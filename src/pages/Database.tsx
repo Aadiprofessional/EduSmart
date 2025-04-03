@@ -78,7 +78,7 @@ const UniversityCard: React.FC<UniversityCardProps> = ({ university, onSelect, i
             }}
             className={`p-2 rounded-full ${inCompareList ? 'bg-secondary text-white' : 'bg-white text-gray-600'}`}
           >
-            <FaBookmark className="text-sm" />
+            <IconComponent icon={FaBookmark} className="text-sm" />
           </motion.button>
         </div>
       </div>
@@ -90,7 +90,7 @@ const UniversityCard: React.FC<UniversityCardProps> = ({ university, onSelect, i
         </div>
         
         <div className="text-sm text-gray-600 flex items-center mb-2">
-          <HiOutlineLocationMarker className="mr-1" /> {university.country}
+          <IconComponent icon={HiOutlineLocationMarker} className="mr-1" /> {university.country}
         </div>
         
         <div className="flex flex-wrap gap-1 mb-3">
@@ -162,7 +162,7 @@ const UniversityListItem: React.FC<UniversityListItemProps> = ({ university, onS
             <div className="flex items-center mt-1 sm:mt-0 gap-2">
               <span className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full font-medium">Rank #{university.qsRanking}</span>
               <span className="text-gray-700 text-sm flex items-center">
-                <HiOutlineLocationMarker className="mr-1" /> {university.country}
+                <IconComponent icon={HiOutlineLocationMarker} className="mr-1" /> {university.country}
               </span>
             </div>
           </div>
@@ -213,11 +213,11 @@ const UniversityListItem: React.FC<UniversityListItemProps> = ({ university, onS
             >
               {inCompareList ? (
                 <>
-                  <FaBookmark className="mr-1" /> Saved
+                  <IconComponent icon={FaBookmark} className="mr-1" /> Saved
                 </>
               ) : (
                 <>
-                  <FaBookmark className="mr-1" /> Add to Compare
+                  <IconComponent icon={FaBookmark} className="mr-1" /> Add to Compare
                 </>
               )}
             </motion.button>
@@ -229,7 +229,7 @@ const UniversityListItem: React.FC<UniversityListItemProps> = ({ university, onS
               className="text-secondary hover:text-secondary-dark font-medium text-sm flex items-center transition-colors"
               whileHover={{ x: 3 }}
             >
-              Visit Website <FaExternalLinkAlt className="ml-1 text-xs" />
+              Visit Website <IconComponent icon={FaExternalLinkAlt} className="ml-1 text-xs" />
             </motion.a>
           </div>
         </div>
@@ -268,7 +268,7 @@ const UniversityDetailModal: React.FC<UniversityDetailModalProps> = ({ universit
             <div>
               <h2 className="text-xl font-bold">{university.name}</h2>
               <div className="flex items-center text-white/80 text-sm">
-                <HiOutlineLocationMarker className="mr-1" />
+                <IconComponent icon={HiOutlineLocationMarker} className="mr-1" />
                 <span>{university.country}</span>
                 <span className="mx-2">•</span>
                 <span>Rank #{university.qsRanking}</span>
@@ -297,11 +297,11 @@ const UniversityDetailModal: React.FC<UniversityDetailModalProps> = ({ universit
             >
               {inCompareList ? (
                 <>
-                  <FaBookmark className="mr-2" /> Remove from Compare
+                  <IconComponent icon={FaBookmark} className="mr-2" /> Remove from Compare
                 </>
               ) : (
                 <>
-                  <FaBookmark className="mr-2" /> Add to Compare
+                  <IconComponent icon={FaBookmark} className="mr-2" /> Add to Compare
                 </>
               )}
             </motion.button>
@@ -314,14 +314,14 @@ const UniversityDetailModal: React.FC<UniversityDetailModalProps> = ({ universit
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
             >
-              Visit Official Website <FaExternalLinkAlt className="ml-2" />
+              Visit Official Website <IconComponent icon={FaExternalLinkAlt} className="ml-2" />
             </motion.a>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                <FaDollarSign className="mr-2 text-primary" /> Tuition & Fees
+                <IconComponent icon={FaDollarSign} className="mr-2 text-primary" /> Tuition & Fees
               </h3>
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="flex justify-between py-2 border-b border-gray-200">
@@ -335,7 +335,7 @@ const UniversityDetailModal: React.FC<UniversityDetailModalProps> = ({ universit
               </div>
               
               <h3 className="text-lg font-bold text-gray-800 mt-6 mb-4 flex items-center">
-                <FaCalendarAlt className="mr-2 text-primary" /> Application Deadlines
+                <IconComponent icon={FaCalendarAlt} className="mr-2 text-primary" /> Application Deadlines
               </h3>
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="flex justify-between py-2 border-b border-gray-200">
@@ -351,7 +351,7 @@ const UniversityDetailModal: React.FC<UniversityDetailModalProps> = ({ universit
             
             <div>
               <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                <FaGraduationCap className="mr-2 text-primary" /> Admission Requirements
+                <IconComponent icon={FaGraduationCap} className="mr-2 text-primary" /> Admission Requirements
               </h3>
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="flex justify-between py-2 border-b border-gray-200">
@@ -388,7 +388,7 @@ const UniversityDetailModal: React.FC<UniversityDetailModalProps> = ({ universit
           
           <div className="mt-6">
             <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-              <FaTrophy className="mr-2 text-primary" /> Major Strengths
+              <IconComponent icon={FaTrophy} className="mr-2 text-primary" /> Major Strengths
             </h3>
             <div className="flex flex-wrap gap-2">
               {university.majorStrengths.map((major, index) => (
@@ -423,7 +423,7 @@ const CompareUniversitiesModal: React.FC<CompareUniversitiesModalProps> = ({ uni
       >
         <div className="flex justify-between items-center bg-gradient-to-r from-primary to-primary-dark text-white p-5">
           <h2 className="text-xl font-bold flex items-center">
-            <FaTrophy className="mr-2" /> Compare Universities
+            <IconComponent icon={FaTrophy} className="mr-2" /> Compare Universities
           </h2>
           <button 
             onClick={onClose}
@@ -886,14 +886,14 @@ const Database: React.FC = () => {
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
                   >
-                    <HiOutlineAcademicCap className="mr-2 text-xl" /> Explore Programs
+                    <IconComponent icon={HiOutlineAcademicCap} className="mr-2 text-xl" /> Explore Programs
                   </motion.button>
                   <motion.button 
                     className="bg-transparent hover:bg-white/10 border border-white text-white font-medium py-2 px-6 rounded-full flex items-center"
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
                   >
-                    <FaGlobe className="mr-2" /> Top Universities
+                    <IconComponent icon={FaGlobe} className="mr-2" /> Top Universities
                   </motion.button>
                 </div>
               </motion.div>
@@ -904,7 +904,7 @@ const Database: React.FC = () => {
               >
                 <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl shadow-lg border border-white/30">
                   <h3 className="text-xl font-semibold mb-4 flex items-center">
-                    <FaSearch className="mr-2" /> Advanced Search
+                    <IconComponent icon={FaSearch} className="mr-2" /> Advanced Search
                   </h3>
                   <div className="mb-4">
                     <div className="relative">
@@ -959,7 +959,7 @@ const Database: React.FC = () => {
                       whileTap={{ scale: 0.97 }}
                       className="bg-secondary hover:bg-secondary-light text-white py-2 px-4 rounded-lg w-full flex items-center justify-center"
                     >
-                      <FaSearch className="mr-2" /> Search
+                      <IconComponent icon={FaSearch} className="mr-2" /> Search
                     </motion.button>
                     <motion.button
                       whileHover={{ scale: 1.03 }}
@@ -988,7 +988,7 @@ const Database: React.FC = () => {
               <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 border-b">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div className="flex items-center">
-                    <FaFilter className="text-primary mr-2" />
+                    <IconComponent icon={FaFilter} className="text-primary mr-2" />
                     <h2 className="text-xl font-bold text-gray-800">Advanced Filters</h2>
                   </div>
                   <div className="flex items-center gap-3">
@@ -1030,7 +1030,7 @@ const Database: React.FC = () => {
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                       >
-                        <FaTrophy className="mr-1" /> Compare ({compareList.length})
+                        <IconComponent icon={FaTrophy} className="mr-1" /> Compare ({compareList.length})
                       </motion.button>
                     )}
                   </div>
@@ -1042,7 +1042,7 @@ const Database: React.FC = () => {
                   <div className="space-y-6">
                     <div>
                       <h3 className="font-semibold text-gray-700 mb-3 flex items-center">
-                        <HiOutlineLocationMarker className="mr-2" /> Location
+                        <IconComponent icon={HiOutlineLocationMarker} className="mr-2" /> Location
                       </h3>
                       <select
                         name="country"
@@ -1064,7 +1064,7 @@ const Database: React.FC = () => {
                     
                     <div>
                       <h3 className="font-semibold text-gray-700 mb-3 flex items-center">
-                        <FaGraduationCap className="mr-2" /> Field of Study
+                        <IconComponent icon={FaGraduationCap} className="mr-2" /> Field of Study
                       </h3>
                       <select
                         name="major"
@@ -1088,7 +1088,7 @@ const Database: React.FC = () => {
                     
                     <div>
                       <h3 className="font-semibold text-gray-700 mb-3 flex items-center">
-                        <FaTrophy className="mr-2" /> QS Ranking Range
+                        <IconComponent icon={FaTrophy} className="mr-2" /> QS Ranking Range
                       </h3>
                       <div className="px-2">
                         <div className="flex justify-between text-xs text-gray-600 mb-1">
@@ -1111,7 +1111,7 @@ const Database: React.FC = () => {
                     
                     <div>
                       <h3 className="font-semibold text-gray-700 mb-3 flex items-center">
-                        <FaCalendarAlt className="mr-2" /> Application Status
+                        <IconComponent icon={FaCalendarAlt} className="mr-2" /> Application Status
                       </h3>
                       <div className="flex items-center">
                         <input
@@ -1130,7 +1130,7 @@ const Database: React.FC = () => {
                     
                     <div>
                       <h3 className="font-semibold text-gray-700 mb-3 flex items-center">
-                        <FaGraduationCap className="mr-2" /> Admission Difficulty
+                        <IconComponent icon={FaGraduationCap} className="mr-2" /> Admission Difficulty
                       </h3>
                       <select
                         name="admissionDifficulty"
@@ -1163,7 +1163,7 @@ const Database: React.FC = () => {
                   {sortedUniversities.length === 0 ? (
                     <div className="bg-gray-50 rounded-lg p-8 text-center">
                       <div className="text-gray-400 text-5xl mb-4">
-                        <FaUniversity className="mx-auto" />
+                        <IconComponent icon={FaUniversity} className="mx-auto" />
                       </div>
                       <h3 className="text-xl font-bold text-gray-700 mb-2">No Universities Found</h3>
                       <p className="text-gray-600 mb-4">
