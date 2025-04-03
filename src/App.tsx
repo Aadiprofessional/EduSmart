@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
 
@@ -8,9 +8,7 @@ import Login from './pages/Login';
 import About from './pages/About';
 import Courses from './pages/Courses';
 import Database from './pages/Database';
-
 import CaseStudies from './pages/CaseStudies';
-
 import NotFound from './pages/NotFound';
 import AICourses from './pages/AICourses';
 import Resources from './pages/Resources';
@@ -18,8 +16,18 @@ import Blog from './pages/Blog';
 import Scholarships from './pages/Scholarships';
 import ApplicationTracker from './pages/ApplicationTracker';
 import Signup from './pages/Signup';
+import ChatBotPage from './pages/ChatBot';
+
+// Components
+import ChatBot from './components/ui/ChatBot';
+
+// Utils
+import { useSmoothScroll } from './utils/scrollUtils';
 
 function App() {
+  // Enable smooth scrolling across the app
+  useSmoothScroll();
+
   return (
     <Router>
       <Routes>
@@ -36,8 +44,12 @@ function App() {
         <Route path="/blog/:id" element={<Blog />} />
         <Route path="/scholarships" element={<Scholarships />} />
         <Route path="/application-tracker" element={<ApplicationTracker />} />
+        <Route path="/chatbot" element={<ChatBotPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      
+      {/* ChatBot component visible on all pages */}
+      <ChatBot />
     </Router>
   );
 }

@@ -3,6 +3,7 @@ import { FaGraduationCap, FaStar, FaUniversity, FaCertificate, FaRobot, FaLaptop
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import IconComponent from '../components/ui/IconComponent';
+import { motion } from 'framer-motion';
 
 interface Course {
   id: number;
@@ -48,7 +49,7 @@ const AICourses: React.FC = () => {
       skills: ['Deep Learning', 'Neural Networks', 'Natural Language Processing', 'Computer Vision', 'Reinforcement Learning'],
       price: '$60,000/year',
       link: 'https://ai.stanford.edu/',
-      image: 'https://via.placeholder.com/300x200?text=Stanford+AI',
+      image: 'https://images.unsplash.com/photo-1562774053-701939374585?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80',
       featured: true
     },
     {
@@ -67,7 +68,7 @@ const AICourses: React.FC = () => {
       skills: ['TensorFlow', 'Convolutional Neural Networks', 'Recurrent Neural Networks', 'Model Optimization'],
       price: '$49/month (subscription)',
       link: 'https://www.coursera.org/specializations/deep-learning',
-      image: 'https://via.placeholder.com/300x200?text=Deep+Learning'
+      image: 'https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80'
     },
     {
       id: 3,
@@ -84,7 +85,7 @@ const AICourses: React.FC = () => {
       skills: ['AI Strategy', 'Machine Learning Project Management', 'AI Ethics', 'Business Applications of AI'],
       price: '$49 (one-time purchase)',
       link: 'https://www.coursera.org/learn/ai-for-everyone',
-      image: 'https://via.placeholder.com/300x200?text=AI+for+Everyone'
+      image: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80'
     },
     {
       id: 4,
@@ -101,7 +102,7 @@ const AICourses: React.FC = () => {
       skills: ['TensorFlow', 'Convolutional Neural Networks', 'Natural Language Processing', 'Computer Vision'],
       price: '$49/month (subscription)',
       link: 'https://www.coursera.org/professional-certificates/tensorflow-in-practice',
-      image: 'https://via.placeholder.com/300x200?text=TensorFlow'
+      image: 'https://images.unsplash.com/photo-1591696205602-2f950c417cb9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80'
     },
     {
       id: 5,
@@ -117,7 +118,7 @@ const AICourses: React.FC = () => {
       skills: ['Prompt Engineering', 'Content Refinement', 'AI-assisted Writing'],
       price: 'Free',
       link: '/tutorials/chatgpt-sop',
-      image: 'https://via.placeholder.com/300x200?text=ChatGPT+Tutorial',
+      image: 'https://images.unsplash.com/photo-1655720828026-e53261de9a55?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80',
       featured: true
     },
     {
@@ -134,7 +135,7 @@ const AICourses: React.FC = () => {
       skills: ['Data-driven Decision Making', 'University Research', 'Application Strategy'],
       price: 'Free',
       link: '/tutorials/ai-university-selection',
-      image: 'https://via.placeholder.com/300x200?text=AI+University+Selection'
+      image: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80'
     },
     {
       id: 7,
@@ -152,7 +153,7 @@ const AICourses: React.FC = () => {
       skills: ['Machine Learning Research', 'Algorithm Development', 'Academic Publishing', 'Grant Writing'],
       price: 'Fully funded (includes stipend)',
       link: 'https://www.ml.cmu.edu/academics/ph.d.-in-machine-learning.html',
-      image: 'https://via.placeholder.com/300x200?text=CMU+AI+PhD'
+      image: 'https://images.unsplash.com/photo-1597589827317-4c6d6e0a90f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80'
     }
   ];
 
@@ -212,19 +213,99 @@ const AICourses: React.FC = () => {
     }
   };
 
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: { duration: 0.5 }
+    }
+  };
+
+  const filterButtonVariants = {
+    hover: {
+      scale: 1.05,
+      transition: { duration: 0.2 }
+    },
+    tap: {
+      scale: 0.95
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-grow">
-        <section className="bg-gradient-to-r from-teal-700 to-teal-900 text-white py-12">
-          <div className="container mx-auto px-4">
+        <motion.section 
+          className="bg-gradient-to-r from-teal-700 to-teal-900 text-white py-12 relative overflow-hidden"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          {/* Animated background elements */}
+          <motion.div 
+            className="absolute w-96 h-96 bg-teal-600 rounded-full opacity-10" 
+            style={{ filter: 'blur(80px)', top: '-10%', right: '5%' }}
+            animate={{
+              scale: [1, 1.2, 1],
+              x: [0, 30, 0],
+            }}
+            transition={{
+              duration: 15,
+              repeat: Infinity,
+              repeatType: "reverse"
+            }}
+          />
+          <motion.div 
+            className="absolute w-64 h-64 bg-orange-500 rounded-full opacity-10" 
+            style={{ filter: 'blur(60px)', bottom: '-5%', left: '10%' }}
+            animate={{
+              scale: [1, 1.1, 1],
+              y: [0, -20, 0],
+            }}
+            transition={{
+              duration: 10,
+              repeat: Infinity,
+              repeatType: "reverse"
+            }}
+          />
+          
+          <div className="container mx-auto px-4 relative z-10">
             <div className="text-center max-w-3xl mx-auto">
-              <h1 className="text-4xl font-bold mb-4">AI Education Courses</h1>
-              <p className="text-xl mb-8">
+              <motion.h1 
+                className="text-4xl font-bold mb-4"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                AI Education Courses
+              </motion.h1>
+              <motion.p 
+                className="text-xl mb-8"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+              >
                 Explore top university AI programs, online certifications, and practical tutorials to 
                 master artificial intelligence and enhance your applications.
-              </p>
-              <div className="relative">
+              </motion.p>
+              <motion.div 
+                className="relative"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+              >
                 <input
                   type="text"
                   placeholder="Search AI courses, programs and tutorials..."
@@ -233,24 +314,45 @@ const AICourses: React.FC = () => {
                   className="w-full px-5 py-3 pr-12 bg-white rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
                 <IconComponent icon={FaSearch} className="absolute right-4 top-3.5 text-gray-500" />
-              </div>
+              </motion.div>
             </div>
           </div>
-        </section>
+        </motion.section>
 
         <section className="py-12 bg-gray-50">
           <div className="container mx-auto px-4">
             {/* Featured Courses */}
-            <div className="mb-12">
+            <motion.div 
+              className="mb-12"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
               <h2 className="text-2xl font-bold text-teal-800 mb-6">Featured Programs</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <motion.div 
+                className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+              >
                 {courses.filter(course => course.featured).map(course => (
-                  <div key={course.id} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100 flex flex-col md:flex-row">
-                    <div className="md:w-1/3">
-                      <img 
+                  <motion.div 
+                    key={course.id} 
+                    className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100 flex flex-col md:flex-row"
+                    variants={itemVariants}
+                    whileHover={{ 
+                      y: -5,
+                      boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+                    }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <div className="md:w-1/3 overflow-hidden">
+                      <motion.img 
                         src={course.image} 
-                        alt={course.title} 
-                        className="w-full h-48 md:h-full object-cover"
+                        alt={course.title}
+                        className="h-full w-full object-cover" 
+                        whileHover={{ scale: 1.05 }}
+                        transition={{ duration: 0.5 }}
                       />
                     </div>
                     <div className="md:w-2/3 p-6">
@@ -285,10 +387,10 @@ const AICourses: React.FC = () => {
                         </a>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
             
             {/* Filter options */}
             <div className="mb-8">

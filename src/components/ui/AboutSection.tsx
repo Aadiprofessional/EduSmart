@@ -1,63 +1,102 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { fadeIn, staggerContainer } from '../../utils/animations';
+import AnimatedSection from './AnimatedSection';
 
 const AboutSection: React.FC = () => {
+  const stats = [
+    { number: '15K+', label: 'Students Enrolled' },
+    { number: '95%', label: 'Success Rate' },
+    { number: '200+', label: 'Expert Instructors' },
+    { number: '100+', label: 'Global Partners' },
+  ];
+
   return (
-    <section className="py-16 bg-white">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-teal-800 mb-2">A Few Words About the <span className="text-orange-500">EduSmart</span> WEBSITE</h2>
-        </div>
-        
-        <div className="flex flex-col md:flex-row gap-8">
-          <div className="md:w-1/3 bg-gray-200 rounded-lg h-64 flex items-center justify-center">
-            <img 
-              src="/images/about-illustration.svg" 
-              alt="About EduSmart" 
-              className="h-48 w-48 object-contain"
-              onError={(e) => {
-                e.currentTarget.src = 'https://via.placeholder.com/300?text=About+EduSmart';
-              }}
+    <section className="py-20 bg-white">
+      <motion.div 
+        variants={staggerContainer(0.1, 0.1)}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, amount: 0.25 }}
+        className="container mx-auto px-4"
+      >
+        <div className="flex flex-col lg:flex-row items-center gap-12">
+          <motion.div 
+            variants={fadeIn('right', 0.2)}
+            className="lg:w-1/2 relative"
+          >
+            <motion.div 
+              whileHover={{ scale: 1.03 }}
+              transition={{ type: "spring", stiffness: 300 }}
+              className="rounded-lg overflow-hidden shadow-xl"
+            >
+              <img 
+                src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" 
+                alt="Students collaborating" 
+                className="w-full h-auto object-cover"
+              />
+            </motion.div>
+            
+            {/* Decorative elements */}
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5, duration: 0.8 }}
+              className="absolute -bottom-6 -left-6 w-24 h-24 bg-teal-500 rounded-lg z-[-1]"
             />
-          </div>
-          <div className="md:w-2/3">
-            <p className="text-gray-700 mb-4">
-              EduSmart Guide is an AI-powered platform designed to help students find their ideal university, track applications, and access expert resources. With intelligent search tools, real success stories, and personalized recommendations, we make higher education planning seamless and stress-free.
-            </p>
-            <p className="text-gray-700 mb-6">
-              Our smart platform combines AI-driven insights, university rankings, and real student experiences to help you make informed decisions. From school matching to application tracking, we simplify every step of your academic path.
-            </p>
-            <div className="flex flex-wrap gap-6 mt-6">
-              <div className="flex items-center">
-                <div className="h-12 w-12 rounded-full bg-orange-500 flex items-center justify-center text-white mr-3">
-                  <span className="text-xl">1K+</span>
-                </div>
-                <span className="text-gray-800 font-medium">Universities</span>
-              </div>
-              <div className="flex items-center">
-                <div className="h-12 w-12 rounded-full bg-orange-500 flex items-center justify-center text-white mr-3">
-                  <span className="text-xl">10K+</span>
-                </div>
-                <span className="text-gray-800 font-medium">Programs</span>
-              </div>
-              <div className="flex items-center">
-                <div className="h-12 w-12 rounded-full bg-orange-500 flex items-center justify-center text-white mr-3">
-                  <span className="text-xl">100+</span>
-                </div>
-                <span className="text-gray-800 font-medium">Students Daily</span>
-              </div>
-            </div>
-            <div className="mt-8">
-              <Link
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7, duration: 0.8 }}
+              className="absolute -top-6 -right-6 w-32 h-32 bg-orange-400 rounded-full z-[-1]"
+            />
+          </motion.div>
+
+          <motion.div 
+            variants={fadeIn('left', 0.3)}
+            className="lg:w-1/2"
+          >
+            <AnimatedSection direction="up" delay={0.1}>
+              <h2 className="text-3xl lg:text-4xl font-bold mb-6 text-gray-800">
+                About <span className="text-orange-500">EduSmart</span>
+              </h2>
+            </AnimatedSection>
+            
+            <AnimatedSection direction="up" delay={0.2}>
+              <p className="text-gray-600 mb-6 text-lg">
+                EduSmart is revolutionizing educational guidance through AI-powered personalization. We help students worldwide find their perfect educational path with intelligent matching algorithms and comprehensive resources.
+              </p>
+            </AnimatedSection>
+            
+            <AnimatedSection direction="up" delay={0.3}>
+              <p className="text-gray-600 mb-8 text-lg">
+                Our platform combines cutting-edge technology with educational expertise to provide tailored recommendations, scholarship opportunities, and application assistance for students at every stage of their academic journey.
+              </p>
+            </AnimatedSection>
+
+            <AnimatedSection direction="up" delay={0.4}>
+              <Link 
                 to="/about"
-                className="inline-block bg-teal-700 hover:bg-teal-800 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+                className="inline-block bg-teal-700 hover:bg-teal-800 text-white font-medium py-3 px-8 rounded-lg transition-colors mb-12"
               >
-                Read More
+                Learn More About Us
               </Link>
+            </AnimatedSection>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              {stats.map((stat, index) => (
+                <AnimatedSection key={index} direction="up" delay={0.5 + index * 0.1}>
+                  <div className="text-center hover-float">
+                    <h3 className="text-3xl font-bold text-orange-500 mb-2">{stat.number}</h3>
+                    <p className="text-gray-500">{stat.label}</p>
+                  </div>
+                </AnimatedSection>
+              ))}
             </div>
-          </div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 };
