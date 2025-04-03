@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaSearch, FaGraduationCap } from 'react-icons/fa';
+import IconComponent from './IconComponent';
 
 const CourseSearch: React.FC = () => {
   const navigate = useNavigate();
@@ -98,7 +99,7 @@ const CourseSearch: React.FC = () => {
                 type="submit"
                 className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 px-6 rounded-md transition-colors flex items-center justify-center font-medium"
               >
-                <FaSearch className="mr-2" />
+                <IconComponent icon={FaSearch} className="mr-2" />
                 Search Universities
               </button>
             </div>

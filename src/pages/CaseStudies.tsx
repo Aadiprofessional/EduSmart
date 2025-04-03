@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FaGraduationCap, FaUniversity, FaChartLine, FaStar, FaFilter, FaSearch } from 'react-icons/fa';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
+import IconComponent from '../components/ui/IconComponent';
 
 interface CaseStudy {
   id: number;
@@ -255,7 +256,7 @@ const CaseStudies: React.FC = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full px-5 py-3 pr-12 bg-white rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
-                <FaSearch className="absolute right-4 top-3.5 text-gray-500" />
+                <IconComponent icon={FaSearch} className="absolute right-4 top-3.5 text-gray-500" />
               </div>
             </div>
           </div>
@@ -271,33 +272,27 @@ const CaseStudies: React.FC = () => {
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => toggleFilter('lowGPA')}
-                    className={`px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 ${
-                      activeFilters.lowGPA
-                        ? 'bg-orange-500 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${
+                      activeFilters.lowGPA ? 'bg-teal-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
                   >
-                    <FaChartLine /> Low GPA Success
+                    <IconComponent icon={FaChartLine} /> Low GPA Success
                   </button>
                   <button
                     onClick={() => toggleFilter('international')}
-                    className={`px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 ${
-                      activeFilters.international
-                        ? 'bg-orange-500 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${
+                      activeFilters.international ? 'bg-teal-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
                   >
-                    <FaUniversity /> International Students
+                    <IconComponent icon={FaUniversity} /> International Students
                   </button>
                   <button
                     onClick={() => toggleFilter('scholarship')}
-                    className={`px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 ${
-                      activeFilters.scholarship
-                        ? 'bg-orange-500 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${
+                      activeFilters.scholarship ? 'bg-teal-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
                   >
-                    <FaGraduationCap /> Scholarship Winners
+                    <IconComponent icon={FaGraduationCap} /> Scholarship Winners
                   </button>
                 </div>
               </div>
@@ -475,11 +470,11 @@ const CaseStudies: React.FC = () => {
                           <div className="mt-6 bg-gray-50 p-4 rounded-lg">
                             <h4 className="font-semibold text-gray-700 mb-2">Testimonial</h4>
                             <div className="flex gap-1 text-yellow-400 mb-2">
-                              <FaStar />
-                              <FaStar />
-                              <FaStar />
-                              <FaStar />
-                              <FaStar />
+                              <IconComponent icon={FaStar} />
+                              <IconComponent icon={FaStar} />
+                              <IconComponent icon={FaStar} />
+                              <IconComponent icon={FaStar} />
+                              <IconComponent icon={FaStar} />
                             </div>
                             <p className="text-gray-600 italic">"{study.testimonial}"</p>
                           </div>
@@ -491,7 +486,7 @@ const CaseStudies: React.FC = () => {
               </div>
             ) : (
               <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                <FaUniversity className="text-5xl text-gray-300 mx-auto mb-4" />
+                <IconComponent icon={FaUniversity} className="text-5xl text-gray-300 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-700 mb-2">No case studies match your criteria</h3>
                 <p className="text-gray-600">Try adjusting your filters or search query.</p>
               </div>

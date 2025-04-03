@@ -1,5 +1,6 @@
 import React from 'react';
 import { FaStar } from 'react-icons/fa';
+import IconComponent from './IconComponent';
 
 const ClientFeedback: React.FC = () => {
   const testimonials = [
@@ -31,8 +32,9 @@ const ClientFeedback: React.FC = () => {
 
   const renderStars = (rating: number) => {
     return Array(5).fill(0).map((_, index) => (
-      <FaStar 
+      <IconComponent 
         key={index} 
+        icon={FaStar}
         className={`${index < rating ? 'text-yellow-500' : 'text-gray-300'}`} 
       />
     ));

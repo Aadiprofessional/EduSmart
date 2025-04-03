@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import * as Fa from 'react-icons/fa';
+import { FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaYoutube } from 'react-icons/fa';
+import IconComponent from '../ui/IconComponent';
 
 const Footer: React.FC = () => {
   return (
@@ -15,19 +16,19 @@ const Footer: React.FC = () => {
             </p>
             <div className="flex space-x-4">
               <a href="#" className="text-gray-300 hover:text-orange-500">
-                <Fa.FaFacebook size={20} />
+                <IconComponent icon={FaFacebook} size={20} />
               </a>
               <a href="#" className="text-gray-300 hover:text-orange-500">
-                <Fa.FaTwitter size={20} />
+                <IconComponent icon={FaTwitter} size={20} />
               </a>
               <a href="#" className="text-gray-300 hover:text-orange-500">
-                <Fa.FaInstagram size={20} />
+                <IconComponent icon={FaInstagram} size={20} />
               </a>
               <a href="#" className="text-gray-300 hover:text-orange-500">
-                <Fa.FaLinkedin size={20} />
+                <IconComponent icon={FaLinkedin} size={20} />
               </a>
               <a href="#" className="text-gray-300 hover:text-orange-500">
-                <Fa.FaYoutube size={20} />
+                <IconComponent icon={FaYoutube} size={20} />
               </a>
             </div>
           </div>
@@ -90,7 +91,7 @@ const Footer: React.FC = () => {
         
         <div className="border-t border-gray-700 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
           <div className="mb-4 md:mb-0">
-            <span className="text-gray-300">© 2023 EduSmart. All rights reserved.</span>
+            <span className="text-gray-300">© 2025 EduSmart. All rights reserved.</span>
           </div>
           <div className="flex space-x-6">
             <Link to="/privacy" className="text-gray-300 hover:text-orange-500 text-sm">

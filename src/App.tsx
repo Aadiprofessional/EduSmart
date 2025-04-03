@@ -16,6 +16,8 @@ import AICourses from './pages/AICourses';
 import Resources from './pages/Resources';
 import Blog from './pages/Blog';
 import Scholarships from './pages/Scholarships';
+import ApplicationTracker from './pages/ApplicationTracker';
+import Signup from './pages/Signup';
 
 function App() {
   return (

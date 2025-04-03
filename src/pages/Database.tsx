@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FaSearch, FaFilter, FaSortAmountDown, FaExternalLinkAlt, FaUniversity } from 'react-icons/fa';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
+import IconComponent from '../components/ui/IconComponent';
 
 interface University {
   id: number;
@@ -201,9 +202,9 @@ const Database: React.FC = () => {
                   placeholder="Search for universities..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-5 py-3 pr-12 bg-white rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-5 py-3 pr-12 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
-                <FaSearch className="absolute right-4 top-3.5 text-gray-500" />
+                <IconComponent icon={FaSearch} className="absolute right-4 top-3.5 text-gray-500" />
               </div>
             </div>
           </div>
@@ -220,7 +221,7 @@ const Database: React.FC = () => {
                       onClick={() => setIsFilterOpen(!isFilterOpen)} 
                       className="md:hidden text-teal-700"
                     >
-                      <FaFilter />
+                      <IconComponent icon={FaFilter} />
                     </button>
                   </div>
                   
@@ -394,7 +395,7 @@ const Database: React.FC = () => {
                                   className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-2"
                                 >
                                   <span>Apply Now</span>
-                                  <FaExternalLinkAlt size={12} />
+                                  <IconComponent icon={FaExternalLinkAlt} size={12} />
                                 </a>
                               </div>
                             </div>
@@ -404,7 +405,7 @@ const Database: React.FC = () => {
                     ))
                   ) : (
                     <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                      <FaUniversity className="text-5xl text-gray-300 mx-auto mb-4" />
+                      <IconComponent icon={FaUniversity} className="text-5xl text-gray-300 mx-auto mb-4" />
                       <h3 className="text-xl font-semibold text-gray-700 mb-2">No universities match your criteria</h3>
                       <p className="text-gray-600">Try adjusting your filters or search query.</p>
                     </div>

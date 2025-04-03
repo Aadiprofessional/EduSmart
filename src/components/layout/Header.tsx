@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import * as Hi from 'react-icons/hi';
+import { HiX, HiMenu } from 'react-icons/hi';
+import IconComponent from '../ui/IconComponent';
 
 const Header: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -68,8 +69,8 @@ const Header: React.FC = () => {
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             {isMobileMenuOpen
-              ? <Hi.HiX className="h-6 w-6" />
-              : <Hi.HiMenu className="h-6 w-6" />
+              ? <IconComponent icon={HiX} className="h-6 w-6" />
+              : <IconComponent icon={HiMenu} className="h-6 w-6" />
             }
           </button>
         </div>

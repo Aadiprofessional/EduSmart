@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FaPaperPlane } from 'react-icons/fa';
+import IconComponent from './IconComponent';
 
 const Newsletter: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -40,7 +41,7 @@ const Newsletter: React.FC = () => {
               type="submit"
               className="absolute right-0 top-0 h-full bg-orange-500 hover:bg-orange-600 text-white px-4 rounded-r-lg transition-colors"
             >
-              <FaPaperPlane />
+              <IconComponent icon={FaPaperPlane} />
             </button>
           </form>
           

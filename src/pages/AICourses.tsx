@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FaGraduationCap, FaStar, FaUniversity, FaCertificate, FaRobot, FaLaptopCode, FaSearch, FaTag } from 'react-icons/fa';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
+import IconComponent from '../components/ui/IconComponent';
 
 interface Course {
   id: number;
@@ -187,7 +188,8 @@ const AICourses: React.FC = () => {
   // Helper to render star ratings
   const renderStars = (rating: number) => {
     return Array(5).fill(0).map((_, index) => (
-      <FaStar 
+      <IconComponent 
+        icon={FaStar}
         key={index} 
         className={`${index < Math.floor(rating) ? 'text-yellow-400' : 'text-gray-300'} ${
           index === Math.floor(rating) && rating % 1 > 0 ? 'text-yellow-200' : ''
@@ -200,13 +202,13 @@ const AICourses: React.FC = () => {
   const getCourseTypeIcon = (type: string) => {
     switch (type) {
       case 'university':
-        return <FaUniversity className="text-teal-600" />;
+        return <IconComponent icon={FaUniversity} className="text-teal-600" />;
       case 'certification':
-        return <FaCertificate className="text-blue-600" />;
+        return <IconComponent icon={FaCertificate} className="text-blue-600" />;
       case 'tutorial':
-        return <FaLaptopCode className="text-orange-500" />;
+        return <IconComponent icon={FaLaptopCode} className="text-orange-500" />;
       default:
-        return <FaGraduationCap className="text-gray-600" />;
+        return <IconComponent icon={FaGraduationCap} className="text-gray-600" />;
     }
   };
 
@@ -230,7 +232,7 @@ const AICourses: React.FC = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full px-5 py-3 pr-12 bg-white rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
-                <FaSearch className="absolute right-4 top-3.5 text-gray-500" />
+                <IconComponent icon={FaSearch} className="absolute right-4 top-3.5 text-gray-500" />
               </div>
             </div>
           </div>
@@ -312,7 +314,7 @@ const AICourses: React.FC = () => {
                           : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       }`}
                     >
-                      <FaUniversity className="text-xs" /> University Programs
+                      <IconComponent icon={FaUniversity} className="text-xs" /> University Programs
                     </button>
                     <button
                       onClick={() => setActiveType('certification')}
@@ -322,7 +324,7 @@ const AICourses: React.FC = () => {
                           : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       }`}
                     >
-                      <FaCertificate className="text-xs" /> Certifications
+                      <IconComponent icon={FaCertificate} className="text-xs" /> Certifications
                     </button>
                     <button
                       onClick={() => setActiveType('tutorial')}
@@ -332,7 +334,7 @@ const AICourses: React.FC = () => {
                           : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       }`}
                     >
-                      <FaLaptopCode className="text-xs" /> Tutorials
+                      <IconComponent icon={FaLaptopCode} className="text-xs" /> Tutorials
                     </button>
                   </div>
                 </div>
@@ -407,7 +409,7 @@ const AICourses: React.FC = () => {
                           : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       }`}
                     >
-                      <FaTag className="text-xs" /> {category}
+                      <IconComponent icon={FaTag} className="text-xs" /> {category}
                     </button>
                   ))}
                 </div>
@@ -484,7 +486,7 @@ const AICourses: React.FC = () => {
               </div>
             ) : (
               <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                <FaRobot className="text-5xl text-gray-300 mx-auto mb-4" />
+                <IconComponent icon={FaRobot} className="text-5xl text-gray-300 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-700 mb-2">No courses match your criteria</h3>
                 <p className="text-gray-600">Try adjusting your filters or search query.</p>
               </div>
@@ -506,7 +508,7 @@ const AICourses: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="bg-gray-50 rounded-lg p-6">
                 <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center text-teal-600 mb-4">
-                  <FaGraduationCap className="text-xl" />
+                  <IconComponent icon={FaGraduationCap} className="text-xl" />
                 </div>
                 <h3 className="text-lg font-bold text-teal-800 mb-2">Career Opportunities</h3>
                 <p className="text-gray-600">
@@ -517,7 +519,7 @@ const AICourses: React.FC = () => {
               
               <div className="bg-gray-50 rounded-lg p-6">
                 <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 mb-4">
-                  <FaRobot className="text-xl" />
+                  <IconComponent icon={FaRobot} className="text-xl" />
                 </div>
                 <h3 className="text-lg font-bold text-teal-800 mb-2">Future-Proof Skills</h3>
                 <p className="text-gray-600">
@@ -528,7 +530,7 @@ const AICourses: React.FC = () => {
               
               <div className="bg-gray-50 rounded-lg p-6">
                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 mb-4">
-                  <FaLaptopCode className="text-xl" />
+                  <IconComponent icon={FaLaptopCode} className="text-xl" />
                 </div>
                 <h3 className="text-lg font-bold text-teal-800 mb-2">Problem-Solving Power</h3>
                 <p className="text-gray-600">

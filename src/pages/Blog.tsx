@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { FaCalendarAlt, FaUser, FaTag, FaSearch, FaArrowRight, FaClock, FaChartLine, FaGraduationCap, FaGlobe } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { FaCalendarAlt, FaUser, FaTag, FaSearch, FaArrowLeft, FaClock, FaArrowRight, FaChartLine, FaGraduationCap, FaGlobe } from 'react-icons/fa';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
+import IconComponent from '../components/ui/IconComponent';
 
 interface BlogPost {
   id: number;
@@ -31,38 +33,38 @@ const Blog: React.FC = () => {
   const blogPosts: BlogPost[] = [
     {
       id: 1,
-      title: "How AI is Transforming University Admissions in 2023",
+      title: "How AI is Transforming University Admissions in 2025",
       excerpt: "Discover how artificial intelligence is revolutionizing the college application process and how you can leverage these tools for your applications.",
       author: {
         name: "Dr. Sarah Chen",
         avatar: "https://via.placeholder.com/40x40",
         title: "AI Education Specialist"
       },
-      publishDate: "August 15, 2023",
+      publishDate: "August 15, 2025",
       readTime: "7 min",
       category: "AI in Education",
       tags: ["AI", "Admissions", "Technology", "Applications"],
       image: "https://via.placeholder.com/600x400?text=AI+in+Admissions",
       featured: true,
       trending: true,
-      slug: "ai-transforming-university-admissions-2023"
+      slug: "ai-transforming-university-admissions-2025"
     },
     {
       id: 2,
-      title: "Top 10 Universities for Computer Science in 2023",
+      title: "Top 10 Universities for Computer Science in 2025",
       excerpt: "Looking to study computer science? Explore our comprehensive ranking of the best universities worldwide for CS degrees.",
       author: {
         name: "Michael Reeves",
         avatar: "https://via.placeholder.com/40x40",
         title: "Education Consultant"
       },
-      publishDate: "July 28, 2023",
+      publishDate: "July 28, 2025",
       readTime: "10 min",
       category: "University Rankings",
       tags: ["Computer Science", "Rankings", "STEM", "University Selection"],
       image: "https://via.placeholder.com/600x400?text=CS+University+Rankings",
       trending: true,
-      slug: "top-universities-computer-science-2023"
+      slug: "top-universities-computer-science-2025"
     },
     {
       id: 3,
@@ -73,7 +75,7 @@ const Blog: React.FC = () => {
         avatar: "https://via.placeholder.com/40x40",
         title: "Former Admissions Officer"
       },
-      publishDate: "August 5, 2023",
+      publishDate: "August 5, 2025",
       readTime: "8 min",
       category: "Application Tips",
       tags: ["SOP", "Writing", "Application Strategy", "Admissions"],
@@ -90,7 +92,7 @@ const Blog: React.FC = () => {
         avatar: "https://via.placeholder.com/40x40",
         title: "International Education Advisor"
       },
-      publishDate: "July 20, 2023",
+      publishDate: "July 20, 2025",
       readTime: "12 min",
       category: "Study Abroad",
       tags: ["Finance", "Scholarships", "Budget", "International Students"],
@@ -106,7 +108,7 @@ const Blog: React.FC = () => {
         avatar: "https://via.placeholder.com/40x40",
         title: "Education Futurist"
       },
-      publishDate: "August 12, 2023",
+      publishDate: "August 12, 2025",
       readTime: "9 min",
       category: "Education Trends",
       tags: ["Future of Education", "Trends", "Graduate Programs", "Innovation"],
@@ -122,7 +124,7 @@ const Blog: React.FC = () => {
         avatar: "https://via.placeholder.com/40x40",
         title: "Test Prep Specialist"
       },
-      publishDate: "July 10, 2023",
+      publishDate: "July 10, 2025",
       readTime: "11 min",
       category: "Test Preparation",
       tags: ["GRE", "Study Plan", "Test Prep", "Graduate School"],
@@ -139,7 +141,7 @@ const Blog: React.FC = () => {
         avatar: "https://via.placeholder.com/40x40",
         title: "AI Education Specialist"
       },
-      publishDate: "August 8, 2023",
+      publishDate: "August 8, 2025",
       readTime: "6 min",
       category: "AI in Education",
       tags: ["ChatGPT", "AI Writing", "Research", "Academic Writing"],
@@ -155,7 +157,7 @@ const Blog: React.FC = () => {
         avatar: "https://via.placeholder.com/40x40",
         title: "Career Development Coach"
       },
-      publishDate: "July 25, 2023",
+      publishDate: "July 25, 2025",
       readTime: "8 min",
       category: "Career Development",
       tags: ["Networking", "Academic Connections", "Professional Development", "Graduate School"],
@@ -188,21 +190,21 @@ const Blog: React.FC = () => {
   const getCategoryIcon = (category: string) => {
     switch (category) {
       case 'AI in Education':
-        return <FaChartLine className="text-teal-600" />;
+        return <IconComponent icon={FaChartLine} className="text-teal-600" />;
       case 'University Rankings':
-        return <FaGraduationCap className="text-blue-600" />;
+        return <IconComponent icon={FaGraduationCap} className="text-blue-600" />;
       case 'Application Tips':
-        return <FaGraduationCap className="text-orange-600" />;
+        return <IconComponent icon={FaGraduationCap} className="text-orange-600" />;
       case 'Study Abroad':
-        return <FaGlobe className="text-green-600" />;
+        return <IconComponent icon={FaGlobe} className="text-green-600" />;
       case 'Education Trends':
-        return <FaChartLine className="text-purple-600" />;
+        return <IconComponent icon={FaChartLine} className="text-purple-600" />;
       case 'Test Preparation':
-        return <FaGraduationCap className="text-red-600" />;
+        return <IconComponent icon={FaGraduationCap} className="text-red-600" />;
       case 'Career Development':
-        return <FaChartLine className="text-indigo-600" />;
+        return <IconComponent icon={FaChartLine} className="text-indigo-600" />;
       default:
-        return <FaGraduationCap className="text-gray-600" />;
+        return <IconComponent icon={FaGraduationCap} className="text-gray-600" />;
     }
   };
 
@@ -226,7 +228,7 @@ const Blog: React.FC = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full px-5 py-3 pr-12 bg-white rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
-                <FaSearch className="absolute right-4 top-3.5 text-gray-500" />
+                <IconComponent icon={FaSearch} className="absolute right-4 top-3.5 text-gray-500" />
               </div>
             </div>
           </div>
@@ -268,11 +270,11 @@ const Blog: React.FC = () => {
                     </div>
                     <div className="flex items-center text-sm text-gray-500 mt-auto">
                       <span className="flex items-center gap-1 mr-4">
-                        <FaCalendarAlt className="text-gray-400" />
+                        <IconComponent icon={FaCalendarAlt} className="text-gray-400" />
                         {post.publishDate}
                       </span>
                       <span className="flex items-center gap-1">
-                        <FaClock className="text-gray-400" />
+                        <IconComponent icon={FaClock} className="text-gray-400" />
                         {post.readTime} read
                       </span>
                     </div>
@@ -280,7 +282,7 @@ const Blog: React.FC = () => {
                       href={`/blog/${post.slug}`}
                       className="mt-4 inline-flex items-center gap-1 text-teal-600 font-medium hover:text-teal-700 transition-colors"
                     >
-                      Read more <FaArrowRight className="text-xs" />
+                      Read more <IconComponent icon={FaArrowRight} className="text-xs" />
                     </a>
                   </div>
                 </div>
@@ -311,11 +313,11 @@ const Blog: React.FC = () => {
                     </h3>
                     <div className="flex items-center text-xs text-gray-500 mb-3">
                       <span className="flex items-center gap-1 mr-3">
-                        <FaCalendarAlt className="text-gray-400" />
+                        <IconComponent icon={FaCalendarAlt} className="text-gray-400" />
                         {post.publishDate}
                       </span>
                       <span className="flex items-center gap-1">
-                        <FaClock className="text-gray-400" />
+                        <IconComponent icon={FaClock} className="text-gray-400" />
                         {post.readTime} read
                       </span>
                     </div>
@@ -323,7 +325,7 @@ const Blog: React.FC = () => {
                       href={`/blog/${post.slug}`}
                       className="inline-flex items-center gap-1 text-sm text-teal-600 font-medium hover:text-teal-700 transition-colors"
                     >
-                      Read article <FaArrowRight className="text-xs" />
+                      Read article <IconComponent icon={FaArrowRight} className="text-xs" />
                     </a>
                   </div>
                 </div>
@@ -389,7 +391,7 @@ const Blog: React.FC = () => {
                       <div className="flex flex-wrap gap-1 mb-4">
                         {post.tags.slice(0, 3).map((tag, idx) => (
                           <span key={idx} className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded flex items-center gap-1">
-                            <FaTag className="text-gray-400 text-xs" /> {tag}
+                            <IconComponent icon={FaTag} className="text-gray-400 text-xs" /> {tag}
                           </span>
                         ))}
                         {post.tags.length > 3 && (
@@ -401,11 +403,11 @@ const Blog: React.FC = () => {
                       
                       <div className="flex items-center text-xs text-gray-500 mt-auto mb-3">
                         <span className="flex items-center gap-1 mr-3">
-                          <FaCalendarAlt className="text-gray-400" />
+                          <IconComponent icon={FaCalendarAlt} className="text-gray-400" />
                           {post.publishDate}
                         </span>
                         <span className="flex items-center gap-1">
-                          <FaClock className="text-gray-400" />
+                          <IconComponent icon={FaClock} className="text-gray-400" />
                           {post.readTime} read
                         </span>
                       </div>
@@ -414,7 +416,7 @@ const Blog: React.FC = () => {
                         href={`/blog/${post.slug}`}
                         className="inline-flex items-center gap-1 text-sm text-teal-600 font-medium hover:text-teal-700 transition-colors"
                       >
-                        Read article <FaArrowRight className="text-xs" />
+                        Read article <IconComponent icon={FaArrowRight} className="text-xs" />
                       </a>
                     </div>
                   </div>
@@ -422,9 +424,9 @@ const Blog: React.FC = () => {
               </div>
             ) : (
               <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                <FaSearch className="text-5xl text-gray-300 mx-auto mb-4" />
+                <IconComponent icon={FaSearch} className="text-5xl text-gray-300 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-700 mb-2">No articles found</h3>
-                <p className="text-gray-600">Try adjusting your search terms or category filter.</p>
+                <p className="text-gray-600">Try adjusting your search criteria.</p>
               </div>
             )}
           </div>

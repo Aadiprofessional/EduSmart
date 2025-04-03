@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { FaCalendarAlt, FaUser } from 'react-icons/fa';
+import IconComponent from './IconComponent';
 
 const BlogSection: React.FC = () => {
   const blogPosts = [
@@ -9,7 +10,7 @@ const BlogSection: React.FC = () => {
       title: 'How AI Is Revolutionizing University Selection Process',
       excerpt: 'Discover how artificial intelligence algorithms are helping students find their perfect university match with unprecedented accuracy.',
       author: 'Dr. James Wilson',
-      date: 'May 15, 2023',
+      date: 'May 15, 2025',
       category: 'AI Technology',
       image: 'https://via.placeholder.com/400x250'
     },
@@ -18,16 +19,16 @@ const BlogSection: React.FC = () => {
       title: '5 Success Stories: From Rejection to Top University Admission',
       excerpt: 'Read inspiring case studies of students who overcame initial rejections and secured spots at prestigious universities worldwide.',
       author: 'Emily Parker',
-      date: 'May 10, 2023',
+      date: 'May 10, 2025',
       category: 'Success Stories',
       image: 'https://via.placeholder.com/400x250'
     },
     {
       id: 3,
-      title: 'International Scholarship Guide: Hidden Opportunities for 2023',
+      title: 'International Scholarship Guide: Hidden Opportunities for 2025',
       excerpt: 'Uncover lesser-known scholarship programs and funding sources for international students planning to study abroad.',
       author: 'Michael Thompson',
-      date: 'May 5, 2023',
+      date: 'May 5, 2025',
       category: 'Scholarships',
       image: 'https://via.placeholder.com/400x250'
     }
@@ -70,11 +71,11 @@ const BlogSection: React.FC = () => {
                 </p>
                 <div className="flex justify-between items-center text-gray-500 text-sm">
                   <div className="flex items-center">
-                    <FaUser className="mr-2 text-teal-600" />
+                    <IconComponent icon={FaUser} className="mr-2 text-teal-600" />
                     {post.author}
                   </div>
                   <div className="flex items-center">
-                    <FaCalendarAlt className="mr-2 text-teal-600" />
+                    <IconComponent icon={FaCalendarAlt} className="mr-2 text-teal-600" />
                     {post.date}
                   </div>
                 </div>

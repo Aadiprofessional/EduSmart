@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FaGraduationCap, FaGlobe, FaSearch, FaCalendarAlt, FaUniversity, FaDollarSign, FaFilter, FaArrowRight, FaRegBookmark, FaBookmark } from 'react-icons/fa';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
+import IconComponent from '../components/ui/IconComponent';
 
 interface Scholarship {
   id: number;
@@ -39,7 +40,7 @@ const Scholarships: React.FC = () => {
       country: "USA",
       description: "The Knight-Hennessy Scholars program funds up to three years of graduate education at Stanford, and provides access to leadership development, mentorship, and experiential learning opportunities.",
       amount: "Full tuition and stipend",
-      deadline: "October 12, 2023",
+      deadline: "October 12, 2025",
       eligibility: ["Bachelor's degree", "Apply to Stanford graduate program", "Demonstrated leadership", "English proficiency"],
       academicLevel: "postgraduate",
       fields: ["All fields"],
@@ -73,7 +74,7 @@ const Scholarships: React.FC = () => {
       country: "UK",
       description: "The Gates Cambridge Scholarship program offers full-cost scholarships to outstanding applicants from countries outside the UK to pursue a postgraduate degree in any subject at the University of Cambridge.",
       amount: "Full tuition, living stipend, travel allowance",
-      deadline: "December 1, 2023",
+      deadline: "December 1, 2025",
       eligibility: ["Bachelor's degree", "Non-UK resident", "Apply to Cambridge", "Academic excellence"],
       academicLevel: "postgraduate",
       fields: ["All fields"],
@@ -122,7 +123,7 @@ const Scholarships: React.FC = () => {
       country: "Canada",
       description: "The Vanier CGS program aims to attract and retain world-class doctoral students by supporting students who demonstrate both leadership skills and a high standard of scholarly achievement.",
       amount: "CAD $50,000 per year (3 years)",
-      deadline: "November 2023",
+      deadline: "November 2025",
       eligibility: ["PhD candidate", "Academic excellence", "Leadership skills", "Research potential"],
       academicLevel: "phd",
       fields: ["Health", "Natural Sciences", "Engineering", "Social Sciences", "Humanities"],
@@ -138,7 +139,7 @@ const Scholarships: React.FC = () => {
       country: "UK",
       description: "Chevening is the UK government's global scholarship program that offers future leaders the opportunity to study in the UK for one year.",
       amount: "Full tuition, living expenses, travel costs",
-      deadline: "November 2, 2023",
+      deadline: "November 2, 2025",
       eligibility: ["2+ years work experience", "Bachelor's degree", "Return to home country"],
       academicLevel: "postgraduate",
       fields: ["All fields"],
@@ -268,7 +269,7 @@ const Scholarships: React.FC = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full px-5 py-3 pr-12 bg-white rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
-                <FaSearch className="absolute right-4 top-3.5 text-gray-500" />
+                <IconComponent icon={FaSearch} className="absolute right-4 top-3.5 text-gray-500" />
               </div>
             </div>
           </div>
@@ -282,7 +283,7 @@ const Scholarships: React.FC = () => {
                 onClick={() => setShowFilters(!showFilters)}
                 className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-2"
               >
-                <FaFilter /> {showFilters ? 'Hide Filters' : 'Show Filters'}
+                <IconComponent icon={FaFilter} /> {showFilters ? 'Hide Filters' : 'Show Filters'}
               </button>
             </div>
             
@@ -379,27 +380,27 @@ const Scholarships: React.FC = () => {
                             className="text-gray-400 hover:text-teal-600 transition-colors"
                             aria-label={savedScholarships.includes(scholarship.id) ? "Unsave scholarship" : "Save scholarship"}
                           >
-                            {savedScholarships.includes(scholarship.id) ? <FaBookmark className="text-teal-600" /> : <FaRegBookmark />}
+                            {savedScholarships.includes(scholarship.id) ? <IconComponent icon={FaBookmark} className="text-teal-600" /> : <IconComponent icon={FaRegBookmark} />}
                           </button>
                         </div>
                         <h3 className="text-xl font-bold text-teal-800 mb-1">{scholarship.title}</h3>
                         <div className="flex items-center text-sm text-gray-600 mb-3">
-                          <FaUniversity className="mr-1" /> {scholarship.university} • <FaGlobe className="mx-1" /> {scholarship.country}
+                          <IconComponent icon={FaUniversity} className="mr-1" /> {scholarship.university} • <IconComponent icon={FaGlobe} className="mx-1" /> {scholarship.country}
                         </div>
                         <p className="text-gray-600 text-sm mb-4">{scholarship.description}</p>
                         <div className="flex flex-col gap-2 mb-4">
                           <div className="flex items-center text-sm">
-                            <FaDollarSign className="text-teal-600 mr-2" />
+                            <IconComponent icon={FaDollarSign} className="text-teal-600 mr-2" />
                             <span className="font-medium">Amount:</span>
                             <span className="ml-1">{scholarship.amount}</span>
                           </div>
                           <div className="flex items-center text-sm">
-                            <FaCalendarAlt className="text-orange-500 mr-2" />
+                            <IconComponent icon={FaCalendarAlt} className="text-orange-500 mr-2" />
                             <span className="font-medium">Deadline:</span>
                             <span className="ml-1">{scholarship.deadline}</span>
                           </div>
                           <div className="flex items-start text-sm">
-                            <FaGraduationCap className="text-blue-600 mr-2 mt-1" />
+                            <IconComponent icon={FaGraduationCap} className="text-blue-600 mr-2 mt-1" />
                             <div>
                               <span className="font-medium">Eligibility:</span>
                               <span className="ml-1">{formatEligibility(scholarship.eligibility)}</span>
@@ -412,7 +413,7 @@ const Scholarships: React.FC = () => {
                           rel="noopener noreferrer"
                           className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-2"
                         >
-                          Apply Now <FaArrowRight />
+                          Apply Now <IconComponent icon={FaArrowRight} />
                         </a>
                       </div>
                     </div>
@@ -437,7 +438,7 @@ const Scholarships: React.FC = () => {
                         className="absolute top-2 right-2 bg-white p-2 rounded-full shadow text-gray-400 hover:text-teal-600 transition-colors"
                         aria-label={savedScholarships.includes(scholarship.id) ? "Unsave scholarship" : "Save scholarship"}
                       >
-                        {savedScholarships.includes(scholarship.id) ? <FaBookmark className="text-teal-600" /> : <FaRegBookmark />}
+                        {savedScholarships.includes(scholarship.id) ? <IconComponent icon={FaBookmark} className="text-teal-600" /> : <IconComponent icon={FaRegBookmark} />}
                       </button>
                     </div>
                     <div className="p-5 flex-grow flex flex-col">
@@ -462,18 +463,18 @@ const Scholarships: React.FC = () => {
                       </div>
                       <h3 className="text-lg font-bold text-teal-800 mb-1">{scholarship.title}</h3>
                       <div className="flex items-center text-sm text-gray-600 mb-3">
-                        <FaUniversity className="mr-1" /> {scholarship.university} • <FaGlobe className="mx-1" /> {scholarship.country}
+                        <IconComponent icon={FaUniversity} className="mr-1" /> {scholarship.university} • <IconComponent icon={FaGlobe} className="mx-1" /> {scholarship.country}
                       </div>
                       <p className="text-gray-600 text-sm mb-4 line-clamp-3">{scholarship.description}</p>
                       
                       <div className="flex flex-col gap-1 mb-4">
                         <div className="flex items-center text-sm">
-                          <FaDollarSign className="text-teal-600 mr-2" />
+                          <IconComponent icon={FaDollarSign} className="text-teal-600 mr-2" />
                           <span className="font-medium">Amount:</span>
                           <span className="ml-1 text-gray-600">{scholarship.amount}</span>
                         </div>
                         <div className="flex items-center text-sm">
-                          <FaCalendarAlt className="text-orange-500 mr-2" />
+                          <IconComponent icon={FaCalendarAlt} className="text-orange-500 mr-2" />
                           <span className="font-medium">Deadline:</span>
                           <span className="ml-1 text-gray-600">{scholarship.deadline}</span>
                         </div>
@@ -485,7 +486,7 @@ const Scholarships: React.FC = () => {
                         rel="noopener noreferrer"
                         className="mt-auto bg-orange-500 hover:bg-orange-600 text-white text-center py-2 rounded-lg transition-colors inline-flex items-center justify-center gap-2"
                       >
-                        Apply Now <FaArrowRight />
+                        Apply Now <IconComponent icon={FaArrowRight} />
                       </a>
                     </div>
                   </div>
@@ -493,7 +494,7 @@ const Scholarships: React.FC = () => {
               </div>
             ) : (
               <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                <FaSearch className="text-5xl text-gray-300 mx-auto mb-4" />
+                <IconComponent icon={FaSearch} className="text-5xl text-gray-300 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-700 mb-2">No scholarships match your criteria</h3>
                 <p className="text-gray-600">Try adjusting your filters or search terms to find more opportunities.</p>
               </div>
@@ -570,7 +571,7 @@ const Scholarships: React.FC = () => {
                 href="/resources"
                 className="inline-flex items-center gap-2 text-teal-600 font-medium hover:text-teal-700 transition-colors"
               >
-                View our scholarship resources for more tips <FaArrowRight className="text-xs" />
+                View our scholarship resources for more tips <IconComponent icon={FaArrowRight} className="text-xs" />
               </a>
             </div>
           </div>

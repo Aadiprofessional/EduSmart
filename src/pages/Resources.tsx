@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FaGraduationCap, FaBook, FaFileAlt, FaBriefcase, FaSearch, FaRegFileAlt, FaDownload, FaVideo } from 'react-icons/fa';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
+import IconComponent from '../components/ui/IconComponent';
 
 interface Resource {
   id: number;
@@ -143,18 +144,18 @@ const Resources: React.FC = () => {
   const getResourceTypeIcon = (type: string) => {
     switch (type) {
       case 'guide':
-        return <FaBook className="text-teal-600" />;
+        return <IconComponent icon={FaBook} className="text-teal-600" />;
       case 'template':
-        return <FaRegFileAlt className="text-blue-600" />;
+        return <IconComponent icon={FaRegFileAlt} className="text-blue-600" />;
       case 'checklist':
-        return <FaFileAlt className="text-green-600" />;
+        return <IconComponent icon={FaFileAlt} className="text-green-600" />;
       case 'video':
       case 'webinar':
-        return <FaVideo className="text-red-600" />;
+        return <IconComponent icon={FaVideo} className="text-red-600" />;
       case 'ebook':
-        return <FaBook className="text-purple-600" />;
+        return <IconComponent icon={FaBook} className="text-purple-600" />;
       default:
-        return <FaFileAlt className="text-gray-600" />;
+        return <IconComponent icon={FaFileAlt} className="text-gray-600" />;
     }
   };
 
@@ -162,15 +163,15 @@ const Resources: React.FC = () => {
   const getResourceCategoryIcon = (category: string) => {
     switch (category) {
       case 'application':
-        return <FaFileAlt className="text-teal-600" />;
+        return <IconComponent icon={FaFileAlt} className="text-teal-600" />;
       case 'study':
-        return <FaBook className="text-blue-600" />;
+        return <IconComponent icon={FaBook} className="text-blue-600" />;
       case 'test-prep':
-        return <FaGraduationCap className="text-orange-600" />;
+        return <IconComponent icon={FaGraduationCap} className="text-orange-600" />;
       case 'career':
-        return <FaBriefcase className="text-purple-600" />;
+        return <IconComponent icon={FaBriefcase} className="text-purple-600" />;
       default:
-        return <FaFileAlt className="text-gray-600" />;
+        return <IconComponent icon={FaFileAlt} className="text-gray-600" />;
     }
   };
 
@@ -230,7 +231,7 @@ const Resources: React.FC = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full px-5 py-3 pr-12 bg-white rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
-                <FaSearch className="absolute right-4 top-3.5 text-gray-500" />
+                <IconComponent icon={FaSearch} className="absolute right-4 top-3.5 text-gray-500" />
               </div>
             </div>
           </div>
@@ -276,7 +277,7 @@ const Resources: React.FC = () => {
                             href={resource.downloadLink}
                             className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-2 mr-2"
                           >
-                            <FaDownload /> Download
+                            <IconComponent icon={FaDownload} /> Download
                           </a>
                         )}
                         {resource.videoLink && (
@@ -286,7 +287,7 @@ const Resources: React.FC = () => {
                             rel="noopener noreferrer"
                             className="bg-teal-600 hover:bg-teal-700 text-white text-sm px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-2"
                           >
-                            <FaVideo /> Watch
+                            <IconComponent icon={FaVideo} /> Watch
                           </a>
                         )}
                       </div>
@@ -320,7 +321,7 @@ const Resources: React.FC = () => {
                           : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       }`}
                     >
-                      <FaBook className="text-xs" /> Guides
+                      <IconComponent icon={FaBook} className="text-xs" /> Guides
                     </button>
                     <button
                       onClick={() => setActiveType('template')}
@@ -330,7 +331,7 @@ const Resources: React.FC = () => {
                           : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       }`}
                     >
-                      <FaRegFileAlt className="text-xs" /> Templates
+                      <IconComponent icon={FaRegFileAlt} className="text-xs" /> Templates
                     </button>
                     <button
                       onClick={() => setActiveType('checklist')}
@@ -340,7 +341,7 @@ const Resources: React.FC = () => {
                           : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       }`}
                     >
-                      <FaFileAlt className="text-xs" /> Checklists
+                      <IconComponent icon={FaFileAlt} className="text-xs" /> Checklists
                     </button>
                     <button
                       onClick={() => setActiveType('video')}
@@ -350,7 +351,7 @@ const Resources: React.FC = () => {
                           : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       }`}
                     >
-                      <FaVideo className="text-xs" /> Videos
+                      <IconComponent icon={FaVideo} className="text-xs" /> Videos
                     </button>
                     <button
                       onClick={() => setActiveType('ebook')}
@@ -360,7 +361,7 @@ const Resources: React.FC = () => {
                           : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       }`}
                     >
-                      <FaBook className="text-xs" /> E-Books
+                      <IconComponent icon={FaBook} className="text-xs" /> E-Books
                     </button>
                   </div>
                 </div>
@@ -386,7 +387,7 @@ const Resources: React.FC = () => {
                           : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       }`}
                     >
-                      <FaFileAlt className="text-xs" /> Application
+                      <IconComponent icon={FaFileAlt} className="text-xs" /> Application
                     </button>
                     <button
                       onClick={() => setActiveCategory('study')}
@@ -396,7 +397,7 @@ const Resources: React.FC = () => {
                           : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       }`}
                     >
-                      <FaBook className="text-xs" /> Study
+                      <IconComponent icon={FaBook} className="text-xs" /> Study
                     </button>
                     <button
                       onClick={() => setActiveCategory('test-prep')}
@@ -406,7 +407,7 @@ const Resources: React.FC = () => {
                           : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       }`}
                     >
-                      <FaGraduationCap className="text-xs" /> Test Prep
+                      <IconComponent icon={FaGraduationCap} className="text-xs" /> Test Prep
                     </button>
                     <button
                       onClick={() => setActiveCategory('career')}
@@ -416,7 +417,7 @@ const Resources: React.FC = () => {
                           : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       }`}
                     >
-                      <FaBriefcase className="text-xs" /> Career
+                      <IconComponent icon={FaBriefcase} className="text-xs" /> Career
                     </button>
                   </div>
                 </div>
@@ -467,7 +468,7 @@ const Resources: React.FC = () => {
                             href={resource.downloadLink}
                             className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-2 mr-2"
                           >
-                            <FaDownload /> Download
+                            <IconComponent icon={FaDownload} /> Download
                           </a>
                         )}
                         {resource.videoLink && (
@@ -477,7 +478,7 @@ const Resources: React.FC = () => {
                             rel="noopener noreferrer"
                             className="bg-teal-600 hover:bg-teal-700 text-white text-sm px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-2"
                           >
-                            <FaVideo /> Watch
+                            <IconComponent icon={FaVideo} /> Watch
                           </a>
                         )}
                       </div>
@@ -487,7 +488,7 @@ const Resources: React.FC = () => {
               </div>
             ) : (
               <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                <FaFileAlt className="text-5xl text-gray-300 mx-auto mb-4" />
+                <IconComponent icon={FaFileAlt} className="text-5xl text-gray-300 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-700 mb-2">No resources match your criteria</h3>
                 <p className="text-gray-600">Try adjusting your filters or search query.</p>
               </div>

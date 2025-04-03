@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { FaCalendarAlt, FaRobot, FaMoneyBillWave, FaUsers, FaCalendarCheck, FaUniversity } from 'react-icons/fa';
+import IconComponent from './IconComponent';
 
 const UpcomingEvents: React.FC = () => {
   const upcomingFeatures = [
@@ -10,7 +11,7 @@ const UpcomingEvents: React.FC = () => {
       description: 'Get personalized mock interviews with AI feedback to help you ace university admissions and scholarship interviews.',
       status: 'In Development',
       release: 'Coming Soon',
-      icon: <FaRobot />,
+      icon: <IconComponent icon={FaRobot} />,
       link: '/features/interview-prep'
     },
     {
@@ -19,7 +20,7 @@ const UpcomingEvents: React.FC = () => {
       description: 'Estimate your total expenses, including tuition, living costs, and travel, based on your destination and lifestyle preferences.',
       status: 'In Progress',
       release: 'Q3 2025',
-      icon: <FaMoneyBillWave />,
+      icon: <IconComponent icon={FaMoneyBillWave} />,
       link: '/features/cost-calculator'
     },
     {
@@ -28,7 +29,7 @@ const UpcomingEvents: React.FC = () => {
       description: 'Connect with current students and alumni to get real insights into university life, courses, and career opportunities.',
       status: 'Planning Stage',
       release: 'To Be Announced',
-      icon: <FaUsers />,
+      icon: <IconComponent icon={FaUsers} />,
       link: '/features/networking-hub'
     },
     {
@@ -37,7 +38,7 @@ const UpcomingEvents: React.FC = () => {
       description: 'Receive a personalized study plan based on your target universities, application deadlines, and preparation timeline.',
       status: 'Beta Testing',
       release: 'Early 2026',
-      icon: <FaCalendarCheck />,
+      icon: <IconComponent icon={FaCalendarCheck} />,
       link: '/features/study-plan'
     },
     {
@@ -46,7 +47,7 @@ const UpcomingEvents: React.FC = () => {
       description: 'Explore universities around the world with 360° virtual tours and interactive campus experiences.',
       status: 'Concept Development',
       release: 'Future Update',
-      icon: <FaUniversity />,
+      icon: <IconComponent icon={FaUniversity} />,
       link: '/features/virtual-tours'
     }
   ];
@@ -71,7 +72,7 @@ const UpcomingEvents: React.FC = () => {
                 <h3 className="text-xl font-semibold text-teal-700 mb-2">{feature.title}</h3>
                 <p className="text-gray-600 mb-4">{feature.description}</p>
                 <div className="flex items-center text-gray-600 mb-1">
-                  <FaCalendarAlt className="mr-2 text-orange-500" />
+                  <IconComponent icon={FaCalendarAlt} className="mr-2 text-orange-500" />
                   <span className="text-sm">Status: {feature.status}</span>
                 </div>
                 <p className="text-gray-600 mb-4 text-sm">Expected Release: {feature.release}</p>

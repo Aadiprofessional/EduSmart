@@ -1,23 +1,24 @@
 import React from 'react';
 import { FaRobot, FaChartLine, FaUserGraduate } from 'react-icons/fa';
+import IconComponent from './IconComponent';
 
 const BestFeatures: React.FC = () => {
   const features = [
     {
       id: 1,
-      icon: <FaRobot className="text-orange-500 text-4xl" />,
+      icon: <IconComponent icon={FaRobot} className="text-orange-500 text-4xl" />,
       title: 'AI-Powered University Matching',
       description: 'Find your ideal university with AI-driven recommendations tailored to your grades, budget, and career goals.'
     },
     {
       id: 2,
-      icon: <FaUserGraduate className="text-orange-500 text-4xl" />,
+      icon: <IconComponent icon={FaUserGraduate} className="text-orange-500 text-4xl" />,
       title: 'Real Success Stories & Case Studies',
       description: 'Get inspired by students who overcame challenges and secured admission to top universities, with insights into their strategies.'
     },
     {
       id: 3,
-      icon: <FaChartLine className="text-orange-500 text-4xl" />,
+      icon: <IconComponent icon={FaChartLine} className="text-orange-500 text-4xl" />,
       title: 'Smart Application Tracking',
       description: 'Keep your application process organized with real-time deadline reminders, document tracking, and offer status updates.'
     }

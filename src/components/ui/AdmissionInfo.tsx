@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { FaUniversity, FaMoneyBillWave } from 'react-icons/fa';
+import IconComponent from './IconComponent';
 
 const AdmissionInfo: React.FC = () => {
   return (
@@ -29,11 +30,11 @@ const AdmissionInfo: React.FC = () => {
             </p>
             <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-6">
               <div className="flex items-center">
-                <FaUniversity className="text-orange-500 mr-2 text-xl" />
+                <IconComponent icon={FaUniversity} className="text-orange-500 mr-2 text-xl" />
                 <span className="text-gray-700">10,000+ universities</span>
               </div>
               <div className="flex items-center">
-                <FaMoneyBillWave className="text-orange-500 mr-2 text-xl" />
+                <IconComponent icon={FaMoneyBillWave} className="text-orange-500 mr-2 text-xl" />
                 <span className="text-gray-700">5,000+ scholarships</span>
               </div>
             </div>
