@@ -3,6 +3,7 @@ import { FaGraduationCap, FaBook, FaFileAlt, FaBriefcase, FaSearch, FaRegFileAlt
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import IconComponent from '../components/ui/IconComponent';
+import { motion } from 'framer-motion';
 
 interface Resource {
   id: number;
@@ -30,7 +31,7 @@ const Resources: React.FC = () => {
       type: "guide",
       category: "application",
       description: "A comprehensive guide covering every aspect of the graduate school application process, from selecting programs to acing interviews.",
-      thumbnail: "https://via.placeholder.com/300x200?text=Application+Guide",
+      thumbnail: "https://images.unsplash.com/photo-1517971129774-8a2b38fa128e?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&h=200&q=80",
       downloadLink: "/resources/guides/graduate-application-guide.pdf",
       featured: true,
       tags: ["SOP", "CV", "Recommendations", "Interview"]
@@ -41,7 +42,7 @@ const Resources: React.FC = () => {
       type: "template",
       category: "application",
       description: "A collection of successful SOP templates and examples for various programs, with annotations explaining effective strategies.",
-      thumbnail: "https://via.placeholder.com/300x200?text=SOP+Templates",
+      thumbnail: "https://images.unsplash.com/photo-1456324504439-367cee3b3c32?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&h=200&q=80",
       downloadLink: "/resources/templates/sop-templates.zip",
       tags: ["SOP", "Writing", "Examples"]
     },
@@ -51,7 +52,7 @@ const Resources: React.FC = () => {
       type: "video",
       category: "test-prep",
       description: "A comprehensive video course covering all GRE sections with proven strategies to maximize your score.",
-      thumbnail: "https://via.placeholder.com/300x200?text=GRE+Prep",
+      thumbnail: "https://images.unsplash.com/photo-1606326608690-4e0281b1e588?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&h=200&q=80",
       videoLink: "https://www.youtube.com/watch?v=example",
       tags: ["GRE", "Test Prep", "Strategies"]
     },
@@ -61,7 +62,7 @@ const Resources: React.FC = () => {
       type: "checklist",
       category: "application",
       description: "A detailed checklist to ensure you don't miss any important steps or deadlines in your application process.",
-      thumbnail: "https://via.placeholder.com/300x200?text=Checklist",
+      thumbnail: "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&h=200&q=80",
       downloadLink: "/resources/checklists/application-checklist.pdf",
       tags: ["Organization", "Deadlines", "Planning"]
     },
@@ -71,7 +72,7 @@ const Resources: React.FC = () => {
       type: "ebook",
       category: "study",
       description: "Learn essential research methodologies, data analysis techniques, and academic writing standards for graduate-level research.",
-      thumbnail: "https://via.placeholder.com/300x200?text=Research+Methods",
+      thumbnail: "https://images.unsplash.com/photo-1532153955177-f59af40d6472?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&h=200&q=80",
       downloadLink: "/resources/ebooks/research-methods.pdf",
       featured: true,
       tags: ["Research", "Academia", "Writing", "Data Analysis"]
@@ -82,7 +83,7 @@ const Resources: React.FC = () => {
       type: "webinar",
       category: "test-prep",
       description: "Interactive webinar with speaking practice exercises and expert feedback to boost your IELTS speaking score.",
-      thumbnail: "https://via.placeholder.com/300x200?text=IELTS+Webinar",
+      thumbnail: "https://images.unsplash.com/photo-1526948128573-703ee1aeb6fa?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&h=200&q=80",
       videoLink: "https://www.example.com/webinars/ielts-speaking",
       tags: ["IELTS", "Speaking", "English Proficiency"]
     },
@@ -92,7 +93,7 @@ const Resources: React.FC = () => {
       type: "template",
       category: "career",
       description: "Professional CV and resume templates specifically designed for graduate students and recent graduates.",
-      thumbnail: "https://via.placeholder.com/300x200?text=CV+Templates",
+      thumbnail: "https://images.unsplash.com/photo-1586281380349-632531db7ed4?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&h=200&q=80",
       downloadLink: "/resources/templates/cv-templates.zip",
       tags: ["CV", "Resume", "Job Application"]
     },
@@ -102,7 +103,7 @@ const Resources: React.FC = () => {
       type: "guide",
       category: "application",
       description: "Comprehensive guide to finding and securing funding for your PhD, including scholarships, grants, and assistantships.",
-      thumbnail: "https://via.placeholder.com/300x200?text=PhD+Funding",
+      thumbnail: "https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&h=200&q=80",
       downloadLink: "/resources/guides/phd-funding-guide.pdf",
       tags: ["Funding", "Scholarships", "PhD", "Grants"]
     },
@@ -112,11 +113,43 @@ const Resources: React.FC = () => {
       type: "ebook",
       category: "career",
       description: "Learn how to build and leverage academic and professional networks to advance your research and career.",
-      thumbnail: "https://via.placeholder.com/300x200?text=Networking",
+      thumbnail: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&h=200&q=80",
       downloadLink: "/resources/ebooks/academic-networking.pdf",
       tags: ["Networking", "Professional Development", "Conferences"]
     }
   ];
+
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: { duration: 0.5 }
+    }
+  };
+
+  const buttonVariants = {
+    hover: {
+      scale: 1.05,
+      backgroundColor: "#0F766E",
+      color: "white",
+      transition: { duration: 0.2 }
+    },
+    tap: {
+      scale: 0.95
+    }
+  };
 
   // Filter resources based on search and active filters
   const filteredResources = resources.filter(resource => {
@@ -215,15 +248,65 @@ const Resources: React.FC = () => {
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-grow">
-        <section className="bg-gradient-to-r from-teal-700 to-teal-900 text-white py-12">
-          <div className="container mx-auto px-4">
+        <motion.section 
+          className="bg-gradient-to-r from-teal-700 to-teal-900 text-white py-12 relative overflow-hidden"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          {/* Animated background elements */}
+          <motion.div 
+            className="absolute w-96 h-96 bg-teal-600 rounded-full opacity-10" 
+            style={{ filter: 'blur(80px)', top: '-10%', right: '5%' }}
+            animate={{
+              scale: [1, 1.2, 1],
+              x: [0, 30, 0],
+            }}
+            transition={{
+              duration: 15,
+              repeat: Infinity,
+              repeatType: "reverse"
+            }}
+          />
+          <motion.div 
+            className="absolute w-64 h-64 bg-orange-500 rounded-full opacity-10" 
+            style={{ filter: 'blur(60px)', bottom: '-5%', left: '10%' }}
+            animate={{
+              scale: [1, 1.1, 1],
+              y: [0, -20, 0],
+            }}
+            transition={{
+              duration: 10,
+              repeat: Infinity,
+              repeatType: "reverse"
+            }}
+          />
+          
+          <div className="container mx-auto px-4 relative z-10">
             <div className="text-center max-w-3xl mx-auto">
-              <h1 className="text-4xl font-bold mb-4">Educational Resources</h1>
-              <p className="text-xl mb-8">
+              <motion.h1 
+                className="text-4xl font-bold mb-4"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                Educational Resources
+              </motion.h1>
+              <motion.p 
+                className="text-xl mb-8"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+              >
                 Access high-quality guides, templates, videos, and more to support your educational journey
                 from application to graduation and beyond.
-              </p>
-              <div className="relative">
+              </motion.p>
+              <motion.div 
+                className="relative"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+              >
                 <input
                   type="text"
                   placeholder="Search resources by title, description, or tags..."
@@ -232,287 +315,296 @@ const Resources: React.FC = () => {
                   className="w-full px-5 py-3 pr-12 bg-white rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
                 <IconComponent icon={FaSearch} className="absolute right-4 top-3.5 text-gray-500" />
-              </div>
+              </motion.div>
             </div>
           </div>
-        </section>
+        </motion.section>
 
         <section className="py-12 bg-gray-50">
           <div className="container mx-auto px-4">
             {/* Featured Resources */}
-            <div className="mb-12">
-              <h2 className="text-2xl font-bold text-teal-800 mb-6">Featured Resources</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <motion.div 
+              className="mb-12"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <motion.h2 
+                className="text-2xl font-bold text-teal-800 mb-6"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                Featured Resources
+              </motion.h2>
+              <motion.div 
+                className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+              >
                 {resources.filter(resource => resource.featured).map(resource => (
-                  <div key={resource.id} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100 flex flex-col md:flex-row">
-                    <div className="md:w-1/3">
-                      <img 
+                  <motion.div 
+                    key={resource.id} 
+                    className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100 flex flex-col md:flex-row"
+                    variants={itemVariants}
+                    whileHover={{ 
+                      y: -5,
+                      boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+                    }}
+                  >
+                    <div className="md:w-1/3 overflow-hidden">
+                      <motion.img 
                         src={resource.thumbnail} 
                         alt={resource.title} 
-                        className="w-full h-48 md:h-full object-cover"
+                        className="w-full h-full object-cover"
+                        whileHover={{ scale: 1.05 }}
+                        transition={{ duration: 0.5 }}
                       />
                     </div>
                     <div className="md:w-2/3 p-6">
-                      <div className="flex items-center gap-2 mb-2">
-                        {getResourceTypeIcon(resource.type)}
-                        <span className="text-sm font-medium text-gray-600">{getTypeLabel(resource.type)}</span>
-                        <span className="mx-1">•</span>
-                        <span className="text-sm font-medium text-gray-600 flex items-center gap-1">
+                      <div className="flex items-center mb-3">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800 mr-2">
+                          {getResourceTypeIcon(resource.type)}
+                          <span className="ml-1">{getTypeLabel(resource.type)}</span>
+                        </span>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                           {getResourceCategoryIcon(resource.category)}
-                          {getCategoryLabel(resource.category)}
+                          <span className="ml-1">{getCategoryLabel(resource.category)}</span>
                         </span>
                       </div>
-                      <h3 className="text-xl font-bold text-teal-800 mb-2">{resource.title}</h3>
-                      <p className="text-gray-600 text-sm mb-4">{resource.description}</p>
-                      <div className="flex flex-wrap gap-1 mb-4">
+                      <h3 className="text-xl font-bold text-gray-800 mb-2">{resource.title}</h3>
+                      <p className="text-gray-600 mb-4">{resource.description}</p>
+                      <div className="flex flex-wrap gap-2 mb-4">
                         {resource.tags.map((tag, idx) => (
-                          <span key={idx} className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">
+                          <motion.span 
+                            key={idx} 
+                            className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded"
+                            whileHover={{ y: -2 }}
+                          >
                             {tag}
-                          </span>
+                          </motion.span>
                         ))}
                       </div>
-                      <div className="mt-auto">
-                        {resource.downloadLink && (
-                          <a
-                            href={resource.downloadLink}
-                            className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-2 mr-2"
-                          >
-                            <IconComponent icon={FaDownload} /> Download
-                          </a>
+                      <motion.a
+                        href={resource.downloadLink || resource.videoLink}
+                        className="inline-flex items-center text-teal-600 font-medium hover:text-teal-700"
+                        whileHover={{ x: 3 }}
+                      >
+                        {resource.downloadLink ? (
+                          <>
+                            <IconComponent icon={FaDownload} className="mr-1" />
+                            Download Resource
+                          </>
+                        ) : (
+                          <>
+                            <IconComponent icon={FaVideo} className="mr-1" />
+                            Watch Resource
+                          </>
                         )}
-                        {resource.videoLink && (
-                          <a
-                            href={resource.videoLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="bg-teal-600 hover:bg-teal-700 text-white text-sm px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-2"
-                          >
-                            <IconComponent icon={FaVideo} /> Watch
-                          </a>
-                        )}
-                      </div>
+                      </motion.a>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
-              </div>
-            </div>
-            
-            {/* Filter options */}
-            <div className="mb-8">
-              <div className="flex flex-wrap gap-4 mb-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Resource Type</label>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => setActiveType('all')}
-                      className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        activeType === 'all'
-                          ? 'bg-teal-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              </motion.div>
+            </motion.div>
+
+            {/* Filter and All Resources */}
+            <div className="flex flex-col lg:flex-row gap-8">
+              {/* Filter Sidebar */}
+              <motion.div 
+                className="lg:w-1/4"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+              >
+                <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                  <h3 className="text-lg font-bold text-teal-800 mb-4">Categories</h3>
+                  <div className="space-y-2">
+                    <motion.button
+                      className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                        activeCategory === 'all'
+                          ? 'bg-teal-100 text-teal-800'
+                          : 'bg-white text-gray-700 hover:bg-gray-100'
                       }`}
+                      onClick={() => setActiveCategory('all')}
+                      whileHover={{ x: 3 }}
+                      whileTap={{ scale: 0.98 }}
                     >
-                      All Types
-                    </button>
-                    <button
-                      onClick={() => setActiveType('guide')}
-                      className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${
-                        activeType === 'guide'
-                          ? 'bg-teal-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      <IconComponent icon={FaBook} className="text-xs" /> Guides
-                    </button>
-                    <button
-                      onClick={() => setActiveType('template')}
-                      className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${
-                        activeType === 'template'
-                          ? 'bg-teal-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      <IconComponent icon={FaRegFileAlt} className="text-xs" /> Templates
-                    </button>
-                    <button
-                      onClick={() => setActiveType('checklist')}
-                      className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${
-                        activeType === 'checklist'
-                          ? 'bg-teal-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      <IconComponent icon={FaFileAlt} className="text-xs" /> Checklists
-                    </button>
-                    <button
-                      onClick={() => setActiveType('video')}
-                      className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${
-                        activeType === 'video'
-                          ? 'bg-teal-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      <IconComponent icon={FaVideo} className="text-xs" /> Videos
-                    </button>
-                    <button
-                      onClick={() => setActiveType('ebook')}
-                      className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${
-                        activeType === 'ebook'
-                          ? 'bg-teal-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      <IconComponent icon={FaBook} className="text-xs" /> E-Books
-                    </button>
+                      All Categories
+                    </motion.button>
+                    {['application', 'study', 'test-prep', 'career'].map(category => (
+                      <motion.button
+                        key={category}
+                        className={`w-full text-left px-3 py-2 rounded-lg flex items-center transition-colors ${
+                          activeCategory === category
+                            ? 'bg-teal-100 text-teal-800'
+                            : 'bg-white text-gray-700 hover:bg-gray-100'
+                        }`}
+                        onClick={() => setActiveCategory(category)}
+                        whileHover={{ x: 3 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <span className="mr-2">{getResourceCategoryIcon(category)}</span>
+                        {getCategoryLabel(category)}
+                      </motion.button>
+                    ))}
                   </div>
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => setActiveCategory('all')}
-                      className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        activeCategory === 'all'
-                          ? 'bg-teal-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h3 className="text-lg font-bold text-teal-800 mb-4">Resource Types</h3>
+                  <div className="space-y-2">
+                    <motion.button
+                      className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                        activeType === 'all'
+                          ? 'bg-teal-100 text-teal-800'
+                          : 'bg-white text-gray-700 hover:bg-gray-100'
                       }`}
+                      onClick={() => setActiveType('all')}
+                      whileHover={{ x: 3 }}
+                      whileTap={{ scale: 0.98 }}
                     >
-                      All Categories
-                    </button>
-                    <button
-                      onClick={() => setActiveCategory('application')}
-                      className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${
-                        activeCategory === 'application'
-                          ? 'bg-teal-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      <IconComponent icon={FaFileAlt} className="text-xs" /> Application
-                    </button>
-                    <button
-                      onClick={() => setActiveCategory('study')}
-                      className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${
-                        activeCategory === 'study'
-                          ? 'bg-teal-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      <IconComponent icon={FaBook} className="text-xs" /> Study
-                    </button>
-                    <button
-                      onClick={() => setActiveCategory('test-prep')}
-                      className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${
-                        activeCategory === 'test-prep'
-                          ? 'bg-teal-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      <IconComponent icon={FaGraduationCap} className="text-xs" /> Test Prep
-                    </button>
-                    <button
-                      onClick={() => setActiveCategory('career')}
-                      className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${
-                        activeCategory === 'career'
-                          ? 'bg-teal-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      <IconComponent icon={FaBriefcase} className="text-xs" /> Career
-                    </button>
+                      All Types
+                    </motion.button>
+                    {['guide', 'template', 'checklist', 'video', 'webinar', 'ebook'].map(type => (
+                      <motion.button
+                        key={type}
+                        className={`w-full text-left px-3 py-2 rounded-lg flex items-center transition-colors ${
+                          activeType === type
+                            ? 'bg-teal-100 text-teal-800'
+                            : 'bg-white text-gray-700 hover:bg-gray-100'
+                        }`}
+                        onClick={() => setActiveType(type)}
+                        whileHover={{ x: 3 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <span className="mr-2">{getResourceTypeIcon(type)}</span>
+                        {getTypeLabel(type)}
+                      </motion.button>
+                    ))}
                   </div>
                 </div>
-              </div>
-            </div>
-            
-            {/* Resource listing */}
-            {filteredResources.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredResources.map(resource => (
-                  <div key={resource.id} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100 flex flex-col">
-                    <div className="h-48 overflow-hidden">
-                      <img 
-                        src={resource.thumbnail} 
-                        alt={resource.title} 
-                        className="w-full h-full object-cover transition-transform hover:scale-105 duration-300"
-                      />
-                    </div>
-                    <div className="p-6 flex-grow flex flex-col">
-                      <div className="flex flex-wrap items-center gap-2 mb-2">
-                        {getResourceTypeIcon(resource.type)}
-                        <span className="text-xs font-medium text-gray-600">{getTypeLabel(resource.type)}</span>
-                        <span className="mx-1 text-gray-300">•</span>
-                        <span className="text-xs font-medium text-gray-600 flex items-center gap-1">
-                          {getResourceCategoryIcon(resource.category)}
-                          {getCategoryLabel(resource.category)}
-                        </span>
-                      </div>
-                      <h3 className="text-lg font-bold text-teal-800 mb-2">{resource.title}</h3>
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-3">{resource.description}</p>
-                      
-                      <div className="flex flex-wrap gap-1 mb-4">
-                        {resource.tags.slice(0, 3).map((tag, idx) => (
-                          <span key={idx} className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">
-                            {tag}
-                          </span>
-                        ))}
-                        {resource.tags.length > 3 && (
-                          <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">
-                            +{resource.tags.length - 3} more
-                          </span>
-                        )}
-                      </div>
-                      
-                      <div className="mt-auto">
-                        {resource.downloadLink && (
-                          <a
-                            href={resource.downloadLink}
-                            className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-2 mr-2"
-                          >
-                            <IconComponent icon={FaDownload} /> Download
-                          </a>
-                        )}
-                        {resource.videoLink && (
-                          <a
-                            href={resource.videoLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="bg-teal-600 hover:bg-teal-700 text-white text-sm px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-2"
-                          >
-                            <IconComponent icon={FaVideo} /> Watch
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                <IconComponent icon={FaFileAlt} className="text-5xl text-gray-300 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-700 mb-2">No resources match your criteria</h3>
-                <p className="text-gray-600">Try adjusting your filters or search query.</p>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* Resource request section */}
-        <section className="py-12 bg-white">
-          <div className="container mx-auto px-4">
-            <div className="bg-gray-50 rounded-lg p-8 max-w-3xl mx-auto">
-              <h2 className="text-2xl font-bold text-teal-800 mb-4 text-center">Can't find what you need?</h2>
-              <p className="text-gray-600 mb-6 text-center">
-                If you're looking for specific resources or have suggestions for new materials, 
-                let us know and our team will work to create or find what you need.
-              </p>
-              <div className="flex justify-center">
-                <a
-                  href="/contact"
-                  className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-lg transition-colors inline-flex items-center gap-2"
+              </motion.div>
+              
+              {/* Resources Grid */}
+              <motion.div 
+                className="lg:w-3/4"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+              >
+                <h2 className="text-2xl font-bold text-teal-800 mb-6">
+                  {activeCategory === 'all' && activeType === 'all' 
+                    ? 'All Resources' 
+                    : activeCategory !== 'all' && activeType !== 'all'
+                      ? `${getTypeLabel(activeType)} in ${getCategoryLabel(activeCategory)}`
+                      : activeCategory !== 'all'
+                        ? getCategoryLabel(activeCategory)
+                        : getTypeLabel(activeType)
+                  }
+                </h2>
+                
+                <motion.div 
+                  className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
+                  variants={containerVariants}
+                  initial="hidden"
+                  animate="visible"
                 >
-                  Request Resources
-                </a>
-              </div>
+                  {filteredResources.map(resource => (
+                    <motion.div 
+                      key={resource.id} 
+                      className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col h-full"
+                      variants={itemVariants}
+                      whileHover={{ 
+                        y: -5,
+                        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
+                      }}
+                    >
+                      <div className="relative overflow-hidden h-48">
+                        <motion.img 
+                          src={resource.thumbnail} 
+                          alt={resource.title} 
+                          className="w-full h-full object-cover"
+                          whileHover={{ scale: 1.05 }}
+                          transition={{ duration: 0.5 }}
+                        />
+                        <div className="absolute top-2 right-2 flex gap-1">
+                          <span className="inline-flex items-center justify-center p-1.5 bg-white bg-opacity-90 rounded-full">
+                            {getResourceTypeIcon(resource.type)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="p-5 flex-grow flex flex-col">
+                        <div className="flex items-center mb-3">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {getResourceCategoryIcon(resource.category)}
+                            <span className="ml-1">{getCategoryLabel(resource.category)}</span>
+                          </span>
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-800 mb-2">{resource.title}</h3>
+                        <p className="text-gray-600 text-sm mb-4">{resource.description.substring(0, 100)}...</p>
+                        <div className="flex flex-wrap gap-1 mb-4">
+                          {resource.tags.slice(0, 3).map((tag, idx) => (
+                            <motion.span 
+                              key={idx} 
+                              className="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded"
+                              whileHover={{ y: -1 }}
+                            >
+                              {tag}
+                            </motion.span>
+                          ))}
+                          {resource.tags.length > 3 && (
+                            <span className="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">
+                              +{resource.tags.length - 3}
+                            </span>
+                          )}
+                        </div>
+                        <motion.a
+                          href={resource.downloadLink || resource.videoLink}
+                          className="inline-flex items-center mt-auto text-teal-600 font-medium"
+                          whileHover={{ x: 3 }}
+                        >
+                          {resource.downloadLink ? (
+                            <>
+                              <IconComponent icon={FaDownload} className="mr-1" />
+                              Download Resource
+                            </>
+                          ) : (
+                            <>
+                              <IconComponent icon={FaVideo} className="mr-1" />
+                              Watch Resource
+                            </>
+                          )}
+                        </motion.a>
+                      </div>
+                    </motion.div>
+                  ))}
+                </motion.div>
+                
+                {filteredResources.length === 0 && (
+                  <motion.div 
+                    className="bg-white rounded-lg shadow-md p-8 text-center"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <h3 className="text-xl font-bold text-gray-700 mb-2">No resources found</h3>
+                    <p className="text-gray-600 mb-4">Try adjusting your search or filters to find what you're looking for.</p>
+                    <motion.button
+                      onClick={() => {
+                        setSearchQuery('');
+                        setActiveCategory('all');
+                        setActiveType('all');
+                      }}
+                      className="text-teal-600 font-medium"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      Clear all filters
+                    </motion.button>
+                  </motion.div>
+                )}
+              </motion.div>
             </div>
           </div>
         </section>

@@ -74,7 +74,7 @@ const ClientFeedback: React.FC = () => {
                   animate={{ rotate: [0, 5, 0] }}
                   transition={{ duration: 5, repeat: Infinity, repeatType: "reverse" }}
                 >
-                  <FaQuoteRight />
+                  <IconComponent icon={FaQuoteRight} />
                 </motion.div>
                 
                 <div className="flex text-yellow-500 mb-4">

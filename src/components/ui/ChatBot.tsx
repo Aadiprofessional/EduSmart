@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaRobot, FaTimes, FaPaperPlane, FaQuestion, FaGraduationCap, FaCalendarAlt, FaInfo } from 'react-icons/fa';
+import IconComponent from './IconComponent';
 
 interface Message {
   id: number;
@@ -9,10 +10,10 @@ interface Message {
 }
 
 const preDefinedCommands = [
-  { command: 'help', description: 'Display available commands', icon: <FaQuestion /> },
-  { command: 'courses', description: 'Show featured courses', icon: <FaGraduationCap /> },
-  { command: 'schedule', description: 'View upcoming events', icon: <FaCalendarAlt /> },
-  { command: 'about', description: 'Learn about EduSmart', icon: <FaInfo /> },
+  { command: 'help', description: 'Display available commands', icon: <IconComponent icon={FaQuestion} /> },
+  { command: 'courses', description: 'Show featured courses', icon: <IconComponent icon={FaGraduationCap} /> },
+  { command: 'schedule', description: 'View upcoming events', icon: <IconComponent icon={FaCalendarAlt} /> },
+  { command: 'about', description: 'Learn about EduSmart', icon: <IconComponent icon={FaInfo} /> },
 ];
 
 const ChatBot: React.FC = () => {
@@ -115,7 +116,7 @@ const ChatBot: React.FC = () => {
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
       >
-        {isOpen ? <FaTimes size={20} /> : <FaRobot size={20} />}
+        {isOpen ? <IconComponent icon={FaTimes} size={20} /> : <IconComponent icon={FaRobot} size={20} />}
       </motion.button>
 
       {/* Chat window */}
@@ -131,7 +132,7 @@ const ChatBot: React.FC = () => {
             {/* Chat header */}
             <div className="bg-teal-700 text-white p-3">
               <h3 className="font-bold flex items-center">
-                <FaRobot className="mr-2" /> EduSmart Assistant
+                <IconComponent icon={FaRobot} className="mr-2" /> EduSmart Assistant
               </h3>
             </div>
 
@@ -188,7 +189,7 @@ const ChatBot: React.FC = () => {
                   type="submit"
                   className="bg-teal-700 text-white p-2 rounded-r-lg"
                 >
-                  <FaPaperPlane />
+                  <IconComponent icon={FaPaperPlane} />
                 </button>
               </div>
             </form>

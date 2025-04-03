@@ -72,7 +72,7 @@ const Newsletter: React.FC = () => {
         <div className="flex flex-col items-center">
           <AnimatedSection direction="up">
             <div className="mb-6 inline-block p-4 bg-white/10 rounded-full">
-              <FaEnvelope className="text-white text-3xl" />
+              <IconComponent icon={FaEnvelope} className="text-white text-3xl" />
             </div>
           </AnimatedSection>
           

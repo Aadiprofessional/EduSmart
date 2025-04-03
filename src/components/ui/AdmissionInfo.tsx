@@ -33,7 +33,7 @@ const AdmissionInfo: React.FC = () => {
                   whileHover={{ y: 0, opacity: 1 }}
                   transition={{ duration: 0.3, delay: 0.1 }}
                 >
-                  <FaGraduationCap className="text-5xl mb-4 mx-auto text-orange-400" />
+                  <IconComponent icon={FaGraduationCap} className="text-5xl mb-4 mx-auto text-orange-400" />
                   <h3 className="text-2xl font-bold mb-2">Success Awaits</h3>
                   <p className="text-white/80">Let us guide you through the admission journey</p>
                 </motion.div>

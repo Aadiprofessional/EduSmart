@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import AnimatedSection from './AnimatedSection';
 import { FaUser, FaEnvelope, FaCommentAlt, FaPaperPlane, FaPlus, FaMinus } from 'react-icons/fa';
+import IconComponent from './IconComponent';
 
 const ContactForm: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -103,7 +104,7 @@ const ContactForm: React.FC = () => {
                       transition={{ duration: 0.2 }}
                       className="text-orange-500"
                     >
-                      {openFaq === index ? <FaMinus /> : <FaPlus />}
+                      {openFaq === index ? <IconComponent icon={FaMinus} /> : <IconComponent icon={FaPlus} />}
                     </motion.div>
                   </motion.button>
                   <motion.div 
@@ -133,7 +134,7 @@ const ContactForm: React.FC = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <motion.div whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                    <FaUser className="mr-2 text-teal-600" /> Your Name
+                    <IconComponent icon={FaUser} className="mr-2 text-teal-600" /> Your Name
                   </label>
                   <input
                     type="text"
@@ -147,7 +148,7 @@ const ContactForm: React.FC = () => {
                 </motion.div>
                 <motion.div whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                    <FaEnvelope className="mr-2 text-teal-600" /> Email Address
+                    <IconComponent icon={FaEnvelope} className="mr-2 text-teal-600" /> Email Address
                   </label>
                   <input
                     type="email"
@@ -161,7 +162,7 @@ const ContactForm: React.FC = () => {
                 </motion.div>
                 <motion.div whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
                   <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                    <FaCommentAlt className="mr-2 text-teal-600" /> Your Message
+                    <IconComponent icon={FaCommentAlt} className="mr-2 text-teal-600" /> Your Message
                   </label>
                   <textarea
                     id="message"
@@ -185,7 +186,7 @@ const ContactForm: React.FC = () => {
                     {isSubmitting ? (
                       <span className="loading-spinner mr-2"></span>
                     ) : (
-                      <FaPaperPlane className="mr-2" />
+                      <IconComponent icon={FaPaperPlane} className="mr-2" />
                     )}
                     {isSubmitting ? 'Submitting...' : 'Submit'}
                   </button>

@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FaRobot, FaPaperPlane, FaArrowLeft } from 'react-icons/fa';
+import { FaArrowLeft, FaRobot, FaPaperPlane } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
+import IconComponent from '../components/ui/IconComponent';
 import AnimatedSection from '../components/ui/AnimatedSection';
 
 interface Message {
@@ -97,11 +98,11 @@ const ChatBotPage: React.FC = () => {
                   whileTap={{ scale: 0.9 }}
                   className="p-2 bg-teal-100 rounded-full"
                 >
-                  <FaArrowLeft className="text-teal-700" />
+                  <IconComponent icon={FaArrowLeft} className="text-teal-700" />
                 </motion.div>
               </Link>
               <h1 className="text-3xl font-bold flex items-center">
-                <FaRobot className="mr-2 text-teal-700" /> 
+                <IconComponent icon={FaRobot} className="mr-2 text-teal-700" /> 
                 <span>EduSmart AI Assistant</span>
               </h1>
             </div>
@@ -155,7 +156,7 @@ const ChatBotPage: React.FC = () => {
                     whileTap={{ scale: 0.95 }}
                     className="bg-teal-700 hover:bg-teal-800 text-white p-3 px-6 rounded-r-lg font-medium"
                   >
-                    <FaPaperPlane />
+                    <IconComponent icon={FaPaperPlane} />
                   </motion.button>
                 </div>
               </form>

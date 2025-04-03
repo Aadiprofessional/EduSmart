@@ -3,26 +3,27 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import AnimatedSection from './AnimatedSection';
 import { FaGraduationCap, FaUniversity, FaGlobeAmericas, FaChartLine } from 'react-icons/fa';
+import IconComponent from './IconComponent';
 
 const ScholarshipPrograms: React.FC = () => {
   const scholarshipTypes = [
     {
-      icon: <FaGraduationCap />,
+      icon: <IconComponent icon={FaGraduationCap} />,
       title: "Merit-Based",
       count: "1,250+"
     },
     {
-      icon: <FaUniversity />,
+      icon: <IconComponent icon={FaUniversity} />,
       title: "University-Specific",
       count: "3,000+"
     },
     {
-      icon: <FaGlobeAmericas />,
+      icon: <IconComponent icon={FaGlobeAmericas} />,
       title: "International",
       count: "750+"
     },
     {
-      icon: <FaChartLine />,
+      icon: <IconComponent icon={FaChartLine} />,
       title: "Field-Specific",
       count: "1,500+"
     }

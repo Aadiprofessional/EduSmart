@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { FaGraduationCap, FaUniversity, FaChartLine, FaStar, FaFilter, FaSearch } from 'react-icons/fa';
+import { FaGraduationCap, FaUniversity, FaChartLine, FaStar, FaFilter, FaSearch, FaCheck, FaTimesCircle } from 'react-icons/fa';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import IconComponent from '../components/ui/IconComponent';
+import { motion } from 'framer-motion';
 
 interface CaseStudy {
   id: number;
@@ -42,12 +43,44 @@ const CaseStudies: React.FC = () => {
   });
   const [activeTab, setActiveTab] = useState('all');
 
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: { duration: 0.5 }
+    }
+  };
+
+  const buttonVariants = {
+    hover: {
+      scale: 1.05,
+      backgroundColor: "#0F766E",
+      color: "white",
+      transition: { duration: 0.2 }
+    },
+    tap: {
+      scale: 0.95
+    }
+  };
+
   // Sample case studies data
   const caseStudies: CaseStudy[] = [
     {
       id: 1,
       name: 'James L.',
-      profilePic: 'https://via.placeholder.com/150?text=James+L',
+      profilePic: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&h=150&q=80',
       background: {
         gpa: '3.2/4.0 (Low for top universities)',
         testScores: [
@@ -83,7 +116,7 @@ const CaseStudies: React.FC = () => {
     {
       id: 2,
       name: 'Sophia H.',
-      profilePic: 'https://via.placeholder.com/150?text=Sophia+H',
+      profilePic: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&h=150&q=80',
       background: {
         gpa: '3.9/4.0',
         testScores: [
@@ -119,7 +152,7 @@ const CaseStudies: React.FC = () => {
     {
       id: 3,
       name: 'Raj P.',
-      profilePic: 'https://via.placeholder.com/150?text=Raj+P',
+      profilePic: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&h=150&q=80',
       background: {
         gpa: '3.7/4.0',
         testScores: [
@@ -157,7 +190,7 @@ const CaseStudies: React.FC = () => {
     {
       id: 4,
       name: 'Emma L.',
-      profilePic: 'https://via.placeholder.com/150?text=Emma+L',
+      profilePic: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&h=150&q=80',
       background: {
         gpa: '3.1/4.0',
         testScores: [
@@ -240,257 +273,392 @@ const CaseStudies: React.FC = () => {
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-grow">
-        <section className="bg-gradient-to-r from-teal-700 to-teal-900 text-white py-12">
-          <div className="container mx-auto px-4">
+        <motion.section 
+          className="bg-gradient-to-r from-teal-700 to-teal-900 text-white py-12 relative overflow-hidden"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          {/* Animated background elements */}
+          <motion.div 
+            className="absolute w-96 h-96 bg-teal-600 rounded-full opacity-10" 
+            style={{ filter: 'blur(80px)', top: '-10%', right: '5%' }}
+            animate={{
+              scale: [1, 1.2, 1],
+              x: [0, 30, 0],
+            }}
+            transition={{
+              duration: 15,
+              repeat: Infinity,
+              repeatType: "reverse"
+            }}
+          />
+          <motion.div 
+            className="absolute w-64 h-64 bg-orange-500 rounded-full opacity-10" 
+            style={{ filter: 'blur(60px)', bottom: '-5%', left: '10%' }}
+            animate={{
+              scale: [1, 1.1, 1],
+              y: [0, -20, 0],
+            }}
+            transition={{
+              duration: 10,
+              repeat: Infinity,
+              repeatType: "reverse"
+            }}
+          />
+          
+          <div className="container mx-auto px-4 relative z-10">
             <div className="text-center max-w-3xl mx-auto">
-              <h1 className="text-4xl font-bold mb-4">Success Case Studies</h1>
-              <p className="text-xl mb-8">
+              <motion.h1 
+                className="text-4xl font-bold mb-4"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                Success Case Studies
+              </motion.h1>
+              <motion.p 
+                className="text-xl mb-8"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+              >
                 Discover inspiring stories of students who achieved their dreams, from overcoming low GPAs to securing 
                 full scholarships at top universities worldwide.
-              </p>
-              <div className="relative">
+              </motion.p>
+              <motion.div 
+                className="relative"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+              >
                 <input
                   type="text"
-                  placeholder="Search success stories..."
+                  placeholder="Search by student name..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full px-5 py-3 pr-12 bg-white rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
                 <IconComponent icon={FaSearch} className="absolute right-4 top-3.5 text-gray-500" />
-              </div>
+              </motion.div>
             </div>
           </div>
-        </section>
+        </motion.section>
 
         <section className="py-12 bg-gray-50">
           <div className="container mx-auto px-4">
-            {/* Filters and Tabs */}
-            <div className="mb-10">
-              <div className="flex flex-wrap justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-teal-800">Browse Success Stories</h2>
-                
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => toggleFilter('lowGPA')}
-                    className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${
-                      activeFilters.lowGPA ? 'bg-teal-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
+            {/* Category Tabs */}
+            <motion.div 
+              className="flex flex-wrap justify-center mb-10 gap-2"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`px-4 py-2 rounded-full font-medium transition-colors ${
+                  activeTab === 'all'
+                    ? 'bg-teal-600 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                }`}
+                onClick={() => setActiveTab('all')}
+              >
+                All Case Studies
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`px-4 py-2 rounded-full font-medium transition-colors ${
+                  activeTab === 'lowGPA'
+                    ? 'bg-teal-600 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                }`}
+                onClick={() => setActiveTab('lowGPA')}
+              >
+                Low GPA Success
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`px-4 py-2 rounded-full font-medium transition-colors ${
+                  activeTab === 'international'
+                    ? 'bg-teal-600 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                }`}
+                onClick={() => setActiveTab('international')}
+              >
+                International Students
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`px-4 py-2 rounded-full font-medium transition-colors ${
+                  activeTab === 'scholarship'
+                    ? 'bg-teal-600 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                }`}
+                onClick={() => setActiveTab('scholarship')}
+              >
+                Scholarship Winners
+              </motion.button>
+            </motion.div>
+
+            {/* Filters */}
+            <motion.div 
+              className="bg-white rounded-lg shadow-md p-4 mb-8 flex flex-wrap gap-3 items-center"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+            >
+              <span className="text-gray-700 flex items-center">
+                <IconComponent icon={FaFilter} className="mr-2" /> Filters:
+              </span>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`px-3 py-1 rounded text-sm font-medium flex items-center ${
+                  activeFilters.lowGPA
+                    ? 'bg-teal-100 text-teal-800'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                onClick={() => toggleFilter('lowGPA')}
+              >
+                <span className={`w-3 h-3 rounded-full mr-2 ${activeFilters.lowGPA ? 'bg-teal-500' : 'bg-gray-300'}`}></span>
+                Low GPA
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`px-3 py-1 rounded text-sm font-medium flex items-center ${
+                  activeFilters.international
+                    ? 'bg-teal-100 text-teal-800'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                onClick={() => toggleFilter('international')}
+              >
+                <span className={`w-3 h-3 rounded-full mr-2 ${activeFilters.international ? 'bg-teal-500' : 'bg-gray-300'}`}></span>
+                International
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`px-3 py-1 rounded text-sm font-medium flex items-center ${
+                  activeFilters.scholarship
+                    ? 'bg-teal-100 text-teal-800'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                onClick={() => toggleFilter('scholarship')}
+              >
+                <span className={`w-3 h-3 rounded-full mr-2 ${activeFilters.scholarship ? 'bg-teal-500' : 'bg-gray-300'}`}></span>
+                With Scholarship
+              </motion.button>
+              {(activeFilters.lowGPA || activeFilters.international || activeFilters.scholarship) && (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="text-teal-600 hover:text-teal-800 text-sm font-medium underline ml-auto"
+                  onClick={() => setActiveFilters({ lowGPA: false, international: false, scholarship: false })}
+                >
+                  Clear All Filters
+                </motion.button>
+              )}
+            </motion.div>
+
+            {/* Case Studies Grid */}
+            <motion.div 
+              className="grid grid-cols-1 lg:grid-cols-2 gap-8"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              {filteredCaseStudies.length > 0 ? (
+                filteredCaseStudies.map(study => (
+                  <motion.div 
+                    key={study.id} 
+                    className="bg-white rounded-lg shadow-lg overflow-hidden"
+                    variants={itemVariants}
+                    whileHover={{ 
+                      y: -5,
+                      boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+                    }}
                   >
-                    <IconComponent icon={FaChartLine} /> Low GPA Success
-                  </button>
-                  <button
-                    onClick={() => toggleFilter('international')}
-                    className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${
-                      activeFilters.international ? 'bg-teal-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
-                  >
-                    <IconComponent icon={FaUniversity} /> International Students
-                  </button>
-                  <button
-                    onClick={() => toggleFilter('scholarship')}
-                    className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${
-                      activeFilters.scholarship ? 'bg-teal-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
-                  >
-                    <IconComponent icon={FaGraduationCap} /> Scholarship Winners
-                  </button>
-                </div>
-              </div>
-              
-              <div className="border-b border-gray-200">
-                <nav className="flex space-x-8">
-                  <button
-                    onClick={() => setActiveTab('all')}
-                    className={`py-4 px-1 font-medium text-sm border-b-2 ${
-                      activeTab === 'all'
-                        ? 'border-orange-500 text-orange-500'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    All Case Studies
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('lowGPA')}
-                    className={`py-4 px-1 font-medium text-sm border-b-2 ${
-                      activeTab === 'lowGPA'
-                        ? 'border-orange-500 text-orange-500'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    Low GPA Success
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('international')}
-                    className={`py-4 px-1 font-medium text-sm border-b-2 ${
-                      activeTab === 'international'
-                        ? 'border-orange-500 text-orange-500'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    International Students
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('scholarship')}
-                    className={`py-4 px-1 font-medium text-sm border-b-2 ${
-                      activeTab === 'scholarship'
-                        ? 'border-orange-500 text-orange-500'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    Scholarship Winners
-                  </button>
-                </nav>
-              </div>
-            </div>
-            
-            {/* Case Studies */}
-            {filteredCaseStudies.length > 0 ? (
-              <div className="space-y-10">
-                {filteredCaseStudies.map((study) => (
-                  <div key={study.id} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100">
-                    <div className="p-6">
-                      <div className="flex flex-col lg:flex-row gap-6">
-                        {/* Left column: Student profile */}
-                        <div className="lg:w-1/3">
-                          <div className="flex items-center gap-4 mb-6">
-                            <div className="w-16 h-16 rounded-full overflow-hidden">
-                              <img 
-                                src={study.profilePic} 
-                                alt={study.name} 
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            <div>
-                              <h3 className="text-xl font-bold text-teal-800">{study.name}</h3>
-                              <div className="flex gap-2 mt-1">
-                                {study.isLowGPA && (
-                                  <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-xs">
-                                    Low GPA Success
-                                  </span>
-                                )}
-                                {study.isInternational && (
-                                  <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">
-                                    International
-                                  </span>
-                                )}
-                                {study.hasScholarship && (
-                                  <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs">
-                                    Scholarship
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-4">
-                            <div>
-                              <h4 className="font-semibold text-gray-700 mb-1">Academic Background</h4>
-                              <p className="text-sm text-gray-600">
-                                GPA: {study.background.gpa}
-                              </p>
-                              <div className="mt-1">
-                                {study.background.testScores.map((test, index) => (
-                                  <p key={index} className="text-sm text-gray-600">
-                                    {test.name}: {test.score}
-                                  </p>
-                                ))}
-                              </div>
-                            </div>
-                            
-                            <div>
-                              <h4 className="font-semibold text-gray-700 mb-1">Activities & Experience</h4>
-                              <ul className="list-disc list-inside text-sm text-gray-600">
-                                {study.background.extracurriculars.map((activity, index) => (
-                                  <li key={index}>{activity}</li>
-                                ))}
-                              </ul>
-                            </div>
-                            
-                            {study.background.challenges && (
-                              <div>
-                                <h4 className="font-semibold text-gray-700 mb-1">Challenges</h4>
-                                <p className="text-sm text-gray-600">{study.background.challenges}</p>
-                              </div>
+                    <div className="border-b border-gray-100">
+                      <div className="p-6 flex items-start">
+                        <motion.div 
+                          className="w-16 h-16 rounded-full overflow-hidden mr-4 flex-shrink-0"
+                          whileHover={{ scale: 1.1 }}
+                        >
+                          <img 
+                            src={study.profilePic} 
+                            alt={study.name} 
+                            className="w-full h-full object-cover"
+                          />
+                        </motion.div>
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-800">
+                            {study.name}
+                          </h3>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {study.isLowGPA && (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                Low GPA Success
+                              </span>
                             )}
-                          </div>
-                        </div>
-                        
-                        {/* Right column: Results and strategy */}
-                        <div className="lg:w-2/3">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                            <div>
-                              <h4 className="font-semibold text-gray-700 mb-3">Application Results</h4>
-                              <div className="space-y-2">
-                                {study.results.universitiesApplied.map((uni, index) => (
-                                  <div 
-                                    key={index} 
-                                    className={`p-3 rounded-lg flex justify-between items-center ${
-                                      uni.admitted ? 'bg-green-50 border border-green-200' : 'bg-gray-50 border border-gray-200'
-                                    }`}
-                                  >
-                                    <div>
-                                      <p className="font-medium text-sm">{uni.name}</p>
-                                      <p className="text-xs text-gray-500">{uni.country}</p>
-                                    </div>
-                                    <span 
-                                      className={`text-xs font-medium px-2 py-1 rounded-full ${
-                                        uni.admitted 
-                                          ? 'bg-green-100 text-green-700' 
-                                          : 'bg-gray-200 text-gray-700'
-                                      }`}
-                                    >
-                                      {uni.admitted ? 'Admitted' : 'Rejected'}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                              
-                              {study.results.scholarship && (
-                                <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                                  <p className="font-medium text-orange-700 text-sm">
-                                    <span className="font-bold">Scholarship:</span> {study.results.scholarship}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                            
-                            <div>
-                              <h4 className="font-semibold text-gray-700 mb-3">Success Strategy</h4>
-                              <ul className="space-y-2">
-                                {study.strategy.map((point, index) => (
-                                  <li key={index} className="flex items-start gap-2">
-                                    <span className="text-orange-500 mt-1">•</span>
-                                    <span className="text-sm text-gray-600">{point}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          </div>
-                          
-                          <div className="mt-6 bg-gray-50 p-4 rounded-lg">
-                            <h4 className="font-semibold text-gray-700 mb-2">Testimonial</h4>
-                            <div className="flex gap-1 text-yellow-400 mb-2">
-                              <IconComponent icon={FaStar} />
-                              <IconComponent icon={FaStar} />
-                              <IconComponent icon={FaStar} />
-                              <IconComponent icon={FaStar} />
-                              <IconComponent icon={FaStar} />
-                            </div>
-                            <p className="text-gray-600 italic">"{study.testimonial}"</p>
+                            {study.isInternational && (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                International Student
+                              </span>
+                            )}
+                            {study.hasScholarship && (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Scholarship Recipient
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                <IconComponent icon={FaUniversity} className="text-5xl text-gray-300 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-700 mb-2">No case studies match your criteria</h3>
-                <p className="text-gray-600">Try adjusting your filters or search query.</p>
-              </div>
-            )}
+                    
+                    <div className="p-6">
+                      <div className="mb-6">
+                        <h4 className="text-sm font-bold text-teal-700 uppercase tracking-wider mb-2">
+                          Background
+                        </h4>
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <p className="text-gray-700 mb-2">
+                            <span className="font-medium">GPA:</span> {study.background.gpa}
+                          </p>
+                          <div className="mb-2">
+                            <span className="font-medium text-gray-700">Test Scores:</span>
+                            <ul className="mt-1 pl-4">
+                              {study.background.testScores.map((score, i) => (
+                                <li key={i} className="text-gray-600 text-sm">
+                                  {score.name}: {score.score}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div className="mb-2">
+                            <span className="font-medium text-gray-700">Extracurriculars:</span>
+                            <ul className="mt-1 pl-4 list-disc list-inside">
+                              {study.background.extracurriculars.map((item, i) => (
+                                <motion.li 
+                                  key={i} 
+                                  className="text-gray-600 text-sm"
+                                  initial={{ opacity: 0.5 }}
+                                  whileHover={{ opacity: 1, x: 5 }}
+                                  transition={{ duration: 0.2 }}
+                                >
+                                  {item}
+                                </motion.li>
+                              ))}
+                            </ul>
+                          </div>
+                          {study.background.challenges && (
+                            <div className="mt-2 text-sm italic text-gray-600">
+                              <span className="font-medium">Challenges:</span> {study.background.challenges}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="mb-6">
+                        <h4 className="text-sm font-bold text-teal-700 uppercase tracking-wider mb-2">
+                          Results
+                        </h4>
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <div className="mb-3">
+                            <span className="font-medium text-gray-700">Universities Applied:</span>
+                            <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {study.results.universitiesApplied.map((uni, i) => (
+                                <motion.div 
+                                  key={i} 
+                                  className={`flex items-center p-2 rounded-md text-sm ${
+                                    uni.admitted
+                                      ? 'bg-green-50 text-green-800'
+                                      : 'bg-red-50 text-red-800'
+                                  }`}
+                                  whileHover={{ scale: 1.03 }}
+                                >
+                                  <span className={`w-5 h-5 rounded-full flex items-center justify-center mr-2 ${
+                                    uni.admitted
+                                      ? 'bg-green-100 text-green-600'
+                                      : 'bg-red-100 text-red-600'
+                                  }`}>
+                                    {uni.admitted ? <IconComponent icon={FaCheck} size={10} /> : <IconComponent icon={FaTimesCircle} size={10} />}
+                                  </span>
+                                  <span>{uni.name}, {uni.country}</span>
+                                </motion.div>
+                              ))}
+                            </div>
+                          </div>
+                          {study.results.scholarship && (
+                            <div className="mt-3 font-medium text-green-700 flex items-center">
+                              <IconComponent icon={FaStar} className="mr-2 text-yellow-400" />
+                              Scholarship: {study.results.scholarship}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="mb-6">
+                        <h4 className="text-sm font-bold text-teal-700 uppercase tracking-wider mb-2">
+                          Application Strategy
+                        </h4>
+                        <ul className="bg-gray-50 p-4 rounded-lg list-disc list-inside">
+                          {study.strategy.map((item, i) => (
+                            <motion.li 
+                              key={i} 
+                              className="text-gray-600 text-sm mb-1"
+                              initial={{ opacity: 0.5 }}
+                              whileHover={{ opacity: 1, x: 5 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              {item}
+                            </motion.li>
+                          ))}
+                        </ul>
+                      </div>
+                      
+                      <motion.div 
+                        className="bg-teal-50 p-5 rounded-lg border-l-4 border-teal-500 italic text-gray-700"
+                        initial={{ opacity: 0.8 }}
+                        whileHover={{ 
+                          opacity: 1,
+                          scale: 1.02,
+                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
+                        }}
+                      >
+                        "{study.testimonial}"
+                      </motion.div>
+                    </div>
+                  </motion.div>
+                ))
+              ) : (
+                <motion.div 
+                  className="col-span-full bg-white rounded-lg shadow-md p-8 text-center"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <h3 className="text-xl font-bold text-gray-700 mb-2">No case studies match your criteria</h3>
+                  <p className="text-gray-600 mb-4">Try adjusting your search or filters to find relevant success stories.</p>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="text-teal-600 font-medium"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setActiveFilters({ lowGPA: false, international: false, scholarship: false });
+                      setActiveTab('all');
+                    }}
+                  >
+                    Reset all filters
+                  </motion.button>
+                </motion.div>
+              )}
+            </motion.div>
           </div>
         </section>
       </main>
