@@ -176,6 +176,8 @@ const Footer: React.FC = () => {
         >
           <div className="mb-4 md:mb-0">
             <span className="text-gray-300">© 2025 EduSmart. All rights reserved.</span>
+            <br />
+            <span className="text-gray-300">Powered by <a href="https://www.matrixai.asia" className="text-gray-300 hover:text-orange-500">MatrixAI</a> X <a href="https://www.smarteducation.asia" className="text-gray-300 hover:text-orange-500">Smart Education</a></span>
           </div>
           <div className="flex space-x-6">
             <motion.div variants={linkVariants} whileHover="hover">
