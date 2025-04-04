@@ -20,6 +20,7 @@ import ChatBotPage from './pages/ChatBot';
 
 // Components
 import ChatBot from './components/ui/ChatBot';
+import ProtectedRoute from './utils/ProtectedRoute';
 
 // Utils
 import { useSmoothScroll } from './utils/scrollUtils';
@@ -43,7 +44,11 @@ function App() {
         <Route path="/blog" element={<Blog />} />
         <Route path="/blog/:id" element={<Blog />} />
         <Route path="/scholarships" element={<Scholarships />} />
-        <Route path="/application-tracker" element={<ApplicationTracker />} />
+        <Route path="/application-tracker" element={
+          <ProtectedRoute>
+            <ApplicationTracker />
+          </ProtectedRoute>
+        } />
         <Route path="/chatbot" element={<ChatBotPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

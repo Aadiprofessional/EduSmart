@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import { FaEnvelope, FaLock, FaGoogle, FaFacebook, FaEye, FaEyeSlash } from 'react-icons/fa';
 import IconComponent from '../components/ui/IconComponent';
 import { motion } from 'framer-motion';
+import { useAuth } from '../utils/AuthContext';
 
 const Login: React.FC = () => {
+  const navigate = useNavigate();
+  const { signIn, signInWithGoogle, signInWithFacebook } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -14,6 +17,8 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -28,6 +33,11 @@ const Login: React.FC = () => {
         ...errors,
         [name]: ''
       });
+    }
+    
+    // Clear auth error when user changes input
+    if (authError) {
+      setAuthError(null);
     }
   };
 
@@ -50,22 +60,39 @@ const Login: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (validateForm()) {
-      // Here you would typically submit the form data to your backend API
-      console.log('Login attempt with:', formData, 'Remember me:', rememberMe);
+      setIsSubmitting(true);
       
-      // For demo purposes
-      alert('Login successful!');
+      try {
+        const { success, error } = await signIn(formData.email, formData.password);
+        
+        if (success) {
+          navigate('/');
+        } else {
+          setAuthError(error || 'An error occurred during sign in');
+        }
+      } catch (error) {
+        setAuthError('An unexpected error occurred');
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
-  const handleSocialLogin = (provider: string) => {
-    // Here you would typically implement OAuth authentication with the provider
-    console.log(`Logging in with ${provider}`);
-    alert(`${provider} authentication would be implemented here`);
+  const handleSocialLogin = async (provider: string) => {
+    try {
+      if (provider === 'Google') {
+        await signInWithGoogle();
+      } else if (provider === 'Facebook') {
+        await signInWithFacebook();
+      }
+    } catch (error) {
+      console.error(`Error with ${provider} login:`, error);
+      setAuthError(`${provider} login failed. Please try again.`);
+    }
   };
 
   const containerVariants = {
@@ -184,6 +211,17 @@ const Login: React.FC = () => {
               
               {/* Login form */}
               <form onSubmit={handleSubmit}>
+                {/* Display auth error if any */}
+                {authError && (
+                  <motion.div 
+                    className="mb-4 p-3 bg-red-50 border border-red-200 text-red-800 rounded-md"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    {authError}
+                  </motion.div>
+                )}
+                
                 {/* Email field */}
                 <motion.div 
                   className="mb-4"
@@ -261,21 +299,20 @@ const Login: React.FC = () => {
                     </label>
                   </div>
                   <div className="text-sm">
-                    <Link to="/forgot-password" className="font-medium text-orange-500 hover:text-orange-600">
-                      Forgot password?
-                    </Link>
+                    <a href="#" className="font-medium text-teal-600 hover:text-teal-500">
+                      Forgot your password?
+                    </a>
                   </div>
                 </motion.div>
                 
                 <motion.div variants={itemVariants}>
-                  <motion.button
+                  <button
                     type="submit"
-                    className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
-                    whileHover={{ y: -2 }}
-                    whileTap={{ y: 0 }}
+                    disabled={isSubmitting}
+                    className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
                   >
-                    Sign In
-                  </motion.button>
+                    {isSubmitting ? 'Signing in...' : 'Sign in'}
+                  </button>
                 </motion.div>
               </form>
               
@@ -283,9 +320,9 @@ const Login: React.FC = () => {
                 className="mt-6 text-center text-sm"
                 variants={itemVariants}
               >
-                <span className="text-gray-600">Don't have an account? </span>
-                <Link to="/signup" className="font-medium text-teal-600 hover:text-teal-700">
-                  Sign up now
+                <span className="text-gray-600">Don't have an account?</span>{' '}
+                <Link to="/signup" className="font-medium text-teal-600 hover:text-teal-500">
+                  Sign up for free
                 </Link>
               </motion.div>
             </div>
