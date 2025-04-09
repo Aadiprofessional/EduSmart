@@ -58,11 +58,12 @@ const ClientFeedback: React.FC = () => {
           <h2 className="text-3xl font-bold text-teal-800 mb-12 text-center">Client Feedback</h2>
         </AnimatedSection>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {testimonials.map((testimonial, index) => (
             <AnimatedSection key={testimonial.id} direction="up" delay={0.1 * index}>
+              {/* Desktop view - vertical card */}
               <motion.div 
-                className="bg-white p-6 rounded-lg shadow-md border border-gray-100 relative h-full"
+                className="bg-white p-6 rounded-lg shadow-md border border-gray-100 relative h-full hidden md:block"
                 whileHover={{ 
                   y: -10,
                   boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
@@ -97,6 +98,47 @@ const ClientFeedback: React.FC = () => {
                     <p className="text-gray-600 text-sm">{testimonial.role}</p>
                     <p className="text-orange-500 text-sm">{testimonial.university}</p>
                   </div>
+                </div>
+              </motion.div>
+
+              {/* Mobile view - horizontal card */}
+              <motion.div 
+                className="bg-white rounded-lg shadow-md border border-gray-100 overflow-hidden h-full md:hidden flex flex-row"
+                whileHover={{ 
+                  y: -5,
+                  boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+                }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <div className="w-1/3 bg-gray-50 p-4 flex flex-col justify-center items-center">
+                  <motion.div 
+                    className="w-20 h-20 rounded-full overflow-hidden mb-2"
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    <img 
+                      src={testimonial.image} 
+                      alt={testimonial.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </motion.div>
+                  <div className="text-center">
+                    <h4 className="font-semibold text-teal-700 text-sm">{testimonial.name}</h4>
+                    <p className="text-gray-600 text-xs">{testimonial.role}</p>
+                    <p className="text-orange-500 text-xs">{testimonial.university}</p>
+                  </div>
+                  <div className="flex text-yellow-500 mt-2">
+                    {renderStars(testimonial.rating)}
+                  </div>
+                </div>
+                <div className="w-2/3 p-4 relative">
+                  <motion.div 
+                    className="absolute top-2 right-2 text-teal-100 text-2xl opacity-50"
+                    animate={{ rotate: [0, 5, 0] }}
+                    transition={{ duration: 5, repeat: Infinity, repeatType: "reverse" }}
+                  >
+                    <IconComponent icon={FaQuoteRight} />
+                  </motion.div>
+                  <p className="text-gray-700 text-sm relative z-10">"{testimonial.content}"</p>
                 </div>
               </motion.div>
             </AnimatedSection>

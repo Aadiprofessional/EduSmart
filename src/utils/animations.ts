@@ -1,9 +1,15 @@
 // Animation variants for framer-motion
 export const fadeIn = (direction: "up" | "down" | "left" | "right", delay: number = 0) => {
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  
+  // Use smaller values for mobile devices
+  const distance = isMobile ? 40 : 80;
+  const duration = isMobile ? 0.6 : 0.8;
+  
   return {
     hidden: {
-      y: direction === "up" ? 80 : direction === "down" ? -80 : 0,
-      x: direction === "left" ? 80 : direction === "right" ? -80 : 0,
+      y: direction === "up" ? distance : direction === "down" ? -distance : 0,
+      x: direction === "left" ? distance : direction === "right" ? -distance : 0,
       opacity: 0,
     },
     show: {
@@ -12,7 +18,7 @@ export const fadeIn = (direction: "up" | "down" | "left" | "right", delay: numbe
       opacity: 1,
       transition: {
         type: "tween",
-        duration: 0.8,
+        duration: duration,
         delay,
         ease: [0.25, 0.25, 0.25, 0.75],
       },

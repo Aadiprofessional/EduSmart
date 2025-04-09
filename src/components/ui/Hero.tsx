@@ -21,8 +21,8 @@ const Hero: React.FC = () => {
             <p className="text-xl mb-8">
               Explore top universities, personalized recommendations, and real success stories—all driven by AI to simplify your journey to higher education.
             </p>
-            <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <div className="flex flex-row space-x-4">
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-1/2 md:w-auto">
                 <Link
                   to="/courses"
                   className="bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 px-6 rounded-lg transition-colors text-center block btn-pulse"
@@ -30,7 +30,7 @@ const Hero: React.FC = () => {
                   Explore
                 </Link>
               </motion.div>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-1/2 md:w-auto">
                 <Link
                   to="/about"
                   className="bg-transparent border-2 border-white hover:bg-white hover:text-teal-800 font-medium py-3 px-6 rounded-lg transition-colors text-center block"

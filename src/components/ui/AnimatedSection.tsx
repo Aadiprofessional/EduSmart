@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { fadeIn } from '../../utils/animations';
 
@@ -15,9 +15,27 @@ const AnimatedSection: React.FC<AnimatedSectionProps> = ({
   delay = 0,
   className = '',
 }) => {
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkIfMobile();
+    window.addEventListener('resize', checkIfMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkIfMobile);
+    };
+  }, []);
+
+  // Always use 'up' direction on mobile devices
+  const effectiveDirection = isMobile ? 'up' : direction;
+  
   return (
     <motion.div
-      variants={fadeIn(direction, delay)}
+      variants={fadeIn(effectiveDirection, delay)}
       initial="hidden"
       whileInView="show"
       viewport={{ once: true, amount: 0.25 }}

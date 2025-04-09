@@ -53,11 +53,12 @@ const BlogSection: React.FC = () => {
           </div>
         </AnimatedSection>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {blogPosts.map((post, index) => (
             <AnimatedSection key={post.id} direction="up" delay={0.1 * index}>
+              {/* Desktop view - vertical card */}
               <motion.div 
-                className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100 h-full"
+                className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100 h-full hidden md:block"
                 whileHover={{ 
                   y: -10,
                   boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
@@ -97,6 +98,53 @@ const BlogSection: React.FC = () => {
                     </div>
                     <div className="flex items-center">
                       <IconComponent icon={FaCalendarAlt} className="mr-2 text-teal-600" />
+                      {post.date}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Mobile view - horizontal card */}
+              <motion.div 
+                className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100 h-full md:hidden flex flex-row"
+                whileHover={{ 
+                  y: -5,
+                  boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+                }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <div className="w-2/5 overflow-hidden">
+                  <motion.img 
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ duration: 0.3 }}
+                    src={post.image} 
+                    alt={post.title} 
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <div className="p-4 w-3/5">
+                  <motion.div 
+                    className="flex items-center text-gray-500 text-xs mb-1"
+                  >
+                    <span className="bg-orange-100 text-orange-500 px-2 py-0.5 rounded-full text-xs">
+                      {post.category}
+                    </span>
+                  </motion.div>
+                  <h3 className="text-base font-semibold text-teal-700 mb-1">
+                    <Link to={`/blog/${post.id}`} className="hover:text-orange-500">
+                      {post.title}
+                    </Link>
+                  </h3>
+                  <p className="text-gray-600 text-xs mb-2 line-clamp-2">
+                    {post.excerpt}
+                  </p>
+                  <div className="flex justify-between items-center text-gray-500 text-xs">
+                    <div className="flex items-center">
+                      <IconComponent icon={FaUser} className="mr-1 text-teal-600 text-xs" />
+                      <span className="truncate max-w-[70px]">{post.author}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <IconComponent icon={FaCalendarAlt} className="mr-1 text-teal-600 text-xs" />
                       {post.date}
                     </div>
                   </div>

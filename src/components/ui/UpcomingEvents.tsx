@@ -69,10 +69,11 @@ const UpcomingEvents: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {upcomingFeatures.slice(0, 6).map((feature, index) => (
             <AnimatedSection key={feature.id} direction="up" delay={0.1 * index}>
+              {/* Desktop view - vertical card */}
               <motion.div 
-                className="bg-white rounded-lg shadow-md overflow-hidden relative border border-gray-200 h-full"
+                className="bg-white rounded-lg shadow-md overflow-hidden relative border border-gray-200 h-full hidden md:block"
                 whileHover={{ 
-                  y: -10,
+                  y: -5,
                   boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
                 }}
                 transition={{ type: "spring", stiffness: 300 }}
@@ -114,6 +115,65 @@ const UpcomingEvents: React.FC = () => {
                     <Link 
                       to={feature.link}
                       className="text-orange-500 hover:text-orange-600 font-medium inline-flex items-center"
+                    >
+                      Learn More 
+                      <motion.span 
+                        initial={{ x: 0 }}
+                        animate={{ x: [0, 5, 0] }}
+                        transition={{ duration: 1, repeat: Infinity, repeatDelay: 1 }}
+                      >
+                        →
+                      </motion.span>
+                    </Link>
+                  </motion.div>
+                </div>
+              </motion.div>
+
+              {/* Mobile view - horizontal card */}
+              <motion.div 
+                className="bg-white rounded-lg shadow-md overflow-hidden relative border border-gray-200 h-full md:hidden flex flex-row"
+                whileHover={{ 
+                  y: -5,
+                  boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+                }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <motion.div 
+                  className="absolute top-2 right-2 bg-orange-500 text-white text-xs py-1 px-2 rounded z-10"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  NEW
+                </motion.div>
+                <div className="w-2/5 overflow-hidden relative">
+                  <motion.img 
+                    src={feature.image} 
+                    alt={feature.title}
+                    className="w-full h-full object-cover transition-transform duration-300"
+                    whileHover={{ scale: 1.05 }}
+                  />
+                  <motion.div 
+                    className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-center justify-center"
+                    initial={{ opacity: 0.3 }}
+                  >
+                    <div className="text-white text-3xl">{feature.icon}</div>
+                  </motion.div>
+                </div>
+                <div className="p-4 w-3/5">
+                  <h3 className="text-base font-semibold text-teal-700 mb-1">{feature.title}</h3>
+                  <p className="text-sm text-gray-600 mb-2">{feature.description}</p>
+                  <div className="flex items-center text-gray-600 mb-1">
+                    <IconComponent icon={FaCalendarAlt} className="mr-1 text-orange-500 text-xs" />
+                    <span className="text-xs">Status: {feature.status}</span>
+                  </div>
+                  <p className="text-gray-600 mb-2 text-xs">Expected: {feature.release}</p>
+                  <motion.div
+                    whileHover={{ x: 5 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Link 
+                      to={feature.link}
+                      className="text-orange-500 hover:text-orange-600 font-medium inline-flex items-center text-sm"
                     >
                       Learn More 
                       <motion.span 

@@ -104,7 +104,7 @@ const ScholarshipPrograms: React.FC = () => {
             {scholarshipTypes.map((type, index) => (
               <motion.div 
                 key={index}
-                whileHover={{ y: -10, boxShadow: "0 15px 30px -10px rgba(0, 0, 0, 0.3)" }}
+                whileHover={{ y: -5, boxShadow: "0 15px 30px -10px rgba(0, 0, 0, 0.3)" }}
                 transition={{ type: "spring", stiffness: 300 }}
                 className="bg-white/10 backdrop-blur-sm rounded-lg p-6 text-center"
               >

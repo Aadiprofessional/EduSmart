@@ -130,3 +130,11 @@ code {
     transform: scale(1.5);
   }
 }
+
+/* Custom line-clamp utility since the Tailwind plugin might not be activated */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

@@ -40,7 +40,7 @@ const GraduatePrograms: React.FC = () => {
       <div className="container mx-auto px-4">
         <AnimatedSection direction="up">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-teal-800 mb-4">Graduate Programs</h2>
+            <h2 className="text-3xl font-bold text-teal-800 mb-4">Study Abroad Programs</h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
               Explore our comprehensive database of international universities and resources designed to help you find the perfect program for your educational goals.
             </p>
@@ -50,13 +50,14 @@ const GraduatePrograms: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {programs.map((program, index) => (
             <AnimatedSection key={program.id} direction="up" delay={0.1 * index}>
+              {/* Desktop view - vertical card */}
               <motion.div 
                 whileHover={{ 
                   y: -10,
                   boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
                 }}
                 transition={{ type: "spring", stiffness: 300 }}
-                className="bg-white rounded-lg shadow-md overflow-hidden h-full"
+                className="bg-white rounded-lg shadow-md overflow-hidden h-full hidden md:block"
               >
                 <div className="h-48 overflow-hidden">
                   <motion.img 
@@ -74,6 +75,45 @@ const GraduatePrograms: React.FC = () => {
                     <Link 
                       to={program.link}
                       className="text-orange-500 hover:text-orange-600 font-medium inline-flex items-center"
+                    >
+                      Learn More 
+                      <motion.span 
+                        initial={{ x: 0 }}
+                        animate={{ x: [0, 5, 0] }}
+                        transition={{ duration: 1, repeat: Infinity, repeatDelay: 1 }}
+                      >
+                        →
+                      </motion.span>
+                    </Link>
+                  </motion.div>
+                </div>
+              </motion.div>
+
+              {/* Mobile view - horizontal card */}
+              <motion.div 
+                whileHover={{ 
+                  y: -5,
+                  boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+                }}
+                transition={{ type: "spring", stiffness: 300 }}
+                className="bg-white rounded-lg shadow-md overflow-hidden h-full md:hidden flex flex-row"
+              >
+                <div className="w-2/5 overflow-hidden">
+                  <motion.img 
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ duration: 0.3 }}
+                    src={program.image} 
+                    alt={program.title} 
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <div className="p-4 w-3/5">
+                  <h3 className="text-base font-semibold text-teal-700 mb-1">{program.title}</h3>
+                  <p className="text-sm text-gray-600 mb-2">{program.description}</p>
+                  <motion.div whileHover={{ x: 5 }} transition={{ duration: 0.2 }}>
+                    <Link 
+                      to={program.link}
+                      className="text-orange-500 hover:text-orange-600 font-medium inline-flex items-center text-sm"
                     >
                       Learn More 
                       <motion.span 
