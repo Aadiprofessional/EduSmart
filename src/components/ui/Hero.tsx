@@ -41,23 +41,19 @@ const Hero: React.FC = () => {
             </div>
           </motion.div>
           <motion.div 
-            variants={slideIn('left', 'tween', 0.2, 1)}
+            variants={fadeIn('up', 0.4)}
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, amount: 0.25 }}
             className="md:w-1/2 flex justify-center"
           >
-            <motion.div 
-              whileHover={{ y: -10, boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)" }}
-              transition={{ type: "spring", stiffness: 300 }}
-              className="bg-white rounded-lg shadow-xl w-full max-w-md h-80 flex items-center justify-center overflow-hidden"
-            >
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-md h-80 flex items-center justify-center overflow-hidden">
               <img 
                 src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80" 
                 alt="University education illustration" 
                 className="h-full w-full object-cover"
               />
-            </motion.div>
+            </div>
           </motion.div>
         </div>
       </div>

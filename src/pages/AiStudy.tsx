@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { AiOutlineUpload, AiOutlineBulb, AiOutlineRobot, AiOutlineHistory, AiOutlineFileText, AiOutlineCamera } from 'react-icons/ai';
-import { FiBookOpen, FiClock, FiCalendar, FiCheck, FiBookmark } from 'react-icons/fi';
+import { AiOutlineUpload, AiOutlineBulb, AiOutlineRobot, AiOutlineHistory, AiOutlineFileText, AiOutlineCamera, AiOutlineFullscreen, AiOutlineSearch } from 'react-icons/ai';
+import { FiBookOpen, FiClock, FiCalendar, FiCheck, FiBookmark, FiEdit, FiMenu } from 'react-icons/fi';
 import IconComponent from '../components/ui/IconComponent';
 import { useAuth } from '../utils/AuthContext';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
+import CitationGenerator from '../components/ui/CitationGenerator';
 
 const AiStudy: React.FC = () => {
   const { user } = useAuth();
@@ -35,16 +36,76 @@ const AiStudy: React.FC = () => {
     {task: 'Read chapter 5 for literature', subject: 'Literature', date: '2023-06-24', completed: true},
   ]);
 
+  // New state for check mistakes functionality
+  const [documentPages, setDocumentPages] = useState<string[]>([
+    'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?ixlib=rb-1.2.1&auto=format&fit=crop&w=634&q=80',
+    'https://images.unsplash.com/photo-1516979187457-637abb4f9353?ixlib=rb-1.2.1&auto=format&fit=crop&w=634&q=80',
+  ]);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [mistakes, setMistakes] = useState<{id: number, line: string, correction: string, type: string}[]>([
+    {id: 1, line: "The study were conducted in 2020.", correction: "The study was conducted in 2020.", type: "Grammar"},
+    {id: 2, line: "They're were four participants.", correction: "There were four participants.", type: "Spelling"},
+    {id: 3, line: "According to Smith et al", correction: "Add proper citation: (Smith et al., 2019)", type: "Citation"},
+  ]);
+  const [fullScreenSolution, setFullScreenSolution] = useState(false);
+  const [fullScreenDocument, setFullScreenDocument] = useState(false);
+  
   const [newTask, setNewTask] = useState({task: '', subject: '', date: ''});
   const [currentFlashcard, setCurrentFlashcard] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
+  const [showFullScreen, setShowFullScreen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    // Add custom CSS for scrollbar hiding and 3D perspective
+    const style = document.createElement('style');
+    style.textContent = `
+      .custom-hide-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .custom-hide-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      .perspective {
+        perspective: 1000px;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setFile(e.target.files[0]);
+      
+      // If we're in check mistakes tab, process the file for mistakes checking
+      if (activeTab === 'check-mistakes') {
+        // Create a file URL
+        const fileUrl = URL.createObjectURL(e.target.files[0]);
+        
+        // Add the new file to document pages
+        setDocumentPages(prev => [...prev, fileUrl]);
+        setCurrentPage(documentPages.length); // Set to the newly added page
+        
+        // Simulate processing the file for mistakes
+        setLoading(true);
+        setTimeout(() => {
+          // Add some sample mistakes
+          setMistakes([
+            {id: Date.now(), line: "The data were collected from participants.", correction: "The data was collected from participants.", type: "Grammar"},
+            {id: Date.now() + 1, line: "According to Smith et al", correction: "According to Smith et al. (2021)", type: "Citation"},
+            {id: Date.now() + 2, line: "This results in a signficant change.", correction: "This results in a significant change.", type: "Spelling"},
+          ]);
+          setLoading(false);
+        }, 2000);
+      }
     }
   };
 
@@ -129,8 +190,10 @@ const AiStudy: React.FC = () => {
   const tabs = [
     { id: 'upload', name: 'Upload Homework', icon: AiOutlineUpload },
     { id: 'chat', name: 'AI Tutor Chat', icon: AiOutlineRobot },
+    { id: 'check-mistakes', name: 'Check Mistakes', icon: AiOutlineSearch },
     { id: 'study-planner', name: 'Study Planner', icon: FiCalendar },
     { id: 'flashcards', name: 'Flashcards', icon: FiBookOpen },
+    { id: 'citations', name: 'Citations', icon: FiEdit },
     { id: 'history', name: 'Study History', icon: AiOutlineHistory },
   ];
 
@@ -176,6 +239,27 @@ const AiStudy: React.FC = () => {
     );
   };
 
+  // For creating new flashcards
+  const [newFlashcard, setNewFlashcard] = useState({ question: '', answer: '' });
+
+  const handleAddFlashcard = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newFlashcard.question.trim() || !newFlashcard.answer.trim()) return;
+    
+    // Add the new flashcard
+    setFlashcards(prev => [
+      ...prev,
+      { ...newFlashcard, mastered: false }
+    ]);
+    
+    // Reset form
+    setNewFlashcard({ question: '', answer: '' });
+    
+    // Optionally, switch to the newly added card
+    setCurrentFlashcard(flashcards.length);
+  };
+
   // Scroll to top on initial load
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -206,14 +290,97 @@ const AiStudy: React.FC = () => {
             </p>
           </motion.div>
 
+          {/* Subject Selector */}
+          <motion.div
+            className="mb-8 max-w-6xl mx-auto"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            <div className="bg-gradient-to-r from-teal-700 to-teal-900 rounded-xl p-4 shadow-md">
+              <h3 className="text-white font-medium mb-3">Select Subject</h3>
+              
+              {/* Mobile subject selector */}
+              <div className="sm:hidden -mx-1 px-1">
+                <div className="flex overflow-x-auto pb-2 custom-hide-scrollbar">
+                  {['Mathematics', 'Science', 'English', 'History', 'Computer Science', 'Physics', 'Chemistry', 'Biology', 'Literature', 'Languages'].map((subject) => (
+                    <motion.button
+                      key={subject}
+                      className="bg-white/10 hover:bg-white/20 text-white rounded-lg py-2 px-3 text-sm backdrop-blur-sm transition-colors whitespace-nowrap mr-2 flex-shrink-0"
+                      whileHover={{ y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      {subject}
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Desktop subject selector */}
+              <div className="hidden sm:grid sm:grid-cols-3 md:grid-cols-5 gap-2">
+                {['Mathematics', 'Science', 'English', 'History', 'Computer Science', 'Physics', 'Chemistry', 'Biology', 'Literature', 'Languages'].map((subject) => (
+                  <motion.button
+                    key={subject}
+                    className="bg-white/10 hover:bg-white/20 text-white rounded-lg py-2 px-3 text-sm backdrop-blur-sm transition-colors"
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {subject}
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+
           <motion.div 
             className="bg-white rounded-2xl shadow-xl overflow-hidden max-w-6xl mx-auto"
             variants={containerVariants}
             initial="hidden"
             animate="visible"
           >
-            {/* Tabs */}
-            <div className="flex bg-gradient-to-r from-teal-700 to-teal-900 text-white">
+            {/* Tabs - Mobile Version */}
+            <div className="md:hidden">
+              <div className="flex justify-between items-center bg-gradient-to-r from-teal-700 to-teal-900 text-white p-4">
+                <span className="font-medium">{tabs.find(tab => tab.id === activeTab)?.name}</span>
+                <motion.button
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  whileTap={{ scale: 0.95 }}
+                  className="p-2"
+                >
+                  <IconComponent icon={FiMenu} className="h-6 w-6" />
+                </motion.button>
+              </div>
+              
+              {mobileMenuOpen && (
+                <motion.div 
+                  className="bg-white shadow-lg rounded-b-lg absolute z-50 w-full"
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {tabs.map((tab) => (
+                    <motion.button
+                      key={tab.id}
+                      className={`flex items-center py-3 px-4 w-full text-left ${
+                        activeTab === tab.id ? 'bg-teal-50 text-teal-700' : 'text-gray-700'
+                      }`}
+                      onClick={() => {
+                        setActiveTab(tab.id);
+                        setMobileMenuOpen(false);
+                      }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <IconComponent icon={tab.icon} className="h-5 w-5 mr-3" />
+                      <span className="font-medium">{tab.name}</span>
+                    </motion.button>
+                  ))}
+                </motion.div>
+              )}
+            </div>
+
+            {/* Tabs - Desktop Version */}
+            <div className="hidden md:flex bg-gradient-to-r from-teal-700 to-teal-900 text-white">
               {tabs.map((tab) => (
                 <motion.button
                   key={tab.id}
@@ -288,7 +455,7 @@ const AiStudy: React.FC = () => {
                           </div>
                         </div>
                         
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
                           <motion.button
                             type="button"
                             className="flex items-center justify-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50"
@@ -319,9 +486,31 @@ const AiStudy: React.FC = () => {
                     
                     {/* Results Section */}
                     <div>
-                      <h2 className="text-2xl font-semibold text-teal-800 mb-6">Solution</h2>
+                      <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-2xl font-semibold text-teal-800">Solution</h2>
+                        {answer && (
+                          <motion.button
+                            variants={buttonVariants}
+                            whileHover="hover"
+                            whileTap="tap"
+                            onClick={() => setFullScreenSolution(!fullScreenSolution)}
+                            className="flex items-center text-teal-600 font-medium"
+                          >
+                            <IconComponent 
+                              icon={AiOutlineFullscreen} 
+                              className="h-5 w-5 mr-1" 
+                            />
+                            {fullScreenSolution ? "Exit Fullscreen" : "Fullscreen"}
+                          </motion.button>
+                        )}
+                      </div>
+                      
                       <motion.div
-                        className="bg-gray-50 rounded-xl p-6 h-[450px] overflow-y-auto"
+                        className={`bg-gray-50 rounded-xl p-6 overflow-y-auto transition-all duration-300 ${
+                          fullScreenSolution ? 
+                            "fixed top-0 left-0 right-0 bottom-0 z-50 rounded-none" : 
+                            "h-[450px]"
+                        }`}
                         variants={itemVariants}
                         animate={answer ? { boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)" } : {}}
                       >
@@ -339,7 +528,23 @@ const AiStudy: React.FC = () => {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             transition={{ duration: 0.5 }}
+                            className="relative"
                           >
+                            {fullScreenSolution && (
+                              <div className="sticky top-2 right-2 flex justify-end mb-4">
+                                <motion.button
+                                  variants={buttonVariants}
+                                  whileHover="hover"
+                                  whileTap="tap"
+                                  onClick={() => setFullScreenSolution(false)}
+                                  className="bg-white text-gray-700 p-2 rounded-full shadow-md"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </motion.button>
+                              </div>
+                            )}
                             <div className="prose prose-teal max-w-none">
                               <p>{answer}</p>
                             </div>
@@ -424,7 +629,7 @@ const AiStudy: React.FC = () => {
                       className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm"
                     >
                       <h3 className="text-lg font-medium text-teal-800 mb-4 flex items-center">
-                        <FiCalendar className="mr-2" /> Add New Study Task
+                        <IconComponent icon={FiCalendar} className="mr-2" /> Add New Study Task
                       </h3>
                       
                       <form onSubmit={handleAddTask}>
@@ -484,7 +689,7 @@ const AiStudy: React.FC = () => {
                       className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm lg:col-span-2"
                     >
                       <h3 className="text-lg font-medium text-teal-800 mb-4 flex items-center">
-                        <FiClock className="mr-2" /> Your Study Schedule
+                        <IconComponent icon={FiClock} className="mr-2" /> Your Study Schedule
                       </h3>
                       
                       {studyTasks.length > 0 ? (
@@ -508,7 +713,7 @@ const AiStudy: React.FC = () => {
                                   onClick={() => handleTaskToggle(index)}
                                 >
                                   {task.completed && (
-                                    <FiCheck className="text-white w-full h-full p-0.5" />
+                                    <IconComponent icon={FiCheck} className="text-white w-full h-full p-0.5" />
                                   )}
                                 </motion.button>
                                 <div>
@@ -520,7 +725,7 @@ const AiStudy: React.FC = () => {
                                       {task.subject}
                                     </span>
                                     <span className="flex items-center">
-                                      <FiCalendar className="h-3 w-3 mr-1" />
+                                      <IconComponent icon={FiCalendar} className="h-3 w-3 mr-1" />
                                       {new Date(task.date).toLocaleDateString()}
                                     </span>
                                   </div>
@@ -544,7 +749,7 @@ const AiStudy: React.FC = () => {
                         </div>
                       ) : (
                         <div className="text-center py-8 text-gray-500">
-                          <FiCalendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                          <IconComponent icon={FiCalendar} className="h-12 w-12 mx-auto mb-3 opacity-50" />
                           <p>Your study tasks will appear here once you add them.</p>
                         </div>
                       )}
@@ -556,7 +761,7 @@ const AiStudy: React.FC = () => {
                       className="bg-gradient-to-br from-teal-600 to-teal-700 rounded-xl p-6 shadow-md text-white col-span-full"
                     >
                       <h3 className="text-lg font-medium mb-4 flex items-center">
-                        <AiOutlineBulb className="mr-2" /> Smart Study Recommendations
+                        <IconComponent icon={AiOutlineBulb} className="mr-2" /> Smart Study Recommendations
                       </h3>
                       
                       <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
@@ -564,19 +769,19 @@ const AiStudy: React.FC = () => {
                         <ul className="space-y-2">
                           <li className="flex items-start">
                             <span className="bg-white text-teal-800 rounded-full p-1 mr-2 flex-shrink-0">
-                              <FiCheck className="h-3 w-3" />
+                              <IconComponent icon={FiCheck} className="h-3 w-3" />
                             </span>
                             <span>Start with Mathematics homework first, as it's due earliest.</span>
                           </li>
                           <li className="flex items-start">
                             <span className="bg-white text-teal-800 rounded-full p-1 mr-2 flex-shrink-0">
-                              <FiCheck className="h-3 w-3" />
+                              <IconComponent icon={FiCheck} className="h-3 w-3" />
                             </span>
                             <span>Block 2-hour focus sessions with 15-minute breaks for better retention.</span>
                           </li>
                           <li className="flex items-start">
                             <span className="bg-white text-teal-800 rounded-full p-1 mr-2 flex-shrink-0">
-                              <FiCheck className="h-3 w-3" />
+                              <IconComponent icon={FiCheck} className="h-3 w-3" />
                             </span>
                             <span>Create flashcards for biology terms to prepare for your upcoming test.</span>
                           </li>
@@ -594,14 +799,18 @@ const AiStudy: React.FC = () => {
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Flashcard Display */}
                     <div className="lg:col-span-2">
-                      <motion.div 
-                        className="bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden h-72 relative"
-                        initial={{ rotateY: 0 }}
-                        animate={{ rotateY: showAnswer ? 180 : 0 }}
-                        transition={{ duration: 0.6 }}
-                      >
+                      <div className="bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden h-72 relative perspective">
                         {/* Question Side */}
-                        <div className={`absolute w-full h-full p-8 backface-hidden ${showAnswer ? 'hidden' : 'block'}`}>
+                        <motion.div
+                          className="absolute w-full h-full p-8 bg-white"
+                          initial={false}
+                          animate={{
+                            rotateY: showAnswer ? 180 : 0,
+                            opacity: showAnswer ? 0 : 1,
+                            zIndex: showAnswer ? 0 : 1,
+                          }}
+                          transition={{ duration: 0.6 }}
+                        >
                           <div className="flex justify-between mb-2">
                             <span className="text-sm text-gray-500">Card {currentFlashcard + 1} of {flashcards.length}</span>
                             <span className={`text-xs px-2 py-0.5 rounded-full ${
@@ -628,10 +837,19 @@ const AiStudy: React.FC = () => {
                               Show Answer
                             </motion.button>
                           </div>
-                        </div>
+                        </motion.div>
                         
                         {/* Answer Side */}
-                        <div className={`absolute w-full h-full p-8 backface-hidden transform rotate-y-180 ${showAnswer ? 'block' : 'hidden'}`}>
+                        <motion.div
+                          className="absolute w-full h-full p-8 bg-white"
+                          initial={false}
+                          animate={{
+                            rotateY: showAnswer ? 0 : -180,
+                            opacity: showAnswer ? 1 : 0,
+                            zIndex: showAnswer ? 1 : 0,
+                          }}
+                          transition={{ duration: 0.6 }}
+                        >
                           <div className="flex justify-between mb-2">
                             <span className="text-sm text-gray-500">Answer</span>
                             <motion.button
@@ -666,8 +884,8 @@ const AiStudy: React.FC = () => {
                               Back to Question
                             </motion.button>
                           </div>
-                        </div>
-                      </motion.div>
+                        </motion.div>
+                      </div>
                       
                       {/* Navigation Controls */}
                       <div className="flex justify-between mt-4">
@@ -705,14 +923,14 @@ const AiStudy: React.FC = () => {
                       className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm"
                     >
                       <h3 className="text-lg font-medium text-teal-800 mb-4 flex items-center">
-                        <FiBookmark className="mr-2" /> Create Flashcards
+                        <IconComponent icon={FiBookmark} className="mr-2" /> Create Flashcards
                       </h3>
                       
                       <div className="mb-4">
                         <button 
                           className="w-full py-3 bg-teal-600 text-white rounded-lg flex items-center justify-center font-medium"
                         >
-                          <AiOutlineBulb className="mr-2" />
+                          <IconComponent icon={AiOutlineBulb} className="mr-2" />
                           Generate from Notes
                         </button>
                       </div>
@@ -724,7 +942,7 @@ const AiStudy: React.FC = () => {
                         <span className="relative bg-white px-2 text-sm text-gray-500">or create manually</span>
                       </div>
                       
-                      <form>
+                      <form onSubmit={handleAddFlashcard}>
                         <div className="mb-3">
                           <label className="block text-gray-700 mb-1 text-sm font-medium">
                             Question
@@ -732,6 +950,8 @@ const AiStudy: React.FC = () => {
                           <textarea
                             className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none h-20"
                             placeholder="Enter your question here"
+                            value={newFlashcard.question}
+                            onChange={(e) => setNewFlashcard({...newFlashcard, question: e.target.value})}
                           />
                         </div>
                         
@@ -742,10 +962,13 @@ const AiStudy: React.FC = () => {
                           <textarea
                             className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none h-20"
                             placeholder="Enter the answer here"
+                            value={newFlashcard.answer}
+                            onChange={(e) => setNewFlashcard({...newFlashcard, answer: e.target.value})}
                           />
                         </div>
                         
                         <motion.button
+                          type="submit"
                           variants={buttonVariants}
                           whileHover="hover"
                           whileTap="tap"
@@ -756,6 +979,14 @@ const AiStudy: React.FC = () => {
                       </form>
                     </motion.div>
                   </div>
+                </motion.div>
+              )}
+
+              {activeTab === 'citations' && (
+                <motion.div variants={containerVariants}>
+                  <h2 className="text-2xl font-semibold text-teal-800 mb-6">Citation Generator</h2>
+                  
+                  <CitationGenerator />
                 </motion.div>
               )}
 
@@ -788,12 +1019,180 @@ const AiStudy: React.FC = () => {
                   )}
                 </motion.div>
               )}
+
+              {activeTab === 'check-mistakes' && (
+                <motion.div variants={containerVariants}>
+                  <h2 className="text-2xl font-semibold text-teal-800 mb-6">Check Mistakes</h2>
+                  
+                  {documentPages.length > 0 ? (
+                    <div>
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-4">
+                        <div className="lg:col-span-2">
+                          <div className="flex justify-between items-center mb-4">
+                            <div className="flex space-x-2">
+                              <button 
+                                className="px-3 py-1 bg-gray-200 rounded-md disabled:opacity-50"
+                                disabled={currentPage === 0}
+                                onClick={() => setCurrentPage(prev => prev - 1)}
+                              >
+                                Previous
+                              </button>
+                              <button 
+                                className="px-3 py-1 bg-gray-200 rounded-md disabled:opacity-50"
+                                disabled={currentPage === documentPages.length - 1}
+                                onClick={() => setCurrentPage(prev => prev + 1)}
+                              >
+                                Next
+                              </button>
+                            </div>
+                            <div className="text-gray-600">
+                              Page {currentPage + 1} of {documentPages.length}
+                            </div>
+                            <motion.button
+                              variants={buttonVariants}
+                              whileHover="hover"
+                              whileTap="tap"
+                              onClick={() => setFullScreenDocument(!fullScreenDocument)}
+                              className="flex items-center text-teal-600"
+                            >
+                              <IconComponent icon={AiOutlineFullscreen} className="h-5 w-5 mr-1" />
+                              <span className="hidden sm:inline">Fullscreen</span>
+                            </motion.button>
+                          </div>
+                          
+                          <div className={`relative ${
+                            fullScreenDocument ? 
+                              "fixed top-0 left-0 right-0 bottom-0 z-50 bg-gray-900 flex items-center justify-center p-4" : 
+                              "aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden"
+                          }`}>
+                            {fullScreenDocument && (
+                              <motion.button
+                                variants={buttonVariants}
+                                whileHover="hover"
+                                whileTap="tap"
+                                onClick={() => setFullScreenDocument(false)}
+                                className="absolute top-4 right-4 bg-white p-2 rounded-full shadow-md z-10"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </motion.button>
+                            )}
+                            <img 
+                              src={documentPages[currentPage]} 
+                              alt={`Document page ${currentPage + 1}`}
+                              className={`${fullScreenDocument ? 'max-h-full max-w-full object-contain' : 'w-full h-full object-cover'}`}
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="lg:col-span-1">
+                          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm h-full">
+                            <h3 className="text-lg font-medium text-teal-800 mb-4 flex items-center">
+                              <IconComponent icon={AiOutlineSearch} className="mr-2" /> 
+                              Identified Mistakes
+                            </h3>
+                            
+                            {mistakes.length > 0 ? (
+                              <div className="space-y-4 overflow-y-auto" style={{ maxHeight: "500px" }}>
+                                {mistakes.map((mistake) => (
+                                  <motion.div
+                                    key={mistake.id}
+                                    variants={itemVariants}
+                                    className="border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow"
+                                    whileHover={{ y: -2 }}
+                                  >
+                                    <div className="flex justify-between items-start">
+                                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                                        mistake.type === 'Grammar' ? 'bg-red-100 text-red-800' :
+                                        mistake.type === 'Spelling' ? 'bg-orange-100 text-orange-800' :
+                                        'bg-blue-100 text-blue-800'
+                                      }`}>
+                                        {mistake.type}
+                                      </span>
+                                    </div>
+                                    <div className="mt-2">
+                                      <p className="text-sm line-through text-gray-500">{mistake.line}</p>
+                                      <p className="text-sm font-medium text-green-700 mt-1">{mistake.correction}</p>
+                                    </div>
+                                  </motion.div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+                                <IconComponent icon={AiOutlineSearch} className="h-12 w-12 mb-3 opacity-50" />
+                                <p className="text-center">No mistakes found on this page.</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-gray-50 p-4 rounded-lg mt-6">
+                        <h3 className="text-lg font-medium text-teal-800 mb-3">Upload Document to Check</h3>
+                        <div className="flex flex-wrap gap-4">
+                          <motion.button
+                            variants={buttonVariants}
+                            whileHover="hover"
+                            whileTap="tap"
+                            className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg"
+                            onClick={() => fileInputRef.current?.click()}
+                          >
+                            <IconComponent icon={AiOutlineUpload} className="mr-2" />
+                            Upload New Document
+                          </motion.button>
+                          <motion.button
+                            variants={buttonVariants}
+                            whileHover="hover"
+                            whileTap="tap"
+                            className="flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg"
+                          >
+                            <IconComponent icon={AiOutlineCamera} className="mr-2" />
+                            Take Photo
+                          </motion.button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-16 text-gray-500">
+                      <div className="bg-gray-100 rounded-full p-6 mb-4">
+                        <IconComponent icon={AiOutlineUpload} className="h-12 w-12 opacity-70" />
+                      </div>
+                      <h3 className="text-xl font-medium text-gray-700 mb-2">No Documents Uploaded</h3>
+                      <p className="text-gray-500 mb-6 text-center max-w-md">
+                        Upload a document or take a photo to check for mistakes, grammar issues, and suggestions.
+                      </p>
+                      <div className="flex flex-wrap gap-4 justify-center">
+                        <motion.button
+                          variants={buttonVariants}
+                          whileHover="hover"
+                          whileTap="tap"
+                          className="flex items-center px-6 py-3 bg-teal-600 text-white rounded-lg shadow-md"
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          <IconComponent icon={AiOutlineUpload} className="mr-2" />
+                          Upload Document
+                        </motion.button>
+                        <motion.button
+                          variants={buttonVariants}
+                          whileHover="hover"
+                          whileTap="tap"
+                          className="flex items-center px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg"
+                        >
+                          <IconComponent icon={AiOutlineCamera} className="mr-2" />
+                          Take Photo
+                        </motion.button>
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              )}
             </div>
           </motion.div>
 
           {/* Features Section */}
           <motion.div
-            className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16"
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mt-16"
             variants={containerVariants}
             initial="hidden"
             animate="visible"
@@ -828,12 +1227,26 @@ const AiStudy: React.FC = () => {
               whileHover={{ y: -5, boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)" }}
             >
               <div className="bg-teal-100 w-12 h-12 rounded-full flex items-center justify-center mb-4">
-                <IconComponent icon={FiCalendar} className="h-6 w-6 text-teal-600" />
+                <IconComponent icon={AiOutlineSearch} className="h-6 w-6 text-teal-600" />
               </div>
-              <h3 className="text-xl font-semibold text-teal-800 mb-2">Study Planner</h3>
-              <p className="text-gray-600">Organize and manage your study schedule effectively.</p>
+              <h3 className="text-xl font-semibold text-teal-800 mb-2">Check Mistakes</h3>
+              <p className="text-gray-600">Upload papers and get instant feedback on grammar, spelling, and content errors.</p>
             </motion.div>
           </motion.div>
+
+          {/* Floating Action Button */}
+          <motion.button
+            className="fixed bottom-5 right-5 md:right-20 z-40 bg-gradient-to-r from-orange-500 to-orange-600 text-white p-3 md:p-4 rounded-full shadow-lg flex items-center justify-center"
+            whileHover={{ scale: 1.1, boxShadow: "0 8px 20px rgba(0, 0, 0, 0.2)" }}
+            whileTap={{ scale: 0.95 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1 }}
+            onClick={() => setActiveTab('upload')}
+          >
+            <IconComponent icon={AiOutlineBulb} className="h-5 w-5 md:h-6 md:w-6" />
+            <span className="ml-2 font-medium hidden md:inline">Quick Help</span>
+          </motion.button>
         </div>
       </motion.div>
       <Footer />

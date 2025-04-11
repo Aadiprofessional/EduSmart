@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
-import { AiOutlineHome, AiOutlineDatabase, AiOutlineTrophy, AiOutlineRobot, AiOutlineBook, AiOutlineRead, AiOutlineUser, AiOutlineBulb } from 'react-icons/ai';
+import { AiOutlineHome, AiOutlineDatabase, AiOutlineTrophy, AiOutlineRobot, AiOutlineBook, AiOutlineRead, AiOutlineUser, AiOutlineBulb, AiOutlineMenu, AiOutlineClose } from 'react-icons/ai';
 import IconComponent from '../ui/IconComponent';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../utils/AuthContext';
@@ -11,6 +11,7 @@ const Header: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
@@ -100,9 +101,37 @@ const Header: React.FC = () => {
     }
   };
 
-  // Split navigation for mobile rows - 4 items in first row, 3 in second
-  const mobileFirstRow = navigation.slice(0, 4);
-  const mobileSecondRow = navigation.slice(4);
+  const mobileMenuVariants = {
+    hidden: { 
+      opacity: 0,
+      height: 0,
+      overflow: 'hidden'
+    },
+    visible: { 
+      opacity: 1,
+      height: 'auto',
+      transition: { 
+        duration: 0.4,
+        staggerChildren: 0.05,
+        when: "beforeChildren"
+      }
+    }
+  };
+
+  const expandButtonVariants = {
+    initial: { rotate: 0 },
+    expanded: { rotate: 180 }
+  };
+
+  // Items to show in the single row (first 4)
+  const visibleItems = navigation.slice(0, 4);
+  // Items to show when expanded
+  const expandedItems = navigation.slice(4);
+
+  // Function to toggle expanded state
+  const toggleExpand = () => {
+    setIsExpanded(!isExpanded);
+  };
 
   return (
     <motion.header 
@@ -112,24 +141,35 @@ const Header: React.FC = () => {
       className="bg-white shadow-sm"
     >
       <div className="container mx-auto px-0">
-        <div className="flex justify-between items-center ">
-          <div className="flex items-center">
-            <motion.div 
-              variants={logoVariants}
-              whileHover="hover"
-            >
-              <Link to="/" className="flex items-center">
-                <span className="text-2xl font-bold text-teal-800 mr-2 ml-2">Edu<span className="text-orange-500">Smart</span></span>
-                <div className="w-40 h-12 mr-2 overflow-hidden" style={{ aspectRatio: '1/4' }}>
-                  <img 
-                    alt="EduSmart Logo" 
-                    src={eduLogo} 
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-              </Link>
-            </motion.div>
-          </div>
+        {/* Header with logo and navigation */}
+        <div className="flex justify-between items-center py-2">
+          {/* Logo section - centered on mobile */}
+          <div className={`flex items-start ${isMobile ? 'ml-2' : ''}`}>
+  {/* Only apply animation variants on non-mobile */}
+  <div className={isMobile ? '' : 'motion-safe:hover:scale-105 transition-transform duration-200'}>
+    <Link to="/" className="flex items-center">
+      {/* Conditional text based on screen size */}
+      {isMobile ? (
+        <span className="text-2xl font-bold text-teal-800 mr-2 ml-2">
+        E<span className="text-orange-500">S</span>
+      </span>
+      ) : (
+        <span className="text-2xl font-bold text-teal-800 mr-2 ml-2">
+          Edu<span className="text-orange-500">Smart</span>
+        </span>
+      )}
+      
+      <div className="w-40 h-12 mr-2 overflow-hidden" style={{ aspectRatio: '1/4' }}>
+        <img 
+          alt="EduSmart Logo" 
+          src={eduLogo} 
+          className="w-full h-full object-contain"
+        />
+      </div>
+    </Link>
+  </div>
+</div>
+
           
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8">
@@ -153,6 +193,7 @@ const Header: React.FC = () => {
             ))}
           </nav>
           
+          {/* Desktop auth buttons */}
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
               <div className="relative">
@@ -230,17 +271,17 @@ const Header: React.FC = () => {
             )}
           </div>
           
-          {/* User menu button for mobile */}
-          <div className="md:hidden flex items-center">
-            {user && (
+          {/* Mobile auth buttons */}
+          <div className="md:hidden flex items-center absolute right-4">
+            {user ? (
               <div className="relative">
                 <motion.button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center text-sm font-medium text-gray-700 focus:outline-none ml-2"
+                  className="flex items-center text-sm font-medium text-gray-700 focus:outline-none"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <IconComponent icon={AiOutlineUser} className="h-6 w-6 mr-4" />
+                  <IconComponent icon={AiOutlineUser} className="h-6 w-6" />
                 </motion.button>
                 
                 <AnimatePresence>
@@ -276,127 +317,116 @@ const Header: React.FC = () => {
                   )}
                 </AnimatePresence>
               </div>
+            ) : (
+              <div className="flex space-x-2">
+                <Link
+                  to="/login"
+                  className="text-xs font-medium text-gray-700 border border-gray-300 px-2 py-1 rounded"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/signup"
+                  className="text-xs font-medium bg-orange-500 text-white px-2 py-1 rounded"
+                >
+                  Sign Up
+                </Link>
+              </div>
             )}
           </div>
         </div>
         
-        {/* Mobile Navigation with Circles and Icons */}
-        <div className="md:hidden bg-gradient-to-r from-teal-700 to-teal-900 text-white">
-          {/* First row of navigation items - 4 items */}
-          <div className="grid grid-cols-4 gap-3 py-3 px-2 border-t border-gray-200">
-            {mobileFirstRow.map((item, index) => (
-              <motion.div
-                key={item.name}
-                className="flex flex-col items-center"
-                variants={getAnimationVariant()}
-                initial="hidden"
-                animate="visible"
-                transition={{ duration: 0.3, delay: index * 0.1 }}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <Link
-                  to={item.href}
+        {/* New Mobile Navigation with Expandable Menu */}
+        <div className="md:hidden bg-gradient-to-r from-teal-700 to-teal-900 text-white relative">
+          {/* Single row of navigation items - always visible */}
+          <div className="flex justify-between items-center py-3 px-2">
+            <div className="flex justify-between w-full px-1">
+              {visibleItems.map((item, index) => (
+                <div
+                  key={item.name}
                   className="flex flex-col items-center"
                 >
-                  <div className={`flex items-center justify-center w-12 h-12 rounded-full shadow-md mb-1 bg-white ${
-                    isActive(item.href)
-                      ? 'text-orange-500 border-2 border-orange-500'
-                      : 'text-gray-700 border border-gray-300'
-                  }`}>
-                    <IconComponent icon={item.icon} className="h-6 w-6" />
-                  </div>
-                  <span className={`text-xs font-medium mt-1 ${
-                    isActive(item.href)
-                      ? 'text-orange-300'
-                      : 'text-white'
-                  }`}>
-                    {item.name}
-                  </span>
-                </Link>
-              </motion.div>
-            ))}
+                  <Link
+                    to={item.href}
+                    className="flex flex-col items-center"
+                  >
+                    <div className={`flex items-center justify-center w-12 h-12 rounded-full shadow-md mb-1 bg-white ${
+                      isActive(item.href)
+                        ? 'text-orange-500 border-2 border-orange-500'
+                        : 'text-gray-700 border border-gray-300'
+                    }`}>
+                      <IconComponent icon={item.icon} className="h-6 w-6" />
+                    </div>
+                    <span className={`text-xs font-medium mt-1 ${
+                      isActive(item.href)
+                        ? 'text-orange-300'
+                        : 'text-white'
+                    }`}>
+                      {item.name}
+                    </span>
+                  </Link>
+                </div>
+              ))}
+              
+              {/* Expand button */}
+              <div className="flex flex-col items-center">
+                <button
+                  onClick={toggleExpand}
+                  className="bg-orange-500 w-12 h-12 rounded-full flex items-center justify-center shadow-lg mb-1"
+                  style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease' }}
+                >
+                  <IconComponent 
+                    icon={isExpanded ? AiOutlineClose : AiOutlineMenu} 
+                    className="h-6 w-6 text-white" 
+                  />
+                </button>
+                <span className="text-xs font-medium mt-1 text-white">More</span>
+              </div>
+            </div>
           </div>
           
-          {/* Second row - remaining items in a row with equal spacing */}
-          <div className="grid grid-cols-4 gap-3 py-3 px-2 border-t border-gray-200">
-            {mobileSecondRow.map((item, index) => (
+          {/* Expandable section */}
+          <AnimatePresence>
+            {isExpanded && (
               <motion.div
-                key={item.name}
-                className="flex flex-col items-center"
-                variants={getAnimationVariant()}
+                className="border-t border-teal-600"
+                variants={mobileMenuVariants}
                 initial="hidden"
                 animate="visible"
-                transition={{ duration: 0.3, delay: 0.4 + (index * 0.1) }}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
+                exit="hidden"
               >
-                <Link
-                  to={item.href}
-                  className="flex flex-col items-center"
-                >
-                  <div className={`flex items-center justify-center w-12 h-12 rounded-full shadow-md mb-1 bg-white ${
-                    isActive(item.href)
-                      ? 'text-orange-500 border-2 border-orange-500'
-                      : 'text-gray-700 border border-gray-300'
-                  }`}>
-                    <IconComponent icon={item.icon} className="h-6 w-6" />
-                  </div>
-                  <span className={`text-xs font-medium mt-1 ${
-                    isActive(item.href)
-                      ? 'text-orange-300'
-                      : 'text-white'
-                  }`}>
-                    {item.name}
-                  </span>
-                </Link>
+                <div className="grid grid-cols-3 gap-4 py-4 px-2">
+                  {expandedItems.map((item, index) => (
+                    <div
+                      key={item.name}
+                      className="flex flex-col items-center"
+                    >
+                      <Link
+                        to={item.href}
+                        className="flex flex-col items-center"
+                        onClick={() => setIsExpanded(false)}
+                      >
+                        <div className={`flex items-center justify-center w-12 h-12 rounded-full shadow-md mb-1 bg-white ${
+                          isActive(item.href)
+                            ? 'text-orange-500 border-2 border-orange-500'
+                            : 'text-gray-700 border border-gray-300'
+                        }`}>
+                          <IconComponent icon={item.icon} className="h-6 w-6" />
+                        </div>
+                        <span className={`text-xs font-medium mt-1 ${
+                          isActive(item.href)
+                            ? 'text-orange-300'
+                            : 'text-white'
+                        }`}>
+                          {item.name}
+                        </span>
+                      </Link>
+                    </div>
+                  ))}
+                </div>
               </motion.div>
-            ))}
-            
-            {/* Add login/signup in the same row if not logged in */}
-            {!user && (
-              <>
-                <motion.div
-                  className="flex flex-col items-center"
-                  variants={getAnimationVariant()}
-                  initial="hidden"
-                  animate="visible"
-                  transition={{ duration: 0.3, delay: 0.6 }}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  <Link
-                    to="/login"
-                    className="flex flex-col items-center"
-                  >
-                    <div className="w-12 h-12 rounded-full shadow-md flex items-center justify-center mb-1 bg-white border border-gray-300">
-                      <IconComponent icon={AiOutlineUser} className="h-6 w-6 text-gray-700" />
-                    </div>
-                    <span className="text-xs font-medium mt-1 text-white">Login</span>
-                  </Link>
-                </motion.div>
-                <motion.div
-                  className="flex flex-col items-center"
-                  variants={getAnimationVariant()}
-                  initial="hidden"
-                  animate="visible"
-                  transition={{ duration: 0.3, delay: 0.7 }}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  <Link
-                    to="/signup"
-                    className="flex flex-col items-center"
-                  >
-                    <div className="w-12 h-12 rounded-full bg-orange-500 text-white flex items-center justify-center mb-1 shadow-md">
-                      <IconComponent icon={AiOutlineUser} className="h-6 w-6" />
-                    </div>
-                    <span className="text-xs font-medium mt-1 text-orange-300">Sign Up</span>
-                  </Link>
-                </motion.div>
-              </>
             )}
-          </div>
+          </AnimatePresence>
         </div>
       </div>
     </motion.header>
