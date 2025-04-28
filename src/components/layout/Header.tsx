@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
-import { AiOutlineHome, AiOutlineDatabase, AiOutlineTrophy, AiOutlineRobot, AiOutlineBook, AiOutlineRead, AiOutlineUser, AiOutlineBulb, AiOutlineMenu, AiOutlineClose } from 'react-icons/ai';
+import { AiOutlineHome, AiOutlineDatabase, AiOutlineTrophy, AiOutlineRobot, AiOutlineBook, AiOutlineRead, AiOutlineUser, AiOutlineBulb, AiOutlineMenu, AiOutlineClose, AiOutlineEdit } from 'react-icons/ai';
 import IconComponent from '../ui/IconComponent';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../utils/AuthContext';
@@ -22,6 +22,7 @@ const Header: React.FC = () => {
     { name: 'Success Stories', href: '/case-studies', icon: AiOutlineTrophy },
     { name: 'AI Courses', href: '/ai-courses', icon: AiOutlineRobot },
     { name: 'AI Study', href: '/ai-study', icon: AiOutlineBulb },
+    { name: 'Content Writer', href: '/content-writer', icon: AiOutlineEdit },
     { name: 'Resources', href: '/resources', icon: AiOutlineBook },
     { name: 'Blog', href: '/blog', icon: AiOutlineRead },
   ];
@@ -134,12 +135,7 @@ const Header: React.FC = () => {
   };
 
   return (
-    <motion.header 
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.5, type: "spring", stiffness: 100 }}
-      className="bg-white shadow-sm"
-    >
+    <header className="bg-white shadow-sm">
       <div className="container mx-auto px-0">
         {/* Header with logo and navigation */}
         <div className="flex justify-between items-center py-2">
@@ -176,8 +172,8 @@ const Header: React.FC = () => {
             {navigation.map((item) => (
               <motion.div
                 key={item.name}
-                variants={navItemVariants}
-                whileHover="hover"
+                animate={isActive(item.href) ? { y: [0, -2, 0], transition: { duration: 0.5 } } : {}}
+                whileHover={{ y: -2, color: '#f97316', transition: { duration: 0.2 } }}
               >
                 <Link
                   to={item.href}
@@ -245,8 +241,8 @@ const Header: React.FC = () => {
             ) : (
               <>
                 <motion.div
-                  variants={navItemVariants}
-                  whileHover="hover"
+                  animate={isActive('/login') ? { y: [0, -2, 0], transition: { duration: 0.5 } } : {}}
+                  whileHover={{ y: -2, transition: { duration: 0.2 } }}
                 >
                   <Link
                     to="/login"
@@ -256,9 +252,9 @@ const Header: React.FC = () => {
                   </Link>
                 </motion.div>
                 <motion.div
-                  variants={buttonVariants}
-                  whileHover="hover"
-                  whileTap="tap"
+                  animate={isActive('/signup') ? { scale: [1, 1.05, 1], transition: { duration: 0.5 } } : {}}
+                  whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
+                  whileTap={{ scale: 0.95 }}
                 >
                   <Link
                     to="/signup"
@@ -350,13 +346,17 @@ const Header: React.FC = () => {
                     to={item.href}
                     className="flex flex-col items-center"
                   >
-                    <div className={`flex items-center justify-center w-12 h-12 rounded-full shadow-md mb-1 bg-white ${
-                      isActive(item.href)
-                        ? 'text-orange-500 border-2 border-orange-500'
-                        : 'text-gray-700 border border-gray-300'
-                    }`}>
+                    <motion.div 
+                      className={`flex items-center justify-center w-12 h-12 rounded-full shadow-md mb-1 bg-white ${
+                        isActive(item.href)
+                          ? 'text-orange-500 border-2 border-orange-500'
+                          : 'text-gray-700 border border-gray-300'
+                      }`}
+                      animate={isActive(item.href) ? { scale: [1, 1.1, 1] } : {}}
+                      transition={isActive(item.href) ? { duration: 0.5 } : {}}
+                    >
                       <IconComponent icon={item.icon} className="h-6 w-6" />
-                    </div>
+                    </motion.div>
                     <span className={`text-xs font-medium mt-1 ${
                       isActive(item.href)
                         ? 'text-orange-300'
@@ -390,12 +390,12 @@ const Header: React.FC = () => {
             {isExpanded && (
               <motion.div
                 className="border-t border-teal-600"
-                variants={mobileMenuVariants}
-                initial="hidden"
-                animate="visible"
-                exit="hidden"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3 }}
               >
-                <div className="grid grid-cols-3 gap-4 py-4 px-2">
+                <div className="grid grid-cols-4 gap-3 py-4 px-2">
                   {expandedItems.map((item, index) => (
                     <div
                       key={item.name}
@@ -406,13 +406,17 @@ const Header: React.FC = () => {
                         className="flex flex-col items-center"
                         onClick={() => setIsExpanded(false)}
                       >
-                        <div className={`flex items-center justify-center w-12 h-12 rounded-full shadow-md mb-1 bg-white ${
-                          isActive(item.href)
-                            ? 'text-orange-500 border-2 border-orange-500'
-                            : 'text-gray-700 border border-gray-300'
-                        }`}>
+                        <motion.div 
+                          className={`flex items-center justify-center w-12 h-12 rounded-full shadow-md mb-1 bg-white ${
+                            isActive(item.href)
+                              ? 'text-orange-500 border-2 border-orange-500'
+                              : 'text-gray-700 border border-gray-300'
+                          }`}
+                          animate={isActive(item.href) ? { scale: [1, 1.1, 1] } : {}}
+                          transition={isActive(item.href) ? { duration: 0.5 } : {}}
+                        >
                           <IconComponent icon={item.icon} className="h-6 w-6" />
-                        </div>
+                        </motion.div>
                         <span className={`text-xs font-medium mt-1 ${
                           isActive(item.href)
                             ? 'text-orange-300'
@@ -429,7 +433,7 @@ const Header: React.FC = () => {
           </AnimatePresence>
         </div>
       </div>
-    </motion.header>
+    </header>
   );
 };
 
