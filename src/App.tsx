@@ -18,7 +18,6 @@ import ApplicationTracker from './pages/ApplicationTracker';
 import Signup from './pages/Signup';
 import ChatBotPage from './pages/ChatBot';
 import AiStudy from './pages/AiStudy';
-import ContentWriter from './pages/ContentWriter';
 
 // Components
 import ChatBot from './components/ui/ChatBot';
@@ -43,7 +42,6 @@ function App() {
         <Route path="/case-studies" element={<CaseStudies />} />
         <Route path="/ai-courses" element={<AICourses />} />
         <Route path="/ai-study" element={<AiStudy />} />
-        <Route path="/content-writer" element={<ContentWriter />} />
         <Route path="/resources" element={<Resources />} />
         <Route path="/blog" element={<Blog />} />
         <Route path="/blog/:id" element={<Blog />} />

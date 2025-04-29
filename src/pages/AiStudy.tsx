@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { AiOutlineUpload, AiOutlineBulb, AiOutlineRobot, AiOutlineHistory, AiOutlineFileText, AiOutlineCamera, AiOutlineFullscreen, AiOutlineSearch } from 'react-icons/ai';
+import { AiOutlineUpload, AiOutlineBulb, AiOutlineRobot, AiOutlineHistory, AiOutlineFileText, AiOutlineCamera, AiOutlineFullscreen, AiOutlineSearch, AiOutlineEdit } from 'react-icons/ai';
 import { FiBookOpen, FiClock, FiCalendar, FiCheck, FiBookmark, FiEdit, FiMenu } from 'react-icons/fi';
 import IconComponent from '../components/ui/IconComponent';
 import { useAuth } from '../utils/AuthContext';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import CitationGenerator from '../components/ui/CitationGenerator';
+import ContentWriterComponent from '../components/ui/ContentWriterComponent';
 
 const AiStudy: React.FC = () => {
   const { user } = useAuth();
@@ -193,6 +194,7 @@ const AiStudy: React.FC = () => {
     { id: 'check-mistakes', name: 'Check Mistakes', icon: AiOutlineSearch },
     { id: 'study-planner', name: 'Study Planner', icon: FiCalendar },
     { id: 'flashcards', name: 'Flashcards', icon: FiBookOpen },
+    { id: 'content-writer', name: 'Content Writer', icon: AiOutlineEdit },
     { id: 'citations', name: 'Citations', icon: FiEdit },
     { id: 'history', name: 'Study History', icon: AiOutlineHistory },
   ];
@@ -276,7 +278,7 @@ const AiStudy: React.FC = () => {
       >
         <div className="container mx-auto px-4">
           <motion.div
-            className="text-center mb-12"
+            className="text-center mb-8"
             initial={{ y: -50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.5 }}
@@ -288,48 +290,17 @@ const AiStudy: React.FC = () => {
               Get instant help with your homework, assignments, and learning materials. 
               Our AI assistant provides step-by-step solutions and explanations.
             </p>
-          </motion.div>
-
-          {/* Subject Selector */}
-          <motion.div
-            className="mb-8 max-w-6xl mx-auto"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            <div className="bg-gradient-to-r from-teal-700 to-teal-900 rounded-xl p-4 shadow-md">
-              <h3 className="text-white font-medium mb-3">Select Subject</h3>
-              
-              {/* Mobile subject selector */}
-              <div className="sm:hidden -mx-1 px-1">
-                <div className="flex overflow-x-auto pb-2 custom-hide-scrollbar">
-                  {['Mathematics', 'Science', 'English', 'History', 'Computer Science', 'Physics', 'Chemistry', 'Biology', 'Literature', 'Languages'].map((subject) => (
-                    <motion.button
-                      key={subject}
-                      className="bg-white/10 hover:bg-white/20 text-white rounded-lg py-2 px-3 text-sm backdrop-blur-sm transition-colors whitespace-nowrap mr-2 flex-shrink-0"
-                      whileHover={{ y: -2 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      {subject}
-                    </motion.button>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Desktop subject selector */}
-              <div className="hidden sm:grid sm:grid-cols-3 md:grid-cols-5 gap-2">
-                {['Mathematics', 'Science', 'English', 'History', 'Computer Science', 'Physics', 'Chemistry', 'Biology', 'Literature', 'Languages'].map((subject) => (
-                  <motion.button
-                    key={subject}
-                    className="bg-white/10 hover:bg-white/20 text-white rounded-lg py-2 px-3 text-sm backdrop-blur-sm transition-colors"
-                    whileHover={{ y: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    {subject}
-                  </motion.button>
-                ))}
-              </div>
-            </div>
+            
+            {/* Content Writer Button */}
+            <motion.button
+              whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.1)" }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setActiveTab('content-writer')}
+              className="mt-4 inline-flex items-center px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg shadow-md font-medium"
+            >
+              <IconComponent icon={AiOutlineEdit} className="mr-2 h-5 w-5" />
+              Generate Essays & Academic Papers
+            </motion.button>
           </motion.div>
 
           <motion.div 
@@ -340,12 +311,15 @@ const AiStudy: React.FC = () => {
           >
             {/* Tabs - Mobile Version */}
             <div className="md:hidden">
-              <div className="flex justify-between items-center bg-gradient-to-r from-teal-700 to-teal-900 text-white p-4">
-                <span className="font-medium">{tabs.find(tab => tab.id === activeTab)?.name}</span>
+              <div className="flex justify-between items-center bg-gradient-to-r from-teal-700 to-teal-900 text-white p-4 rounded-t-2xl">
+                <span className="font-medium flex items-center">
+                  <IconComponent icon={tabs.find(tab => tab.id === activeTab)?.icon || AiOutlineBulb} className="mr-2 h-5 w-5" />
+                  {tabs.find(tab => tab.id === activeTab)?.name}
+                </span>
                 <motion.button
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                   whileTap={{ scale: 0.95 }}
-                  className="p-2"
+                  className="p-2 bg-white/10 rounded-lg"
                 >
                   <IconComponent icon={FiMenu} className="h-6 w-6" />
                 </motion.button>
@@ -363,7 +337,7 @@ const AiStudy: React.FC = () => {
                     <motion.button
                       key={tab.id}
                       className={`flex items-center py-3 px-4 w-full text-left ${
-                        activeTab === tab.id ? 'bg-teal-50 text-teal-700' : 'text-gray-700'
+                        activeTab === tab.id ? 'bg-teal-50 text-teal-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
                       }`}
                       onClick={() => {
                         setActiveTab(tab.id);
@@ -380,14 +354,14 @@ const AiStudy: React.FC = () => {
             </div>
 
             {/* Tabs - Desktop Version */}
-            <div className="hidden md:flex bg-gradient-to-r from-teal-700 to-teal-900 text-white">
+            <div className="hidden md:flex bg-gradient-to-r from-teal-700 to-teal-900 text-white rounded-t-2xl overflow-hidden">
               {tabs.map((tab) => (
                 <motion.button
                   key={tab.id}
                   className={`flex items-center py-4 px-6 flex-1 justify-center ${
                     activeTab === tab.id
-                      ? 'bg-white/10 border-b-2 border-orange-500'
-                      : 'hover:bg-white/5'
+                      ? 'bg-white text-teal-800 font-medium shadow-inner border-b-2 border-orange-500'
+                      : 'hover:bg-white/10'
                   }`}
                   onClick={() => setActiveTab(tab.id)}
                   whileHover={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
@@ -783,7 +757,7 @@ const AiStudy: React.FC = () => {
                             <span className="bg-white text-teal-800 rounded-full p-1 mr-2 flex-shrink-0">
                               <IconComponent icon={FiCheck} className="h-3 w-3" />
                             </span>
-                            <span>Create flashcards for biology terms to prepare for your upcoming test.</span>
+                            <span>Use the AI Study Assistant for difficult concepts.</span>
                           </li>
                         </ul>
                       </div>
@@ -980,6 +954,10 @@ const AiStudy: React.FC = () => {
                     </motion.div>
                   </div>
                 </motion.div>
+              )}
+
+              {activeTab === 'content-writer' && (
+                <ContentWriterComponent />
               )}
 
               {activeTab === 'citations' && (
@@ -1192,60 +1170,93 @@ const AiStudy: React.FC = () => {
 
           {/* Features Section */}
           <motion.div
-            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mt-16"
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mt-10"
             variants={containerVariants}
             initial="hidden"
             animate="visible"
           >
             <motion.div 
-              className="bg-white p-6 rounded-xl shadow-md"
+              className="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300"
               variants={itemVariants}
-              whileHover={{ y: -5, boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)" }}
+              whileHover={{ y: -5, boxShadow: "0 15px 30px rgba(0, 0, 0, 0.1)" }}
             >
-              <div className="bg-teal-100 w-12 h-12 rounded-full flex items-center justify-center mb-4">
-                <IconComponent icon={AiOutlineUpload} className="h-6 w-6 text-teal-600" />
+              <div className="bg-teal-100 w-14 h-14 rounded-full flex items-center justify-center mb-4">
+                <IconComponent icon={AiOutlineUpload} className="h-7 w-7 text-teal-600" />
               </div>
-              <h3 className="text-xl font-semibold text-teal-800 mb-2">Instant Homework Solutions</h3>
-              <p className="text-gray-600">Upload your homework and get detailed step-by-step solutions instantly.</p>
+              <h3 className="text-xl font-semibold text-teal-800 mb-2">Instant Homework Help</h3>
+              <p className="text-gray-600">Upload your homework, get step-by-step solutions with detailed explanations instantly.</p>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setActiveTab('upload')}
+                className="mt-4 text-teal-600 font-medium flex items-center text-sm"
+              >
+                Try now
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </motion.button>
             </motion.div>
             
             <motion.div 
-              className="bg-white p-6 rounded-xl shadow-md"
+              className="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300"
               variants={itemVariants}
-              whileHover={{ y: -5, boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)" }}
+              whileHover={{ y: -5, boxShadow: "0 15px 30px rgba(0, 0, 0, 0.1)" }}
             >
-              <div className="bg-orange-100 w-12 h-12 rounded-full flex items-center justify-center mb-4">
-                <IconComponent icon={AiOutlineRobot} className="h-6 w-6 text-orange-500" />
+              <div className="bg-orange-100 w-14 h-14 rounded-full flex items-center justify-center mb-4">
+                <IconComponent icon={AiOutlineEdit} className="h-7 w-7 text-orange-500" />
               </div>
-              <h3 className="text-xl font-semibold text-teal-800 mb-2">AI Tutoring Chat</h3>
+              <h3 className="text-xl font-semibold text-teal-800 mb-2">AI Content Writer</h3>
+              <p className="text-gray-600">Generate essays, papers, and applications with our AI-powered content writing assistant.</p>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setActiveTab('content-writer')}
+                className="mt-4 text-orange-500 font-medium flex items-center text-sm"
+              >
+                Start writing
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </motion.button>
+            </motion.div>
+            
+            <motion.div 
+              className="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300"
+              variants={itemVariants}
+              whileHover={{ y: -5, boxShadow: "0 15px 30px rgba(0, 0, 0, 0.1)" }}
+            >
+              <div className="bg-teal-100 w-14 h-14 rounded-full flex items-center justify-center mb-4">
+                <IconComponent icon={AiOutlineRobot} className="h-7 w-7 text-teal-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-teal-800 mb-2">AI Tutor Chat</h3>
               <p className="text-gray-600">Chat with our AI tutor for personalized help and explanations on any subject.</p>
-            </motion.div>
-            
-            <motion.div 
-              className="bg-white p-6 rounded-xl shadow-md"
-              variants={itemVariants}
-              whileHover={{ y: -5, boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)" }}
-            >
-              <div className="bg-teal-100 w-12 h-12 rounded-full flex items-center justify-center mb-4">
-                <IconComponent icon={AiOutlineSearch} className="h-6 w-6 text-teal-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-teal-800 mb-2">Check Mistakes</h3>
-              <p className="text-gray-600">Upload papers and get instant feedback on grammar, spelling, and content errors.</p>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setActiveTab('chat')}
+                className="mt-4 text-teal-600 font-medium flex items-center text-sm"
+              >
+                Chat now
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </motion.button>
             </motion.div>
           </motion.div>
 
           {/* Floating Action Button */}
           <motion.button
-            className="fixed bottom-5 right-5 md:right-20 z-40 bg-gradient-to-r from-orange-500 to-orange-600 text-white p-3 md:p-4 rounded-full shadow-lg flex items-center justify-center"
+            className="fixed bottom-5 right-5 md:right-20 z-40 bg-gradient-to-r from-orange-500 to-orange-600 text-white p-4 rounded-full shadow-lg flex items-center justify-center"
             whileHover={{ scale: 1.1, boxShadow: "0 8px 20px rgba(0, 0, 0, 0.2)" }}
             whileTap={{ scale: 0.95 }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1 }}
-            onClick={() => setActiveTab('upload')}
+            transition={{ delay: 0.5 }}
+            onClick={() => setActiveTab('chat')}
           >
-            <IconComponent icon={AiOutlineBulb} className="h-5 w-5 md:h-6 md:w-6" />
-            <span className="ml-2 font-medium hidden md:inline">Quick Help</span>
+            <IconComponent icon={AiOutlineRobot} className="h-6 w-6" />
+            <span className="ml-2 font-medium hidden md:inline">Ask AI Tutor</span>
           </motion.button>
         </div>
       </motion.div>

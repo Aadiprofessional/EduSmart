@@ -22,7 +22,6 @@ const Header: React.FC = () => {
     { name: 'Success Stories', href: '/case-studies', icon: AiOutlineTrophy },
     { name: 'AI Courses', href: '/ai-courses', icon: AiOutlineRobot },
     { name: 'AI Study', href: '/ai-study', icon: AiOutlineBulb },
-    { name: 'Content Writer', href: '/content-writer', icon: AiOutlineEdit },
     { name: 'Resources', href: '/resources', icon: AiOutlineBook },
     { name: 'Blog', href: '/blog', icon: AiOutlineRead },
   ];

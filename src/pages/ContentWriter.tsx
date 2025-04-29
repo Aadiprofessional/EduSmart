@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { jsPDF } from 'jspdf';
+import { Document, Paragraph, TextRun, Packer } from 'docx';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import { FiEdit, FiDownload, FiShare2, FiSave, FiSettings, FiRotateCw, FiRefreshCw, FiCopy, FiTrash, FiBook, FiFileText, FiMail, FiClipboard } from 'react-icons/fi';
@@ -18,11 +20,36 @@ const ContentWriter: React.FC = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [fontSize, setFontSize] = useState(16);
-  const [contentHistory, setContentHistory] = useState<{ title: string, date: string, content: string }[]>([
-    { title: "College Application Essay", date: "3 days ago", content: "As I reflect on my journey through high school..." },
-    { title: "Research Paper Outline", date: "1 week ago", content: "The impact of technology on modern education..." },
+  const [contentHistory, setContentHistory] = useState<{ 
+    title: string, 
+    date: string, 
+    content: string,
+    template: string,
+    prompt: string 
+  }[]>([
+    { 
+      title: "College Application Essay", 
+      date: "3 days ago", 
+      content: "As I reflect on my journey through high school...",
+      template: "college-app",
+      prompt: "Write a compelling college application essay about my passion for computer science"
+    },
+    { 
+      title: "Research Paper Outline", 
+      date: "1 week ago", 
+      content: "The impact of technology on modern education...",
+      template: "research-paper",
+      prompt: "Generate an outline for a research paper on the impact of artificial intelligence in education"
+    },
   ]);
   const editorRef = useRef<HTMLTextAreaElement>(null);
+  const [showAIEditModal, setShowAIEditModal] = useState(false);
+  const [editInstructions, setEditInstructions] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editProgress, setEditProgress] = useState(0);
+  const [highlightedSections, setHighlightedSections] = useState<{start: number, end: number, original: string, updated: string}[]>([]);
+  const [editStep, setEditStep] = useState<'analyzing' | 'searching' | 'updating'>('analyzing');
+  const [showDownloadOptions, setShowDownloadOptions] = useState(false);
 
   // Animation variants
   const containerVariants = {
@@ -55,6 +82,43 @@ const ContentWriter: React.FC = () => {
     { id: 'personal-statement', name: 'Personal Statement', icon: FiFileText },
   ];
 
+  // Add interface for parsed result
+  interface AnalysisResult {
+    sections: string[];
+    updates: string[];
+    explanation?: string;
+  }
+
+  // Add delay between API calls to avoid rate limits
+  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  // Helper function to make API calls with retry logic
+  const makeAPICall = async (prompt: string, retries = 3): Promise<string> => {
+    for (let i = 0; i < retries; i++) {
+      try {
+        // Add delay between retries
+        if (i > 0) {
+          await delay(2000 * i); // Exponential backoff
+        }
+
+        const response = await axios.post(
+          'https://ddtgdhehxhgarkonvpfq.supabase.co/functions/v1/createContent',
+          { prompt },
+          {
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        return response.data.output.text;
+      } catch (error) {
+        if (i === retries - 1) throw error; // Throw on last retry
+        console.warn('API call failed, retrying...', error);
+      }
+    }
+    throw new Error('API call failed after retries');
+  };
+
   const handleGenerateContent = async () => {
     if (!prompt.trim()) return;
     
@@ -77,11 +141,13 @@ const ContentWriter: React.FC = () => {
       setGeneratedContent(content);
       setEditedContent(content);
       
-      // Add to history
+      // Add to history with template and prompt information
       const newHistoryItem = {
         title: getHistoryTitle(prompt),
         date: 'Just now',
-        content: content
+        content: content,
+        template: activeTemplate,
+        prompt: prompt
       };
       setContentHistory([newHistoryItem, ...contentHistory]);
     } catch (error) {
@@ -126,21 +192,113 @@ const ContentWriter: React.FC = () => {
   };
 
   const handleCopyContent = () => {
-    navigator.clipboard.writeText(editedContent || generatedContent);
+    let content = editedContent;
+    // Convert markdown to formatted text
+    content = content
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .replace(/_(.*?)_/g, '$1')
+      .replace(/==(.*?)==/g, '$1')
+      .replace(/\n- (.*)/g, '• $1')
+      .replace(/\n\d+\. (.*)/g, '$1')
+      .replace(/#{1,6} (.*)/g, '$1')
+      .replace(/\n/g, '\n');
+    navigator.clipboard.writeText(content);
   };
 
-  const handleDownloadContent = () => {
+  const handleDownloadContent = (format: 'txt' | 'pdf' | 'doc') => {
     const element = document.createElement('a');
-    const file = new Blob([editedContent || generatedContent], {type: 'text/plain'});
-    element.href = URL.createObjectURL(file);
-    element.download = `content-${new Date().toISOString().slice(0, 10)}.txt`;
+    let content = editedContent;
+    
+    // Convert markdown to formatted text
+    content = content
+      .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
+      .replace(/\*(.*?)\*/g, '$1') // Remove italic
+      .replace(/_(.*?)_/g, '$1') // Remove underline
+      .replace(/==(.*?)==/g, '$1') // Remove highlight
+      .replace(/\n- (.*)/g, '• $1') // Convert unordered lists
+      .replace(/\n\d+\. (.*)/g, '$1') // Convert ordered lists
+      .replace(/#{1,6} (.*)/g, '$1') // Remove headers
+      .replace(/\n/g, '\n'); // Keep newlines
+
+    if (format === 'txt') {
+      const file = new Blob([content], {type: 'text/plain'});
+      element.href = URL.createObjectURL(file);
+      element.download = `content-${new Date().toISOString().slice(0, 10)}.txt`;
+    } else if (format === 'pdf') {
+      // Create PDF using jsPDF
+      const doc = new jsPDF();
+      const lines = doc.splitTextToSize(content, 180);
+      doc.text(lines, 15, 15);
+      doc.save(`content-${new Date().toISOString().slice(0, 10)}.pdf`);
+      return;
+    } else if (format === 'doc') {
+      // Create DOC using docx
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: [
+            new Paragraph({
+              children: [
+                new TextRun(content)
+              ],
+            }),
+          ],
+        }],
+      });
+      
+      // Use Packer to generate the document
+      Packer.toBlob(doc).then(blob => {
+        const file = new Blob([blob], {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+        element.href = URL.createObjectURL(file);
+        element.download = `content-${new Date().toISOString().slice(0, 10)}.docx`;
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+      });
+      return;
+    }
+
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
   };
 
-  const loadFromHistory = (content: string) => {
-    setEditedContent(content);
+  const handleShareContent = () => {
+    let content = editedContent;
+    // Convert markdown to formatted text
+    content = content
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .replace(/_(.*?)_/g, '$1')
+      .replace(/==(.*?)==/g, '$1')
+      .replace(/\n- (.*)/g, '• $1')
+      .replace(/\n\d+\. (.*)/g, '$1')
+      .replace(/#{1,6} (.*)/g, '$1')
+      .replace(/\n/g, '\n');
+
+    if (navigator.share) {
+      navigator.share({
+        title: 'Generated Content',
+        text: content,
+      }).catch(console.error);
+    } else {
+      // Fallback for browsers that don't support Web Share API
+      navigator.clipboard.writeText(content);
+      alert('Content copied to clipboard!');
+    }
+  };
+
+  const loadFromHistory = (item: { 
+    title: string, 
+    date: string, 
+    content: string,
+    template: string,
+    prompt: string 
+  }) => {
+    setEditedContent(item.content);
+    setActiveTemplate(item.template);
+    setPrompt(item.prompt);
     setShowHistory(false);
   };
 
@@ -202,6 +360,105 @@ const ContentWriter: React.FC = () => {
   // Increase/decrease font size
   const changeFontSize = (delta: number) => {
     setFontSize(Math.max(12, Math.min(24, fontSize + delta)));
+  };
+
+  const handleAIEdit = async () => {
+    if (!editInstructions.trim()) return;
+    
+    setIsEditing(true);
+    setEditProgress(0);
+    setEditStep('analyzing');
+    
+    try {
+      // Step 1: Single API call to analyze and identify sections
+      const analysisPrompt = `Given this content and instructions, perform a complete analysis:
+
+Content: "${editedContent}"
+Instructions: "${editInstructions}"
+
+Return a JSON object with:
+1. sections: Array of sections that need to be modified (exact text)
+2. updates: Array of updated versions for each section
+3. explanation: Brief explanation of changes
+
+Format the response as valid JSON.`;
+
+      setEditProgress(20);
+      const analysisResult = await makeAPICall(analysisPrompt);
+      
+      let parsedResult: AnalysisResult;
+      try {
+        parsedResult = JSON.parse(analysisResult) as AnalysisResult;
+        // Validate the parsed result has required properties
+        if (!Array.isArray(parsedResult.sections) || !Array.isArray(parsedResult.updates)) {
+          throw new Error('Invalid response format');
+        }
+      } catch (e) {
+        // If JSON parsing fails, try to extract sections manually
+        const sections = analysisResult.split('\n').filter(line => 
+          line.includes('Original:') || line.includes('Updated:')
+        );
+        parsedResult = {
+          sections: sections.filter(s => s.includes('Original:')).map(s => s.replace('Original:', '').trim()),
+          updates: sections.filter(s => s.includes('Updated:')).map(s => s.replace('Updated:', '').trim())
+        };
+      }
+
+      setEditProgress(60);
+      setEditStep('updating');
+
+      // Apply updates
+      let updatedContent = editedContent;
+      const highlights = parsedResult.sections.map((section: string, index: number) => {
+        const start = updatedContent.indexOf(section);
+        const updated = parsedResult.updates[index] || section; // Fallback to original if update not found
+        updatedContent = updatedContent.replace(section, updated);
+        return {
+          start,
+          end: start + updated.length,
+          original: section,
+          updated
+        };
+      });
+
+      setHighlightedSections(highlights);
+      setEditProgress(80);
+
+      // Final consistency check with single API call
+      const finalContent = await makeAPICall(
+        `Review this updated content and ensure all changes are consistent:
+Content: "${updatedContent}"
+Original Instructions: "${editInstructions}"
+
+Return the final, polished content.`
+      );
+
+      setEditedContent(finalContent);
+      setEditProgress(100);
+      setShowAIEditModal(false);
+      setEditInstructions('');
+      
+    } catch (error) {
+      console.error('Error during AI editing:', error);
+      // Show error message to user
+      alert('An error occurred while editing. Please try again in a few moments.');
+    } finally {
+      setIsEditing(false);
+      setHighlightedSections([]);
+      setEditProgress(0);
+      setEditStep('analyzing');
+    }
+  };
+
+  // Add pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 1000; // Adjust based on your needs
+  const totalPages = Math.ceil(editedContent.length / itemsPerPage);
+
+  const getCurrentPageContent = () => {
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    return editedContent.slice(start, end);
   };
 
   return (
@@ -424,35 +681,85 @@ const ContentWriter: React.FC = () => {
                   >
                     {showPreview ? 'Edit Mode' : 'Preview'}
                   </motion.button>
+
+                  <div className="h-6 w-px bg-gray-300 mx-1"></div>
+                  
+                  <motion.button
+                    variants={buttonVariants}
+                    whileHover="hover"
+                    whileTap="tap"
+                    onClick={() => setShowAIEditModal(true)}
+                    className="flex items-center px-3 py-1 rounded text-sm font-medium bg-gradient-to-r from-purple-500 to-indigo-600 text-white hover:from-purple-600 hover:to-indigo-700"
+                  >
+                    <IconComponent icon={AiOutlineRobot} className="mr-2" />
+                    AI Edit
+                  </motion.button>
                 </div>
 
                 {/* Content Panel */}
                 <div className="p-6">
                   {showPreview ? (
-                    <div 
-                      className="min-h-[500px] p-4 border border-gray-200 rounded-lg prose max-w-none"
-                      style={{ fontSize: `${fontSize}px` }}
-                      dangerouslySetInnerHTML={{ 
-                        __html: editedContent
+                    <div className="min-h-[500px] p-4 border border-gray-200 rounded-lg prose max-w-none">
+                      <div style={{ fontSize: `${fontSize}px` }}>
+                        {getCurrentPageContent()
                           .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                           .replace(/\*(.*?)\*/g, '<em>$1</em>')
                           .replace(/_(.*?)_/g, '<u>$1</u>')
                           .replace(/==(.*?)==/g, '<mark>$1</mark>')
                           .replace(/\n- (.*)/g, '<ul><li>$1</li></ul>')
                           .replace(/\n\d+\. (.*)/g, '<ol><li>$1</li></ol>')
-                          .replace(/\n/g, '<br />') 
-                          .replace(/#{1,6} (.*)/g, '<h3>$1</h3>')
-                      }}
-                    />
+                          .replace(/\n/g, '<br />')
+                          .replace(/#{1,6} (.*)/g, '<h3>$1</h3>')}
+                      </div>
+                      
+                      {/* Pagination */}
+                      {totalPages > 1 && (
+                        <div className="flex justify-center mt-4">
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                              disabled={currentPage === 1}
+                              className="px-3 py-1 border rounded disabled:opacity-50"
+                            >
+                              Previous
+                            </button>
+                            <span className="px-3 py-1">
+                              Page {currentPage} of {totalPages}
+                            </span>
+                            <button
+                              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                              disabled={currentPage === totalPages}
+                              className="px-3 py-1 border rounded disabled:opacity-50"
+                            >
+                              Next
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   ) : (
-                    <textarea
-                      ref={editorRef}
-                      value={editedContent}
-                      onChange={(e) => setEditedContent(e.target.value)}
-                      placeholder="Your content will appear here after generation. You can edit it as needed."
-                      className="w-full min-h-[500px] p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent font-mono resize-none"
-                      style={{ fontSize: `${fontSize}px` }}
-                    />
+                    <div className="relative">
+                      <textarea
+                        ref={editorRef}
+                        value={editedContent}
+                        onChange={(e) => setEditedContent(e.target.value)}
+                        placeholder="Your content will appear here after generation. You can edit it as needed."
+                        className="w-full min-h-[500px] p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent font-mono resize-none"
+                        style={{ fontSize: `${fontSize}px` }}
+                      />
+                      {highlightedSections.map((section, index) => (
+                        <motion.div
+                          key={index}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="absolute left-0 right-0 bg-purple-100 bg-opacity-30 pointer-events-none"
+                          style={{
+                            top: `${section.start * 1.5}em`,
+                            height: `${(section.end - section.start) * 1.5}em`
+                          }}
+                        />
+                      ))}
+                    </div>
                   )}
 
                   {/* Action Buttons */}
@@ -466,23 +773,83 @@ const ContentWriter: React.FC = () => {
                     >
                       <IconComponent icon={FiCopy} className="mr-2" /> Copy
                     </motion.button>
+                    
+                    {/* Download Buttons */}
+                    <div className="flex items-center space-x-2">
+                      <motion.button
+                        variants={buttonVariants}
+                        whileHover="hover"
+                        whileTap="tap"
+                        onClick={() => setShowDownloadOptions(!showDownloadOptions)}
+                        className={`flex items-center text-sm px-4 py-2 rounded-lg transition-all duration-300 ${
+                          showDownloadOptions 
+                            ? 'bg-primary text-white' 
+                            : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                        }`}
+                      >
+                        <IconComponent icon={FiDownload} className="mr-2" /> 
+                        {showDownloadOptions ? 'Close' : 'Download'}
+                      </motion.button>
+
+                      <AnimatePresence>
+                        {showDownloadOptions && (
+                          <motion.div 
+                            className="flex items-center space-x-2"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            transition={{ duration: 0.3 }}
+                          >
+                            <motion.button
+                              whileHover={{ scale: 1.05, y: -2 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => handleDownloadContent('pdf')}
+                              className="flex items-center text-sm px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
+                            >
+                              <div className="flex items-center">
+                                <span className="mr-2 text-lg">📑</span>
+                                <span className="font-medium">PDF</span>
+                              </div>
+                            </motion.button>
+
+                            <motion.button
+                              whileHover={{ scale: 1.05, y: -2 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => handleDownloadContent('doc')}
+                              className="flex items-center text-sm px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
+                            >
+                              <div className="flex items-center">
+                                <span className="mr-2 text-lg">📝</span>
+                                <span className="font-medium">DOC</span>
+                              </div>
+                            </motion.button>
+
+                            <motion.button
+                              whileHover={{ scale: 1.05, y: -2 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => handleDownloadContent('txt')}
+                              className="flex items-center text-sm px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
+                            >
+                              <div className="flex items-center">
+                                <span className="mr-2 text-lg">📄</span>
+                                <span className="font-medium">TXT</span>
+                              </div>
+                            </motion.button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                    
                     <motion.button
                       variants={buttonVariants}
                       whileHover="hover"
                       whileTap="tap"
-                      onClick={handleDownloadContent}
-                      className="flex items-center text-sm px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg"
-                    >
-                      <IconComponent icon={FiDownload} className="mr-2" /> Download
-                    </motion.button>
-                    <motion.button
-                      variants={buttonVariants}
-                      whileHover="hover"
-                      whileTap="tap"
+                      onClick={handleShareContent}
                       className="flex items-center text-sm px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg"
                     >
                       <IconComponent icon={FiShare2} className="mr-2" /> Share
                     </motion.button>
+                    
                     <motion.button
                       variants={buttonVariants}
                       whileHover="hover"
@@ -524,12 +891,22 @@ const ContentWriter: React.FC = () => {
                   initial="hidden"
                   animate="visible"
                   exit="hidden"
-                  className="p-4 border border-gray-200 rounded-lg hover:border-primary cursor-pointer"
-                  onClick={() => loadFromHistory(item.content)}
+                  className="p-4 border border-gray-200 rounded-lg hover:border-primary cursor-pointer transition-colors"
+                  onClick={() => loadFromHistory(item)}
                 >
-                  <h3 className="font-medium text-gray-800">{item.title}</h3>
-                  <p className="text-xs text-gray-500 mt-1">{item.date}</p>
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium text-gray-800">{item.title}</h3>
+                    <span className="text-xs text-gray-500">{item.date}</span>
+                  </div>
+                  <div className="mt-2">
+                    <span className="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full mb-2">
+                      {templates.find(t => t.id === item.template)?.name || 'Custom'}
+                    </span>
+                  </div>
                   <p className="text-sm text-gray-600 mt-2 line-clamp-2">{item.content.substring(0, 100)}...</p>
+                  <div className="mt-2">
+                    <p className="text-xs text-gray-500">Prompt: {item.prompt.substring(0, 50)}...</p>
+                  </div>
                 </motion.div>
               ))}
               
@@ -542,6 +919,89 @@ const ContentWriter: React.FC = () => {
             </div>
           </div>
         </motion.div>
+
+        {/* AI Edit Modal */}
+        <AnimatePresence>
+          {showAIEditModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                className="bg-white rounded-xl shadow-xl p-6 w-full max-w-2xl"
+              >
+                <h2 className="text-2xl font-bold text-primary mb-4">AI Content Editor</h2>
+                <p className="text-gray-600 mb-4">
+                  Describe what specific changes you want to make. For example: "Change all mentions of MIT to Stanford" or "Update the basketball reference to football"
+                </p>
+                
+                <textarea
+                  value={editInstructions}
+                  onChange={(e) => setEditInstructions(e.target.value)}
+                  placeholder="Example: Change all mentions of MIT to Stanford, or update the basketball reference to football..."
+                  className="w-full h-32 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none mb-4"
+                />
+                
+                {isEditing && (
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-gray-600">
+                        {editStep === 'analyzing' && 'Analyzing content and instructions...'}
+                        {editStep === 'searching' && 'Identifying sections to update...'}
+                        {editStep === 'updating' && 'Applying changes and checking consistency...'}
+                      </span>
+                      <span className="text-sm font-medium">{Math.round(editProgress)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <motion.div
+                        className="bg-gradient-to-r from-purple-500 to-indigo-600 h-2.5 rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${editProgress}%` }}
+                        transition={{ duration: 0.3 }}
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                <div className="flex justify-end gap-3">
+                  <motion.button
+                    variants={buttonVariants}
+                    whileHover="hover"
+                    whileTap="tap"
+                    onClick={() => setShowAIEditModal(false)}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  >
+                    Cancel
+                  </motion.button>
+                  <motion.button
+                    variants={buttonVariants}
+                    whileHover="hover"
+                    whileTap="tap"
+                    onClick={handleAIEdit}
+                    disabled={isEditing || !editInstructions.trim()}
+                    className="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 disabled:opacity-50"
+                  >
+                    {isEditing ? (
+                      <>
+                        <IconComponent icon={FiRotateCw} className="animate-spin mr-2 inline" />
+                        {editStep === 'analyzing' && 'Analyzing...'}
+                        {editStep === 'searching' && 'Searching...'}
+                        {editStep === 'updating' && 'Updating...'}
+                      </>
+                    ) : (
+                      'Update Content'
+                    )}
+                  </motion.button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
       <Footer />
     </>
