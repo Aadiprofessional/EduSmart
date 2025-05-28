@@ -115,16 +115,35 @@ const ContentWriterComponent: React.FC = () => {
           await delay(2000 * i); // Exponential backoff
         }
 
-        const response = await axios.post(
-          'https://ddtgdhehxhgarkonvpfq.supabase.co/functions/v1/createContent',
-          { prompt },
-          {
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-        return response.data.output.text;
+        const response = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer 95fad12c-0768-4de2-a4c2-83247337ea89',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: "doubao-vision-pro-32k-241028",
+            messages: [
+              {
+                role: "system",
+                content: "You are a professional academic writing assistant. Generate high-quality, well-structured content based on user prompts. Focus on clarity, coherence, and academic standards."
+              },
+              {
+                role: "user",
+                content: prompt
+              }
+            ],
+            max_tokens: 4000,
+            temperature: 0.7
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`API call failed: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        return data.choices?.[0]?.message?.content || 'Error generating content';
       } catch (error) {
         if (i === retries - 1) throw error; // Throw on last retry
         console.warn('API call failed, retrying...', error);
@@ -138,34 +157,46 @@ const ContentWriterComponent: React.FC = () => {
     
     setIsGenerating(true);
     try {
-      const response = await axios.post(
-        'https://ddtgdhehxhgarkonvpfq.supabase.co/functions/v1/createContent',
-        {
-          prompt: prompt
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+      const content = await makeAPICall(prompt);
       
-      // Set the generated content from API response
-      const content = response.data.output.text;
-      setGeneratedContent(content);
-      setEditedContent(content);
+      // Clean up the AI response to remove unwanted text
+      let cleanedContent = content
+        .replace(/^(I am [^.]*(AI|LLM|Assistant|GPT|language model)[^.]*\.)/i, '') // Remove AI self-identification
+        .replace(/^(Here'?s?( is)?( a| an| your| the)?( \d+[-\s]word)? (essay|response|text|content|output)[:.]\s*)/i, '') // Remove "Here's an essay:" type text
+        .replace(/^(In response to your request|As requested|Based on your prompt)[^.]*/i, '') // Remove other common AI prefixes
+        .replace(/^[\s\n]*/, '') // Remove leading whitespace
+        .replace(/\n*$/g, '') // Remove trailing newlines
+        .replace(/(Let me know if you|Hope this|If you need any|Do you want me to)[^]*$/i, '') // Remove trailing questions
+        .trim();
+        
+      // Extract title if it exists 
+      let title = '';
+      const titleMatch = cleanedContent.match(/^(?:Title:?\s*)(.*?)(?:\n|$)/i);
+      if (titleMatch && titleMatch[1]) {
+        title = titleMatch[1].trim();
+      }
+        
+      // Add title back if it was removed
+      if (title && !cleanedContent.includes(title)) {
+        cleanedContent = `**Title: ${title}**\n\n${cleanedContent}`;
+      }
+        
+      setGeneratedContent(cleanedContent);
+      setEditedContent(cleanedContent);
       
       // Add to history with template and prompt information
       const newHistoryItem = {
-        title: getHistoryTitle(prompt),
+        title: title || getHistoryTitle(prompt),
         date: 'Just now',
-        content: content,
+        content: cleanedContent,
         template: activeTemplate,
         prompt: prompt
       };
       setContentHistory([newHistoryItem, ...contentHistory]);
     } catch (error) {
       console.error('Error generating content:', error);
+      setGeneratedContent('Error generating content. Please try again.');
+      setEditedContent('Error generating content. Please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -331,13 +362,26 @@ const ContentWriterComponent: React.FC = () => {
     }
   };
 
-  // Get content for the current page
+  // Get content for the current page with proper HTML handling
   const getCurrentPageContent = () => {
     const contentLines = editedContent.split('\n');
     const startLine = (currentPage - 1) * linesPerPage;
     const endLine = Math.min(startLine + linesPerPage, contentLines.length);
     
     return contentLines.slice(startLine, endLine).join('\n');
+  };
+  
+  // Function to convert content text to HTML with proper formatting
+  const contentToHTML = (text: string) => {
+    return text
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
+      .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
+      .replace(/_(.*?)_/g, '<u>$1</u>') // Underline
+      .replace(/==(.*?)==/g, '<mark>$1</mark>') // Highlight
+      .replace(/\n- (.*)/g, '<ul><li>$1</li></ul>') // Unordered list
+      .replace(/\n\d+\. (.*)/g, '<ol><li>$1</li></ol>') // Ordered list
+      .replace(/#{1,6} (.*)/g, '<h3>$1</h3>') // Headers
+      .replace(/\n/g, '<br />'); // Newlines
   };
 
   // Basic formatting functionality
@@ -392,90 +436,79 @@ const ContentWriterComponent: React.FC = () => {
 
   // Add the AI Edit functionality
   const handleAIEdit = async () => {
-    if (!editInstructions.trim()) return;
+    if (!editInstructions.trim() || !editedContent.trim()) return;
     
     setIsEditing(true);
     setEditProgress(0);
     setEditStep('analyzing');
     
     try {
-      // Step 1: Single API call to analyze and identify sections
-      const analysisPrompt = `Given this content and instructions, perform a complete analysis:
+      const prompt = `Please edit the following content based on these instructions:
 
-Content: "${editedContent}"
-Instructions: "${editInstructions}"
+Instructions: ${editInstructions}
 
-Return a JSON object with:
-1. sections: Array of sections that need to be modified (exact text)
-2. updates: Array of updated versions for each section
-3. explanation: Brief explanation of changes
+Content to edit:
+${editedContent}
 
-Format the response as valid JSON.`;
+Please return the edited content with the requested changes applied. Maintain the original structure and formatting while implementing the specified modifications.`;
 
-      setEditProgress(20);
-      const analysisResult = await makeAPICall(analysisPrompt);
-      
-      let parsedResult: AnalysisResult;
-      try {
-        parsedResult = JSON.parse(analysisResult) as AnalysisResult;
-        // Validate the parsed result has required properties
-        if (!Array.isArray(parsedResult.sections) || !Array.isArray(parsedResult.updates)) {
-          throw new Error('Invalid response format');
-        }
-      } catch (e) {
-        // If JSON parsing fails, try to extract sections manually
-        const sections = analysisResult.split('\n').filter(line => 
-          line.includes('Original:') || line.includes('Updated:')
-        );
-        parsedResult = {
-          sections: sections.filter(s => s.includes('Original:')).map(s => s.replace('Original:', '').trim()),
-          updates: sections.filter(s => s.includes('Updated:')).map(s => s.replace('Updated:', '').trim())
-        };
-      }
-
-      setEditProgress(60);
       setEditStep('updating');
+      setEditProgress(50);
 
-      // Apply updates
-      let updatedContent = editedContent;
-      const highlights = parsedResult.sections.map((section: string, index: number) => {
-        const start = updatedContent.indexOf(section);
-        const updated = parsedResult.updates[index] || section; // Fallback to original if update not found
-        updatedContent = updatedContent.replace(section, updated);
-        return {
-          start,
-          end: start + updated.length,
-          original: section,
-          updated
-        };
+      const response = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer 95fad12c-0768-4de2-a4c2-83247337ea89',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: "doubao-vision-pro-32k-241028",
+          messages: [
+            {
+              role: "system",
+              content: "You are a professional content editor. Apply the requested changes to the content while maintaining quality and coherence."
+            },
+            {
+              role: "user",
+              content: prompt
+            }
+          ],
+          max_tokens: 4000,
+          temperature: 0.3
+        })
       });
 
-      setHighlightedSections(highlights);
-      setEditProgress(80);
+      if (!response.ok) {
+        throw new Error(`API call failed: ${response.status} ${response.statusText}`);
+      }
 
-      // Final consistency check with single API call
-      const finalContent = await makeAPICall(
-        `Review this updated content and ensure all changes are consistent:
-Content: "${updatedContent}"
-Original Instructions: "${editInstructions}"
+      const data = await response.json();
+      let editedResult = data.choices?.[0]?.message?.content || editedContent;
 
-Return the final, polished content.`
-      );
+      // Clean up the response
+      editedResult = editedResult
+        .replace(/^(Here is|Here's|I've|The edited|The updated)[^]*/i, '')
+        .replace(/[\r\n]+(Let me know|Hope this helps|Is there anything else)[^]*$/i, '')
+        .trim();
 
-      setEditedContent(finalContent);
       setEditProgress(100);
-      setShowAIEditModal(false);
-      setEditInstructions('');
+      
+      // Update the content
+      setEditedContent(editedResult);
+      
+      // Close modal after a brief delay
+      setTimeout(() => {
+        setShowAIEditModal(false);
+        setEditInstructions('');
+        setIsEditing(false);
+        setEditProgress(0);
+      }, 1000);
       
     } catch (error) {
       console.error('Error during AI editing:', error);
-      // Show error message to user
-      alert('An error occurred while editing. Please try again in a few moments.');
-    } finally {
+      alert('An error occurred during editing. Please try again.');
       setIsEditing(false);
-      setHighlightedSections([]);
       setEditProgress(0);
-      setEditStep('analyzing');
     }
   };
 
@@ -517,20 +550,22 @@ Return the final, polished content.`
     
     // Add a slight delay to selection handling for better UI experience
     const delayedSelectionChange = () => {
-      setTimeout(handleSelectionChange, 100);
+      setTimeout(handleSelectionChange, 50);
     };
     
     // Handle clicks outside the editor to cancel selection
     const handleClickOutside = (e: MouseEvent) => {
-      // Don't hide the button if clicking on the Ask AI button or modal
+      // Keep button visible when clicking on the Ask AI button or when modal is open
       if (
-        (askAIButtonRef.current && askAIButtonRef.current.contains(e.target as Node)) ||
+        askAIButtonRef.current?.contains(e.target as Node) ||
         showAskAIModal
       ) {
+        e.stopPropagation();
         return;
       }
       
-      if (editorRef.current && !editorRef.current.contains(e.target as Node)) {
+      // Otherwise hide the button when clicking outside
+      if (!editorRef.current?.contains(e.target as Node)) {
         setShowAskAIButton(false);
         setSelectionData(null);
       }
@@ -540,15 +575,18 @@ Return the final, polished content.`
     if (editorRef.current) {
       editorRef.current.addEventListener('mouseup', delayedSelectionChange);
       editorRef.current.addEventListener('keyup', delayedSelectionChange);
-      document.addEventListener('mousedown', handleClickOutside);
+      // Also detect selection on mousedown to catch selection via double-click
+      editorRef.current.addEventListener('mousedown', delayedSelectionChange);
+      document.addEventListener('mousedown', handleClickOutside, true);
     }
     
     return () => {
       if (editorRef.current) {
         editorRef.current.removeEventListener('mouseup', delayedSelectionChange);
         editorRef.current.removeEventListener('keyup', delayedSelectionChange);
+        editorRef.current.removeEventListener('mousedown', delayedSelectionChange);
       }
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside, true);
     };
   }, [showPreview, editedContent, showAskAIModal]);
   
@@ -565,52 +603,60 @@ Return the final, polished content.`
   
   // Process the AI instruction for selected text
   const processAskAIRequest = async () => {
-    if (!selectionData || !askAIInstruction.trim() || isProcessingSelection) return;
+    if (!askAIInstruction.trim() || !selectionData) return;
     
     setIsProcessingSelection(true);
     try {
-      // Simplify the prompt to prevent AI from adding explanations
-      const prompt = `I have this text: "${selectionData.text}"
+      const selectedText = selectionData.text;
+      const instruction = askAIInstruction;
       
-      Instructions: ${askAIInstruction}
+      const prompt = `Please help me with the following text selection:
+
+Selected text: "${selectedText}"
+
+Instruction: ${instruction}
+
+Please provide a helpful response or suggestion for improving this text.`;
+
+      const response = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer 95fad12c-0768-4de2-a4c2-83247337ea89',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: "doubao-vision-pro-32k-241028",
+          messages: [
+            {
+              role: "system",
+              content: "You are a helpful writing assistant. Provide concise, actionable suggestions for improving text based on user instructions."
+            },
+            {
+              role: "user",
+              content: prompt
+            }
+          ],
+          max_tokens: 1000,
+          temperature: 0.7
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API call failed: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const suggestion = data.choices?.[0]?.message?.content || 'No suggestion available';
       
-      Return only the revised text without any explanations or formatting. Don't add any additional text before or after the revised content.`;
+      // Show the suggestion to the user
+      alert(`AI Suggestion:\n\n${suggestion}`);
       
-      console.log('Sending to API:', { selectedText: selectionData.text, instruction: askAIInstruction });
-      
-      const response = await axios.post(
-        'https://ddtgdhehxhgarkonvpfq.supabase.co/functions/v1/createContent',
-        { prompt },
-        {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-      
-      let updatedText = response.data.output.text.trim();
-      
-      // Additional cleanup to ensure we only get the revised text
-      updatedText = updatedText
-        .replace(/^(Here is|Here's|I've|The revised|The updated)[^]*/i, '')
-        .replace(/[\r\n]+(Let me know|Hope this helps|Is there anything else)[^]*$/i, '')
-        .trim();
-      
-      console.log('API response processed:', updatedText);
-      
-      // Replace the selected text with the updated version
-      const newContent = 
-        editedContent.substring(0, selectionData.start) + 
-        updatedText + 
-        editedContent.substring(selectionData.end);
-      
-      setEditedContent(newContent);
-      
-      // Reset
+      // Reset the modal
       setShowAskAIModal(false);
       setAskAIInstruction('');
       setShowAskAIButton(false);
       setSelectionData(null);
+      
     } catch (error) {
       console.error('Error processing selection with AI:', error);
       alert('An error occurred. Please try again.');
@@ -636,26 +682,17 @@ Return the final, polished content.`
       const textarea = editorRef.current;
       const textareaRect = textarea.getBoundingClientRect();
       
-      // Use a simpler positioning approach
-      const cursorPos = textarea.selectionEnd;
-      const text = textarea.value.substring(0, cursorPos);
-      const lines = text.split('\n');
+      // Position the button at a fixed offset from the editor to make it easier to click
+      const buttonTop = textareaRect.top + 50;
+      const buttonLeft = textareaRect.left + textareaRect.width/2 - 55;
       
-      // Calculate approximate position
-      const lineHeight = fontSize * 1.5;
-      const lineNumber = lines.length;
-      
-      // Position above the selected text
-      const top = (lineNumber * lineHeight) - 50;
-      
-      // Center horizontally within the editor
-      const left = textareaRect.width / 2 - 55;
-      
-      // Set button position
-      askAIButtonRef.current.style.top = `${Math.max(10, top)}px`;
-      askAIButtonRef.current.style.left = `${Math.max(10, left)}px`;
+      // Set position as fixed rather than absolute for better clickability
+      askAIButtonRef.current.style.position = 'fixed';
+      askAIButtonRef.current.style.top = `${buttonTop}px`;
+      askAIButtonRef.current.style.left = `${buttonLeft}px`;
+      askAIButtonRef.current.style.zIndex = '9999';
     }
-  }, [showAskAIButton, selectionData, fontSize]);
+  }, [showAskAIButton, selectionData]);
 
   return (
     <motion.div
@@ -898,55 +935,54 @@ Return the final, polished content.`
                         height: `${pageHeight}px`,
                         overflow: 'hidden',
                         position: 'relative',
-                        boxShadow: '0 0 10px rgba(0,0,0,0.1)'
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
                       }}
                     >
-                      <div style={{ 
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        padding: '2rem',
-                        overflowY: 'hidden'
-                      }}>
-                        {getCurrentPageContent()
-                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                          .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                          .replace(/_(.*?)_/g, '<u>$1</u>')
-                          .replace(/==(.*?)==/g, '<mark>$1</mark>')
-                          .replace(/\n- (.*)/g, '<ul><li>$1</li></ul>')
-                          .replace(/\n\d+\. (.*)/g, '<ol><li>$1</li></ol>')
-                          .replace(/\n/g, '<br />')
-                          .replace(/#{1,6} (.*)/g, '<h3>$1</h3>')}
-                      </div>
+                      <div 
+                        style={{ 
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          padding: '2.5rem',
+                          overflowY: 'hidden'
+                        }}
+                        dangerouslySetInnerHTML={{ __html: contentToHTML(getCurrentPageContent()) }}
+                      />
                       
                       {/* Page number indicator */}
-                      <div className="absolute bottom-2 right-2 text-gray-400 text-xs">
-                        Page {currentPage}
+                      <div className="absolute bottom-4 right-4 text-gray-500 text-sm font-medium">
+                        Page {currentPage} of {totalPages}
                       </div>
                     </div>
                     
-                    {/* Pagination */}
+                    {/* Pagination Controls */}
                     {totalPages > 1 && (
                       <div className="flex justify-center mt-6">
-                        <div className="flex space-x-2 items-center">
+                        <div className="flex space-x-4 items-center">
                           <button
                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                             disabled={currentPage === 1}
-                            className="px-3 py-2 border rounded-lg disabled:opacity-50 hover:bg-gray-50"
+                            className="px-4 py-2 border rounded-lg disabled:opacity-50 hover:bg-gray-50 flex items-center"
                           >
-                            <IconComponent icon={FiRotateCw} className="transform rotate-180" />
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                            Previous
                           </button>
-                          <span className="px-4 py-2 bg-gray-100 rounded-lg">
+                          <span className="px-4 py-2 bg-gray-100 rounded-lg font-medium">
                             {currentPage} / {totalPages}
                           </span>
                           <button
                             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                             disabled={currentPage === totalPages}
-                            className="px-3 py-2 border rounded-lg disabled:opacity-50 hover:bg-gray-50"
+                            className="px-4 py-2 border rounded-lg disabled:opacity-50 hover:bg-gray-50 flex items-center"
                           >
-                            <IconComponent icon={FiRotateCw} />
+                            Next
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                            </svg>
                           </button>
                         </div>
                       </div>
@@ -966,12 +1002,11 @@ Return the final, polished content.`
                     {/* Ask AI Button that appears when text is selected */}
                     {showAskAIButton && selectionData && (
                       <div 
-                        className="absolute z-50" 
+                        className="fixed z-50" 
                         ref={askAIButtonRef}
                         style={{
-                          pointerEvents: 'all',
+                          pointerEvents: 'auto',
                         }}
-                        onClick={(e) => e.stopPropagation()}
                       >
                         <motion.button
                           initial={{ opacity: 0, y: 10 }}
@@ -982,6 +1017,7 @@ Return the final, polished content.`
                             minWidth: '110px',
                             minHeight: '40px',
                             boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                            cursor: 'pointer',
                           }}
                         >
                           <IconComponent icon={AiOutlineRobot} className="mr-2 text-lg" />
@@ -1200,78 +1236,61 @@ Return the final, polished content.`
                         className="bg-gradient-to-r from-purple-500 to-indigo-600 h-2.5 rounded-full"
                         initial={{ width: 0 }}
                         animate={{ width: `${editProgress}%` }}
-                        transition={{ duration: 0.3 }}
                       />
                     </div>
                   </div>
                 )}
-                
-                <div className="flex justify-end gap-3">
-                  <motion.button
-                    variants={buttonVariants}
-                    whileHover="hover"
-                    whileTap="tap"
-                    onClick={() => setShowAIEditModal(false)}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-                  >
-                    Cancel
-                  </motion.button>
-                  <motion.button
-                    variants={buttonVariants}
-                    whileHover="hover"
-                    whileTap="tap"
-                    onClick={handleAIEdit}
-                    disabled={isEditing || !editInstructions.trim()}
-                    className="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 disabled:opacity-50"
-                  >
-                    {isEditing ? (
-                      <>
-                        <IconComponent icon={FiRotateCw} className="animate-spin mr-2 inline" />
-                        {editStep === 'analyzing' && 'Analyzing...'}
-                        {editStep === 'searching' && 'Searching...'}
-                        {editStep === 'updating' && 'Updating...'}
-                      </>
-                    ) : (
-                      'Update Content'
-                    )}
-                  </motion.button>
-                </div>
               </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Ask AI for Selected Text Modal */}
+        {/* AI Ask Modal */}
         <AnimatePresence>
           {showAskAIModal && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]"
+              onClick={() => {
+                setShowAskAIModal(false);
+                setAskAIInstruction('');
+              }}
             >
               <motion.div
                 initial={{ scale: 0.9, y: 20 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 20 }}
                 className="bg-white rounded-xl shadow-xl p-6 w-full max-w-2xl"
+                onClick={(e) => e.stopPropagation()}
               >
-                <h2 className="text-2xl font-bold text-primary mb-4">Edit Selected Text</h2>
-                
-                <div className="p-4 bg-gray-100 rounded-lg mb-4 text-sm">
-                  <p className="font-medium mb-2">Selected text:</p>
-                  <p className="italic text-gray-700">{selectionData?.text}</p>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-2xl font-bold text-primary">Ask AI to Modify Text</h2>
+                  <button 
+                    onClick={() => {
+                      setShowAskAIModal(false);
+                      setAskAIInstruction('');
+                    }}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 </div>
                 
-                <p className="text-gray-600 mb-4">
-                  Tell AI what you want to do with this text. For example: "Make it more formal", "Simplify this", "Expand on this idea", etc.
-                </p>
+                <p className="text-gray-600 mb-2">Selected text:</p>
+                <div className="p-3 bg-gray-100 rounded-lg mb-4 text-gray-800 max-h-32 overflow-y-auto">
+                  {selectionData?.text}
+                </div>
                 
                 <textarea
                   value={askAIInstruction}
                   onChange={(e) => setAskAIInstruction(e.target.value)}
-                  placeholder="Example: Rewrite this in a more academic tone..."
+                  placeholder="What would you like to do with this text? E.g., 'Make it more formal', 'Fix grammar', 'Simplify the language'"
                   className="w-full h-32 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none mb-4"
+                  autoFocus
                 />
                 
                 <div className="flex justify-end gap-3">
@@ -1283,7 +1302,7 @@ Return the final, polished content.`
                       setShowAskAIModal(false);
                       setAskAIInstruction('');
                     }}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                   >
                     Cancel
                   </motion.button>
@@ -1293,16 +1312,9 @@ Return the final, polished content.`
                     whileTap="tap"
                     onClick={processAskAIRequest}
                     disabled={isProcessingSelection || !askAIInstruction.trim()}
-                    className="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 disabled:opacity-50"
+                    className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-700 text-white rounded-lg disabled:opacity-50"
                   >
-                    {isProcessingSelection ? (
-                      <>
-                        <IconComponent icon={FiRotateCw} className="animate-spin mr-2 inline" />
-                        Processing...
-                      </>
-                    ) : (
-                      'Process Selection'
-                    )}
+                    {isProcessingSelection ? 'Processing...' : 'Apply Changes'}
                   </motion.button>
                 </div>
               </motion.div>
@@ -1314,4 +1326,5 @@ Return the final, polished content.`
   );
 };
 
-export default ContentWriterComponent; 
+export { ContentWriterComponent };
+export default ContentWriterComponent;

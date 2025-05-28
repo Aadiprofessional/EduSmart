@@ -7,7 +7,9 @@ import { useAuth } from '../utils/AuthContext';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import CitationGenerator from '../components/ui/CitationGenerator';
-import ContentWriterComponent from '../components/ui/ContentWriterComponent';
+import { ContentWriterComponent } from '../components/ui/ContentWriterComponent';
+import CheckMistakesComponent from '../components/ui/CheckMistakesComponent';
+import AiTutorChatComponent from '../components/ui/AiTutorChatComponent';
 
 const AiStudy: React.FC = () => {
   const { user } = useAuth();
@@ -16,10 +18,6 @@ const AiStudy: React.FC = () => {
   const [question, setQuestion] = useState('');
   const [loading, setLoading] = useState(false);
   const [answer, setAnswer] = useState('');
-  const [chatMessages, setChatMessages] = useState<{role: string, content: string}[]>([
-    {role: 'assistant', content: 'Hi there! I\'m your AI study assistant. How can I help you with your homework today?'}
-  ]);
-  const [chatInput, setChatInput] = useState('');
   const [history, setHistory] = useState<{date: string, question: string, snippet: string}[]>([
     {date: '2 days ago', question: 'Explain photosynthesis', snippet: 'Photosynthesis is the process by which green plants...'},
     {date: '1 week ago', question: 'Solve x^2 - 4 = 0', snippet: 'Using the quadratic formula, we find x = ±2...'},
@@ -37,19 +35,7 @@ const AiStudy: React.FC = () => {
     {task: 'Read chapter 5 for literature', subject: 'Literature', date: '2023-06-24', completed: true},
   ]);
 
-  // New state for check mistakes functionality
-  const [documentPages, setDocumentPages] = useState<string[]>([
-    'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?ixlib=rb-1.2.1&auto=format&fit=crop&w=634&q=80',
-    'https://images.unsplash.com/photo-1516979187457-637abb4f9353?ixlib=rb-1.2.1&auto=format&fit=crop&w=634&q=80',
-  ]);
-  const [currentPage, setCurrentPage] = useState(0);
-  const [mistakes, setMistakes] = useState<{id: number, line: string, correction: string, type: string}[]>([
-    {id: 1, line: "The study were conducted in 2020.", correction: "The study was conducted in 2020.", type: "Grammar"},
-    {id: 2, line: "They're were four participants.", correction: "There were four participants.", type: "Spelling"},
-    {id: 3, line: "According to Smith et al", correction: "Add proper citation: (Smith et al., 2019)", type: "Citation"},
-  ]);
   const [fullScreenSolution, setFullScreenSolution] = useState(false);
-  const [fullScreenDocument, setFullScreenDocument] = useState(false);
   
   const [newTask, setNewTask] = useState({task: '', subject: '', date: ''});
   const [currentFlashcard, setCurrentFlashcard] = useState(0);
@@ -85,28 +71,6 @@ const AiStudy: React.FC = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setFile(e.target.files[0]);
-      
-      // If we're in check mistakes tab, process the file for mistakes checking
-      if (activeTab === 'check-mistakes') {
-        // Create a file URL
-        const fileUrl = URL.createObjectURL(e.target.files[0]);
-        
-        // Add the new file to document pages
-        setDocumentPages(prev => [...prev, fileUrl]);
-        setCurrentPage(documentPages.length); // Set to the newly added page
-        
-        // Simulate processing the file for mistakes
-        setLoading(true);
-        setTimeout(() => {
-          // Add some sample mistakes
-          setMistakes([
-            {id: Date.now(), line: "The data were collected from participants.", correction: "The data was collected from participants.", type: "Grammar"},
-            {id: Date.now() + 1, line: "According to Smith et al", correction: "According to Smith et al. (2021)", type: "Citation"},
-            {id: Date.now() + 2, line: "This results in a signficant change.", correction: "This results in a significant change.", type: "Spelling"},
-          ]);
-          setLoading(false);
-        }, 2000);
-      }
     }
   };
 
@@ -128,28 +92,6 @@ const AiStudy: React.FC = () => {
         ]);
       }
     }, 2000);
-  };
-
-  const handleChatSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatInput.trim() || loading) return;
-    
-    // Add user message
-    setChatMessages(prev => [...prev, {role: 'user', content: chatInput}]);
-    setLoading(true);
-    
-    // Simulate AI response
-    setTimeout(() => {
-      setChatMessages(prev => [
-        ...prev, 
-        {role: 'assistant', content: `I've analyzed your question about "${chatInput}". Here's how to approach it: [detailed explanation with step-by-step guidance and examples to help understand the concept]`}
-      ]);
-      setChatInput('');
-      setLoading(false);
-      
-      // Scroll to bottom of chat
-      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 1500);
   };
 
   const containerVariants = {
@@ -304,7 +246,7 @@ const AiStudy: React.FC = () => {
           </motion.div>
 
           <motion.div 
-            className="bg-white rounded-2xl shadow-xl overflow-hidden max-w-6xl mx-auto"
+            className="bg-white rounded-2xl shadow-xl overflow-hidden max-w-7xl mx-auto"
             variants={containerVariants}
             initial="hidden"
             animate="visible"
@@ -536,60 +478,7 @@ const AiStudy: React.FC = () => {
               )}
 
               {activeTab === 'chat' && (
-                <motion.div 
-                  variants={containerVariants}
-                  className="flex flex-col h-[600px]"
-                >
-                  {/* Chat messages */}
-                  <div className="flex-1 overflow-y-auto mb-4 bg-gray-50 rounded-xl p-4">
-                    {chatMessages.map((msg, index) => (
-                      <motion.div
-                        key={index}
-                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} mb-4`}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <div 
-                          className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                            msg.role === 'user' 
-                              ? 'bg-teal-600 text-white rounded-tr-none' 
-                              : 'bg-white border border-gray-200 rounded-tl-none'
-                          }`}
-                        >
-                          {msg.content}
-                        </div>
-                      </motion.div>
-                    ))}
-                    <div ref={chatEndRef} />
-                  </div>
-                  
-                  {/* Chat input */}
-                  <motion.form 
-                    variants={itemVariants}
-                    onSubmit={handleChatSubmit}
-                    className="relative"
-                  >
-                    <input
-                      type="text"
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      className="w-full p-4 pr-16 border border-gray-300 rounded-full focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                      placeholder="Ask anything about your homework..."
-                      disabled={loading}
-                    />
-                    <motion.button
-                      type="submit"
-                      className="absolute right-2 top-2 p-2 bg-teal-600 text-white rounded-full"
-                      variants={buttonVariants}
-                      whileHover="hover"
-                      whileTap="tap"
-                      disabled={loading}
-                    >
-                      <IconComponent icon={AiOutlineRobot} className="h-6 w-6" />
-                    </motion.button>
-                  </motion.form>
-                </motion.div>
+                <AiTutorChatComponent />
               )}
 
               {activeTab === 'study-planner' && (
@@ -1001,168 +890,7 @@ const AiStudy: React.FC = () => {
               {activeTab === 'check-mistakes' && (
                 <motion.div variants={containerVariants}>
                   <h2 className="text-2xl font-semibold text-teal-800 mb-6">Check Mistakes</h2>
-                  
-                  {documentPages.length > 0 ? (
-                    <div>
-                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-4">
-                        <div className="lg:col-span-2">
-                          <div className="flex justify-between items-center mb-4">
-                            <div className="flex space-x-2">
-                              <button 
-                                className="px-3 py-1 bg-gray-200 rounded-md disabled:opacity-50"
-                                disabled={currentPage === 0}
-                                onClick={() => setCurrentPage(prev => prev - 1)}
-                              >
-                                Previous
-                              </button>
-                              <button 
-                                className="px-3 py-1 bg-gray-200 rounded-md disabled:opacity-50"
-                                disabled={currentPage === documentPages.length - 1}
-                                onClick={() => setCurrentPage(prev => prev + 1)}
-                              >
-                                Next
-                              </button>
-                            </div>
-                            <div className="text-gray-600">
-                              Page {currentPage + 1} of {documentPages.length}
-                            </div>
-                            <motion.button
-                              variants={buttonVariants}
-                              whileHover="hover"
-                              whileTap="tap"
-                              onClick={() => setFullScreenDocument(!fullScreenDocument)}
-                              className="flex items-center text-teal-600"
-                            >
-                              <IconComponent icon={AiOutlineFullscreen} className="h-5 w-5 mr-1" />
-                              <span className="hidden sm:inline">Fullscreen</span>
-                            </motion.button>
-                          </div>
-                          
-                          <div className={`relative ${
-                            fullScreenDocument ? 
-                              "fixed top-0 left-0 right-0 bottom-0 z-50 bg-gray-900 flex items-center justify-center p-4" : 
-                              "aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden"
-                          }`}>
-                            {fullScreenDocument && (
-                              <motion.button
-                                variants={buttonVariants}
-                                whileHover="hover"
-                                whileTap="tap"
-                                onClick={() => setFullScreenDocument(false)}
-                                className="absolute top-4 right-4 bg-white p-2 rounded-full shadow-md z-10"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                              </motion.button>
-                            )}
-                            <img 
-                              src={documentPages[currentPage]} 
-                              alt={`Document page ${currentPage + 1}`}
-                              className={`${fullScreenDocument ? 'max-h-full max-w-full object-contain' : 'w-full h-full object-cover'}`}
-                            />
-                          </div>
-                        </div>
-                        
-                        <div className="lg:col-span-1">
-                          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm h-full">
-                            <h3 className="text-lg font-medium text-teal-800 mb-4 flex items-center">
-                              <IconComponent icon={AiOutlineSearch} className="mr-2" /> 
-                              Identified Mistakes
-                            </h3>
-                            
-                            {mistakes.length > 0 ? (
-                              <div className="space-y-4 overflow-y-auto" style={{ maxHeight: "500px" }}>
-                                {mistakes.map((mistake) => (
-                                  <motion.div
-                                    key={mistake.id}
-                                    variants={itemVariants}
-                                    className="border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow"
-                                    whileHover={{ y: -2 }}
-                                  >
-                                    <div className="flex justify-between items-start">
-                                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                                        mistake.type === 'Grammar' ? 'bg-red-100 text-red-800' :
-                                        mistake.type === 'Spelling' ? 'bg-orange-100 text-orange-800' :
-                                        'bg-blue-100 text-blue-800'
-                                      }`}>
-                                        {mistake.type}
-                                      </span>
-                                    </div>
-                                    <div className="mt-2">
-                                      <p className="text-sm line-through text-gray-500">{mistake.line}</p>
-                                      <p className="text-sm font-medium text-green-700 mt-1">{mistake.correction}</p>
-                                    </div>
-                                  </motion.div>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-                                <IconComponent icon={AiOutlineSearch} className="h-12 w-12 mb-3 opacity-50" />
-                                <p className="text-center">No mistakes found on this page.</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="bg-gray-50 p-4 rounded-lg mt-6">
-                        <h3 className="text-lg font-medium text-teal-800 mb-3">Upload Document to Check</h3>
-                        <div className="flex flex-wrap gap-4">
-                          <motion.button
-                            variants={buttonVariants}
-                            whileHover="hover"
-                            whileTap="tap"
-                            className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg"
-                            onClick={() => fileInputRef.current?.click()}
-                          >
-                            <IconComponent icon={AiOutlineUpload} className="mr-2" />
-                            Upload New Document
-                          </motion.button>
-                          <motion.button
-                            variants={buttonVariants}
-                            whileHover="hover"
-                            whileTap="tap"
-                            className="flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg"
-                          >
-                            <IconComponent icon={AiOutlineCamera} className="mr-2" />
-                            Take Photo
-                          </motion.button>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-16 text-gray-500">
-                      <div className="bg-gray-100 rounded-full p-6 mb-4">
-                        <IconComponent icon={AiOutlineUpload} className="h-12 w-12 opacity-70" />
-                      </div>
-                      <h3 className="text-xl font-medium text-gray-700 mb-2">No Documents Uploaded</h3>
-                      <p className="text-gray-500 mb-6 text-center max-w-md">
-                        Upload a document or take a photo to check for mistakes, grammar issues, and suggestions.
-                      </p>
-                      <div className="flex flex-wrap gap-4 justify-center">
-                        <motion.button
-                          variants={buttonVariants}
-                          whileHover="hover"
-                          whileTap="tap"
-                          className="flex items-center px-6 py-3 bg-teal-600 text-white rounded-lg shadow-md"
-                          onClick={() => fileInputRef.current?.click()}
-                        >
-                          <IconComponent icon={AiOutlineUpload} className="mr-2" />
-                          Upload Document
-                        </motion.button>
-                        <motion.button
-                          variants={buttonVariants}
-                          whileHover="hover"
-                          whileTap="tap"
-                          className="flex items-center px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg"
-                        >
-                          <IconComponent icon={AiOutlineCamera} className="mr-2" />
-                          Take Photo
-                        </motion.button>
-                      </div>
-                    </div>
-                  )}
+                  <CheckMistakesComponent />
                 </motion.div>
               )}
             </div>
