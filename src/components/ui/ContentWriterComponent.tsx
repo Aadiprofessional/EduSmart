@@ -167,6 +167,11 @@ const ContentWriterComponent: React.FC = () => {
         .replace(/^[\s\n]*/, '') // Remove leading whitespace
         .replace(/\n*$/g, '') // Remove trailing newlines
         .replace(/(Let me know if you|Hope this|If you need any|Do you want me to)[^]*$/i, '') // Remove trailing questions
+        .replace(/#{1,6}\s*/g, '') // Remove markdown headers
+        .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown but keep text
+        .replace(/\*(.*?)\*/g, '$1') // Remove italic markdown but keep text
+        .replace(/_(.*?)_/g, '$1') // Remove underline markdown but keep text
+        .replace(/==(.*?)==/g, '$1') // Remove highlight markdown but keep text
         .trim();
         
       // Extract title if it exists 
@@ -178,7 +183,7 @@ const ContentWriterComponent: React.FC = () => {
         
       // Add title back if it was removed
       if (title && !cleanedContent.includes(title)) {
-        cleanedContent = `**Title: ${title}**\n\n${cleanedContent}`;
+        cleanedContent = `Title: ${title}\n\n${cleanedContent}`;
       }
         
       setGeneratedContent(cleanedContent);
@@ -269,7 +274,7 @@ const ContentWriterComponent: React.FC = () => {
       
     // Remove any AI prefixes/suffixes like "Certainly!" or "Let me know if you need anything else"
     content = content
-      .replace(/^(Certainly!|Here's|I've|Sure|Absolutely)[^]*/i, '')
+      .replace(/^(Certainly!|Here's|I've|The edited|The updated)[^]*/i, '')
       .replace(/[\r\n]+(Let me know|Hope this helps|Is there anything else)[^]*$/i, '');
 
     if (format === 'txt') {
@@ -489,6 +494,11 @@ Please return the edited content with the requested changes applied. Maintain th
       editedResult = editedResult
         .replace(/^(Here is|Here's|I've|The edited|The updated)[^]*/i, '')
         .replace(/[\r\n]+(Let me know|Hope this helps|Is there anything else)[^]*$/i, '')
+        .replace(/#{1,6}\s*/g, '') // Remove markdown headers
+        .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown but keep text
+        .replace(/\*(.*?)\*/g, '$1') // Remove italic markdown but keep text
+        .replace(/_(.*?)_/g, '$1') // Remove underline markdown but keep text
+        .replace(/==(.*?)==/g, '$1') // Remove highlight markdown but keep text
         .trim();
 
       setEditProgress(100);
@@ -646,7 +656,16 @@ Please provide a helpful response or suggestion for improving this text.`;
       }
 
       const data = await response.json();
-      const suggestion = data.choices?.[0]?.message?.content || 'No suggestion available';
+      let suggestion = data.choices?.[0]?.message?.content || 'No suggestion available';
+      
+      // Clean up markdown formatting from the suggestion
+      suggestion = suggestion
+        .replace(/#{1,6}\s*/g, '') // Remove markdown headers
+        .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown but keep text
+        .replace(/\*(.*?)\*/g, '$1') // Remove italic markdown but keep text
+        .replace(/_(.*?)_/g, '$1') // Remove underline markdown but keep text
+        .replace(/==(.*?)==/g, '$1') // Remove highlight markdown but keep text
+        .trim();
       
       // Show the suggestion to the user
       alert(`AI Suggestion:\n\n${suggestion}`);

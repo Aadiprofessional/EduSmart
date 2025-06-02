@@ -154,13 +154,6 @@ const Header: React.FC = () => {
         </span>
       )}
       
-      <div className="w-40 h-12 mr-2 overflow-hidden" style={{ aspectRatio: '1/4' }}>
-        <img 
-          alt="EduSmart Logo" 
-          src={eduLogo} 
-          className="w-full h-full object-contain"
-        />
-      </div>
     </Link>
   </div>
 </div>

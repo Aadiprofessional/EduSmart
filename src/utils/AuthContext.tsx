@@ -47,6 +47,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const signUp = async (email: string, password: string, name: string) => {
     try {
+      console.log('🔄 Starting signup process...', { email, name });
+      
+      // Only create the user account - no profile creation
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -57,12 +60,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         },
       });
 
-      if (error) throw error;
+      console.log('✅ Auth signup response:', { data, error });
 
+      if (error) {
+        console.error('❌ Auth signup error:', error);
+        return { 
+          success: false, 
+          error: error.message 
+        };
+      }
+
+      console.log('✅ Signup completed successfully - no profile creation attempted');
       return { success: true, error: null };
+      
     } catch (error: any) {
-      console.error('Error signing up:', error.message);
-      return { success: false, error: error.message };
+      console.error('❌ Signup process failed:', error);
+      return { 
+        success: false, 
+        error: error.message || 'Signup failed' 
+      };
     }
   };
 

@@ -53,6 +53,13 @@
   --danger-color: #ef4444;
   --warning-color: #f59e0b;
   --info-color: #0ea5e9;
+  --lavender-50: #faf5ff;
+  --lavender-100: #f3e8ff;
+  --lavender-200: #e9d5ff;
+  --lavender-300: #d8b4fe;
+  --lavender-400: #c084fc;
+  --lavender-500: #a855f7;
+  --lavender-600: #9333ea;
 }
 
 /* Modern scrollbar */

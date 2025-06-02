@@ -18,6 +18,7 @@ import ApplicationTracker from './pages/ApplicationTracker';
 import Signup from './pages/Signup';
 import ChatBotPage from './pages/ChatBot';
 import AiStudy from './pages/AiStudy';
+import Profile from './pages/Profile';
 
 // Components
 import ChatBot from './components/ui/ChatBot';
@@ -46,6 +47,12 @@ function App() {
         <Route path="/blog" element={<Blog />} />
         <Route path="/blog/:id" element={<Blog />} />
         <Route path="/scholarships" element={<Scholarships />} />
+        <Route path="/scholarship-finder" element={<Scholarships />} />
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        } />
         <Route path="/application-tracker" element={
           <ProtectedRoute>
             <ApplicationTracker />

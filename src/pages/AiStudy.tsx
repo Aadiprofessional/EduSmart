@@ -279,7 +279,7 @@ const AiStudy: React.FC = () => {
                     <motion.button
                       key={tab.id}
                       className={`flex items-center py-3 px-4 w-full text-left ${
-                        activeTab === tab.id ? 'bg-teal-50 text-teal-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
+                        activeTab === tab.id ? 'bg-orange-50 text-orange-600 font-medium' : 'text-gray-700 hover:bg-gray-50'
                       }`}
                       onClick={() => {
                         setActiveTab(tab.id);
@@ -302,7 +302,7 @@ const AiStudy: React.FC = () => {
                   key={tab.id}
                   className={`flex items-center py-4 px-6 flex-1 justify-center ${
                     activeTab === tab.id
-                      ? 'bg-white text-teal-800 font-medium shadow-inner border-b-2 border-orange-500'
+                      ? 'bg-white text-orange-500 font-medium shadow-inner border-b-2 border-orange-500'
                       : 'hover:bg-white/10'
                   }`}
                   onClick={() => setActiveTab(tab.id)}
