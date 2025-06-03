@@ -3101,24 +3101,7 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                     <h2 className="text-xl font-bold text-gray-800">Advanced Filters</h2>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center border border-gray-300 rounded overflow-hidden">
-                      <button 
-                        onClick={() => setViewMode('grid')} 
-                        className={`p-2 ${viewMode === 'grid' ? 'bg-primary text-white' : 'bg-white text-gray-700'}`}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                        </svg>
-                      </button>
-                      <button 
-                        onClick={() => setViewMode('list')} 
-                        className={`p-2 ${viewMode === 'list' ? 'bg-primary text-white' : 'bg-white text-gray-700'}`}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                      </button>
-                    </div>
+                   
                     
                     <select
                       value={sortBy}
@@ -3132,27 +3115,31 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                       <option value="country">Country: A to Z</option>
                     </select>
                     
-                    {compareList.length > 0 && (
-                      <motion.button
-                        onClick={handleOpenCompare}
-                        className="bg-secondary text-white px-3 py-2 rounded flex items-center text-sm"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <IconComponent icon={FaTrophy} className="mr-1" /> Compare ({compareList.length})
-                      </motion.button>
-                    )}
+                    {/* AI Analysis Button */}
+                    <motion.button
+                      onClick={handleAIAnalysis}
+                      disabled={isLoadingAI}
+                      className="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-3 py-2 rounded flex items-center text-sm disabled:opacity-50"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <IconComponent icon={FaRobot} className="mr-1" /> 
+                      {isLoadingAI ? 'Analyzing...' : 'AI Analysis'}
+                    </motion.button>
                     
-                    {compareList.length === 0 && (
-                      <motion.button
-                        onClick={handleOpenCompare}
-                        className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-3 py-2 rounded flex items-center text-sm"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <IconComponent icon={FaRobot} className="mr-1" /> Smart Compare
-                      </motion.button>
-                    )}
+                    {/* Get Recommendations Button */}
+                    <motion.button
+                      onClick={handleGetRecommendations}
+                      disabled={isLoadingAI}
+                      className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-2 rounded flex items-center text-sm disabled:opacity-50"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <IconComponent icon={FaLightbulb} className="mr-1" /> 
+                      {isLoadingAI ? 'Loading...' : 'Get Recommendations'}
+                    </motion.button>
+                    
+                 
                   </div>
                 </div>
               </div>
@@ -3371,52 +3358,33 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                           </svg>
                         </button>
                       </div>
-                      
-                      <select
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value)}
-                        className="p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary text-sm"
-                      >
-                        <option value="qsRanking">QS Ranking: Low to High</option>
-                        <option value="qsRankingDesc">QS Ranking: High to Low</option>
-                        <option value="name">University Name: A to Z</option>
-                        <option value="nameDesc">University Name: Z to A</option>
-                        <option value="country">Country: A to Z</option>
-                      </select>
-                      
                       {compareList.length > 0 && (
-                    <motion.button
-                          onClick={handleOpenCompare}
-                          className="bg-secondary text-white px-3 py-2 rounded flex items-center text-sm"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <IconComponent icon={FaTrophy} className="mr-1" /> Compare ({compareList.length})
-                        </motion.button>
-                      )}
-
-                      {/* AI Analysis and Recommendation buttons */}
                       <motion.button
-                        onClick={handleAIAnalysis}
-                        disabled={isLoadingAI}
-                        className="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-3 py-2 rounded flex items-center text-sm disabled:opacity-50"
+                        onClick={handleOpenCompare}
+                        className="bg-secondary text-white px-3 py-2 rounded flex items-center text-sm"
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                       >
-                        <IconComponent icon={FaRobot} className="mr-1" /> 
-                        {isLoadingAI ? 'Analyzing...' : 'AI Analysis'}
+                        <IconComponent icon={FaTrophy} className="mr-1" /> Compare ({compareList.length})
                       </motion.button>
-                      
+                    )}
+                    
+                    {compareList.length === 0 && (
                       <motion.button
-                        onClick={handleGetRecommendations}
-                        disabled={isLoadingAI}
-                        className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-2 rounded flex items-center text-sm disabled:opacity-50"
+                        onClick={handleOpenCompare}
+                        className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-3 py-2 rounded flex items-center text-sm"
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                       >
-                        <IconComponent icon={FaLightbulb} className="mr-1" /> 
-                        {isLoadingAI ? 'Loading...' : 'Get Recommendations'}
-                    </motion.button>
+                        <IconComponent icon={FaRobot} className="mr-1" /> Smart Compare
+                      </motion.button>
+                    )}
+                    
+                   
+                      {/* AI Analysis and Recommendation buttons */}
+                 
+                      
+                    
                   </div>
                 </div>
                   

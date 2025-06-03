@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { AiOutlineUpload, AiOutlineBulb, AiOutlineRobot, AiOutlineHistory, AiOutlineFileText, AiOutlineCamera, AiOutlineFullscreen, AiOutlineSearch, AiOutlineEdit } from 'react-icons/ai';
+import { AiOutlineUpload, AiOutlineBulb, AiOutlineRobot, AiOutlineHistory, AiOutlineSearch, AiOutlineEdit } from 'react-icons/ai';
 import { FiBookOpen, FiClock, FiCalendar, FiCheck, FiBookmark, FiEdit, FiMenu } from 'react-icons/fi';
 import IconComponent from '../components/ui/IconComponent';
 import { useAuth } from '../utils/AuthContext';
@@ -10,14 +10,11 @@ import CitationGenerator from '../components/ui/CitationGenerator';
 import { ContentWriterComponent } from '../components/ui/ContentWriterComponent';
 import CheckMistakesComponent from '../components/ui/CheckMistakesComponent';
 import AiTutorChatComponent from '../components/ui/AiTutorChatComponent';
+import UploadHomeworkComponent from '../components/ui/UploadHomeworkComponent';
 
 const AiStudy: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('upload');
-  const [file, setFile] = useState<File | null>(null);
-  const [question, setQuestion] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [answer, setAnswer] = useState('');
   const [history, setHistory] = useState<{date: string, question: string, snippet: string}[]>([
     {date: '2 days ago', question: 'Explain photosynthesis', snippet: 'Photosynthesis is the process by which green plants...'},
     {date: '1 week ago', question: 'Solve x^2 - 4 = 0', snippet: 'Using the quadratic formula, we find x = ±2...'},
@@ -35,15 +32,12 @@ const AiStudy: React.FC = () => {
     {task: 'Read chapter 5 for literature', subject: 'Literature', date: '2023-06-24', completed: true},
   ]);
 
-  const [fullScreenSolution, setFullScreenSolution] = useState(false);
-  
   const [newTask, setNewTask] = useState({task: '', subject: '', date: ''});
   const [currentFlashcard, setCurrentFlashcard] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [showFullScreen, setShowFullScreen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -67,32 +61,6 @@ const AiStudy: React.FC = () => {
       document.head.removeChild(style);
     };
   }, []);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setFile(e.target.files[0]);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if ((!file && !question) || loading) return;
-    
-    setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setAnswer('Based on your homework question, the solution involves applying the principles of [subject] to solve this problem. First, we need to identify the key variables and constraints. Then, using the formula [formula], we can determine that the answer is [detailed explanation with step-by-step working].');
-      setLoading(false);
-      
-      // Add to history
-      if (question) {
-        setHistory(prev => [
-          {date: 'Just now', question, snippet: 'Based on your homework question...'},
-          ...prev
-        ]);
-      }
-    }, 2000);
-  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -318,163 +286,7 @@ const AiStudy: React.FC = () => {
             {/* Tab Content */}
             <div className="p-6">
               {activeTab === 'upload' && (
-                <motion.div variants={containerVariants}>
-                  <motion.div 
-                    variants={itemVariants}
-                    className="grid grid-cols-1 md:grid-cols-2 gap-8"
-                  >
-                    {/* Input Section */}
-                    <div>
-                      <h2 className="text-2xl font-semibold text-teal-800 mb-6">Submit Your Homework</h2>
-                      
-                      <form onSubmit={handleSubmit}>
-                        <div className="mb-6">
-                          <label className="block text-gray-700 mb-2 font-medium">
-                            Describe your homework problem
-                          </label>
-                          <textarea
-                            value={question}
-                            onChange={(e) => setQuestion(e.target.value)}
-                            className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none h-40"
-                            placeholder="Type your homework question or problem here..."
-                          />
-                        </div>
-                        
-                        <div className="mb-6">
-                          <label className="block text-gray-700 mb-2 font-medium">
-                            Or upload your assignment
-                          </label>
-                          <div 
-                            className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-teal-500 cursor-pointer transition-colors"
-                            onClick={() => fileInputRef.current?.click()}
-                          >
-                            <input 
-                              type="file" 
-                              ref={fileInputRef}
-                              onChange={handleFileChange}
-                              className="hidden"
-                              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                            />
-                            {file ? (
-                              <div className="text-gray-700">
-                                <IconComponent icon={AiOutlineFileText} className="h-8 w-8 mx-auto mb-2 text-teal-600" />
-                                <p className="font-medium">{file.name}</p>
-                                <p className="text-sm text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                              </div>
-                            ) : (
-                              <div className="text-gray-500">
-                                <IconComponent icon={AiOutlineUpload} className="h-8 w-8 mx-auto mb-2" />
-                                <p>Drag and drop your file here, or click to browse</p>
-                                <p className="text-sm mt-1">Supports PDF, Word, and images</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center justify-between flex-wrap gap-2">
-                          <motion.button
-                            type="button"
-                            className="flex items-center justify-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50"
-                            variants={buttonVariants}
-                            whileHover="hover"
-                            whileTap="tap"
-                            onClick={() => fileInputRef.current?.click()}
-                          >
-                            <IconComponent icon={AiOutlineCamera} className="h-5 w-5 mr-2" />
-                            Take Photo
-                          </motion.button>
-                          
-                          <motion.button
-                            type="submit"
-                            className="flex items-center justify-center px-6 py-3 bg-gradient-to-r from-teal-600 to-teal-700 rounded-lg text-white font-medium shadow-md hover:shadow-lg"
-                            variants={buttonVariants}
-                            whileHover="hover"
-                            whileTap="tap"
-                            disabled={loading}
-                            animate={loading ? "pulse" : ""}
-                          >
-                            {loading ? 'Processing...' : 'Get Solution'}
-                            <IconComponent icon={AiOutlineBulb} className="h-5 w-5 ml-2" />
-                          </motion.button>
-                        </div>
-                      </form>
-                    </div>
-                    
-                    {/* Results Section */}
-                    <div>
-                      <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-2xl font-semibold text-teal-800">Solution</h2>
-                        {answer && (
-                          <motion.button
-                            variants={buttonVariants}
-                            whileHover="hover"
-                            whileTap="tap"
-                            onClick={() => setFullScreenSolution(!fullScreenSolution)}
-                            className="flex items-center text-teal-600 font-medium"
-                          >
-                            <IconComponent 
-                              icon={AiOutlineFullscreen} 
-                              className="h-5 w-5 mr-1" 
-                            />
-                            {fullScreenSolution ? "Exit Fullscreen" : "Fullscreen"}
-                          </motion.button>
-                        )}
-                      </div>
-                      
-                      <motion.div
-                        className={`bg-gray-50 rounded-xl p-6 overflow-y-auto transition-all duration-300 ${
-                          fullScreenSolution ? 
-                            "fixed top-0 left-0 right-0 bottom-0 z-50 rounded-none" : 
-                            "h-[450px]"
-                        }`}
-                        variants={itemVariants}
-                        animate={answer ? { boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)" } : {}}
-                      >
-                        {loading ? (
-                          <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                            <motion.div
-                              className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full mb-4"
-                              animate={{ rotate: 360 }}
-                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                            />
-                            <p>Analyzing your homework...</p>
-                          </div>
-                        ) : answer ? (
-                          <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 0.5 }}
-                            className="relative"
-                          >
-                            {fullScreenSolution && (
-                              <div className="sticky top-2 right-2 flex justify-end mb-4">
-                                <motion.button
-                                  variants={buttonVariants}
-                                  whileHover="hover"
-                                  whileTap="tap"
-                                  onClick={() => setFullScreenSolution(false)}
-                                  className="bg-white text-gray-700 p-2 rounded-full shadow-md"
-                                >
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                  </svg>
-                                </motion.button>
-                              </div>
-                            )}
-                            <div className="prose prose-teal max-w-none">
-                              <p>{answer}</p>
-                            </div>
-                          </motion.div>
-                        ) : (
-                          <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                            <IconComponent icon={AiOutlineBulb} className="h-12 w-12 mb-3 opacity-50" />
-                            <p className="text-center">Your solution will appear here after submitting your homework problem.</p>
-                          </div>
-                        )}
-                      </motion.div>
-                    </div>
-                  </motion.div>
-                </motion.div>
+                <UploadHomeworkComponent />
               )}
 
               {activeTab === 'chat' && (
