@@ -2,85 +2,87 @@ import React, { useState } from 'react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import { motion } from 'framer-motion';
-
-const courseCategories = [
-  'All Courses',
-  'Computer Science',
-  'Business',
-  'Data Science',
-  'Design',
-  'Engineering'
-];
-
-const courseData = [
-  {
-    id: 1,
-    title: 'Introduction to AI',
-    category: 'Computer Science',
-    instructor: 'Dr. Smith',
-    rating: 4.8,
-    students: 1245,
-    price: 49.99,
-    image: 'https://images.unsplash.com/photo-1593376893114-1a66d1013e14?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 2,
-    title: 'Business Management',
-    category: 'Business',
-    instructor: 'Prof. Johnson',
-    rating: 4.6,
-    students: 980,
-    price: 39.99,
-    image: 'https://images.unsplash.com/photo-1556761175-4b46a572b786?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 3,
-    title: 'Data Visualization',
-    category: 'Data Science',
-    instructor: 'Sarah Williams',
-    rating: 4.9,
-    students: 1560,
-    price: 59.99,
-    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 4,
-    title: 'UX/UI Design Principles',
-    category: 'Design',
-    instructor: 'Mike Robertson',
-    rating: 4.7,
-    students: 1100,
-    price: 44.99,
-    image: 'https://images.unsplash.com/photo-1517292987719-0369a794ec0f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 5,
-    title: 'Mechanical Engineering Basics',
-    category: 'Engineering',
-    instructor: 'Dr. Chen',
-    rating: 4.5,
-    students: 875,
-    price: 54.99,
-    image: 'https://images.unsplash.com/photo-1537462715879-360eeb61a0ad?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 6,
-    title: 'Web Development Bootcamp',
-    category: 'Computer Science',
-    instructor: 'Jessica Lee',
-    rating: 4.8,
-    students: 2200,
-    price: 79.99,
-    image: 'https://images.unsplash.com/photo-1605379399642-870262d3d051?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80'
-  }
-];
+import { useLanguage } from '../utils/LanguageContext';
 
 const Courses: React.FC = () => {
+  const { t } = useLanguage();
   const [activeCategory, setActiveCategory] = useState('All Courses');
   const [searchTerm, setSearchTerm] = useState('');
 
+  const courseCategories = [
+    t('courses.allCourses'),
+    t('courses.categories.computerScience'),
+    t('courses.categories.business'),
+    t('courses.categories.dataScience'),
+    t('courses.categories.design'),
+    t('courses.categories.engineering')
+  ];
+
+  const courseData = [
+    {
+      id: 1,
+      title: 'Introduction to AI',
+      category: t('courses.categories.computerScience'),
+      instructor: 'Dr. Smith',
+      rating: 4.8,
+      students: 1245,
+      price: 49.99,
+      image: 'https://images.unsplash.com/photo-1593376893114-1a66d1013e14?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      id: 2,
+      title: 'Business Management',
+      category: t('courses.categories.business'),
+      instructor: 'Prof. Johnson',
+      rating: 4.6,
+      students: 980,
+      price: 39.99,
+      image: 'https://images.unsplash.com/photo-1556761175-4b46a572b786?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      id: 3,
+      title: 'Data Visualization',
+      category: t('courses.categories.dataScience'),
+      instructor: 'Sarah Williams',
+      rating: 4.9,
+      students: 1560,
+      price: 59.99,
+      image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      id: 4,
+      title: 'UX/UI Design Principles',
+      category: t('courses.categories.design'),
+      instructor: 'Mike Robertson',
+      rating: 4.7,
+      students: 1100,
+      price: 44.99,
+      image: 'https://images.unsplash.com/photo-1517292987719-0369a794ec0f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      id: 5,
+      title: 'Mechanical Engineering Basics',
+      category: t('courses.categories.engineering'),
+      instructor: 'Dr. Chen',
+      rating: 4.5,
+      students: 875,
+      price: 54.99,
+      image: 'https://images.unsplash.com/photo-1537462715879-360eeb61a0ad?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      id: 6,
+      title: 'Web Development Bootcamp',
+      category: t('courses.categories.computerScience'),
+      instructor: 'Jessica Lee',
+      rating: 4.8,
+      students: 2200,
+      price: 79.99,
+      image: 'https://images.unsplash.com/photo-1605379399642-870262d3d051?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80'
+    }
+  ];
+
   const filteredCourses = courseData.filter((course) => {
-    const matchesCategory = activeCategory === 'All Courses' || course.category === activeCategory;
+    const matchesCategory = activeCategory === t('courses.allCourses') || course.category === activeCategory;
     const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch;
   });
@@ -159,7 +161,7 @@ const Courses: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              Explore Our Courses
+              {t('courses.title')}
             </motion.h1>
             <motion.p 
               className="text-xl"
@@ -167,7 +169,7 @@ const Courses: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
             >
-              Discover a wide range of courses to help you achieve your goals
+              {t('courses.subtitle')}
             </motion.p>
           </div>
         </motion.div>
@@ -196,82 +198,100 @@ const Courses: React.FC = () => {
                       whileTap="tap"
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: 0.4 + (index * 0.05) }}
+                      transition={{ duration: 0.3, delay: index * 0.1 }}
                     >
                       {category}
                     </motion.button>
                   ))}
                 </motion.div>
+                
                 <motion.div 
-                  className="w-full md:w-auto"
+                  className="relative"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.5 }}
                 >
                   <input
                     type="text"
-                    placeholder="Search courses..."
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-600"
+                    placeholder={t('courses.searchPlaceholder')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-4 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 w-64"
                   />
                 </motion.div>
               </div>
             </div>
             
-            <motion.div 
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              transition={{ staggerChildren: 0.1, delayChildren: 0.6 }}
-            >
-              {filteredCourses.map((course) => (
-                <motion.div 
-                  key={course.id} 
-                  className="bg-white rounded-lg shadow-md overflow-hidden"
-                  variants={itemVariants}
-                  whileHover={{ 
-                    y: -10,
-                    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
-                  }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <div className="overflow-hidden">
-                    <motion.img 
-                      src={course.image} 
-                      alt={course.title} 
-                      className="w-full h-48 object-cover" 
-                      whileHover={{ scale: 1.05 }}
-                      transition={{ duration: 0.5 }}
-                    />
-                  </div>
-                  <div className="p-6">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-xl font-semibold text-teal-800">{course.title}</h3>
-                      <span className="bg-orange-500 text-white text-sm px-2 py-1 rounded">
+            {filteredCourses.length > 0 ? (
+              <motion.div 
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                {filteredCourses.map((course) => (
+                  <motion.div
+                    key={course.id}
+                    className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
+                    variants={itemVariants}
+                    whileHover={{ y: -5 }}
+                  >
+                    <div className="relative">
+                      <img 
+                        src={course.image} 
+                        alt={course.title}
+                        className="w-full h-48 object-cover"
+                      />
+                      <div className="absolute top-4 right-4 bg-white px-2 py-1 rounded-full text-sm font-bold text-orange-500">
                         ${course.price}
-                      </span>
-                    </div>
-                    <p className="text-gray-600 mb-4">Instructor: {course.instructor}</p>
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center">
-                        <span className="text-yellow-500 mr-1">★</span>
-                        <span className="text-gray-700">{course.rating}</span>
-                        <span className="text-gray-500 text-sm ml-2">({course.students} students)</span>
                       </div>
-                      <motion.button 
-                        className="text-orange-500 hover:text-orange-600 font-medium"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        Details
-                      </motion.button>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
+                    
+                    <div className="p-6">
+                      <h3 className="text-xl font-bold text-gray-800 mb-2">{course.title}</h3>
+                      <p className="text-gray-600 mb-4">{t('courses.instructor')}: {course.instructor}</p>
+                      
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center">
+                          <span className="text-yellow-500 mr-1">★</span>
+                          <span className="text-gray-700">{course.rating}</span>
+                        </div>
+                        <span className="text-gray-600 text-sm">{course.students} {t('courses.students')}</span>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <motion.button
+                          className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"
+                          variants={buttonVariants}
+                          whileHover="hover"
+                          whileTap="tap"
+                        >
+                          {t('courses.enrollNow')}
+                        </motion.button>
+                        <motion.button
+                          className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors"
+                          variants={buttonVariants}
+                          whileHover="hover"
+                          whileTap="tap"
+                        >
+                          {t('courses.viewDetails')}
+                        </motion.button>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            ) : (
+              <motion.div 
+                className="text-center py-12"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
+              >
+                <h3 className="text-xl font-semibold text-gray-600 mb-2">{t('courses.noCoursesFound')}</h3>
+                <p className="text-gray-500">{t('common.search')}</p>
+              </motion.div>
+            )}
           </div>
         </section>
       </main>

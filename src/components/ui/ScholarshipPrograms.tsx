@@ -1,126 +1,102 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import AnimatedSection from './AnimatedSection';
-import { FaGraduationCap, FaUniversity, FaGlobeAmericas, FaChartLine } from 'react-icons/fa';
+import { FaGraduationCap, FaGlobe, FaAward } from 'react-icons/fa';
 import IconComponent from './IconComponent';
+import AnimatedSection from './AnimatedSection';
+import { useLanguage } from '../../utils/LanguageContext';
 
 const ScholarshipPrograms: React.FC = () => {
-  const scholarshipTypes = [
+  const { t } = useLanguage();
+
+  const scholarships = [
     {
-      icon: <IconComponent icon={FaGraduationCap} />,
-      title: "Merit-Based",
-      count: "1,250+"
+      icon: FaGraduationCap,
+      title: 'Merit-Based Scholarships',
+      description: 'Scholarships awarded based on academic excellence and achievements.',
+      amount: 'Up to $50,000',
+      color: 'from-blue-500 to-blue-600'
     },
     {
-      icon: <IconComponent icon={FaUniversity} />,
-      title: "University-Specific",
-      count: "3,000+"
+      icon: FaGlobe,
+      title: 'International Student Scholarships',
+      description: 'Special funding opportunities for international students.',
+      amount: 'Up to $30,000',
+      color: 'from-green-500 to-green-600'
     },
     {
-      icon: <IconComponent icon={FaGlobeAmericas} />,
-      title: "International",
-      count: "750+"
-    },
-    {
-      icon: <IconComponent icon={FaChartLine} />,
-      title: "Field-Specific",
-      count: "1,500+"
+      icon: FaAward,
+      title: 'Need-Based Financial Aid',
+      description: 'Financial assistance based on demonstrated financial need.',
+      amount: 'Up to $40,000',
+      color: 'from-purple-500 to-purple-600'
     }
   ];
-  
+
   return (
-    <section className="py-16 bg-teal-800 text-white relative overflow-hidden">
-      {/* Background decoration */}
-      <motion.div 
-        className="absolute inset-0 opacity-10"
-        animate={{ 
-          backgroundPosition: ['0% 0%', '100% 100%'],
-        }}
-        transition={{ 
-          repeat: Infinity, 
-          repeatType: "reverse", 
-          duration: 20,
-          ease: "linear"
-        }}
-        style={{
-          backgroundImage: "url('https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          filter: "blur(8px)"
-        }}
-      />
-      
-      {/* Floating elements */}
-      <motion.div
-        className="absolute top-20 right-10 w-40 h-40 bg-orange-400 rounded-full opacity-20 blur-xl"
-        animate={{ 
-          y: [0, -20, 0],
-          opacity: [0.1, 0.2, 0.1]
-        }}
-        transition={{ 
-          repeat: Infinity, 
-          duration: 5
-        }}
-      />
-      
-      <motion.div
-        className="absolute bottom-20 left-10 w-56 h-56 bg-teal-400 rounded-full opacity-20 blur-xl"
-        animate={{ 
-          y: [0, 20, 0],
-          opacity: [0.1, 0.15, 0.1]
-        }}
-        transition={{ 
-          repeat: Infinity, 
-          duration: 7,
-          delay: 1
-        }}
-      />
-      
-      <div className="container mx-auto px-4 relative z-10">
+    <section className="py-16 bg-gray-50">
+      <div className="container mx-auto px-4">
         <AnimatedSection direction="up">
-          <div className="max-w-3xl mx-auto text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Scholarship Programs</h2>
-            <p className="text-lg text-gray-300">
-              Discover global scholarship opportunities tailored to your academic profile. Our comprehensive database features merit-based, need-based, and specialized scholarships to help fund your international education.
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-teal-800 mb-4">
+              {t('scholarshipPrograms.title')}
+            </h2>
+            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+              {t('scholarshipPrograms.subtitle')}
             </p>
+          </div>
+        </AnimatedSection>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+          {scholarships.map((scholarship, index) => (
+            <AnimatedSection key={index} direction="up" delay={0.1 * index}>
+              <motion.div
+                className="bg-white rounded-lg shadow-lg overflow-hidden h-full"
+                whileHover={{ 
+                  y: -10,
+                  boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+                }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <div className={`bg-gradient-to-r ${scholarship.color} p-6 text-white`}>
+                  <motion.div 
+                    className="inline-flex items-center justify-center w-16 h-16 bg-white bg-opacity-20 rounded-full mb-4"
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    transition={{ type: "spring", stiffness: 300 }}
+                  >
+                    <IconComponent icon={scholarship.icon} className="h-8 w-8" />
+                  </motion.div>
+                  <h3 className="text-xl font-bold mb-2">{scholarship.title}</h3>
+                  <div className="text-2xl font-bold">{scholarship.amount}</div>
+                </div>
+                <div className="p-6">
+                  <p className="text-gray-600 mb-6">{scholarship.description}</p>
+                  <motion.button
+                    className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {t('scholarshipPrograms.applyButton')}
+                  </motion.button>
+                </div>
+              </motion.div>
+            </AnimatedSection>
+          ))}
+        </div>
+
+        <AnimatedSection direction="up" delay={0.4}>
+          <div className="text-center">
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="inline-block mt-8"
             >
-              <Link 
+              <Link
                 to="/scholarships"
-                className="inline-block bg-orange-500 hover:bg-orange-600 text-white py-3 px-8 rounded-lg transition-colors"
+                className="inline-block bg-teal-600 hover:bg-teal-700 text-white font-medium py-3 px-8 rounded-lg transition-colors"
               >
-                Explore Scholarships
+                {t('scholarshipPrograms.exploreButton')}
               </Link>
             </motion.div>
-          </div>
-        </AnimatedSection>
-        
-        <AnimatedSection direction="up" delay={0.2}>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-            {scholarshipTypes.map((type, index) => (
-              <motion.div 
-                key={index}
-                whileHover={{ y: -5, boxShadow: "0 15px 30px -10px rgba(0, 0, 0, 0.3)" }}
-                transition={{ type: "spring", stiffness: 300 }}
-                className="bg-white/10 backdrop-blur-sm rounded-lg p-6 text-center"
-              >
-                <motion.div 
-                  className="text-3xl text-orange-400 mb-3 mx-auto"
-                  whileHover={{ rotate: 5, scale: 1.1 }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                >
-                  {type.icon}
-                </motion.div>
-                <h3 className="text-xl font-semibold text-white mb-1">
-                  {type.title}
-                </h3>
-                <p className="text-teal-100 font-semibold">{type.count}</p>
-              </motion.div>
-            ))}
           </div>
         </AnimatedSection>
       </div>

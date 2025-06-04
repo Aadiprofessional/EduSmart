@@ -5,11 +5,13 @@ import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import IconComponent from '../components/ui/IconComponent';
 import { useAuth } from '../utils/AuthContext';
+import { useLanguage } from '../utils/LanguageContext';
 import { motion } from 'framer-motion';
 
 const Signup: React.FC = () => {
   const navigate = useNavigate();
   const { signUp, signInWithGoogle, signInWithFacebook } = useAuth();
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -49,33 +51,33 @@ const Signup: React.FC = () => {
     
     // Validate name
     if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = t('auth.signup.nameRequired');
     }
     
     // Validate email
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = t('auth.signup.emailRequired');
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
+      newErrors.email = t('auth.signup.emailInvalid');
     }
     
     // Validate password
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = t('auth.signup.passwordRequired');
     } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
+      newErrors.password = t('auth.signup.passwordMinLength');
     }
     
     // Validate confirm password
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
+      newErrors.confirmPassword = t('auth.signup.confirmPasswordRequired');
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = t('auth.signup.passwordsNotMatch');
     }
     
     // Validate terms agreement
     if (!agreeToTerms) {
-      newErrors.terms = 'You must agree to the terms and conditions';
+      newErrors.terms = t('auth.signup.agreeToTermsRequired');
     }
     
     setErrors(newErrors);
@@ -93,13 +95,13 @@ const Signup: React.FC = () => {
         
         if (success) {
           // Show success message and redirect to login
-          alert('Account created successfully! Please check your email to confirm your account.');
+          alert(t('auth.signup.accountCreated'));
           navigate('/login');
         } else {
-          setAuthError(error || 'An error occurred during sign up');
+          setAuthError(error || t('auth.signup.signUpError'));
         }
       } catch (error) {
-        setAuthError('An unexpected error occurred');
+        setAuthError(t('auth.signup.signUpError'));
       } finally {
         setIsSubmitting(false);
       }
@@ -185,13 +187,13 @@ const Signup: React.FC = () => {
                 className="text-2xl font-bold text-white text-center"
                 variants={itemVariants}
               >
-                Create an Account
+                {t('auth.signup.createAccount')}
               </motion.h1>
               <motion.p 
                 className="text-teal-100 text-center mt-2"
                 variants={itemVariants}
               >
-                Join EduSmart to access all features and resources
+                {t('auth.signup.joinEduSmart')}
               </motion.p>
             </div>
             
@@ -222,192 +224,162 @@ const Signup: React.FC = () => {
               </motion.div>
               
               <motion.div 
-                className="relative mb-6"
+                className="flex items-center justify-center mb-6"
                 variants={itemVariants}
               >
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">Or sign up with email</span>
-                </div>
+                <div className="border-t border-gray-300 flex-grow"></div>
+                <span className="px-4 text-gray-500 text-sm">{t('auth.signup.orSignUpWith')}</span>
+                <div className="border-t border-gray-300 flex-grow"></div>
               </motion.div>
-              
-              {/* Signup form */}
-              <form onSubmit={handleSubmit}>
-                {/* Display auth error if any */}
-                {authError && (
-                  <motion.div 
-                    className="mb-4 p-3 bg-red-50 border border-red-200 text-red-800 rounded-md"
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                  >
-                    {authError}
-                  </motion.div>
-                )}
-                
-                {/* Name field */}
+
+              {/* Auth error display */}
+              {authError && (
                 <motion.div 
-                  className="mb-4"
-                  variants={itemVariants}
+                  className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
                 >
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                    Full Name
+                  {authError}
+                </motion.div>
+              )}
+              
+              <form onSubmit={handleSubmit}>
+                <motion.div className="mb-4" variants={itemVariants}>
+                  <label htmlFor="name" className="block text-gray-700 text-sm font-medium mb-2">
+                    {t('auth.signup.nameLabel')}
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <IconComponent icon={FaUserAlt} className="text-gray-400" />
-                    </div>
+                    <IconComponent icon={FaUserAlt} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                     <input
                       type="text"
                       id="name"
                       name="name"
                       value={formData.name}
                       onChange={handleChange}
-                      className={`w-full pl-10 pr-3 py-2 border ${errors.name ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500`}
-                      placeholder="John Doe"
+                      className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
+                        errors.name ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder={t('auth.signup.namePlaceholder')}
                     />
                   </div>
-                  {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+                  {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
                 </motion.div>
-                
-                {/* Email field */}
-                <motion.div 
-                  className="mb-4"
-                  variants={itemVariants}
-                >
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                    Email Address
+
+                <motion.div className="mb-4" variants={itemVariants}>
+                  <label htmlFor="email" className="block text-gray-700 text-sm font-medium mb-2">
+                    {t('auth.signup.emailLabel')}
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <IconComponent icon={FaEnvelope} className="text-gray-400" />
-                    </div>
+                    <IconComponent icon={FaEnvelope} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                     <input
                       type="email"
                       id="email"
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      className={`w-full pl-10 pr-3 py-2 border ${errors.email ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500`}
-                      placeholder="johndoe@example.com"
+                      className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
+                        errors.email ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder={t('auth.signup.emailPlaceholder')}
                     />
                   </div>
-                  {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+                  {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
                 </motion.div>
                 
-                {/* Password field */}
-                <motion.div 
-                  className="mb-4"
-                  variants={itemVariants}
-                >
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                    Password
+                <motion.div className="mb-4" variants={itemVariants}>
+                  <label htmlFor="password" className="block text-gray-700 text-sm font-medium mb-2">
+                    {t('auth.signup.passwordLabel')}
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <IconComponent icon={FaLock} className="text-gray-400" />
-                    </div>
+                    <IconComponent icon={FaLock} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                     <input
-                      type={showPassword ? "text" : "password"}
+                      type={showPassword ? 'text' : 'password'}
                       id="password"
                       name="password"
                       value={formData.password}
                       onChange={handleChange}
-                      className={`w-full pl-10 pr-10 py-2 border ${errors.password ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500`}
-                      placeholder="••••••••"
+                      className={`w-full pl-10 pr-12 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
+                        errors.password ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder={t('auth.signup.passwordPlaceholder')}
                     />
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="text-gray-400 hover:text-gray-500 focus:outline-none"
-                      >
-                        {showPassword ? <IconComponent icon={FaEyeSlash} /> : <IconComponent icon={FaEye} />}
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <IconComponent icon={showPassword ? FaEyeSlash : FaEye} />
+                    </button>
                   </div>
-                  {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
+                  {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
                 </motion.div>
-                
-                {/* Confirm Password field */}
-                <motion.div 
-                  className="mb-6"
-                  variants={itemVariants}
-                >
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                    Confirm Password
+
+                <motion.div className="mb-4" variants={itemVariants}>
+                  <label htmlFor="confirmPassword" className="block text-gray-700 text-sm font-medium mb-2">
+                    {t('auth.signup.confirmPasswordLabel')}
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <IconComponent icon={FaLock} className="text-gray-400" />
-                    </div>
+                    <IconComponent icon={FaLock} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                     <input
-                      type={showConfirmPassword ? "text" : "password"}
+                      type={showConfirmPassword ? 'text' : 'password'}
                       id="confirmPassword"
                       name="confirmPassword"
                       value={formData.confirmPassword}
                       onChange={handleChange}
-                      className={`w-full pl-10 pr-10 py-2 border ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500`}
-                      placeholder="••••••••"
+                      className={`w-full pl-10 pr-12 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
+                        errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder={t('auth.signup.confirmPasswordPlaceholder')}
                     />
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="text-gray-400 hover:text-gray-500 focus:outline-none"
-                      >
-                        {showConfirmPassword ? <IconComponent icon={FaEyeSlash} /> : <IconComponent icon={FaEye} />}
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <IconComponent icon={showConfirmPassword ? FaEyeSlash : FaEye} />
+                    </button>
                   </div>
-                  {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>}
+                  {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
                 </motion.div>
                 
-                {/* Terms and conditions */}
-                <motion.div 
-                  className="mb-6"
-                  variants={itemVariants}
-                >
-                  <label className="flex items-center">
+                <motion.div className="mb-6" variants={itemVariants}>
+                  <label className="flex items-start">
                     <input
                       type="checkbox"
                       checked={agreeToTerms}
-                      onChange={() => setAgreeToTerms(!agreeToTerms)}
-                      className="h-4 w-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                      onChange={(e) => setAgreeToTerms(e.target.checked)}
+                      className="mr-2 mt-1 text-teal-600 focus:ring-teal-500"
                     />
-                    <span className="ml-2 text-sm text-gray-700">
-                      I agree to the{" "}
-                      <a href="#" className="text-teal-600 hover:text-teal-500">
-                        Terms of Service
-                      </a>{" "}
-                      and{" "}
-                      <a href="#" className="text-teal-600 hover:text-teal-500">
-                        Privacy Policy
-                      </a>
+                    <span className="text-sm text-gray-700">
+                      {t('auth.signup.agreeToTerms')} {' '}
+                      <Link to="/terms" className="text-teal-600 hover:text-teal-800">
+                        {t('auth.signup.termsAndConditions')}
+                      </Link>
+                      {' '} and {' '}
+                      <Link to="/privacy" className="text-teal-600 hover:text-teal-800">
+                        {t('auth.signup.privacyPolicy')}
+                      </Link>
                     </span>
                   </label>
-                  {errors.terms && <p className="mt-1 text-sm text-red-600">{errors.terms}</p>}
+                  {errors.terms && <p className="text-red-500 text-sm mt-1">{errors.terms}</p>}
                 </motion.div>
                 
-                <motion.div variants={itemVariants}>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
-                  >
-                    {isSubmitting ? 'Creating Account...' : 'Create Account'}
-                  </button>
-                </motion.div>
+                <motion.button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  variants={itemVariants}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {isSubmitting ? t('common.loading') : t('auth.signup.signUpButton')}
+                </motion.button>
               </form>
               
-              <motion.div 
-                className="mt-6 text-center text-sm"
-                variants={itemVariants}
-              >
-                <span className="text-gray-600">Already have an account?</span>{' '}
-                <Link to="/login" className="font-medium text-teal-600 hover:text-teal-500">
-                  Sign in
+              <motion.div className="text-center mt-6" variants={itemVariants}>
+                <span className="text-gray-600">{t('auth.signup.haveAccount')} </span>
+                <Link to="/login" className="text-teal-600 hover:text-teal-800 font-medium">
+                  {t('auth.signup.signIn')}
                 </Link>
               </motion.div>
             </div>

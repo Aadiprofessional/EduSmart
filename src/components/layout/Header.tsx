@@ -3,8 +3,10 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { AiOutlineHome, AiOutlineDatabase, AiOutlineTrophy, AiOutlineRobot, AiOutlineBook, AiOutlineRead, AiOutlineUser, AiOutlineBulb, AiOutlineMenu, AiOutlineClose, AiOutlineEdit } from 'react-icons/ai';
 import IconComponent from '../ui/IconComponent';
+import LanguageSelector from '../ui/LanguageSelector';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../utils/AuthContext';
+import { useLanguage } from '../../utils/LanguageContext';
 import eduLogo from '../../assets/edulogo.jpeg';
 
 const Header: React.FC = () => {
@@ -15,15 +17,16 @@ const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { t } = useLanguage();
   
   const navigation = [
-    { name: 'Home', href: '/', icon: AiOutlineHome },
-    { name: 'Database', href: '/database', icon: AiOutlineDatabase },
-    { name: 'Success Stories', href: '/case-studies', icon: AiOutlineTrophy },
-    { name: 'AI Courses', href: '/ai-courses', icon: AiOutlineRobot },
-    { name: 'AI Study', href: '/ai-study', icon: AiOutlineBulb },
-    { name: 'Resources', href: '/resources', icon: AiOutlineBook },
-    { name: 'Blog', href: '/blog', icon: AiOutlineRead },
+    { name: t('nav.home'), href: '/', icon: AiOutlineHome },
+    { name: t('nav.database'), href: '/database', icon: AiOutlineDatabase },
+    { name: t('nav.successStories'), href: '/case-studies', icon: AiOutlineTrophy },
+    { name: t('nav.aiCourses'), href: '/ai-courses', icon: AiOutlineRobot },
+    { name: t('nav.aiStudy'), href: '/ai-study', icon: AiOutlineBulb },
+    { name: t('nav.resources'), href: '/resources', icon: AiOutlineBook },
+    { name: t('nav.blog'), href: '/blog', icon: AiOutlineRead },
   ];
 
   // Check if device is mobile
@@ -181,8 +184,9 @@ const Header: React.FC = () => {
             ))}
           </nav>
           
-          {/* Desktop auth buttons */}
+          {/* Desktop auth buttons and language selector */}
           <div className="hidden md:flex items-center space-x-4">
+            <LanguageSelector />
             {user ? (
               <div className="relative">
                 <motion.button
@@ -211,20 +215,20 @@ const Header: React.FC = () => {
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
-                        Your Profile
+                        {t('nav.profile')}
                       </Link>
                       <Link
                         to="/application-tracker"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
-                        Application Tracker
+                        {t('nav.applicationTracker')}
                       </Link>
                       <button
                         onClick={handleSignOut}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
-                        Sign out
+                        {t('nav.signOut')}
                       </button>
                     </motion.div>
                   )}
@@ -240,7 +244,7 @@ const Header: React.FC = () => {
                     to="/login"
                     className="text-sm font-medium text-gray-700"
                   >
-                    Login
+                    {t('nav.login')}
                   </Link>
                 </motion.div>
                 <motion.div
@@ -252,15 +256,16 @@ const Header: React.FC = () => {
                     to="/signup"
                     className="text-sm font-medium bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600"
                   >
-                    Sign Up
+                    {t('nav.signup')}
                   </Link>
                 </motion.div>
               </>
             )}
           </div>
           
-          {/* Mobile auth buttons */}
-          <div className="md:hidden flex items-center absolute right-4">
+          {/* Mobile auth buttons and language selector */}
+          <div className="md:hidden flex items-center space-x-2 absolute right-4">
+            <LanguageSelector />
             {user ? (
               <div className="relative">
                 <motion.button
@@ -286,20 +291,20 @@ const Header: React.FC = () => {
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
-                        Your Profile
+                        {t('nav.profile')}
                       </Link>
                       <Link
                         to="/application-tracker"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
-                        Application Tracker
+                        {t('nav.applicationTracker')}
                       </Link>
                       <button
                         onClick={handleSignOut}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
-                        Sign out
+                        {t('nav.signOut')}
                       </button>
                     </motion.div>
                   )}
@@ -311,13 +316,13 @@ const Header: React.FC = () => {
                   to="/login"
                   className="text-xs font-medium text-gray-700 border border-gray-300 px-2 py-1 rounded"
                 >
-                  Login
+                  {t('nav.login')}
                 </Link>
                 <Link
                   to="/signup"
                   className="text-xs font-medium bg-orange-500 text-white px-2 py-1 rounded"
                 >
-                  Sign Up
+                  {t('nav.signup')}
                 </Link>
               </div>
             )}
@@ -372,7 +377,7 @@ const Header: React.FC = () => {
                     className="h-6 w-6 text-white" 
                   />
                 </button>
-                <span className="text-xs font-medium mt-1 text-white">More</span>
+                <span className="text-xs font-medium mt-1 text-white">{t('nav.more')}</span>
               </div>
             </div>
           </div>

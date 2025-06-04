@@ -3,8 +3,11 @@ import { Link } from 'react-router-dom';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import { motion } from 'framer-motion';
+import { useLanguage } from '../utils/LanguageContext';
 
 const NotFound: React.FC = () => {
+  const { t } = useLanguage();
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
@@ -49,7 +52,7 @@ const NotFound: React.FC = () => {
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              404
+              {t('notFound.title')}
             </motion.h1>
             <motion.h2 
               className="text-3xl font-semibold text-gray-700 mb-4"
@@ -57,7 +60,7 @@ const NotFound: React.FC = () => {
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.3 }}
             >
-              Page Not Found
+              {t('notFound.subtitle')}
             </motion.h2>
             <motion.p 
               className="text-gray-600 mb-8"
@@ -65,7 +68,7 @@ const NotFound: React.FC = () => {
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.4 }}
             >
-              Sorry, the page you are looking for does not exist or has been moved.
+              {t('notFound.description')}
             </motion.p>
             <motion.div
               initial={{ y: 20, opacity: 0 }}
@@ -81,7 +84,7 @@ const NotFound: React.FC = () => {
                   }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  Return to Home
+                  {t('notFound.returnHome')}
                 </motion.button>
               </Link>
             </motion.div>

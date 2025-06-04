@@ -4,8 +4,11 @@ import { FaCalendarAlt, FaUser } from 'react-icons/fa';
 import IconComponent from './IconComponent';
 import { motion } from 'framer-motion';
 import AnimatedSection from './AnimatedSection';
+import { useLanguage } from '../../utils/LanguageContext';
 
 const BlogSection: React.FC = () => {
+  const { t } = useLanguage();
+  
   const blogPosts = [
     {
       id: 1,
@@ -41,13 +44,13 @@ const BlogSection: React.FC = () => {
       <div className="container mx-auto px-4">
         <AnimatedSection direction="up">
           <div className="flex justify-between items-center mb-12">
-            <h2 className="text-3xl font-bold text-teal-800">Read Our Blog</h2>
+            <h2 className="text-3xl font-bold text-teal-800">{t('blogSection.readOurBlog')}</h2>
             <motion.div whileHover={{ x: 5 }} whileTap={{ scale: 0.95 }}>
               <Link 
                 to="/blog" 
                 className="text-orange-500 hover:text-orange-600 font-medium"
               >
-                View All
+                {t('blogSection.viewAll')}
               </Link>
             </motion.div>
           </div>

@@ -3,6 +3,7 @@ import { FaPlus, FaEdit, FaTrash, FaCheck, FaTimes, FaCalendarAlt, FaUniversity,
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import IconComponent from '../components/ui/IconComponent';
+import { useLanguage } from '../utils/LanguageContext';
 
 interface Application {
   id: number;
@@ -22,6 +23,7 @@ interface ApplicationTask {
 }
 
 const ApplicationTracker: React.FC = () => {
+  const { t } = useLanguage();
   const [applications, setApplications] = useState<Application[]>([]);
   const [isAddingApplication, setIsAddingApplication] = useState(false);
   const [isEditingApplication, setIsEditingApplication] = useState<number | null>(null);
@@ -93,7 +95,7 @@ const ApplicationTracker: React.FC = () => {
   // Add new application
   const handleAddApplication = () => {
     if (!newApplication.university || !newApplication.program || !newApplication.deadline) {
-      alert('Please fill in all required fields');
+      alert(t('applicationTracker.requiredFields'));
       return;
     }
     
@@ -126,7 +128,7 @@ const ApplicationTracker: React.FC = () => {
     if (isEditingApplication === null) return;
     
     if (!newApplication.university || !newApplication.program || !newApplication.deadline) {
-      alert('Please fill in all required fields');
+      alert(t('applicationTracker.requiredFields'));
       return;
     }
     
@@ -175,7 +177,7 @@ const ApplicationTracker: React.FC = () => {
 
   // Delete application
   const handleDeleteApplication = (id: number) => {
-    if (window.confirm('Are you sure you want to delete this application?')) {
+    if (window.confirm(t('applicationTracker.confirmDelete'))) {
       setApplications(applications.filter(app => app.id !== id));
     }
   };
@@ -267,13 +269,13 @@ const ApplicationTracker: React.FC = () => {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'planning': return 'Planning';
-      case 'in-progress': return 'In Progress';
-      case 'submitted': return 'Submitted';
-      case 'interview': return 'Interview Stage';
-      case 'accepted': return 'Accepted';
-      case 'rejected': return 'Rejected';
-      case 'waitlisted': return 'Waitlisted';
+      case 'planning': return t('applicationTracker.planning');
+      case 'in-progress': return t('applicationTracker.inProgress');
+      case 'submitted': return t('applicationTracker.submitted');
+      case 'interview': return t('applicationTracker.interview');
+      case 'accepted': return t('applicationTracker.accepted');
+      case 'rejected': return t('applicationTracker.rejected');
+      case 'waitlisted': return t('applicationTracker.waitlisted');
       default: return status;
     }
   };
@@ -290,33 +292,33 @@ const ApplicationTracker: React.FC = () => {
       <main className="flex-grow pt-8 pb-16 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-teal-800">Application Tracker</h1>
+            <h1 className="text-2xl font-bold text-teal-800">{t('applicationTracker.title')}</h1>
             <button
               onClick={() => setIsAddingApplication(true)}
               className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-2"
             >
-              <IconComponent icon={FaPlus} /> Add Application
+              <IconComponent icon={FaPlus} /> {t('applicationTracker.addApplication')}
             </button>
           </div>
           
           {/* Statistics */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             <div className="bg-white rounded-lg shadow-md p-4">
-              <h3 className="text-gray-600 text-sm mb-1">Total Applications</h3>
+              <h3 className="text-gray-600 text-sm mb-1">{t('applicationTracker.totalApplications')}</h3>
               <p className="text-2xl font-bold text-teal-800">{applications.length}</p>
             </div>
             <div className="bg-white rounded-lg shadow-md p-4">
-              <h3 className="text-gray-600 text-sm mb-1">Submitted</h3>
+              <h3 className="text-gray-600 text-sm mb-1">{t('applicationTracker.submittedCount')}</h3>
               <p className="text-2xl font-bold text-purple-700">
                 {applications.filter(app => app.status === 'submitted' || app.status === 'interview' || app.status === 'accepted' || app.status === 'rejected' || app.status === 'waitlisted').length}
               </p>
             </div>
             <div className="bg-white rounded-lg shadow-md p-4">
-              <h3 className="text-gray-600 text-sm mb-1">Accepted</h3>
+              <h3 className="text-gray-600 text-sm mb-1">{t('applicationTracker.acceptedCount')}</h3>
               <p className="text-2xl font-bold text-green-700">{applications.filter(app => app.status === 'accepted').length}</p>
             </div>
             <div className="bg-white rounded-lg shadow-md p-4">
-              <h3 className="text-gray-600 text-sm mb-1">In Progress</h3>
+              <h3 className="text-gray-600 text-sm mb-1">{t('applicationTracker.pending')}</h3>
               <p className="text-2xl font-bold text-blue-700">{applications.filter(app => app.status === 'planning' || app.status === 'in-progress').length}</p>
             </div>
           </div>
@@ -331,14 +333,14 @@ const ApplicationTracker: React.FC = () => {
                   onChange={(e) => setFilterStatus(e.target.value)}
                   className="bg-gray-100 border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                 >
-                  <option value="all">All Statuses</option>
-                  <option value="planning">Planning</option>
-                  <option value="in-progress">In Progress</option>
-                  <option value="submitted">Submitted</option>
-                  <option value="interview">Interview</option>
-                  <option value="accepted">Accepted</option>
-                  <option value="rejected">Rejected</option>
-                  <option value="waitlisted">Waitlisted</option>
+                  <option value="all">{t('applicationTracker.allStatuses')}</option>
+                  <option value="planning">{t('applicationTracker.planning')}</option>
+                  <option value="in-progress">{t('applicationTracker.inProgress')}</option>
+                  <option value="submitted">{t('applicationTracker.submitted')}</option>
+                  <option value="interview">{t('applicationTracker.interview')}</option>
+                  <option value="accepted">{t('applicationTracker.accepted')}</option>
+                  <option value="rejected">{t('applicationTracker.rejected')}</option>
+                  <option value="waitlisted">{t('applicationTracker.waitlisted')}</option>
                 </select>
               </div>
             </div>
@@ -350,9 +352,9 @@ const ApplicationTracker: React.FC = () => {
                   onChange={(e) => setSortBy(e.target.value)}
                   className="bg-gray-100 border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                 >
-                  <option value="deadline">Sort by Deadline</option>
-                  <option value="university">Sort by University</option>
-                  <option value="status">Sort by Status</option>
+                  <option value="deadline">{t('applicationTracker.sortBy')} {t('applicationTracker.deadline')}</option>
+                  <option value="university">{t('applicationTracker.sortBy')} {t('applicationTracker.university')}</option>
+                  <option value="status">{t('applicationTracker.sortBy')} {t('applicationTracker.status')}</option>
                 </select>
               </div>
               <button
@@ -401,13 +403,13 @@ const ApplicationTracker: React.FC = () => {
                       </span>
                     </div>
                     <div className="flex items-center text-sm text-gray-600 mt-2">
-                      <IconComponent icon={FaCalendarAlt} className="mr-1 text-orange-500" /> Deadline: {formatDate(app.deadline)}
+                      <IconComponent icon={FaCalendarAlt} className="mr-1 text-orange-500" /> {t('applicationTracker.deadline')}: {formatDate(app.deadline)}
                     </div>
                   </div>
                   
                   {/* Tasks */}
                   <div className="p-4">
-                    <h4 className="font-medium text-gray-700 mb-2">Tasks</h4>
+                    <h4 className="font-medium text-gray-700 mb-2">{t('applicationTracker.tasks')}</h4>
                     {app.tasks.length > 0 ? (
                       <ul className="space-y-2">
                         {app.tasks.map(task => (
@@ -427,14 +429,14 @@ const ApplicationTracker: React.FC = () => {
                         ))}
                       </ul>
                     ) : (
-                      <p className="text-sm text-gray-500 italic">No tasks added yet</p>
+                      <p className="text-sm text-gray-500 italic">{t('applicationTracker.newTask')}</p>
                     )}
                     
                     {/* Add task form */}
                     <div className="mt-3 flex gap-2">
                       <input
                         type="text"
-                        placeholder="Add a task..."
+                        placeholder={t('applicationTracker.taskPlaceholder')}
                         value={newTask}
                         onChange={(e) => setNewTask(e.target.value)}
                         className="flex-grow bg-gray-100 border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
@@ -444,7 +446,7 @@ const ApplicationTracker: React.FC = () => {
                         onClick={() => addTask(app.id)}
                         className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md text-sm transition-colors"
                       >
-                        Add
+                        {t('applicationTracker.addTask')}
                       </button>
                     </div>
                   </div>
@@ -453,26 +455,26 @@ const ApplicationTracker: React.FC = () => {
                   <div className="p-4 bg-gray-50 border-t border-gray-100">
                     {app.notes && (
                       <div className="mb-3">
-                        <h4 className="font-medium text-gray-700 mb-1">Notes</h4>
+                        <h4 className="font-medium text-gray-700 mb-1">{t('applicationTracker.notes')}</h4>
                         <p className="text-sm text-gray-600">{app.notes}</p>
                       </div>
                     )}
                     
                     <div>
-                      <h4 className="font-medium text-gray-700 mb-1">Update Status</h4>
+                      <h4 className="font-medium text-gray-700 mb-1">{t('applicationTracker.status')}</h4>
                       <div className="flex flex-wrap gap-2">
                         <select
                           value={app.status}
                           onChange={(e) => updateApplicationStatus(app.id, e.target.value as Application['status'])}
                           className="bg-white border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                         >
-                          <option value="planning">Planning</option>
-                          <option value="in-progress">In Progress</option>
-                          <option value="submitted">Submitted</option>
-                          <option value="interview">Interview</option>
-                          <option value="accepted">Accepted</option>
-                          <option value="rejected">Rejected</option>
-                          <option value="waitlisted">Waitlisted</option>
+                          <option value="planning">{t('applicationTracker.planning')}</option>
+                          <option value="in-progress">{t('applicationTracker.inProgress')}</option>
+                          <option value="submitted">{t('applicationTracker.submitted')}</option>
+                          <option value="interview">{t('applicationTracker.interview')}</option>
+                          <option value="accepted">{t('applicationTracker.accepted')}</option>
+                          <option value="rejected">{t('applicationTracker.rejected')}</option>
+                          <option value="waitlisted">{t('applicationTracker.waitlisted')}</option>
                         </select>
                       </div>
                     </div>
@@ -483,18 +485,18 @@ const ApplicationTracker: React.FC = () => {
           ) : (
             <div className="bg-white rounded-lg shadow-md p-8 text-center">
               <IconComponent icon={FaUniversity} className="text-5xl text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">No applications found</h3>
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">{t('applicationTracker.noApplicationsFound')}</h3>
               <p className="text-gray-600 mb-4">
                 {filterStatus === 'all' 
-                  ? "You haven't added any applications yet."
-                  : "No applications match the selected filter."}
+                  ? t('applicationTracker.noApplicationsYet')
+                  : t('applicationTracker.noMatchingFilter')}
               </p>
               {filterStatus !== 'all' && (
                 <button
                   onClick={() => setFilterStatus('all')}
                   className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg transition-colors"
                 >
-                  Show All Applications
+                  {t('applicationTracker.showAllApplications')}
                 </button>
               )}
             </div>
@@ -507,46 +509,46 @@ const ApplicationTracker: React.FC = () => {
             <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
               <div className="p-4 border-b border-gray-200">
                 <h2 className="text-lg font-bold text-gray-800">
-                  {isEditingApplication !== null ? 'Edit Application' : 'Add New Application'}
+                  {isEditingApplication !== null ? t('applicationTracker.editApplication') : t('applicationTracker.addNewApplication')}
                 </h2>
               </div>
               <div className="p-4">
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">University *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('applicationTracker.university')} *</label>
                     <input
                       type="text"
                       value={newApplication.university}
                       onChange={(e) => setNewApplication({...newApplication, university: e.target.value})}
                       className="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder="e.g. Stanford University"
+                      placeholder={t('applicationTracker.universityPlaceholder')}
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Program *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('applicationTracker.program')} *</label>
                     <input
                       type="text"
                       value={newApplication.program}
                       onChange={(e) => setNewApplication({...newApplication, program: e.target.value})}
                       className="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder="e.g. MS in Computer Science"
+                      placeholder={t('applicationTracker.programPlaceholder')}
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('applicationTracker.country')}</label>
                     <input
                       type="text"
                       value={newApplication.country}
                       onChange={(e) => setNewApplication({...newApplication, country: e.target.value})}
                       className="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder="e.g. USA"
+                      placeholder={t('applicationTracker.countryPlaceholder')}
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Application Deadline *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('applicationTracker.deadline')} *</label>
                     <input
                       type="date"
                       value={newApplication.deadline}
@@ -556,30 +558,30 @@ const ApplicationTracker: React.FC = () => {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('applicationTracker.status')}</label>
                     <select
                       value={newApplication.status}
                       onChange={(e) => setNewApplication({...newApplication, status: e.target.value as Application['status']})}
                       className="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
                     >
-                      <option value="planning">Planning</option>
-                      <option value="in-progress">In Progress</option>
-                      <option value="submitted">Submitted</option>
-                      <option value="interview">Interview</option>
-                      <option value="accepted">Accepted</option>
-                      <option value="rejected">Rejected</option>
-                      <option value="waitlisted">Waitlisted</option>
+                      <option value="planning">{t('applicationTracker.planning')}</option>
+                      <option value="in-progress">{t('applicationTracker.inProgress')}</option>
+                      <option value="submitted">{t('applicationTracker.submitted')}</option>
+                      <option value="interview">{t('applicationTracker.interview')}</option>
+                      <option value="accepted">{t('applicationTracker.accepted')}</option>
+                      <option value="rejected">{t('applicationTracker.rejected')}</option>
+                      <option value="waitlisted">{t('applicationTracker.waitlisted')}</option>
                     </select>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('applicationTracker.notes')}</label>
                     <textarea
                       value={newApplication.notes}
                       onChange={(e) => setNewApplication({...newApplication, notes: e.target.value})}
                       className="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
                       rows={3}
-                      placeholder="Add any notes or reminders..."
+                      placeholder={t('applicationTracker.notesPlaceholder')}
                     />
                   </div>
                 </div>
@@ -601,13 +603,13 @@ const ApplicationTracker: React.FC = () => {
                   }}
                   className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg transition-colors"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   onClick={isEditingApplication !== null ? handleUpdateApplication : handleAddApplication}
                   className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors"
                 >
-                  {isEditingApplication !== null ? 'Save Changes' : 'Add Application'}
+                  {isEditingApplication !== null ? t('applicationTracker.saveChanges') : t('applicationTracker.addApplication')}
                 </button>
               </div>
             </div>

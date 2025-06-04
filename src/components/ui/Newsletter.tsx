@@ -1,129 +1,147 @@
 import React, { useState } from 'react';
-import { FaPaperPlane, FaEnvelope } from 'react-icons/fa';
+import { motion } from 'framer-motion';
+import { FaEnvelope, FaPaperPlane } from 'react-icons/fa';
 import IconComponent from './IconComponent';
-import { motion, AnimatePresence } from 'framer-motion';
-import AnimatedSection from './AnimatedSection';
+import { useLanguage } from '../../utils/LanguageContext';
 
 const Newsletter: React.FC = () => {
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle newsletter subscription logic
-    console.log('Newsletter subscription for:', email);
-    setIsSubmitted(true);
-    setEmail('');
-    // Reset submission status after 3 seconds
-    setTimeout(() => {
-      setIsSubmitted(false);
-    }, 3000);
+    if (!email) return;
+
+    setIsSubmitting(true);
+    
+    // Simulate API call
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setSubmitStatus('success');
+      setEmail('');
+    } catch (error) {
+      setSubmitStatus('error');
+    } finally {
+      setIsSubmitting(false);
+      setTimeout(() => setSubmitStatus('idle'), 3000);
+    }
   };
 
   return (
     <section className="py-16 bg-gradient-to-r from-teal-700 to-teal-900 text-white relative overflow-hidden">
-      {/* Decorative elements */}
+      {/* Background decoration */}
       <motion.div 
-        className="absolute top-0 left-0 w-full h-full opacity-10"
-        style={{
-          backgroundImage: "url('https://images.unsplash.com/photo-1497633762265-9d179a990aa6?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80')",
-          backgroundSize: "cover",
-          backgroundPosition: "center"
+        className="absolute w-96 h-96 bg-teal-600 rounded-full opacity-10" 
+        style={{ filter: 'blur(80px)', top: '-20%', right: '-10%' }}
+        animate={{
+          scale: [1, 1.2, 1],
+          x: [0, 30, 0],
         }}
-        animate={{ 
-          scale: [1, 1.05, 1],
-          opacity: [0.05, 0.1, 0.05]
-        }}
-        transition={{ 
-          repeat: Infinity, 
+        transition={{
           duration: 15,
-          ease: "easeInOut"
+          repeat: Infinity,
+          repeatType: "reverse"
         }}
       />
-      
       <motion.div 
-        className="absolute -bottom-16 -right-16 w-64 h-64 bg-teal-500 rounded-full opacity-20 blur-lg"
+        className="absolute w-64 h-64 bg-orange-500 rounded-full opacity-10" 
+        style={{ filter: 'blur(60px)', bottom: '-10%', left: '-5%' }}
         animate={{
-          y: [0, -10, 0],
-          x: [0, 10, 0]
+          scale: [1, 1.1, 1],
+          y: [0, -20, 0],
         }}
         transition={{
+          duration: 10,
           repeat: Infinity,
-          duration: 8,
-          ease: "easeInOut"
+          repeatType: "reverse"
         }}
       />
-      
-      <motion.div 
-        className="absolute -top-16 -left-16 w-64 h-64 bg-orange-400 rounded-full opacity-20 blur-lg"
-        animate={{
-          y: [0, 10, 0],
-          x: [0, -10, 0]
-        }}
-        transition={{
-          repeat: Infinity,
-          duration: 6,
-          ease: "easeInOut",
-          delay: 1
-        }}
-      />
-      
+
       <div className="container mx-auto px-4 relative z-10">
-        <div className="flex flex-col items-center">
-          <AnimatedSection direction="up">
-            <div className="mb-6 inline-block p-4 bg-white/10 rounded-full">
-              <IconComponent icon={FaEnvelope} className="text-white text-3xl" />
-            </div>
-          </AnimatedSection>
+        <motion.div
+          className="max-w-2xl mx-auto text-center"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          <motion.h2 
+            className="text-3xl font-bold mb-4"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+          >
+            {t('newsletter.title')}
+          </motion.h2>
           
-          <AnimatedSection direction="up" delay={0.1}>
-            <h2 className="text-3xl font-bold mb-2 text-center">Subscribe To Newsletter</h2>
-          </AnimatedSection>
-          
-          <AnimatedSection direction="up" delay={0.2}>
-            <p className="text-white/80 mb-8 text-center max-w-xl">
-              Get the latest updates on university admissions, scholarships, and educational resources 
-              delivered directly to your inbox.
-            </p>
-          </AnimatedSection>
-          
-          <AnimatedSection direction="up" delay={0.3}>
-            <form onSubmit={handleSubmit} className="w-full max-w-md relative">
-              <motion.input
+          <motion.p 
+            className="text-teal-100 text-lg mb-8"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            {t('newsletter.subtitle')}
+          </motion.p>
+
+          <motion.form 
+            onSubmit={handleSubmit}
+            className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
+            <div className="flex-1 relative">
+              <IconComponent 
+                icon={FaEnvelope} 
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" 
+              />
+              <input
                 type="email"
-                placeholder="Enter your email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 pr-12 border border-white/20 bg-white/10 backdrop-blur-sm text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-transparent placeholder-white/60"
-                whileFocus={{ scale: 1.01 }}
-                transition={{ type: "spring", stiffness: 400 }}
                 required
+                className="w-full pl-10 pr-4 py-3 text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                placeholder={t('newsletter.emailPlaceholder')}
               />
-              <motion.button
-                type="submit"
-                className="absolute right-0 top-0 h-full bg-orange-500 hover:bg-orange-600 text-white px-4 rounded-r-lg transition-colors"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <IconComponent icon={FaPaperPlane} />
-              </motion.button>
-            </form>
-          </AnimatedSection>
-          
-          <AnimatePresence>
-            {isSubmitted && (
-              <motion.div 
-                className="mt-4 text-white bg-green-600/20 backdrop-blur-sm py-2 px-4 rounded-lg"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                Thank you for subscribing to our newsletter!
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+            </div>
+            
+            <motion.button
+              type="submit"
+              disabled={isSubmitting || !email}
+              className="bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <IconComponent icon={FaPaperPlane} />
+              {isSubmitting ? t('common.loading') : t('newsletter.subscribeButton')}
+            </motion.button>
+          </motion.form>
+
+          {submitStatus === 'success' && (
+            <motion.div 
+              className="mt-4 bg-green-500 bg-opacity-20 border border-green-400 text-green-100 px-4 py-3 rounded-lg"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              {t('newsletter.successMessage')}
+            </motion.div>
+          )}
+
+          {submitStatus === 'error' && (
+            <motion.div 
+              className="mt-4 bg-red-500 bg-opacity-20 border border-red-400 text-red-100 px-4 py-3 rounded-lg"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              {t('newsletter.errorMessage')}
+            </motion.div>
+          )}
+        </motion.div>
       </div>
     </section>
   );

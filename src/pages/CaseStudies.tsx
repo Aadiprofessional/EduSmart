@@ -4,6 +4,7 @@ import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import IconComponent from '../components/ui/IconComponent';
 import { motion } from 'framer-motion';
+import { useLanguage } from '../utils/LanguageContext';
 
 interface CaseStudy {
   id: number;
@@ -35,6 +36,7 @@ interface CaseStudy {
 }
 
 const CaseStudies: React.FC = () => {
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilters, setActiveFilters] = useState({
     lowGPA: false,
@@ -315,7 +317,7 @@ const CaseStudies: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
-                Success Case Studies
+                {t('caseStudies.title')}
               </motion.h1>
               <motion.p 
                 className="text-xl mb-8"
@@ -323,8 +325,7 @@ const CaseStudies: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
               >
-                Discover inspiring stories of students who achieved their dreams, from overcoming low GPAs to securing 
-                full scholarships at top universities worldwide.
+                {t('caseStudies.subtitle')}
               </motion.p>
               <motion.div 
                 className="relative"
@@ -334,7 +335,7 @@ const CaseStudies: React.FC = () => {
               >
                 <input
                   type="text"
-                  placeholder="Search by student name..."
+                  placeholder={t('caseStudies.searchPlaceholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full px-5 py-3 pr-12 bg-white rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500"
@@ -364,7 +365,7 @@ const CaseStudies: React.FC = () => {
                 }`}
                 onClick={() => setActiveTab('all')}
               >
-                All Case Studies
+                {t('caseStudies.allStories')}
               </motion.button>
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -376,7 +377,7 @@ const CaseStudies: React.FC = () => {
                 }`}
                 onClick={() => setActiveTab('lowGPA')}
               >
-                Low GPA Success
+                {t('caseStudies.lowGPAStories')}
               </motion.button>
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -388,7 +389,7 @@ const CaseStudies: React.FC = () => {
                 }`}
                 onClick={() => setActiveTab('international')}
               >
-                International Students
+                {t('caseStudies.internationalStories')}
               </motion.button>
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -400,7 +401,7 @@ const CaseStudies: React.FC = () => {
                 }`}
                 onClick={() => setActiveTab('scholarship')}
               >
-                Scholarship Winners
+                {t('caseStudies.scholarshipStories')}
               </motion.button>
             </motion.div>
 
@@ -412,7 +413,7 @@ const CaseStudies: React.FC = () => {
               transition={{ duration: 0.5, delay: 0.4 }}
             >
               <span className="text-gray-700 flex items-center">
-                <IconComponent icon={FaFilter} className="mr-2" /> Filters:
+                {t('caseStudies.filterBy')}:
               </span>
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -425,7 +426,7 @@ const CaseStudies: React.FC = () => {
                 onClick={() => toggleFilter('lowGPA')}
               >
                 <span className={`w-3 h-3 rounded-full mr-2 ${activeFilters.lowGPA ? 'bg-teal-500' : 'bg-gray-300'}`}></span>
-                Low GPA
+                {t('caseStudies.lowGPA')}
               </motion.button>
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -438,7 +439,7 @@ const CaseStudies: React.FC = () => {
                 onClick={() => toggleFilter('international')}
               >
                 <span className={`w-3 h-3 rounded-full mr-2 ${activeFilters.international ? 'bg-teal-500' : 'bg-gray-300'}`}></span>
-                International
+                {t('caseStudies.international')}
               </motion.button>
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -451,7 +452,7 @@ const CaseStudies: React.FC = () => {
                 onClick={() => toggleFilter('scholarship')}
               >
                 <span className={`w-3 h-3 rounded-full mr-2 ${activeFilters.scholarship ? 'bg-teal-500' : 'bg-gray-300'}`}></span>
-                With Scholarship
+                {t('caseStudies.scholarship')}
               </motion.button>
               {(activeFilters.lowGPA || activeFilters.international || activeFilters.scholarship) && (
                 <motion.button
@@ -460,7 +461,7 @@ const CaseStudies: React.FC = () => {
                   className="text-teal-600 hover:text-teal-800 text-sm font-medium underline ml-auto"
                   onClick={() => setActiveFilters({ lowGPA: false, international: false, scholarship: false })}
                 >
-                  Clear All Filters
+                  {t('caseStudies.clearAllFilters')}
                 </motion.button>
               )}
             </motion.div>
@@ -502,17 +503,17 @@ const CaseStudies: React.FC = () => {
                           <div className="flex flex-wrap gap-2 mt-2">
                             {study.isLowGPA && (
                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                Low GPA Success
+                                {t('caseStudies.lowGPA')}
                               </span>
                             )}
                             {study.isInternational && (
                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                International Student
+                                {t('caseStudies.international')}
                               </span>
                             )}
                             {study.hasScholarship && (
                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                Scholarship Recipient
+                                {t('caseStudies.scholarship')}
                               </span>
                             )}
                           </div>
@@ -523,14 +524,14 @@ const CaseStudies: React.FC = () => {
                     <div className="p-6">
                       <div className="mb-6">
                         <h4 className="text-sm font-bold text-teal-700 uppercase tracking-wider mb-2">
-                          Background
+                          {t('caseStudies.background')}
                         </h4>
                         <div className="bg-gray-50 p-4 rounded-lg">
                           <p className="text-gray-700 mb-2">
-                            <span className="font-medium">GPA:</span> {study.background.gpa}
+                            <span className="font-medium">{t('caseStudies.gpa')}:</span> {study.background.gpa}
                           </p>
                           <div className="mb-2">
-                            <span className="font-medium text-gray-700">Test Scores:</span>
+                            <span className="font-medium text-gray-700">{t('caseStudies.testScores')}:</span>
                             <ul className="mt-1 pl-4">
                               {study.background.testScores.map((score, i) => (
                                 <li key={i} className="text-gray-600 text-sm">
@@ -540,7 +541,7 @@ const CaseStudies: React.FC = () => {
                             </ul>
                           </div>
                           <div className="mb-2">
-                            <span className="font-medium text-gray-700">Extracurriculars:</span>
+                            <span className="font-medium text-gray-700">{t('caseStudies.extracurriculars')}:</span>
                             <ul className="mt-1 pl-4 list-disc list-inside">
                               {study.background.extracurriculars.map((item, i) => (
                                 <motion.li 
@@ -557,7 +558,7 @@ const CaseStudies: React.FC = () => {
                           </div>
                           {study.background.challenges && (
                             <div className="mt-2 text-sm italic text-gray-600">
-                              <span className="font-medium">Challenges:</span> {study.background.challenges}
+                              <span className="font-medium">{t('caseStudies.challenges')}:</span> {study.background.challenges}
                             </div>
                           )}
                         </div>
@@ -565,10 +566,11 @@ const CaseStudies: React.FC = () => {
                       
                       <div className="mb-6">
                         <h4 className="text-sm font-bold text-teal-700 uppercase tracking-wider mb-2">
-                          Results
+                          {t('caseStudies.results')}
                         </h4>
                         <div className="bg-gray-50 p-4 rounded-lg">
                           <div className="mb-3">
+                            <span className="font-medium text-gray-700">{t('caseStudies.universitiesApplied')}:</span>
                             <span className="font-medium text-gray-700">Universities Applied:</span>
                             <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
                               {study.results.universitiesApplied.map((uni, i) => (

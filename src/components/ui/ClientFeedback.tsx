@@ -1,145 +1,104 @@
 import React from 'react';
-import { FaStar, FaQuoteRight } from 'react-icons/fa';
-import IconComponent from './IconComponent';
 import { motion } from 'framer-motion';
+import { FaQuoteLeft, FaStar } from 'react-icons/fa';
+import IconComponent from './IconComponent';
 import AnimatedSection from './AnimatedSection';
+import { useLanguage } from '../../utils/LanguageContext';
 
 const ClientFeedback: React.FC = () => {
+  const { t } = useLanguage();
+
   const testimonials = [
     {
       id: 1,
-      name: 'Sarah J.',
-      role: 'Computer Science Student',
-      university: 'MIT (Admitted)',
-      content: 'EduSmart\'s AI matching tool helped me find programs that perfectly aligned with my interests. Their application tracking kept me organized through the whole process!',
+      name: 'Sarah Chen',
+      university: 'Stanford University',
+      program: 'Computer Science',
       rating: 5,
-      image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80'
+      feedback: 'EduSmart helped me find the perfect university match. The AI recommendations were spot-on, and I got accepted to my dream school!',
+      image: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80'
     },
     {
       id: 2,
-      name: 'Michael L.',
-      role: 'International Student',
-      university: 'Oxford University',
-      content: 'As an international student, I was overwhelmed by options until I found EduSmart. Their database made comparing universities across countries so much easier.',
+      name: 'Michael Rodriguez',
+      university: 'MIT',
+      program: 'Engineering',
       rating: 5,
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80'
+      feedback: 'The scholarship finder feature saved me thousands of dollars. I found funding opportunities I never knew existed.',
+      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80'
     },
     {
       id: 3,
-      name: 'Emma R.',
-      role: 'Scholarship Recipient',
-      university: 'Stanford University',
-      content: 'Thanks to EduSmart\'s scholarship finder, I discovered and applied for funding I didn\'t know existed. Now I\'m studying at my dream university with a full scholarship!',
+      name: 'Emily Wang',
+      university: 'Oxford University',
+      program: 'International Relations',
       rating: 5,
-      image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80'
+      feedback: 'The application tracker kept me organized throughout the entire process. I highly recommend EduSmart to all students.',
+      image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80'
     }
   ];
-
-  const renderStars = (rating: number) => {
-    return Array(5).fill(0).map((_, index) => (
-      <motion.span 
-        key={index}
-        initial={{ opacity: 0, y: -5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 * index }}
-      >
-        <IconComponent 
-          icon={FaStar}
-          className={`${index < rating ? 'text-yellow-500' : 'text-gray-300'}`} 
-        />
-      </motion.span>
-    ));
-  };
 
   return (
     <section className="py-16 bg-gray-50">
       <div className="container mx-auto px-4">
         <AnimatedSection direction="up">
-          <h2 className="text-3xl font-bold text-teal-800 mb-12 text-center">Client Feedback</h2>
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-teal-800 mb-4">
+              {t('clientFeedback.title')}
+            </h2>
+            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+              {t('clientFeedback.subtitle')}
+            </p>
+          </div>
         </AnimatedSection>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {testimonials.map((testimonial, index) => (
             <AnimatedSection key={testimonial.id} direction="up" delay={0.1 * index}>
-              {/* Desktop view - vertical card */}
-              <motion.div 
-                className="bg-white p-6 rounded-lg shadow-md border border-gray-100 relative h-full hidden md:block"
-                whileHover={{ 
-                  y: -10,
-                  boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
-                }}
-                transition={{ type: "spring", stiffness: 300 }}
-              >
-                <motion.div 
-                  className="absolute top-6 right-6 text-teal-100 text-4xl opacity-50"
-                  animate={{ rotate: [0, 5, 0] }}
-                  transition={{ duration: 5, repeat: Infinity, repeatType: "reverse" }}
-                >
-                  <IconComponent icon={FaQuoteRight} />
-                </motion.div>
-                
-                <div className="flex text-yellow-500 mb-4">
-                  {renderStars(testimonial.rating)}
-                </div>
-                <p className="text-gray-700 mb-6 relative z-10">"{testimonial.content}"</p>
-                <div className="flex items-center">
-                  <motion.div 
-                    className="w-12 h-12 rounded-full mr-4 overflow-hidden"
-                    whileHover={{ scale: 1.1 }}
-                  >
-                    <img 
-                      src={testimonial.image} 
-                      alt={testimonial.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </motion.div>
-                  <div>
-                    <h4 className="font-semibold text-teal-700">{testimonial.name}</h4>
-                    <p className="text-gray-600 text-sm">{testimonial.role}</p>
-                    <p className="text-orange-500 text-sm">{testimonial.university}</p>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Mobile view - horizontal card */}
-              <motion.div 
-                className="bg-white rounded-lg shadow-md border border-gray-100 overflow-hidden h-full md:hidden flex flex-row"
+              <motion.div
+                className="bg-white rounded-lg shadow-lg p-6 h-full relative"
                 whileHover={{ 
                   y: -5,
                   boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
                 }}
                 transition={{ type: "spring", stiffness: 300 }}
               >
-                <div className="w-1/3 bg-gray-50 p-4 flex flex-col justify-center items-center">
-                  <motion.div 
-                    className="w-20 h-20 rounded-full overflow-hidden mb-2"
-                    whileHover={{ scale: 1.05 }}
-                  >
-                    <img 
-                      src={testimonial.image} 
-                      alt={testimonial.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </motion.div>
-                  <div className="text-center">
-                    <h4 className="font-semibold text-teal-700 text-sm">{testimonial.name}</h4>
-                    <p className="text-gray-600 text-xs">{testimonial.role}</p>
-                    <p className="text-orange-500 text-xs">{testimonial.university}</p>
-                  </div>
-                  <div className="flex text-yellow-500 mt-2">
-                    {renderStars(testimonial.rating)}
+                <motion.div 
+                  className="absolute top-4 right-4 text-teal-600 opacity-20"
+                  whileHover={{ scale: 1.2, opacity: 0.4 }}
+                >
+                  <IconComponent icon={FaQuoteLeft} className="h-8 w-8" />
+                </motion.div>
+                
+                <div className="flex items-center mb-4">
+                  <motion.img 
+                    src={testimonial.image} 
+                    alt={testimonial.name}
+                    className="w-16 h-16 rounded-full object-cover mr-4"
+                    whileHover={{ scale: 1.1 }}
+                    transition={{ type: "spring", stiffness: 300 }}
+                  />
+                  <div>
+                    <h4 className="font-bold text-teal-700">{testimonial.name}</h4>
+                    <p className="text-sm text-gray-600">{testimonial.program}</p>
+                    <p className="text-sm text-orange-500 font-medium">{testimonial.university}</p>
                   </div>
                 </div>
-                <div className="w-2/3 p-4 relative">
-                  <motion.div 
-                    className="absolute top-2 right-2 text-teal-100 text-2xl opacity-50"
-                    animate={{ rotate: [0, 5, 0] }}
-                    transition={{ duration: 5, repeat: Infinity, repeatType: "reverse" }}
-                  >
-                    <IconComponent icon={FaQuoteRight} />
-                  </motion.div>
-                  <p className="text-gray-700 text-sm relative z-10">"{testimonial.content}"</p>
+                
+                <div className="flex mb-4">
+                  {[...Array(testimonial.rating)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, scale: 0 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.1 * i }}
+                    >
+                      <IconComponent icon={FaStar} className="h-5 w-5 text-yellow-400" />
+                    </motion.div>
+                  ))}
                 </div>
+                
+                <p className="text-gray-600 italic">"{testimonial.feedback}"</p>
               </motion.div>
             </AnimatedSection>
           ))}

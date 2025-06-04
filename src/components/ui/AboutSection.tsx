@@ -2,9 +2,12 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { fadeIn, staggerContainer } from '../../utils/animations';
+import { useLanguage } from '../../utils/LanguageContext';
 import AnimatedSection from './AnimatedSection';
 
 const AboutSection: React.FC = () => {
+  const { t } = useLanguage();
+
   const stats = [
     { number: '15K+', label: 'Students Enrolled' },
     { number: '95%', label: 'Success Rate' },
@@ -59,19 +62,19 @@ const AboutSection: React.FC = () => {
           >
             <AnimatedSection direction="up" delay={0.1}>
               <h2 className="text-3xl lg:text-4xl font-bold mb-6 text-gray-800">
-                About <span className="text-orange-500">EduSmart</span>
+                {t('about.title')}
               </h2>
             </AnimatedSection>
             
             <AnimatedSection direction="up" delay={0.2}>
               <p className="text-gray-600 mb-6 text-lg">
-                EduSmart is revolutionizing educational guidance through AI-powered personalization. We help students worldwide find their perfect educational path with intelligent matching algorithms and comprehensive resources.
+                {t('about.description')}
               </p>
             </AnimatedSection>
             
             <AnimatedSection direction="up" delay={0.3}>
               <p className="text-gray-600 mb-8 text-lg">
-                Our platform combines cutting-edge technology with educational expertise to provide tailored recommendations, scholarship opportunities, and application assistance for students at every stage of their academic journey.
+                {t('about.subtitle')}
               </p>
             </AnimatedSection>
 
@@ -80,7 +83,7 @@ const AboutSection: React.FC = () => {
                 to="/about"
                 className="inline-block bg-teal-700 hover:bg-teal-800 text-white font-medium py-3 px-8 rounded-lg transition-colors mb-12"
               >
-                Learn More About Us
+                {t('common.readMore')}
               </Link>
             </AnimatedSection>
 

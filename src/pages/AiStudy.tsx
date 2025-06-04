@@ -11,9 +11,11 @@ import { ContentWriterComponent } from '../components/ui/ContentWriterComponent'
 import CheckMistakesComponent from '../components/ui/CheckMistakesComponent';
 import AiTutorChatComponent from '../components/ui/AiTutorChatComponent';
 import UploadHomeworkComponent from '../components/ui/UploadHomeworkComponent';
+import { useLanguage } from '../utils/LanguageContext';
 
 const AiStudy: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('upload');
   const [history, setHistory] = useState<{date: string, question: string, snippet: string}[]>([
     {date: '2 days ago', question: 'Explain photosynthesis', snippet: 'Photosynthesis is the process by which green plants...'},
@@ -197,8 +199,7 @@ const AiStudy: React.FC = () => {
               AI<span className="text-orange-500">Study</span> Assistant
             </h1>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Get instant help with your homework, assignments, and learning materials. 
-              Our AI assistant provides step-by-step solutions and explanations.
+              {t('get_instant_help')}
             </p>
             
             {/* Content Writer Button */}
@@ -209,7 +210,7 @@ const AiStudy: React.FC = () => {
               className="mt-4 inline-flex items-center px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg shadow-md font-medium"
             >
               <IconComponent icon={AiOutlineEdit} className="mr-2 h-5 w-5" />
-              Generate Essays & Academic Papers
+              {t('generate_essays_academic_papers')}
             </motion.button>
           </motion.div>
 
@@ -304,39 +305,39 @@ const AiStudy: React.FC = () => {
                       className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm"
                     >
                       <h3 className="text-lg font-medium text-teal-800 mb-4 flex items-center">
-                        <IconComponent icon={FiCalendar} className="mr-2" /> Add New Study Task
+                        <IconComponent icon={FiCalendar} className="mr-2" /> {t('add_new_study_task')}
                       </h3>
                       
                       <form onSubmit={handleAddTask}>
                         <div className="mb-4">
                           <label className="block text-gray-700 mb-1 text-sm font-medium">
-                            Task Description
+                            {t('task_description')}
                           </label>
                           <input
                             type="text"
                             value={newTask.task}
                             onChange={(e) => setNewTask({...newTask, task: e.target.value})}
                             className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                            placeholder="What do you need to study?"
+                            placeholder={t('what_do_you_need_to_study')}
                           />
                         </div>
                         
                         <div className="mb-4">
                           <label className="block text-gray-700 mb-1 text-sm font-medium">
-                            Subject
+                            {t('subject')}
                           </label>
                           <input
                             type="text"
                             value={newTask.subject}
                             onChange={(e) => setNewTask({...newTask, subject: e.target.value})}
                             className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                            placeholder="e.g. Math, Science, History"
+                            placeholder={t('e_g_math_science_history')}
                           />
                         </div>
                         
                         <div className="mb-4">
                           <label className="block text-gray-700 mb-1 text-sm font-medium">
-                            Due Date
+                            {t('due_date')}
                           </label>
                           <input
                             type="date"
@@ -353,7 +354,7 @@ const AiStudy: React.FC = () => {
                           whileHover="hover"
                           whileTap="tap"
                         >
-                          Add to Study Plan
+                          {t('add_to_study_plan')}
                         </motion.button>
                       </form>
                     </motion.div>
@@ -364,7 +365,7 @@ const AiStudy: React.FC = () => {
                       className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm lg:col-span-2"
                     >
                       <h3 className="text-lg font-medium text-teal-800 mb-4 flex items-center">
-                        <IconComponent icon={FiClock} className="mr-2" /> Your Study Schedule
+                        <IconComponent icon={FiClock} className="mr-2" /> {t('your_study_schedule')}
                       </h3>
                       
                       {studyTasks.length > 0 ? (
@@ -425,7 +426,7 @@ const AiStudy: React.FC = () => {
                       ) : (
                         <div className="text-center py-8 text-gray-500">
                           <IconComponent icon={FiCalendar} className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                          <p>Your study tasks will appear here once you add them.</p>
+                          <p>{t('study_tasks_will_appear_here_once_you_add_them')}</p>
                         </div>
                       )}
                     </motion.div>
@@ -436,29 +437,29 @@ const AiStudy: React.FC = () => {
                       className="bg-gradient-to-br from-teal-600 to-teal-700 rounded-xl p-6 shadow-md text-white col-span-full"
                     >
                       <h3 className="text-lg font-medium mb-4 flex items-center">
-                        <IconComponent icon={AiOutlineBulb} className="mr-2" /> Smart Study Recommendations
+                        <IconComponent icon={AiOutlineBulb} className="mr-2" /> {t('smart_study_recommendations')}
                       </h3>
                       
                       <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
-                        <p className="mb-3">Based on your upcoming tasks and learning patterns, here are personalized recommendations:</p>
+                        <p className="mb-3">{t('based_on_your_upcoming_tasks_and_learning_patterns_here_are_personalized_recommendations')}:</p>
                         <ul className="space-y-2">
                           <li className="flex items-start">
                             <span className="bg-white text-teal-800 rounded-full p-1 mr-2 flex-shrink-0">
                               <IconComponent icon={FiCheck} className="h-3 w-3" />
                             </span>
-                            <span>Start with Mathematics homework first, as it's due earliest.</span>
+                            <span>{t('start_with_mathematics_homework_first_as_its_due_earliest')}</span>
                           </li>
                           <li className="flex items-start">
                             <span className="bg-white text-teal-800 rounded-full p-1 mr-2 flex-shrink-0">
                               <IconComponent icon={FiCheck} className="h-3 w-3" />
                             </span>
-                            <span>Block 2-hour focus sessions with 15-minute breaks for better retention.</span>
+                            <span>{t('block_2_hour_focus_sessions_with_15_minute_breaks_for_better_retention')}</span>
                           </li>
                           <li className="flex items-start">
                             <span className="bg-white text-teal-800 rounded-full p-1 mr-2 flex-shrink-0">
                               <IconComponent icon={FiCheck} className="h-3 w-3" />
                             </span>
-                            <span>Use the AI Study Assistant for difficult concepts.</span>
+                            <span>{t('use_the_ai_study_assistant_for_difficult_concepts')}</span>
                           </li>
                         </ul>
                       </div>
@@ -509,7 +510,7 @@ const AiStudy: React.FC = () => {
                               className="bg-teal-600 text-white px-4 py-2 rounded-full text-sm font-medium"
                               onClick={() => setShowAnswer(true)}
                             >
-                              Show Answer
+                              {t('show_answer')}
                             </motion.button>
                           </div>
                         </motion.div>
@@ -526,7 +527,7 @@ const AiStudy: React.FC = () => {
                           transition={{ duration: 0.6 }}
                         >
                           <div className="flex justify-between mb-2">
-                            <span className="text-sm text-gray-500">Answer</span>
+                            <span className="text-sm text-gray-500">{t('answer')}</span>
                             <motion.button
                               variants={buttonVariants}
                               whileHover="hover"
@@ -539,7 +540,7 @@ const AiStudy: React.FC = () => {
                                   ? 'bg-green-100 text-green-800' 
                                   : 'bg-blue-100 text-blue-800'
                               }`}>
-                                {flashcards[currentFlashcard]?.mastered ? 'Mastered' : 'Mark as Mastered'}
+                                {flashcards[currentFlashcard]?.mastered ? 'Mastered' : t('mark_as_mastered')}
                               </span>
                             </motion.button>
                           </div>
@@ -556,7 +557,7 @@ const AiStudy: React.FC = () => {
                               className="bg-gray-200 text-gray-800 px-4 py-2 rounded-full text-sm font-medium"
                               onClick={() => setShowAnswer(false)}
                             >
-                              Back to Question
+                              {t('back_to_question')}
                             </motion.button>
                           </div>
                         </motion.div>
@@ -574,7 +575,7 @@ const AiStudy: React.FC = () => {
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                           </svg>
-                          Previous
+                          {t('previous')}
                         </motion.button>
                         
                         <motion.button
@@ -584,7 +585,7 @@ const AiStudy: React.FC = () => {
                           onClick={handleNextFlashcard}
                           className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg flex items-center"
                         >
-                          Next
+                          {t('next')}
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                           </svg>
@@ -598,7 +599,7 @@ const AiStudy: React.FC = () => {
                       className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm"
                     >
                       <h3 className="text-lg font-medium text-teal-800 mb-4 flex items-center">
-                        <IconComponent icon={FiBookmark} className="mr-2" /> Create Flashcards
+                        <IconComponent icon={FiBookmark} className="mr-2" /> {t('create_flashcards')}
                       </h3>
                       
                       <div className="mb-4">
@@ -606,7 +607,7 @@ const AiStudy: React.FC = () => {
                           className="w-full py-3 bg-teal-600 text-white rounded-lg flex items-center justify-center font-medium"
                         >
                           <IconComponent icon={AiOutlineBulb} className="mr-2" />
-                          Generate from Notes
+                          {t('generate_from_notes')}
                         </button>
                       </div>
                       
@@ -614,17 +615,17 @@ const AiStudy: React.FC = () => {
                         <div className="absolute inset-0 flex items-center">
                           <div className="w-full border-t border-gray-300"></div>
                         </div>
-                        <span className="relative bg-white px-2 text-sm text-gray-500">or create manually</span>
+                        <span className="relative bg-white px-2 text-sm text-gray-500">{t('or_create_manually')}</span>
                       </div>
                       
                       <form onSubmit={handleAddFlashcard}>
                         <div className="mb-3">
                           <label className="block text-gray-700 mb-1 text-sm font-medium">
-                            Question
+                            {t('question')}
                           </label>
                           <textarea
                             className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none h-20"
-                            placeholder="Enter your question here"
+                            placeholder={t('enter_your_question_here')}
                             value={newFlashcard.question}
                             onChange={(e) => setNewFlashcard({...newFlashcard, question: e.target.value})}
                           />
@@ -632,11 +633,11 @@ const AiStudy: React.FC = () => {
                         
                         <div className="mb-4">
                           <label className="block text-gray-700 mb-1 text-sm font-medium">
-                            Answer
+                            {t('answer')}
                           </label>
                           <textarea
                             className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none h-20"
-                            placeholder="Enter the answer here"
+                            placeholder={t('enter_the_answer_here')}
                             value={newFlashcard.answer}
                             onChange={(e) => setNewFlashcard({...newFlashcard, answer: e.target.value})}
                           />
@@ -649,7 +650,7 @@ const AiStudy: React.FC = () => {
                           whileTap="tap"
                           className="w-full py-2 bg-gradient-to-r from-teal-600 to-teal-700 rounded-lg text-white font-medium shadow-md hover:shadow-lg"
                         >
-                          Add Flashcard
+                          {t('add_flashcard')}
                         </motion.button>
                       </form>
                     </motion.div>
@@ -693,7 +694,7 @@ const AiStudy: React.FC = () => {
                   ) : (
                     <div className="text-center py-8 text-gray-500">
                       <IconComponent icon={AiOutlineHistory} className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                      <p>Your study history will appear here once you start using AI Study.</p>
+                      <p>{t('study_history_will_appear_here_once_you_start_using_ai_study')}</p>
                     </div>
                   )}
                 </motion.div>
@@ -724,14 +725,14 @@ const AiStudy: React.FC = () => {
                 <IconComponent icon={AiOutlineUpload} className="h-7 w-7 text-teal-600" />
               </div>
               <h3 className="text-xl font-semibold text-teal-800 mb-2">Instant Homework Help</h3>
-              <p className="text-gray-600">Upload your homework, get step-by-step solutions with detailed explanations instantly.</p>
+              <p className="text-gray-600">{t('instant_homework_help')}</p>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveTab('upload')}
                 className="mt-4 text-teal-600 font-medium flex items-center text-sm"
               >
-                Try now
+                {t('try_now')}
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
@@ -747,14 +748,14 @@ const AiStudy: React.FC = () => {
                 <IconComponent icon={AiOutlineEdit} className="h-7 w-7 text-orange-500" />
               </div>
               <h3 className="text-xl font-semibold text-teal-800 mb-2">AI Content Writer</h3>
-              <p className="text-gray-600">Generate essays, papers, and applications with our AI-powered content writing assistant.</p>
+              <p className="text-gray-600">{t('ai_content_writer')}</p>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveTab('content-writer')}
                 className="mt-4 text-orange-500 font-medium flex items-center text-sm"
               >
-                Start writing
+                {t('start_writing')}
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
@@ -770,14 +771,14 @@ const AiStudy: React.FC = () => {
                 <IconComponent icon={AiOutlineRobot} className="h-7 w-7 text-teal-600" />
               </div>
               <h3 className="text-xl font-semibold text-teal-800 mb-2">AI Tutor Chat</h3>
-              <p className="text-gray-600">Chat with our AI tutor for personalized help and explanations on any subject.</p>
+              <p className="text-gray-600">{t('ai_tutor_chat')}</p>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveTab('chat')}
                 className="mt-4 text-teal-600 font-medium flex items-center text-sm"
               >
-                Chat now
+                {t('chat_now')}
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
@@ -796,7 +797,7 @@ const AiStudy: React.FC = () => {
             onClick={() => setActiveTab('chat')}
           >
             <IconComponent icon={AiOutlineRobot} className="h-6 w-6" />
-            <span className="ml-2 font-medium hidden md:inline">Ask AI Tutor</span>
+            <span className="ml-2 font-medium hidden md:inline">{t('ask_ai_tutor')}</span>
           </motion.button>
         </div>
       </motion.div>

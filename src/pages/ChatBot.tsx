@@ -6,6 +6,7 @@ import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import IconComponent from '../components/ui/IconComponent';
 import AnimatedSection from '../components/ui/AnimatedSection';
+import { useLanguage } from '../utils/LanguageContext';
 
 interface Message {
   id: number;
@@ -14,9 +15,10 @@ interface Message {
 }
 
 const ChatBotPage: React.FC = () => {
+  const { t } = useLanguage();
   const [messages, setMessages] = useState<Message[]>([
-    { id: 1, text: 'Hello! I am EduSmart AI Assistant. How can I help you today?', sender: 'bot' },
-    { id: 2, text: 'I can help you find courses, scholarships, or provide information about educational resources.', sender: 'bot' },
+    { id: 1, text: t('chatBot.welcomeMessage'), sender: 'bot' },
+    { id: 2, text: t('chatBot.helpMessage'), sender: 'bot' },
   ]);
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -103,14 +105,14 @@ const ChatBotPage: React.FC = () => {
               </Link>
               <h1 className="text-3xl font-bold flex items-center">
                 <IconComponent icon={FaRobot} className="mr-2 text-teal-700" /> 
-                <span>EduSmart AI Assistant</span>
+                <span>{t('chatBot.title')}</span>
               </h1>
             </div>
             
             <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
               <div className="bg-teal-700 text-white p-4">
-                <h2 className="font-bold">Chat with EduSmart AI</h2>
-                <p className="text-sm opacity-80">Ask about courses, scholarships, resources, and more</p>
+                <h2 className="font-bold">{t('chatBot.chatTitle')}</h2>
+                <p className="text-sm opacity-80">{t('chatBot.chatSubtitle')}</p>
               </div>
               
               <div className="p-4 h-[60vh] overflow-y-auto bg-gray-50">
@@ -134,7 +136,7 @@ const ChatBotPage: React.FC = () => {
                       {message.text}
                     </div>
                     <div className={`text-xs mt-1 ${message.sender === 'user' ? 'text-gray-500' : 'text-gray-500'}`}>
-                      {message.sender === 'user' ? 'You' : 'EduSmart AI'}
+                      {message.sender === 'user' ? t('chatBot.you') : t('chatBot.aiAssistant')}
                     </div>
                   </motion.div>
                 ))}
@@ -147,7 +149,7 @@ const ChatBotPage: React.FC = () => {
                     type="text"
                     value={inputValue}
                     onChange={handleInputChange}
-                    placeholder="Type your message here..."
+                    placeholder={t('chatBot.messagePlaceholder')}
                     className="flex-grow p-3 border border-gray-300 rounded-l-lg focus:outline-none focus:border-teal-500"
                   />
                   <motion.button

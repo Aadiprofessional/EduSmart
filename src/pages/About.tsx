@@ -3,8 +3,11 @@ import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import { motion } from 'framer-motion';
 import AnimatedSection from '../components/ui/AnimatedSection';
+import { useLanguage } from '../utils/LanguageContext';
 
 const About: React.FC = () => {
+  const { t } = useLanguage();
+
   // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -70,7 +73,7 @@ const About: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              About EduSmart
+              {t('about.title')}
             </motion.h1>
             <motion.p 
               className="text-xl"
@@ -78,7 +81,7 @@ const About: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-              We're transforming the educational experience through AI-powered solutions
+              {t('about.subtitle')}
             </motion.p>
           </div>
         </motion.div>
@@ -94,8 +97,7 @@ const About: React.FC = () => {
               >
                 <h2 className="text-3xl font-bold text-teal-700 mb-6">Our Mission</h2>
                 <p className="text-gray-700 mb-4">
-                  At EduSmart, our mission is to make quality education accessible to everyone through cutting-edge 
-                  technology and personalized learning experiences.
+                  {t('about.description')}
                 </p>
                 <p className="text-gray-700 mb-4">
                   We believe that every student deserves an educational journey tailored to their unique needs and learning style.

@@ -3,8 +3,11 @@ import { Link } from 'react-router-dom';
 import { FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaYoutube } from 'react-icons/fa';
 import IconComponent from '../ui/IconComponent';
 import { motion } from 'framer-motion';
+import { useLanguage } from '../../utils/LanguageContext';
 
 const Footer: React.FC = () => {
+  const { t } = useLanguage();
+
   const socialVariants = {
     hover: { scale: 1.2, rotate: 5, transition: { duration: 0.2 } }
   };
@@ -68,9 +71,9 @@ const Footer: React.FC = () => {
         >
           {/* About */}
           <motion.div variants={itemVariants}>
-            <h3 className="text-xl font-bold mb-4">About Us</h3>
+            <h3 className="text-xl font-bold mb-4">{t('footer.quickLinks.about')}</h3>
             <p className="text-gray-300 mb-4">
-              EduSmart is an AI-powered educational platform helping students find their dream university and educational path with personalized guidance and resources.
+              {t('footer.description')}
             </p>
             <div className="flex space-x-4">
               <motion.a href="#" className="text-gray-300 hover:text-orange-500" variants={socialVariants} whileHover="hover">
@@ -93,31 +96,31 @@ const Footer: React.FC = () => {
           
           {/* Quick Links */}
           <motion.div variants={itemVariants}>
-            <h3 className="text-xl font-bold mb-4">Quick Links</h3>
+            <h3 className="text-xl font-bold mb-4">{t('footer.quickLinks.title')}</h3>
             <ul className="space-y-2">
               <li>
                 <motion.div variants={linkVariants} whileHover="hover">
-                  <Link to="/" className="text-gray-300 inline-block">Home</Link>
+                  <Link to="/" className="text-gray-300 inline-block">{t('nav.home')}</Link>
                 </motion.div>
               </li>
               <li>
                 <motion.div variants={linkVariants} whileHover="hover">
-                  <Link to="/database" className="text-gray-300 inline-block">University Database</Link>
+                  <Link to="/database" className="text-gray-300 inline-block">{t('nav.database')}</Link>
                 </motion.div>
               </li>
               <li>
                 <motion.div variants={linkVariants} whileHover="hover">
-                  <Link to="/case-studies" className="text-gray-300 inline-block">Success Stories</Link>
+                  <Link to="/case-studies" className="text-gray-300 inline-block">{t('nav.successStories')}</Link>
                 </motion.div>
               </li>
               <li>
                 <motion.div variants={linkVariants} whileHover="hover">
-                  <Link to="/ai-courses" className="text-gray-300 inline-block">AI Courses</Link>
+                  <Link to="/ai-courses" className="text-gray-300 inline-block">{t('nav.aiCourses')}</Link>
                 </motion.div>
               </li>
               <li>
                 <motion.div variants={linkVariants} whileHover="hover">
-                  <Link to="/blog" className="text-gray-300 inline-block">Blog</Link>
+                  <Link to="/blog" className="text-gray-300 inline-block">{t('nav.blog')}</Link>
                 </motion.div>
               </li>
             </ul>
@@ -125,31 +128,31 @@ const Footer: React.FC = () => {
           
           {/* Resources */}
           <motion.div variants={itemVariants}>
-            <h3 className="text-xl font-bold mb-4">Resources</h3>
+            <h3 className="text-xl font-bold mb-4">{t('footer.programs.title')}</h3>
             <ul className="space-y-2">
               <li>
                 <motion.div variants={linkVariants} whileHover="hover">
-                  <Link to="/scholarship-finder" className="text-gray-300 inline-block">Scholarship Finder</Link>
+                  <Link to="/scholarship-finder" className="text-gray-300 inline-block">{t('footer.quickLinks.scholarships')}</Link>
                 </motion.div>
               </li>
               <li>
                 <motion.div variants={linkVariants} whileHover="hover">
-                  <Link to="/application-tracker" className="text-gray-300 inline-block">Application Tracker</Link>
+                  <Link to="/application-tracker" className="text-gray-300 inline-block">{t('nav.applicationTracker')}</Link>
                 </motion.div>
               </li>
               <li>
                 <motion.div variants={linkVariants} whileHover="hover">
-                  <Link to="/privacy" className="text-gray-300 inline-block">Privacy Policy</Link>
+                  <Link to="/privacy" className="text-gray-300 inline-block">{t('footer.support.privacy')}</Link>
                 </motion.div>
               </li>
               <li>
                 <motion.div variants={linkVariants} whileHover="hover">
-                  <Link to="/terms" className="text-gray-300 inline-block">Terms of Service</Link>
+                  <Link to="/terms" className="text-gray-300 inline-block">{t('footer.support.terms')}</Link>
                 </motion.div>
               </li>
               <li>
                 <motion.div variants={linkVariants} whileHover="hover">
-                  <Link to="/faq" className="text-gray-300 inline-block">FAQ</Link>
+                  <Link to="/faq" className="text-gray-300 inline-block">{t('footer.support.faq')}</Link>
                 </motion.div>
               </li>
             </ul>
@@ -157,7 +160,7 @@ const Footer: React.FC = () => {
           
           {/* Contact */}
           <motion.div variants={itemVariants}>
-            <h3 className="text-xl font-bold mb-4">Contact Us</h3>
+            <h3 className="text-xl font-bold mb-4">{t('footer.support.contactUs')}</h3>
             <ul className="space-y-2 text-gray-300">
               <li>123 Education Street</li>
               <li>Hong Kong, NY 10001</li>
@@ -175,19 +178,19 @@ const Footer: React.FC = () => {
           transition={{ delay: 0.6, duration: 0.5 }}
         >
           <div className="mb-4 md:mb-0">
-            <span className="text-gray-300">© 2025 EduSmart. All rights reserved.</span>
+            <span className="text-gray-300">{t('footer.copyright')}</span>
             <br />
             <span className="text-gray-300">Powered by <a href="https://www.matrixai.asia" className="text-gray-300 hover:text-orange-500">MatrixAI</a> X <a href="https://www.smarteducation.asia" className="text-gray-300 hover:text-orange-500">Smart Education</a></span>
           </div>
           <div className="flex space-x-6">
             <motion.div variants={linkVariants} whileHover="hover">
               <Link to="/privacy" className="text-gray-300 text-sm inline-block">
-                Privacy Policy
+                {t('footer.support.privacy')}
               </Link>
             </motion.div>
             <motion.div variants={linkVariants} whileHover="hover">
               <Link to="/terms" className="text-gray-300 text-sm inline-block">
-                Terms of Service
+                {t('footer.support.terms')}
               </Link>
             </motion.div>
             <motion.div variants={linkVariants} whileHover="hover">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaSearch, FaFilter, FaSortAmountDown, FaExternalLinkAlt, FaUniversity, FaGlobe, FaGraduationCap, FaCalendarAlt, FaDollarSign, FaTrophy, FaChevronDown, FaChevronUp, FaBookmark, FaRobot, FaLightbulb, FaUser } from 'react-icons/fa';
+import { FaSearch, FaFilter, FaSortAmountDown, FaExternalLinkAlt, FaUniversity, FaGlobe, FaGraduationCap, FaCalendarAlt, FaDollarSign, FaTrophy, FaChevronDown, FaChevronUp, FaBookmark, FaRobot, FaLightbulb, FaUser, FaBuilding, FaMapMarkerAlt } from 'react-icons/fa';
 import { HiOutlineAcademicCap, HiOutlineLocationMarker } from 'react-icons/hi';
 import { RiArrowDropDownLine, RiArrowDropUpLine } from 'react-icons/ri';
 import Header from '../components/layout/Header';
@@ -9,44 +9,96 @@ import { motion } from 'framer-motion';
 import { fadeIn, staggerContainer, slideIn } from '../utils/animations';
 import { supabase } from '../utils/supabase';
 import { useAuth } from '../utils/AuthContext';
+import { universityAPI } from '../utils/apiService';
+import { useLanguage } from '../utils/LanguageContext';
 
 interface University {
-  id: number;
+  id: string;
   name: string;
+  description: string;
   country: string;
+  city: string;
+  state: string;
+  address: string;
+  website: string;
+  contact_email: string;
+  contact_phone: string;
+  established_year: number;
+  type: string;
+  ranking: number;
+  tuition_fee: number;
+  application_fee: number;
+  acceptance_rate: number;
+  student_population: number;
+  faculty_count: number;
+  programs_offered: string[];
+  facilities: string[];
+  image: string;
+  logo: string;
+  gallery: string[];
+  campus_size: string;
+  campus_type: string;
+  accreditation: string;
+  notable_alumni: string[];
+  slug: string;
+  keywords: string[];
+  status: string;
+  featured: boolean;
+  verified: boolean;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  // Additional properties used in the component
   qsRanking: number;
-  tuitionFees: {
-    undergraduate: string;
-    graduate: string;
-  };
-  admissionRequirements: {
-    minGPA: number;
-    testScores: {
-      name: string;
-      score: string;
-    }[];
-    languageRequirements: {
-      test: string;
-      score: string;
-    }[];
-  };
+  majorStrengths: string[];
   applicationDeadlines: {
     fall: string;
     spring: string;
   };
-  majorStrengths: string[];
+  admissionRequirements: {
+    minGPA: number;
+    testScores: Array<{
+      name: string;
+      score: string;
+    }>;
+    languageRequirements: Array<{
+      test: string;
+      score: string;
+    }>;
+  };
+  tuitionFees: {
+    undergraduate: string;
+    graduate: string;
+  };
   applicationLink: string;
-  logo: string;
   rankingType: string;
   region: string;
   rankingYear: number;
   acceptanceRate: string;
   studentPopulation: string;
-  internationalStudents: string;
-  campusType: string;
   researchOutput: string;
   employmentRate: string;
+  campusType: string;
 }
+
+// Helper functions
+const formatTuitionFee = (fee: number | null): string => {
+  if (!fee) return 'Contact for details';
+  if (fee === 0) return 'Free';
+  return `$${fee.toLocaleString()}/year`;
+};
+
+const formatAcceptanceRate = (rate: number | null): string => {
+  if (!rate) return 'N/A';
+  return `${rate}%`;
+};
+
+const formatStudentPopulation = (population: number | null): string => {
+  if (!population) return 'N/A';
+  return population.toLocaleString();
+};
+
+const getDefaultLogo = () => '/api/placeholder/100/100';
 
 // CSS for grid background pattern
 const gridPatternStyle = {
@@ -90,9 +142,13 @@ const UniversityCard: React.FC<UniversityCardProps> = ({ university, onSelect, i
     >
       <div className={`relative ${isMobile ? 'h-24' : 'h-36'} bg-gradient-to-r from-gray-100 to-gray-200 flex justify-center items-center`}>
         <img 
-          src={university.logo} 
+          src={university.logo || getDefaultLogo()} 
           alt={`${university.name} logo`}
           className={`${isMobile ? 'h-16 w-16' : 'h-24 w-24'} object-contain`}
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.src = getDefaultLogo();
+          }}
         />
         <div className="absolute top-2 right-2 flex gap-1">
           <motion.button
@@ -107,6 +163,13 @@ const UniversityCard: React.FC<UniversityCardProps> = ({ university, onSelect, i
             <IconComponent icon={FaBookmark} className={`${isMobile ? 'text-xs' : 'text-sm'}`} />
           </motion.button>
         </div>
+        {university.ranking && (
+          <div className="absolute top-2 left-2">
+            <span className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full font-medium">
+              #{university.ranking}
+            </span>
+          </div>
+        )}
       </div>
       
       <div className={`${isMobile ? 'p-3' : 'p-4'}`}>
@@ -114,25 +177,22 @@ const UniversityCard: React.FC<UniversityCardProps> = ({ university, onSelect, i
           <h3 className={`${isMobile ? 'text-sm' : 'text-lg'} font-bold text-gray-800 line-clamp-2`}>
             {isMobile ? university.name.split(' ').slice(0, 3).join(' ') + (university.name.split(' ').length > 3 ? '...' : '') : university.name}
           </h3>
-          <span className={`bg-primary/10 text-primary ${isMobile ? 'text-xs px-1.5 py-0.5' : 'text-xs px-2 py-1'} rounded-full font-medium`}>
-            #{university.qsRanking}
-          </span>
         </div>
         
         <div className={`${isMobile ? 'text-xs' : 'text-sm'} text-gray-600 flex items-center mb-2`}>
-          <IconComponent icon={HiOutlineLocationMarker} className="mr-1" /> {university.country}
+          <IconComponent icon={HiOutlineLocationMarker} className="mr-1" /> {university.city}, {university.country}
         </div>
         
         {!isMobile && (
         <div className="flex flex-wrap gap-1 mb-3">
-          {university.majorStrengths.slice(0, 3).map((major, index) => (
+          {university.programs_offered && university.programs_offered.slice(0, 3).map((program, index) => (
             <span key={index} className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full">
-              {major}
+              {program}
             </span>
           ))}
-          {university.majorStrengths.length > 3 && (
+          {university.programs_offered && university.programs_offered.length > 3 && (
             <span className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full">
-              +{university.majorStrengths.length - 3}
+              +{university.programs_offered.length - 3}
             </span>
           )}
         </div>
@@ -142,17 +202,17 @@ const UniversityCard: React.FC<UniversityCardProps> = ({ university, onSelect, i
           <div className="flex justify-between mb-1">
             <span>Tuition:</span>
             <span className="font-medium text-gray-700">
-              {isMobile ? university.tuitionFees.undergraduate.split('/')[0] : university.tuitionFees.undergraduate}
+              {isMobile ? formatTuitionFee(university.tuition_fee).split('/')[0] : formatTuitionFee(university.tuition_fee)}
             </span>
           </div>
           <div className="flex justify-between">
-            <span>Min GPA:</span>
-            <span className="font-medium text-gray-700">{university.admissionRequirements.minGPA}</span>
+            <span>Type:</span>
+            <span className="font-medium text-gray-700">{university.type || 'N/A'}</span>
           </div>
           {!isMobile && (
             <div className="flex justify-between mt-1">
               <span>Acceptance:</span>
-              <span className="font-medium text-gray-700">{university.acceptanceRate}</span>
+              <span className="font-medium text-gray-700">{formatAcceptanceRate(university.acceptance_rate)}</span>
             </div>
           )}
         </div>
@@ -202,9 +262,13 @@ const UniversityListItem: React.FC<UniversityListItemProps> = ({ university, onS
           <div className="flex-shrink-0 mr-3">
             <div className="bg-gray-50 rounded-lg p-1 h-12 w-12 flex items-center justify-center">
               <img 
-                src={university.logo} 
+                src={university.logo || getDefaultLogo()} 
                 alt={`${university.name} logo`} 
                 className="h-10 w-10 object-contain"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = getDefaultLogo();
+                }}
               />
             </div>
           </div>
@@ -212,21 +276,21 @@ const UniversityListItem: React.FC<UniversityListItemProps> = ({ university, onS
           <div className="flex-1 min-w-0">
             <div className="flex justify-between items-start mb-1">
               <h3 className="text-sm font-bold text-gray-800 truncate pr-2">{university.name}</h3>
-              <span className="bg-primary/10 text-primary text-xs px-1.5 py-0.5 rounded-full font-medium flex-shrink-0">#{university.qsRanking}</span>
+              <span className="bg-primary/10 text-primary text-xs px-1.5 py-0.5 rounded-full font-medium flex-shrink-0">#{university.ranking}</span>
             </div>
             
             <div className="text-xs text-gray-600 mb-1 flex items-center">
               <IconComponent icon={HiOutlineLocationMarker} className="mr-1 text-gray-400" /> 
-              <span className="truncate">{university.country}</span>
+              <span className="truncate">{university.city}, {university.country}</span>
             </div>
             
             <div className="text-xs text-gray-600 mb-2">
               <div className="flex justify-between">
-                <span>Tuition: {university.tuitionFees.undergraduate}</span>
+                <span>Tuition: {formatTuitionFee(university.tuition_fee)}</span>
               </div>
               <div className="flex justify-between mt-0.5">
-                <span>GPA: {university.admissionRequirements.minGPA}</span>
-                <span>Deadline: {university.applicationDeadlines.fall}</span>
+                <span>Type: {university.type || 'N/A'}</span>
+                <span>Acceptance: {formatAcceptanceRate(university.acceptance_rate)}</span>
               </div>
             </div>
             
@@ -270,9 +334,13 @@ const UniversityListItem: React.FC<UniversityListItemProps> = ({ university, onS
         <div className="sm:w-24 flex justify-center">
           <div className="bg-gray-50 rounded-lg p-2 h-20 w-20 flex items-center justify-center">
             <img 
-              src={university.logo} 
+              src={university.logo || getDefaultLogo()} 
               alt={`${university.name} logo`} 
               className="h-16 w-16 object-contain"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = getDefaultLogo();
+              }}
             />
           </div>
         </div>
@@ -281,32 +349,32 @@ const UniversityListItem: React.FC<UniversityListItemProps> = ({ university, onS
           <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-2">
             <h3 className="text-lg font-bold text-gray-800">{university.name}</h3>
             <div className="flex items-center mt-1 sm:mt-0 gap-2">
-              <span className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full font-medium">Rank #{university.qsRanking}</span>
+              <span className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full font-medium">Rank #{university.ranking}</span>
               <span className="text-gray-700 text-sm flex items-center">
-                <IconComponent icon={HiOutlineLocationMarker} className="mr-1" /> {university.country}
+                <IconComponent icon={HiOutlineLocationMarker} className="mr-1" /> {university.city}, {university.country}
               </span>
             </div>
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm mb-2">
             <div className="text-gray-600">
-              <span className="font-medium text-gray-700">Undergrad:</span> {university.tuitionFees.undergraduate}
+              <span className="font-medium text-gray-700">Undergrad:</span> {formatTuitionFee(university.tuition_fee)}
             </div>
             <div className="text-gray-600">
-              <span className="font-medium text-gray-700">Grad:</span> {university.tuitionFees.graduate}
+              <span className="font-medium text-gray-700">Type:</span> {university.type || 'N/A'}
             </div>
             <div className="text-gray-600">
-              <span className="font-medium text-gray-700">Min GPA:</span> {university.admissionRequirements.minGPA}
+              <span className="font-medium text-gray-700">Acceptance:</span> {formatAcceptanceRate(university.acceptance_rate)}
             </div>
             <div className="text-gray-600">
-              <span className="font-medium text-gray-700">Fall Deadline:</span> {university.applicationDeadlines.fall}
+              <span className="font-medium text-gray-700">Student Population:</span> {formatStudentPopulation(university.student_population)}
             </div>
           </div>
           
           <div className="flex flex-wrap gap-1 mb-3">
-            {university.majorStrengths.map((major, index) => (
+            {university.programs_offered && university.programs_offered.map((program, index) => (
               <span key={index} className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full">
-                {major}
+                {program}
               </span>
             ))}
           </div>
@@ -344,7 +412,7 @@ const UniversityListItem: React.FC<UniversityListItemProps> = ({ university, onS
             </motion.button>
             
             <motion.a
-              href={university.applicationLink}
+              href={university.website}
               target="_blank"
               rel="noopener noreferrer"
               className="text-secondary hover:text-secondary-dark font-medium text-sm flex items-center transition-colors"
@@ -381,18 +449,22 @@ const UniversityDetailModal: React.FC<UniversityDetailModalProps> = ({ universit
           <div className="flex items-center">
             <div className="bg-white rounded-lg p-2 mr-4">
               <img 
-                src={university.logo} 
+                src={university.logo || getDefaultLogo()} 
                 alt={`${university.name} logo`} 
                 className="h-12 w-12 object-contain"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = getDefaultLogo();
+                }}
               />
             </div>
             <div>
               <h2 className="text-xl font-bold">{university.name}</h2>
               <div className="flex items-center text-white/80 text-sm">
                 <IconComponent icon={HiOutlineLocationMarker} className="mr-1" />
-                <span>{university.country}</span>
+                <span>{university.city}, {university.country}</span>
                 <span className="mx-2">•</span>
-                <span>Rank #{university.qsRanking}</span>
+                <span>Rank #{university.ranking}</span>
               </div>
             </div>
           </div>
@@ -428,7 +500,7 @@ const UniversityDetailModal: React.FC<UniversityDetailModalProps> = ({ universit
             </motion.button>
             
             <motion.a
-              href={university.applicationLink}
+              href={university.website}
               target="_blank"
               rel="noopener noreferrer"
               className="bg-primary hover:bg-primary-dark text-white py-2 px-4 rounded-lg transition-colors font-medium text-sm flex items-center"
@@ -446,12 +518,12 @@ const UniversityDetailModal: React.FC<UniversityDetailModalProps> = ({ universit
               </h3>
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="flex justify-between py-2 border-b border-gray-200">
-                  <span className="text-gray-600">Undergraduate</span>
-                  <span className="font-medium text-gray-800">{university.tuitionFees.undergraduate}</span>
+                  <span className="text-gray-600">Annual Tuition</span>
+                  <span className="font-medium text-gray-800">{formatTuitionFee(university.tuition_fee)}</span>
                 </div>
                 <div className="flex justify-between py-2">
-                  <span className="text-gray-600">Graduate</span>
-                  <span className="font-medium text-gray-800">{university.tuitionFees.graduate}</span>
+                  <span className="text-gray-600">Application Fee</span>
+                  <span className="font-medium text-gray-800">{university.application_fee ? `$${university.application_fee}` : 'Contact for details'}</span>
                 </div>
               </div>
               
@@ -530,7 +602,7 @@ interface CompareUniversitiesModalProps {
   universities: University[];
   onClose: () => void;
   onRemove: (university: University) => void;
-  aiRecommendedId?: number; // ID of the top AI recommended university
+  aiRecommendedId?: string; // ID of the top AI recommended university
   isAutoGenerating?: boolean; // Loading state for auto-generation
 }
 
@@ -776,8 +848,11 @@ const CompareUniversitiesModal: React.FC<CompareUniversitiesModalProps> = ({
 };
 
 const Database: React.FC = () => {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
+  const [universities, setUniversities] = useState<University[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState({
     search: '',
     country: '',
@@ -817,6 +892,63 @@ const Database: React.FC = () => {
   const [userProfileCompletion, setUserProfileCompletion] = useState(0);
   const [isAutoGeneratingRecommendation, setIsAutoGeneratingRecommendation] = useState(false);
 
+  // Fetch universities data
+  useEffect(() => {
+    const fetchUniversities = async () => {
+      try {
+        setIsLoading(true);
+        const response = await universityAPI.getAll();
+        if (response.success && response.data) {
+          // Transform the data to match our interface
+          const transformedData = response.data.map((uni: any) => ({
+            ...uni,
+            qsRanking: uni.ranking || 999,
+            majorStrengths: uni.programs_offered || [],
+      applicationDeadlines: {
+              fall: 'September 1',
+              spring: 'January 15'
+      },
+      admissionRequirements: {
+              minGPA: 3.0,
+        testScores: [
+                { name: 'SAT', score: '1200+' },
+                { name: 'ACT', score: '26+' }
+        ],
+        languageRequirements: [
+                { test: 'IELTS', score: '6.5' },
+                { test: 'TOEFL', score: '80' }
+              ]
+            },
+      tuitionFees: {
+              undergraduate: `$${uni.tuition_fee?.toLocaleString() || '25,000'}/year`,
+              graduate: `$${((uni.tuition_fee || 25000) * 1.2)?.toLocaleString() || '30,000'}/year`
+            },
+            applicationLink: uni.website || '#',
+      rankingType: 'QS World University Rankings',
+            region: uni.country === 'United States' ? 'North America' : 
+                   uni.country === 'United Kingdom' ? 'Europe' : 
+                   uni.country === 'Canada' ? 'North America' : 'Other',
+      rankingYear: 2024,
+            acceptanceRate: `${uni.acceptance_rate || 50}%`,
+            studentPopulation: uni.student_population?.toLocaleString() || '10,000',
+            researchOutput: 'High',
+            employmentRate: '85%',
+            campusType: uni.campus_type || 'Urban'
+          }));
+          setUniversities(transformedData);
+        }
+      } catch (error) {
+        console.error('Error fetching universities:', error);
+        // Set some mock data as fallback
+        setUniversities([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUniversities();
+  }, []);
+
   // Check if device is mobile
   useEffect(() => {
     const checkIfMobile = () => {
@@ -830,1123 +962,6 @@ const Database: React.FC = () => {
       window.removeEventListener('resize', checkIfMobile);
     };
   }, []);
-
-  // Sample university data - Extended to 30+ universities
-  const universities: University[] = [
-    {
-      id: 1,
-      name: 'Massachusetts Institute of Technology (MIT)',
-      country: 'USA',
-      qsRanking: 1,
-      tuitionFees: {
-        undergraduate: '$55,878/year',
-        graduate: '$58,240/year'
-      },
-      admissionRequirements: {
-        minGPA: 4.0,
-        testScores: [
-          { name: 'SAT', score: '1500-1570' },
-          { name: 'ACT', score: '34-36' },
-          { name: 'GRE', score: '320+ (Graduate)' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '100+' },
-          { test: 'IELTS', score: '7.5+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'January 1',
-        spring: 'October 1'
-      },
-      majorStrengths: ['Computer Science', 'Engineering', 'Physics', 'Mathematics', 'AI'],
-      applicationLink: 'https://mitadmissions.org/',
-      logo: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'United States',
-      rankingYear: 2024,
-      acceptanceRate: '7%',
-      studentPopulation: '11,934',
-      internationalStudents: '33%',
-      campusType: 'Urban',
-      researchOutput: 'Very High',
-      employmentRate: '94%'
-    },
-    {
-      id: 2,
-      name: 'Stanford University',
-      country: 'USA',
-      qsRanking: 3,
-      tuitionFees: {
-        undergraduate: '$56,169/year',
-        graduate: '$57,861/year'
-      },
-      admissionRequirements: {
-        minGPA: 3.95,
-        testScores: [
-          { name: 'SAT', score: '1480-1570' },
-          { name: 'ACT', score: '33-35' },
-          { name: 'GRE', score: '320+ (Graduate)' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '100+' },
-          { test: 'IELTS', score: '7.0+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'December 1',
-        spring: 'October 15'
-      },
-      majorStrengths: ['Computer Science', 'Business', 'Engineering', 'Psychology', 'AI'],
-      applicationLink: 'https://admission.stanford.edu/',
-      logo: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'United States',
-      rankingYear: 2024,
-      acceptanceRate: '4%',
-      studentPopulation: '17,249',
-      internationalStudents: '23%',
-      campusType: 'Suburban',
-      researchOutput: 'Very High',
-      employmentRate: '92%'
-    },
-    {
-      id: 3,
-      name: 'University of Oxford',
-      country: 'UK',
-      qsRanking: 2,
-      tuitionFees: {
-        undergraduate: '£28,370-£39,010/year',
-        graduate: '£29,700-£45,520/year'
-      },
-      admissionRequirements: {
-        minGPA: 3.8,
-        testScores: [
-          { name: 'SAT', score: '1470+' },
-          { name: 'ACT', score: '33+' },
-          { name: 'GMAT', score: '720+ (MBA)' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '100+' },
-          { test: 'IELTS', score: '7.0-7.5' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'October 15',
-        spring: 'N/A'
-      },
-      majorStrengths: ['Philosophy', 'Medicine', 'Law', 'Economics', 'History'],
-      applicationLink: 'https://www.ox.ac.uk/admissions',
-      logo: 'https://images.unsplash.com/photo-1580537659466-0a9bfa916a54?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'United Kingdom',
-      rankingYear: 2024,
-      acceptanceRate: '17%',
-      studentPopulation: '24,515',
-      internationalStudents: '41%',
-      campusType: 'Urban',
-      researchOutput: 'Very High',
-      employmentRate: '95%'
-    },
-    {
-      id: 4,
-      name: 'University of Cambridge',
-      country: 'UK',
-      qsRanking: 4,
-      tuitionFees: {
-        undergraduate: '£22,227-£58,038/year',
-        graduate: '£23,340-£59,000/year'
-      },
-      admissionRequirements: {
-        minGPA: 3.9,
-        testScores: [
-          { name: 'SAT', score: '1460+' },
-          { name: 'ACT', score: '32+' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '110+' },
-          { test: 'IELTS', score: '7.5+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'October 15',
-        spring: 'N/A'
-      },
-      majorStrengths: ['Mathematics', 'Physics', 'Engineering', 'Medicine', 'Natural Sciences'],
-      applicationLink: 'https://www.cam.ac.uk/admissions',
-      logo: 'https://images.unsplash.com/photo-1564981797816-1043664bf78d?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'United Kingdom',
-      rankingYear: 2024,
-      acceptanceRate: '21%',
-      studentPopulation: '23,247',
-      internationalStudents: '39%',
-      campusType: 'Urban',
-      researchOutput: 'Very High',
-      employmentRate: '96%'
-    },
-    {
-      id: 5,
-      name: 'Harvard University',
-      country: 'USA',
-      qsRanking: 5,
-      tuitionFees: {
-        undergraduate: '$54,269/year',
-        graduate: '$52,170/year'
-      },
-      admissionRequirements: {
-        minGPA: 4.0,
-        testScores: [
-          { name: 'SAT', score: '1460-1580' },
-          { name: 'ACT', score: '33-35' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '100+' },
-          { test: 'IELTS', score: '7.0+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'January 1',
-        spring: 'N/A'
-      },
-      majorStrengths: ['Business', 'Law', 'Medicine', 'Economics', 'Government'],
-      applicationLink: 'https://college.harvard.edu/admissions',
-      logo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'United States',
-      rankingYear: 2024,
-      acceptanceRate: '3%',
-      studentPopulation: '23,731',
-      internationalStudents: '25%',
-      campusType: 'Urban',
-      researchOutput: 'Very High',
-      employmentRate: '95%'
-    },
-    {
-      id: 6,
-      name: 'California Institute of Technology (Caltech)',
-      country: 'USA',
-      qsRanking: 6,
-      tuitionFees: {
-        undergraduate: '$58,680/year',
-        graduate: '$58,680/year'
-      },
-      admissionRequirements: {
-        minGPA: 4.0,
-        testScores: [
-          { name: 'SAT', score: '1530-1580' },
-          { name: 'ACT', score: '35-36' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '100+' },
-          { test: 'IELTS', score: '7.0+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'January 3',
-        spring: 'N/A'
-      },
-      majorStrengths: ['Physics', 'Engineering', 'Chemistry', 'Mathematics', 'Astronomy'],
-      applicationLink: 'https://www.admissions.caltech.edu/',
-      logo: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'United States',
-      rankingYear: 2024,
-      acceptanceRate: '6%',
-      studentPopulation: '2,397',
-      internationalStudents: '27%',
-      campusType: 'Suburban',
-      researchOutput: 'Very High',
-      employmentRate: '93%'
-    },
-    {
-      id: 7,
-      name: 'Imperial College London',
-      country: 'UK',
-      qsRanking: 7,
-      tuitionFees: {
-        undergraduate: '£35,100-£50,400/year',
-        graduate: '£36,200-£51,000/year'
-      },
-      admissionRequirements: {
-        minGPA: 3.7,
-        testScores: [
-          { name: 'SAT', score: '1450+' },
-          { name: 'ACT', score: '32+' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '92+' },
-          { test: 'IELTS', score: '6.5+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'January 15',
-        spring: 'N/A'
-      },
-      majorStrengths: ['Engineering', 'Medicine', 'Business', 'Natural Sciences', 'Computing'],
-      applicationLink: 'https://www.imperial.ac.uk/study/undergraduate/apply/',
-      logo: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'United Kingdom',
-      rankingYear: 2024,
-      acceptanceRate: '14%',
-      studentPopulation: '19,945',
-      internationalStudents: '59%',
-      campusType: 'Urban',
-      researchOutput: 'Very High',
-      employmentRate: '91%'
-    },
-    {
-      id: 8,
-      name: 'University College London (UCL)',
-      country: 'UK',
-      qsRanking: 8,
-      tuitionFees: {
-        undergraduate: '£25,000-£38,000/year',
-        graduate: '£26,600-£51,370/year'
-      },
-      admissionRequirements: {
-        minGPA: 3.6,
-        testScores: [
-          { name: 'SAT', score: '1430+' },
-          { name: 'ACT', score: '32+' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '92+' },
-          { test: 'IELTS', score: '6.5+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'January 15',
-        spring: 'N/A'
-      },
-      majorStrengths: ['Medicine', 'Law', 'Architecture', 'Psychology', 'Engineering'],
-      applicationLink: 'https://www.ucl.ac.uk/prospective-students/',
-      logo: 'https://images.unsplash.com/photo-1580537659466-0a9bfa916a54?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'United Kingdom',
-      rankingYear: 2024,
-      acceptanceRate: '48%',
-      studentPopulation: '42,000',
-      internationalStudents: '53%',
-      campusType: 'Urban',
-      researchOutput: 'Very High',
-      employmentRate: '87%'
-    },
-    {
-      id: 9,
-      name: 'ETH Zurich',
-      country: 'Switzerland',
-      qsRanking: 9,
-      tuitionFees: {
-        undergraduate: 'CHF 1,298/year',
-        graduate: 'CHF 1,298/year'
-      },
-      admissionRequirements: {
-        minGPA: 3.8,
-        testScores: [
-          { name: 'SAT', score: '1450+' },
-          { name: 'GRE', score: '320+' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '100+' },
-          { test: 'IELTS', score: '7.0+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'December 15',
-        spring: 'N/A'
-      },
-      majorStrengths: ['Engineering', 'Computer Science', 'Physics', 'Mathematics', 'Architecture'],
-      applicationLink: 'https://ethz.ch/en/studies/registration-application.html',
-      logo: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'Europe',
-      rankingYear: 2024,
-      acceptanceRate: '8%',
-      studentPopulation: '22,200',
-      internationalStudents: '41%',
-      campusType: 'Urban',
-      researchOutput: 'Very High',
-      employmentRate: '95%'
-    },
-    {
-      id: 10,
-      name: 'University of Chicago',
-      country: 'USA',
-      qsRanking: 10,
-      tuitionFees: {
-        undergraduate: '$61,179/year',
-        graduate: '$62,640/year'
-      },
-      admissionRequirements: {
-        minGPA: 3.9,
-        testScores: [
-          { name: 'SAT', score: '1510-1570' },
-          { name: 'ACT', score: '34-35' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '104+' },
-          { test: 'IELTS', score: '7.0+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'January 2',
-        spring: 'N/A'
-      },
-      majorStrengths: ['Economics', 'Business', 'Political Science', 'Physics', 'Mathematics'],
-      applicationLink: 'https://collegeadmissions.uchicago.edu/',
-      logo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'United States',
-      rankingYear: 2024,
-      acceptanceRate: '7%',
-      studentPopulation: '17,834',
-      internationalStudents: '24%',
-      campusType: 'Urban',
-      researchOutput: 'Very High',
-      employmentRate: '93%'
-    },
-    {
-      id: 11,
-      name: 'National University of Singapore (NUS)',
-      country: 'Singapore',
-      qsRanking: 11,
-      tuitionFees: {
-        undergraduate: 'S$37,550/year',
-        graduate: 'S$45,750/year'
-      },
-      admissionRequirements: {
-        minGPA: 3.7,
-        testScores: [
-          { name: 'SAT', score: '1350+' },
-          { name: 'ACT', score: '31+' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '85+' },
-          { test: 'IELTS', score: '6.0+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'February 28',
-        spring: 'September 30'
-      },
-      majorStrengths: ['Engineering', 'Business', 'Computer Science', 'Medicine', 'Law'],
-      applicationLink: 'https://www.nus.edu.sg/oam/',
-      logo: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'Asia',
-      rankingYear: 2024,
-      acceptanceRate: '5%',
-      studentPopulation: '39,000',
-      internationalStudents: '30%',
-      campusType: 'Urban',
-      researchOutput: 'Very High',
-      employmentRate: '89%'
-    },
-    {
-      id: 12,
-      name: 'Peking University',
-      country: 'China',
-      qsRanking: 12,
-      tuitionFees: {
-        undergraduate: '¥50,000/year',
-        graduate: '¥60,000/year'
-      },
-      admissionRequirements: {
-        minGPA: 3.8,
-        testScores: [
-          { name: 'SAT', score: '1400+' },
-          { name: 'GRE', score: '315+' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '90+' },
-          { test: 'IELTS', score: '6.5+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'April 30',
-        spring: 'October 31'
-      },
-      majorStrengths: ['Liberal Arts', 'Sciences', 'Medicine', 'Engineering', 'Economics'],
-      applicationLink: 'https://www.pku.edu.cn/admission/',
-      logo: 'https://images.unsplash.com/photo-1564981797816-1043664bf78d?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'Asia',
-      rankingYear: 2024,
-      acceptanceRate: '1%',
-      studentPopulation: '46,000',
-      internationalStudents: '15%',
-      campusType: 'Urban',
-      researchOutput: 'Very High',
-      employmentRate: '95%'
-    },
-    {
-      id: 13,
-      name: 'University of Pennsylvania',
-      country: 'USA',
-      qsRanking: 13,
-      tuitionFees: {
-        undergraduate: '$63,452/year',
-        graduate: '$42,000/year'
-      },
-      admissionRequirements: {
-        minGPA: 3.9,
-        testScores: [
-          { name: 'SAT', score: '1470-1570' },
-          { name: 'ACT', score: '33-35' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '100+' },
-          { test: 'IELTS', score: '7.0+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'January 5',
-        spring: 'N/A'
-      },
-      majorStrengths: ['Business', 'Engineering', 'Medicine', 'Nursing', 'Social Sciences'],
-      applicationLink: 'https://admissions.upenn.edu/',
-      logo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'United States',
-      rankingYear: 2024,
-      acceptanceRate: '6%',
-      studentPopulation: '28,201',
-      internationalStudents: '21%',
-      campusType: 'Urban',
-      researchOutput: 'Very High',
-      employmentRate: '94%'
-    },
-    {
-      id: 14,
-      name: 'Tsinghua University',
-      country: 'China',
-      qsRanking: 14,
-      tuitionFees: {
-        undergraduate: '¥50,000/year',
-        graduate: '¥60,000/year'
-      },
-      admissionRequirements: {
-        minGPA: 3.8,
-        testScores: [
-          { name: 'SAT', score: '1450+' },
-          { name: 'GRE', score: '320+' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '100+' },
-          { test: 'IELTS', score: '6.5+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'April 30',
-        spring: 'October 31'
-      },
-      majorStrengths: ['Engineering', 'Computer Science', 'Architecture', 'Economics', 'Management'],
-      applicationLink: 'https://www.tsinghua.edu.cn/admission/',
-      logo: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'Asia',
-      rankingYear: 2024,
-      acceptanceRate: '2%',
-      studentPopulation: '53,000',
-      internationalStudents: '12%',
-      campusType: 'Urban',
-      researchOutput: 'Very High',
-      employmentRate: '96%'
-    },
-    {
-      id: 15,
-      name: 'University of Edinburgh',
-      country: 'UK',
-      qsRanking: 15,
-      tuitionFees: {
-        undergraduate: '£25,300-£34,800/year',
-        graduate: '£26,500-£49,900/year'
-      },
-      admissionRequirements: {
-        minGPA: 3.5,
-        testScores: [
-          { name: 'SAT', score: '1290+' },
-          { name: 'ACT', score: '29+' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '92+' },
-          { test: 'IELTS', score: '6.5+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'January 15',
-        spring: 'N/A'
-      },
-      majorStrengths: ['Medicine', 'Veterinary Medicine', 'Engineering', 'Business', 'Arts'],
-      applicationLink: 'https://www.ed.ac.uk/studying/undergraduate/applying',
-      logo: 'https://images.unsplash.com/photo-1580537659466-0a9bfa916a54?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'United Kingdom',
-      rankingYear: 2024,
-      acceptanceRate: '40%',
-      studentPopulation: '47,000',
-      internationalStudents: '45%',
-      campusType: 'Urban',
-      researchOutput: 'Very High',
-      employmentRate: '85%'
-    },
-    {
-      id: 16,
-      name: 'Princeton University',
-      country: 'USA',
-      qsRanking: 16,
-      tuitionFees: {
-        undergraduate: '$57,410/year',
-        graduate: '$56,010/year'
-      },
-      admissionRequirements: {
-        minGPA: 3.95,
-        testScores: [
-          { name: 'SAT', score: '1470-1570' },
-          { name: 'ACT', score: '33-35' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '100+' },
-          { test: 'IELTS', score: '7.0+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'January 1',
-        spring: 'N/A'
-      },
-      majorStrengths: ['Economics', 'Public Policy', 'Engineering', 'Physics', 'Mathematics'],
-      applicationLink: 'https://admission.princeton.edu/',
-      logo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'United States',
-      rankingYear: 2024,
-      acceptanceRate: '4%',
-      studentPopulation: '5,428',
-      internationalStudents: '23%',
-      campusType: 'Suburban',
-      researchOutput: 'Very High',
-      employmentRate: '95%'
-    },
-    {
-      id: 17,
-      name: 'Yale University',
-      country: 'USA',
-      qsRanking: 17,
-      tuitionFees: {
-        undergraduate: '$62,250/year',
-        graduate: '$47,600/year'
-      },
-      admissionRequirements: {
-        minGPA: 3.95,
-        testScores: [
-          { name: 'SAT', score: '1460-1580' },
-          { name: 'ACT', score: '33-35' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '100+' },
-          { test: 'IELTS', score: '7.0+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'January 2',
-        spring: 'N/A'
-      },
-      majorStrengths: ['Law', 'Medicine', 'Drama', 'Art', 'History'],
-      applicationLink: 'https://admissions.yale.edu/',
-      logo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'United States',
-      rankingYear: 2024,
-      acceptanceRate: '5%',
-      studentPopulation: '13,433',
-      internationalStudents: '20%',
-      campusType: 'Urban',
-      researchOutput: 'Very High',
-      employmentRate: '94%'
-    },
-    {
-      id: 18,
-      name: 'Nanyang Technological University (NTU)',
-      country: 'Singapore',
-      qsRanking: 18,
-      tuitionFees: {
-        undergraduate: 'S$37,550/year',
-        graduate: 'S$45,750/year'
-      },
-      admissionRequirements: {
-        minGPA: 3.6,
-        testScores: [
-          { name: 'SAT', score: '1350+' },
-          { name: 'ACT', score: '31+' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '90+' },
-          { test: 'IELTS', score: '6.5+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'February 28',
-        spring: 'September 30'
-      },
-      majorStrengths: ['Engineering', 'Business', 'Communication', 'Education', 'Medicine'],
-      applicationLink: 'https://www.ntu.edu.sg/admissions',
-      logo: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'Asia',
-      rankingYear: 2024,
-      acceptanceRate: '8%',
-      studentPopulation: '33,000',
-      internationalStudents: '25%',
-      campusType: 'Suburban',
-      researchOutput: 'Very High',
-      employmentRate: '88%'
-    },
-    {
-      id: 19,
-      name: 'King\'s College London',
-      country: 'UK',
-      qsRanking: 19,
-      tuitionFees: {
-        undergraduate: '£28,050-£46,650/year',
-        graduate: '£29,460-£49,950/year'
-      },
-      admissionRequirements: {
-        minGPA: 3.5,
-        testScores: [
-          { name: 'SAT', score: '1340+' },
-          { name: 'ACT', score: '30+' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '92+' },
-          { test: 'IELTS', score: '6.5+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'January 15',
-        spring: 'N/A'
-      },
-      majorStrengths: ['Medicine', 'Dentistry', 'Law', 'International Relations', 'War Studies'],
-      applicationLink: 'https://www.kcl.ac.uk/study/undergraduate/apply',
-      logo: 'https://images.unsplash.com/photo-1580537659466-0a9bfa916a54?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'United Kingdom',
-      rankingYear: 2024,
-      acceptanceRate: '13%',
-      studentPopulation: '31,000',
-      internationalStudents: '52%',
-      campusType: 'Urban',
-      researchOutput: 'Very High',
-      employmentRate: '86%'
-    },
-    {
-      id: 20,
-      name: 'Johns Hopkins University',
-      country: 'USA',
-      qsRanking: 20,
-      tuitionFees: {
-        undergraduate: '$60,480/year',
-        graduate: '$58,720/year'
-      },
-      admissionRequirements: {
-        minGPA: 3.9,
-        testScores: [
-          { name: 'SAT', score: '1470-1570' },
-          { name: 'ACT', score: '33-35' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '100+' },
-          { test: 'IELTS', score: '7.0+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'January 3',
-        spring: 'N/A'
-      },
-      majorStrengths: ['Medicine', 'Public Health', 'Engineering', 'International Studies', 'Biomedical Engineering'],
-      applicationLink: 'https://apply.jhu.edu/',
-      logo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'United States',
-      rankingYear: 2024,
-      acceptanceRate: '7%',
-      studentPopulation: '28,890',
-      internationalStudents: '24%',
-      campusType: 'Urban',
-      researchOutput: 'Very High',
-      employmentRate: '92%'
-    },
-    {
-      id: 21,
-      name: 'University of Tokyo',
-      country: 'Japan',
-      qsRanking: 21,
-      tuitionFees: {
-        undergraduate: '¥535,800/year',
-        graduate: '¥535,800/year'
-      },
-      admissionRequirements: {
-        minGPA: 3.7,
-        testScores: [
-          { name: 'SAT', score: '1400+' },
-          { name: 'EJU', score: '320+' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '90+' },
-          { test: 'IELTS', score: '6.5+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'February 28',
-        spring: 'August 31'
-      },
-      majorStrengths: ['Engineering', 'Medicine', 'Law', 'Economics', 'Sciences'],
-      applicationLink: 'https://www.u-tokyo.ac.jp/en/admissions/',
-      logo: 'https://images.unsplash.com/photo-1564981797816-1043664bf78d?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'Asia',
-      rankingYear: 2024,
-      acceptanceRate: '3%',
-      studentPopulation: '28,000',
-      internationalStudents: '12%',
-      campusType: 'Urban',
-      researchOutput: 'Very High',
-      employmentRate: '97%'
-    },
-    {
-      id: 22,
-      name: 'University of Toronto',
-      country: 'Canada',
-      qsRanking: 22,
-      tuitionFees: {
-        undergraduate: 'CAD $58,160/year',
-        graduate: 'CAD $25,000/year'
-      },
-      admissionRequirements: {
-        minGPA: 3.6,
-        testScores: [
-          { name: 'SAT', score: '1350+' },
-          { name: 'ACT', score: '31+' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '100+' },
-          { test: 'IELTS', score: '6.5+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'January 13',
-        spring: 'September 1'
-      },
-      majorStrengths: ['Medicine', 'Engineering', 'Business', 'Computer Science', 'Law'],
-      applicationLink: 'https://future.utoronto.ca/apply/',
-      logo: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'Canada',
-      rankingYear: 2024,
-      acceptanceRate: '43%',
-      studentPopulation: '97,000',
-      internationalStudents: '25%',
-      campusType: 'Urban',
-      researchOutput: 'Very High',
-      employmentRate: '88%'
-    },
-    {
-      id: 23,
-      name: 'McGill University',
-      country: 'Canada',
-      qsRanking: 23,
-      tuitionFees: {
-        undergraduate: 'CAD $50,000/year',
-        graduate: 'CAD $20,000/year'
-      },
-      admissionRequirements: {
-        minGPA: 3.7,
-        testScores: [
-          { name: 'SAT', score: '1360+' },
-          { name: 'ACT', score: '31+' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '90+' },
-          { test: 'IELTS', score: '6.5+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'January 15',
-        spring: 'September 1'
-      },
-      majorStrengths: ['Medicine', 'Law', 'Engineering', 'Management', 'Arts'],
-      applicationLink: 'https://www.mcgill.ca/applying/',
-      logo: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'Canada',
-      rankingYear: 2024,
-      acceptanceRate: '46%',
-      studentPopulation: '40,000',
-      internationalStudents: '30%',
-      campusType: 'Urban',
-      researchOutput: 'Very High',
-      employmentRate: '87%'
-    },
-    {
-      id: 24,
-      name: 'Australian National University (ANU)',
-      country: 'Australia',
-      qsRanking: 24,
-      tuitionFees: {
-        undergraduate: 'AUD $47,940/year',
-        graduate: 'AUD $48,384/year'
-      },
-      admissionRequirements: {
-        minGPA: 3.5,
-        testScores: [
-          { name: 'SAT', score: '1350+' },
-          { name: 'ACT', score: '30+' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '80+' },
-          { test: 'IELTS', score: '6.5+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'December 15',
-        spring: 'May 31'
-      },
-      majorStrengths: ['Political Science', 'International Relations', 'Economics', 'Physics', 'Philosophy'],
-      applicationLink: 'https://www.anu.edu.au/study/apply',
-      logo: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'Australia',
-      rankingYear: 2024,
-      acceptanceRate: '35%',
-      studentPopulation: '25,000',
-      internationalStudents: '42%',
-      campusType: 'Urban',
-      researchOutput: 'Very High',
-      employmentRate: '85%'
-    },
-    {
-      id: 25,
-      name: 'University of Manchester',
-      country: 'UK',
-      qsRanking: 25,
-      tuitionFees: {
-        undergraduate: '£25,500-£47,000/year',
-        graduate: '£26,000-£48,000/year'
-      },
-      admissionRequirements: {
-        minGPA: 3.4,
-        testScores: [
-          { name: 'SAT', score: '1300+' },
-          { name: 'ACT', score: '29+' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '90+' },
-          { test: 'IELTS', score: '6.0+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'January 15',
-        spring: 'N/A'
-      },
-      majorStrengths: ['Engineering', 'Computer Science', 'Business', 'Medicine', 'Materials Science'],
-      applicationLink: 'https://www.manchester.ac.uk/study/undergraduate/apply/',
-      logo: 'https://images.unsplash.com/photo-1580537659466-0a9bfa916a54?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'United Kingdom',
-      rankingYear: 2024,
-      acceptanceRate: '56%',
-      studentPopulation: '46,000',
-      internationalStudents: '40%',
-      campusType: 'Urban',
-      researchOutput: 'Very High',
-      employmentRate: '84%'
-    },
-    {
-      id: 26,
-      name: 'Northwestern University',
-      country: 'USA',
-      qsRanking: 26,
-      tuitionFees: {
-        undergraduate: '$63,468/year',
-        graduate: '$58,701/year'
-      },
-      admissionRequirements: {
-        minGPA: 3.9,
-        testScores: [
-          { name: 'SAT', score: '1460-1570' },
-          { name: 'ACT', score: '33-35' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '100+' },
-          { test: 'IELTS', score: '7.0+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'January 3',
-        spring: 'N/A'
-      },
-      majorStrengths: ['Journalism', 'Engineering', 'Business', 'Medicine', 'Theatre'],
-      applicationLink: 'https://admissions.northwestern.edu/',
-      logo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'United States',
-      rankingYear: 2024,
-      acceptanceRate: '7%',
-      studentPopulation: '22,603',
-      internationalStudents: '18%',
-      campusType: 'Suburban',
-      researchOutput: 'Very High',
-      employmentRate: '93%'
-    },
-    {
-      id: 27,
-      name: 'University of Bristol',
-      country: 'UK',
-      qsRanking: 27,
-      tuitionFees: {
-        undergraduate: '£24,700-£27,200/year',
-        graduate: '£25,300-£28,300/year'
-      },
-      admissionRequirements: {
-        minGPA: 3.4,
-        testScores: [
-          { name: 'SAT', score: '1290+' },
-          { name: 'ACT', score: '29+' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '88+' },
-          { test: 'IELTS', score: '6.5+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'January 15',
-        spring: 'N/A'
-      },
-      majorStrengths: ['Engineering', 'Medicine', 'Law', 'Economics', 'Computer Science'],
-      applicationLink: 'https://www.bristol.ac.uk/study/undergraduate/apply/',
-      logo: 'https://images.unsplash.com/photo-1580537659466-0a9bfa916a54?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'United Kingdom',
-      rankingYear: 2024,
-      acceptanceRate: '63%',
-      studentPopulation: '27,000',
-      internationalStudents: '28%',
-      campusType: 'Urban',
-      researchOutput: 'Very High',
-      employmentRate: '83%'
-    },
-    {
-      id: 28,
-      name: 'University of California, Berkeley (UCB)',
-      country: 'USA',
-      qsRanking: 28,
-      tuitionFees: {
-        undergraduate: '$46,326/year',
-        graduate: '$29,272/year'
-      },
-      admissionRequirements: {
-        minGPA: 3.8,
-        testScores: [
-          { name: 'SAT', score: '1330-1530' },
-          { name: 'ACT', score: '30-35' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '90+' },
-          { test: 'IELTS', score: '7.0+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'November 30',
-        spring: 'N/A'
-      },
-      majorStrengths: ['Engineering', 'Computer Science', 'Business', 'Law', 'Public Policy'],
-      applicationLink: 'https://admissions.berkeley.edu/',
-      logo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'United States',
-      rankingYear: 2024,
-      acceptanceRate: '11%',
-      studentPopulation: '45,057',
-      internationalStudents: '17%',
-      campusType: 'Urban',
-      researchOutput: 'Very High',
-      employmentRate: '90%'
-    },
-    {
-      id: 29,
-      name: 'The University of Melbourne',
-      country: 'Australia',
-      qsRanking: 29,
-      tuitionFees: {
-        undergraduate: 'AUD $45,824/year',
-        graduate: 'AUD $47,712/year'
-      },
-      admissionRequirements: {
-        minGPA: 3.5,
-        testScores: [
-          { name: 'SAT', score: '1350+' },
-          { name: 'ACT', score: '31+' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '79+' },
-          { test: 'IELTS', score: '6.5+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'December 31',
-        spring: 'May 31'
-      },
-      majorStrengths: ['Medicine', 'Law', 'Education', 'Engineering', 'Business'],
-      applicationLink: 'https://study.unimelb.edu.au/how-to-apply',
-      logo: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'Australia',
-      rankingYear: 2024,
-      acceptanceRate: '70%',
-      studentPopulation: '51,000',
-      internationalStudents: '45%',
-      campusType: 'Urban',
-      researchOutput: 'Very High',
-      employmentRate: '86%'
-    },
-    {
-      id: 30,
-      name: 'University of Hong Kong (HKU)',
-      country: 'Hong Kong',
-      qsRanking: 30,
-      tuitionFees: {
-        undergraduate: 'HKD $171,000/year',
-        graduate: 'HKD $147,000/year'
-      },
-      admissionRequirements: {
-        minGPA: 3.6,
-        testScores: [
-          { name: 'SAT', score: '1350+' },
-          { name: 'ACT', score: '31+' }
-        ],
-        languageRequirements: [
-          { test: 'TOEFL', score: '93+' },
-          { test: 'IELTS', score: '6.5+' }
-        ]
-      },
-      applicationDeadlines: {
-        fall: 'June 15',
-        spring: 'November 15'
-      },
-      majorStrengths: ['Medicine', 'Law', 'Business', 'Engineering', 'Architecture'],
-      applicationLink: 'https://www.hku.hk/admissions/',
-      logo: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-      rankingType: 'QS World University Rankings',
-      region: 'Asia',
-      rankingYear: 2024,
-      acceptanceRate: '10%',
-      studentPopulation: '31,000',
-      internationalStudents: '43%',
-      campusType: 'Urban',
-      researchOutput: 'Very High',
-      employmentRate: '89%'
-    }
-  ];
 
   // Filter universities based on search and filters
   const filteredUniversities = universities.filter(university => {
@@ -2452,7 +1467,7 @@ Consider factors like academic fit, budget compatibility, location preferences, 
       const universityElements = xmlDoc.querySelectorAll('recommendations university');
       const recommendedIds = Array.from(universityElements).map(el => {
         const id = el.getAttribute('id');
-        return id ? parseInt(id) : null;
+        return id ? id : null; // Keep as string instead of parsing to int
       }).filter(id => id !== null);
 
       // Get the actual university objects
@@ -2867,7 +1882,7 @@ Return format: <recommendation><university id="X"/></recommendation>`;
           
           if (universityElement) {
             const id = universityElement.getAttribute('id');
-            const recommendedId = id ? parseInt(id) : null;
+            const recommendedId = id ? id : null; // Keep as string instead of parsing to int
             
             if (recommendedId) {
               const recommendedUniversity = universities.find(uni => uni.id === recommendedId);
@@ -2984,10 +1999,10 @@ Return format: <recommendation><university id="X"/></recommendation>`;
             >
               <motion.div className="lg:w-1/2 text-center lg:text-left" variants={fadeIn("right", 0.3)}>
                 <h1 className="text-4xl lg:text-5xl font-bold mb-4 leading-tight">
-                  Global <span className="text-secondary">University</span> Explorer
+                  {t('database.title')}
                 </h1>
                 <p className="text-xl mb-8 text-gray-100 lg:pr-8">
-                  Discover your perfect academic match with our comprehensive database of top universities worldwide.
+                  {t('database.subtitle')}
                 </p>
                 <div className="flex flex-wrap gap-3 justify-center lg:justify-start">
                   <motion.button 
@@ -2995,14 +2010,14 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
                   >
-                    <IconComponent icon={HiOutlineAcademicCap} className="mr-2 text-xl" /> Explore Programs
+                    <IconComponent icon={HiOutlineAcademicCap} className="mr-2 text-xl" /> {t('database.explorePrograms')}
                   </motion.button>
                   <motion.button 
                     className="bg-transparent hover:bg-white/10 border border-white text-white font-medium py-2 px-6 rounded-full flex items-center"
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
                   >
-                    <IconComponent icon={FaGlobe} className="mr-2" /> Top Universities
+                    <IconComponent icon={FaGlobe} className="mr-2" /> {t('database.topUniversities')}
                   </motion.button>
                 </div>
               </motion.div>
@@ -3013,13 +2028,13 @@ Return format: <recommendation><university id="X"/></recommendation>`;
               >
                 <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl shadow-lg border border-white/30">
                   <h3 className="text-xl font-semibold mb-4 flex items-center">
-                    <IconComponent icon={FaSearch} className="mr-2" /> Advanced Search
+                    <IconComponent icon={FaSearch} className="mr-2" /> {t('database.advancedSearch')}
                   </h3>
                   <div className="mb-4">
                     <div className="relative">
                       <input
                         type="text"
-                        placeholder="Search for universities, programs, locations..."
+                        placeholder={t('database.searchPlaceholder')}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full px-5 py-3 pr-12 rounded-lg bg-white/80 backdrop-blur-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-secondary placeholder-gray-500"
@@ -3036,7 +2051,7 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                         onChange={handleFilterChange}
                         className="w-full p-2 border-0 rounded-lg bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-secondary"
                       >
-                        <option value="">All Countries</option>
+                        <option value="">{t('database.allCountries')}</option>
                         <option value="USA">USA</option>
                         <option value="UK">UK</option>
                         <option value="Canada">Canada</option>
@@ -3051,7 +2066,7 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                         onChange={handleFilterChange}
                         className="w-full p-2 border-0 rounded-lg bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-secondary"
                       >
-                        <option value="">All Majors</option>
+                        <option value="">{t('database.allMajors')}</option>
                         <option value="Computer Science">Computer Science</option>
                         <option value="Engineering">Engineering</option>
                         <option value="Business">Business</option>
@@ -3068,7 +2083,7 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                       whileTap={{ scale: 0.97 }}
                       className="bg-secondary hover:bg-secondary-light text-white py-2 px-4 rounded-lg w-full flex items-center justify-center"
                     >
-                      <IconComponent icon={FaSearch} className="mr-2" /> Search
+                      <IconComponent icon={FaSearch} className="mr-2" /> {t('common.search')}
                     </motion.button>
                     <motion.button
                       whileHover={{ scale: 1.03 }}
@@ -3076,7 +2091,7 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                       onClick={resetFilters}
                       className="bg-white/30 hover:bg-white/40 text-white py-2 px-4 rounded-lg flex items-center justify-center"
                     >
-                      Reset
+                      {t('database.reset')}
                     </motion.button>
                   </div>
                 </div>
@@ -3098,7 +2113,7 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div className="flex items-center">
                     <IconComponent icon={FaFilter} className="text-primary mr-2" />
-                    <h2 className="text-xl font-bold text-gray-800">Advanced Filters</h2>
+                    <h2 className="text-xl font-bold text-gray-800">{t('database.advancedFilters')}</h2>
                   </div>
                   <div className="flex items-center gap-3">
                    
@@ -3108,11 +2123,11 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                       onChange={(e) => setSortBy(e.target.value)}
                       className="p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary text-sm"
                     >
-                      <option value="qsRanking">QS Ranking: Low to High</option>
-                      <option value="qsRankingDesc">QS Ranking: High to Low</option>
-                      <option value="name">University Name: A to Z</option>
-                      <option value="nameDesc">University Name: Z to A</option>
-                      <option value="country">Country: A to Z</option>
+                      <option value="qsRanking">{t('database.sortQSLowHigh')}</option>
+                      <option value="qsRankingDesc">{t('database.sortQSHighLow')}</option>
+                      <option value="name">{t('database.sortNameAZ')}</option>
+                      <option value="nameDesc">{t('database.sortNameZA')}</option>
+                      <option value="country">{t('database.sortCountryAZ')}</option>
                     </select>
                     
                     {/* AI Analysis Button */}
@@ -3124,7 +2139,7 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                       whileTap={{ scale: 0.95 }}
                     >
                       <IconComponent icon={FaRobot} className="mr-1" /> 
-                      {isLoadingAI ? 'Analyzing...' : 'AI Analysis'}
+                      {isLoadingAI ? t('database.analyzing') : t('database.aiAnalysis')}
                     </motion.button>
                     
                     {/* Get Recommendations Button */}
@@ -3136,7 +2151,7 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                       whileTap={{ scale: 0.95 }}
                     >
                       <IconComponent icon={FaLightbulb} className="mr-1" /> 
-                      {isLoadingAI ? 'Loading...' : 'Get Recommendations'}
+                      {isLoadingAI ? t('common.loading') : t('database.getRecommendations')}
                     </motion.button>
                     
                  

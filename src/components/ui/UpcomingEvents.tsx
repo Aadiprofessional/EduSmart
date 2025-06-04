@@ -4,8 +4,11 @@ import { FaCalendarAlt, FaRobot, FaMoneyBillWave, FaUsers, FaCalendarCheck, FaUn
 import IconComponent from './IconComponent';
 import { motion } from 'framer-motion';
 import AnimatedSection from './AnimatedSection';
+import { useLanguage } from '../../utils/LanguageContext';
 
 const UpcomingEvents: React.FC = () => {
+  const { t } = useLanguage();
+
   const upcomingFeatures = [
     {
       id: 1,
@@ -63,9 +66,16 @@ const UpcomingEvents: React.FC = () => {
     <section className="py-16 bg-white">
       <div className="container mx-auto px-4">
         <AnimatedSection direction="up">
-          <h2 className="text-3xl font-bold text-teal-800 mb-12 text-center">Upcoming Features</h2>
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-teal-800 mb-4">
+              {t('upcomingEvents.title')}
+            </h2>
+            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+              {t('upcomingEvents.subtitle')}
+            </p>
+          </div>
         </AnimatedSection>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {upcomingFeatures.slice(0, 6).map((feature, index) => (
             <AnimatedSection key={feature.id} direction="up" delay={0.1 * index}>
@@ -190,6 +200,22 @@ const UpcomingEvents: React.FC = () => {
             </AnimatedSection>
           ))}
         </div>
+
+        <AnimatedSection direction="up" delay={0.3}>
+          <div className="text-center">
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Link
+                to="/events"
+                className="inline-block bg-teal-600 hover:bg-teal-700 text-white font-medium py-3 px-8 rounded-lg transition-colors"
+              >
+                {t('upcomingEvents.viewAllButton')}
+              </Link>
+            </motion.div>
+          </div>
+        </AnimatedSection>
       </div>
     </section>
   );

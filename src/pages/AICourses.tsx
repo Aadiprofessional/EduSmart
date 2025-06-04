@@ -4,6 +4,7 @@ import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import IconComponent from '../components/ui/IconComponent';
 import { motion } from 'framer-motion';
+import { useLanguage } from '../utils/LanguageContext';
 
 interface Course {
   id: number;
@@ -50,6 +51,7 @@ interface Teacher {
 }
 
 const AICourses: React.FC = () => {
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeLevel, setActiveLevel] = useState('all');
@@ -597,7 +599,7 @@ const AICourses: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
-                AI Education Courses
+                {t('nav.aiCourses')}
               </motion.h1>
               <motion.p 
                 className="text-xl mb-8"
@@ -640,7 +642,7 @@ const AICourses: React.FC = () => {
                         : 'text-white hover:bg-teal-600 hover:bg-opacity-50'
                     }`}
                   >
-                    Courses
+                    {t('courses.title')}
                   </button>
                   <button
                     onClick={() => setShowMode('teachers')}

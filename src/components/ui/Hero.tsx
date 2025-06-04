@@ -2,8 +2,11 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { fadeIn, slideIn } from '../../utils/animations';
+import { useLanguage } from '../../utils/LanguageContext';
 
 const Hero: React.FC = () => {
+  const { t } = useLanguage();
+
   return (
     <section className="bg-gradient-to-r from-teal-700 to-teal-900 text-white py-16 overflow-hidden">
       <div className="container mx-auto px-4">
@@ -16,10 +19,10 @@ const Hero: React.FC = () => {
             className="md:w-1/2 mb-10 md:mb-0"
           >
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Find Your Dream University with AI-Powered Guidance
+              {t('hero.title')}
             </h1>
             <p className="text-xl mb-8">
-              Explore top universities, personalized recommendations, and real success stories—all driven by AI to simplify your journey to higher education.
+              {t('hero.subtitle')}
             </p>
             <div className="flex flex-row space-x-4">
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-1/2 md:w-auto">
@@ -27,7 +30,7 @@ const Hero: React.FC = () => {
                   to="/courses"
                   className="bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 px-6 rounded-lg transition-colors text-center block btn-pulse"
                 >
-                  Explore
+                  {t('hero.exploreButton')}
                 </Link>
               </motion.div>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-1/2 md:w-auto">
@@ -35,7 +38,7 @@ const Hero: React.FC = () => {
                   to="/about"
                   className="bg-transparent border-2 border-white hover:bg-white hover:text-teal-800 font-medium py-3 px-6 rounded-lg transition-colors text-center block"
                 >
-                  Learn More
+                  {t('hero.learnMoreButton')}
                 </Link>
               </motion.div>
             </div>
@@ -50,7 +53,7 @@ const Hero: React.FC = () => {
             <div className="bg-white rounded-lg shadow-xl w-full max-w-md h-80 flex items-center justify-center overflow-hidden">
               <img 
                 src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80" 
-                alt="University education illustration" 
+                alt={t('hero.imageAlt')} 
                 className="h-full w-full object-cover"
               />
             </div>

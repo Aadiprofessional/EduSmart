@@ -5,170 +5,96 @@ import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import IconComponent from '../components/ui/IconComponent';
 import { motion } from 'framer-motion';
+import { blogAPI } from '../utils/apiService';
+import { useLanguage } from '../utils/LanguageContext';
 
 interface BlogPost {
-  id: number;
+  id: string;
   title: string;
   excerpt: string;
   content?: string;
   author: {
     name: string;
-    avatar: string;
-    title: string;
+    avatar_url?: string;
   };
-  publishDate: string;
-  readTime: string;
+  created_at: string;
+  updated_at: string;
   category: string;
   tags: string[];
   image: string;
-  featured?: boolean;
-  trending?: boolean;
-  slug: string;
+  author_id: string;
 }
 
 const Blog: React.FC = () => {
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Sample blog post data
-  const blogPosts: BlogPost[] = [
-    {
-      id: 1,
-      title: "How AI is Transforming University Admissions in 2025",
-      excerpt: "Discover how artificial intelligence is revolutionizing the college application process and how you can leverage these tools for your applications.",
-      author: {
-        name: "Dr. Sarah Chen",
-        avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=40&h=40&q=80",
-        title: "AI Education Specialist"
-      },
-      publishDate: "August 15, 2025",
-      readTime: "7 min",
-      category: "AI in Education",
-      tags: ["AI", "Admissions", "Technology", "Applications"],
-      image: "https://images.unsplash.com/photo-1531482615713-2afd69097998?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
-      featured: true,
-      trending: true,
-      slug: "ai-transforming-university-admissions-2025"
-    },
-    {
-      id: 2,
-      title: "Top 10 Universities for Computer Science in 2025",
-      excerpt: "Looking to study computer science? Explore our comprehensive ranking of the best universities worldwide for CS degrees.",
-      author: {
-        name: "Michael Reeves",
-        avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=crop&w=40&h=40&q=80",
-        title: "Education Consultant"
-      },
-      publishDate: "July 28, 2025",
-      readTime: "10 min",
-      category: "University Rankings",
-      tags: ["Computer Science", "Rankings", "STEM", "University Selection"],
-      image: "https://images.unsplash.com/photo-1517849845537-4d257902454a?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
-      trending: true,
-      slug: "top-universities-computer-science-2025"
-    },
-    {
-      id: 3,
-      title: "Writing a Compelling Statement of Purpose: Tips from Admission Officers",
-      excerpt: "Learn directly from university admission officers about what makes a statement of purpose stand out from the crowd.",
-      author: {
-        name: "Jennifer Wu",
-        avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-1.2.1&auto=format&fit=crop&w=40&h=40&q=80",
-        title: "Former Admissions Officer"
-      },
-      publishDate: "August 5, 2025",
-      readTime: "8 min",
-      category: "Application Tips",
-      tags: ["SOP", "Writing", "Application Strategy", "Admissions"],
-      image: "https://images.unsplash.com/photo-1455390582262-044cdead277a?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
-      featured: true,
-      slug: "writing-compelling-statement-of-purpose-tips"
-    },
-    {
-      id: 4,
-      title: "Studying Abroad on a Budget: A Complete Financial Guide",
-      excerpt: "Your comprehensive guide to financing your international education, from scholarships to part-time work opportunities.",
-      author: {
-        name: "David Parker",
-        avatar: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?ixlib=rb-1.2.1&auto=format&fit=crop&w=40&h=40&q=80",
-        title: "International Education Advisor"
-      },
-      publishDate: "July 20, 2025",
-      readTime: "12 min",
-      category: "Study Abroad",
-      tags: ["Finance", "Scholarships", "Budget", "International Students"],
-      image: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
-      slug: "studying-abroad-budget-financial-guide"
-    },
-    {
-      id: 5,
-      title: "The Future of Graduate Education: Trends to Watch in 2024",
-      excerpt: "Explore emerging trends in graduate education, from micro-credentials to hybrid learning models that are reshaping higher education.",
-      author: {
-        name: "Prof. Robert Mason",
-        avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=crop&w=40&h=40&q=80",
-        title: "Education Futurist"
-      },
-      publishDate: "August 12, 2025",
-      readTime: "9 min",
-      category: "Education Trends",
-      tags: ["Future of Education", "Trends", "Graduate Programs", "Innovation"],
-      image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
-      slug: "future-graduate-education-trends-2024"
-    },
-    {
-      id: 6,
-      title: "How to Prepare for GRE at Home: A 3-Month Study Plan",
-      excerpt: "A comprehensive 3-month GRE preparation strategy for busy professionals, complete with weekly goals and resource recommendations.",
-      author: {
-        name: "Lisa Thompson",
-        avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-1.2.1&auto=format&fit=crop&w=40&h=40&q=80",
-        title: "Test Prep Specialist"
-      },
-      publishDate: "July 10, 2025",
-      readTime: "11 min",
-      category: "Test Preparation",
-      tags: ["GRE", "Study Plan", "Test Prep", "Graduate School"],
-      image: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
-      trending: true,
-      slug: "gre-preparation-3-month-study-plan"
-    },
-    {
-      id: 7,
-      title: "Using ChatGPT to Improve Your Research Papers: A Guide",
-      excerpt: "Learn how to use AI tools like ChatGPT effectively to enhance your academic writing and research while avoiding ethical pitfalls.",
-      author: {
-        name: "Dr. Sarah Chen",
-        avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=40&h=40&q=80",
-        title: "AI Education Specialist"
-      },
-      publishDate: "August 8, 2025",
-      readTime: "6 min",
-      category: "AI in Education",
-      tags: ["ChatGPT", "AI Writing", "Research", "Academic Writing"],
-      image: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
-      slug: "chatgpt-improve-research-papers-guide"
-    },
-    {
-      id: 8,
-      title: "Networking for Graduate Students: Building Academic Connections",
-      excerpt: "Strategies for building a powerful professional network during your graduate studies that will benefit your academic and career goals.",
-      author: {
-        name: "Tanisha Williams",
-        avatar: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?ixlib=rb-1.2.1&auto=format&fit=crop&w=40&h=40&q=80",
-        title: "Career Development Coach"
-      },
-      publishDate: "July 25, 2025",
-      readTime: "8 min",
-      category: "Career Development",
-      tags: ["Networking", "Academic Connections", "Professional Development", "Graduate School"],
-      image: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&h=400&q=80",
-      slug: "networking-graduate-students-academic-connections"
+  useEffect(() => {
+    fetchBlogs();
+    fetchCategories();
+  }, []);
+
+  const fetchBlogs = async () => {
+    try {
+      setLoading(true);
+      const response = await blogAPI.getAll(1, 50); // Get more blogs for user website
+      
+      if (response.success && response.data) {
+        // Handle the API response structure
+        let blogsData = response.data;
+        
+        // The API returns { blogs: [...], pagination: {...} }
+        if (blogsData && blogsData.blogs) {
+          blogsData = blogsData.blogs;
+        }
+        
+        setBlogPosts(Array.isArray(blogsData) ? blogsData : []);
+      } else {
+        setError('Failed to fetch blogs');
+        setBlogPosts([]);
+      }
+    } catch (error) {
+      console.error('Error fetching blogs:', error);
+      setError('Error loading blogs');
+      setBlogPosts([]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
-  // Extract unique categories from blog posts
-  const categories = Array.from(new Set(blogPosts.map(post => post.category)));
+  const fetchCategories = async () => {
+    try {
+      const response = await blogAPI.getCategories();
+      if (response.success && response.data && response.data.categories) {
+        setCategories(response.data.categories);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  // Helper function to format date
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
+  // Helper function to calculate read time (rough estimate)
+  const calculateReadTime = (content: string) => {
+    const wordsPerMinute = 200;
+    const wordCount = content.split(' ').length;
+    const minutes = Math.ceil(wordCount / wordsPerMinute);
+    return `${minutes} min`;
+  };
 
   // Filter blog posts based on search and active category
   const filteredPosts = blogPosts.filter(post => {
@@ -189,23 +115,19 @@ const Blog: React.FC = () => {
 
   // Get icon for category
   const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'AI in Education':
+    switch (category.toLowerCase()) {
+      case 'technology':
         return <IconComponent icon={FaChartLine} className="text-teal-600" />;
-      case 'University Rankings':
+      case 'education':
         return <IconComponent icon={FaGraduationCap} className="text-blue-600" />;
-      case 'Application Tips':
-        return <IconComponent icon={FaGraduationCap} className="text-orange-600" />;
-      case 'Study Abroad':
-        return <IconComponent icon={FaGlobe} className="text-green-600" />;
-      case 'Education Trends':
+      case 'programming':
         return <IconComponent icon={FaChartLine} className="text-purple-600" />;
-      case 'Test Preparation':
-        return <IconComponent icon={FaGraduationCap} className="text-red-600" />;
-      case 'Career Development':
-        return <IconComponent icon={FaChartLine} className="text-indigo-600" />;
+      case 'career':
+        return <IconComponent icon={FaGraduationCap} className="text-orange-600" />;
+      case 'study tips':
+        return <IconComponent icon={FaGlobe} className="text-green-600" />;
       default:
-        return <IconComponent icon={FaGraduationCap} className="text-gray-600" />;
+        return <IconComponent icon={FaGlobe} className="text-gray-600" />;
     }
   };
 
@@ -238,6 +160,39 @@ const Blog: React.FC = () => {
       scale: 0.95
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+        <Header />
+        <div className="flex justify-center items-center min-h-[50vh]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+        <Header />
+        <div className="flex justify-center items-center min-h-[50vh]">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">Error Loading Blogs</h2>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button 
+              onClick={fetchBlogs}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -285,7 +240,7 @@ const Blog: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
-                EduSmart Blog
+                {t('blog.title')}
               </motion.h1>
               <motion.p 
                 className="text-xl mb-8"
@@ -293,8 +248,7 @@ const Blog: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
               >
-                Insights, guides, and expert advice on university admissions, study abroad,
-                and leveraging AI for your educational journey.
+                {t('blog.subtitle')}
               </motion.p>
               <motion.div 
                 className="relative"
@@ -304,7 +258,7 @@ const Blog: React.FC = () => {
               >
                 <input
                   type="text"
-                  placeholder="Search articles by topic, keyword, or tag..."
+                  placeholder={t('blog.searchPlaceholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full px-5 py-3 pr-12 bg-white rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500"
@@ -324,7 +278,7 @@ const Blog: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
             >
-              Featured Articles
+              {t('blog.featuredArticles')}
             </motion.h2>
             <motion.div 
               className="grid grid-cols-1 lg:grid-cols-2 gap-8"
@@ -332,7 +286,7 @@ const Blog: React.FC = () => {
               initial="hidden"
               animate="visible"
             >
-              {blogPosts.filter(post => post.featured).map(post => (
+              {blogPosts.slice(0, 4).map(post => (
                 <motion.div 
                   key={post.id} 
                   className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100 flex flex-col lg:flex-row"
@@ -361,7 +315,7 @@ const Blog: React.FC = () => {
                         </span>
                         <span className="ml-2 text-gray-500 text-xs flex items-center">
                           <IconComponent icon={FaClock} className="mr-1" />
-                          {post.readTime}
+                          {calculateReadTime(post.content || post.excerpt)}
                         </span>
                       </div>
                       <h3 className="text-xl font-bold text-gray-900 mb-2">{post.title}</h3>
@@ -370,12 +324,12 @@ const Blog: React.FC = () => {
                     <div className="flex items-center">
                       <img 
                         className="w-10 h-10 rounded-full mr-4" 
-                        src={post.author.avatar} 
+                        src={post.author.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author.name)}&background=0ea5e9&color=fff`} 
                         alt={post.author.name} 
                       />
                       <div className="text-sm">
                         <p className="text-gray-900 font-medium">{post.author.name}</p>
-                        <p className="text-gray-500">{post.publishDate}</p>
+                        <p className="text-gray-500">{formatDate(post.created_at)}</p>
                       </div>
                     </div>
                   </div>
@@ -397,7 +351,7 @@ const Blog: React.FC = () => {
                 transition={{ duration: 0.5, delay: 0.4 }}
               >
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-lg font-bold text-teal-800 mb-4">Categories</h3>
+                  <h3 className="text-lg font-bold text-teal-800 mb-4">{t('blog.categories')}</h3>
                   <div className="space-y-2">
                     <motion.button
                       className={`w-full text-left px-3 py-2 rounded-lg ${
@@ -409,7 +363,7 @@ const Blog: React.FC = () => {
                       whileHover={{ x: 5 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      All Categories
+                      {t('blog.allCategories')}
                     </motion.button>
                     {categories.map(category => (
                       <motion.button
@@ -431,7 +385,7 @@ const Blog: React.FC = () => {
                 </div>
                 
                 <div className="bg-white rounded-lg shadow-md p-6 mt-6">
-                  <h3 className="text-lg font-bold text-teal-800 mb-4">Trending Topics</h3>
+                  <h3 className="text-lg font-bold text-teal-800 mb-4">{t('blog.trendingTopics')}</h3>
                   <div className="flex flex-wrap gap-2">
                     {Array.from(new Set(blogPosts.flatMap(post => post.tags))).slice(0, 10).map(tag => (
                       <motion.span 
@@ -512,7 +466,7 @@ const Blog: React.FC = () => {
                           </span>
                           <span className="ml-2 text-gray-500 text-xs flex items-center">
                             <IconComponent icon={FaClock} className="mr-1" />
-                            {post.readTime}
+                            {calculateReadTime(post.content || post.excerpt)}
                           </span>
                         </div>
                         <h3 className="text-lg font-bold text-gray-900 mb-2">{post.title}</h3>
@@ -523,10 +477,13 @@ const Blog: React.FC = () => {
                           <div className="flex items-center">
                             <img 
                               className="w-8 h-8 rounded-full mr-2" 
-                              src={post.author.avatar} 
+                              src={post.author.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author.name)}&background=0ea5e9&color=fff`} 
                               alt={post.author.name} 
                             />
-                            <span className="text-sm text-gray-700">{post.author.name}</span>
+                            <div className="text-xs">
+                              <p className="text-gray-900 font-medium">{post.author.name}</p>
+                              <p className="text-gray-500">{formatDate(post.created_at)}</p>
+                            </div>
                           </div>
                           <motion.span 
                             className="text-orange-500 text-sm font-medium cursor-pointer flex items-center"
