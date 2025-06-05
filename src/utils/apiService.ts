@@ -1,9 +1,7 @@
 import axios from 'axios';
 
 // Environment-aware base URL configuration
-const BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://edusmart-server.vercel.app'
-  : process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const BASE_URL = 'https://edusmart-server.vercel.app'; // Force production URL for now
 
 // Helper function to make API calls
 const apiCall = async (method: string, endpoint: string, data: any = null) => {
@@ -66,6 +64,34 @@ export const blogAPI = {
   }
 };
 
+// Course API functions (public only for user website)
+export const courseAPI = {
+  // Get all courses (public)
+  getAll: async (page = 1, limit = 20, category?: string, level?: string, search?: string, featured?: boolean) => {
+    let endpoint = `/api/courses?page=${page}&limit=${limit}`;
+    if (category) endpoint += `&category=${category}`;
+    if (level) endpoint += `&level=${level}`;
+    if (search) endpoint += `&search=${search}`;
+    if (featured !== undefined) endpoint += `&featured=${featured}`;
+    return apiCall('GET', endpoint);
+  },
+
+  // Get course by ID (public)
+  getById: async (id: string) => {
+    return apiCall('GET', `/api/courses/${id}`);
+  },
+
+  // Get course categories (public)
+  getCategories: async () => {
+    return apiCall('GET', '/api/course-categories');
+  },
+
+  // Get course levels (public)
+  getLevels: async () => {
+    return apiCall('GET', '/api/course-levels');
+  }
+};
+
 // Scholarship API functions (public only for user website)
 export const scholarshipAPI = {
   // Get all scholarships (public)
@@ -94,9 +120,11 @@ export const scholarshipAPI = {
 // University API functions (public only for user website)
 export const universityAPI = {
   // Get all universities (public)
-  getAll: async (page = 1, limit = 12, country?: string) => {
+  getAll: async (page = 1, limit = 12, queryString?: string) => {
     let endpoint = `/api/universities?page=${page}&limit=${limit}`;
-    if (country) endpoint += `&country=${country}`;
+    if (queryString) {
+      endpoint += `&${queryString}`;
+    }
     return apiCall('GET', endpoint);
   },
 
@@ -136,6 +164,46 @@ export const responseAPI = {
   // Get response types (public)
   getTypes: async () => {
     return apiCall('GET', '/api/response-types');
+  }
+};
+
+// Case Study API functions (public only for user website)
+export const caseStudyAPI = {
+  // Get all case studies (public)
+  getAll: async (page = 1, limit = 20, category?: string, outcome?: string, country?: string, field?: string, search?: string, featured?: boolean) => {
+    let endpoint = `/api/case-studies?page=${page}&limit=${limit}`;
+    if (category) endpoint += `&category=${category}`;
+    if (outcome) endpoint += `&outcome=${outcome}`;
+    if (country) endpoint += `&country=${country}`;
+    if (field) endpoint += `&field=${field}`;
+    if (search) endpoint += `&search=${search}`;
+    if (featured !== undefined) endpoint += `&featured=${featured}`;
+    return apiCall('GET', endpoint);
+  },
+
+  // Get case study by ID (public)
+  getById: async (id: string) => {
+    return apiCall('GET', `/api/case-studies/${id}`);
+  },
+
+  // Get case study categories (public)
+  getCategories: async () => {
+    return apiCall('GET', '/api/case-studies/categories');
+  },
+
+  // Get case study outcomes (public)
+  getOutcomes: async () => {
+    return apiCall('GET', '/api/case-studies/outcomes');
+  },
+
+  // Get case study countries (public)
+  getCountries: async () => {
+    return apiCall('GET', '/api/case-studies/countries');
+  },
+
+  // Get case study fields (public)
+  getFields: async () => {
+    return apiCall('GET', '/api/case-studies/fields');
   }
 };
 

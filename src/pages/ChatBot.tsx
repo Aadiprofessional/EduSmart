@@ -44,7 +44,7 @@ const ChatBotPage: React.FC = () => {
     } else if (lowerMsg.includes('application') || lowerMsg.includes('apply') || lowerMsg.includes('track')) {
       return 'You can track your applications using our Application Tracker. It helps you organize deadlines and requirements for educational opportunities.';
     } else if (lowerMsg.includes('ai') || lowerMsg.includes('artificial intelligence')) {
-      return 'We have specialized AI courses and resources. Our AI Courses section provides cutting-edge content in machine learning, deep learning, and AI ethics.';
+      return 'We have specialized courses and resources. Our Courses section provides cutting-edge content in machine learning, deep learning, and AI ethics.';
     } else if (lowerMsg.includes('resource') || lowerMsg.includes('material') || lowerMsg.includes('tool')) {
       return 'EduSmart offers various educational resources including e-books, tutorials, and interactive tools. Check our Resources page.';
     } else if (lowerMsg.includes('blog') || lowerMsg.includes('article') || lowerMsg.includes('news')) {

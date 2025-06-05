@@ -323,6 +323,34 @@ export interface Translations {
     noResults: string;
     loading: string;
     error: string;
+    advancedFilters: string;
+    sortBy: string;
+    qsRanking: string;
+    acceptanceRate: string;
+    tuitionFee: string;
+    studentPopulation: string;
+    country: string;
+    region: string;
+    type: string;
+    resetFilters: string;
+    applyFilters: string;
+    compareUniversities: string;
+    getRecommendations: string;
+    aiAnalysis: string;
+    university: string;
+    ranking: string;
+    location: string;
+    website: string;
+    contact: string;
+    established: string;
+    programs: string;
+    facilities: string;
+    admissionRequirements: string;
+    applicationDeadlines: string;
+    scholarships: string;
+    campusLife: string;
+    research: string;
+    alumni: string;
   };
 
   // Scholarships Page
@@ -342,7 +370,7 @@ export interface Translations {
     loading: string;
     error: string;
   };
-
+  
   // Blog Page
   blog: {
     title: string;
@@ -359,8 +387,18 @@ export interface Translations {
     noResults: string;
     loading: string;
     error: string;
+    featuredArticles: string;
+    trendingTopics: string;
+    recentPosts: string;
+    popularPosts: string;
+    searchResults: string;
+    noArticlesFound: string;
+    backToBlog: string;
+    shareArticle: string;
+    comments: string;
+    leaveComment: string;
   };
-
+  
   // Application Tracker Page
   applicationTracker: {
     title: string;
@@ -409,7 +447,7 @@ export interface Translations {
     addNewApplication: string;
     saveChanges: string;
   };
-
+  
   // Case Studies Page
   caseStudies: {
     title: string;
@@ -439,7 +477,7 @@ export interface Translations {
     internationalStories: string;
     scholarshipStories: string;
   };
-
+  
   // ChatBot Page
   chatBot: {
     title: string;
@@ -454,7 +492,7 @@ export interface Translations {
     welcomeMessage: string;
     helpMessage: string;
   };
-
+  
   // Courses Page
   courses: {
     title: string;
@@ -478,6 +516,94 @@ export interface Translations {
       engineering: string;
     };
   };
+  
+  // AI Study Page
+  aiStudy: {
+    title: string;
+    subtitle: string;
+    studyPlanner: string;
+    flashcards: string;
+    notesTaker: string;
+    citationGenerator: string;
+    contentWriter: string;
+    mistakeChecker: string;
+    aiTutor: string;
+    studyTimer: string;
+    progressTracker: string;
+    taskManager: string;
+    addTask: string;
+    taskPlaceholder: string;
+    completed: string;
+    pending: string;
+    createFlashcard: string;
+    frontText: string;
+    backText: string;
+    nextCard: string;
+    previousCard: string;
+    markMastered: string;
+    showAnswer: string;
+    studyMode: string;
+    reviewMode: string;
+    startTimer: string;
+    stopTimer: string;
+    resetTimer: string;
+    pomodoroTimer: string;
+    breakTime: string;
+    focusTime: string;
+    generateCitation: string;
+    checkGrammar: string;
+    improveWriting: string;
+    askTutor: string;
+    getHelp: string;
+    saveNotes: string;
+    exportNotes: string;
+  };
+  
+  // AI Courses Page
+  aiCourses: {
+    title: string;
+    subtitle: string;
+    searchPlaceholder: string;
+    filterByType: string;
+    filterByLevel: string;
+    filterByProvider: string;
+    allTypes: string;
+    allLevels: string;
+    allProviders: string;
+    university: string;
+    certification: string;
+    tutorial: string;
+    beginner: string;
+    intermediate: string;
+    advanced: string;
+    duration: string;
+    rating: string;
+    students: string;
+    instructor: string;
+    prerequisites: string;
+    skills: string;
+    price: string;
+    free: string;
+    paid: string;
+    enrollNow: string;
+    viewDetails: string;
+    addToWishlist: string;
+    removeFromWishlist: string;
+    featuredCourses: string;
+    popularCourses: string;
+    newCourses: string;
+    topRated: string;
+    noCoursesFound: string;
+    courseDetails: string;
+    syllabus: string;
+    reviews: string;
+    relatedCourses: string;
+    startLearning: string;
+    continueWatching: string;
+    completed: string;
+    inProgress: string;
+    notStarted: string;
+  };
 }
 
 export const translations: Record<Language, Translations> = {
@@ -486,7 +612,7 @@ export const translations: Record<Language, Translations> = {
       home: 'Home',
       database: 'Database',
       successStories: 'Success Stories',
-      aiCourses: 'AI Courses',
+      aiCourses: 'Courses',
       aiStudy: 'AI Study',
       resources: 'Resources',
       blog: 'Blog',
@@ -773,6 +899,34 @@ export const translations: Record<Language, Translations> = {
       noResults: 'No results found',
       loading: 'Loading...',
       error: 'An error occurred',
+      advancedFilters: 'Advanced Filters',
+      sortBy: 'Sort By',
+      qsRanking: 'QS Ranking',
+      acceptanceRate: 'Acceptance Rate',
+      tuitionFee: 'Tuition Fee',
+      studentPopulation: 'Student Population',
+      country: 'Country',
+      region: 'Region',
+      type: 'Type',
+      resetFilters: 'Reset Filters',
+      applyFilters: 'Apply Filters',
+      compareUniversities: 'Compare Universities',
+      getRecommendations: 'Get Recommendations',
+      aiAnalysis: 'AI Analysis',
+      university: 'University',
+      ranking: 'Ranking',
+      location: 'Location',
+      website: 'Website',
+      contact: 'Contact',
+      established: 'Established',
+      programs: 'Programs',
+      facilities: 'Facilities',
+      admissionRequirements: 'Admission Requirements',
+      applicationDeadlines: 'Application Deadlines',
+      scholarships: 'Scholarships',
+      campusLife: 'Campus Life',
+      research: 'Research',
+      alumni: 'Alumni',
     },
     scholarships: {
       title: 'Scholarships',
@@ -805,6 +959,16 @@ export const translations: Record<Language, Translations> = {
       noResults: 'No results found',
       loading: 'Loading...',
       error: 'An error occurred',
+      featuredArticles: 'Featured Articles',
+      trendingTopics: 'Trending Topics',
+      recentPosts: 'Recent Posts',
+      popularPosts: 'Popular Posts',
+      searchResults: 'Search Results',
+      noArticlesFound: 'No articles found',
+      backToBlog: 'Back to Blog',
+      shareArticle: 'Share Article',
+      comments: 'Comments',
+      leaveComment: 'Leave a Comment',
     },
     applicationTracker: {
       title: 'Application Tracker',
@@ -915,6 +1079,90 @@ export const translations: Record<Language, Translations> = {
         design: 'Design',
         engineering: 'Engineering',
       },
+    },
+    aiStudy: {
+      title: 'AI Study',
+      subtitle: 'Your AI-powered study companion',
+      studyPlanner: 'Study Planner',
+      flashcards: 'Flashcards',
+      notesTaker: 'Notes Taker',
+      citationGenerator: 'Citation Generator',
+      contentWriter: 'Content Writer',
+      mistakeChecker: 'Mistake Checker',
+      aiTutor: 'AI Tutor',
+      studyTimer: 'Study Timer',
+      progressTracker: 'Progress Tracker',
+      taskManager: 'Task Manager',
+      addTask: 'Add Task',
+      taskPlaceholder: 'Enter task description',
+      completed: 'Completed',
+      pending: 'Pending',
+      createFlashcard: 'Create Flashcard',
+      frontText: 'Front Text',
+      backText: 'Back Text',
+      nextCard: 'Next Card',
+      previousCard: 'Previous Card',
+      markMastered: 'Mark as Mastered',
+      showAnswer: 'Show Answer',
+      studyMode: 'Study Mode',
+      reviewMode: 'Review Mode',
+      startTimer: 'Start Timer',
+      stopTimer: 'Stop Timer',
+      resetTimer: 'Reset Timer',
+      pomodoroTimer: 'Pomodoro Timer',
+      breakTime: 'Break Time',
+      focusTime: 'Focus Time',
+      generateCitation: 'Generate Citation',
+      checkGrammar: 'Check Grammar',
+      improveWriting: 'Improve Writing',
+      askTutor: 'Ask Tutor',
+      getHelp: 'Get Help',
+      saveNotes: 'Save Notes',
+      exportNotes: 'Export Notes',
+    },
+    aiCourses: {
+      title: 'Courses',
+      subtitle: 'Discover comprehensive courses designed to enhance your academic journey',
+      searchPlaceholder: 'Search for courses...',
+      filterByType: 'Filter by Type',
+      filterByLevel: 'Filter by Level',
+      filterByProvider: 'Filter by Provider',
+      allTypes: 'All Types',
+      allLevels: 'All Levels',
+      allProviders: 'All Providers',
+      university: 'University',
+      certification: 'Certification',
+      tutorial: 'Tutorial',
+      beginner: 'Beginner',
+      intermediate: 'Intermediate',
+      advanced: 'Advanced',
+      duration: 'Duration',
+      rating: 'Rating',
+      students: 'Students',
+      instructor: 'Instructor',
+      prerequisites: 'Prerequisites',
+      skills: 'Skills',
+      price: 'Price',
+      free: 'Free',
+      paid: 'Paid',
+      enrollNow: 'Enroll Now',
+      viewDetails: 'View Details',
+      addToWishlist: 'Add to Wishlist',
+      removeFromWishlist: 'Remove from Wishlist',
+      featuredCourses: 'Featured Courses',
+      popularCourses: 'Popular Courses',
+      newCourses: 'New Courses',
+      topRated: 'Top Rated',
+      noCoursesFound: 'No courses found',
+      courseDetails: 'Course Details',
+      syllabus: 'Syllabus',
+      reviews: 'Reviews',
+      relatedCourses: 'Related Courses',
+      startLearning: 'Start Learning',
+      continueWatching: 'Continue Watching',
+      completed: 'Completed',
+      inProgress: 'In Progress',
+      notStarted: 'Not Started',
     },
   },
   'zh-CN': {
@@ -1209,6 +1457,34 @@ export const translations: Record<Language, Translations> = {
       noResults: '没有找到结果',
       loading: '加载中...',
       error: '发生错误',
+      advancedFilters: '高级筛选',
+      sortBy: '排序依据',
+      qsRanking: 'QS排名',
+      acceptanceRate: '录取率',
+      tuitionFee: '学费',
+      studentPopulation: '学生人数',
+      country: '国家',
+      region: '地区',
+      type: '类型',
+      resetFilters: '重置筛选器',
+      applyFilters: '应用筛选器',
+      compareUniversities: '比较大学',
+      getRecommendations: '获取推荐',
+      aiAnalysis: 'AI分析',
+      university: '大学',
+      ranking: '排名',
+      location: '位置',
+      website: '网站',
+      contact: '联系',
+      established: '成立时间',
+      programs: '项目',
+      facilities: '设施',
+      admissionRequirements: '入学要求',
+      applicationDeadlines: '申请截止日期',
+      scholarships: '奖学金',
+      campusLife: '校园生活',
+      research: '研究',
+      alumni: '校友',
     },
     scholarships: {
       title: '奖学金',
@@ -1241,6 +1517,16 @@ export const translations: Record<Language, Translations> = {
       noResults: '没有找到结果',
       loading: '加载中...',
       error: '发生错误',
+      featuredArticles: '精选文章',
+      trendingTopics: '热门话题',
+      recentPosts: '最新文章',
+      popularPosts: '热门文章',
+      searchResults: '搜索结果',
+      noArticlesFound: '没有找到文章',
+      backToBlog: '返回博客',
+      shareArticle: '分享文章',
+      comments: '评论',
+      leaveComment: '留下评论',
     },
     applicationTracker: {
       title: '申请跟踪',
@@ -1351,6 +1637,90 @@ export const translations: Record<Language, Translations> = {
         design: '设计',
         engineering: '工程',
       },
+    },
+    aiStudy: {
+      title: 'AI学习',
+      subtitle: '您的AI学习助手',
+      studyPlanner: '学习计划',
+      flashcards: '闪卡',
+      notesTaker: '笔记',
+      citationGenerator: '引用生成',
+      contentWriter: '内容写作',
+      mistakeChecker: '错误检查',
+      aiTutor: 'AI导师',
+      studyTimer: '学习计时',
+      progressTracker: '进度跟踪',
+      taskManager: '任务管理',
+      addTask: '添加任务',
+      taskPlaceholder: '输入任务描述',
+      completed: '已完成',
+      pending: '待完成',
+      createFlashcard: '创建闪卡',
+      frontText: '正面文本',
+      backText: '背面文本',
+      nextCard: '下一卡',
+      previousCard: '上一卡',
+      markMastered: '标记为掌握',
+      showAnswer: '显示答案',
+      studyMode: '学习模式',
+      reviewMode: '复习模式',
+      startTimer: '开始计时',
+      stopTimer: '停止计时',
+      resetTimer: '重置计时',
+      pomodoroTimer: '番茄计时',
+      breakTime: '休息时间',
+      focusTime: '专注时间',
+      generateCitation: '生成引用',
+      checkGrammar: '检查语法',
+      improveWriting: '提高写作',
+      askTutor: '询问导师',
+      getHelp: '获取帮助',
+      saveNotes: '保存笔记',
+      exportNotes: '导出笔记',
+    },
+    aiCourses: {
+      title: 'AI课程',
+      subtitle: '您的AI课程助手',
+      searchPlaceholder: '搜索AI课程...',
+      filterByType: '按类型筛选',
+      filterByLevel: '按级别筛选',
+      filterByProvider: '按提供者筛选',
+      allTypes: '所有类型',
+      allLevels: '所有级别',
+      allProviders: '所有提供者',
+      university: '大学',
+      certification: '认证',
+      tutorial: '教程',
+      beginner: '初学者',
+      intermediate: '中级',
+      advanced: '高级',
+      duration: '持续时间',
+      rating: '评分',
+      students: '学生',
+      instructor: '讲师',
+      prerequisites: '先决条件',
+      skills: '技能',
+      price: '价格',
+      free: '免费',
+      paid: '付费',
+      enrollNow: '立即报名',
+      viewDetails: '查看详情',
+      addToWishlist: '添加到愿望清单',
+      removeFromWishlist: '从愿望清单中移除',
+      featuredCourses: '精选课程',
+      popularCourses: '热门课程',
+      newCourses: '新课程',
+      topRated: '评分最高',
+      noCoursesFound: '没有找到课程',
+      courseDetails: '课程详情',
+      syllabus: '课程大纲',
+      reviews: '评论',
+      relatedCourses: '相关课程',
+      startLearning: '开始学习',
+      continueWatching: '继续观看',
+      completed: '已完成',
+      inProgress: '进行中',
+      notStarted: '未开始',
     },
   },
   'zh-TW': {
@@ -1645,6 +2015,34 @@ export const translations: Record<Language, Translations> = {
       noResults: '沒有找到結果',
       loading: '加載中...',
       error: '發生錯誤',
+      advancedFilters: '進階篩選',
+      sortBy: '排序依據',
+      qsRanking: 'QS排名',
+      acceptanceRate: '錄取率',
+      tuitionFee: '學費',
+      studentPopulation: '學生人數',
+      country: '國家',
+      region: '地區',
+      type: '類型',
+      resetFilters: '重置篩選器',
+      applyFilters: '應用篩選器',
+      compareUniversities: '比較大學',
+      getRecommendations: '獲取推薦',
+      aiAnalysis: 'AI分析',
+      university: '大學',
+      ranking: '排名',
+      location: '位置',
+      website: '網站',
+      contact: '聯絡',
+      established: '成立時間',
+      programs: '項目',
+      facilities: '設施',
+      admissionRequirements: '入學要求',
+      applicationDeadlines: '申請截止日期',
+      scholarships: '獎學金',
+      campusLife: '校園生活',
+      research: '研究',
+      alumni: '校友',
     },
     scholarships: {
       title: '獎學金',
@@ -1677,6 +2075,16 @@ export const translations: Record<Language, Translations> = {
       noResults: '沒有找到結果',
       loading: '加載中...',
       error: '發生錯誤',
+      featuredArticles: '精選文章',
+      trendingTopics: '熱門話題',
+      recentPosts: '最新文章',
+      popularPosts: '熱門文章',
+      searchResults: '搜索結果',
+      noArticlesFound: '沒有找到文章',
+      backToBlog: '返回部落格',
+      shareArticle: '分享文章',
+      comments: '評論',
+      leaveComment: '留下評論',
     },
     applicationTracker: {
       title: '申請跟踪',
@@ -1787,6 +2195,90 @@ export const translations: Record<Language, Translations> = {
         design: '設計',
         engineering: '工程',
       },
+    },
+    aiStudy: {
+      title: 'AI學習',
+      subtitle: '您的AI學習助手',
+      studyPlanner: '學習計劃',
+      flashcards: '閃卡',
+      notesTaker: '筆記',
+      citationGenerator: '引用生成',
+      contentWriter: '內容寫作',
+      mistakeChecker: '錯誤檢查',
+      aiTutor: 'AI導師',
+      studyTimer: '學習計時',
+      progressTracker: '進度跟踪',
+      taskManager: '任務管理',
+      addTask: '添加任務',
+      taskPlaceholder: '輸入任務描述',
+      completed: '已完成',
+      pending: '待完成',
+      createFlashcard: '創建閃卡',
+      frontText: '正面文本',
+      backText: '背面文本',
+      nextCard: '下一卡',
+      previousCard: '上一卡',
+      markMastered: '標記為掌握',
+      showAnswer: '顯示答案',
+      studyMode: '學習模式',
+      reviewMode: '複習模式',
+      startTimer: '開始計時',
+      stopTimer: '停止計時',
+      resetTimer: '重置計時',
+      pomodoroTimer: '番茄計時',
+      breakTime: '休息時間',
+      focusTime: '專注時間',
+      generateCitation: '生成引用',
+      checkGrammar: '檢查語法',
+      improveWriting: '提高寫作',
+      askTutor: '詢問導師',
+      getHelp: '獲取幫助',
+      saveNotes: '保存筆記',
+      exportNotes: '導出筆記',
+    },
+    aiCourses: {
+      title: 'AI課程',
+      subtitle: '您的AI課程助手',
+      searchPlaceholder: '搜索AI課程...',
+      filterByType: '按類型篩選',
+      filterByLevel: '按級別篩選',
+      filterByProvider: '按提供者篩選',
+      allTypes: '所有類型',
+      allLevels: '所有級別',
+      allProviders: '所有提供者',
+      university: '大學',
+      certification: '認證',
+      tutorial: '教程',
+      beginner: '初學者',
+      intermediate: '中級',
+      advanced: '高級',
+      duration: '持續時間',
+      rating: '評分',
+      students: '學生',
+      instructor: '講師',
+      prerequisites: '先決條件',
+      skills: '技能',
+      price: '價格',
+      free: '免費',
+      paid: '付費',
+      enrollNow: '立即報名',
+      viewDetails: '查看詳情',
+      addToWishlist: '添加到願望清單',
+      removeFromWishlist: '從願望清單中移除',
+      featuredCourses: '精選課程',
+      popularCourses: '熱門課程',
+      newCourses: '新課程',
+      topRated: '評分最高',
+      noCoursesFound: '沒有找到課程',
+      courseDetails: '課程詳情',
+      syllabus: '課程大綱',
+      reviews: '評論',
+      relatedCourses: '相關課程',
+      startLearning: '開始學習',
+      continueWatching: '繼續觀看',
+      completed: '已完成',
+      inProgress: '進行中',
+      notStarted: '未開始',
     },
   },
 };

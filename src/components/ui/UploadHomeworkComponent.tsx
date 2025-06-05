@@ -399,7 +399,7 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
           messages: [
             {
               role: "system",
-              content: "You are an OCR assistant. Extract all text from the image exactly as it appears, maintaining line breaks and formatting. Only return the extracted text, nothing else."
+              content: "You are an OCR assistant. Extract all text from the image exactly as it appears, maintaining line breaks and formatting. Only return the extracted text, nothing else. Also if their is diagram please explain that in the text so  that ai can understand the question."
             },
             {
               role: "user",

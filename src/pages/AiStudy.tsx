@@ -101,14 +101,14 @@ const AiStudy: React.FC = () => {
   };
 
   const tabs = [
-    { id: 'upload', name: 'Upload Homework', icon: AiOutlineUpload },
-    { id: 'chat', name: 'AI Tutor Chat', icon: AiOutlineRobot },
-    { id: 'check-mistakes', name: 'Check Mistakes', icon: AiOutlineSearch },
-    { id: 'study-planner', name: 'Study Planner', icon: FiCalendar },
-    { id: 'flashcards', name: 'Flashcards', icon: FiBookOpen },
-    { id: 'content-writer', name: 'Content Writer', icon: AiOutlineEdit },
-    { id: 'citations', name: 'Citations', icon: FiEdit },
-    { id: 'history', name: 'Study History', icon: AiOutlineHistory },
+    { id: 'upload', name: t('aiStudy.notesTaker'), icon: AiOutlineUpload },
+    { id: 'chat', name: t('aiStudy.aiTutor'), icon: AiOutlineRobot },
+    { id: 'check-mistakes', name: t('aiStudy.mistakeChecker'), icon: AiOutlineSearch },
+    { id: 'study-planner', name: t('aiStudy.studyPlanner'), icon: FiCalendar },
+    { id: 'flashcards', name: t('aiStudy.flashcards'), icon: FiBookOpen },
+    { id: 'content-writer', name: t('aiStudy.contentWriter'), icon: AiOutlineEdit },
+    { id: 'citations', name: t('aiStudy.citationGenerator'), icon: FiEdit },
+    { id: 'history', name: t('aiStudy.progressTracker'), icon: AiOutlineHistory },
   ];
 
   const handleAddTask = (e: React.FormEvent) => {
@@ -196,10 +196,10 @@ const AiStudy: React.FC = () => {
             transition={{ duration: 0.5 }}
           >
             <h1 className="text-4xl font-bold text-teal-800 mb-3">
-              AI<span className="text-orange-500">Study</span> Assistant
+              {t('aiStudy.title')}
             </h1>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              {t('get_instant_help')}
+              {t('aiStudy.subtitle')}
             </p>
             
             {/* Content Writer Button */}
@@ -210,7 +210,7 @@ const AiStudy: React.FC = () => {
               className="mt-4 inline-flex items-center px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg shadow-md font-medium"
             >
               <IconComponent icon={AiOutlineEdit} className="mr-2 h-5 w-5" />
-              {t('generate_essays_academic_papers')}
+              {t('aiStudy.contentWriter')}
             </motion.button>
           </motion.div>
 
@@ -271,11 +271,11 @@ const AiStudy: React.FC = () => {
                   key={tab.id}
                   className={`flex items-center py-4 px-6 flex-1 justify-center ${
                     activeTab === tab.id
-                      ? 'bg-white text-orange-500 font-medium shadow-inner border-b-2 border-orange-500'
+                      ? 'bg-teal-600 text-white font-medium border-b-2 border-orange-500'
                       : 'hover:bg-white/10'
                   }`}
                   onClick={() => setActiveTab(tab.id)}
-                  whileHover={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
+                  whileHover={{ backgroundColor: activeTab === tab.id ? "rgba(20, 184, 166, 0.8)" : "rgba(255, 255, 255, 0.1)" }}
                   whileTap={{ scale: 0.98 }}
                 >
                   <IconComponent icon={tab.icon} className="h-5 w-5 mr-2" />

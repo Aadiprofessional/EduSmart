@@ -365,10 +365,10 @@ const Blog: React.FC = () => {
                     >
                       {t('blog.allCategories')}
                     </motion.button>
-                    {categories.map(category => (
+                    {categories.map((category) => (
                       <motion.button
                         key={category}
-                        className={`w-full text-left px-3 py-2 rounded-lg flex items-center ${
+                        className={`w-full text-left px-3 py-2 rounded-lg ${
                           activeCategory === category
                             ? 'bg-teal-100 text-teal-800'
                             : 'bg-white text-gray-700 hover:bg-gray-100'
@@ -378,7 +378,7 @@ const Blog: React.FC = () => {
                         whileTap={{ scale: 0.98 }}
                       >
                         <span className="mr-2">{getCategoryIcon(category)}</span>
-                        {category}
+                        {category === 'all' ? t('blog.allCategories') : category}
                       </motion.button>
                     ))}
                   </div>

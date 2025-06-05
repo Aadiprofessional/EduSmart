@@ -1,16 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { FaSearch, FaFilter, FaSortAmountDown, FaExternalLinkAlt, FaUniversity, FaGlobe, FaGraduationCap, FaCalendarAlt, FaDollarSign, FaTrophy, FaChevronDown, FaChevronUp, FaBookmark, FaRobot, FaLightbulb, FaUser, FaBuilding, FaMapMarkerAlt } from 'react-icons/fa';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FaSearch, FaFilter, FaMapMarkerAlt, FaDollarSign, FaGraduationCap, FaUsers, FaStar, FaHeart, FaEye, FaPlus, FaTimes, FaChevronDown, FaChevronUp, FaRobot, FaLightbulb, FaUser, FaSpinner, FaExternalLinkAlt, FaUniversity, FaGlobe, FaCalendarAlt, FaBookOpen, FaAward, FaChartLine, FaBuilding, FaPhone, FaEnvelope, FaInfoCircle, FaCheckCircle, FaExclamationTriangle, FaBookmark, FaSortAmountDown, FaTrophy } from 'react-icons/fa';
 import { HiOutlineAcademicCap, HiOutlineLocationMarker } from 'react-icons/hi';
 import { RiArrowDropDownLine, RiArrowDropUpLine } from 'react-icons/ri';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import IconComponent from '../components/ui/IconComponent';
-import { motion } from 'framer-motion';
 import { fadeIn, staggerContainer, slideIn } from '../utils/animations';
-import { supabase } from '../utils/supabase';
 import { useAuth } from '../utils/AuthContext';
+import { supabase } from '../utils/supabase';
 import { universityAPI } from '../utils/apiService';
 import { useLanguage } from '../utils/LanguageContext';
+import { userProfileAPI, UserProfile } from '../utils/userProfileAPI';
 
 interface University {
   id: string;
@@ -849,14 +850,14 @@ const CompareUniversitiesModal: React.FC<CompareUniversitiesModalProps> = ({
 
 const Database: React.FC = () => {
   const { t } = useLanguage();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [universities, setUniversities] = useState<University[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState({
     search: '',
     country: '',
-    qsRanking: [1, 500],
+    qsRanking: [1, 2000],
     tuitionFees: [0, 100000],
     minGPA: [0, 4],
     rankingType: '',
@@ -867,7 +868,7 @@ const Database: React.FC = () => {
     campusType: '',
     employmentRate: '',
     major: '',
-    qsRankingRange: [1, 500],
+    qsRankingRange: [1, 2000],
     researchOutput: '',
     showOnlyOpenApplications: false,
     admissionDifficulty: '',
@@ -891,55 +892,175 @@ const Database: React.FC = () => {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [userProfileCompletion, setUserProfileCompletion] = useState(0);
   const [isAutoGeneratingRecommendation, setIsAutoGeneratingRecommendation] = useState(false);
+  const [availableCountries, setAvailableCountries] = useState<string[]>([]);
+  const [availableRegions, setAvailableRegions] = useState<string[]>([]);
+  const [availableRankingTypes, setAvailableRankingTypes] = useState<string[]>([]);
+  const [availableCampusTypes, setAvailableCampusTypes] = useState<string[]>([]);
+  const [availableUniversityTypes, setAvailableUniversityTypes] = useState<string[]>([]);
+  const [availableMajors, setAvailableMajors] = useState<string[]>([]);
+  const [availableRankingYears, setAvailableRankingYears] = useState<number[]>([]);
+  const [qsRankingRange, setQsRankingRange] = useState<[number, number]>([1, 2000]);
+  const [tuitionFeeRange, setTuitionFeeRange] = useState<[number, number]>([0, 100000]);
+
+  const extractFilterOptions = (universitiesData: University[]) => {
+    // Extract unique countries
+    const countries = Array.from(new Set(universitiesData.map(uni => uni.country).filter(Boolean)));
+    setAvailableCountries(countries);
+
+    // Extract unique regions
+    const regions = Array.from(new Set(universitiesData.map(uni => uni.region).filter(Boolean)));
+    setAvailableRegions(regions);
+
+    // Extract unique ranking types
+    const rankingTypes = Array.from(new Set(universitiesData.map(uni => uni.rankingType).filter(Boolean)));
+    setAvailableRankingTypes(rankingTypes);
+
+    // Extract unique campus types
+    const campusTypes = Array.from(new Set(universitiesData.map(uni => uni.campusType || uni.campus_type).filter(Boolean)));
+    setAvailableCampusTypes(campusTypes);
+
+    // Extract unique university types
+    const universityTypes = Array.from(new Set(universitiesData.map(uni => uni.type).filter(Boolean)));
+    setAvailableUniversityTypes(universityTypes);
+
+    // Extract unique majors from programs_offered
+    const allMajors = universitiesData.flatMap(uni => uni.programs_offered || uni.majorStrengths || []);
+    const uniqueMajors = Array.from(new Set(allMajors.filter(Boolean)));
+    setAvailableMajors(uniqueMajors);
+
+    // Extract unique ranking years
+    const rankingYears = Array.from(new Set(universitiesData.map(uni => uni.rankingYear).filter(Boolean)));
+    setAvailableRankingYears(rankingYears.sort((a, b) => b - a)); // Sort descending
+
+    // Calculate QS ranking range
+    const rankings = universitiesData.map(uni => uni.qsRanking || uni.ranking).filter(r => r && r > 0);
+    if (rankings.length > 0) {
+      const minRanking = Math.min(...rankings);
+      const maxRanking = Math.max(...rankings);
+      setQsRankingRange([minRanking, maxRanking]);
+    }
+
+    // Calculate tuition fee range
+    const tuitionFees = universitiesData.map(uni => uni.tuition_fee).filter(f => f && f > 0);
+    if (tuitionFees.length > 0) {
+      const minFee = Math.min(...tuitionFees);
+      const maxFee = Math.max(...tuitionFees);
+      setTuitionFeeRange([minFee, maxFee]);
+    }
+  };
+
+  const testAPICall = async () => {
+    console.log('Testing API call manually...');
+    try {
+      const response = await universityAPI.getAll(1, 100);
+      console.log('Manual API test result:', response);
+    } catch (error) {
+      console.error('Manual API test error:', error);
+    }
+  };
+
+  // Fetch available countries for filter dropdown
+  useEffect(() => {
+    const fetchCountries = async () => {
+      try {
+        const response = await universityAPI.getCountries();
+        if (response.success && response.data && response.data.countries) {
+          setAvailableCountries(response.data.countries);
+        }
+      } catch (error) {
+        console.error('Error fetching countries:', error);
+      }
+    };
+
+    fetchCountries();
+  }, []);
 
   // Fetch universities data
   useEffect(() => {
     const fetchUniversities = async () => {
       try {
         setIsLoading(true);
-        const response = await universityAPI.getAll();
+        
+        // Simplify the API call - get all universities first, then filter on frontend
+        console.log('Fetching universities...');
+        const response = await universityAPI.getAll(1, 100);
+        
+        console.log('API Response:', response);
+        
         if (response.success && response.data) {
+          let universitiesData = [];
+          
+          console.log('Response data structure:', response.data);
+          
+          // Handle both paginated and non-paginated responses
+          if (response.data.universities) {
+            // Paginated response
+            universitiesData = response.data.universities;
+            console.log('Using paginated response, universities:', universitiesData.length);
+          } else if (Array.isArray(response.data)) {
+            // Direct array response
+            universitiesData = response.data;
+            console.log('Using direct array response, universities:', universitiesData.length);
+          } else {
+            console.log('Unexpected response structure:', response.data);
+          }
+          
           // Transform the data to match our interface
-          const transformedData = response.data.map((uni: any) => ({
+          const transformedData = universitiesData.map((uni: any) => ({
             ...uni,
-            qsRanking: uni.ranking || 999,
+            // Fix QS ranking - use actual ranking or set to high number if not available
+            qsRanking: uni.ranking && uni.ranking > 0 ? uni.ranking : 999,
+            // Use programs_offered as majorStrengths
             majorStrengths: uni.programs_offered || [],
-      applicationDeadlines: {
+            applicationDeadlines: {
               fall: 'September 1',
               spring: 'January 15'
-      },
-      admissionRequirements: {
+            },
+            admissionRequirements: {
               minGPA: 3.0,
-        testScores: [
+              testScores: [
                 { name: 'SAT', score: '1200+' },
                 { name: 'ACT', score: '26+' }
-        ],
-        languageRequirements: [
+              ],
+              languageRequirements: [
                 { test: 'IELTS', score: '6.5' },
                 { test: 'TOEFL', score: '80' }
               ]
             },
-      tuitionFees: {
+            tuitionFees: {
               undergraduate: `$${uni.tuition_fee?.toLocaleString() || '25,000'}/year`,
               graduate: `$${((uni.tuition_fee || 25000) * 1.2)?.toLocaleString() || '30,000'}/year`
             },
             applicationLink: uni.website || '#',
-      rankingType: 'QS World University Rankings',
-            region: uni.country === 'United States' ? 'North America' : 
-                   uni.country === 'United Kingdom' ? 'Europe' : 
-                   uni.country === 'Canada' ? 'North America' : 'Other',
-      rankingYear: 2024,
+            rankingType: uni.ranking_type || 'QS World University Rankings',
+            // Fix region mapping
+            region: uni.region || (
+              uni.country === 'United States' || uni.country === 'USA' ? 'North America' : 
+              uni.country === 'United Kingdom' ? 'Europe' : 
+              uni.country === 'Canada' ? 'North America' : 
+              uni.country === 'india' || uni.country === 'India' ? 'Asia' :
+              'Other'
+            ),
+            rankingYear: uni.ranking_year || 2024,
             acceptanceRate: `${uni.acceptance_rate || 50}%`,
             studentPopulation: uni.student_population?.toLocaleString() || '10,000',
             researchOutput: 'High',
             employmentRate: '85%',
             campusType: uni.campus_type || 'Urban'
           }));
+          
+          console.log('Transformed universities:', transformedData);
           setUniversities(transformedData);
+          
+          // Extract filter options from the fetched data
+          extractFilterOptions(transformedData);
+        } else {
+          console.log('API call failed or no data:', response);
+          setUniversities([]);
         }
       } catch (error) {
         console.error('Error fetching universities:', error);
-        // Set some mock data as fallback
+        // Set empty array as fallback
         setUniversities([]);
       } finally {
         setIsLoading(false);
@@ -947,7 +1068,7 @@ const Database: React.FC = () => {
     };
 
     fetchUniversities();
-  }, []);
+  }, []); // Remove dependencies for now to avoid infinite loops
 
   // Check if device is mobile
   useEffect(() => {
@@ -983,9 +1104,13 @@ const Database: React.FC = () => {
       return false;
     }
     
-    // QS Ranking filter
-    if (university.qsRanking < filters.qsRankingRange[0] || 
-        university.qsRanking > filters.qsRankingRange[1]) {
+    // QS Ranking filter - be more inclusive for high rankings
+    if (university.qsRanking > 0 && university.qsRanking < filters.qsRankingRange[0]) {
+      return false;
+    }
+    
+    // Only apply upper limit if it's not the maximum (2000)
+    if (filters.qsRankingRange[1] < 2000 && university.qsRanking > filters.qsRankingRange[1]) {
       return false;
     }
 
@@ -1040,6 +1165,10 @@ const Database: React.FC = () => {
     
     return true;
   });
+
+  console.log('Universities from API:', universities.length);
+  console.log('Filtered universities:', filteredUniversities.length);
+  console.log('Current filters:', filters);
 
   // Sort universities
   const sortedUniversities = [...filteredUniversities].sort((a, b) => {
@@ -1096,7 +1225,7 @@ const Database: React.FC = () => {
     setFilters({
       search: '',
       country: '',
-      qsRanking: [1, 500],
+      qsRanking: [1, 2000],
       tuitionFees: [0, 100000],
       minGPA: [0, 4],
       rankingType: '',
@@ -1107,7 +1236,7 @@ const Database: React.FC = () => {
       campusType: '',
       employmentRate: '',
       major: '',
-      qsRankingRange: [1, 500],
+      qsRankingRange: [1, 2000],
       researchOutput: '',
       showOnlyOpenApplications: false,
       admissionDifficulty: '',
@@ -1693,25 +1822,45 @@ Consider factors like academic fit, budget compatibility, location preferences, 
     if (!user) return;
     
     try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('profile_completion_percentage, full_name, current_education_level, current_institution, current_gpa, graduation_year, field_of_study, preferred_field, preferred_degree_level, budget_range, preferred_study_location')
-        .eq('user_id', user.id)
-        .single();
-
-      if (error && error.code === 'PGRST116') {
-        // Profile doesn't exist
-        setUserProfileCompletion(0);
-        return;
-      } else if (error) {
-        console.error('Error fetching profile:', error);
-        return;
+      const result = await userProfileAPI.getProfileCompletion(session);
+      
+      if (result.success && result.completion_percentage !== undefined) {
+        setUserProfileCompletion(result.completion_percentage);
+      } else {
+        // Fallback: try to get profile and calculate completion
+        const profileResult = await userProfileAPI.getUserProfile(session);
+        
+        if (profileResult.success && profileResult.profile) {
+          // Calculate completion based on required fields
+          const requiredFields = [
+            'full_name',
+            'current_education_level', 
+            'current_institution',
+            'current_gpa',
+            'graduation_year',
+            'field_of_study',
+            'preferred_field',
+            'preferred_degree_level',
+            'budget_range',
+            'preferred_study_location'
+          ];
+          
+          const totalFields = requiredFields.length;
+          const completedFields = requiredFields.filter(field => {
+            const value = profileResult.profile![field as keyof UserProfile];
+            return value !== null && value !== undefined && value !== '' && value !== '0';
+          }).length;
+          
+          const completion = Math.round((completedFields / totalFields) * 100);
+          setUserProfileCompletion(completion);
+        } else {
+          // Profile doesn't exist
+          setUserProfileCompletion(0);
+        }
       }
-
-      const completion = profile?.profile_completion_percentage || 0;
-      setUserProfileCompletion(completion);
     } catch (error) {
       console.error('Error checking profile completion:', error);
+      setUserProfileCompletion(0);
     }
   };
 
@@ -1796,14 +1945,10 @@ Consider factors like academic fit, budget compatibility, location preferences, 
 
     setIsAutoGeneratingRecommendation(true);
     try {
-      // Fetch user profile data from Supabase
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+      // Fetch user profile data using the new API
+      const profileResult = await userProfileAPI.getUserProfile(session);
 
-      if (error || !profile) {
+      if (!profileResult.success || !profileResult.profile) {
         // Use algorithmic fallback if profile fetch fails
         const fallbackRecommendations = generateUniversityRecommendations({}, universities);
         if (fallbackRecommendations.length > 0) {
@@ -1820,6 +1965,8 @@ Consider factors like academic fit, budget compatibility, location preferences, 
         setIsAutoGeneratingRecommendation(false);
         return;
       }
+
+      const profile = profileResult.profile;
 
       // Quick AI recommendation for just the top university
       const userData = {
@@ -2052,11 +2199,11 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                         className="w-full p-2 border-0 rounded-lg bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-secondary"
                       >
                         <option value="">{t('database.allCountries')}</option>
-                        <option value="USA">USA</option>
-                        <option value="UK">UK</option>
-                        <option value="Canada">Canada</option>
-                        <option value="Australia">Australia</option>
-                        <option value="Germany">Germany</option>
+                        {availableCountries.map((country) => (
+                          <option key={country} value={country}>
+                            {country}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     <div>
@@ -2067,12 +2214,11 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                         className="w-full p-2 border-0 rounded-lg bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-secondary"
                       >
                         <option value="">{t('database.allMajors')}</option>
-                        <option value="Computer Science">Computer Science</option>
-                        <option value="Engineering">Engineering</option>
-                        <option value="Business">Business</option>
-                        <option value="Medicine">Medicine</option>
-                        <option value="Law">Law</option>
-                        <option value="AI">AI & Machine Learning</option>
+                        {availableMajors.slice(0, 10).map((major) => (
+                          <option key={major} value={major}>
+                            {major}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>
@@ -2118,29 +2264,39 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                   <div className="flex items-center gap-3">
                    
                     
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
-                      className="p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary text-sm"
+                 
+                    
+                    <motion.button
+                      onClick={resetFilters}
+                      className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm flex items-center"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                     >
-                      <option value="qsRanking">{t('database.sortQSLowHigh')}</option>
-                      <option value="qsRankingDesc">{t('database.sortQSHighLow')}</option>
-                      <option value="name">{t('database.sortNameAZ')}</option>
-                      <option value="nameDesc">{t('database.sortNameZA')}</option>
-                      <option value="country">{t('database.sortCountryAZ')}</option>
-                    </select>
+                      {t('database.resetFilters')}
+                    </motion.button>
                     
                     {/* AI Analysis Button */}
                     <motion.button
                       onClick={handleAIAnalysis}
                       disabled={isLoadingAI}
-                      className="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-3 py-2 rounded flex items-center text-sm disabled:opacity-50"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                      className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-4 py-2 rounded text-sm flex items-center disabled:opacity-50"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                     >
-                      <IconComponent icon={FaRobot} className="mr-1" /> 
-                      {isLoadingAI ? t('database.analyzing') : t('database.aiAnalysis')}
+                      <IconComponent icon={FaRobot} className="mr-2" />
+                      {isLoadingAI ? t('common.loading') : t('database.aiAnalysis')}
                     </motion.button>
+                    
+                    {compareList.length > 0 && (
+                      <motion.button
+                        onClick={handleOpenCompare}
+                        className="bg-secondary hover:bg-secondary-light text-white px-4 py-2 rounded text-sm flex items-center"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        {t('database.compareUniversities')} ({compareList.length})
+                      </motion.button>
+                    )}
                     
                     {/* Get Recommendations Button */}
                     <motion.button
@@ -2173,17 +2329,11 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                         className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary mb-3"
                       >
                         <option value="">All Countries</option>
-                        <option value="USA">United States</option>
-                        <option value="UK">United Kingdom</option>
-                        <option value="Canada">Canada</option>
-                        <option value="Australia">Australia</option>
-                        <option value="Germany">Germany</option>
-                        <option value="France">France</option>
-                        <option value="Japan">Japan</option>
-                        <option value="Singapore">Singapore</option>
-                        <option value="Switzerland">Switzerland</option>
-                        <option value="China">China</option>
-                        <option value="Hong Kong">Hong Kong</option>
+                        {availableCountries.map((country) => (
+                          <option key={country} value={country}>
+                            {country}
+                          </option>
+                        ))}
                       </select>
                       
                       <select
@@ -2193,12 +2343,11 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                         className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary"
                       >
                         <option value="">All Regions</option>
-                        <option value="United States">United States</option>
-                        <option value="United Kingdom">United Kingdom</option>
-                        <option value="Canada">Canada</option>
-                        <option value="Australia">Australia</option>
-                        <option value="Europe">Europe</option>
-                        <option value="Asia">Asia</option>
+                        {availableRegions.map((region) => (
+                          <option key={region} value={region}>
+                            {region}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     
@@ -2213,16 +2362,11 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                         className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary"
                       >
                         <option value="">All Fields</option>
-                        <option value="Computer Science">Computer Science</option>
-                        <option value="Engineering">Engineering</option>
-                        <option value="Business">Business & Management</option>
-                        <option value="Medicine">Medicine & Health</option>
-                        <option value="Law">Law</option>
-                        <option value="AI">AI & Machine Learning</option>
-                        <option value="Physics">Physics</option>
-                        <option value="Economics">Economics</option>
-                        <option value="Mathematics">Mathematics</option>
-                        <option value="Psychology">Psychology</option>
+                        {availableMajors.map((major) => (
+                          <option key={major} value={major}>
+                            {major}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     
@@ -2237,23 +2381,24 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                         className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary mb-3"
                       >
                         <option value="">All Rankings</option>
-                        <option value="QS World University Rankings">QS World University Rankings</option>
-                        <option value="TIMES World University Rankings">TIMES World University Rankings</option>
-                        <option value="ARWU World University Rankings">ARWU World University Rankings</option>
-                        <option value="US News World University Rankings">US News World University Rankings</option>
+                        {availableRankingTypes.map((rankingType) => (
+                          <option key={rankingType} value={rankingType}>
+                            {rankingType}
+                          </option>
+                        ))}
                       </select>
                       
                       <div className="px-2">
                         <div className="flex justify-between text-xs text-gray-600 mb-1">
-                          <span>Top 1</span>
-                          <span>Top 1000</span>
+                          <span>Top {qsRankingRange[0]}</span>
+                          <span>Top {qsRankingRange[1]}</span>
                         </div>
                         <input 
                           type="range"
-                          min="1"
-                          max="1000"
+                          min={qsRankingRange[0]}
+                          max={qsRankingRange[1]}
                           value={filters.qsRankingRange[1]}
-                          onChange={(e) => handleRangeChange('qsRankingRange', [1, parseInt(e.target.value)])}
+                          onChange={(e) => handleRangeChange('qsRankingRange', [qsRankingRange[0], parseInt(e.target.value)])}
                           className="w-full accent-secondary"
                         />
                         <div className="text-center mt-1 text-sm font-medium text-primary">
@@ -2287,11 +2432,11 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                         className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary"
                       >
                         <option value="">All Years</option>
-                        <option value="2024">2024</option>
-                        <option value="2023">2023</option>
-                        <option value="2022">2022</option>
-                        <option value="2021">2021</option>
-                        <option value="2020">2020</option>
+                        {availableRankingYears.map((year) => (
+                          <option key={year} value={year.toString()}>
+                            {year}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     
@@ -2318,9 +2463,11 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                         className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary mb-3"
                       >
                         <option value="">All Campus Types</option>
-                        <option value="Urban">Urban</option>
-                        <option value="Suburban">Suburban</option>
-                        <option value="Rural">Rural</option>
+                        {availableCampusTypes.map((campusType) => (
+                          <option key={campusType} value={campusType}>
+                            {campusType}
+                          </option>
+                        ))}
                       </select>
                       
                       <select
@@ -2408,16 +2555,28 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                       <div className="text-gray-400 text-5xl mb-4">
                         <IconComponent icon={FaUniversity} className="mx-auto" />
                       </div>
-                      <h3 className="text-xl font-bold text-gray-700 mb-2">No Universities Found</h3>
+                      <h3 className="text-xl font-bold text-gray-700 mb-2">
+                        {isLoading ? 'Loading Universities...' : 'No Universities Found'}
+                      </h3>
                       <p className="text-gray-600 mb-4">
-                        Try adjusting your filters or search criteria to see more results.
+                        {isLoading 
+                          ? 'Please wait while we fetch university data...' 
+                          : 'Try adjusting your filters or search criteria to see more results.'
+                        }
                       </p>
-                      <button 
-                        onClick={resetFilters}
-                        className="bg-primary hover:bg-primary-dark text-white font-medium py-2 px-4 rounded"
-                      >
-                        Reset Filters
-                      </button>
+                      {!isLoading && (
+                        <button 
+                          onClick={resetFilters}
+                          className="bg-primary hover:bg-primary-dark text-white font-medium py-2 px-4 rounded"
+                        >
+                          Reset Filters
+                        </button>
+                      )}
+                      {isLoading && (
+                        <div className="flex justify-center">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <motion.div

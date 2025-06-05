@@ -7,71 +7,10 @@ import Footer from '../components/layout/Footer';
 import IconComponent from '../components/ui/IconComponent';
 import { fadeIn, staggerContainer } from '../utils/animations';
 import { useAuth } from '../utils/AuthContext';
-import { supabase } from '../utils/supabase';
-
-interface UserProfile {
-  id?: string;
-  user_id: string;
-  
-  // Basic Information
-  full_name: string;
-  email: string;
-  phone: string;
-  
-  // Personal Information
-  date_of_birth: string;
-  nationality: string;
-  current_location: string;
-  preferred_study_location: string;
-  
-  // Academic Information
-  current_education_level: string;
-  current_institution: string;
-  current_gpa: number;
-  gpa_scale: string;
-  graduation_year: string;
-  field_of_study: string;
-  preferred_field: string;
-  
-  // Test Scores
-  sat_score: number;
-  act_score: number;
-  gre_score: number;
-  gmat_score: number;
-  toefl_score: number;
-  ielts_score: number;
-  duolingo_score: number;
-  
-  // Preferences
-  preferred_degree_level: string;
-  budget_range: string;
-  preferred_university_size: string;
-  preferred_campus_type: string;
-  preferred_program_type: string;
-  
-  // Experience and Activities
-  extracurricular_activities: string[];
-  career_goals: string;
-  work_experience: string;
-  research_experience: string;
-  publications: string;
-  awards: string;
-  languages: string[];
-  
-  // Additional Information
-  financial_aid_needed: boolean;
-  scholarship_interests: string;
-  
-  // Profile Management
-  profile_completion_percentage: number;
-  
-  // Timestamps
-  created_at?: string;
-  updated_at?: string;
-}
+import { userProfileAPI, UserProfile } from '../utils/userProfileAPI';
 
 const Profile: React.FC = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -86,32 +25,20 @@ const Profile: React.FC = () => {
     preferred_study_location: '',
     current_education_level: '',
     current_institution: '',
-    current_gpa: 0,
+    current_gpa: '0',
     gpa_scale: '4.0',
     graduation_year: '',
     field_of_study: '',
     preferred_field: '',
-    sat_score: 0,
-    act_score: 0,
-    gre_score: 0,
-    gmat_score: 0,
-    toefl_score: 0,
-    ielts_score: 0,
-    duolingo_score: 0,
     preferred_degree_level: '',
     budget_range: '',
     preferred_university_size: '',
     preferred_campus_type: '',
     preferred_program_type: '',
-    extracurricular_activities: [],
     career_goals: '',
     work_experience: '',
-    research_experience: '',
-    publications: '',
-    awards: '',
+    extracurricular_activities: [],
     languages: [],
-    financial_aid_needed: false,
-    scholarship_interests: '',
     profile_completion_percentage: 5,
   });
 
@@ -134,7 +61,7 @@ const Profile: React.FC = () => {
     const totalFields = requiredFields.length;
     const completedFields = requiredFields.filter(field => {
       const value = profileData[field as keyof UserProfile];
-      return value !== null && value !== undefined && value !== '' && value !== 0;
+      return value !== null && value !== undefined && value !== '' && value !== '0';
     }).length;
     
     return Math.round((completedFields / totalFields) * 100);
@@ -170,69 +97,67 @@ const Profile: React.FC = () => {
     
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (error && error.code === 'PGRST116') {
-        // Profile doesn't exist, create a new one
+      const result = await userProfileAPI.getUserProfile(session);
+      
+      if (result.success && result.profile) {
+        // Ensure all required fields exist with default values
+        const processedProfile = {
+          ...profile,
+          ...result.profile,
+          user_id: user.id,
+          email: user.email || result.profile.email || '',
+          extracurricular_activities: result.profile.extracurricular_activities || [],
+          languages: result.profile.languages || [],
+        };
+        
+        setProfile(processedProfile);
+      } else if (result.error && result.error.includes('Profile not found')) {
+        // Profile doesn't exist, create a new one with basic info
         const newProfile = {
+          ...profile,
           user_id: user.id,
           full_name: user.user_metadata?.name || '',
           email: user.email || '',
+          extracurricular_activities: [],
+          languages: [],
           profile_completion_percentage: 5,
         };
-
-        const { data: createdProfile, error: createError } = await supabase
-          .from('profiles')
-          .insert([newProfile])
-          .select()
-          .single();
-
-        if (createError) {
-          console.error('Error creating profile:', createError);
-        } else if (createdProfile) {
-          // Ensure array fields are properly initialized
-          const processedProfile = {
-            ...profile,
-            ...createdProfile,
-            extracurricular_activities: createdProfile.extracurricular_activities 
-              ? (typeof createdProfile.extracurricular_activities === 'string' 
-                  ? createdProfile.extracurricular_activities.split(',').map((item: string) => item.trim()).filter((item: string) => item)
-                  : createdProfile.extracurricular_activities)
-              : [],
-            languages: createdProfile.languages 
-              ? (typeof createdProfile.languages === 'string' 
-                  ? createdProfile.languages.split(',').map((item: string) => item.trim()).filter((item: string) => item)
-                  : createdProfile.languages)
-              : []
+        
+        setProfile(newProfile);
+        
+        // Optionally create the profile on the server
+        const createResult = await userProfileAPI.createOrUpdateProfile(newProfile, session);
+        if (createResult.success && createResult.profile) {
+          const processedCreatedProfile = {
+            ...createResult.profile,
+            extracurricular_activities: createResult.profile.extracurricular_activities || [],
+            languages: createResult.profile.languages || [],
           };
-          setProfile(processedProfile);
+          setProfile(prev => ({ ...prev, ...processedCreatedProfile }));
         }
-      } else if (error) {
-        console.error('Error fetching profile:', error);
-      } else if (data) {
-        // Process the data to ensure array fields are properly handled
-        const processedProfile = {
-          ...profile,
-          ...data,
-          extracurricular_activities: data.extracurricular_activities 
-            ? (typeof data.extracurricular_activities === 'string' 
-                ? data.extracurricular_activities.split(',').map((item: string) => item.trim()).filter((item: string) => item)
-                : data.extracurricular_activities)
-            : [],
-          languages: data.languages 
-            ? (typeof data.languages === 'string' 
-                ? data.languages.split(',').map((item: string) => item.trim()).filter((item: string) => item)
-                : data.languages)
-            : []
-        };
-        setProfile(processedProfile);
+      } else {
+        console.error('Error fetching profile:', result.error);
+        // Set default profile with user info
+        setProfile(prev => ({
+          ...prev,
+          user_id: user.id,
+          full_name: user.user_metadata?.name || '',
+          email: user.email || '',
+          extracurricular_activities: [],
+          languages: [],
+        }));
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error fetching profile:', error);
+      // Set default profile with user info
+      setProfile(prev => ({
+        ...prev,
+        user_id: user.id,
+        full_name: user.user_metadata?.name || '',
+        email: user.email || '',
+        extracurricular_activities: [],
+        languages: [],
+      }));
     } finally {
       setLoading(false);
     }
@@ -240,52 +165,35 @@ const Profile: React.FC = () => {
 
   const saveProfile = async () => {
     if (!user) return;
-
+    
     setSaving(true);
     try {
-      const profileData = {
+      // Calculate completion percentage before saving
+      const completionPercentage = calculateCompletionPercentage(profile);
+      const profileToSave = {
         ...profile,
-        user_id: user.id,
-        updated_at: new Date().toISOString(),
-        // Convert arrays to comma-separated strings for database storage
-        extracurricular_activities: Array.isArray(profile.extracurricular_activities) 
-          ? profile.extracurricular_activities.join(', ') 
-          : profile.extracurricular_activities,
-        languages: Array.isArray(profile.languages) 
-          ? profile.languages.join(', ') 
-          : profile.languages
+        extracurricular_activities: profile.extracurricular_activities || [],
+        languages: profile.languages || [],
+        profile_completion_percentage: completionPercentage,
       };
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .upsert(profileData)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error saving profile:', error);
-        alert('Error saving profile. Please try again.');
-      } else {
-        // Process the returned data to ensure array fields are properly handled
-        const processedData = {
-          ...data,
-          extracurricular_activities: data.extracurricular_activities 
-            ? (typeof data.extracurricular_activities === 'string' 
-                ? data.extracurricular_activities.split(',').map((item: string) => item.trim()).filter((item: string) => item)
-                : data.extracurricular_activities)
-            : [],
-          languages: data.languages 
-            ? (typeof data.languages === 'string' 
-                ? data.languages.split(',').map((item: string) => item.trim()).filter((item: string) => item)
-                : data.languages)
-            : []
+      
+      const result = await userProfileAPI.updateProfile(profileToSave, session);
+      
+      if (result.success && result.profile) {
+        const processedProfile = {
+          ...result.profile,
+          extracurricular_activities: result.profile.extracurricular_activities || [],
+          languages: result.profile.languages || [],
         };
-        setProfile(processedData);
+        setProfile(processedProfile);
         setIsEditing(false);
-        alert('Profile saved successfully!');
+        alert('Profile updated successfully!');
+      } else {
+        console.error('Error saving profile:', result.error);
+        alert('Error saving profile: ' + (result.error || 'Unknown error'));
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error saving profile:', error);
       alert('Error saving profile. Please try again.');
     } finally {
       setSaving(false);
@@ -293,10 +201,7 @@ const Profile: React.FC = () => {
   };
 
   const handleInputChange = (field: string, value: any) => {
-    setProfile(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setProfile(prev => ({ ...prev, [field]: value }));
   };
 
   const handleArrayChange = (field: string, value: string) => {
@@ -807,7 +712,7 @@ const Profile: React.FC = () => {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Extracurricular Activities</label>
                         <textarea
-                          value={profile.extracurricular_activities.join(', ')}
+                          value={(profile.extracurricular_activities || []).join(', ')}
                           onChange={(e) => handleArrayChange('extracurricular_activities', e.target.value)}
                           disabled={!isEditing}
                           rows={3}
@@ -818,7 +723,7 @@ const Profile: React.FC = () => {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Languages</label>
                         <textarea
-                          value={profile.languages.join(', ')}
+                          value={(profile.languages || []).join(', ')}
                           onChange={(e) => handleArrayChange('languages', e.target.value)}
                           disabled={!isEditing}
                           rows={3}

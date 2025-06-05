@@ -161,12 +161,28 @@ const Footer: React.FC = () => {
           {/* Contact */}
           <motion.div variants={itemVariants}>
             <h3 className="text-xl font-bold mb-4">{t('footer.support.contactUs')}</h3>
-            <ul className="space-y-2 text-gray-300">
-              <li>123 Education Street</li>
-              <li>Hong Kong, NY 10001</li>
-              <li>Phone: (123) 456-7890</li>
-              <li>Email: info@edusmart.com</li>
-            </ul>
+            <div className="space-y-4 text-gray-300">
+              {/* Hong Kong Office */}
+              <div>
+                <p className="font-semibold text-white mb-1">Hong Kong Office:</p>
+                <p className="text-sm">Unit G1, 35/F, Legend Tower</p>
+                <p className="text-sm">7 Shing Yip Street, Kwun Tong, KLN</p>
+                <p className="text-sm">Phone: +852 66359879</p>
+              </div>
+              
+              {/* Shenzhen Office */}
+              <div>
+                <p className="font-semibold text-white mb-1">深圳办公室:</p>
+                <p className="text-sm">前海桂湾三路深港青年夢工場</p>
+                <p className="text-sm">香港大學青年科創學院4樓</p>
+                <p className="text-sm">Phone: +86 13266989879</p>
+              </div>
+              
+              {/* Email */}
+              <div>
+                <p className="text-sm">Email: info@edusmart.com</p>
+              </div>
+            </div>
           </motion.div>
         </motion.div>
         

@@ -9,13 +9,12 @@ interface LanguageOption {
   code: Language;
   name: string;
   nativeName: string;
-  flag: string;
 }
 
 const languageOptions: LanguageOption[] = [
-  { code: 'en', name: 'English', nativeName: 'English', flag: '🇺🇸' },
-  { code: 'zh-CN', name: 'Simplified Chinese', nativeName: '简体中文', flag: '🇨🇳' },
-  { code: 'zh-TW', name: 'Traditional Chinese', nativeName: '繁體中文', flag: '🇹🇼' },
+  { code: 'en', name: 'English', nativeName: 'English' },
+  { code: 'zh-CN', name: 'Simplified Chinese', nativeName: '简体中文' },
+  { code: 'zh-TW', name: 'Traditional Chinese', nativeName: '繁體中文' },
 ];
 
 const LanguageSelector: React.FC = () => {
@@ -84,7 +83,6 @@ const LanguageSelector: React.FC = () => {
         aria-label={t('languageSelector.title')}
       >
         <IconComponent icon={AiOutlineGlobal} className="h-5 w-5" />
-        <span className="hidden md:inline">{currentLanguage.flag}</span>
         <span className="hidden lg:inline">{currentLanguage.nativeName}</span>
         <motion.div
           animate={{ rotate: isOpen ? 180 : 0 }}
@@ -120,8 +118,8 @@ const LanguageSelector: React.FC = () => {
                 animate="visible"
                 transition={{ delay: index * 0.05 }}
                 whileHover={{ x: 4 }}
-              >
-                <span className="text-lg">{option.flag}</span>
+                >
+      
                 <div className="flex flex-col items-start">
                   <span className="font-medium">{option.nativeName}</span>
                   <span className="text-xs text-gray-500">{option.name}</span>

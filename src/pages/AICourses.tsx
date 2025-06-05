@@ -1,526 +1,576 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaGraduationCap, FaStar, FaUniversity, FaCertificate, FaRobot, FaLaptopCode, FaSearch, FaTag, FaChalkboardTeacher, FaBookmark, FaRegBookmark, FaChevronRight, FaTimes, FaUserTie, FaFilter } from 'react-icons/fa';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import IconComponent from '../components/ui/IconComponent';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../utils/LanguageContext';
+import { courseAPI } from '../utils/apiService';
 
 interface Course {
-  id: number;
+  id: string;
   title: string;
-  provider: string;
-  type: 'university' | 'certification' | 'tutorial';
-  category: string[];
   description: string;
+  category: string;
+  level: string;
   duration: string;
-  level: 'Beginner' | 'Intermediate' | 'Advanced';
-  rating: number;
-  ratingCount: number;
-  instructors?: string[];
-  prerequisites?: string[];
-  skills: string[];
-  price?: string;
-  link: string;
-  image: string;
-  featured?: boolean;
-  teacherId?: number; // Reference to teacher
+  price: number;
+  original_price?: number | null;
+  image?: string | null;
+  instructor_name: string;
+  instructor_bio?: string | null;
+  instructor_image?: string | null;
+  syllabus?: any | null;
+  prerequisites?: string[] | null;
+  learning_outcomes?: string[] | null;
+  skills_gained?: string[] | null;
+  language?: string | null;
+  certificate?: boolean | null;
+  rating?: number | null;
+  total_reviews?: number | null;
+  total_students?: number | null;
+  featured?: boolean | null;
+  status?: string | null;
+  video_preview_url?: string | null;
+  course_materials?: any | null;
+  tags?: string[] | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface Teacher {
   id: number;
   name: string;
-  avatar: string;
+  title: string;
   subjects: string[];
+  levels: string[];
   rating: number;
-  ratingCount: number;
-  university: string;
-  position: string;
-  shortBio: string;
-  longBio: string;
+  students: number;
   experience: string;
-  achievements: string[];
-  contactEmail?: string;
-  socialLinks?: {
-    linkedin?: string;
-    twitter?: string;
-    website?: string;
-  };
-  courseCount: number;
+  image: string;
+  bio: string;
+  courses: number;
   featured?: boolean;
 }
 
 const AICourses: React.FC = () => {
   const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState('all');
-  const [activeLevel, setActiveLevel] = useState('all');
-  const [activeType, setActiveType] = useState('all');
-  const [activeSubject, setActiveSubject] = useState('all');
-  const [showMode, setShowMode] = useState<'courses' | 'teachers'>('courses');
-  const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
-  const [showTeacherModal, setShowTeacherModal] = useState(false);
-  const [favoriteTeachers, setFavoriteTeachers] = useState<number[]>([]);
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [selectedSubject, setSelectedSubject] = useState('');
+  const [selectedLevel, setSelectedLevel] = useState('');
+  const [selectedType, setSelectedType] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   
+  // API state management - Initialize courses as empty array to prevent filter error
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [levels, setLevels] = useState<string[]>([]);
+  const [favoriteTeachers, setFavoriteTeachers] = useState<number[]>([]);
+
   // Sample teachers data
   const teachers: Teacher[] = [
     {
       id: 1,
-      name: "Dr. Andrew Ng",
-      avatar: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=300&q=80",
-      subjects: ["Machine Learning", "Deep Learning", "AI"],
+      name: "Dr. Sarah Chen",
+      title: "AI Research Scientist",
+      subjects: ["Machine Learning", "Deep Learning", "Computer Vision"],
+      levels: ["Beginner", "Intermediate", "Advanced"],
       rating: 4.9,
-      ratingCount: 24500,
-      university: "Stanford University",
-      position: "Professor of Computer Science",
-      shortBio: "Leading AI researcher and educator, co-founder of Coursera",
-      longBio: "Dr. Andrew Ng is a globally recognized leader in AI. He founded and led the Google Brain team, served as Chief Scientist at Baidu, and co-founded Coursera. His research focuses on machine learning and deep learning. Dr. Ng is dedicated to providing educational resources that help people around the world master AI skills.",
-      experience: "20+ years in AI research and education",
-      achievements: [
-        "Co-founder of Coursera",
-        "Former Chief Scientist at Baidu",
-        "Founded Google Brain",
-        "Published 100+ research papers in leading journals"
-      ],
-      contactEmail: "andrew.ng@example.edu",
-      socialLinks: {
-        linkedin: "https://linkedin.com/in/andrewng",
-        twitter: "https://twitter.com/andrewng",
-        website: "https://www.andrewng.org"
-      },
-      courseCount: 5,
+      students: 15420,
+      experience: "8 years",
+      image: "/api/placeholder/150/150",
+      bio: "Leading expert in computer vision and neural networks with publications in top-tier conferences.",
+      courses: 12,
       featured: true
     },
     {
       id: 2,
-      name: "Dr. Fei-Fei Li",
-      avatar: "https://images.unsplash.com/photo-1580894732444-8ecded7900cd?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=300&q=80",
-      subjects: ["Computer Vision", "AI Ethics", "Machine Learning"],
+      name: "Prof. Michael Rodriguez",
+      title: "Data Science Professor",
+      subjects: ["Data Science", "Statistics", "Python Programming"],
+      levels: ["Beginner", "Intermediate"],
       rating: 4.8,
-      ratingCount: 18700,
-      university: "Stanford University",
-      position: "Co-Director, Stanford Institute for Human-Centered AI",
-      shortBio: "Pioneer in computer vision and AI education",
-      longBio: "Dr. Fei-Fei Li is a Professor in the Computer Science Department at Stanford University and Co-Director of Stanford's Human-Centered AI Institute. Her research expertise includes computer vision, machine learning, and cognitive neuroscience. She served as the Chief Scientist of AI/ML at Google Cloud and is an advocate for diversity in technology.",
-      experience: "15+ years in computer vision research",
-      achievements: [
-        "Created ImageNet",
-        "Former VP & Chief Scientist of AI at Google Cloud",
-        "Co-founded AI4ALL, a nonprofit promoting diversity in AI",
-        "Named one of the most influential people in AI"
-      ],
-      contactEmail: "feifeili@example.edu",
-      socialLinks: {
-        linkedin: "https://linkedin.com/in/feifeili",
-        twitter: "https://twitter.com/drfeifei"
-      },
-      courseCount: 3,
+      students: 12350,
+      experience: "12 years",
+      image: "/api/placeholder/150/150",
+      bio: "Professor of Data Science with extensive industry experience in Fortune 500 companies.",
+      courses: 8,
       featured: true
     },
     {
       id: 3,
-      name: "Dr. Sebastian Thrun",
-      avatar: "https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=300&q=80",
-      subjects: ["Robotics", "Self-Driving Cars", "AI"],
+      name: "Dr. Emily Watson",
+      title: "NLP Specialist",
+      subjects: ["Natural Language Processing", "Linguistics", "Text Analytics"],
+      levels: ["Intermediate", "Advanced"],
       rating: 4.7,
-      ratingCount: 15600,
-      university: "Stanford University",
-      position: "Adjunct Professor",
-      shortBio: "Pioneer in self-driving cars and founder of Udacity",
-      longBio: "Sebastian Thrun is a scientist, educator, inventor, and entrepreneur. He is CEO of Kitty Hawk Corporation, chairman and co-founder of Udacity, and an Adjunct Professor at Stanford University. His research focuses on robotics, AI, and education. He led the development of Google's self-driving car and Google X.",
-      experience: "25+ years in robotics and AI",
-      achievements: [
-        "Founded Udacity",
-        "Led Google's self-driving car project",
-        "Developed Stanley, the winning vehicle in the DARPA Grand Challenge",
-        "Recipient of the Smithsonian American Ingenuity Award"
-      ],
-      contactEmail: "sebastian@example.edu",
-      socialLinks: {
-        linkedin: "https://linkedin.com/in/sebastianthrun",
-        twitter: "https://twitter.com/sebastianthrun"
-      },
-      courseCount: 4
-    },
-    {
-      id: 4,
-      name: "Dr. Christopher Manning",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=300&q=80",
-      subjects: ["Natural Language Processing", "Deep Learning", "Linguistics"],
-      rating: 4.9,
-      ratingCount: 14200,
-      university: "Stanford University",
-      position: "Professor of Computer Science and Linguistics",
-      shortBio: "Leading researcher in NLP and computational linguistics",
-      longBio: "Christopher Manning is a Professor of Computer Science and Linguistics at Stanford University. His research focuses on natural language processing, computational linguistics, and deep learning approaches to language understanding. He is known for developing core NLP tools that are widely used in industry and academia.",
-      experience: "20+ years in NLP research and education",
-      achievements: [
-        "Director of the Stanford Artificial Intelligence Laboratory",
-        "Co-authored leading textbooks on NLP and information retrieval",
-        "Developed the Stanford CoreNLP software",
-        "Fellow of the Association for Computational Linguistics"
-      ],
-      contactEmail: "manning@example.edu",
-      socialLinks: {
-        linkedin: "https://linkedin.com/in/christophermanning"
-      },
-      courseCount: 2
-    },
-    {
-      id: 5,
-      name: "Dr. Emma Johnson",
-      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=300&q=80",
-      subjects: ["Mathematics", "Data Science", "Statistics"],
-      rating: 4.7,
-      ratingCount: 9800,
-      university: "MIT",
-      position: "Associate Professor of Mathematics",
-      shortBio: "Expert in statistical modeling and data science applications",
-      longBio: "Dr. Emma Johnson specializes in applying advanced statistical methods to solve real-world problems. Her research bridges pure mathematics with practical applications in data science, making complex concepts accessible to students from diverse backgrounds. She leads MIT's initiative to integrate data science across all academic disciplines.",
-      experience: "12+ years teaching advanced mathematics",
-      achievements: [
-        "President's Award for Excellence in Teaching",
-        "Author of 'Statistics for Modern Data Science'",
-        "Led development of MIT's cross-disciplinary data curriculum",
-        "Consultant for major tech companies on statistical modeling"
-      ],
-      contactEmail: "emmaj@example.edu",
-      socialLinks: {
-        linkedin: "https://linkedin.com/in/emmajohnson",
-        website: "https://www.emmajohnson-math.edu"
-      },
-      courseCount: 6
-    },
-    {
-      id: 6,
-      name: "Dr. Michael Chen",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=300&q=80",
-      subjects: ["Physics", "Quantum Computing", "Computational Physics"],
-      rating: 4.8,
-      ratingCount: 8750,
-      university: "California Institute of Technology",
-      position: "Professor of Theoretical Physics",
-      shortBio: "Bridging quantum physics with computational methods",
-      longBio: "Dr. Michael Chen's work focuses on the intersection of quantum mechanics and computational methods. He has made significant contributions to the field of quantum computing algorithms and simulation of quantum systems. His teaching methodology combines theoretical rigor with practical computational skills, preparing students for the future of physics research.",
-      experience: "18+ years researching quantum computing applications",
-      achievements: [
-        "National Science Foundation Career Award",
-        "Published groundbreaking work on quantum error correction",
-        "Developer of widely-used quantum simulation software",
-        "Advisor to multiple quantum computing startups"
-      ],
-      contactEmail: "mchen@example.edu",
-      socialLinks: {
-        linkedin: "https://linkedin.com/in/michaelchen",
-        twitter: "https://twitter.com/dr_mchen"
-      },
-      courseCount: 3
-    },
-    {
-      id: 7,
-      name: "Dr. Sarah Williams",
-      avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=300&q=80",
-      subjects: ["English Literature", "Creative Writing", "Critical Theory"],
-      rating: 4.9,
-      ratingCount: 12300,
-      university: "Oxford University",
-      position: "Professor of Contemporary Literature",
-      shortBio: "Award-winning author and literature professor",
-      longBio: "Dr. Sarah Williams is a renowned literary scholar and author whose research focuses on contemporary fiction and poetry. Her interdisciplinary approach connects literature with societal issues, digital humanities, and creative practice. Her courses are known for fostering critical thinking and creative expression in equal measure.",
-      experience: "15+ years in literary scholarship and creative writing",
-      achievements: [
-        "Pulitzer Prize finalist for 'The Echoing Spaces'",
-        "Oxford Excellence in Teaching Award recipient",
-        "Editor of the Oxford Literary Review",
-        "Developed pioneering digital humanities curriculum"
-      ],
-      contactEmail: "swilliams@example.edu",
-      socialLinks: {
-        twitter: "https://twitter.com/sarahwilliamslit",
-        website: "https://www.sarahwilliams-literature.com"
-      },
-      courseCount: 4,
-      featured: true
-    }
-  ];
-  
-  // Sample courses data
-  const courses: Course[] = [
-    {
-      id: 1,
-      title: 'Master of Science in Artificial Intelligence',
-      provider: 'Stanford University',
-      type: 'university',
-      category: ['Machine Learning', 'Deep Learning', 'NLP', 'Computer Vision'],
-      description: "Stanford's MS in AI program prepares students for leadership roles in AI research and development. The curriculum covers foundational AI concepts, advanced machine learning techniques, and specialized areas like NLP and computer vision.",
-      duration: '2 years',
-      level: 'Advanced',
-      rating: 4.9,
-      ratingCount: 245,
-      instructors: ['Dr. Andrew Ng', 'Dr. Fei-Fei Li', 'Dr. Christopher Manning'],
-      prerequisites: ['Computer Science background', 'Programming experience', 'Linear algebra and calculus'],
-      skills: ['Deep Learning', 'Neural Networks', 'Natural Language Processing', 'Computer Vision', 'Reinforcement Learning'],
-      price: '$60,000/year',
-      link: 'https://ai.stanford.edu/',
-      image: 'https://images.unsplash.com/photo-1562774053-701939374585?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80',
-      featured: true,
-      teacherId: 1
-    },
-    {
-      id: 2,
-      title: 'Deep Learning Specialization',
-      provider: 'Coursera (by DeepLearning.AI)',
-      type: 'certification',
-      category: ['Deep Learning', 'Neural Networks', 'Computer Vision', 'NLP'],
-      description: 'Learn the foundations of Deep Learning, understand how to build neural networks, and lead successful machine learning projects. The specialization covers CNN, RNN, LSTM, and other modern architectures.',
-      duration: '5 months',
-      level: 'Intermediate',
-      rating: 4.8,
-      ratingCount: 156000,
-      instructors: ['Andrew Ng'],
-      prerequisites: ['Basic Python programming', 'Understanding of linear algebra'],
-      skills: ['TensorFlow', 'Convolutional Neural Networks', 'Recurrent Neural Networks', 'Model Optimization'],
-      price: '$49/month (subscription)',
-      link: 'https://www.coursera.org/specializations/deep-learning',
-      image: 'https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80',
-      teacherId: 1
-    },
-    {
-      id: 3,
-      title: 'AI for Everyone',
-      provider: 'Coursera (by DeepLearning.AI)',
-      type: 'certification',
-      category: ['AI Fundamentals', 'Business Strategy'],
-      description: 'A non-technical course designed to help you understand AI technologies and how they can impact your business. Learn the skills to work with an AI team and build an AI strategy in your company.',
-      duration: '4 weeks',
-      level: 'Beginner',
-      rating: 4.7,
-      ratingCount: 45000,
-      instructors: ['Andrew Ng'],
-      skills: ['AI Strategy', 'Machine Learning Project Management', 'AI Ethics', 'Business Applications of AI'],
-      price: '$49 (one-time purchase)',
-      link: 'https://www.coursera.org/learn/ai-for-everyone',
-      image: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80',
-      teacherId: 1
-    },
-    {
-      id: 4,
-      title: 'TensorFlow Developer Professional Certificate',
-      provider: 'Coursera (by Google)',
-      type: 'certification',
-      category: ['Machine Learning', 'Deep Learning', 'TensorFlow'],
-      description: 'Prepare for the TensorFlow Developer Certificate exam while learning best practices for TensorFlow, a popular open-source framework for machine learning.',
-      duration: '3 months',
-      level: 'Intermediate',
-      rating: 4.6,
-      ratingCount: 32000,
-      prerequisites: ['Basic Python programming'],
-      skills: ['TensorFlow', 'Convolutional Neural Networks', 'Natural Language Processing', 'Computer Vision'],
-      price: '$49/month (subscription)',
-      link: 'https://www.coursera.org/professional-certificates/tensorflow-in-practice',
-      image: 'https://images.unsplash.com/photo-1591696205602-2f950c417cb9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80',
-      teacherId: 3
-    },
-    {
-      id: 5,
-      title: 'Using ChatGPT for Statement of Purpose Writing',
-      provider: 'EduSmart',
-      type: 'tutorial',
-      category: ['AI Tools', 'Writing', 'Academic Applications'],
-      description: 'Learn how to effectively use ChatGPT to craft a compelling Statement of Purpose for university applications. This tutorial covers prompt engineering techniques, editing strategies, and ethical considerations.',
-      duration: '2 hours',
-      level: 'Beginner',
-      rating: 4.8,
-      ratingCount: 1200,
-      skills: ['Prompt Engineering', 'Content Refinement', 'AI-assisted Writing'],
-      price: 'Free',
-      link: '/tutorials/chatgpt-sop',
-      image: 'https://images.unsplash.com/photo-1655720828026-e53261de9a55?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80',
-      featured: true,
-      teacherId: 7
-    },
-    {
-      id: 6,
-      title: 'AI for University Selection and Application',
-      provider: 'EduSmart',
-      type: 'tutorial',
-      category: ['AI Tools', 'University Applications', 'Decision Making'],
-      description: 'This hands-on tutorial demonstrates how to leverage AI tools to research universities, compare programs, and make data-driven decisions about where to apply based on your profile and preferences.',
-      duration: '3 hours',
-      level: 'Beginner',
-      rating: 4.7,
-      ratingCount: 950,
-      skills: ['Data-driven Decision Making', 'University Research', 'Application Strategy'],
-      price: 'Free',
-      link: '/tutorials/ai-university-selection',
-      image: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80',
-      teacherId: 2
-    },
-    {
-      id: 7,
-      title: 'Ph.D. in Artificial Intelligence and Machine Learning',
-      provider: 'Carnegie Mellon University',
-      type: 'university',
-      category: ['Machine Learning', 'Deep Learning', 'Research', 'Robotics'],
-      description: "CMU's renowned Ph.D. program focuses on cutting-edge AI research, with opportunities to work with leading faculty on projects spanning machine learning theory, robotics, computer vision, and more.",
-      duration: '4-5 years',
-      level: 'Advanced',
-      rating: 4.9,
-      ratingCount: 180,
-      instructors: ['Dr. Tom Mitchell', 'Dr. Manuela Veloso', 'Dr. Ruslan Salakhutdinov'],
-      prerequisites: ['Masters degree in related field', 'Strong research background', 'Advanced mathematics'],
-      skills: ['Machine Learning Research', 'Algorithm Development', 'Academic Publishing', 'Grant Writing'],
-      price: 'Fully funded (includes stipend)',
-      link: 'https://www.ml.cmu.edu/academics/ph.d.-in-machine-learning.html',
-      image: 'https://images.unsplash.com/photo-1597589827317-4c6d6e0a90f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80',
-      teacherId: 4
-    },
-    {
-      id: 8,
-      title: 'Introduction to Quantum Computing',
-      provider: 'California Institute of Technology',
-      type: 'university',
-      category: ['Physics', 'Quantum Computing', 'Computer Science'],
-      description: "An introductory course to quantum computing principles and applications. Explore quantum mechanics basics, quantum algorithms, and their potential impact on computing.",
-      duration: '1 semester',
-      level: 'Intermediate',
-      rating: 4.7,
-      ratingCount: 320,
-      instructors: ['Dr. Michael Chen'],
-      prerequisites: ['Linear algebra', 'Basic quantum mechanics', 'Programming experience'],
-      skills: ['Quantum Algorithms', 'Quantum Circuit Design', 'Quantum Programming'],
-      price: '$4,000',
-      link: 'https://www.caltech.edu/quantum-computing',
-      image: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80',
-      teacherId: 6
-    },
-    {
-      id: 9,
-      title: 'Advanced Statistics for Data Science',
-      provider: 'MIT',
-      type: 'certification',
-      category: ['Mathematics', 'Statistics', 'Data Science'],
-      description: "Master statistical methods essential for data science. This comprehensive course covers probability theory, inference, regression, and modern statistical computing techniques.",
-      duration: '4 months',
-      level: 'Advanced',
-      rating: 4.8,
-      ratingCount: 750,
-      instructors: ['Dr. Emma Johnson'],
-      prerequisites: ['Calculus', 'Basic statistics', 'Programming knowledge'],
-      skills: ['Statistical Modeling', 'Hypothesis Testing', 'Regression Analysis', 'Bayesian Statistics'],
-      price: '$1,200',
-      link: 'https://www.mit.edu/statistics-datascience',
-      image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80',
-      teacherId: 5
-    },
-    {
-      id: 10,
-      title: 'Contemporary Literature and Digital Media',
-      provider: 'Oxford University',
-      type: 'university',
-      category: ['English Literature', 'Digital Humanities', 'Creative Writing'],
-      description: "Explore the intersection of contemporary literature and digital media. Analyze how digital technologies are transforming narrative forms, readership, and literary criticism.",
-      duration: '1 year',
-      level: 'Advanced',
-      rating: 4.9,
-      ratingCount: 420,
-      instructors: ['Dr. Sarah Williams'],
-      prerequisites: ['Bachelor\'s degree in Literature or related field', 'Critical reading and writing skills'],
-      skills: ['Literary Analysis', 'Digital Content Creation', 'Critical Theory', 'Research Methods'],
-      price: '£9,500/year',
-      link: 'https://www.oxford.edu/literature-digital-media',
-      image: 'https://images.unsplash.com/photo-1535905557558-afc4877a26fc?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80',
-      teacherId: 7
+      students: 9800,
+      experience: "6 years",
+      image: "/api/placeholder/150/150",
+      bio: "Specialist in natural language processing with focus on multilingual AI systems.",
+      courses: 6,
+      featured: false
     }
   ];
 
-  const categories = ['Machine Learning', 'Deep Learning', 'NLP', 'Computer Vision', 'AI Tools', 'Business Strategy', 'Research', 'Writing'];
-  const subjects = ['Machine Learning', 'Deep Learning', 'Physics', 'Mathematics', 'English Literature', 'Quantum Computing', 'Natural Language Processing', 'Statistics'];
-  
-  // Filter courses based on search and active filters
-  const filteredCourses = courses.filter(course => {
+  // Load data on component mount
+  useEffect(() => {
+    loadCourses();
+    loadFilterOptions();
+  }, []);
+
+  // Load courses from API
+  const loadCourses = async () => {
+    try {
+      setLoading(true);
+      const response = await courseAPI.getAll();
+      if (response.success && response.data && Array.isArray(response.data)) {
+        setCourses(response.data);
+      } else {
+        // If API fails or returns invalid data, set empty array
+        setCourses([]);
+      }
+    } catch (error) {
+      console.error('Error loading courses:', error);
+      // Set empty array on error to prevent filter issues
+      setCourses([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load filter options
+  const loadFilterOptions = async () => {
+    try {
+      const [categoriesRes, levelsRes] = await Promise.all([
+        courseAPI.getCategories(),
+        courseAPI.getLevels()
+      ]);
+      
+      if (categoriesRes.success && categoriesRes.data) {
+        setCategories(categoriesRes.data);
+      }
+      
+      if (levelsRes.success && levelsRes.data) {
+        setLevels(levelsRes.data);
+      }
+    } catch (error) {
+      console.error('Error loading filter options:', error);
+    }
+  };
+
+  // Filter courses based on search and active filters - Add safety check
+  const filteredCourses = Array.isArray(courses) ? courses.filter(course => {
     // Search filter
     if (searchQuery && !course.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !course.provider.toLowerCase().includes(searchQuery.toLowerCase()) &&
         !course.description.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
     }
     
-    // Category filter
-    if (activeCategory !== 'all' && !course.category.includes(activeCategory)) {
+    // Subject filter
+    if (selectedSubject && course.category !== selectedSubject) {
       return false;
     }
     
     // Level filter
-    if (activeLevel !== 'all' && course.level !== activeLevel) {
-      return false;
-    }
-    
-    // Type filter
-    if (activeType !== 'all' && course.type !== activeType) {
+    if (selectedLevel && course.level !== selectedLevel) {
       return false;
     }
     
     return true;
-  });
+  }) : [];
 
-  // Filter teachers based on search and subject
+  // Filter teachers based on search and active filters
   const filteredTeachers = teachers.filter(teacher => {
     // Search filter
     if (searchQuery && !teacher.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !teacher.university.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !teacher.position.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !teacher.shortBio.toLowerCase().includes(searchQuery.toLowerCase())) {
+        !teacher.subjects.some(subject => subject.toLowerCase().includes(searchQuery.toLowerCase()))) {
       return false;
     }
     
     // Subject filter
-    if (activeSubject !== 'all' && !teacher.subjects.includes(activeSubject)) {
+    if (selectedSubject && !teacher.subjects.includes(selectedSubject)) {
+      return false;
+    }
+    
+    // Level filter
+    if (selectedLevel && !teacher.levels.includes(selectedLevel)) {
       return false;
     }
     
     return true;
   });
 
-  // Get courses for a specific teacher
-  const getTeacherCourses = (teacherId: number) => {
-    return courses.filter(course => course.teacherId === teacherId);
+  const toggleFavoriteTeacher = (teacherId: number) => {
+    setFavoriteTeachers(prev => 
+      prev.includes(teacherId) 
+        ? prev.filter(id => id !== teacherId)
+        : [...prev, teacherId]
+    );
   };
 
-  // Toggle favorite teacher
-  const toggleFavorite = (teacherId: number) => {
-    if (favoriteTeachers.includes(teacherId)) {
-      setFavoriteTeachers(favoriteTeachers.filter(id => id !== teacherId));
-    } else {
-      setFavoriteTeachers([...favoriteTeachers, teacherId]);
+  const addFilter = (filter: string) => {
+    if (!activeFilters.includes(filter)) {
+      setActiveFilters([...activeFilters, filter]);
     }
   };
 
+  const removeFilter = (filter: string) => {
+    setActiveFilters(activeFilters.filter(f => f !== filter));
+  };
+
+  const clearAllFilters = () => {
+    setActiveFilters([]);
+    setSelectedSubject('');
+    setSelectedLevel('');
+    setSelectedType('');
+    setSearchQuery('');
+  };
+
+  // Sample courses data - using different variable name to avoid conflict
+  const sampleCoursesData: Course[] = [
+    {
+      id: "1",
+      title: "Master of Science in Artificial Intelligence",
+      description: "Stanford's MS in AI program prepares students for leadership roles in AI research and development. The curriculum covers foundational AI concepts, advanced machine learning techniques, and specialized areas like NLP and computer vision.",
+      category: "Machine Learning",
+      level: "Advanced",
+      duration: "2 years",
+      price: 60000,
+      original_price: 65000,
+      image: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=400&h=300&fit=crop",
+      instructor_name: "Stanford University",
+      instructor_bio: "World-renowned institution for AI research and education",
+      instructor_image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+      syllabus: null,
+      prerequisites: ["Bachelor's in Computer Science", "Linear Algebra", "Statistics"],
+      learning_outcomes: ["Advanced ML algorithms", "AI research methods", "Industry applications"],
+      skills_gained: ["Python", "TensorFlow", "Research", "Leadership"],
+      language: "English",
+      certificate: true,
+      rating: 4.8,
+      total_reviews: 1250,
+      total_students: 5000,
+      featured: true,
+      status: "active",
+      video_preview_url: "https://www.youtube.com/watch?v=aircAruvnKk",
+      course_materials: null,
+      tags: ["AI", "Machine Learning", "Graduate"],
+      created_by: "stanford-admin",
+      created_at: "2024-01-01T00:00:00Z",
+      updated_at: "2024-01-01T00:00:00Z"
+    },
+    {
+      id: "2",
+      title: "Deep Learning Specialization",
+      description: "Learn the foundations of Deep Learning, understand how to build neural networks, and lead successful machine learning projects. The specialization covers CNN, RNN, LSTM, and other modern architectures.",
+      category: "Deep Learning",
+      level: "Intermediate",
+      duration: "5 months",
+      price: 49,
+      original_price: 79,
+      image: "https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=400&h=300&fit=crop",
+      instructor_name: "Andrew Ng",
+      instructor_bio: "Co-founder of Coursera and former head of Baidu AI Group",
+      instructor_image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+      syllabus: null,
+      prerequisites: ["Basic Python", "Linear Algebra"],
+      learning_outcomes: ["Neural Networks", "CNN", "RNN", "LSTM"],
+      skills_gained: ["TensorFlow", "Keras", "Python", "Deep Learning"],
+      language: "English",
+      certificate: true,
+      rating: 4.9,
+      total_reviews: 89000,
+      total_students: 450000,
+      featured: true,
+      status: "active",
+      video_preview_url: "https://www.youtube.com/watch?v=CS4cs9xVecg",
+      course_materials: null,
+      tags: ["Deep Learning", "Neural Networks", "Coursera"],
+      created_by: "coursera-admin",
+      created_at: "2024-01-01T00:00:00Z",
+      updated_at: "2024-01-01T00:00:00Z"
+    },
+    {
+      id: "3",
+      title: "AI for Everyone",
+      description: "A non-technical course designed to help you understand AI technologies and how they can impact your business. Learn the skills to work with an AI team and build an AI strategy in your company.",
+      category: "AI Fundamentals",
+      level: "Beginner",
+      duration: "4 weeks",
+      price: 49,
+      original_price: null,
+      image: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&h=300&fit=crop",
+      instructor_name: "Andrew Ng",
+      instructor_bio: "Co-founder of Coursera and former head of Baidu AI Group",
+      instructor_image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+      syllabus: null,
+      prerequisites: null,
+      learning_outcomes: ["AI Strategy", "Business Applications", "Team Management"],
+      skills_gained: ["AI Strategy", "Business Planning", "Team Leadership"],
+      language: "English",
+      certificate: true,
+      rating: 4.7,
+      total_reviews: 45000,
+      total_students: 200000,
+      featured: false,
+      status: "active",
+      video_preview_url: "https://www.youtube.com/watch?v=21EiKfQYZXc",
+      course_materials: null,
+      tags: ["AI", "Business", "Strategy"],
+      created_by: "coursera-admin",
+      created_at: "2024-01-01T00:00:00Z",
+      updated_at: "2024-01-01T00:00:00Z"
+    },
+    {
+      id: "4",
+      title: "TensorFlow Developer Professional Certificate",
+      description: "Prepare for the TensorFlow Developer Certificate exam while learning best practices for TensorFlow, a popular open-source framework for machine learning.",
+      category: "Machine Learning",
+      level: "Intermediate",
+      duration: "3 months",
+      price: 49,
+      original_price: null,
+      image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=300&fit=crop",
+      instructor_name: "Laurence Moroney",
+      instructor_bio: "AI Advocate at Google and TensorFlow expert",
+      instructor_image: "https://images.unsplash.com/photo-1472099645785-2616b612b786?w=150&h=150&fit=crop&crop=face",
+      syllabus: null,
+      prerequisites: ["Basic Python", "Machine Learning basics"],
+      learning_outcomes: ["TensorFlow", "Model deployment", "Certification"],
+      skills_gained: ["TensorFlow", "Python", "Model Deployment", "Certification"],
+      language: "English",
+      certificate: true,
+      rating: 4.6,
+      total_reviews: 25000,
+      total_students: 120000,
+      featured: false,
+      status: "active",
+      video_preview_url: "https://www.youtube.com/watch?v=tPYj3fFJGjk",
+      course_materials: null,
+      tags: ["TensorFlow", "Certification", "Google"],
+      created_by: "coursera-admin",
+      created_at: "2024-01-01T00:00:00Z",
+      updated_at: "2024-01-01T00:00:00Z"
+    },
+    {
+      id: "5",
+      title: "Using ChatGPT for Statement of Purpose Writing",
+      description: "Learn how to effectively use ChatGPT to craft a compelling Statement of Purpose for university applications. This tutorial covers prompt engineering techniques, editing strategies, and ethical considerations.",
+      category: "AI Tools",
+      level: "Beginner",
+      duration: "2 hours",
+      price: 0,
+      original_price: null,
+      image: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&h=300&fit=crop",
+      instructor_name: "Dr. Sarah Chen",
+      instructor_bio: "Academic writing expert and AI tools specialist",
+      instructor_image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
+      syllabus: null,
+      prerequisites: null,
+      learning_outcomes: ["Prompt engineering", "Academic writing", "AI ethics"],
+      skills_gained: ["ChatGPT", "Writing", "Prompt Engineering"],
+      language: "English",
+      certificate: false,
+      rating: 4.5,
+      total_reviews: 1200,
+      total_students: 8500,
+      featured: false,
+      status: "active",
+      video_preview_url: "https://www.youtube.com/watch?v=example1",
+      course_materials: null,
+      tags: ["ChatGPT", "Writing", "Tutorial"],
+      created_by: "edusmart-admin",
+      created_at: "2024-01-01T00:00:00Z",
+      updated_at: "2024-01-01T00:00:00Z"
+    },
+    {
+      id: "6",
+      title: "AI for University Selection and Application",
+      description: "This hands-on tutorial demonstrates how to leverage AI tools to research universities, compare programs, and make data-driven decisions about where to apply based on your profile and preferences.",
+      category: "AI Tools",
+      level: "Beginner",
+      duration: "3 hours",
+      price: 0,
+      original_price: null,
+      image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=400&h=300&fit=crop",
+      instructor_name: "Dr. Michael Rodriguez",
+      instructor_bio: "University admissions consultant and AI researcher",
+      instructor_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+      syllabus: null,
+      prerequisites: null,
+      learning_outcomes: ["University research", "AI-assisted decision making", "Application strategy"],
+      skills_gained: ["Research", "Decision Making", "AI Tools"],
+      language: "English",
+      certificate: false,
+      rating: 4.7,
+      total_reviews: 850,
+      total_students: 5200,
+      featured: false,
+      status: "active",
+      video_preview_url: "https://www.youtube.com/watch?v=example2",
+      course_materials: null,
+      tags: ["University", "Research", "Tutorial"],
+      created_by: "edusmart-admin",
+      created_at: "2024-01-01T00:00:00Z",
+      updated_at: "2024-01-01T00:00:00Z"
+    },
+    {
+      id: "7",
+      title: "Ph.D. in Artificial Intelligence and Machine Learning",
+      description: "CMU's renowned Ph.D. program focuses on cutting-edge AI research, with opportunities to work with leading faculty on projects spanning machine learning theory, robotics, computer vision, and more.",
+      category: "Machine Learning",
+      level: "Advanced",
+      duration: "4-5 years",
+      price: 0,
+      original_price: null,
+      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop",
+      instructor_name: "Carnegie Mellon University",
+      instructor_bio: "Leading research university in computer science and AI",
+      instructor_image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+      syllabus: null,
+      prerequisites: ["Master's in CS/related field", "Strong research background"],
+      learning_outcomes: ["Advanced research", "AI theory", "Publication skills"],
+      skills_gained: ["Research", "AI Theory", "Publications", "Teaching"],
+      language: "English",
+      certificate: false,
+      rating: 4.9,
+      total_reviews: 150,
+      total_students: 300,
+      featured: true,
+      status: "active",
+      video_preview_url: "https://www.youtube.com/watch?v=example3",
+      course_materials: null,
+      tags: ["PhD", "Research", "CMU"],
+      created_by: "cmu-admin",
+      created_at: "2024-01-01T00:00:00Z",
+      updated_at: "2024-01-01T00:00:00Z"
+    },
+    {
+      id: "8",
+      title: "Introduction to Quantum Computing",
+      description: "An introductory course to quantum computing principles and applications. Explore quantum mechanics basics, quantum algorithms, and their potential impact on computing.",
+      category: "Physics",
+      level: "Intermediate",
+      duration: "1 semester",
+      price: 0,
+      original_price: null,
+      image: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&h=300&fit=crop",
+      instructor_name: "Dr. Alice Johnson",
+      instructor_bio: "Quantum computing researcher and physics professor",
+      instructor_image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
+      syllabus: null,
+      prerequisites: ["Linear Algebra", "Basic Physics"],
+      learning_outcomes: ["Quantum mechanics", "Quantum algorithms", "Computing applications"],
+      skills_gained: ["Quantum Computing", "Physics", "Mathematics"],
+      language: "English",
+      certificate: true,
+      rating: 4.4,
+      total_reviews: 320,
+      total_students: 1800,
+      featured: false,
+      status: "active",
+      video_preview_url: "https://www.youtube.com/watch?v=example4",
+      course_materials: null,
+      tags: ["Quantum", "Physics", "Computing"],
+      created_by: "university-admin",
+      created_at: "2024-01-01T00:00:00Z",
+      updated_at: "2024-01-01T00:00:00Z"
+    },
+    {
+      id: "9",
+      title: "Advanced Statistics for Data Science",
+      description: "Master statistical methods essential for data science. This comprehensive course covers probability theory, inference, regression, and modern statistical computing techniques.",
+      category: "Mathematics",
+      level: "Advanced",
+      duration: "4 months",
+      price: 0,
+      original_price: null,
+      image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=300&fit=crop",
+      instructor_name: "Dr. Robert Kim",
+      instructor_bio: "Statistics professor and data science consultant",
+      instructor_image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+      syllabus: null,
+      prerequisites: ["Calculus", "Basic Statistics"],
+      learning_outcomes: ["Advanced statistics", "Data analysis", "Statistical computing"],
+      skills_gained: ["Statistics", "R", "Python", "Data Analysis"],
+      language: "English",
+      certificate: true,
+      rating: 4.6,
+      total_reviews: 890,
+      total_students: 4200,
+      featured: false,
+      status: "active",
+      video_preview_url: "https://www.youtube.com/watch?v=example5",
+      course_materials: null,
+      tags: ["Statistics", "Data Science", "Mathematics"],
+      created_by: "university-admin",
+      created_at: "2024-01-01T00:00:00Z",
+      updated_at: "2024-01-01T00:00:00Z"
+    },
+    {
+      id: "10",
+      title: "Contemporary Literature and Digital Media",
+      description: "Explore the intersection of contemporary literature and digital media. Analyze how digital technologies are transforming narrative forms, readership, and literary criticism.",
+      category: "English Literature",
+      level: "Advanced",
+      duration: "1 year",
+      price: 0,
+      original_price: null,
+      image: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=300&fit=crop",
+      instructor_name: "Dr. Emily Watson",
+      instructor_bio: "Literature professor specializing in digital humanities",
+      instructor_image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
+      syllabus: null,
+      prerequisites: ["Bachelor's in Literature or related field"],
+      learning_outcomes: ["Digital humanities", "Literary analysis", "Media studies"],
+      skills_gained: ["Literary Analysis", "Digital Media", "Critical Thinking"],
+      language: "English",
+      certificate: true,
+      rating: 4.3,
+      total_reviews: 180,
+      total_students: 650,
+      featured: false,
+      status: "active",
+      video_preview_url: "https://www.youtube.com/watch?v=example6",
+      course_materials: null,
+      tags: ["Literature", "Digital Media", "Humanities"],
+      created_by: "university-admin",
+      created_at: "2024-01-01T00:00:00Z",
+      updated_at: "2024-01-01T00:00:00Z"
+    }
+  ];
+
+  // Ensure displayCourses is always an array
+  const displayCourses = Array.isArray(courses) && courses.length > 0 ? courses : sampleCoursesData;
+  
+  // Sample categories and subjects for fallback
+  const fallbackCategories = ['Machine Learning', 'Deep Learning', 'NLP', 'Computer Vision', 'AI Tools', 'Business Strategy', 'Research', 'Writing'];
+  const subjects = ['Machine Learning', 'Deep Learning', 'Physics', 'Mathematics', 'English Literature', 'Quantum Computing', 'Natural Language Processing', 'Statistics'];
+  
+  // Use API data if available, otherwise fall back to sample data
+  const displayCategories = categories.length > 0 ? categories : fallbackCategories;
+  
   // Helper to render star ratings
-  const renderStars = (rating: number) => {
-    return Array(5).fill(0).map((_, index) => (
+  const renderStars = (rating: number | null | undefined) => {
+    const safeRating = rating || 0;
+    return Array.from({ length: 5 }, (_, i) => (
       <IconComponent 
+        key={i} 
         icon={FaStar}
-        key={index} 
-        className={`${index < Math.floor(rating) ? 'text-yellow-400' : 'text-gray-300'} ${
-          index === Math.floor(rating) && rating % 1 > 0 ? 'text-yellow-200' : ''
-        }`} 
+        className={i < Math.floor(safeRating) ? 'text-yellow-400' : 'text-gray-300'} 
       />
     ));
   };
   
   // Get appropriate icon for course type
-  const getCourseTypeIcon = (type: string) => {
-    switch (type) {
-      case 'university':
-        return <IconComponent icon={FaUniversity} className="text-teal-600" />;
-      case 'certification':
-        return <IconComponent icon={FaCertificate} className="text-blue-600" />;
-      case 'tutorial':
-        return <IconComponent icon={FaLaptopCode} className="text-orange-500" />;
-      default:
-        return <IconComponent icon={FaGraduationCap} className="text-gray-600" />;
-    }
+  const getCourseTypeIcon = (type: string | undefined) => {
+    // Since type doesn't exist in our Course interface, we'll use category instead
+    return <IconComponent icon={FaGraduationCap} className="text-primary" />;
   };
 
   // Animation variants
@@ -551,6 +601,12 @@ const AICourses: React.FC = () => {
     tap: {
       scale: 0.95
     }
+  };
+
+  // Get courses for a specific teacher
+  const getTeacherCourses = (teacherId: number) => {
+    // For now, return empty array since we don't have teacher-course mapping in API
+    return [];
   };
 
   return (
@@ -599,7 +655,7 @@ const AICourses: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
-                {t('nav.aiCourses')}
+                {t('aiCourses.title')}
               </motion.h1>
               <motion.p 
                 className="text-xl mb-8"
@@ -607,8 +663,7 @@ const AICourses: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
               >
-                Explore top university AI programs, online certifications, and practical tutorials to 
-                master artificial intelligence and enhance your applications.
+                {t('aiCourses.subtitle')}
               </motion.p>
               <motion.div 
                 className="relative"
@@ -618,12 +673,12 @@ const AICourses: React.FC = () => {
               >
                 <input
                   type="text"
-                  placeholder="Search AI courses, programs and tutorials..."
+                  placeholder={t('aiCourses.searchPlaceholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-5 py-3 pr-12 bg-white rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full max-w-md mx-auto px-4 py-3 pl-12 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
-                <IconComponent icon={FaSearch} className="absolute right-4 top-3.5 text-gray-500" />
+                <IconComponent icon={FaSearch} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
               </motion.div>
 
               {/* Display Mode Toggle */}
@@ -635,9 +690,9 @@ const AICourses: React.FC = () => {
               >
                 <div className="bg-teal-800 bg-opacity-50 rounded-full p-1 flex">
                   <button
-                    onClick={() => setShowMode('courses')}
+                    onClick={() => setViewMode('grid')}
                     className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
-                      showMode === 'courses'
+                      viewMode === 'grid'
                         ? 'bg-white text-teal-800'
                         : 'text-white hover:bg-teal-600 hover:bg-opacity-50'
                     }`}
@@ -645,9 +700,9 @@ const AICourses: React.FC = () => {
                     {t('courses.title')}
                   </button>
                   <button
-                    onClick={() => setShowMode('teachers')}
+                    onClick={() => setViewMode('list')}
                     className={`px-5 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
-                      showMode === 'teachers'
+                      viewMode === 'list'
                         ? 'bg-white text-teal-800'
                         : 'text-white hover:bg-teal-600 hover:bg-opacity-50'
                     }`}
@@ -664,21 +719,21 @@ const AICourses: React.FC = () => {
         <section className="py-12 bg-gray-50">
           <div className="container mx-auto px-4">
             {/* Featured Courses */}
-            {showMode === 'courses' && (
+            {viewMode === 'grid' && (
               <motion.div 
                 className="mb-12"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.3 }}
               >
-                <h2 className="text-2xl font-bold text-teal-800 mb-6">Featured Programs</h2>
+                <h2 className="text-2xl font-bold text-teal-800 mb-6">{t('aiCourses.featuredCourses')}</h2>
                 <motion.div 
                   className="grid grid-cols-1 md:grid-cols-2 gap-6"
                   variants={containerVariants}
                   initial="hidden"
                   animate="visible"
                 >
-                  {courses.filter(course => course.featured).map(course => (
+                  {(displayCourses || []).filter(course => course.featured).map(course => (
                     <motion.div 
                       key={course.id} 
                       className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100 flex flex-col md:flex-row"
@@ -691,42 +746,42 @@ const AICourses: React.FC = () => {
                     >
                       <div className="md:w-1/3 overflow-hidden">
                         <motion.img 
-                          src={course.image} 
+                          src={course.image || '/api/placeholder/400/300'} 
                           alt={course.title}
                           className="h-full w-full object-cover" 
                           whileHover={{ scale: 1.05 }}
-                          transition={{ duration: 0.5 }}
+                          transition={{ duration: 0.3 }}
                         />
                       </div>
                       <div className="md:w-2/3 p-6">
                         <div className="flex items-center gap-2 mb-2">
-                          {getCourseTypeIcon(course.type)}
-                          <span className="text-sm font-medium text-gray-600">{course.provider}</span>
+                          {getCourseTypeIcon(course.category)}
+                          <span className="text-sm font-medium text-gray-600">{course.instructor_name}</span>
                         </div>
                         <h3 className="text-xl font-bold text-teal-800 mb-2">{course.title}</h3>
-                        <p className="text-gray-600 text-sm mb-4">{course.description}</p>
+                        <p className="text-gray-600 mb-4 line-clamp-2">{course.description}</p>
+                        
                         <div className="flex items-center gap-2 mb-4">
                           <div className="flex gap-1">
                             {renderStars(course.rating)}
                           </div>
-                          <span className="text-sm text-gray-600">{course.rating} ({course.ratingCount.toLocaleString()} ratings)</span>
+                          <span className="text-sm text-gray-600">{course.rating || 0} ({course.total_reviews?.toLocaleString() || 0} reviews)</span>
                         </div>
-                        <div className="flex items-center justify-between mt-auto">
-                          <div className="flex gap-2">
-                            <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
-                              {course.level}
-                            </span>
-                            <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
-                              {course.duration}
-                            </span>
+                        
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <span className="text-2xl font-bold text-primary">${course.price}</span>
+                            {course.original_price && course.original_price > course.price && (
+                              <span className="text-lg text-gray-500 line-through">${course.original_price}</span>
+                            )}
                           </div>
                           <a
-                            href={course.link}
+                            href={course.video_preview_url || '#'}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-4 py-2 rounded-lg transition-colors"
                           >
-                            Learn More
+                            Preview
                           </a>
                         </div>
                       </div>
@@ -737,7 +792,7 @@ const AICourses: React.FC = () => {
             )}
 
             {/* Featured Teachers */}
-            {showMode === 'teachers' && (
+            {viewMode === 'list' && (
               <motion.div 
                 className="mb-12"
                 initial={{ opacity: 0, y: 20 }}
@@ -764,17 +819,15 @@ const AICourses: React.FC = () => {
                     >
                       <div className="relative p-6 pt-0 flex-grow flex flex-col">
                         <div className="flex justify-center -mt-12 mb-4">
-                          <motion.img 
-                            src={teacher.avatar} 
+                          <img 
+                            src={teacher.image} 
                             alt={teacher.name}
-                            className="w-24 h-24 rounded-full border-4 border-white shadow-md object-cover" 
-                            whileHover={{ scale: 1.05 }}
-                            transition={{ duration: 0.5 }}
+                            className="w-20 h-20 rounded-full mx-auto mb-3 object-cover border-4 border-white shadow-lg"
                           />
                         </div>
                         <div className="absolute top-3 right-3">
                           <button 
-                            onClick={() => toggleFavorite(teacher.id)}
+                            onClick={() => toggleFavoriteTeacher(teacher.id)}
                             className="text-gray-400 hover:text-yellow-500 transition-colors"
                           >
                             <IconComponent 
@@ -784,8 +837,8 @@ const AICourses: React.FC = () => {
                           </button>
                         </div>
                         <h3 className="text-xl font-bold text-teal-800 mb-1 text-center">{teacher.name}</h3>
-                        <p className="text-gray-600 text-sm mb-2 text-center">{teacher.position}</p>
-                        <p className="text-gray-600 text-sm mb-3 text-center">{teacher.university}</p>
+                        <p className="text-gray-600 text-sm mb-2 text-center">{teacher.title}</p>
+                        <p className="text-gray-600 text-sm mb-3 text-center">{teacher.experience}</p>
                         
                         <div className="flex flex-wrap justify-center gap-1 mb-3">
                           {teacher.subjects.map((subject, index) => (
@@ -795,32 +848,23 @@ const AICourses: React.FC = () => {
                           ))}
                         </div>
                         
-                        <p className="text-gray-600 text-sm mb-4 text-center">{teacher.shortBio}</p>
+                        <p className="text-gray-600 text-sm mb-4 text-center">{teacher.bio}</p>
                         
                         <div className="flex items-center justify-center gap-2 mb-4">
                           <div className="flex gap-1">
                             {renderStars(teacher.rating)}
                           </div>
-                          <span className="text-sm text-gray-600">{teacher.rating} ({teacher.ratingCount.toLocaleString()})</span>
+                          <span className="text-sm text-gray-600">{teacher.rating} ({teacher.students.toLocaleString()})</span>
                         </div>
                         
                         <div className="mt-auto flex flex-col gap-2">
                           <button
                             onClick={() => {
-                              setSelectedTeacher(teacher);
-                              setShowTeacherModal(true);
-                            }}
-                            className="bg-teal-500 hover:bg-teal-600 text-white text-center py-2 rounded-lg transition-colors"
-                          >
-                            View Profile
-                          </button>
-                          <button
-                            onClick={() => {
                               // Navigate to teacher's courses
-                              setShowMode('courses');
+                              setViewMode('grid');
                               // You would filter courses by teacher here
                             }}
-                            className="bg-orange-500 hover:bg-orange-600 text-white text-center py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
+                            className="bg-teal-500 hover:bg-teal-600 text-white text-center py-2 rounded-lg transition-colors"
                           >
                             View Courses ({getTeacherCourses(teacher.id).length})
                             <IconComponent icon={FaChevronRight} className="text-xs" />
@@ -835,71 +879,71 @@ const AICourses: React.FC = () => {
             
             {/* Filter options */}
             <div className="mb-8">
-              {showMode === 'courses' && (
+              {viewMode === 'grid' && (
                 <div className="flex flex-wrap gap-4 mb-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Course Type</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('aiCourses.filterByType')}</label>
                     <div className="flex flex-wrap gap-2">
                       <button
-                        onClick={() => setActiveType('all')}
+                        onClick={() => setSelectedType('all')}
                         className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          activeType === 'all'
+                          selectedType === 'all'
                             ? 'bg-teal-600 text-white'
                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                         }`}
                       >
-                        All Types
+                        {t('aiCourses.allTypes')}
                       </button>
                       <button
-                        onClick={() => setActiveType('university')}
+                        onClick={() => setSelectedType('university')}
                         className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${
-                          activeType === 'university'
+                          selectedType === 'university'
                             ? 'bg-teal-600 text-white'
                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                         }`}
                       >
-                        <IconComponent icon={FaUniversity} className="text-xs" /> University Programs
+                        <IconComponent icon={FaUniversity} className="text-xs" /> {t('aiCourses.university')}
                       </button>
                       <button
-                        onClick={() => setActiveType('certification')}
+                        onClick={() => setSelectedType('certification')}
                         className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${
-                          activeType === 'certification'
+                          selectedType === 'certification'
                             ? 'bg-teal-600 text-white'
                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                         }`}
                       >
-                        <IconComponent icon={FaCertificate} className="text-xs" /> Certifications
+                        <IconComponent icon={FaCertificate} className="text-xs" /> {t('aiCourses.certification')}
                       </button>
                       <button
-                        onClick={() => setActiveType('tutorial')}
+                        onClick={() => setSelectedType('tutorial')}
                         className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${
-                          activeType === 'tutorial'
+                          selectedType === 'tutorial'
                             ? 'bg-teal-600 text-white'
                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                         }`}
                       >
-                        <IconComponent icon={FaLaptopCode} className="text-xs" /> Tutorials
+                        <IconComponent icon={FaLaptopCode} className="text-xs" /> {t('aiCourses.tutorial')}
                       </button>
                     </div>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Level</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('aiCourses.filterByLevel')}</label>
                     <div className="flex flex-wrap gap-2">
                       <button
-                        onClick={() => setActiveLevel('all')}
+                        onClick={() => setSelectedLevel('all')}
                         className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          activeLevel === 'all'
+                          selectedLevel === 'all'
                             ? 'bg-teal-600 text-white'
                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                         }`}
                       >
-                        All Levels
+                        {t('aiCourses.allLevels')}
                       </button>
                       <button
-                        onClick={() => setActiveLevel('Beginner')}
+                        onClick={() => setSelectedLevel('Beginner')}
                         className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          activeLevel === 'Beginner'
+                          selectedLevel === 'Beginner'
                             ? 'bg-teal-600 text-white'
                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                         }`}
@@ -907,9 +951,9 @@ const AICourses: React.FC = () => {
                         Beginner
                       </button>
                       <button
-                        onClick={() => setActiveLevel('Intermediate')}
+                        onClick={() => setSelectedLevel('Intermediate')}
                         className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          activeLevel === 'Intermediate'
+                          selectedLevel === 'Intermediate'
                             ? 'bg-teal-600 text-white'
                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                         }`}
@@ -917,9 +961,9 @@ const AICourses: React.FC = () => {
                         Intermediate
                       </button>
                       <button
-                        onClick={() => setActiveLevel('Advanced')}
+                        onClick={() => setSelectedLevel('Advanced')}
                         className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          activeLevel === 'Advanced'
+                          selectedLevel === 'Advanced'
                             ? 'bg-teal-600 text-white'
                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                         }`}
@@ -933,21 +977,21 @@ const AICourses: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Categories</label>
                     <div className="flex flex-wrap gap-2">
                       <button
-                        onClick={() => setActiveCategory('all')}
+                        onClick={() => setSelectedSubject('all')}
                         className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          activeCategory === 'all'
+                          selectedSubject === 'all'
                             ? 'bg-teal-600 text-white'
                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                         }`}
                       >
                         All Categories
                       </button>
-                      {categories.map(category => (
+                      {displayCategories.map(category => (
                         <button
                           key={category}
-                          onClick={() => setActiveCategory(category)}
+                          onClick={() => setSelectedSubject(category)}
                           className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${
-                            activeCategory === category
+                            selectedSubject === category
                               ? 'bg-teal-600 text-white'
                               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                           }`}
@@ -961,14 +1005,14 @@ const AICourses: React.FC = () => {
               )}
               
               {/* Teacher Filters */}
-              {showMode === 'teachers' && (
+              {viewMode === 'list' && (
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Subject Areas</label>
                   <div className="flex flex-wrap gap-2">
                     <button
-                      onClick={() => setActiveSubject('all')}
+                      onClick={() => setSelectedSubject('all')}
                       className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        activeSubject === 'all'
+                        selectedSubject === 'all'
                           ? 'bg-teal-600 text-white'
                           : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       }`}
@@ -978,9 +1022,9 @@ const AICourses: React.FC = () => {
                     {subjects.map(subject => (
                       <button
                         key={subject}
-                        onClick={() => setActiveSubject(subject)}
+                        onClick={() => setSelectedSubject(subject)}
                         className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${
-                          activeSubject === subject
+                          selectedSubject === subject
                             ? 'bg-teal-600 text-white'
                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                         }`}
@@ -994,68 +1038,58 @@ const AICourses: React.FC = () => {
             </div>
             
             {/* Course listing */}
-            {showMode === 'courses' && filteredCourses.length > 0 ? (
+            {viewMode === 'grid' && filteredCourses.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredCourses.map(course => (
                   <div key={course.id} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100 flex flex-col">
                     <div className="h-48 overflow-hidden">
                       <img 
-                        src={course.image} 
+                        src={course.image || '/api/placeholder/400/300'} 
                         alt={course.title} 
                         className="w-full h-full object-cover transition-transform hover:scale-105 duration-300"
                       />
                     </div>
                     <div className="p-6 flex-grow flex flex-col">
                       <div className="flex items-center gap-2 mb-2">
-                        {getCourseTypeIcon(course.type)}
-                        <span className="text-sm font-medium text-gray-600">{course.provider}</span>
+                        {getCourseTypeIcon(course.category)}
+                        <span className="text-sm font-medium text-gray-600">{course.instructor_name}</span>
                       </div>
                       <h3 className="text-lg font-bold text-teal-800 mb-2">{course.title}</h3>
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-3">{course.description}</p>
+                      <p className="text-gray-600 text-sm mb-3 line-clamp-3 flex-grow">{course.description}</p>
                       
                       <div className="flex flex-wrap gap-1 mb-3">
-                        {course.category.slice(0, 3).map((cat, index) => (
-                          <span key={index} className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">
-                            {cat}
-                          </span>
-                        ))}
-                        {course.category.length > 3 && (
-                          <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">
-                            +{course.category.length - 3} more
-                          </span>
-                        )}
+                        <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">
+                          {course.category}
+                        </span>
+                        <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">
+                          {course.level}
+                        </span>
                       </div>
                       
                       <div className="flex items-center gap-2 mb-2">
                         <div className="flex gap-1">
                           {renderStars(course.rating)}
                         </div>
-                        <span className="text-xs text-gray-600">{course.rating}</span>
+                        <span className="text-xs text-gray-600">{course.rating || 0}</span>
                       </div>
                       
-                      <div className="mt-auto pt-4 flex items-center justify-between">
-                        <div className="flex gap-2">
-                          <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
-                            {course.level}
-                          </span>
-                          <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
-                            {course.duration}
-                          </span>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg font-bold text-primary">${course.price}</span>
+                          {course.original_price && course.original_price > course.price && (
+                            <span className="text-sm text-gray-500 line-through">${course.original_price}</span>
+                          )}
                         </div>
-                        {course.price && (
-                          <span className="text-sm font-medium text-teal-700">
-                            {course.price}
-                          </span>
-                        )}
+                        <span className="text-xs text-gray-500">{course.duration}</span>
                       </div>
                       
                       <a
-                        href={course.link}
+                        href={course.video_preview_url || '#'}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="mt-4 bg-orange-500 hover:bg-orange-600 text-white text-center py-2 rounded-lg transition-colors"
                       >
-                        View Details
+                        Preview Course
                       </a>
                     </div>
                   </div>
