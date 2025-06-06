@@ -8,7 +8,6 @@ import Footer from '../components/layout/Footer';
 import IconComponent from '../components/ui/IconComponent';
 import { fadeIn, staggerContainer, slideIn } from '../utils/animations';
 import { useAuth } from '../utils/AuthContext';
-import { supabase } from '../utils/supabase';
 import { universityAPI } from '../utils/apiService';
 import { useLanguage } from '../utils/LanguageContext';
 import { userProfileAPI, UserProfile } from '../utils/userProfileAPI';
@@ -49,12 +48,33 @@ interface University {
   created_by: string;
   created_at: string;
   updated_at: string;
+  // Additional admission requirements fields
+  min_gpa_required: number;
+  sat_score_required: string;
+  act_score_required: string;
+  ielts_score_required: string;
+  toefl_score_required: string;
+  gre_score_required: string;
+  gmat_score_required: string;
+  application_deadline_fall: string;
+  application_deadline_spring: string;
+  application_deadline_summer: string;
+  tuition_fee_graduate: number;
+  scholarship_available: boolean;
+  financial_aid_available: boolean;
+  application_requirements: string[];
+  admission_essay_required: boolean;
+  letters_of_recommendation_required: number;
+  interview_required: boolean;
+  work_experience_required: boolean;
+  portfolio_required: boolean;
   // Additional properties used in the component
   qsRanking: number;
   majorStrengths: string[];
   applicationDeadlines: {
     fall: string;
     spring: string;
+    summer?: string;
   };
   admissionRequirements: {
     minGPA: number;
@@ -66,6 +86,12 @@ interface University {
       test: string;
       score: string;
     }>;
+    essayRequired: boolean;
+    lettersOfRecommendation: number;
+    interviewRequired: boolean;
+    workExperienceRequired: boolean;
+    portfolioRequired: boolean;
+    applicationRequirements: string[];
   };
   tuitionFees: {
     undergraduate: string;
@@ -80,6 +106,10 @@ interface University {
   researchOutput: string;
   employmentRate: string;
   campusType: string;
+  scholarshipInfo: {
+    available: boolean;
+    financialAidAvailable: boolean;
+  };
 }
 
 // Helper functions
@@ -440,46 +470,65 @@ const UniversityDetailModal: React.FC<UniversityDetailModalProps> = ({ universit
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <motion.div 
-        className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+        className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden"
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 50 }}
         transition={{ duration: 0.3 }}
       >
-        <div className="flex justify-between items-center bg-gradient-to-r from-primary to-primary-dark text-white p-5">
-          <div className="flex items-center">
-            <div className="bg-white rounded-lg p-2 mr-4">
+        {/* Header with university image */}
+        <div className="relative">
+          {university.image && (
+            <div className="h-48 bg-gradient-to-r from-gray-100 to-gray-200 overflow-hidden">
               <img 
-                src={university.logo || getDefaultLogo()} 
-                alt={`${university.name} logo`} 
-                className="h-12 w-12 object-contain"
+                src={university.image} 
+                alt={`${university.name} campus`}
+                className="w-full h-full object-cover"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
-                  target.src = getDefaultLogo();
+                  target.style.display = 'none';
                 }}
               />
             </div>
-            <div>
-              <h2 className="text-xl font-bold">{university.name}</h2>
-              <div className="flex items-center text-white/80 text-sm">
-                <IconComponent icon={HiOutlineLocationMarker} className="mr-1" />
-                <span>{university.city}, {university.country}</span>
-                <span className="mx-2">•</span>
-                <span>Rank #{university.ranking}</span>
+          )}
+          <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/50 to-transparent p-5">
+            <div className="flex justify-between items-start">
+              <div className="flex items-center">
+                <div className="bg-white rounded-lg p-2 mr-4">
+                  <img 
+                    src={university.logo || getDefaultLogo()} 
+                    alt={`${university.name} logo`} 
+                    className="h-12 w-12 object-contain"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = getDefaultLogo();
+                    }}
+                  />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">{university.name}</h2>
+                  <div className="flex items-center text-white/80 text-sm">
+                    <IconComponent icon={HiOutlineLocationMarker} className="mr-1" />
+                    <span>{university.city}, {university.state ? `${university.state}, ` : ''}{university.country}</span>
+                    <span className="mx-2">•</span>
+                    <span>Rank #{university.ranking || university.qsRanking}</span>
+                  </div>
+                </div>
               </div>
+              <button 
+                onClick={onClose}
+                className="p-2 hover:bg-white/10 rounded-full transition-colors text-white"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
           </div>
-          <button 
-            onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-full transition-colors"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
         </div>
         
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-4rem)]">
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-12rem)]">
+          {/* Action buttons */}
           <div className="flex flex-wrap gap-4 mb-6">
             <motion.button
               whileHover={{ scale: 1.03 }}
@@ -500,98 +549,377 @@ const UniversityDetailModal: React.FC<UniversityDetailModalProps> = ({ universit
               )}
             </motion.button>
             
-            <motion.a
-              href={university.website}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-primary hover:bg-primary-dark text-white py-2 px-4 rounded-lg transition-colors font-medium text-sm flex items-center"
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-            >
-              Visit Official Website <IconComponent icon={FaExternalLinkAlt} className="ml-2" />
-            </motion.a>
+            {university.website && (
+              <motion.a
+                href={university.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-primary hover:bg-primary-dark text-white py-2 px-4 rounded-lg transition-colors font-medium text-sm flex items-center"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                Visit Official Website <IconComponent icon={FaExternalLinkAlt} className="ml-2" />
+              </motion.a>
+            )}
+            
+            {university.applicationLink && university.applicationLink !== '#' && (
+              <motion.a
+                href={university.applicationLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors font-medium text-sm flex items-center"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                Apply Now <IconComponent icon={FaExternalLinkAlt} className="ml-2" />
+              </motion.a>
+            )}
           </div>
+
+          {/* University Description */}
+          {university.description && (
+            <div className="mb-6">
+              <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">
+                <IconComponent icon={FaInfoCircle} className="mr-2 text-primary" /> About University
+              </h3>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-gray-700 leading-relaxed">{university.description}</p>
+              </div>
+            </div>
+          )}
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Left Column */}
             <div>
+              {/* Basic Information */}
+              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                <IconComponent icon={FaUniversity} className="mr-2 text-primary" /> Basic Information
+              </h3>
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <div className="space-y-3">
+                  <div className="flex justify-between py-2 border-b border-gray-200">
+                    <span className="text-gray-600">Established</span>
+                    <span className="font-medium text-gray-800">{university.established_year || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-gray-200">
+                    <span className="text-gray-600">Type</span>
+                    <span className="font-medium text-gray-800">{university.type || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-gray-200">
+                    <span className="text-gray-600">Campus Type</span>
+                    <span className="font-medium text-gray-800">{university.campus_type || university.campusType || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-gray-200">
+                    <span className="text-gray-600">Campus Size</span>
+                    <span className="font-medium text-gray-800">{university.campus_size || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between py-2">
+                    <span className="text-gray-600">Accreditation</span>
+                    <span className="font-medium text-gray-800">{university.accreditation || 'N/A'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tuition & Fees */}
               <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
                 <IconComponent icon={FaDollarSign} className="mr-2 text-primary" /> Tuition & Fees
               </h3>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex justify-between py-2 border-b border-gray-200">
-                  <span className="text-gray-600">Annual Tuition</span>
-                  <span className="font-medium text-gray-800">{formatTuitionFee(university.tuition_fee)}</span>
-                </div>
-                <div className="flex justify-between py-2">
-                  <span className="text-gray-600">Application Fee</span>
-                  <span className="font-medium text-gray-800">{university.application_fee ? `$${university.application_fee}` : 'Contact for details'}</span>
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <div className="space-y-3">
+                  <div className="flex justify-between py-2 border-b border-gray-200">
+                    <span className="text-gray-600">Annual Tuition</span>
+                    <span className="font-medium text-gray-800">{formatTuitionFee(university.tuition_fee)}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-gray-200">
+                    <span className="text-gray-600">Application Fee</span>
+                    <span className="font-medium text-gray-800">{university.application_fee ? `$${university.application_fee}` : 'Contact for details'}</span>
+                  </div>
+                  <div className="flex justify-between py-2">
+                    <span className="text-gray-600">Graduate Tuition</span>
+                    <span className="font-medium text-gray-800">{university.tuitionFees?.graduate || 'Contact for details'}</span>
+                  </div>
                 </div>
               </div>
               
-              <h3 className="text-lg font-bold text-gray-800 mt-6 mb-4 flex items-center">
+              {/* Application Deadlines */}
+              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
                 <IconComponent icon={FaCalendarAlt} className="mr-2 text-primary" /> Application Deadlines
               </h3>
               <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex justify-between py-2 border-b border-gray-200">
-                  <span className="text-gray-600">Fall Intake</span>
-                  <span className="font-medium text-gray-800">{university.applicationDeadlines.fall}</span>
-                </div>
-                <div className="flex justify-between py-2">
-                  <span className="text-gray-600">Spring Intake</span>
-                  <span className="font-medium text-gray-800">{university.applicationDeadlines.spring}</span>
+                <div className="space-y-3">
+                  <div className="flex justify-between py-2 border-b border-gray-200">
+                    <span className="text-gray-600">Fall Intake</span>
+                    <span className="font-medium text-gray-800">{university.applicationDeadlines?.fall || 'Contact University'}</span>
+                  </div>
+                  <div className="flex justify-between py-2">
+                    <span className="text-gray-600">Spring Intake</span>
+                    <span className="font-medium text-gray-800">{university.applicationDeadlines?.spring || 'Contact University'}</span>
+                  </div>
                 </div>
               </div>
             </div>
             
+            {/* Right Column */}
             <div>
+              {/* Statistics */}
               <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                <IconComponent icon={FaGraduationCap} className="mr-2 text-primary" /> Admission Requirements
+                <IconComponent icon={FaChartLine} className="mr-2 text-primary" /> Statistics
               </h3>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex justify-between py-2 border-b border-gray-200">
-                  <span className="text-gray-600">Minimum GPA</span>
-                  <span className="font-medium text-gray-800">{university.admissionRequirements.minGPA}</span>
-                </div>
-                
-                <div className="py-2 border-b border-gray-200">
-                  <p className="text-gray-600 mb-2">Test Scores</p>
-                  <div className="space-y-1">
-                    {university.admissionRequirements.testScores.map((test, index) => (
-                      <div key={index} className="flex justify-between text-sm">
-                        <span className="text-gray-500">{test.name}</span>
-                        <span className="font-medium text-gray-700">{test.score}</span>
-                      </div>
-                    ))}
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <div className="space-y-3">
+                  <div className="flex justify-between py-2 border-b border-gray-200">
+                    <span className="text-gray-600">Acceptance Rate</span>
+                    <span className="font-medium text-gray-800">{formatAcceptanceRate(university.acceptance_rate)}</span>
                   </div>
-                </div>
-                
-                <div className="py-2">
-                  <p className="text-gray-600 mb-2">Language Requirements</p>
-                  <div className="space-y-1">
-                    {university.admissionRequirements.languageRequirements.map((lang, index) => (
-                      <div key={index} className="flex justify-between text-sm">
-                        <span className="text-gray-500">{lang.test}</span>
-                        <span className="font-medium text-gray-700">{lang.score}</span>
-                      </div>
-                    ))}
+                  <div className="flex justify-between py-2 border-b border-gray-200">
+                    <span className="text-gray-600">Student Population</span>
+                    <span className="font-medium text-gray-800">{formatStudentPopulation(university.student_population)}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-gray-200">
+                    <span className="text-gray-600">Faculty Count</span>
+                    <span className="font-medium text-gray-800">{university.faculty_count?.toLocaleString() || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between py-2">
+                    <span className="text-gray-600">Student-Faculty Ratio</span>
+                    <span className="font-medium text-gray-800">
+                      {university.student_population && university.faculty_count 
+                        ? `${Math.round(university.student_population / university.faculty_count)}:1`
+                        : 'N/A'
+                      }
+                    </span>
                   </div>
                 </div>
               </div>
+
+              {/* Admission Requirements */}
+              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                <IconComponent icon={FaGraduationCap} className="mr-2 text-primary" /> Admission Requirements
+              </h3>
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <div className="space-y-3">
+                  <div className="flex justify-between py-2 border-b border-gray-200">
+                    <span className="text-gray-600">Minimum GPA</span>
+                    <span className="font-medium text-gray-800">{university.admissionRequirements?.minGPA || 'Contact University'}</span>
+                  </div>
+                  
+                  {university.admissionRequirements?.testScores && university.admissionRequirements.testScores.length > 0 && (
+                    <div className="py-2 border-b border-gray-200">
+                      <p className="text-gray-600 mb-2">Test Scores</p>
+                      <div className="space-y-1">
+                        {university.admissionRequirements.testScores.map((test, index) => (
+                          <div key={index} className="flex justify-between text-sm">
+                            <span className="text-gray-500">{test.name}</span>
+                            <span className="font-medium text-gray-700">{test.score}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {university.admissionRequirements?.languageRequirements && university.admissionRequirements.languageRequirements.length > 0 && (
+                    <div className="py-2 border-b border-gray-200">
+                      <p className="text-gray-600 mb-2">Language Requirements</p>
+                      <div className="space-y-1">
+                        {university.admissionRequirements.languageRequirements.map((lang, index) => (
+                          <div key={index} className="flex justify-between text-sm">
+                            <span className="text-gray-500">{lang.test}</span>
+                            <span className="font-medium text-gray-700">{lang.score}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Additional Requirements */}
+                  <div className="py-2 border-b border-gray-200">
+                    <p className="text-gray-600 mb-2">Additional Requirements</p>
+                    <div className="space-y-2">
+                      {university.admissionRequirements?.essayRequired && (
+                        <div className="flex items-center text-sm">
+                          <IconComponent icon={FaCheckCircle} className="text-green-500 mr-2" />
+                          <span className="text-gray-700">Admission Essay Required</span>
+                        </div>
+                      )}
+                      {university.admissionRequirements?.lettersOfRecommendation > 0 && (
+                        <div className="flex items-center text-sm">
+                          <IconComponent icon={FaCheckCircle} className="text-green-500 mr-2" />
+                          <span className="text-gray-700">
+                            {university.admissionRequirements.lettersOfRecommendation} Letter(s) of Recommendation
+                          </span>
+                        </div>
+                      )}
+                      {university.admissionRequirements?.interviewRequired && (
+                        <div className="flex items-center text-sm">
+                          <IconComponent icon={FaCheckCircle} className="text-green-500 mr-2" />
+                          <span className="text-gray-700">Interview Required</span>
+                        </div>
+                      )}
+                      {university.admissionRequirements?.workExperienceRequired && (
+                        <div className="flex items-center text-sm">
+                          <IconComponent icon={FaCheckCircle} className="text-green-500 mr-2" />
+                          <span className="text-gray-700">Work Experience Required</span>
+                        </div>
+                      )}
+                      {university.admissionRequirements?.portfolioRequired && (
+                        <div className="flex items-center text-sm">
+                          <IconComponent icon={FaCheckCircle} className="text-green-500 mr-2" />
+                          <span className="text-gray-700">Portfolio Required</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Application Requirements List */}
+                  {university.admissionRequirements?.applicationRequirements && university.admissionRequirements.applicationRequirements.length > 0 && (
+                    <div className="py-2">
+                      <p className="text-gray-600 mb-2">Application Requirements</p>
+                      <div className="space-y-1">
+                        {university.admissionRequirements.applicationRequirements.map((req, index) => (
+                          <div key={index} className="flex items-start text-sm">
+                            <span className="text-gray-400 mr-2">•</span>
+                            <span className="text-gray-700">{req}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Contact Information */}
+              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                <IconComponent icon={FaPhone} className="mr-2 text-primary" /> Contact Information
+              </h3>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="space-y-3">
+                  {university.contact_email && (
+                    <div className="flex items-center py-2 border-b border-gray-200">
+                      <IconComponent icon={FaEnvelope} className="mr-2 text-gray-500" />
+                      <span className="text-gray-600 mr-2">Email:</span>
+                      <a href={`mailto:${university.contact_email}`} className="font-medium text-primary hover:underline">
+                        {university.contact_email}
+                      </a>
+                    </div>
+                  )}
+                  {university.contact_phone && (
+                    <div className="flex items-center py-2 border-b border-gray-200">
+                      <IconComponent icon={FaPhone} className="mr-2 text-gray-500" />
+                      <span className="text-gray-600 mr-2">Phone:</span>
+                      <a href={`tel:${university.contact_phone}`} className="font-medium text-primary hover:underline">
+                        {university.contact_phone}
+                      </a>
+                    </div>
+                  )}
+                  {university.address && (
+                    <div className="flex items-start py-2">
+                      <IconComponent icon={HiOutlineLocationMarker} className="mr-2 text-gray-500 mt-1" />
+                      <div>
+                        <span className="text-gray-600">Address:</span>
+                        <p className="font-medium text-gray-800">{university.address}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Scholarship & Financial Aid */}
+              {(university.scholarshipInfo?.available || university.scholarshipInfo?.financialAidAvailable) && (
+                <div className="mt-6">
+                  <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                    <IconComponent icon={FaDollarSign} className="mr-2 text-primary" /> Scholarships & Financial Aid
+                  </h3>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="space-y-3">
+                      {university.scholarshipInfo.available && (
+                        <div className="flex items-center py-2">
+                          <IconComponent icon={FaCheckCircle} className="text-green-500 mr-2" />
+                          <span className="text-gray-700">Scholarships Available</span>
+                        </div>
+                      )}
+                      {university.scholarshipInfo.financialAidAvailable && (
+                        <div className="flex items-center py-2">
+                          <IconComponent icon={FaCheckCircle} className="text-green-500 mr-2" />
+                          <span className="text-gray-700">Financial Aid Available</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           
-          <div className="mt-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-              <IconComponent icon={FaTrophy} className="mr-2 text-primary" /> Major Strengths
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {university.majorStrengths.map((major, index) => (
-                <span key={index} className="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full">
-                  {major}
-                </span>
-              ))}
+          {/* Programs Offered */}
+          {university.programs_offered && university.programs_offered.length > 0 && (
+            <div className="mt-6">
+              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                <IconComponent icon={FaBookOpen} className="mr-2 text-primary" /> Programs Offered
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {university.programs_offered.map((program, index) => (
+                  <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1.5 rounded-full text-sm">
+                    {program}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Facilities */}
+          {university.facilities && university.facilities.length > 0 && (
+            <div className="mt-6">
+              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                <IconComponent icon={FaBuilding} className="mr-2 text-primary" /> Facilities
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {university.facilities.map((facility, index) => (
+                  <span key={index} className="bg-green-100 text-green-800 px-3 py-1.5 rounded-full text-sm">
+                    {facility}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Notable Alumni */}
+          {university.notable_alumni && university.notable_alumni.length > 0 && (
+            <div className="mt-6">
+              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                <IconComponent icon={FaAward} className="mr-2 text-primary" /> Notable Alumni
+              </h3>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {university.notable_alumni.map((alumni, index) => (
+                    <div key={index} className="text-gray-700">• {alumni}</div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Gallery */}
+          {university.gallery && university.gallery.length > 0 && (
+            <div className="mt-6">
+              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                <IconComponent icon={FaEye} className="mr-2 text-primary" /> Campus Gallery
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {university.gallery.slice(0, 6).map((image, index) => (
+                  <div key={index} className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                    <img 
+                      src={image} 
+                      alt={`${university.name} campus ${index + 1}`}
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </motion.div>
     </div>
@@ -1013,23 +1341,32 @@ const Database: React.FC = () => {
             // Use programs_offered as majorStrengths
             majorStrengths: uni.programs_offered || [],
             applicationDeadlines: {
-              fall: 'September 1',
-              spring: 'January 15'
+              fall: uni.application_deadline_fall || 'September 1',
+              spring: uni.application_deadline_spring || 'January 15',
+              summer: uni.application_deadline_summer || 'May 1'
             },
             admissionRequirements: {
-              minGPA: 3.0,
+              minGPA: uni.min_gpa_required || 3.0,
               testScores: [
-                { name: 'SAT', score: '1200+' },
-                { name: 'ACT', score: '26+' }
-              ],
+                ...(uni.sat_score_required ? [{ name: 'SAT', score: uni.sat_score_required }] : []),
+                ...(uni.act_score_required ? [{ name: 'ACT', score: uni.act_score_required }] : []),
+                ...(uni.gre_score_required ? [{ name: 'GRE', score: uni.gre_score_required }] : []),
+                ...(uni.gmat_score_required ? [{ name: 'GMAT', score: uni.gmat_score_required }] : [])
+              ].filter(test => test.score),
               languageRequirements: [
-                { test: 'IELTS', score: '6.5' },
-                { test: 'TOEFL', score: '80' }
-              ]
+                ...(uni.ielts_score_required ? [{ test: 'IELTS', score: uni.ielts_score_required }] : []),
+                ...(uni.toefl_score_required ? [{ test: 'TOEFL', score: uni.toefl_score_required }] : [])
+              ].filter(lang => lang.score),
+              essayRequired: uni.admission_essay_required || false,
+              lettersOfRecommendation: uni.letters_of_recommendation_required || 0,
+              interviewRequired: uni.interview_required || false,
+              workExperienceRequired: uni.work_experience_required || false,
+              portfolioRequired: uni.portfolio_required || false,
+              applicationRequirements: uni.application_requirements || []
             },
             tuitionFees: {
               undergraduate: `$${uni.tuition_fee?.toLocaleString() || '25,000'}/year`,
-              graduate: `$${((uni.tuition_fee || 25000) * 1.2)?.toLocaleString() || '30,000'}/year`
+              graduate: `$${(uni.tuition_fee_graduate || uni.tuition_fee * 1.2 || 30000)?.toLocaleString()}/year`
             },
             applicationLink: uni.website || '#',
             rankingType: uni.ranking_type || 'QS World University Rankings',
@@ -1046,7 +1383,11 @@ const Database: React.FC = () => {
             studentPopulation: uni.student_population?.toLocaleString() || '10,000',
             researchOutput: 'High',
             employmentRate: '85%',
-            campusType: uni.campus_type || 'Urban'
+            campusType: uni.campus_type || 'Urban',
+            scholarshipInfo: {
+              available: uni.scholarship_available || false,
+              financialAidAvailable: uni.financial_aid_available || false
+            }
           }));
           
           console.log('Transformed universities:', transformedData);
@@ -1286,7 +1627,7 @@ const Database: React.FC = () => {
   // AI Analysis function
   const handleAIAnalysis = async () => {
     if (!user) {
-      alert('Please log in to use AI Analysis');
+      alert('Please log in to get AI analysis');
       return;
     }
 
@@ -1298,36 +1639,24 @@ const Database: React.FC = () => {
 
     setIsLoadingAI(true);
     try {
-      // Fetch user profile data from Supabase
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+      // Fetch user profile data using the userProfileAPI
+      const profileResult = await userProfileAPI.getUserProfile(session);
 
-      if (error && error.code === 'PGRST116') {
-        setShowProfileModal(true);
-        setIsLoadingAI(false);
-        return;
-      } else if (error) {
-        console.error('Error fetching profile:', error);
-        alert('Error fetching your profile. Please try again.');
-        setIsLoadingAI(false);
-        return;
-      } else if (!profile) {
+      if (!profileResult.success || !profileResult.profile) {
+        console.error('Error fetching profile:', profileResult.error);
         setShowProfileModal(true);
         setIsLoadingAI(false);
         return;
       }
 
+      const profile = profileResult.profile;
+
       // Prepare user data for AI analysis
       const userData = {
         name: profile.full_name,
         currentEducation: profile.current_education_level,
-        institution: profile.current_institution,
         gpa: profile.current_gpa,
         gpaScale: profile.gpa_scale,
-        graduationYear: profile.graduation_year,
         fieldOfStudy: profile.field_of_study,
         preferredField: profile.preferred_field,
         preferredDegree: profile.preferred_degree_level,
@@ -1342,28 +1671,28 @@ const Database: React.FC = () => {
           ielts: profile.ielts_score,
           duolingo: profile.duolingo_score
         },
-        extracurriculars: profile.extracurricular_activities,
-        careerGoals: profile.career_goals,
-        workExperience: profile.work_experience,
-        researchExperience: profile.research_experience
+        careerGoals: profile.career_goals
       };
 
-      const aiPrompt = `Please analyze this student's academic profile and provide a comprehensive analysis in XML format. Here is the student data:
+      const aiPrompt = `Please analyze this student's academic profile and provide detailed insights in XML format:
 
+Student Profile:
 ${JSON.stringify(userData, null, 2)}
 
-Please provide your analysis in the following XML structure:
+Please provide your analysis in this exact XML format:
+
 <analysis>
-  <academic_strength percentage="85">Strong academic performance with excellent GPA</academic_strength>
+  <academic_strength percentage="85">Strong academic performance with excellent GPA and test scores</academic_strength>
   <competitive_level>Highly Competitive</competitive_level>
   <budget_analysis>
     <level>Moderate Budget</level>
-    <recommendation>Consider universities with good financial aid programs</recommendation>
+    <recommendation>Consider applying for merit-based scholarships</recommendation>
     <affordable_options>15</affordable_options>
   </budget_analysis>
   <recommended_regions>
     <region>North America</region>
     <region>Europe</region>
+    <region>Australia</region>
   </recommended_regions>
   <suggestions>
     <suggestion>Focus on improving standardized test scores</suggestion>
@@ -1374,27 +1703,27 @@ Please provide your analysis in the following XML structure:
 
 Analyze their academic strength, competitiveness, budget considerations, recommended study regions, and provide actionable suggestions for improvement.`;
 
-      // Call the AI API
-      const response = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+      // Call the AI API with streaming
+      const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer 95fad12c-0768-4de2-a4c2-83247337ea89',
+          'Authorization': 'Bearer sk-80beadf6603b4832981d0d65896b1ae0',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: "doubao-vision-pro-32k-241028",
+          model: "qvq-max",
           messages: [
             {
-              role: "system",
-              content: "You are an AI education consultant from Hong Kong helping students with university applications and academic planning. Provide detailed, personalized analysis based on student profiles. Always respond in the exact XML format requested."
-            },
-            {
               role: "user",
-              content: aiPrompt
+              content: [
+                {
+                  type: "text",
+                  text: aiPrompt
+                }
+              ]
             }
           ],
-          max_tokens: 4000,
-          temperature: 0.7
+          stream: true
         })
       });
 
@@ -1402,8 +1731,59 @@ Analyze their academic strength, competitiveness, budget considerations, recomme
         throw new Error(`AI API error: ${response.status}`);
       }
 
-      const aiResponse = await response.json();
-      const aiContent = aiResponse.choices[0].message.content;
+      // Handle streaming response
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body reader available');
+      }
+
+      let aiContent = '';
+      let isAnswering = false;
+      
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = new TextDecoder().decode(value);
+          const lines = chunk.split('\n').filter(line => line.trim() !== '');
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+              
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta) {
+                  const delta = parsed.choices[0].delta;
+                  
+                  // Skip reasoning content, only collect the final answer
+                  if (delta.reasoning_content) {
+                    // This is the thinking process, we can skip it for analysis
+                    continue;
+                  } else if (delta.content) {
+                    // This is the actual answer content
+                    if (!isAnswering && delta.content.trim() !== '') {
+                      isAnswering = true;
+                    }
+                    if (isAnswering) {
+                      aiContent += delta.content;
+                      // Update UI in real-time
+                      setAiAnalysisData(aiContent);
+                    }
+                  }
+                }
+              } catch (parseError) {
+                // Skip invalid JSON chunks
+                continue;
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
 
       // Parse XML response
       const parser = new DOMParser();
@@ -1464,27 +1844,17 @@ Analyze their academic strength, competitiveness, budget considerations, recomme
 
     setIsLoadingAI(true);
     try {
-      // Fetch user profile data from Supabase
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+      // Fetch user profile data using the userProfileAPI
+      const profileResult = await userProfileAPI.getUserProfile(session);
 
-      if (error && error.code === 'PGRST116') {
-        setShowProfileModal(true);
-        setIsLoadingAI(false);
-        return;
-      } else if (error) {
-        console.error('Error fetching profile:', error);
-        alert('Error fetching your profile. Please try again.');
-        setIsLoadingAI(false);
-        return;
-      } else if (!profile) {
+      if (!profileResult.success || !profileResult.profile) {
+        console.error('Error fetching profile:', profileResult.error);
         setShowProfileModal(true);
         setIsLoadingAI(false);
         return;
       }
+
+      const profile = profileResult.profile;
 
       // Prepare user data and university list for AI
       const userData = {
@@ -1557,27 +1927,27 @@ Please analyze the student's academic profile, test scores, field preferences, b
 
 Consider factors like academic fit, budget compatibility, location preferences, admission requirements, and career alignment.`;
 
-      // Call the AI API
-      const response = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+      // Call the AI API with streaming
+      const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer 95fad12c-0768-4de2-a4c2-83247337ea89',
+          'Authorization': 'Bearer sk-80beadf6603b4832981d0d65896b1ae0',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: "doubao-vision-pro-32k-241028",
+          model: "qvq-max",
           messages: [
             {
-              role: "system",
-              content: "You are an AI university admissions consultant from Hong Kong. Analyze student profiles and recommend the best matching universities from the provided list. Always respond in the exact XML format requested with university IDs that exist in the provided list."
-            },
-            {
               role: "user",
-              content: aiPrompt
+              content: [
+                {
+                  type: "text",
+                  text: aiPrompt
+                }
+              ]
             }
           ],
-          max_tokens: 4000,
-          temperature: 0.7
+          stream: true
         })
       });
 
@@ -1585,8 +1955,57 @@ Consider factors like academic fit, budget compatibility, location preferences, 
         throw new Error(`AI API error: ${response.status}`);
       }
 
-      const aiResponse = await response.json();
-      const aiContent = aiResponse.choices[0].message.content;
+      // Handle streaming response
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body reader available');
+      }
+
+      let aiContent = '';
+      let isAnswering = false;
+      
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = new TextDecoder().decode(value);
+          const lines = chunk.split('\n').filter(line => line.trim() !== '');
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+              
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta) {
+                  const delta = parsed.choices[0].delta;
+                  
+                  // Skip reasoning content, only collect the final answer
+                  if (delta.reasoning_content) {
+                    // This is the thinking process, we can skip it for recommendations
+                    continue;
+                  } else if (delta.content) {
+                    // This is the actual answer content
+                    if (!isAnswering && delta.content.trim() !== '') {
+                      isAnswering = true;
+                    }
+                    if (isAnswering) {
+                      aiContent += delta.content;
+                    }
+                  }
+                }
+              } catch (parseError) {
+                // Skip invalid JSON chunks
+                continue;
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
 
       // Parse XML response
       const parser = new DOMParser();
@@ -1647,14 +2066,10 @@ Consider factors like academic fit, budget compatibility, location preferences, 
       console.error('Error getting recommendations:', error);
       // Fall back to algorithm-based recommendations
       try {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
+        const profileResult = await userProfileAPI.getUserProfile(session);
         
-        if (profile) {
-          const fallbackRecommendations = generateUniversityRecommendations(profile, universities);
+        if (profileResult.success && profileResult.profile) {
+          const fallbackRecommendations = generateUniversityRecommendations(profileResult.profile, universities);
           setRecommendedUniversities(fallbackRecommendations);
           
           // Add only the first recommended university to compare list
@@ -1933,42 +2348,23 @@ Consider factors like academic fit, budget compatibility, location preferences, 
     </motion.div>
   );
 
-  // Auto-generate recommendation when compare modal is opened
+  // Auto-generate recommendation for compare modal
   const autoGenerateRecommendation = async () => {
-    if (!user || recommendedUniversities.length > 0) return;
-
-    // Check profile completion first
-    if (userProfileCompletion < 50) {
-      setShowProfileModal(true);
-      return;
-    }
-
+    if (!user) return;
+    
     setIsAutoGeneratingRecommendation(true);
+    
     try {
-      // Fetch user profile data using the new API
       const profileResult = await userProfileAPI.getUserProfile(session);
-
+      
       if (!profileResult.success || !profileResult.profile) {
-        // Use algorithmic fallback if profile fetch fails
-        const fallbackRecommendations = generateUniversityRecommendations({}, universities);
-        if (fallbackRecommendations.length > 0) {
-          const topRecommendation = fallbackRecommendations[0];
-          setRecommendedUniversities(fallbackRecommendations);
-          setCompareList(prev => {
-            const exists = prev.some(existing => existing.id === topRecommendation.id);
-            if (!exists) {
-              return [topRecommendation, ...prev];
-            }
-            return prev;
-          });
-        }
+        console.error('Error fetching profile for auto-recommendation');
         setIsAutoGeneratingRecommendation(false);
         return;
       }
 
       const profile = profileResult.profile;
 
-      // Quick AI recommendation for just the top university
       const userData = {
         name: profile.full_name,
         currentEducation: profile.current_education_level,
@@ -1976,10 +2372,10 @@ Consider factors like academic fit, budget compatibility, location preferences, 
         fieldOfStudy: profile.field_of_study,
         preferredField: profile.preferred_field,
         budgetRange: profile.budget_range,
-        preferredLocation: profile.preferred_study_location,
-        careerGoals: profile.career_goals
+        preferredLocation: profile.preferred_study_location
       };
 
+      // Use a smaller subset for faster processing
       const universityList = universities.slice(0, 20).map(uni => ({
         id: uni.id,
         name: uni.name,
@@ -1996,32 +2392,81 @@ Universities: ${JSON.stringify(universityList, null, 2)}
 Return format: <recommendation><university id="X"/></recommendation>`;
 
       try {
-        const response = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+        const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
           method: 'POST',
           headers: {
-            'Authorization': 'Bearer 95fad12c-0768-4de2-a4c2-83247337ea89',
+            'Authorization': 'Bearer sk-80beadf6603b4832981d0d65896b1ae0',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: "doubao-vision-pro-32k-241028",
+            model: "qvq-max",
             messages: [
               {
-                role: "system",
-                content: "You are an AI university consultant. Select the best matching university and return only the ID in the specified XML format."
-              },
-              {
                 role: "user",
-                content: quickPrompt
+                content: [
+                  {
+                    type: "text",
+                    text: quickPrompt
+                  }
+                ]
               }
             ],
-            max_tokens: 500,
-            temperature: 0.5
+            stream: true
           })
         });
 
         if (response.ok) {
-          const aiResponse = await response.json();
-          const aiContent = aiResponse.choices[0].message.content;
+          // Handle streaming response
+          const reader = response.body?.getReader();
+          if (!reader) {
+            throw new Error('No response body reader available');
+          }
+
+          let aiContent = '';
+          let isAnswering = false;
+          
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              
+              const chunk = new TextDecoder().decode(value);
+              const lines = chunk.split('\n').filter(line => line.trim() !== '');
+              
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  const data = line.slice(6);
+                  if (data === '[DONE]') continue;
+                  
+                  try {
+                    const parsed = JSON.parse(data);
+                    if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta) {
+                      const delta = parsed.choices[0].delta;
+                      
+                      // Skip reasoning content, only collect the final answer
+                      if (delta.reasoning_content) {
+                        // This is the thinking process, we can skip it for quick recommendations
+                        continue;
+                      } else if (delta.content) {
+                        // This is the actual answer content
+                        if (!isAnswering && delta.content.trim() !== '') {
+                          isAnswering = true;
+                        }
+                        if (isAnswering) {
+                          aiContent += delta.content;
+                        }
+                      }
+                    }
+                  } catch (parseError) {
+                    // Skip invalid JSON chunks
+                    continue;
+                  }
+                }
+              }
+            }
+          } finally {
+            reader.releaseLock();
+          }
           
           const parser = new DOMParser();
           const xmlDoc = parser.parseFromString(aiContent, 'text/xml');

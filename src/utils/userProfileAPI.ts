@@ -87,7 +87,7 @@ class UserProfileAPI {
       if (response.ok) {
         return {
           success: true,
-          profile: data.profile,
+          profile: data.data || data.profile,
         };
       } else {
         return {

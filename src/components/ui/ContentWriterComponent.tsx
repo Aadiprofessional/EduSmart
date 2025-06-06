@@ -20,8 +20,17 @@ const ContentWriterComponent: React.FC = () => {
   const [selectionData, setSelectionData] = useState<{text: string, start: number, end: number} | null>(null);
   const [showAskAIModal, setShowAskAIModal] = useState(false);
   const [askAIInstruction, setAskAIInstruction] = useState('');
+  const [askAISuggestion, setAskAISuggestion] = useState('');
   const [isProcessingSelection, setIsProcessingSelection] = useState(false);
   const askAIButtonRef = useRef<HTMLDivElement>(null);
+  
+  // Add missing state variables for content generation
+  const [contentType, setContentType] = useState('essay');
+  const [wordCount, setWordCount] = useState(500);
+  const [tone, setTone] = useState('academic');
+  const [progress, setProgress] = useState(0);
+  const [currentStep, setCurrentStep] = useState<'analyzing' | 'generating' | 'finalizing'>('analyzing');
+  
   const [contentHistory, setContentHistory] = useState<{ 
     title: string, 
     date: string, 
@@ -50,7 +59,7 @@ const ContentWriterComponent: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editProgress, setEditProgress] = useState(0);
   const [highlightedSections, setHighlightedSections] = useState<{start: number, end: number, original: string, updated: string}[]>([]);
-  const [editStep, setEditStep] = useState<'analyzing' | 'searching' | 'updating'>('analyzing');
+  const [editStep, setEditStep] = useState<'analyzing' | 'searching' | 'updating' | 'completed'>('analyzing');
   const [showDownloadOptions, setShowDownloadOptions] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const pageHeight = 650; // Approximate height of a standard A4 page with given font size
@@ -106,8 +115,12 @@ const ContentWriterComponent: React.FC = () => {
   // Add delay between API calls to avoid rate limits
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-  // Helper function to make API calls with retry logic
-  const makeAPICall = async (prompt: string, retries = 3): Promise<string> => {
+  // Helper function to make API calls with streaming and retry logic
+  const makeAPICall = async (
+    prompt: string, 
+    retries = 3, 
+    onChunk?: (chunk: string) => void
+  ): Promise<string> => {
     for (let i = 0; i < retries; i++) {
       try {
         // Add delay between retries
@@ -115,26 +128,28 @@ const ContentWriterComponent: React.FC = () => {
           await delay(2000 * i); // Exponential backoff
         }
 
-        const response = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+        const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
           method: 'POST',
           headers: {
-            'Authorization': 'Bearer 95fad12c-0768-4de2-a4c2-83247337ea89',
+            'Authorization': 'Bearer sk-80beadf6603b4832981d0d65896b1ae0',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: "doubao-vision-pro-32k-241028",
+            model: "qvq-max",
             messages: [
               {
-                role: "system",
-                content: "You are a professional academic writing assistant. Generate high-quality, well-structured content based on user prompts. Focus on clarity, coherence, and academic standards."
-              },
-              {
                 role: "user",
-                content: prompt
+                content: [
+                  {
+                    type: "text",
+                    text: `You are a professional academic writing assistant. Generate high-quality, well-structured content based on user prompts. Focus on clarity, coherence, and academic standards.
+
+User request: ${prompt}`
+                  }
+                ]
               }
             ],
-            max_tokens: 4000,
-            temperature: 0.7
+            stream: true
           })
         });
 
@@ -142,8 +157,63 @@ const ContentWriterComponent: React.FC = () => {
           throw new Error(`API call failed: ${response.status} ${response.statusText}`);
         }
 
-        const data = await response.json();
-        return data.choices?.[0]?.message?.content || 'Error generating content';
+        // Handle streaming response
+        const reader = response.body?.getReader();
+        if (!reader) {
+          throw new Error('No response body reader available');
+        }
+
+        let fullContent = '';
+        let isAnswering = false;
+        
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            const chunk = new TextDecoder().decode(value);
+            const lines = chunk.split('\n').filter(line => line.trim() !== '');
+            
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                if (data === '[DONE]') continue;
+                
+                try {
+                  const parsed = JSON.parse(data);
+                  if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta) {
+                    const delta = parsed.choices[0].delta;
+                    
+                    // Skip reasoning content, only collect the final answer
+                    if (delta.reasoning_content) {
+                      // This is the thinking process, we can skip it for content writing
+                      continue;
+                    } else if (delta.content) {
+                      // This is the actual answer content
+                      if (!isAnswering && delta.content.trim() !== '') {
+                        isAnswering = true;
+                      }
+                      if (isAnswering) {
+                        fullContent += delta.content;
+                        // Call the chunk callback if provided
+                        if (onChunk) {
+                          onChunk(delta.content);
+                        }
+                      }
+                    }
+                  }
+                } catch (parseError) {
+                  // Skip invalid JSON chunks
+                  continue;
+                }
+              }
+            }
+          }
+        } finally {
+          reader.releaseLock();
+        }
+
+        return fullContent.trim() || 'Error generating content';
       } catch (error) {
         if (i === retries - 1) throw error; // Throw on last retry
         console.warn('API call failed, retrying...', error);
@@ -152,15 +222,54 @@ const ContentWriterComponent: React.FC = () => {
     throw new Error('API call failed after retries');
   };
 
-  const handleGenerateContent = async () => {
+  // Generate content with streaming
+  const generateContent = async () => {
     if (!prompt.trim()) return;
     
     setIsGenerating(true);
+    setProgress(0);
+    setCurrentStep('analyzing');
+    setGeneratedContent(''); // Clear previous content
+    setEditedContent(''); // Clear edited content too
+    
     try {
-      const content = await makeAPICall(prompt);
+      const fullPrompt = `Generate ${contentType} content about: ${prompt}
+      
+      ${contentType === 'essay' ? 'Please write a well-structured essay with introduction, body paragraphs, and conclusion.' : ''}
+      ${contentType === 'article' ? 'Please write an informative article with clear headings and sections.' : ''}
+      ${contentType === 'blog' ? 'Please write an engaging blog post with a catchy introduction and conclusion.' : ''}
+      ${contentType === 'report' ? 'Please write a professional report with executive summary and detailed analysis.' : ''}
+      ${contentType === 'summary' ? 'Please write a concise summary highlighting the key points.' : ''}
+      ${contentType === 'outline' ? 'Please create a detailed outline with main points and sub-points.' : ''}
+      
+      Target length: ${wordCount} words
+      Tone: ${tone}
+      
+      Please provide high-quality, original content that is well-researched and properly structured.`;
+
+      setCurrentStep('generating');
+      setProgress(25);
+
+      let fullContent = '';
+      
+      // Use streaming API call with real-time updates
+      await makeAPICall(fullPrompt, 3, (chunk: string) => {
+        fullContent += chunk;
+        
+        // Update content in real-time for streaming effect
+        setGeneratedContent(fullContent);
+        setEditedContent(fullContent);
+        
+        // Update progress based on content length
+        const estimatedProgress = Math.min(25 + (fullContent.length / (wordCount * 6)) * 65, 90);
+        setProgress(estimatedProgress);
+      });
+
+      setCurrentStep('finalizing');
+      setProgress(95);
       
       // Clean up the AI response to remove unwanted text
-      let cleanedContent = content
+      let cleanedContent = fullContent
         .replace(/^(I am [^.]*(AI|LLM|Assistant|GPT|language model)[^.]*\.)/i, '') // Remove AI self-identification
         .replace(/^(Here'?s?( is)?( a| an| your| the)?( \d+[-\s]word)? (essay|response|text|content|output)[:.]\s*)/i, '') // Remove "Here's an essay:" type text
         .replace(/^(In response to your request|As requested|Based on your prompt)[^.]*/i, '') // Remove other common AI prefixes
@@ -186,6 +295,7 @@ const ContentWriterComponent: React.FC = () => {
         cleanedContent = `Title: ${title}\n\n${cleanedContent}`;
       }
         
+      // Final update with cleaned content
       setGeneratedContent(cleanedContent);
       setEditedContent(cleanedContent);
       
@@ -198,12 +308,128 @@ const ContentWriterComponent: React.FC = () => {
         prompt: prompt
       };
       setContentHistory([newHistoryItem, ...contentHistory]);
+      
+      setProgress(100);
+      
+      // Small delay to show completion
+      setTimeout(() => {
+        setIsGenerating(false);
+        setProgress(0);
+        setCurrentStep('analyzing');
+      }, 500);
+      
     } catch (error) {
       console.error('Error generating content:', error);
       setGeneratedContent('Error generating content. Please try again.');
       setEditedContent('Error generating content. Please try again.');
-    } finally {
       setIsGenerating(false);
+      setProgress(0);
+      setCurrentStep('analyzing');
+    }
+  };
+
+  const handleGenerateContent = async () => {
+    if (!prompt.trim()) return;
+    
+    setIsGenerating(true);
+    setProgress(0);
+    setCurrentStep('analyzing');
+    setGeneratedContent(''); // Clear previous content
+    setEditedContent(''); // Clear edited content too
+    
+    try {
+      const fullPrompt = `Generate ${contentType} content about: ${prompt}
+      
+      ${contentType === 'essay' ? 'Please write a well-structured essay with introduction, body paragraphs, and conclusion.' : ''}
+      ${contentType === 'article' ? 'Please write an informative article with clear headings and sections.' : ''}
+      ${contentType === 'blog' ? 'Please write an engaging blog post with a catchy introduction and conclusion.' : ''}
+      ${contentType === 'report' ? 'Please write a professional report with executive summary and detailed analysis.' : ''}
+      ${contentType === 'summary' ? 'Please write a concise summary highlighting the key points.' : ''}
+      ${contentType === 'outline' ? 'Please create a detailed outline with main points and sub-points.' : ''}
+      
+      Target length: ${wordCount} words
+      Tone: ${tone}
+      
+      Please provide high-quality, original content that is well-researched and properly structured.`;
+
+      setCurrentStep('generating');
+      setProgress(25);
+
+      let fullContent = '';
+      
+      // Use streaming API call with real-time updates
+      await makeAPICall(fullPrompt, 3, (chunk: string) => {
+        fullContent += chunk;
+        
+        // Update content in real-time for streaming effect
+        setGeneratedContent(fullContent);
+        setEditedContent(fullContent);
+        
+        // Update progress based on content length
+        const estimatedProgress = Math.min(25 + (fullContent.length / (wordCount * 6)) * 65, 90);
+        setProgress(estimatedProgress);
+      });
+
+      setCurrentStep('finalizing');
+      setProgress(95);
+      
+      // Clean up the AI response to remove unwanted text
+      let cleanedContent = fullContent
+        .replace(/^(I am [^.]*(AI|LLM|Assistant|GPT|language model)[^.]*\.)/i, '') // Remove AI self-identification
+        .replace(/^(Here'?s?( is)?( a| an| your| the)?( \d+[-\s]word)? (essay|response|text|content|output)[:.]\s*)/i, '') // Remove "Here's an essay:" type text
+        .replace(/^(In response to your request|As requested|Based on your prompt)[^.]*/i, '') // Remove other common AI prefixes
+        .replace(/^[\s\n]*/, '') // Remove leading whitespace
+        .replace(/\n*$/g, '') // Remove trailing newlines
+        .replace(/(Let me know if you|Hope this|If you need any|Do you want me to)[^]*$/i, '') // Remove trailing questions
+        .replace(/#{1,6}\s*/g, '') // Remove markdown headers
+        .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown but keep text
+        .replace(/\*(.*?)\*/g, '$1') // Remove italic markdown but keep text
+        .replace(/_(.*?)_/g, '$1') // Remove underline markdown but keep text
+        .replace(/==(.*?)==/g, '$1') // Remove highlight markdown but keep text
+        .trim();
+        
+      // Extract title if it exists 
+      let title = '';
+      const titleMatch = cleanedContent.match(/^(?:Title:?\s*)(.*?)(?:\n|$)/i);
+      if (titleMatch && titleMatch[1]) {
+        title = titleMatch[1].trim();
+      }
+        
+      // Add title back if it was removed
+      if (title && !cleanedContent.includes(title)) {
+        cleanedContent = `Title: ${title}\n\n${cleanedContent}`;
+      }
+        
+      // Final update with cleaned content
+      setGeneratedContent(cleanedContent);
+      setEditedContent(cleanedContent);
+      
+      // Add to history with template and prompt information
+      const newHistoryItem = {
+        title: title || getHistoryTitle(prompt),
+        date: 'Just now',
+        content: cleanedContent,
+        template: activeTemplate,
+        prompt: prompt
+      };
+      setContentHistory([newHistoryItem, ...contentHistory]);
+      
+      setProgress(100);
+      
+      // Small delay to show completion
+      setTimeout(() => {
+        setIsGenerating(false);
+        setProgress(0);
+        setCurrentStep('analyzing');
+      }, 500);
+      
+    } catch (error) {
+      console.error('Error generating content:', error);
+      setGeneratedContent('Error generating content. Please try again.');
+      setEditedContent('Error generating content. Please try again.');
+      setIsGenerating(false);
+      setProgress(0);
+      setCurrentStep('analyzing');
     }
   };
 
@@ -439,7 +665,7 @@ const ContentWriterComponent: React.FC = () => {
     setShowHistory(false);
   };
 
-  // Add the AI Edit functionality
+  // Add the AI Edit functionality with streaming
   const handleAIEdit = async () => {
     if (!editInstructions.trim() || !editedContent.trim()) return;
     
@@ -460,26 +686,28 @@ Please return the edited content with the requested changes applied. Maintain th
       setEditStep('updating');
       setEditProgress(50);
 
-      const response = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+      const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer 95fad12c-0768-4de2-a4c2-83247337ea89',
+          'Authorization': 'Bearer sk-80beadf6603b4832981d0d65896b1ae0',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: "doubao-vision-pro-32k-241028",
+          model: "qvq-max",
           messages: [
             {
-              role: "system",
-              content: "You are a professional content editor. Apply the requested changes to the content while maintaining quality and coherence."
-            },
-            {
               role: "user",
-              content: prompt
+              content: [
+                {
+                  type: "text",
+                  text: `You are a professional content editor. Apply the requested changes to the content while maintaining quality and coherence.
+
+${prompt}`
+                }
+              ]
             }
           ],
-          max_tokens: 4000,
-          temperature: 0.3
+          stream: true
         })
       });
 
@@ -487,13 +715,62 @@ Please return the edited content with the requested changes applied. Maintain th
         throw new Error(`API call failed: ${response.status} ${response.statusText}`);
       }
 
-      const data = await response.json();
-      let editedResult = data.choices?.[0]?.message?.content || editedContent;
+      // Handle streaming response
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body reader available');
+      }
 
-      // Clean up the response
+      let editedResult = '';
+      let isAnswering = false;
+      
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = new TextDecoder().decode(value);
+          const lines = chunk.split('\n').filter(line => line.trim() !== '');
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+              
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta) {
+                  const delta = parsed.choices[0].delta;
+                  
+                  // Skip reasoning content, only collect the final answer
+                  if (delta.reasoning_content) {
+                    // This is the thinking process, we can skip it for editing
+                    continue;
+                  } else if (delta.content) {
+                    // This is the actual answer content
+                    if (!isAnswering && delta.content.trim() !== '') {
+                      isAnswering = true;
+                    }
+                    if (isAnswering) {
+                      editedResult += delta.content;
+                      // Update progress
+                      setEditProgress(50 + (editedResult.length / editedContent.length) * 40);
+                    }
+                  }
+                }
+              } catch (parseError) {
+                // Skip invalid JSON chunks
+                continue;
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+
+      // Clean up markdown formatting
       editedResult = editedResult
-        .replace(/^(Here is|Here's|I've|The edited|The updated)[^]*/i, '')
-        .replace(/[\r\n]+(Let me know|Hope this helps|Is there anything else)[^]*$/i, '')
         .replace(/#{1,6}\s*/g, '') // Remove markdown headers
         .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown but keep text
         .replace(/\*(.*?)\*/g, '$1') // Remove italic markdown but keep text
@@ -501,24 +778,23 @@ Please return the edited content with the requested changes applied. Maintain th
         .replace(/==(.*?)==/g, '$1') // Remove highlight markdown but keep text
         .trim();
 
+      setEditedContent(editedResult || editedContent);
       setEditProgress(100);
+      setEditStep('completed');
       
-      // Update the content
-      setEditedContent(editedResult);
-      
-      // Close modal after a brief delay
+      // Reset after a delay
       setTimeout(() => {
-        setShowAIEditModal(false);
-        setEditInstructions('');
         setIsEditing(false);
         setEditProgress(0);
+        setEditStep('analyzing');
+        setEditInstructions('');
       }, 1000);
-      
+
     } catch (error) {
-      console.error('Error during AI editing:', error);
-      alert('An error occurred during editing. Please try again.');
+      console.error('AI Edit error:', error);
       setIsEditing(false);
       setEditProgress(0);
+      setEditStep('analyzing');
     }
   };
 
@@ -611,7 +887,7 @@ Please return the edited content with the requested changes applied. Maintain th
     setShowAskAIModal(true);
   };
   
-  // Process the AI instruction for selected text
+  // Process the AI instruction for selected text with streaming
   const processAskAIRequest = async () => {
     if (!askAIInstruction.trim() || !selectionData) return;
     
@@ -628,26 +904,28 @@ Instruction: ${instruction}
 
 Please provide a helpful response or suggestion for improving this text.`;
 
-      const response = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+      const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer 95fad12c-0768-4de2-a4c2-83247337ea89',
+          'Authorization': 'Bearer sk-80beadf6603b4832981d0d65896b1ae0',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: "doubao-vision-pro-32k-241028",
+          model: "qvq-max",
           messages: [
             {
-              role: "system",
-              content: "You are a helpful writing assistant. Provide concise, actionable suggestions for improving text based on user instructions."
-            },
-            {
               role: "user",
-              content: prompt
+              content: [
+                {
+                  type: "text",
+                  text: `You are a helpful writing assistant. Provide concise, actionable suggestions for improving text based on user instructions.
+
+${prompt}`
+                }
+              ]
             }
           ],
-          max_tokens: 1000,
-          temperature: 0.7
+          stream: true
         })
       });
 
@@ -655,8 +933,57 @@ Please provide a helpful response or suggestion for improving this text.`;
         throw new Error(`API call failed: ${response.status} ${response.statusText}`);
       }
 
-      const data = await response.json();
-      let suggestion = data.choices?.[0]?.message?.content || 'No suggestion available';
+      // Handle streaming response
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body reader available');
+      }
+
+      let suggestion = '';
+      let isAnswering = false;
+      
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = new TextDecoder().decode(value);
+          const lines = chunk.split('\n').filter(line => line.trim() !== '');
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+              
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta) {
+                  const delta = parsed.choices[0].delta;
+                  
+                  // Skip reasoning content, only collect the final answer
+                  if (delta.reasoning_content) {
+                    // This is the thinking process, we can skip it for suggestions
+                    continue;
+                  } else if (delta.content) {
+                    // This is the actual answer content
+                    if (!isAnswering && delta.content.trim() !== '') {
+                      isAnswering = true;
+                    }
+                    if (isAnswering) {
+                      suggestion += delta.content;
+                    }
+                  }
+                }
+              } catch (parseError) {
+                // Skip invalid JSON chunks
+                continue;
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
       
       // Clean up markdown formatting from the suggestion
       suggestion = suggestion
@@ -666,19 +993,11 @@ Please provide a helpful response or suggestion for improving this text.`;
         .replace(/_(.*?)_/g, '$1') // Remove underline markdown but keep text
         .replace(/==(.*?)==/g, '$1') // Remove highlight markdown but keep text
         .trim();
-      
-      // Show the suggestion to the user
-      alert(`AI Suggestion:\n\n${suggestion}`);
-      
-      // Reset the modal
-      setShowAskAIModal(false);
-      setAskAIInstruction('');
-      setShowAskAIButton(false);
-      setSelectionData(null);
-      
+
+      setAskAISuggestion(suggestion || 'No suggestion available');
     } catch (error) {
-      console.error('Error processing selection with AI:', error);
-      alert('An error occurred. Please try again.');
+      console.error('Ask AI error:', error);
+      setAskAISuggestion('Error getting AI suggestion. Please try again.');
     } finally {
       setIsProcessingSelection(false);
     }

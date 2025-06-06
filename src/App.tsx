@@ -10,7 +10,6 @@ import Courses from './pages/Courses';
 import Database from './pages/Database';
 import CaseStudies from './pages/CaseStudies';
 import NotFound from './pages/NotFound';
-import AICourses from './pages/AICourses';
 import Resources from './pages/Resources';
 import Blog from './pages/Blog';
 import Scholarships from './pages/Scholarships';
@@ -45,7 +44,7 @@ function App() {
             <Route path="/courses" element={<Courses />} />
             <Route path="/database" element={<Database />} />
             <Route path="/case-studies" element={<CaseStudies />} />
-            <Route path="/ai-courses" element={<AICourses />} />
+            <Route path="/ai-courses" element={<Courses />} />
             <Route path="/ai-study" element={<AiStudy />} />
             <Route path="/resources" element={<Resources />} />
             <Route path="/blog" element={<Blog />} />

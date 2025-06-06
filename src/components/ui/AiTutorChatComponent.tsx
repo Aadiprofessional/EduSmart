@@ -1,11 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  AiOutlineRobot, 
+  AiOutlineRobot,
   AiOutlineLoading3Quarters, 
-  AiOutlineCopy, 
+  AiOutlineCopy,
   AiOutlineEdit,
-  AiOutlineDelete,
   AiOutlineDownload,
   AiOutlineSend,
   AiOutlineUser,
@@ -15,8 +14,9 @@ import {
   AiOutlineExperiment,
   AiOutlineHistory
 } from 'react-icons/ai';
-import { FiThumbsUp, FiThumbsDown, FiRefreshCw, FiMaximize2, FiMinimize2, FiShare2 } from 'react-icons/fi';
+import { FiSend, FiThumbsUp, FiThumbsDown, FiRefreshCw, FiMaximize2, FiMinimize2, FiShare2, FiImage, FiTrash2, FiEdit3, FiCopy, FiDownload, FiPlus, FiMessageSquare } from 'react-icons/fi';
 import IconComponent from './IconComponent';
+import FormattedMessage from './FormattedMessage';
 
 interface ChatMessage {
   id: string;
@@ -57,60 +57,23 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
       ],
       createdAt: new Date(),
       lastUpdated: new Date()
-    },
-    {
-      id: 'math-help',
-      title: 'Calculus Derivatives Help',
-      messages: [
-        {
-          id: 'math-1',
-          role: 'user',
-          content: 'Can you help me understand derivatives in calculus?',
-          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000) // 2 hours ago
-        },
-        {
-          id: 'math-2',
-          role: 'assistant',
-          content: 'Of course! Derivatives measure the rate of change of a function. Think of it as the slope of a curve at any given point. The basic rule is: if f(x) = x^n, then f\'(x) = n·x^(n-1). For example, if f(x) = x², then f\'(x) = 2x.',
-          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000 + 30000)
-        }
-      ],
-      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      lastUpdated: new Date(Date.now() - 2 * 60 * 60 * 1000 + 30000)
-    },
-    {
-      id: 'chemistry-help',
-      title: 'Chemistry Balancing Equations',
-      messages: [
-        {
-          id: 'chem-1',
-          role: 'user',
-          content: 'How do I balance chemical equations?',
-          timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000) // 1 day ago
-        },
-        {
-          id: 'chem-2',
-          role: 'assistant',
-          content: 'Balancing chemical equations ensures the same number of atoms of each element on both sides. Start with the most complex molecule, then balance metals, non-metals, and finally hydrogen and oxygen. For example: H₂ + O₂ → H₂O becomes 2H₂ + O₂ → 2H₂O.',
-          timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000 + 45000)
-        }
-      ],
-      createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-      lastUpdated: new Date(Date.now() - 24 * 60 * 60 * 1000 + 45000)
     }
   ]);
   
   const [chatInput, setChatInput] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState('');
+  const [editingContent, setEditingContent] = useState('');
   const [showQuickActions, setShowQuickActions] = useState(true);
   const [showHistory, setShowHistory] = useState(false);
+  const [streamingMessage, setStreamingMessage] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
   
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const editInputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Get current chat session
   const currentChat = chatSessions.find(session => session.id === currentChatId) || chatSessions[0];
@@ -130,29 +93,34 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
     }
   }, [editingMessageId]);
 
-  // Send message to AI API
-  const sendMessageToAI = async (message: string): Promise<string> => {
+  // Send message to AI API with streaming
+  const sendMessageToAI = async (
+    message: string, 
+    onChunk?: (chunk: string) => void
+  ): Promise<string> => {
     try {
-      const response = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+      const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer 95fad12c-0768-4de2-a4c2-83247337ea89',
+          'Authorization': 'Bearer sk-80beadf6603b4832981d0d65896b1ae0',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: "doubao-vision-pro-32k-241028",
+          model: "qvq-max",
           messages: [
             {
-              role: "system",
-              content: "You are an AI tutor assistant from Hong Kong helping students with their homework and studies. Please provide helpful, educational responses with a friendly Hong Kong perspective. Use clear explanations and examples that students can easily understand."
-            },
-            {
               role: "user",
-              content: message
+              content: [
+                {
+                  type: "text",
+                  text: `You are an AI tutor assistant from Hong Kong helping students with their homework and studies. Please provide helpful, educational responses with a friendly Hong Kong perspective. Use clear explanations and examples that students can easily understand.
+
+Student question: ${message}`
+                }
+              ]
             }
           ],
-          max_tokens: 4000,
-          temperature: 0.7
+          stream: true
         })
       });
 
@@ -160,11 +128,188 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
         throw new Error(`API call failed: ${response.status} ${response.statusText}`);
       }
 
-      const data = await response.json();
-      return data.choices?.[0]?.message?.content || 'I apologize, but I encountered an error processing your request. Please try again.';
+      // Handle streaming response
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body reader available');
+      }
+
+      let fullContent = '';
+      
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = new TextDecoder().decode(value);
+          const lines = chunk.split('\n').filter(line => line.trim() !== '');
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+              
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta) {
+                  const delta = parsed.choices[0].delta;
+                  
+                  // Skip reasoning content, only collect the final answer
+                  if (delta.reasoning_content) {
+                    // This is the thinking process, we can skip it for tutoring
+                    continue;
+                  } else if (delta.content) {
+                    // This is the actual answer content
+                    fullContent += delta.content;
+                    if (onChunk) {
+                      onChunk(delta.content);
+                    }
+                  }
+                }
+              } catch (parseError) {
+                console.warn('Failed to parse streaming data:', parseError);
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+
+      return fullContent.trim();
     } catch (error) {
-      console.error('AI API Error:', error);
-      return 'I\'m sorry, I\'m having trouble connecting right now. Please try again in a moment.';
+      console.error('Error calling AI API:', error);
+      throw new Error('Failed to get response from AI. Please try again.');
+    }
+  };
+
+  // Handle image upload and text extraction
+  const handleImageUpload = async (file: File): Promise<string> => {
+    try {
+      // Convert image to base64
+      const base64Image = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          resolve(result);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer sk-80beadf6603b4832981d0d65896b1ae0',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: "qvq-max",
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: base64Image
+                  }
+                },
+                {
+                  type: "text",
+                  text: "Please extract all text from this image exactly as it appears, maintaining line breaks and formatting. If there are any diagrams, mathematical expressions, or visual elements, please describe them clearly so that the content can be understood. Focus on accuracy and completeness."
+                }
+              ]
+            }
+          ],
+          stream: true
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API call failed: ${response.status} ${response.statusText}`);
+      }
+
+      // Handle streaming response
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body reader available');
+      }
+
+      let extractedText = '';
+      
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = new TextDecoder().decode(value);
+          const lines = chunk.split('\n').filter(line => line.trim() !== '');
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+              
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta) {
+                  const delta = parsed.choices[0].delta;
+                  
+                  if (delta.content) {
+                    extractedText += delta.content;
+                  }
+                }
+              } catch (parseError) {
+                console.warn('Failed to parse streaming data:', parseError);
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+
+      return extractedText.trim();
+    } catch (error) {
+      console.error('Error extracting text from image:', error);
+      throw new Error('Failed to extract text from image. Please try again.');
+    }
+  };
+
+  // Handle file selection
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check if file is an image
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file (PNG, JPG, JPEG, etc.)');
+      return;
+    }
+
+    // Check file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File size must be less than 10MB');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const extractedText = await handleImageUpload(file);
+      
+      if (extractedText) {
+        setChatInput(prev => prev + (prev ? '\n\n' : '') + `[Image uploaded: ${file.name}]\n\nExtracted text:\n${extractedText}`);
+      }
+    } catch (error) {
+      console.error('Error processing image:', error);
+      alert('Failed to process image. Please try again.');
+    } finally {
+      setIsLoading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -174,7 +319,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
 
   const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!chatInput.trim() || loading) return;
+    if (!chatInput.trim() || isLoading) return;
     
     const userMessage = chatInput.trim();
     setChatInput('');
@@ -199,47 +344,62 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
         }
         : session
     ));
-    setLoading(true);
+    setIsLoading(true);
+    
+    // Create placeholder AI message for streaming
+    const aiMessageId = generateMessageId();
+    const newAiMessage: ChatMessage = {
+      id: aiMessageId,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date()
+    };
+    
+    setChatSessions(prev => prev.map(session => 
+      session.id === currentChatId 
+        ? { 
+          ...session, 
+          messages: [...session.messages, newAiMessage],
+          lastUpdated: new Date()
+        }
+        : session
+    ));
     
     try {
-      // Get AI response
-      const aiResponse = await sendMessageToAI(userMessage);
-      
-      // Add AI response
-      const newAiMessage: ChatMessage = {
-        id: generateMessageId(),
-        role: 'assistant',
-        content: aiResponse,
-        timestamp: new Date()
-      };
-      
-      setChatSessions(prev => prev.map(session => 
-        session.id === currentChatId 
-          ? { 
-            ...session, 
-            messages: [...session.messages, newAiMessage],
-            lastUpdated: new Date()
-          }
-          : session
-      ));
+      // Get AI response with streaming
+      await sendMessageToAI(userMessage, (chunk: string) => {
+        // Update the AI message content in real-time
+        setChatSessions(prev => prev.map(session => 
+          session.id === currentChatId 
+            ? { 
+              ...session, 
+              messages: session.messages.map(msg => 
+                msg.id === aiMessageId 
+                  ? { ...msg, content: msg.content + chunk }
+                  : msg
+              ),
+              lastUpdated: new Date()
+            }
+            : session
+        ));
+      });
     } catch (error) {
       console.error('Chat error:', error);
       setChatSessions(prev => prev.map(session => 
         session.id === currentChatId 
           ? { 
             ...session, 
-            messages: [...session.messages, {
-              id: generateMessageId(),
-              role: 'assistant',
-              content: 'I apologize, but I encountered an error. Please try asking your question again.',
-              timestamp: new Date()
-            }],
+            messages: session.messages.map(msg => 
+              msg.id === aiMessageId 
+                ? { ...msg, content: 'I apologize, but I encountered an error. Please try asking your question again.' }
+                : msg
+            ),
             lastUpdated: new Date()
           }
           : session
       ));
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -302,7 +462,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
 
   const startEditing = (message: ChatMessage) => {
     setEditingMessageId(message.id);
-    setEditContent(message.content);
+    setEditingContent(message.content);
   };
 
   const saveEdit = (messageId: string) => {
@@ -310,18 +470,18 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
       session.id === currentChatId 
         ? { ...session, messages: session.messages.map(msg => 
           msg.id === messageId 
-            ? { ...msg, content: editContent, edited: true, originalContent: msg.originalContent || msg.content }
+            ? { ...msg, content: editingContent, edited: true, originalContent: msg.originalContent || msg.content }
             : msg
         ) }
         : session
     ));
     setEditingMessageId(null);
-    setEditContent('');
+    setEditingContent('');
   };
 
   const cancelEdit = () => {
     setEditingMessageId(null);
-    setEditContent('');
+    setEditingContent('');
   };
 
   const deleteMessage = (messageId: string) => {
@@ -363,23 +523,45 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
     const previousUserMessage = chatMessages[messageIndex - 1];
     if (previousUserMessage.role !== 'user') return;
     
-    setLoading(true);
+    setIsLoading(true);
+    
+    // Reset the message content for streaming
+    setChatSessions(prev => prev.map(session => 
+      session.id === currentChatId 
+        ? { ...session, messages: session.messages.map(msg => 
+          msg.id === messageId 
+            ? { ...msg, content: '', timestamp: new Date() }
+            : msg
+        ) }
+        : session
+    ));
     
     try {
-      const newResponse = await sendMessageToAI(previousUserMessage.content);
+      await sendMessageToAI(previousUserMessage.content, (chunk: string) => {
+        // Update the message content in real-time
+        setChatSessions(prev => prev.map(session => 
+          session.id === currentChatId 
+            ? { ...session, messages: session.messages.map(msg => 
+              msg.id === messageId 
+                ? { ...msg, content: msg.content + chunk }
+                : msg
+            ) }
+            : session
+        ));
+      });
+    } catch (error) {
+      console.error('Regeneration error:', error);
       setChatSessions(prev => prev.map(session => 
         session.id === currentChatId 
           ? { ...session, messages: session.messages.map(msg => 
             msg.id === messageId 
-              ? { ...msg, content: newResponse, timestamp: new Date() }
+              ? { ...msg, content: 'I apologize, but I encountered an error. Please try again.' }
               : msg
           ) }
           : session
       ));
-    } catch (error) {
-      console.error('Regeneration error:', error);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -584,8 +766,8 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
                     <div className="space-y-2">
                       <textarea
                         ref={editInputRef}
-                        value={editContent}
-                        onChange={(e) => setEditContent(e.target.value)}
+                        value={editingContent}
+                        onChange={(e) => setEditingContent(e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded-lg resize-none text-gray-800"
                         rows={3}
                       />
@@ -606,7 +788,11 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
                     </div>
                   ) : (
                     <>
-                      <p className="text-sm md:text-base leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                      {msg.role === 'assistant' ? (
+                        <FormattedMessage content={msg.content} />
+                      ) : (
+                        <p className="text-sm md:text-base leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                      )}
                       {msg.edited && (
                         <p className="text-xs mt-1 opacity-70 italic">
                           (edited)
@@ -650,7 +836,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
                             className="p-1 hover:bg-black/10 rounded"
                             title="Edit message"
                           >
-                            <IconComponent icon={AiOutlineEdit} className="h-3 w-3" />
+                            <IconComponent icon={FiEdit3} className="h-3 w-3" />
                           </button>
                         )}
                         
@@ -659,7 +845,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
                           className="p-1 hover:bg-black/10 rounded"
                           title="Delete message"
                         >
-                          <IconComponent icon={AiOutlineDelete} className="h-3 w-3" />
+                          <IconComponent icon={FiTrash2} className="h-3 w-3" />
                         </button>
                       </div>
                     )}
@@ -693,7 +879,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
                       onClick={() => regenerateResponse(msg.id)}
                       className="p-1 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
                       title="Regenerate response"
-                      disabled={loading}
+                      disabled={isLoading}
                     >
                       <IconComponent icon={FiRefreshCw} className="h-4 w-4" />
                     </button>
@@ -705,7 +891,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
         </AnimatePresence>
         
         {/* Loading indicator */}
-        {loading && (
+        {isLoading && (
           <motion.div
             className="flex justify-start"
             initial={{ opacity: 0, y: 10 }}
@@ -793,7 +979,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                     >
-                      <IconComponent icon={AiOutlineDelete} className="h-3 w-3" />
+                      <IconComponent icon={FiTrash2} className="h-3 w-3" />
                     </motion.button>
                   )}
                 </div>
@@ -883,27 +1069,42 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
                     handleChatSubmit(e);
                   }
                 }}
-                className="w-full p-3 pr-12 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white shadow-sm resize-none max-h-32"
+                className="w-full p-3 pr-20 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white shadow-sm resize-none max-h-32"
                 placeholder="Ask anything about your homework... (Shift+Enter for new line)"
-                disabled={loading}
+                disabled={isLoading}
                 rows={1}
                 style={{ minHeight: '44px' }}
               />
               
-              <div className="absolute right-2 bottom-2 flex items-center space-x-1">
+              <div className="absolute right-2 top-1/2 transform -translate-y-5 flex items-center space-x-1">
+                {/* Attachment Button */}
+                <motion.button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-2 text-gray-500 hover:text-teal-600 hover:bg-teal-50 rounded-full transition-colors"
+                  variants={buttonVariants}
+                  whileHover="hover"
+                  whileTap="tap"
+                  disabled={isLoading}
+                  title="Upload image"
+                >
+                  <IconComponent icon={FiImage} className="h-4 w-4" />
+                </motion.button>
+                
+                {/* Send Button */}
                 <motion.button
                   type="submit"
                   className={`p-2 rounded-full transition-colors ${
-                    loading || !chatInput.trim()
+                    isLoading || !chatInput.trim()
                       ? 'bg-gray-300 cursor-not-allowed'
                       : 'bg-teal-600 hover:bg-teal-700'
                   } text-white`}
                   variants={buttonVariants}
-                  whileHover={!loading && chatInput.trim() ? "hover" : undefined}
-                  whileTap={!loading && chatInput.trim() ? "tap" : undefined}
-                  disabled={loading || !chatInput.trim()}
+                  whileHover={!isLoading && chatInput.trim() ? "hover" : undefined}
+                  whileTap={!isLoading && chatInput.trim() ? "tap" : undefined}
+                  disabled={isLoading || !chatInput.trim()}
                 >
-                  {loading ? (
+                  {isLoading ? (
                     <IconComponent icon={AiOutlineLoading3Quarters} className="h-5 w-5 animate-spin" />
                   ) : (
                     <IconComponent icon={AiOutlineSend} className="h-5 w-5" />
@@ -912,6 +1113,15 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
               </div>
             </div>
           </div>
+          
+          {/* Hidden File Input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
         </form>
         
         <div className="flex items-center justify-between mt-2 text-xs text-gray-500">

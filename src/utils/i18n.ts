@@ -351,6 +351,58 @@ export interface Translations {
     campusLife: string;
     research: string;
     alumni: string;
+    advancedSearch: string;
+    allCountries: string;
+    allRegions: string;
+    allMajors: string;
+    allFields: string;
+    reset: string;
+    explorePrograms: string;
+    topUniversities: string;
+    fieldOfStudy: string;
+    rankingType: string;
+    qsRankingRange: string;
+    admissionDifficulty: string;
+    campusType: string;
+    acceptanceRateFilter: string;
+    showOnlyOpenApplications: string;
+    rankingYear: string;
+    highlyCompetitive: string;
+    moderatelyCompetitive: string;
+    lessCompetitive: string;
+    urban: string;
+    suburban: string;
+    rural: string;
+    small: string;
+    medium: string;
+    large: string;
+    highlySelective: string;
+    moderatelySelective: string;
+    lessSelective: string;
+    undergrad: string;
+    graduate: string;
+    campusSize: string;
+    accreditation: string;
+    applicationFee: string;
+    fallDeadline: string;
+    springDeadline: string;
+    facultyCount: string;
+    minGPA: string;
+    testScores: string;
+    languageRequirements: string;
+    contactForDetails: string;
+    contactUniversity: string;
+    nA: string;
+    rank: string;
+    apply: string;
+    visitWebsite: string;
+    email: string;
+    phone: string;
+    address: string;
+    remove: string;
+    aiRecommended: string;
+    fall: string;
+    spring: string;
   };
 
   // Scholarships Page
@@ -521,17 +573,42 @@ export interface Translations {
   aiStudy: {
     title: string;
     subtitle: string;
+    notesTaker: string;
+    aiTutor: string;
+    mistakeChecker: string;
     studyPlanner: string;
     flashcards: string;
-    notesTaker: string;
-    citationGenerator: string;
     contentWriter: string;
-    mistakeChecker: string;
-    aiTutor: string;
-    studyTimer: string;
+    citationGenerator: string;
     progressTracker: string;
-    taskManager: string;
+    uploadHomework: string;
+    history: string;
+    addAttachment: string;
+    sendMessage: string;
+    studyPlannerCalendar: string;
     addTask: string;
+    addNewStudyTask: string;
+    taskDescription: string;
+    whatDoYouNeedToStudy: string;
+    subject: string;
+    egMathScienceHistory: string;
+    dueDate: string;
+    priority: string;
+    lowPriority: string;
+    mediumPriority: string;
+    highPriority: string;
+    estimatedHours: string;
+    addToStudyPlan: string;
+    cancel: string;
+    yourStudySchedule: string;
+    studyTasksWillAppearHere: string;
+    smartStudyRecommendations: string;
+    basedOnYourUpcomingTasks: string;
+    startWithMathematicsHomework: string;
+    block2HourFocusSessions: string;
+    useTheAiStudyAssistant: string;
+    studyTimer: string;
+    taskManager: string;
     taskPlaceholder: string;
     completed: string;
     pending: string;
@@ -557,6 +634,25 @@ export interface Translations {
     getHelp: string;
     saveNotes: string;
     exportNotes: string;
+    typeMessage: string;
+    newTask: string;
+    addNewTask: string;
+    question: string;
+    answer: string;
+    addFlashcard: string;
+    mastered: string;
+    notMastered: string;
+    showAnswerButton: string;
+    previousButton: string;
+    nextButton: string;
+    markAsMastered: string;
+    viewCalendar: string;
+    taskCompleted: string;
+    taskPending: string;
+    noTasksYet: string;
+    noFlashcardsYet: string;
+    createFirstFlashcard: string;
+    addFirstTask: string;
   };
   
   // AI Courses Page
@@ -927,6 +1023,58 @@ export const translations: Record<Language, Translations> = {
       campusLife: 'Campus Life',
       research: 'Research',
       alumni: 'Alumni',
+      advancedSearch: 'Advanced Search',
+      allCountries: 'All Countries',
+      allRegions: 'All Regions',
+      allMajors: 'All Majors',
+      allFields: 'All Fields',
+      reset: 'Reset',
+      explorePrograms: 'Explore Programs',
+      topUniversities: 'Top Universities',
+      fieldOfStudy: 'Field of Study',
+      rankingType: 'Ranking Type',
+      qsRankingRange: 'QS Ranking Range',
+      admissionDifficulty: 'Admission Difficulty',
+      campusType: 'Campus Type',
+      acceptanceRateFilter: 'Acceptance Rate Filter',
+      showOnlyOpenApplications: 'Show Only Open Applications',
+      rankingYear: 'Ranking Year',
+      highlyCompetitive: 'Highly Competitive',
+      moderatelyCompetitive: 'Moderately Competitive',
+      lessCompetitive: 'Less Competitive',
+      urban: 'Urban',
+      suburban: 'Suburban',
+      rural: 'Rural',
+      small: 'Small',
+      medium: 'Medium',
+      large: 'Large',
+      highlySelective: 'Highly Selective',
+      moderatelySelective: 'Moderately Selective',
+      lessSelective: 'Less Selective',
+      undergrad: 'Undergrad',
+      graduate: 'Graduate',
+      campusSize: 'Campus Size',
+      accreditation: 'Accreditation',
+      applicationFee: 'Application Fee',
+      fallDeadline: 'Fall Deadline',
+      springDeadline: 'Spring Deadline',
+      facultyCount: 'Faculty Count',
+      minGPA: 'Min GPA',
+      testScores: 'Test Scores',
+      languageRequirements: 'Language Requirements',
+      contactForDetails: 'Contact for Details',
+      contactUniversity: 'Contact University',
+      nA: 'N/A',
+      rank: 'Rank',
+      apply: 'Apply',
+      visitWebsite: 'Visit Website',
+      email: 'Email',
+      phone: 'Phone',
+      address: 'Address',
+      remove: 'Remove',
+      aiRecommended: 'AI Recommended',
+      fall: 'Fall',
+      spring: 'Spring',
     },
     scholarships: {
       title: 'Scholarships',
@@ -1081,19 +1229,44 @@ export const translations: Record<Language, Translations> = {
       },
     },
     aiStudy: {
-      title: 'AI Study',
-      subtitle: 'Your AI-powered study companion',
+      title: 'AI Study Assistant',
+      subtitle: 'Your intelligent study companion powered by advanced AI',
+      notesTaker: 'Notes Taker',
+      aiTutor: 'AI Tutor',
+      mistakeChecker: 'Mistake Checker',
       studyPlanner: 'Study Planner',
       flashcards: 'Flashcards',
-      notesTaker: 'Notes Taker',
-      citationGenerator: 'Citation Generator',
       contentWriter: 'Content Writer',
-      mistakeChecker: 'Mistake Checker',
-      aiTutor: 'AI Tutor',
-      studyTimer: 'Study Timer',
+      citationGenerator: 'Citation Generator',
       progressTracker: 'Progress Tracker',
-      taskManager: 'Task Manager',
+      uploadHomework: 'Upload Homework',
+      history: 'History',
+      addAttachment: 'Add Attachment',
+      sendMessage: 'Send Message',
+      studyPlannerCalendar: 'Study Planner & Calendar',
       addTask: 'Add Task',
+      addNewStudyTask: 'Add New Study Task',
+      taskDescription: 'Task Description',
+      whatDoYouNeedToStudy: 'What do you need to study?',
+      subject: 'Subject',
+      egMathScienceHistory: 'e.g. Math, Science, History',
+      dueDate: 'Due Date',
+      priority: 'Priority',
+      lowPriority: 'Low Priority',
+      mediumPriority: 'Medium Priority',
+      highPriority: 'High Priority',
+      estimatedHours: 'Estimated Hours',
+      addToStudyPlan: 'Add to Study Plan',
+      cancel: 'Cancel',
+      yourStudySchedule: 'Your Study Schedule',
+      studyTasksWillAppearHere: 'Study tasks will appear here once you add them',
+      smartStudyRecommendations: 'Smart Study Recommendations',
+      basedOnYourUpcomingTasks: 'Based on your upcoming tasks and learning patterns, here are personalized recommendations',
+      startWithMathematicsHomework: 'Start with mathematics homework first as it\'s due earliest',
+      block2HourFocusSessions: 'Block 2-hour focus sessions with 15-minute breaks for better retention',
+      useTheAiStudyAssistant: 'Use the AI study assistant for difficult concepts',
+      studyTimer: 'Study Timer',
+      taskManager: 'Task Manager',
       taskPlaceholder: 'Enter task description',
       completed: 'Completed',
       pending: 'Pending',
@@ -1102,7 +1275,7 @@ export const translations: Record<Language, Translations> = {
       backText: 'Back Text',
       nextCard: 'Next Card',
       previousCard: 'Previous Card',
-      markMastered: 'Mark as Mastered',
+      markMastered: 'Mark Mastered',
       showAnswer: 'Show Answer',
       studyMode: 'Study Mode',
       reviewMode: 'Review Mode',
@@ -1119,9 +1292,28 @@ export const translations: Record<Language, Translations> = {
       getHelp: 'Get Help',
       saveNotes: 'Save Notes',
       exportNotes: 'Export Notes',
+      typeMessage: 'Type Message',
+      newTask: 'New Task',
+      addNewTask: 'Add New Task',
+      question: 'Question',
+      answer: 'Answer',
+      addFlashcard: 'Add Flashcard',
+      mastered: 'Mastered',
+      notMastered: 'Not Mastered',
+      showAnswerButton: 'Show Answer',
+      previousButton: 'Previous',
+      nextButton: 'Next',
+      markAsMastered: 'Mark as Mastered',
+      viewCalendar: 'View Calendar',
+      taskCompleted: 'Task Completed',
+      taskPending: 'Task Pending',
+      noTasksYet: 'No Tasks Yet',
+      noFlashcardsYet: 'No Flashcards Yet',
+      createFirstFlashcard: 'Create First Flashcard',
+      addFirstTask: 'Add First Task'
     },
     aiCourses: {
-      title: 'Courses',
+      title: 'AI Courses',
       subtitle: 'Discover comprehensive courses designed to enhance your academic journey',
       searchPlaceholder: 'Search for courses...',
       filterByType: 'Filter by Type',
@@ -1485,6 +1677,58 @@ export const translations: Record<Language, Translations> = {
       campusLife: '校园生活',
       research: '研究',
       alumni: '校友',
+      advancedSearch: '高级搜索',
+      allCountries: '所有国家',
+      allRegions: '所有地区',
+      allMajors: '所有专业',
+      allFields: '所有领域',
+      reset: '重置',
+      explorePrograms: '探索项目',
+      topUniversities: '顶尖大学',
+      fieldOfStudy: '研究领域',
+      rankingType: '排名类型',
+      qsRankingRange: 'QS排名范围',
+      admissionDifficulty: '录取难度',
+      campusType: '校园类型',
+      acceptanceRateFilter: '录取率筛选',
+      showOnlyOpenApplications: '只显示开放申请',
+      rankingYear: '排名年份',
+      highlyCompetitive: '高度竞争',
+      moderatelyCompetitive: '中度竞争',
+      lessCompetitive: '低度竞争',
+      urban: '城市',
+      suburban: '郊区',
+      rural: '农村',
+      small: '小规模',
+      medium: '中等规模',
+      large: '大规模',
+      highlySelective: '高度选择性',
+      moderatelySelective: '中度选择性',
+      lessSelective: '低度选择性',
+      undergrad: '本科',
+      graduate: '研究生',
+      campusSize: '校园规模',
+      accreditation: '认证',
+      applicationFee: '申请费用',
+      fallDeadline: '秋季截止日期',
+      springDeadline: '春季截止日期',
+      facultyCount: '教师人数',
+      minGPA: '最低GPA',
+      testScores: '测试成绩',
+      languageRequirements: '语言要求',
+      contactForDetails: '联系获取详情',
+      contactUniversity: '联系大学',
+      nA: 'N/A',
+      rank: '排名',
+      apply: '申请',
+      visitWebsite: '访问网站',
+      email: '电子邮件',
+      phone: '电话',
+      address: '地址',
+      remove: '移除',
+      aiRecommended: 'AI推荐',
+      fall: '秋季',
+      spring: '春季',
     },
     scholarships: {
       title: '奖学金',
@@ -1639,27 +1883,52 @@ export const translations: Record<Language, Translations> = {
       },
     },
     aiStudy: {
-      title: 'AI学习',
-      subtitle: '您的AI学习助手',
+      title: 'AI学习助手',
+      subtitle: '您的智能学习伙伴，由先进AI技术驱动',
+      notesTaker: '笔记记录',
+      aiTutor: 'AI导师',
+      mistakeChecker: '错误检查',
       studyPlanner: '学习计划',
       flashcards: '闪卡',
-      notesTaker: '笔记',
-      citationGenerator: '引用生成',
       contentWriter: '内容写作',
-      mistakeChecker: '错误检查',
-      aiTutor: 'AI导师',
-      studyTimer: '学习计时',
+      citationGenerator: '引用生成',
       progressTracker: '进度跟踪',
-      taskManager: '任务管理',
+      uploadHomework: '上传作业',
+      history: '历史记录',
+      addAttachment: '添加附件',
+      sendMessage: '发送消息',
+      studyPlannerCalendar: '学习计划与日历',
       addTask: '添加任务',
+      addNewStudyTask: '添加新学习任务',
+      taskDescription: '任务描述',
+      whatDoYouNeedToStudy: '您需要学习什么？',
+      subject: '科目',
+      egMathScienceHistory: '例如：数学、科学、历史',
+      dueDate: '截止日期',
+      priority: '优先级',
+      lowPriority: '低优先级',
+      mediumPriority: '中优先级',
+      highPriority: '高优先级',
+      estimatedHours: '预计小时数',
+      addToStudyPlan: '添加到学习计划',
+      cancel: '取消',
+      yourStudySchedule: '您的学习计划',
+      studyTasksWillAppearHere: '添加任务后，学习任务将显示在这里',
+      smartStudyRecommendations: '智能学习建议',
+      basedOnYourUpcomingTasks: '基于您即将到来的任务和学习模式，这里是个性化建议',
+      startWithMathematicsHomework: '首先从数学作业开始，因为它的截止日期最早',
+      block2HourFocusSessions: '安排2小时专注学习时间，中间休息15分钟以提高记忆效果',
+      useTheAiStudyAssistant: '对于困难概念，使用AI学习助手',
+      studyTimer: '学习计时器',
+      taskManager: '任务管理',
       taskPlaceholder: '输入任务描述',
       completed: '已完成',
       pending: '待完成',
       createFlashcard: '创建闪卡',
       frontText: '正面文本',
       backText: '背面文本',
-      nextCard: '下一卡',
-      previousCard: '上一卡',
+      nextCard: '下一张',
+      previousCard: '上一张',
       markMastered: '标记为掌握',
       showAnswer: '显示答案',
       studyMode: '学习模式',
@@ -1667,16 +1936,35 @@ export const translations: Record<Language, Translations> = {
       startTimer: '开始计时',
       stopTimer: '停止计时',
       resetTimer: '重置计时',
-      pomodoroTimer: '番茄计时',
+      pomodoroTimer: '番茄计时器',
       breakTime: '休息时间',
       focusTime: '专注时间',
       generateCitation: '生成引用',
       checkGrammar: '检查语法',
-      improveWriting: '提高写作',
+      improveWriting: '改进写作',
       askTutor: '询问导师',
       getHelp: '获取帮助',
       saveNotes: '保存笔记',
       exportNotes: '导出笔记',
+      typeMessage: '输入消息',
+      newTask: '新任务',
+      addNewTask: '添加新任务',
+      question: '问题',
+      answer: '答案',
+      addFlashcard: '添加闪卡',
+      mastered: '已掌握',
+      notMastered: '未掌握',
+      showAnswerButton: '显示答案',
+      previousButton: '上一个',
+      nextButton: '下一个',
+      markAsMastered: '标记为掌握',
+      viewCalendar: '查看日历',
+      taskCompleted: '任务已完成',
+      taskPending: '任务待完成',
+      noTasksYet: '还没有任务',
+      noFlashcardsYet: '还没有闪卡',
+      createFirstFlashcard: '创建第一张闪卡',
+      addFirstTask: '添加第一个任务'
     },
     aiCourses: {
       title: 'AI课程',
@@ -2043,6 +2331,58 @@ export const translations: Record<Language, Translations> = {
       campusLife: '校園生活',
       research: '研究',
       alumni: '校友',
+      advancedSearch: '高級搜索',
+      allCountries: '所有國家',
+      allRegions: '所有地區',
+      allMajors: '所有專業',
+      allFields: '所有領域',
+      reset: '重置',
+      explorePrograms: '探索項目',
+      topUniversities: '頂尖大學',
+      fieldOfStudy: '研究領域',
+      rankingType: '排名類型',
+      qsRankingRange: 'QS排名範圍',
+      admissionDifficulty: '錄取難度',
+      campusType: '校園類型',
+      acceptanceRateFilter: '錄取率篩選',
+      showOnlyOpenApplications: '只顯示開放申請',
+      rankingYear: '排名年份',
+      highlyCompetitive: '高度競爭',
+      moderatelyCompetitive: '中度競爭',
+      lessCompetitive: '低度競爭',
+      urban: '城市',
+      suburban: '郊區',
+      rural: '農村',
+      small: '小規模',
+      medium: '中等規模',
+      large: '大規模',
+      highlySelective: '高度選擇性',
+      moderatelySelective: '中度選擇性',
+      lessSelective: '低度選擇性',
+      undergrad: '本科',
+      graduate: '研究生',
+      campusSize: '校園規模',
+      accreditation: '認證',
+      applicationFee: '申請費用',
+      fallDeadline: '秋季截止日期',
+      springDeadline: '春季截止日期',
+      facultyCount: '教師人數',
+      minGPA: '最低GPA',
+      testScores: '測試成績',
+      languageRequirements: '語言要求',
+      contactForDetails: '聯絡獲取詳情',
+      contactUniversity: '聯絡大學',
+      nA: 'N/A',
+      rank: '排名',
+      apply: '申請',
+      visitWebsite: '訪問網站',
+      email: '電子郵件',
+      phone: '電話',
+      address: '地址',
+      remove: '移除',
+      aiRecommended: 'AI推薦',
+      fall: '秋季',
+      spring: '春季',
     },
     scholarships: {
       title: '獎學金',
@@ -2197,27 +2537,52 @@ export const translations: Record<Language, Translations> = {
       },
     },
     aiStudy: {
-      title: 'AI學習',
-      subtitle: '您的AI學習助手',
+      title: 'AI學習助手',
+      subtitle: '您的智能學習夥伴，由先進AI技術驅動',
+      notesTaker: '筆記記錄',
+      aiTutor: 'AI導師',
+      mistakeChecker: '錯誤檢查',
       studyPlanner: '學習計劃',
       flashcards: '閃卡',
-      notesTaker: '筆記',
-      citationGenerator: '引用生成',
       contentWriter: '內容寫作',
-      mistakeChecker: '錯誤檢查',
-      aiTutor: 'AI導師',
-      studyTimer: '學習計時',
-      progressTracker: '進度跟踪',
-      taskManager: '任務管理',
+      citationGenerator: '引用生成',
+      progressTracker: '進度跟蹤',
+      uploadHomework: '上傳作業',
+      history: '歷史記錄',
+      addAttachment: '添加附件',
+      sendMessage: '發送消息',
+      studyPlannerCalendar: '學習計劃與日曆',
       addTask: '添加任務',
+      addNewStudyTask: '添加新學習任務',
+      taskDescription: '任務描述',
+      whatDoYouNeedToStudy: '您需要學習什麼？',
+      subject: '科目',
+      egMathScienceHistory: '例如：數學、科學、歷史',
+      dueDate: '截止日期',
+      priority: '優先級',
+      lowPriority: '低優先級',
+      mediumPriority: '中優先級',
+      highPriority: '高優先級',
+      estimatedHours: '預計小時數',
+      addToStudyPlan: '添加到學習計劃',
+      cancel: '取消',
+      yourStudySchedule: '您的學習計劃',
+      studyTasksWillAppearHere: '添加任務後，學習任務將顯示在這裡',
+      smartStudyRecommendations: '智能學習建議',
+      basedOnYourUpcomingTasks: '基於您即將到來的任務和學習模式，這裡是個性化建議',
+      startWithMathematicsHomework: '首先從數學作業開始，因為它的截止日期最早',
+      block2HourFocusSessions: '安排2小時專注學習時間，中間休息15分鐘以提高記憶效果',
+      useTheAiStudyAssistant: '對於困難概念，使用AI學習助手',
+      studyTimer: '學習計時器',
+      taskManager: '任務管理',
       taskPlaceholder: '輸入任務描述',
       completed: '已完成',
       pending: '待完成',
       createFlashcard: '創建閃卡',
       frontText: '正面文本',
       backText: '背面文本',
-      nextCard: '下一卡',
-      previousCard: '上一卡',
+      nextCard: '下一張',
+      previousCard: '上一張',
       markMastered: '標記為掌握',
       showAnswer: '顯示答案',
       studyMode: '學習模式',
@@ -2225,16 +2590,35 @@ export const translations: Record<Language, Translations> = {
       startTimer: '開始計時',
       stopTimer: '停止計時',
       resetTimer: '重置計時',
-      pomodoroTimer: '番茄計時',
+      pomodoroTimer: '番茄計時器',
       breakTime: '休息時間',
       focusTime: '專注時間',
       generateCitation: '生成引用',
       checkGrammar: '檢查語法',
-      improveWriting: '提高寫作',
+      improveWriting: '改進寫作',
       askTutor: '詢問導師',
       getHelp: '獲取幫助',
       saveNotes: '保存筆記',
       exportNotes: '導出筆記',
+      typeMessage: '輸入消息',
+      newTask: '新任務',
+      addNewTask: '添加新任務',
+      question: '問題',
+      answer: '答案',
+      addFlashcard: '添加閃卡',
+      mastered: '已掌握',
+      notMastered: '未掌握',
+      showAnswerButton: '顯示答案',
+      previousButton: '上一個',
+      nextButton: '下一個',
+      markAsMastered: '標記為掌握',
+      viewCalendar: '查看日曆',
+      taskCompleted: '任務已完成',
+      taskPending: '任務待完成',
+      noTasksYet: '還沒有任務',
+      noFlashcardsYet: '還沒有閃卡',
+      createFirstFlashcard: '創建第一張閃卡',
+      addFirstTask: '添加第一個任務'
     },
     aiCourses: {
       title: 'AI課程',

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AiOutlineUpload, AiOutlineCamera, AiOutlineFullscreen, AiOutlineBulb, AiOutlineFileText, AiOutlineLoading3Quarters } from 'react-icons/ai';
-import { FiDownload, FiCopy, FiShare2 } from 'react-icons/fi';
+import { AiOutlineUpload, AiOutlineCamera, AiOutlineFullscreen, AiOutlineBulb, AiOutlineFileText, AiOutlineLoading3Quarters, AiOutlineHistory } from 'react-icons/ai';
+import { FiDownload, FiCopy, FiShare2, FiClock, FiTrash2 } from 'react-icons/fi';
 import IconComponent from './IconComponent';
 import * as pdfjsLib from 'pdfjs-dist';
 import { jsPDF } from 'jspdf';
@@ -47,6 +47,15 @@ interface UploadHomeworkComponentProps {
   className?: string;
 }
 
+interface HomeworkHistoryItem {
+  id: string;
+  fileName: string;
+  question: string;
+  answer: string;
+  timestamp: Date;
+  fileType: string;
+}
+
 const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ className = '' }) => {
   const [file, setFile] = useState<File | null>(null);
   const [question, setQuestion] = useState('');
@@ -55,12 +64,76 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
   const [documentPages, setDocumentPages] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [fullScreenSolution, setFullScreenSolution] = useState(false);
-  const [fullScreenDocument, setFullScreenDocument] = useState(false);
   const [processingStatus, setProcessingStatus] = useState<string>('');
   const [extractedTexts, setExtractedTexts] = useState<string[]>([]);
   const [showDownloadOptions, setShowDownloadOptions] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [homeworkHistory, setHomeworkHistory] = useState<HomeworkHistoryItem[]>([]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load history from localStorage on component mount
+  useEffect(() => {
+    const savedHistory = localStorage.getItem('homeworkHistory');
+    if (savedHistory) {
+      try {
+        const parsedHistory = JSON.parse(savedHistory).map((item: any) => ({
+          ...item,
+          timestamp: new Date(item.timestamp)
+        }));
+        setHomeworkHistory(parsedHistory);
+      } catch (error) {
+        console.error('Error loading homework history:', error);
+      }
+    }
+  }, []);
+
+  // Save history to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('homeworkHistory', JSON.stringify(homeworkHistory));
+  }, [homeworkHistory]);
+
+  // Function to add item to history
+  const addToHistory = (fileName: string, question: string, answer: string, fileType: string) => {
+    const newItem: HomeworkHistoryItem = {
+      id: Date.now().toString(),
+      fileName,
+      question,
+      answer,
+      timestamp: new Date(),
+      fileType
+    };
+    setHomeworkHistory(prev => [newItem, ...prev.slice(0, 19)]); // Keep only last 20 items
+  };
+
+  // Function to load from history
+  const loadFromHistory = (item: HomeworkHistoryItem) => {
+    setQuestion(item.question);
+    setAnswer(item.answer);
+    setShowHistory(false);
+  };
+
+  // Function to delete history item
+  const deleteHistoryItem = (id: string) => {
+    setHomeworkHistory(prev => prev.filter(item => item.id !== id));
+  };
+
+  // Function to clear all history
+  const clearAllHistory = () => {
+    setHomeworkHistory([]);
+  };
+
+  // Function to format relative time
+  const formatRelativeTime = (date: Date) => {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    return date.toLocaleDateString();
+  };
 
   // Add custom CSS for mathematical expressions
   useEffect(() => {
@@ -125,23 +198,24 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
       .replace(/\$\$(.*?)\$\$/g, '<div class="math-block">$1</div>') // Block math $$ $$
       .replace(/\$(.*?)\$/g, '<span class="math-inline">$1</span>') // Inline math $ $
       
-      // Handle headers with proper hierarchy
-      .replace(/^#{6}\s+(.*$)/gim, '<h6 class="text-sm font-medium text-gray-700 mt-4 mb-2">$1</h6>')
-      .replace(/^#{5}\s+(.*$)/gim, '<h5 class="text-base font-medium text-gray-800 mt-4 mb-2">$1</h5>')
-      .replace(/^#{4}\s+(.*$)/gim, '<h4 class="text-lg font-semibold text-gray-800 mt-4 mb-3">$1</h4>')
-      .replace(/^#{3}\s+(.*$)/gim, '<h3 class="text-xl font-semibold text-teal-800 mt-6 mb-3">$1</h3>')
-      .replace(/^#{2}\s+(.*$)/gim, '<h2 class="text-2xl font-bold text-teal-800 mt-6 mb-4">$1</h2>')
-      .replace(/^#{1}\s+(.*$)/gim, '<h1 class="text-3xl font-bold text-teal-900 mt-8 mb-4">$1</h1>')
+      // Handle bold text
+      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-teal-800">$1</strong>')
       
-      // Handle bold and italic formatting
-      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>') // Bold
-      .replace(/\*(.*?)\*/g, '<em class="italic text-gray-800">$1</em>') // Italic
-      .replace(/_(.*?)_/g, '<u class="underline">$1</u>') // Underline
-      .replace(/==(.*?)==/g, '<mark class="bg-yellow-200 px-1 rounded">$1</mark>') // Highlight
+      // Handle italic text
+      .replace(/\*(.*?)\*/g, '<em class="italic text-teal-700">$1</em>')
       
-      // Handle numbered lists (improved)
-      .replace(/^(\d+)\.(\d+)\.(\d+)\s+(.*$)/gim, '<div class="ml-8 mb-2"><span class="font-medium text-teal-700">$1.$2.$3</span> $4</div>')
-      .replace(/^(\d+)\.(\d+)\s+(.*$)/gim, '<div class="ml-4 mb-2"><span class="font-medium text-teal-600">$1.$2</span> $4</div>')
+      // Handle underlined text
+      .replace(/_(.*?)_/g, '<u class="underline text-teal-700">$1</u>')
+      
+      // Handle highlighted text
+      .replace(/==(.*?)==/g, '<mark class="bg-yellow-200 px-1 rounded">$1</mark>')
+      
+      // Handle headers
+      .replace(/^### (.*$)/gim, '<h3 class="text-xl font-bold text-teal-800 mt-6 mb-3">$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2 class="text-2xl font-bold text-teal-800 mt-8 mb-4">$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1 class="text-3xl font-bold text-teal-800 mt-10 mb-5">$1</h1>')
+      
+      // Handle numbered lists
       .replace(/^(\d+)\.\s+(.*$)/gim, '<div class="mb-3"><span class="font-semibold text-teal-800">$1.</span> $2</div>')
       
       // Handle bullet points
@@ -171,16 +245,19 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
       .replace(/(<span class="math-inline">.*?<\/span>)/g, ' $1 ');
   };
 
-  // Clean up AI response formatting (same as ContentWriterComponent)
+  // Clean AI response function
   const cleanAIResponse = (content: string) => {
+    // Remove any AI formatting markers, separator lines, etc.
     return content
-      .replace(/^(I am [^.]*(AI|LLM|Assistant|GPT|language model)[^.]*\.)/i, '') // Remove AI self-identification
-      .replace(/^(Here'?s?( is)?( a| an| your| the)?( \d+[-\s]word)? (solution|response|text|content|output|answer)[:.]\s*)/i, '') // Remove "Here's a solution:" type text
-      .replace(/^(In response to your request|As requested|Based on your prompt)[^.]*/i, '') // Remove other common AI prefixes
-      .replace(/^[\s\n]*/, '') // Remove leading whitespace
-      .replace(/\n*$/g, '') // Remove trailing newlines
-      .replace(/(Let me know if you|Hope this|If you need any|Do you want me to)[^]*$/i, '') // Remove trailing questions
-      .trim();
+      .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
+      .replace(/\*(.*?)\*/g, '$1') // Remove italic
+      .replace(/_(.*?)_/g, '$1') // Remove underline
+      .replace(/==(.*?)==/g, '$1') // Remove highlight
+      .replace(/\n- (.*)/g, '• $1') // Convert unordered lists
+      .replace(/\n\d+\. (.*)/g, '$1') // Convert ordered lists
+      .replace(/#{1,6} (.*)/g, '$1') // Remove headers
+      .replace(/---/g, '') // Remove separators
+      .replace(/\n/g, '\n'); // Keep newlines
   };
 
   // Download functionality (same as ContentWriterComponent)
@@ -367,100 +444,125 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
     }
   };
 
-  // Extract text from image using OCR API
-  const extractTextFromImage = async (imageUrl: string): Promise<string> => {
+  // Combined function to extract text and solve homework with streaming
+  const extractAndSolveHomework = async (imageUrl: string): Promise<string> => {
     try {
-      // Ensure we have the correct format for the API
-      let base64Image = imageUrl;
-      
-      // If it's a data URL, extract the base64 part
-      if (imageUrl.startsWith('data:')) {
-        base64Image = imageUrl;
-      } else {
-        // If it's a blob URL, convert it to base64
-        const response = await fetch(imageUrl);
-        const blob = await response.blob();
-        const file = new File([blob], 'image.jpg', { type: 'image/jpeg' });
-        const reader = new FileReader();
-        base64Image = await new Promise((resolve) => {
-          reader.onload = () => resolve(reader.result as string);
-          reader.readAsDataURL(file);
-        });
-      }
-
-      const apiResponse = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+      const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer 95fad12c-0768-4de2-a4c2-83247337ea89',
+          'Authorization': 'Bearer sk-80beadf6603b4832981d0d65896b1ae0',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: "doubao-vision-pro-32k-241028",
+          model: "qvq-max",
           messages: [
             {
-              role: "system",
-              content: "You are an OCR assistant. Extract all text from the image exactly as it appears, maintaining line breaks and formatting. Only return the extracted text, nothing else. Also if their is diagram please explain that in the text so  that ai can understand the question."
-            },
+              role: "user",
+              content: [
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: imageUrl
+                  }
+                },
+                {
+                  type: "text",
+                  text: `Please analyze this image and solve any homework problems you find. Follow these steps:
+
+1. First, extract and read all text from the image
+2. Identify the homework questions or problems
+3. Provide detailed step-by-step solutions with explanations
+4. Show your reasoning process and provide comprehensive explanations
+
+Please provide:
+- A clear understanding of what each problem is asking
+- Step-by-step solution with explanations for each problem
+- Final answers
+- Any relevant concepts or formulas used
+
+Make sure to explain each step so the student can learn from the solution.`
+                }
+              ]
+            }
+          ],
+          stream: true
+        })
+      });
+
+      if (!response.ok) {
+        console.error('QVQ Combined API Error:', response.status, response.statusText);
+        throw new Error(`API request failed: ${response.status}`);
+      }
+
+      // Handle streaming response
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body reader available');
+      }
+
+      let solutionContent = '';
+      let isAnswering = false;
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = new TextDecoder().decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+
+              try {
+                const parsed = JSON.parse(data);
+                const content = parsed.choices?.[0]?.delta?.content;
+                
+                if (content) {
+                  solutionContent += content;
+                  isAnswering = true;
+                  
+                  // Update the answer in real-time for streaming effect
+                  setAnswer(solutionContent);
+                }
+              } catch (parseError) {
+                // Skip invalid JSON lines
+                continue;
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+
+      return solutionContent.trim() || 'No solution could be generated';
+    } catch (error) {
+      console.error('Combined API Error:', error);
+      return `Error processing image and solving homework: ${error instanceof Error ? error.message : 'Unknown error'}`;
+    }
+  };
+
+  // Solve homework using QVQ model with streaming (for text questions)
+  const solveHomework = async (text: string): Promise<string> => {
+    try {
+      const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer sk-80beadf6603b4832981d0d65896b1ae0',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: "qvq-max",
+          messages: [
             {
               role: "user",
               content: [
                 {
                   type: "text",
-                  text: "Please extract all text from this image exactly as it appears, maintaining the original formatting and line breaks."
-                },
-                {
-                  type: "image_url",
-                  image_url: {
-                    url: base64Image
-                  }
-                }
-              ]
-            }
-          ],
-          max_tokens: 4000,
-          temperature: 0.1
-        })
-      });
-
-      if (!apiResponse.ok) {
-        const errorData = await apiResponse.json().catch(() => ({}));
-        console.error('OCR API Error:', errorData);
-        throw new Error(`OCR API failed: ${apiResponse.status} ${apiResponse.statusText}`);
-      }
-
-      const data = await apiResponse.json();
-      
-      if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-        console.error('Unexpected API response structure:', data);
-        return 'Error: Unable to extract text from image';
-      }
-
-      return data.choices[0].message.content || 'No text found in image';
-    } catch (error) {
-      console.error('OCR Error:', error);
-      return `Error extracting text: ${error instanceof Error ? error.message : 'Unknown error'}`;
-    }
-  };
-
-  // Solve homework using the same chat API
-  const solveHomework = async (text: string): Promise<string> => {
-    try {
-      const response = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer 95fad12c-0768-4de2-a4c2-83247337ea89',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: "doubao-vision-pro-32k-241028",
-          messages: [
-            {
-              role: "system",
-              content: "You are an expert homework tutor. Provide detailed, step-by-step solutions to homework problems. Explain concepts clearly and show all working steps. Format your response in a clear, educational manner."
-            },
-            {
-              role: "user",
-              content: `Please solve this homework problem with detailed step-by-step explanations:
+                  text: `Please solve this homework problem with detailed step-by-step explanations:
 
 ${text}
 
@@ -470,34 +572,79 @@ Please provide:
 3. Final answer
 4. Any relevant concepts or formulas used
 
-Make sure to explain each step so the student can learn from the solution.`
+Make sure to explain each step so the student can learn from the solution. Show your reasoning process and provide comprehensive explanations.`
+                }
+              ]
             }
           ],
-          max_tokens: 4000,
-          temperature: 0.3
+          stream: true
         })
       });
 
       if (!response.ok) {
-        console.error('Homework API Error:', response.status, response.statusText);
+        console.error('QVQ Homework API Error:', response.status, response.statusText);
         throw new Error(`API request failed: ${response.status}`);
       }
 
-      const data = await response.json();
-      const rawContent = data.choices?.[0]?.message?.content || 'Unable to generate solution. Please try again.';
+      // Handle streaming response
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body reader available');
+      }
+
+      let solutionContent = '';
+      let isAnswering = false;
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = new TextDecoder().decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+
+              try {
+                const parsed = JSON.parse(data);
+                const content = parsed.choices?.[0]?.delta?.content;
+                
+                if (content) {
+                  solutionContent += content;
+                  isAnswering = true;
+                  
+                  // Update the answer in real-time for streaming effect
+                  setAnswer(solutionContent);
+                }
+              } catch (parseError) {
+                // Skip invalid JSON lines
+                continue;
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+
+      const rawContent = solutionContent.trim() || 'Unable to generate solution. Please try again.';
       
       // Clean up the AI response
       return cleanAIResponse(rawContent);
     } catch (error) {
-      console.error('Homework solving error:', error);
+      console.error('QVQ Homework solving error:', error);
       return `Error solving homework: ${error instanceof Error ? error.message : 'Unknown error'}`;
     }
   };
 
-  // Process uploaded file
+  // Process uploaded file with combined extraction and solving
   const processFile = async (file: File) => {
     setLoading(true);
     setProcessingStatus('Starting file processing...');
+    setAnswer(''); // Clear previous answer
     
     try {
       let imageUrls: string[] = [];
@@ -522,20 +669,24 @@ Make sure to explain each step so the student can learn from the solution.`
       setDocumentPages(imageUrls);
       setCurrentPage(0);
       
-      // Extract text from all pages
-      const allTexts: string[] = [];
+      setProcessingStatus('Analyzing and solving homework problems...');
       
-      setProcessingStatus('Extracting text from document...');
+      // Process all pages and combine solutions
+      let combinedSolution = '';
       
       for (let i = 0; i < imageUrls.length; i++) {
         setProcessingStatus(`Processing page ${i + 1} of ${imageUrls.length}...`);
         
         try {
-          const extractedText = await extractTextFromImage(imageUrls[i]);
-          allTexts.push(extractedText);
+          const solution = await extractAndSolveHomework(imageUrls[i]);
+          if (imageUrls.length > 1) {
+            combinedSolution += `\n\n--- Page ${i + 1} ---\n\n${solution}`;
+          } else {
+            combinedSolution = solution;
+          }
         } catch (pageError) {
           console.error(`Error processing page ${i + 1}:`, pageError);
-          allTexts.push(`Error processing page ${i + 1}`);
+          combinedSolution += `\n\nError processing page ${i + 1}: ${pageError instanceof Error ? pageError.message : 'Unknown error'}`;
         }
         
         // Add a small delay between API calls to avoid rate limiting
@@ -544,18 +695,10 @@ Make sure to explain each step so the student can learn from the solution.`
         }
       }
       
-      setExtractedTexts(allTexts);
+      setAnswer(combinedSolution);
       
-      // Combine all extracted text for homework solving
-      const combinedText = allTexts.filter(text => !text.startsWith('Error')).join('\n\n');
-      
-      if (combinedText.trim()) {
-        setProcessingStatus('Solving homework problem...');
-        const solution = await solveHomework(combinedText);
-        setAnswer(solution);
-      } else {
-        setAnswer('No text could be extracted from the uploaded file. Please try uploading a clearer image or PDF.');
-      }
+      // Add to history
+      addToHistory(file.name, 'Image/PDF Analysis', combinedSolution, file.type);
       
       setProcessingStatus('Processing completed!');
       
@@ -577,22 +720,32 @@ Make sure to explain each step so the student can learn from the solution.`
     }
   };
 
+  const handleRemoveFile = () => {
+    setFile(null);
+    setDocumentPages([]);
+    setCurrentPage(0);
+    setAnswer('');
+    setExtractedTexts([]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if ((!file && !question) || loading) return;
+    if (!question.trim() || loading) return;
     
     setLoading(true);
     setProcessingStatus('Solving homework problem...');
+    setAnswer(''); // Clear previous answer
     
     try {
-      if (question.trim()) {
-        // Solve text-based question
-        const solution = await solveHomework(question);
-        setAnswer(solution);
-      } else if (file) {
-        // File is already processed in handleFileChange
-        return;
-      }
+      // Use the streaming solve function for text questions
+      const solution = await solveHomework(question);
+      setAnswer(solution);
+      
+      // Add to history
+      addToHistory('Text Question', question, solution, 'text');
     } catch (error) {
       console.error('Submit error:', error);
       setAnswer(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -631,28 +784,28 @@ Make sure to explain each step so the student can learn from the solution.`
       >
         {/* Input Section */}
         <motion.div variants={itemVariants}>
-          <h2 className="text-2xl font-semibold text-teal-800 mb-6">Submit Your Homework</h2>
+          <h2 className="text-2xl font-semibold text-teal-800 mb-6">Submit Your Question</h2>
           
           <form onSubmit={handleSubmit}>
             <div className="mb-6">
               <label className="block text-gray-700 mb-2 font-medium">
-                Describe your homework problem
+                Describe your question or problem
               </label>
               <textarea
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none h-40"
-                placeholder="Type your homework question or problem here..."
+                placeholder="Type your question or problem here..."
               />
             </div>
             
             <div className="mb-6">
               <label className="block text-gray-700 mb-2 font-medium">
-                Or upload your assignment
+                Or upload your question
               </label>
               <div 
-                className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-teal-500 cursor-pointer transition-colors"
-                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-teal-500 cursor-pointer transition-colors relative"
+                onClick={() => !file && fileInputRef.current?.click()}
               >
                 <input 
                   type="file" 
@@ -662,7 +815,20 @@ Make sure to explain each step so the student can learn from the solution.`
                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                 />
                 {file ? (
-                  <div className="text-gray-700">
+                  <div className="text-gray-700 relative">
+                    <motion.button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveFile();
+                      }}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </motion.button>
                     <IconComponent icon={AiOutlineFileText} className="h-8 w-8 mx-auto mb-2 text-teal-600" />
                     <p className="font-medium">{file.name}</p>
                     <p className="text-sm text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
@@ -678,6 +844,18 @@ Make sure to explain each step so the student can learn from the solution.`
             </div>
             
             <div className="flex items-center justify-between flex-wrap gap-2">
+              <motion.button
+                type="button"
+                className="flex items-center justify-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50"
+                variants={buttonVariants}
+                whileHover="hover"
+                whileTap="tap"
+                onClick={() => setShowHistory(!showHistory)}
+              >
+                <IconComponent icon={AiOutlineHistory} className="h-5 w-5 mr-2" />
+                History ({homeworkHistory.length})
+              </motion.button>
+              
               <motion.button
                 type="button"
                 className="flex items-center justify-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50"
@@ -872,7 +1050,7 @@ Make sure to explain each step so the student can learn from the solution.`
         </motion.div>
       </motion.div>
 
-      {/* Document Preview Section (if file uploaded) */}
+      {/* Document Preview Section (if file uploaded) - Always fullscreen */}
       {documentPages.length > 0 && (
         <motion.div 
           className="mt-8 bg-white border border-gray-200 rounded-xl p-6 shadow-sm"
@@ -902,64 +1080,111 @@ Make sure to explain each step so the student can learn from the solution.`
               <div className="text-gray-600">
                 Page {currentPage + 1} of {documentPages.length}
               </div>
-              <motion.button
-                variants={buttonVariants}
-                whileHover="hover"
-                whileTap="tap"
-                onClick={() => setFullScreenDocument(!fullScreenDocument)}
-                className="flex items-center text-teal-600"
-              >
-                <IconComponent icon={AiOutlineFullscreen} className="h-5 w-5 mr-1" />
-                <span className="hidden sm:inline">Fullscreen</span>
-              </motion.button>
             </div>
           </div>
           
-          <div className={`relative ${
-            fullScreenDocument ? 
-              "fixed top-0 left-0 right-0 bottom-0 z-50 bg-gray-900 flex items-center justify-center p-4" : 
-              "aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden max-w-2xl mx-auto"
-          }`}>
-            {fullScreenDocument && (
-              <motion.button
-                variants={buttonVariants}
-                whileHover="hover"
-                whileTap="tap"
-                onClick={() => setFullScreenDocument(false)}
-                className="absolute top-4 right-4 bg-white p-2 rounded-full shadow-md z-10"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </motion.button>
-            )}
+          {/* Always show fullscreen image */}
+          <div className="w-full h-[600px] bg-gray-100 rounded-lg overflow-hidden">
             <img 
               src={documentPages[currentPage]} 
               alt={`Document page ${currentPage + 1}`}
-              className={`${fullScreenDocument ? 'max-h-full max-w-full object-contain' : 'w-full h-full object-cover'}`}
+              className="w-full h-full object-contain"
             />
-            
-            {loading && (
-              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                <div className="bg-white rounded-lg p-4 flex items-center">
-                  <IconComponent icon={AiOutlineLoading3Quarters} className="h-6 w-6 animate-spin mr-2 text-teal-600" />
-                  <span>{processingStatus}</span>
-                </div>
-              </div>
-            )}
           </div>
-          
-          {/* Extracted Text Preview */}
-          {extractedTexts.length > 0 && extractedTexts[currentPage] && (
-            <div className="mt-4 bg-gray-50 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Extracted Text (Page {currentPage + 1}):</h4>
-              <p className="text-sm text-gray-600 whitespace-pre-wrap max-h-32 overflow-y-auto">
-                {extractedTexts[currentPage]}
-              </p>
-            </div>
-          )}
         </motion.div>
       )}
+
+      {/* History Panel */}
+      <AnimatePresence>
+        {showHistory && (
+          <motion.div 
+            className="mt-8 bg-white border border-gray-200 rounded-xl p-6 shadow-sm"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-teal-800">Homework History</h3>
+              <div className="flex items-center space-x-2">
+                {homeworkHistory.length > 0 && (
+                  <motion.button
+                    variants={buttonVariants}
+                    whileHover="hover"
+                    whileTap="tap"
+                    onClick={clearAllHistory}
+                    className="px-3 py-1 bg-red-100 text-red-600 rounded-lg text-sm font-medium hover:bg-red-200 transition-colors"
+                  >
+                    Clear All
+                  </motion.button>
+                )}
+                <button
+                  onClick={() => setShowHistory(false)}
+                  className="text-sm text-gray-400 hover:text-gray-600"
+                >
+                  Hide
+                </button>
+              </div>
+            </div>
+            
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {homeworkHistory.length > 0 ? (
+                homeworkHistory.map((item) => (
+                  <motion.div
+                    key={item.id}
+                    className="p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors group"
+                    onClick={() => loadFromHistory(item)}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <IconComponent 
+                            icon={item.fileType === 'text' ? AiOutlineFileText : AiOutlineUpload} 
+                            className="h-4 w-4 text-teal-600" 
+                          />
+                          <p className="text-sm font-medium text-gray-700 truncate">
+                            {item.fileName}
+                          </p>
+                          <span className="text-xs text-gray-400">
+                            <IconComponent icon={FiClock} className="h-3 w-3 inline mr-1" />
+                            {formatRelativeTime(item.timestamp)}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 truncate mb-2">
+                          {item.question.length > 100 ? `${item.question.substring(0, 100)}...` : item.question}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          Solution: {item.answer.length > 80 ? `${item.answer.substring(0, 80)}...` : item.answer}
+                        </p>
+                      </div>
+                      
+                      <motion.button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteHistoryItem(item.id);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 transition-all"
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                      >
+                        <IconComponent icon={FiTrash2} className="h-4 w-4" />
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <IconComponent icon={AiOutlineHistory} className="mx-auto text-4xl mb-2" />
+                  <p>No homework history yet</p>
+                  <p className="text-sm mt-1">Your solved homework will appear here</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

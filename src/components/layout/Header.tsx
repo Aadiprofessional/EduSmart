@@ -204,7 +204,7 @@ const Header: React.FC = () => {
                 <AnimatePresence>
                   {isUserMenuOpen && (
                     <motion.div
-                      className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10"
+                      className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50"
                       variants={userMenuVariants}
                       initial="hidden"
                       animate="visible"
@@ -280,7 +280,7 @@ const Header: React.FC = () => {
                 <AnimatePresence>
                   {isUserMenuOpen && (
                     <motion.div
-                      className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10"
+                      className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50"
                       variants={userMenuVariants}
                       initial="hidden"
                       animate="visible"

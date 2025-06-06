@@ -136,7 +136,7 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
     }
   };
 
-  // Extract text from image using OCR API
+  // Extract text from image using QVQ model with streaming
   const extractTextFromImage = async (imageUrl: string): Promise<string> => {
     try {
       // Ensure we have the correct format for the API
@@ -157,79 +157,118 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
         });
       }
 
-      const apiResponse = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+      const apiResponse = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer 95fad12c-0768-4de2-a4c2-83247337ea89',
+          'Authorization': 'Bearer sk-80beadf6603b4832981d0d65896b1ae0',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: "doubao-vision-pro-32k-241028",
+          model: "qvq-max",
           messages: [
-            {
-              role: "system",
-              content: "You are an OCR assistant. Extract all text from the image exactly as it appears, maintaining line breaks and formatting. Only return the extracted text, nothing else."
-            },
             {
               role: "user",
               content: [
-                {
-                  type: "text",
-                  text: "Please extract all text from this image exactly as it appears, maintaining the original formatting and line breaks."
-                },
                 {
                   type: "image_url",
                   image_url: {
                     url: base64Image
                   }
+                },
+                {
+                  type: "text",
+                  text: "Please extract all text from this image exactly as it appears, maintaining line breaks and formatting. Focus on accuracy and completeness. If there are any visual elements or formatting that affects the text meaning, please describe them."
                 }
               ]
             }
           ],
-          max_tokens: 4000,
-          temperature: 0.1
+          stream: true
         })
       });
 
       if (!apiResponse.ok) {
         const errorData = await apiResponse.json().catch(() => ({}));
-        console.error('OCR API Error:', errorData);
-        throw new Error(`OCR API failed: ${apiResponse.status} ${apiResponse.statusText}`);
+        console.error('QVQ API Error:', errorData);
+        throw new Error(`QVQ API failed: ${apiResponse.status} ${apiResponse.statusText}`);
       }
 
-      const data = await apiResponse.json();
+      // Handle streaming response
+      const reader = apiResponse.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body reader available');
+      }
+
+      let extractedContent = '';
+      let isAnswering = false;
       
-      if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-        console.error('Unexpected API response structure:', data);
-        return 'Error: Unable to extract text from image';
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = new TextDecoder().decode(value);
+          const lines = chunk.split('\n').filter(line => line.trim() !== '');
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+              
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta) {
+                  const delta = parsed.choices[0].delta;
+                  
+                  // Skip reasoning content, only collect the final answer
+                  if (delta.reasoning_content) {
+                    // This is the thinking process, we can skip it for OCR
+                    continue;
+                  } else if (delta.content) {
+                    // This is the actual answer content
+                    if (!isAnswering && delta.content.trim() !== '') {
+                      isAnswering = true;
+                    }
+                    if (isAnswering) {
+                      extractedContent += delta.content;
+                    }
+                  }
+                }
+              } catch (parseError) {
+                // Skip invalid JSON chunks
+                continue;
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
       }
 
-      return data.choices[0].message.content || 'No text found in image';
+      return extractedContent.trim() || 'No text found in image';
     } catch (error) {
-      console.error('OCR Error:', error);
+      console.error('QVQ OCR Error:', error);
       return `Error extracting text: ${error instanceof Error ? error.message : 'Unknown error'}`;
     }
   };
 
-  // Check for mistakes using the same chat API as content writer
+  // Check for mistakes using QVQ model with streaming
   const checkMistakes = async (text: string, pageNumber: number): Promise<Mistake[]> => {
     try {
-      const response = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+      const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer 95fad12c-0768-4de2-a4c2-83247337ea89',
+          'Authorization': 'Bearer sk-80beadf6603b4832981d0d65896b1ae0',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: "doubao-vision-pro-32k-241028",
+          model: "qvq-max",
           messages: [
             {
-              role: "system",
-              content: "You are a grammar and writing assistant. Analyze text for mistakes and provide corrections in a structured format."
-            },
-            {
               role: "user",
-              content: `Please analyze the following text for grammar mistakes, spelling errors, and other writing issues. 
+              content: [
+                {
+                  type: "text",
+                  text: `Please analyze the following text for grammar mistakes, spelling errors, and other writing issues. 
 
 IMPORTANT: Format your response ONLY as XML with the following structure:
 <mistakes>
@@ -255,23 +294,74 @@ Please identify specific mistakes and provide corrections. Focus on:
 3. Punctuation issues
 4. Word usage errors
 
-Respond ONLY with the XML format above, no additional text.`
+Use your reasoning capabilities to thoroughly analyze the text and provide accurate corrections. Respond ONLY with the XML format above, no additional text.`
+                }
+              ]
             }
           ],
-          max_tokens: 4000,
-          temperature: 0.1
+          stream: true
         })
       });
 
       if (!response.ok) {
-        console.error('Grammar API Error:', response.status, response.statusText);
+        console.error('QVQ Grammar API Error:', response.status, response.statusText);
         return [];
       }
 
-      const data = await response.json();
-      const analysisText = data.choices?.[0]?.message?.content || '';
+      // Handle streaming response
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body reader available');
+      }
+
+      let analysisContent = '';
+      let isAnswering = false;
       
-      console.log(`AI Response for page ${pageNumber}:`, analysisText);
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = new TextDecoder().decode(value);
+          const lines = chunk.split('\n').filter(line => line.trim() !== '');
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+              
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta) {
+                  const delta = parsed.choices[0].delta;
+                  
+                  // Skip reasoning content, only collect the final answer
+                  if (delta.reasoning_content) {
+                    // This is the thinking process - we could optionally use this for better analysis
+                    continue;
+                  } else if (delta.content) {
+                    // This is the actual analysis content
+                    if (!isAnswering && delta.content.trim() !== '') {
+                      isAnswering = true;
+                    }
+                    if (isAnswering) {
+                      analysisContent += delta.content;
+                    }
+                  }
+                }
+              } catch (parseError) {
+                // Skip invalid JSON chunks
+                continue;
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+
+      const analysisText = analysisContent.trim();
+      console.log(`QVQ Analysis Response for page ${pageNumber}:`, analysisText);
       
       // Parse XML response
       const mistakes: Mistake[] = [];
@@ -394,11 +484,11 @@ Respond ONLY with the XML format above, no additional text.`
 
       return mistakes;
     } catch (error) {
-      console.error('Grammar check error:', error);
+      console.error('QVQ Grammar check error:', error);
       return [{
         id: Date.now() + pageNumber * 1000,
         line: `Page ${pageNumber} API Error`,
-        correction: `Failed to check grammar: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        correction: `Error checking grammar: ${error instanceof Error ? error.message : 'Unknown error'}`,
         type: 'Error',
         lineNumber: 1
       }];

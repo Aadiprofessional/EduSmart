@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FaUser, FaGraduationCap, FaMapMarkerAlt, FaBook, FaSave, FaEdit, FaCheck, FaTimes, FaGlobe, FaDollarSign, FaCalendarAlt, FaChartLine } from 'react-icons/fa';
+import { FaUser, FaGraduationCap, FaMapMarkerAlt, FaBook, FaSave, FaEdit, FaCheck, FaTimes, FaGlobe, FaDollarSign, FaCalendarAlt, FaChartLine, FaSync } from 'react-icons/fa';
 import { HiOutlineAcademicCap } from 'react-icons/hi';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
@@ -14,6 +14,10 @@ const Profile: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   const [profile, setProfile] = useState<UserProfile>({
     user_id: user?.id || '',
     full_name: '',
@@ -37,10 +41,25 @@ const Profile: React.FC = () => {
     preferred_program_type: '',
     career_goals: '',
     work_experience: '',
+    research_experience: '',
+    publications: '',
+    awards: '',
     extracurricular_activities: [],
     languages: [],
     profile_completion_percentage: 5,
   });
+
+  // Auto-save functionality for non-critical fields
+  const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimeout) {
+        clearTimeout(autoSaveTimeout);
+      }
+    };
+  }, [autoSaveTimeout]);
 
   // Define required fields for profile completion
   const requiredFields = [
@@ -86,21 +105,70 @@ const Profile: React.FC = () => {
   // Helper function to check if field is required
   const isRequired = (fieldName: string) => requiredFields.includes(fieldName);
 
+  // Clear messages after 5 seconds
   useEffect(() => {
-    if (user) {
+    if (error || successMessage) {
+      const timer = setTimeout(() => {
+        setError(null);
+        setSuccessMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, successMessage]);
+
+  useEffect(() => {
+    if (user && !isInitialized) {
+      setIsInitialized(true);
       fetchProfile();
     }
-  }, [user]);
+  }, [user, isInitialized]);
+
+  const sanitizeProfileData = (data: UserProfile) => {
+    const sanitized: Partial<UserProfile> = { ...data };
+    
+    // Handle date fields - convert empty strings to null for database
+    if (sanitized.date_of_birth === '') {
+      sanitized.date_of_birth = undefined; // Remove empty date
+    }
+    
+    // Handle numeric fields - convert empty strings to null
+    const numericFields: (keyof UserProfile)[] = ['current_gpa', 'sat_score', 'act_score', 'gre_score', 'gmat_score', 'toefl_score', 'ielts_score', 'duolingo_score'];
+    numericFields.forEach(field => {
+      const value = sanitized[field];
+      if (value === '' || value === '0' || value === 0) {
+        sanitized[field] = undefined; // Remove empty numeric fields
+      }
+    });
+    
+    // Ensure arrays are properly formatted
+    if (!Array.isArray(sanitized.extracurricular_activities)) {
+      sanitized.extracurricular_activities = [];
+    }
+    if (!Array.isArray(sanitized.languages)) {
+      sanitized.languages = [];
+    }
+    
+    // Remove undefined fields
+    const cleanedData: Partial<UserProfile> = {};
+    Object.entries(sanitized).forEach(([key, value]) => {
+      if (value !== undefined) {
+        (cleanedData as any)[key] = value;
+      }
+    });
+    
+    return cleanedData;
+  };
 
   const fetchProfile = async () => {
-    if (!user) return;
+    if (!user || loading) return;
     
     setLoading(true);
+    setError(null);
     try {
       const result = await userProfileAPI.getUserProfile(session);
       
       if (result.success && result.profile) {
-        // Ensure all required fields exist with default values
+        // Profile exists, use it
         const processedProfile = {
           ...profile,
           ...result.profile,
@@ -111,8 +179,9 @@ const Profile: React.FC = () => {
         };
         
         setProfile(processedProfile);
-      } else if (result.error && result.error.includes('Profile not found')) {
-        // Profile doesn't exist, create a new one with basic info
+        setSuccessMessage('Profile loaded successfully!');
+      } else {
+        // Profile doesn't exist, set default profile
         const newProfile = {
           ...profile,
           user_id: user.id,
@@ -124,31 +193,11 @@ const Profile: React.FC = () => {
         };
         
         setProfile(newProfile);
-        
-        // Optionally create the profile on the server
-        const createResult = await userProfileAPI.createOrUpdateProfile(newProfile, session);
-        if (createResult.success && createResult.profile) {
-          const processedCreatedProfile = {
-            ...createResult.profile,
-            extracurricular_activities: createResult.profile.extracurricular_activities || [],
-            languages: createResult.profile.languages || [],
-          };
-          setProfile(prev => ({ ...prev, ...processedCreatedProfile }));
-        }
-      } else {
-        console.error('Error fetching profile:', result.error);
-        // Set default profile with user info
-        setProfile(prev => ({
-          ...prev,
-          user_id: user.id,
-          full_name: user.user_metadata?.name || '',
-          email: user.email || '',
-          extracurricular_activities: [],
-          languages: [],
-        }));
+        setSuccessMessage('Welcome! Please complete your profile to get started.');
       }
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error('Network error fetching profile:', error);
+      setError('Network error while loading profile');
       // Set default profile with user info
       setProfile(prev => ({
         ...prev,
@@ -163,38 +212,63 @@ const Profile: React.FC = () => {
     }
   };
 
-  const saveProfile = async () => {
+  const fetchProfileCompletion = async () => {
     if (!user) return;
     
-    setSaving(true);
     try {
-      // Calculate completion percentage before saving
-      const completionPercentage = calculateCompletionPercentage(profile);
-      const profileToSave = {
-        ...profile,
-        extracurricular_activities: profile.extracurricular_activities || [],
-        languages: profile.languages || [],
-        profile_completion_percentage: completionPercentage,
-      };
+      const result = await userProfileAPI.getProfileCompletion(session);
+      if (result.success && typeof result.completion_percentage === 'number') {
+        setProfile(prev => ({
+          ...prev,
+          profile_completion_percentage: result.completion_percentage
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching profile completion:', error);
+    }
+  };
+
+  const refreshProfile = async () => {
+    if (refreshing) return;
+    
+    setRefreshing(true);
+    setError(null);
+    try {
+      await fetchProfile();
+      await fetchProfileCompletion();
+      setSuccessMessage('Profile refreshed successfully!');
+    } catch (error) {
+      setError('Failed to refresh profile');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const saveProfile = async () => {
+    if (!user || saving) return;
+    
+    setSaving(true);
+    setError(null);
+    setSuccessMessage(null);
+    
+    try {
+      const sanitizedData = sanitizeProfileData(profile);
+      const result = await userProfileAPI.createOrUpdateProfile(sanitizedData, session);
       
-      const result = await userProfileAPI.updateProfile(profileToSave, session);
-      
-      if (result.success && result.profile) {
-        const processedProfile = {
-          ...result.profile,
-          extracurricular_activities: result.profile.extracurricular_activities || [],
-          languages: result.profile.languages || [],
-        };
-        setProfile(processedProfile);
+      if (result.success) {
+        setSuccessMessage('Profile saved successfully!');
         setIsEditing(false);
-        alert('Profile updated successfully!');
+        // Refresh the profile to get the latest data including completion percentage
+        setTimeout(() => {
+          fetchProfile();
+          fetchProfileCompletion();
+        }, 500);
       } else {
-        console.error('Error saving profile:', result.error);
-        alert('Error saving profile: ' + (result.error || 'Unknown error'));
+        setError(result.error || 'Failed to save profile');
       }
     } catch (error) {
       console.error('Error saving profile:', error);
-      alert('Error saving profile. Please try again.');
+      setError('Network error while saving profile');
     } finally {
       setSaving(false);
     }
@@ -204,12 +278,105 @@ const Profile: React.FC = () => {
     setProfile(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleInputChangeWithAutoSave = (field: string, value: any) => {
+    handleInputChange(field, value);
+    
+    // Clear existing timeout
+    if (autoSaveTimeout) {
+      clearTimeout(autoSaveTimeout);
+    }
+    
+    // Set new timeout for auto-save (only for non-critical fields)
+    const nonCriticalFields = ['career_goals', 'work_experience', 'phone', 'current_location'];
+    if (nonCriticalFields.includes(field)) {
+      const timeout = setTimeout(() => {
+        updateSpecificFields({ [field]: value });
+      }, 2000); // Auto-save after 2 seconds of inactivity
+      
+      setAutoSaveTimeout(timeout);
+    }
+  };
+
   const handleArrayChange = (field: string, value: string) => {
-    const array = value.split(',').map(item => item.trim()).filter(item => item);
-    setProfile(prev => ({
-      ...prev,
-      [field]: array
-    }));
+    const arrayValue = value.split(',').map(item => item.trim()).filter(item => item);
+    handleInputChange(field, arrayValue);
+  };
+
+  const updateSpecificFields = async (fields: Partial<UserProfile>) => {
+    if (!user) return;
+    
+    try {
+      const sanitizedFields = sanitizeProfileData({ ...profile, ...fields });
+      const result = await userProfileAPI.updateProfileFields(sanitizedFields, session);
+      
+      if (result.success) {
+        // Update local state with the response
+        if (result.profile) {
+          setProfile(prev => ({ ...prev, ...result.profile }));
+        }
+        // Don't show success message for auto-save to avoid spam
+      } else {
+        console.error('Auto-save failed:', result.error);
+      }
+    } catch (error) {
+      console.error('Auto-save error:', error);
+    }
+  };
+
+  const deleteProfile = async () => {
+    if (!user) return;
+    
+    const confirmed = window.confirm('Are you sure you want to delete your profile? This action cannot be undone.');
+    if (!confirmed) return;
+    
+    setError(null);
+    setSuccessMessage(null);
+    
+    try {
+      const result = await userProfileAPI.deleteProfile(session);
+      
+      if (result.success) {
+        setSuccessMessage('Profile deleted successfully!');
+        // Reset to default profile
+        const defaultProfile = {
+          user_id: user.id,
+          full_name: user.user_metadata?.name || '',
+          email: user.email || '',
+          phone: '',
+          date_of_birth: '',
+          nationality: '',
+          current_location: '',
+          preferred_study_location: '',
+          current_education_level: '',
+          current_institution: '',
+          current_gpa: '0',
+          gpa_scale: '4.0',
+          graduation_year: '',
+          field_of_study: '',
+          preferred_field: '',
+          preferred_degree_level: '',
+          budget_range: '',
+          preferred_university_size: '',
+          preferred_campus_type: '',
+          preferred_program_type: '',
+          career_goals: '',
+          work_experience: '',
+          research_experience: '',
+          publications: '',
+          awards: '',
+          extracurricular_activities: [],
+          languages: [],
+          profile_completion_percentage: 5,
+        };
+        setProfile(defaultProfile);
+        setIsEditing(false);
+      } else {
+        setError(result.error || 'Failed to delete profile');
+      }
+    } catch (error) {
+      console.error('Error deleting profile:', error);
+      setError('Network error while deleting profile');
+    }
   };
 
   if (loading) {
@@ -269,7 +436,20 @@ const Profile: React.FC = () => {
                 <div className="flex justify-between items-center">
                   <div className="flex items-center">
                     <IconComponent icon={FaUser} className="text-primary mr-3 text-2xl" />
-                    <h2 className="text-2xl font-bold text-gray-800">Academic Profile</h2>
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-800">Academic Profile</h2>
+                      <div className="flex items-center mt-2">
+                        <span className="text-sm text-gray-600 mr-3">
+                          Profile Completion: {profile.profile_completion_percentage || 0}%
+                        </span>
+                        <div className="w-32 bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-primary h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${profile.profile_completion_percentage || 0}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   <div className="flex gap-3">
                     {isEditing ? (
@@ -295,19 +475,74 @@ const Profile: React.FC = () => {
                         </motion.button>
                       </>
                     ) : (
-                      <motion.button
-                        onClick={() => setIsEditing(true)}
-                        className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg flex items-center"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <IconComponent icon={FaEdit} className="mr-2" />
-                        Edit Profile
-                      </motion.button>
+                      <>
+                        <motion.button
+                          onClick={refreshProfile}
+                          disabled={refreshing}
+                          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center disabled:opacity-50"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <IconComponent icon={FaSync} className={`mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                          {refreshing ? 'Refreshing...' : 'Refresh'}
+                        </motion.button>
+                        <motion.button
+                          onClick={() => setIsEditing(true)}
+                          className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg flex items-center"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <IconComponent icon={FaEdit} className="mr-2" />
+                          Edit Profile
+                        </motion.button>
+                      </>
                     )}
                   </div>
                 </div>
               </div>
+
+              {/* Error and Success Messages */}
+              {error && (
+                <div className="bg-red-50 border-l-4 border-red-400 p-4 mx-6 mt-4 rounded">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <IconComponent icon={FaTimes} className="h-5 w-5 text-red-400" />
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-red-700">{error}</p>
+                    </div>
+                    <div className="ml-auto pl-3">
+                      <button
+                        onClick={() => setError(null)}
+                        className="text-red-400 hover:text-red-600"
+                      >
+                        <IconComponent icon={FaTimes} className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {successMessage && (
+                <div className="bg-green-50 border-l-4 border-green-400 p-4 mx-6 mt-4 rounded">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <IconComponent icon={FaCheck} className="h-5 w-5 text-green-400" />
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-green-700">{successMessage}</p>
+                    </div>
+                    <div className="ml-auto pl-3">
+                      <button
+                        onClick={() => setSuccessMessage(null)}
+                        className="text-green-400 hover:text-green-600"
+                      >
+                        <IconComponent icon={FaTimes} className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Form Content */}
               <div className="p-6">
@@ -691,7 +926,7 @@ const Profile: React.FC = () => {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Career Goals</label>
                         <textarea
-                          value={profile.career_goals}
+                          value={profile.career_goals || ''}
                           onChange={(e) => handleInputChange('career_goals', e.target.value)}
                           disabled={!isEditing}
                           rows={3}
@@ -734,7 +969,7 @@ const Profile: React.FC = () => {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Work Experience</label>
                         <textarea
-                          value={profile.work_experience}
+                          value={profile.work_experience || ''}
                           onChange={(e) => handleInputChange('work_experience', e.target.value)}
                           disabled={!isEditing}
                           rows={3}
@@ -745,7 +980,7 @@ const Profile: React.FC = () => {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Research Experience</label>
                         <textarea
-                          value={profile.research_experience}
+                          value={profile.research_experience || ''}
                           onChange={(e) => handleInputChange('research_experience', e.target.value)}
                           disabled={!isEditing}
                           rows={3}
@@ -756,7 +991,7 @@ const Profile: React.FC = () => {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Publications</label>
                         <textarea
-                          value={profile.publications}
+                          value={profile.publications || ''}
                           onChange={(e) => handleInputChange('publications', e.target.value)}
                           disabled={!isEditing}
                           rows={3}
@@ -767,7 +1002,7 @@ const Profile: React.FC = () => {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Awards & Achievements</label>
                         <textarea
-                          value={profile.awards}
+                          value={profile.awards || ''}
                           onChange={(e) => handleInputChange('awards', e.target.value)}
                           disabled={!isEditing}
                           rows={3}
