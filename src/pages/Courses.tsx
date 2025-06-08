@@ -1,876 +1,1081 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../utils/LanguageContext';
-import { courseAPI } from '../utils/apiService';
-import { FaSearch, FaFilter, FaStar, FaUsers, FaClock, FaGraduationCap, FaTimes, FaChevronDown, FaBookmark, FaPlay, FaTag, FaSort } from 'react-icons/fa';
+import { useAuth } from '../utils/AuthContext';
+import { 
+  FaGraduationCap, 
+  FaSearch, 
+  FaFilter, 
+  FaHeart, 
+  FaShoppingCart, 
+  FaStar, 
+  FaUsers, 
+  FaClock, 
+  FaPlay, 
+  FaVideo, 
+  FaFileAlt, 
+  FaDownload, 
+  FaChevronRight, 
+  FaChevronDown, 
+  FaChevronUp, 
+  FaChevronLeft,
+  FaSpinner,
+  FaExclamationTriangle,
+  FaPlayCircle,
+  FaInfinity,
+  FaMobile,
+  FaAward,
+  FaShare,
+  FaCheck,
+  FaUniversity,
+  FaCertificate,
+  FaRobot,
+  FaLaptopCode,
+  FaTag,
+  FaChalkboardTeacher,
+  FaBookmark,
+  FaRegBookmark,
+  FaTimes,
+  FaUserTie,
+  FaTimesCircle
+} from 'react-icons/fa';
+import IconWrapper from '../components/IconWrapper';
+import PageHeader from '../components/ui/PageHeader';
 import IconComponent from '../components/ui/IconComponent';
+
+// Enhanced API service
+const API_BASE = 'http://localhost:8000/api/v2';
 
 interface Course {
   id: string;
   title: string;
+  subtitle?: string;
   description: string;
   category: string;
   level: string;
+  language: string;
   duration: string;
   price: number;
-  original_price?: number | null;
-  image?: string | null;
+  original_price?: number;
+  thumbnail_image?: string;
+  preview_video_url?: string;
   instructor_name: string;
-  instructor_bio?: string | null;
-  instructor_image?: string | null;
-  rating?: number | null;
-  total_reviews?: number | null;
-  total_students?: number | null;
-  featured?: boolean | null;
-  status?: string | null;
-  tags?: string[] | null;
+  instructor_bio?: string;
+  instructor_image?: string;
+  what_you_will_learn?: string[];
+  prerequisites?: string[];
+  target_audience?: string[];
+  course_includes?: string[];
+  tags?: string[];
+  status: string;
+  featured: boolean;
+  rating?: number;
+  total_reviews?: number;
+  total_students?: number;
+  total_lectures?: number;
+  total_sections?: number;
   created_at: string;
   updated_at: string;
 }
 
+interface CourseSection {
+  id: string;
+  title: string;
+  description?: string;
+  section_order: number;
+  duration_minutes?: number;
+  course_lectures?: CourseLecture[];
+}
+
+interface CourseLecture {
+  id: string;
+  title: string;
+  description?: string;
+  lecture_type: 'video' | 'article' | 'quiz' | 'assignment' | 'resource';
+  video_duration_seconds?: number;
+  lecture_order: number;
+  is_preview: boolean;
+  is_free: boolean;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+}
+
 const Courses: React.FC = () => {
   const { t } = useLanguage();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState('all');
-  const [activeLevel, setActiveLevel] = useState('all');
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { id } = useParams();
+  
+  // State management
   const [courses, setCourses] = useState<Course[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [levels, setLevels] = useState<string[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [courseSections, setCourseSections] = useState<CourseSection[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+  const [currentView, setCurrentView] = useState<'browse' | 'details' | 'learning'>('browse');
+  const [enrolledCourses, setEnrolledCourses] = useState<string[]>([]);
+  
+  // Filter and search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState('');
+  const [activeLevel, setActiveLevel] = useState('');
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 200]);
   const [sortBy, setSortBy] = useState('featured');
+  const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-
-  // Sample data as fallback
-  const sampleCourses: Course[] = [
-    {
-      id: '1',
-      title: 'Introduction to AI',
-      description: 'Learn the fundamentals of Artificial Intelligence and machine learning concepts.',
-      category: 'Computer Science',
-      level: 'Beginner',
-      duration: '8 weeks',
-      price: 49.99,
-      original_price: 79.99,
-      image: 'https://images.unsplash.com/photo-1593376893114-1a66d1013e14?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80',
-      instructor_name: 'Dr. Smith',
-      rating: 4.8,
-      total_reviews: 1245,
-      total_students: 5420,
-      featured: true,
-      status: 'active',
-      tags: ['AI', 'Machine Learning', 'Programming'],
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z'
-    },
-    {
-      id: '2',
-      title: 'Business Management',
-      description: 'Master essential business management skills and leadership principles.',
-      category: 'Business',
-      level: 'Intermediate',
-      duration: '12 weeks',
-      price: 39.99,
-      original_price: null,
-      image: 'https://images.unsplash.com/photo-1556761175-4b46a572b786?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80',
-      instructor_name: 'Prof. Johnson',
-      rating: 4.6,
-      total_reviews: 980,
-      total_students: 3200,
-      featured: false,
-      status: 'active',
-      tags: ['Business', 'Management', 'Leadership'],
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z'
-    },
-    {
-      id: '3',
-      title: 'Data Visualization',
-      description: 'Create compelling data visualizations and learn advanced analytics techniques.',
-      category: 'Data Science',
-      level: 'Advanced',
-      duration: '10 weeks',
-      price: 59.99,
-      original_price: 89.99,
-      image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80',
-      instructor_name: 'Sarah Williams',
-      rating: 4.9,
-      total_reviews: 1560,
-      total_students: 4800,
-      featured: true,
-      status: 'active',
-      tags: ['Data Science', 'Visualization', 'Analytics'],
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z'
-    },
-    {
-      id: '4',
-      title: 'UX/UI Design Principles',
-      description: 'Learn modern design principles and create user-centered digital experiences.',
-      category: 'Design',
-      level: 'Beginner',
-      duration: '6 weeks',
-      price: 44.99,
-      original_price: null,
-      image: 'https://images.unsplash.com/photo-1517292987719-0369a794ec0f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80',
-      instructor_name: 'Mike Robertson',
-      rating: 4.7,
-      total_reviews: 1100,
-      total_students: 2900,
-      featured: false,
-      status: 'active',
-      tags: ['Design', 'UX', 'UI', 'User Experience'],
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z'
-    },
-    {
-      id: '5',
-      title: 'Mechanical Engineering Basics',
-      description: 'Understand fundamental mechanical engineering concepts and applications.',
-      category: 'Engineering',
-      level: 'Intermediate',
-      duration: '14 weeks',
-      price: 54.99,
-      original_price: 74.99,
-      image: 'https://images.unsplash.com/photo-1537462715879-360eeb61a0ad?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80',
-      instructor_name: 'Dr. Chen',
-      rating: 4.5,
-      total_reviews: 875,
-      total_students: 1800,
-      featured: false,
-      status: 'active',
-      tags: ['Engineering', 'Mechanical', 'Physics'],
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z'
-    },
-    {
-      id: '6',
-      title: 'Web Development Bootcamp',
-      description: 'Complete full-stack web development course from beginner to advanced.',
-      category: 'Computer Science',
-      level: 'Beginner',
-      duration: '16 weeks',
-      price: 79.99,
-      original_price: 129.99,
-      image: 'https://images.unsplash.com/photo-1605379399642-870262d3d051?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80',
-      instructor_name: 'Jessica Lee',
-      rating: 4.8,
-      total_reviews: 2200,
-      total_students: 8500,
-      featured: true,
-      status: 'active',
-      tags: ['Web Development', 'Programming', 'Full Stack'],
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z'
-    }
-  ];
+  
+  // Course details state
+  const [activeTab, setActiveTab] = useState('overview');
+  const [expandedSections, setExpandedSections] = useState<string[]>([]);
+  const [wishlist, setWishlist] = useState<string[]>([]);
+  const [cart, setCart] = useState<string[]>([]);
 
   useEffect(() => {
-    loadCourses();
-    loadFilterOptions();
-  }, []);
+    if (id) {
+      setCurrentView('details');
+      fetchCourseDetails(id);
+    } else {
+      setCurrentView('browse');
+      fetchCourses();
+    }
+    fetchCategories();
+    if (user) {
+      fetchUserEnrollments();
+    }
+  }, [id, user]);
 
-  const loadCourses = async () => {
+  // Check enrollment status for selected course
+  useEffect(() => {
+    if (selectedCourse && user) {
+      checkCourseEnrollment(selectedCourse.id);
+    }
+  }, [selectedCourse, user]);
+
+  const checkCourseEnrollment = async (courseId: string) => {
+    if (!user?.id) return;
+    
+    try {
+      const response = await fetch(`${API_BASE}/courses/${courseId}/enrollment/${user.id}`);
+      const data = await response.json();
+      
+      if (data.success && data.data.enrolled) {
+        setEnrolledCourses(prev => {
+          if (!prev.includes(courseId)) {
+            return [...prev, courseId];
+          }
+          return prev;
+        });
+      }
+    } catch (error) {
+      console.error('Error checking course enrollment:', error);
+    }
+  };
+
+  // API Functions
+  const fetchCourses = async () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('Loading courses...');
       
-      const response = await courseAPI.getAll();
-      console.log('Courses API response:', response);
+      const params = new URLSearchParams();
+      if (searchQuery) params.append('search', searchQuery);
+      if (activeCategory) params.append('category', activeCategory);
+      if (activeLevel) params.append('level', activeLevel);
+      if (priceRange[0] > 0) params.append('price_min', priceRange[0].toString());
+      if (priceRange[1] < 200) params.append('price_max', priceRange[1].toString());
+      params.append('sort_by', sortBy);
       
-      if (response.success && response.data) {
-        let coursesData = response.data;
-        
-        // Handle different API response structures
-        if (coursesData && coursesData.courses && Array.isArray(coursesData.courses)) {
-          coursesData = coursesData.courses;
-        } else if (coursesData && Array.isArray(coursesData.data)) {
-          coursesData = coursesData.data;
-        } else if (!Array.isArray(coursesData)) {
-          console.warn('Unexpected courses data structure:', coursesData);
-          coursesData = sampleCourses;
-        }
-        
-        console.log('Setting courses:', coursesData);
-        setCourses(Array.isArray(coursesData) ? coursesData : sampleCourses);
+      const response = await fetch(`${API_BASE}/courses?${params}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setCourses(data.data.courses || []);
       } else {
-        console.warn('API response not successful, using sample data');
-        setCourses(sampleCourses);
+        throw new Error(data.error || 'Failed to fetch courses');
       }
-    } catch (error) {
-      console.error('Error loading courses:', error);
-      setError('Failed to load courses. Showing sample data.');
-      setCourses(sampleCourses);
+    } catch (error: any) {
+      console.error('Error fetching courses:', error);
+      setError(error.message || 'Failed to load courses');
+      setCourses([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const loadFilterOptions = async () => {
+  const fetchCategories = async () => {
     try {
-      console.log('Loading filter options...');
+      const response = await fetch(`${API_BASE}/course-categories`);
+      const data = await response.json();
       
-      const [categoriesRes, levelsRes] = await Promise.all([
-        courseAPI.getCategories(),
-        courseAPI.getLevels()
-      ]);
-      
-      console.log('Categories response:', categoriesRes);
-      console.log('Levels response:', levelsRes);
-      
-      if (categoriesRes.success && categoriesRes.data) {
-        let categoriesData = categoriesRes.data;
-        if (categoriesData.categories && Array.isArray(categoriesData.categories)) {
-          categoriesData = categoriesData.categories;
-        } else if (!Array.isArray(categoriesData)) {
-          categoriesData = Array.from(new Set(sampleCourses.map(course => course.category)));
-        }
-        setCategories(categoriesData);
-      } else {
-        const uniqueCategories = Array.from(new Set(sampleCourses.map(course => course.category)));
-        setCategories(uniqueCategories);
-      }
-      
-      if (levelsRes.success && levelsRes.data) {
-        let levelsData = levelsRes.data;
-        if (levelsData.levels && Array.isArray(levelsData.levels)) {
-          levelsData = levelsData.levels;
-        } else if (!Array.isArray(levelsData)) {
-          levelsData = Array.from(new Set(sampleCourses.map(course => course.level)));
-        }
-        setLevels(levelsData);
-      } else {
-        const uniqueLevels = Array.from(new Set(sampleCourses.map(course => course.level)));
-        setLevels(uniqueLevels);
+      if (data.success) {
+        setCategories(data.data.categories || []);
       }
     } catch (error) {
-      console.error('Error loading filter options:', error);
-      // Extract from current courses or sample data
-      const uniqueCategories = Array.from(new Set((courses.length > 0 ? courses : sampleCourses).map(course => course.category)));
-      const uniqueLevels = Array.from(new Set((courses.length > 0 ? courses : sampleCourses).map(course => course.level)));
-      setCategories(uniqueCategories);
-      setLevels(uniqueLevels);
+      console.error('Error fetching categories:', error);
     }
   };
 
-  // Enhanced filtering logic
-  const filteredCourses = courses.filter((course) => {
-    // Search filter - check title, description, instructor, tags, and category
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const matchesTitle = course.title.toLowerCase().includes(query);
-      const matchesDescription = course.description.toLowerCase().includes(query);
-      const matchesInstructor = course.instructor_name.toLowerCase().includes(query);
-      const matchesTags = course.tags && course.tags.some(tag => tag.toLowerCase().includes(query));
-      const matchesCategory = course.category.toLowerCase().includes(query);
+  const fetchUserEnrollments = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const response = await fetch(`${API_BASE}/users/${user.id}/enrollments`);
+      const data = await response.json();
       
-      if (!matchesTitle && !matchesDescription && !matchesInstructor && !matchesTags && !matchesCategory) {
-        return false;
+      if (data.success) {
+        const enrolledCourseIds = data.data.enrollments.map((e: any) => e.course_id);
+        setEnrolledCourses(enrolledCourseIds);
       }
+    } catch (error) {
+      console.error('Error fetching user enrollments:', error);
     }
-    
-    // Category filter
-    if (activeCategory !== 'all' && course.category !== activeCategory) {
-      return false;
-    }
-    
-    // Level filter
-    if (activeLevel !== 'all' && course.level !== activeLevel) {
-      return false;
-    }
-    
-    // Price range filter
-    if (course.price < priceRange[0] || course.price > priceRange[1]) {
-      return false;
-    }
-    
-    return true;
-  });
-
-  // Sort courses
-  const sortedCourses = [...filteredCourses].sort((a, b) => {
-    switch (sortBy) {
-      case 'price-low':
-        return a.price - b.price;
-      case 'price-high':
-        return b.price - a.price;
-      case 'rating':
-        return (b.rating || 0) - (a.rating || 0);
-      case 'students':
-        return (b.total_students || 0) - (a.total_students || 0);
-      case 'newest':
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      case 'featured':
-      default:
-        return (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
-    }
-  });
-
-  const renderStars = (rating: number | null | undefined) => {
-    const safeRating = rating || 0;
-    return Array.from({ length: 5 }, (_, i) => (
-      <IconComponent 
-        key={i} 
-        icon={FaStar}
-        className={i < Math.floor(safeRating) ? 'text-yellow-400' : 'text-gray-300'} 
-      />
-    ));
   };
 
-  const clearAllFilters = () => {
-    setSearchQuery('');
-    setActiveCategory('all');
-    setActiveLevel('all');
-    setPriceRange([0, 1000]);
-    setSortBy('featured');
-  };
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
+  const fetchCourseDetails = async (courseId: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch(`${API_BASE}/courses/${courseId}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setSelectedCourse(data.data.course);
+        if (data.data.course.course_sections) {
+          setCourseSections(data.data.course.course_sections);
+        }
+      } else {
+        throw new Error(data.error || 'Course not found');
       }
+    } catch (error: any) {
+      console.error('Error fetching course details:', error);
+      setError(error.message || 'Failed to load course details');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: { duration: 0.5 }
+  const handleEnrollment = async (courseId: string) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      console.log('=== ENROLLMENT DEBUG ===');
+      console.log('User:', user.id);
+      console.log('Course:', courseId);
+      
+      const enrollmentData = {
+        userId: user.id,
+        pricePaid: selectedCourse?.price || 0,
+        paymentMethod: 'credit_card',
+        transactionId: 'txn_' + Date.now()
+      };
+
+      console.log('Enrollment data:', enrollmentData);
+
+      const response = await fetch(`${API_BASE}/courses/${courseId}/enroll`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(enrollmentData),
+      });
+
+      const data = await response.json();
+      console.log('Enrollment response:', data);
+      
+      if (data.success) {
+        if (data.data.alreadyEnrolled) {
+          alert('You are already enrolled in this course!');
+        } else {
+          alert('Successfully enrolled in course!');
+        }
+        
+        // Update enrolled courses list
+        setEnrolledCourses(prev => [...prev, courseId]);
+        
+        // Refresh user enrollments to ensure persistence
+        await fetchUserEnrollments();
+        
+        // Wait longer for the enrollment to be fully processed in the database
+        console.log('Waiting for enrollment to be processed...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Verify enrollment before navigating
+        console.log('Verifying enrollment...');
+        const enrollmentCheckUrl = `${API_BASE}/courses/${courseId}/enrollment/${user.id}`;
+        const enrollmentResponse = await fetch(enrollmentCheckUrl);
+        const enrollmentCheckData = await enrollmentResponse.json();
+        
+        console.log('Enrollment verification:', enrollmentCheckData);
+        
+        if (enrollmentCheckData.success && enrollmentCheckData.data.enrolled) {
+          console.log('✅ Enrollment verified, navigating to course...');
+          // Navigate to course player
+          navigateToCoursePlayer(courseId);
+        } else {
+          console.log('❌ Enrollment verification failed');
+          alert('Enrollment successful, but there was an issue accessing the course. Please try again in a moment.');
+        }
+      } else {
+        throw new Error(data.error || 'Enrollment failed');
+      }
+    } catch (error: any) {
+      console.error('Error enrolling in course:', error);
+      alert(error.message || 'Failed to enroll in course');
     }
   };
 
-  if (loading) {
+  const navigateToCoursePlayer = async (courseId: string, retryCount = 0): Promise<void> => {
+    try {
+      console.log('=== NAVIGATION DEBUG ===');
+      console.log('Navigating to course:', courseId);
+      console.log('User ID:', user?.id);
+      console.log('Retry count:', retryCount);
+      
+      // Get course sections to find the first lecture
+      const sectionsUrl = `${API_BASE}/courses/${courseId}/sections?uid=${user?.id}`;
+      console.log('Fetching sections from:', sectionsUrl);
+      
+      const response = await fetch(sectionsUrl);
+      const data = await response.json();
+      
+      console.log('Sections response:', data);
+      
+      if (!response.ok) {
+        console.error('Sections request failed:', response.status, data);
+        
+        // If 403 and this is the first attempt, try to verify enrollment and retry
+        if (response.status === 403 && retryCount < 2) {
+          console.log('403 error, checking enrollment status...');
+          
+          const enrollmentCheckUrl = `${API_BASE}/courses/${courseId}/enrollment/${user?.id}`;
+          const enrollmentResponse = await fetch(enrollmentCheckUrl);
+          const enrollmentData = await enrollmentResponse.json();
+          
+          console.log('Enrollment check:', enrollmentData);
+          
+          if (enrollmentData.success && enrollmentData.data?.enrolled) {
+            console.log('User is enrolled, retrying in 1 second...');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            return navigateToCoursePlayer(courseId, retryCount + 1);
+          } else {
+            alert('You need to be enrolled to access this course. Please try enrolling again.');
+            return;
+          }
+        }
+        
+        throw new Error(data.error || `HTTP ${response.status}`);
+      }
+      
+      if (data.success && data.data.sections && data.data.sections.length > 0) {
+        const firstSection = data.data.sections[0];
+        if (firstSection.course_lectures && firstSection.course_lectures.length > 0) {
+          const firstLecture = firstSection.course_lectures[0];
+          console.log('Navigating to first lecture:', firstLecture.id);
+          navigate(`/learn/${courseId}/${firstLecture.id}`);
+        } else {
+          console.log('No lectures found, navigating to course overview');
+          navigate(`/course/${courseId}`);
+        }
+      } else {
+        console.log('No sections found, navigating to course overview');
+        navigate(`/course/${courseId}`);
+      }
+    } catch (error: any) {
+      console.error('Error navigating to course player:', error);
+      
+      if (retryCount < 2) {
+        console.log(`Retrying navigation (attempt ${retryCount + 1})...`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return navigateToCoursePlayer(courseId, retryCount + 1);
+      }
+      
+      alert(`Failed to access course: ${error.message}`);
+      navigate(`/course/${courseId}`);
+    }
+  };
+
+  const isEnrolled = (courseId: string) => {
+    return enrolledCourses.includes(courseId);
+  };
+
+  const toggleWishlist = (courseId: string) => {
+    setWishlist(prev => 
+      prev.includes(courseId) 
+        ? prev.filter(id => id !== courseId)
+        : [...prev, courseId]
+    );
+  };
+
+  const toggleCart = (courseId: string) => {
+    setCart(prev => 
+      prev.includes(courseId) 
+        ? prev.filter(id => id !== courseId)
+        : [...prev, courseId]
+    );
+  };
+
+  const toggleSection = (sectionId: string) => {
+    setExpandedSections(prev => 
+      prev.includes(sectionId) 
+        ? prev.filter(id => id !== sectionId)
+        : [...prev, sectionId]
+    );
+  };
+
+  const renderStars = (rating: number) => {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-blue-50 to-indigo-50">
-        <Header />
-        <div className="flex justify-center items-center min-h-[50vh]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
-        </div>
-        <Footer />
+      <div className="flex items-center gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <IconWrapper
+            key={star}
+            icon={FaStar}
+            className={star <= rating ? 'text-yellow-400' : 'text-gray-300'}
+            size={14}
+          />
+        ))}
       </div>
     );
-  }
+  };
 
-  console.log('Rendering courses:', courses.length, 'filtered:', sortedCourses.length);
+  const formatDuration = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+  };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-blue-50 to-indigo-50">
+  // Render Course Browse View
+  const renderCourseBrowse = () => (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Header />
-      <main className="flex-grow">
-        {/* Hero Section with Enhanced Search */}
-        <motion.section 
-          className="bg-gradient-to-r from-teal-600 via-teal-700 to-blue-800 text-white py-20 relative overflow-hidden"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          {/* Background elements */}
-          <motion.div 
-            className="absolute top-0 right-0 w-96 h-96 bg-teal-500 rounded-full opacity-20" 
-            animate={{
-              x: [0, 20, 0],
-              y: [0, 30, 0],
-            }}
-            transition={{
-              duration: 15,
-              repeat: Infinity,
-              repeatType: "reverse"
-            }}
-            style={{ filter: 'blur(70px)', top: '-20%', right: '5%' }}
-          />
-          <motion.div 
-            className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500 rounded-full opacity-10" 
-            animate={{
-              x: [0, -30, 0],
-              y: [0, -20, 0],
-            }}
-            transition={{
-              duration: 10,
-              repeat: Infinity,
-              repeatType: "reverse"
-            }}
-            style={{ filter: 'blur(50px)', bottom: '-10%', left: '10%' }}
-          />
-          
-          <div className="container mx-auto px-4 relative z-10">
-            <div className="text-center max-w-4xl mx-auto">
-              <motion.h1 
-                className="text-5xl md:text-6xl font-bold mb-6"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-              >
-                Discover Amazing Courses
-              </motion.h1>
-              <motion.p 
-                className="text-xl md:text-2xl mb-12 text-teal-100"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-              >
-                Learn from industry experts and advance your career with our comprehensive course catalog
-              </motion.p>
-              
-              {/* Enhanced Search Bar */}
-              <motion.div 
-                className="max-w-4xl mx-auto"
+      
+      <PageHeader
+        title={t('courses.title') || 'Learn Without Limits'}
+        subtitle={t('courses.subtitle') || 'Start, switch, or advance your career with thousands of courses'}
+        height="lg"
+      >
+        {/* Enhanced Search Bar */}
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-2 shadow-2xl border border-white/20">
+            <div className="flex gap-2">
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  placeholder={t('courses.searchPlaceholder') || 'What do you want to learn?'}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full px-6 py-4 pl-12 bg-white/90 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white transition-all text-lg placeholder-gray-500"
+                />
+                <IconComponent icon={FaSearch} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
+              </div>
+              <button className="px-6 py-4 bg-white/20 hover:bg-white/30 text-white rounded-xl font-medium transition-colors flex items-center gap-2 border border-white/30">
+                <IconComponent icon={FaSearch} />
+                <span className="hidden sm:inline">Search</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </PageHeader>
+
+      {/* Filters */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <select
+              value={activeLevel}
+              onChange={(e) => setActiveLevel(e.target.value)}
+              className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">All Levels</option>
+              <option value="beginner">Beginner</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="advanced">Advanced</option>
+              <option value="all-levels">All Levels</option>
+            </select>
+            
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="newest">Newest</option>
+              <option value="popular">Most Popular</option>
+              <option value="rating">Highest Rated</option>
+              <option value="price-low">Price: Low to High</option>
+              <option value="price-high">Price: High to Low</option>
+            </select>
+            
+            <input
+              type="number"
+              placeholder="Min Price"
+              value={priceRange[0]}
+              onChange={(e) => setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])}
+              className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            
+            <input
+              type="number"
+              placeholder="Max Price"
+              value={priceRange[1]}
+              onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value) || 200])}
+              className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            
+            <button
+              onClick={fetchCourses}
+              className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-semibold"
+            >
+              Apply Filters
+            </button>
+          </div>
+        </div>
+
+        {/* Course Grid */}
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <IconWrapper icon={FaSpinner} className="animate-spin text-4xl text-blue-600" />
+          </div>
+        ) : error ? (
+          <div className="text-center py-20">
+            <IconWrapper icon={FaExclamationTriangle} className="text-4xl text-red-500 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Courses</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button
+              onClick={fetchCourses}
+              className="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {courses.map((course) => (
+              <motion.div
+                key={course.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
+                whileHover={{ y: -5 }}
+                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer"
+                onClick={() => {
+                  setSelectedCourse(course);
+                  setCurrentView('details');
+                }}
               >
-                <div className="bg-white rounded-2xl p-2 shadow-2xl">
-                  <div className="flex flex-col lg:flex-row gap-2">
-                    {/* Search Input */}
-                    <div className="flex-1 relative">
-                      <input
-                        type="text"
-                        placeholder="Search courses, instructors, or topics..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full px-6 py-4 pl-12 bg-gray-50 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all text-lg"
-                      />
-                      <IconComponent icon={FaSearch} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
-                      {searchQuery && (
-                        <button
-                          onClick={() => setSearchQuery('')}
-                          className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        >
-                          <IconComponent icon={FaTimes} />
-                        </button>
+                <div className="relative">
+                  <img
+                    src={course.thumbnail_image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400'}
+                    alt={course.title}
+                    className="w-full h-48 object-cover"
+                  />
+                  
+                  {course.featured && (
+                    <div className="absolute top-3 left-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                      Featured
+                    </div>
+                  )}
+                  
+                  <div className="absolute top-3 right-3">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleWishlist(course.id);
+                      }}
+                      className={`p-2 rounded-full transition-colors ${
+                        wishlist.includes(course.id) 
+                          ? 'bg-red-500 text-white' 
+                          : 'bg-white/80 text-gray-600 hover:bg-white'
+                      }`}
+                    >
+                      <IconWrapper icon={FaHeart} size={14} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-blue-600 font-semibold capitalize">{course.category}</span>
+                    <span className="text-sm text-gray-500 capitalize">{course.level}</span>
+                  </div>
+                  
+                  <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">{course.title}</h3>
+                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">{course.description}</p>
+                  
+                  <div className="flex items-center gap-4 mb-4 text-sm text-gray-500">
+                    <div className="flex items-center gap-1">
+                      <IconWrapper icon={FaClock} size={12} />
+                      {course.duration}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <IconWrapper icon={FaUsers} size={12} />
+                      {course.total_students || 0}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl font-bold text-gray-900">${course.price}</span>
+                      {course.original_price && course.original_price > course.price && (
+                        <span className="text-lg text-gray-400 line-through">${course.original_price}</span>
                       )}
                     </div>
                     
-                    {/* Quick Filters */}
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <select
-                        value={activeCategory}
-                        onChange={(e) => setActiveCategory(e.target.value)}
-                        className="px-4 py-4 bg-gray-50 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500 min-w-[150px]"
-                      >
-                        <option value="all">All Categories</option>
-                        {categories.map((category) => (
-                          <option key={category} value={category}>{category}</option>
-                        ))}
-                      </select>
-                      
-                      <select
-                        value={activeLevel}
-                        onChange={(e) => setActiveLevel(e.target.value)}
-                        className="px-4 py-4 bg-gray-50 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500 min-w-[130px]"
-                      >
-                        <option value="all">All Levels</option>
-                        {levels.map((level) => (
-                          <option key={level} value={level}>{level}</option>
-                        ))}
-                      </select>
-                      
-                      <motion.button
-                        className="px-6 py-4 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-medium transition-colors flex items-center gap-2"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => setShowFilters(!showFilters)}
-                      >
-                        <IconComponent icon={FaFilter} />
-                        <span className="hidden sm:inline">More Filters</span>
-                        <IconComponent icon={FaChevronDown} className={`transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-                      </motion.button>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        </motion.section>
-
-        {/* Main Content */}
-        <section className="py-12">
-          <div className="container mx-auto px-4">
-            <div className="flex flex-col lg:flex-row gap-8">
-              {/* Sidebar Filters */}
-              <motion.div 
-                className="lg:w-1/4"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-              >
-                <div className="bg-white rounded-xl shadow-lg p-6 sticky top-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-bold text-gray-800">Filters</h3>
-                    {(searchQuery || activeCategory !== 'all' || activeLevel !== 'all') && (
-                      <button
-                        onClick={clearAllFilters}
-                        className="text-sm text-teal-600 hover:text-teal-700 font-medium"
-                      >
-                        Clear All
-                      </button>
+                    {course.rating && (
+                      <div className="flex items-center gap-1">
+                        {renderStars(course.rating)}
+                        <span className="text-sm text-gray-600 ml-1">({course.total_reviews})</span>
+                      </div>
                     )}
                   </div>
 
-                  {/* Categories */}
-                  <div className="mb-6">
-                    <h4 className="text-md font-semibold text-gray-700 mb-3">Categories</h4>
-                    <div className="space-y-2">
-                      <motion.button
-                        className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                          activeCategory === 'all'
-                            ? 'bg-teal-100 text-teal-800 font-medium'
-                            : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                        onClick={() => setActiveCategory('all')}
-                        whileHover={{ x: 2 }}
-                      >
-                        All Categories ({courses.length})
-                      </motion.button>
-                      {categories.map((category) => {
-                        const count = courses.filter(c => c.category === category).length;
-                        return (
-                          <motion.button
-                            key={category}
-                            className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                              activeCategory === category
-                                ? 'bg-teal-100 text-teal-800 font-medium'
-                                : 'text-gray-700 hover:bg-gray-100'
-                            }`}
-                            onClick={() => setActiveCategory(category)}
-                            whileHover={{ x: 2 }}
-                          >
-                            {category} ({count})
-                          </motion.button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Levels */}
-                  <div className="mb-6">
-                    <h4 className="text-md font-semibold text-gray-700 mb-3">Levels</h4>
-                    <div className="space-y-2">
-                      <motion.button
-                        className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                          activeLevel === 'all'
-                            ? 'bg-blue-100 text-blue-800 font-medium'
-                            : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                        onClick={() => setActiveLevel('all')}
-                        whileHover={{ x: 2 }}
-                      >
-                        All Levels
-                      </motion.button>
-                      {levels.map((level) => {
-                        const count = courses.filter(c => c.level === level).length;
-                        return (
-                          <motion.button
-                            key={level}
-                            className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                              activeLevel === level
-                                ? 'bg-blue-100 text-blue-800 font-medium'
-                                : 'text-gray-700 hover:bg-gray-100'
-                            }`}
-                            onClick={() => setActiveLevel(level)}
-                            whileHover={{ x: 2 }}
-                          >
-                            {level} ({count})
-                          </motion.button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Price Range */}
-                  <div className="mb-6">
-                    <h4 className="text-md font-semibold text-gray-700 mb-3">
-                      Price Range: ${priceRange[0]} - ${priceRange[1]}
-                    </h4>
-                    <div className="space-y-3">
-                      <input
-                        type="range"
-                        min="0"
-                        max="1000"
-                        value={priceRange[0]}
-                        onChange={(e) => setPriceRange([parseInt(e.target.value), priceRange[1]])}
-                        className="w-full"
-                      />
-                      <input
-                        type="range"
-                        min="0"
-                        max="1000"
-                        value={priceRange[1]}
-                        onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-                        className="w-full"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Popular Tags */}
-                  <div>
-                    <h4 className="text-md font-semibold text-gray-700 mb-3">Popular Tags</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {Array.from(new Set(courses.flatMap(course => course.tags || []))).slice(0, 10).map(tag => (
-                        <motion.button
-                          key={tag}
-                          className="bg-gray-100 hover:bg-teal-100 hover:text-teal-800 text-gray-700 text-xs font-medium px-3 py-1 rounded-full transition-colors"
-                          onClick={() => setSearchQuery(tag)}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          #{tag}
-                        </motion.button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Main Content */}
-              <motion.div 
-                className="lg:w-3/4"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-              >
-                {/* Results Header */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 bg-white rounded-xl shadow-lg p-6">
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                      {activeCategory === 'all' ? 'All Courses' : activeCategory}
-                      {searchQuery && (
-                        <span className="text-lg font-normal text-gray-600 ml-2">
-                          - Results for "{searchQuery}"
-                        </span>
-                      )}
-                    </h2>
-                    <p className="text-gray-600">
-                      Showing {sortedCourses.length} course{sortedCourses.length !== 1 ? 's' : ''}
-                    </p>
-                  </div>
-                  
-                  <div className="flex items-center gap-4 mt-4 sm:mt-0">
-                    {/* Sort Dropdown */}
-                    <div className="flex items-center gap-2">
-                      <IconComponent icon={FaSort} className="text-gray-500" />
-                      <select
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value)}
-                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
-                      >
-                        <option value="featured">Featured First</option>
-                        <option value="price-low">Price: Low to High</option>
-                        <option value="price-high">Price: High to Low</option>
-                        <option value="rating">Highest Rated</option>
-                        <option value="students">Most Popular</option>
-                        <option value="newest">Newest First</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Active Filters */}
-                {(searchQuery || activeCategory !== 'all' || activeLevel !== 'all') && (
-                  <motion.div 
-                    className="mb-6 bg-white rounded-xl shadow-lg p-4"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                  >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm text-gray-600 font-medium">Active filters:</span>
-                      {searchQuery && (
-                        <span className="bg-teal-100 text-teal-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                          Search: "{searchQuery}"
-                          <button onClick={() => setSearchQuery('')}>
-                            <IconComponent icon={FaTimes} className="text-xs" />
-                          </button>
-                        </span>
-                      )}
-                      {activeCategory !== 'all' && (
-                        <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                          Category: {activeCategory}
-                          <button onClick={() => setActiveCategory('all')}>
-                            <IconComponent icon={FaTimes} className="text-xs" />
-                          </button>
-                        </span>
-                      )}
-                      {activeLevel !== 'all' && (
-                        <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                          Level: {activeLevel}
-                          <button onClick={() => setActiveLevel('all')}>
-                            <IconComponent icon={FaTimes} className="text-xs" />
-                          </button>
-                        </span>
-                      )}
+                  <div className="flex gap-2">
+                    {isEnrolled(course.id) ? (
                       <button
-                        onClick={clearAllFilters}
-                        className="text-gray-500 hover:text-gray-700 text-sm underline ml-2"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigateToCoursePlayer(course.id);
+                        }}
+                        className="flex-1 px-4 py-2 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
                       >
-                        Clear all
+                        <IconWrapper icon={FaPlayCircle} size={16} />
+                        View Course
                       </button>
-                    </div>
-                  </motion.div>
-                )}
-                
-                {/* Courses Grid */}
-                {sortedCourses.length > 0 ? (
-                  <motion.div 
-                    className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                  >
-                    {sortedCourses.map((course) => (
-                      <motion.div
-                        key={course.id}
-                        className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 flex flex-col group"
-                        variants={itemVariants}
-                        whileHover={{ y: -8, scale: 1.02 }}
+                    ) : (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEnrollment(course.id);
+                        }}
+                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors"
                       >
-                        <div className="relative overflow-hidden">
-                          <img 
-                            src={course.image || '/api/placeholder/400/250'} 
-                            alt={course.title}
-                            className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
-                          />
-                          <div className="absolute top-3 right-3 bg-white px-3 py-1 rounded-full text-sm font-bold text-teal-600 shadow-md">
-                            ${course.price}
-                            {course.original_price && course.original_price > course.price && (
-                              <span className="text-xs text-gray-500 line-through ml-1">${course.original_price}</span>
-                            )}
-                          </div>
-                          {course.featured && (
-                            <div className="absolute top-3 left-3 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
-                              Featured
-                            </div>
-                          )}
-                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
-                            <motion.button
-                              className="bg-white text-teal-600 p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                            >
-                              <IconComponent icon={FaPlay} />
-                            </motion.button>
-                          </div>
-                        </div>
-                        
-                        <div className="p-6 flex-1 flex flex-col">
-                          <div className="flex items-center gap-2 mb-3">
-                            <span className="bg-teal-100 text-teal-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                              {course.category}
-                            </span>
-                            <span className="bg-gray-100 text-gray-600 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                              {course.level}
-                            </span>
-                          </div>
-                          
-                          <h3 className="text-lg font-bold text-gray-800 mb-2 line-clamp-2 flex-shrink-0 group-hover:text-teal-600 transition-colors">
-                            {course.title}
-                          </h3>
-                          <p className="text-gray-600 mb-4 text-sm line-clamp-3 flex-1">{course.description}</p>
-                          
-                          <div className="flex items-center mb-4">
-                            <img 
-                              src={course.instructor_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(course.instructor_name)}&background=0ea5e9&color=fff`}
-                              alt={course.instructor_name}
-                              className="w-8 h-8 rounded-full mr-3"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-800 truncate">{course.instructor_name}</p>
-                              <div className="flex items-center">
-                                <div className="flex gap-1 mr-2">
-                                  {renderStars(course.rating)}
-                                </div>
-                                <span className="text-xs text-gray-600">
-                                  {course.rating || 0} ({course.total_reviews?.toLocaleString() || 0})
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center justify-between mb-4 text-sm text-gray-600">
-                            <div className="flex items-center">
-                              <IconComponent icon={FaUsers} className="mr-1" />
-                              <span>{course.total_students?.toLocaleString() || 0} students</span>
-                            </div>
-                            <div className="flex items-center">
-                              <IconComponent icon={FaClock} className="mr-1" />
-                              <span>{course.duration}</span>
-                            </div>
-                          </div>
-                          
-                          {/* Tags */}
-                          {course.tags && course.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mb-4">
-                              {course.tags.slice(0, 3).map(tag => (
-                                <span key={tag} className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                          
-                          <div className="flex gap-2 mt-auto">
-                            <motion.button
-                              className="flex-1 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white py-3 px-4 rounded-lg font-medium transition-all text-sm shadow-lg"
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                            >
-                              Enroll Now
-                            </motion.button>
-                            <motion.button
-                              className="bg-gray-100 hover:bg-gray-200 text-gray-700 p-3 rounded-lg transition-colors"
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                            >
-                              <IconComponent icon={FaBookmark} />
-                            </motion.button>
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </motion.div>
-                ) : (
-                  <motion.div 
-                    className="text-center py-16 bg-white rounded-xl shadow-lg"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    <IconComponent icon={FaGraduationCap} className="mx-auto text-6xl text-gray-300 mb-4" />
-                    <h3 className="text-2xl font-semibold text-gray-600 mb-2">No item found</h3>
-                    <p className="text-gray-500 mb-6">Try adjusting your search terms or filters to find what you're looking for.</p>
-                    <motion.button
-                      onClick={clearAllFilters}
-                      className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      Clear all filters
-                    </motion.button>
-                  </motion.div>
-                )}
-                
-                {/* Debug Info */}
-                {error && (
-                  <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-yellow-800">{error}</p>
+                        Enroll Now
+                      </button>
+                    )}
+                    
+                    {!isEnrolled(course.id) && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleCart(course.id);
+                        }}
+                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
+                      >
+                        <IconWrapper icon={FaShoppingCart} size={14} />
+                      </button>
+                    )}
                   </div>
-                )}
+                </div>
               </motion.div>
-            </div>
+            ))}
           </div>
-        </section>
-      </main>
+        )}
+      </div>
+      
       <Footer />
     </div>
   );
+
+  // Render Course Details View
+  const renderCourseDetails = () => {
+    if (!selectedCourse) return null;
+
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        
+        {/* Course Header */}
+        <div className="bg-gray-900 text-white py-12">
+          <div className="container mx-auto px-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Course Info */}
+              <div className="lg:col-span-2">
+                <nav className="flex items-center gap-2 text-sm mb-4 opacity-80">
+                  <button onClick={() => navigate('/courses')} className="hover:text-blue-400">
+                    Courses
+                  </button>
+                  <IconWrapper icon={FaChevronRight} size={12} />
+                  <span className="capitalize">{selectedCourse.category}</span>
+                  <IconWrapper icon={FaChevronRight} size={12} />
+                  <span>{selectedCourse.title}</span>
+                </nav>
+                
+                <h1 className="text-3xl md:text-4xl font-bold mb-4">{selectedCourse.title}</h1>
+                {selectedCourse.subtitle && (
+                  <p className="text-xl mb-6 opacity-90">{selectedCourse.subtitle}</p>
+                )}
+                
+                <div className="flex flex-wrap items-center gap-6 mb-6">
+                  {selectedCourse.rating && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-yellow-400 font-semibold">{selectedCourse.rating}</span>
+                      {renderStars(selectedCourse.rating)}
+                      <span className="opacity-80">({selectedCourse.total_reviews} reviews)</span>
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center gap-2">
+                    <IconWrapper icon={FaUsers} />
+                    <span>{selectedCourse.total_students || 0} students</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <IconWrapper icon={FaClock} />
+                    <span>{selectedCourse.duration}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <IconWrapper icon={FaGraduationCap} />
+                    <span className="capitalize">{selectedCourse.level}</span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                      {selectedCourse.instructor_name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-semibold">Created by {selectedCourse.instructor_name}</p>
+                      <p className="text-sm opacity-80">Instructor</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Course Preview Card */}
+              <div className="lg:col-span-1">
+                <div className="bg-white rounded-2xl shadow-2xl overflow-hidden sticky top-8">
+                  {/* Preview Video/Image */}
+                  <div className="relative h-48">
+                    {selectedCourse.preview_video_url ? (
+                      <video
+                        src={selectedCourse.preview_video_url}
+                        poster={selectedCourse.thumbnail_image}
+                        controls
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <img
+                        src={selectedCourse.thumbnail_image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400'}
+                        alt={selectedCourse.title}
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                    
+                    {!selectedCourse.preview_video_url && (
+                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                        <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center">
+                          <IconWrapper icon={FaPlay} className="text-gray-800 ml-1" size={20} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="p-6">
+                    {/* Pricing */}
+                    <div className="text-center mb-6">
+                      <div className="flex items-center justify-center gap-3 mb-2">
+                        <span className="text-3xl font-bold text-gray-900">${selectedCourse.price}</span>
+                        {selectedCourse.original_price && selectedCourse.original_price > selectedCourse.price && (
+                          <span className="text-xl text-gray-400 line-through">${selectedCourse.original_price}</span>
+                        )}
+                      </div>
+                      {selectedCourse.original_price && selectedCourse.original_price > selectedCourse.price && (
+                        <p className="text-sm text-red-600 font-semibold">
+                          {Math.round(((selectedCourse.original_price - selectedCourse.price) / selectedCourse.original_price) * 100)}% off
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="space-y-3">
+                      {isEnrolled(selectedCourse.id) ? (
+                        <button
+                          onClick={() => navigateToCoursePlayer(selectedCourse.id)}
+                          className="w-full bg-green-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                        >
+                          <IconWrapper icon={FaPlayCircle} size={20} />
+                          View Course
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleEnrollment(selectedCourse.id)}
+                            className="w-full bg-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-purple-700 transition-colors"
+                          >
+                            Enroll Now
+                          </button>
+                          
+                          <button
+                            onClick={() => toggleCart(selectedCourse.id)}
+                            className={`w-full py-3 rounded-xl font-semibold transition-colors ${
+                              cart.includes(selectedCourse.id)
+                                ? 'bg-gray-200 text-gray-700'
+                                : 'border-2 border-gray-300 text-gray-700 hover:border-gray-400'
+                            }`}
+                          >
+                            {cart.includes(selectedCourse.id) ? 'Remove from Cart' : 'Add to Cart'}
+                          </button>
+                        </>
+                      )}
+                      
+                      <button
+                        onClick={() => toggleWishlist(selectedCourse.id)}
+                        className="w-full py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:border-gray-400 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <IconWrapper icon={FaHeart} className={wishlist.includes(selectedCourse.id) ? 'text-red-500' : ''} />
+                        {wishlist.includes(selectedCourse.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
+                      </button>
+                    </div>
+
+                    {/* Course Includes */}
+                    <div className="mt-6 pt-6 border-t border-gray-200">
+                      <h4 className="font-semibold text-gray-900 mb-3">This course includes:</h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-3">
+                          <IconWrapper icon={FaVideo} className="text-gray-600" size={14} />
+                          <span>{selectedCourse.duration} on-demand video</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <IconWrapper icon={FaFileAlt} className="text-gray-600" size={14} />
+                          <span>{selectedCourse.total_lectures || 0} lectures</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <IconWrapper icon={FaDownload} className="text-gray-600" size={14} />
+                          <span>Downloadable resources</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <IconWrapper icon={FaInfinity} className="text-gray-600" size={14} />
+                          <span>Full lifetime access</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <IconWrapper icon={FaMobile} className="text-gray-600" size={14} />
+                          <span>Access on mobile and TV</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <IconWrapper icon={FaAward} className="text-gray-600" size={14} />
+                          <span>Certificate of completion</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Share */}
+                    <div className="mt-6 pt-6 border-t border-gray-200 text-center">
+                      <button className="text-purple-600 hover:text-purple-700 font-semibold flex items-center justify-center gap-2 mx-auto">
+                        <IconWrapper icon={FaShare} size={14} />
+                        Share this course
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Course Content Tabs */}
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-4xl">
+            {/* Tab Navigation */}
+            <div className="flex border-b border-gray-200 mb-8">
+              {[
+                { id: 'overview', label: 'Overview' },
+                { id: 'curriculum', label: 'Curriculum' },
+                { id: 'instructor', label: 'Instructor' },
+                { id: 'reviews', label: 'Reviews' }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-6 py-3 font-semibold border-b-2 transition-colors ${
+                    activeTab === tab.id
+                      ? 'border-purple-600 text-purple-600'
+                      : 'border-transparent text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Tab Content */}
+            <div className="bg-white rounded-2xl shadow-lg p-8">
+              {activeTab === 'overview' && (
+                <div className="space-y-8">
+                  {/* What You'll Learn */}
+                  {selectedCourse.what_you_will_learn && selectedCourse.what_you_will_learn.length > 0 && (
+                    <div>
+                      <h3 className="text-2xl font-bold text-gray-900 mb-4">What you'll learn</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {selectedCourse.what_you_will_learn.map((item, index) => (
+                          <div key={index} className="flex items-start gap-3">
+                            <IconWrapper icon={FaCheck} className="text-green-500 mt-1 flex-shrink-0" size={14} />
+                            <span className="text-gray-700">{item}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Course Description */}
+                  <div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-4">Course Description</h3>
+                    <div className="prose max-w-none text-gray-700">
+                      <p>{selectedCourse.description}</p>
+                    </div>
+                  </div>
+
+                  {/* Prerequisites */}
+                  {selectedCourse.prerequisites && selectedCourse.prerequisites.length > 0 && (
+                    <div>
+                      <h3 className="text-2xl font-bold text-gray-900 mb-4">Prerequisites</h3>
+                      <ul className="space-y-2">
+                        {selectedCourse.prerequisites.map((item, index) => (
+                          <li key={index} className="flex items-start gap-3">
+                            <div className="w-2 h-2 bg-purple-600 rounded-full mt-2 flex-shrink-0" />
+                            <span className="text-gray-700">{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Target Audience */}
+                  {selectedCourse.target_audience && selectedCourse.target_audience.length > 0 && (
+                    <div>
+                      <h3 className="text-2xl font-bold text-gray-900 mb-4">Who this course is for</h3>
+                      <ul className="space-y-2">
+                        {selectedCourse.target_audience.map((item, index) => (
+                          <li key={index} className="flex items-start gap-3">
+                            <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0" />
+                            <span className="text-gray-700">{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'curriculum' && (
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-6">Course Curriculum</h3>
+                  <div className="space-y-4">
+                    {courseSections.map((section, sectionIndex) => (
+                      <div key={section.id} className="border border-gray-200 rounded-xl overflow-hidden">
+                        <button
+                          onClick={() => toggleSection(section.id)}
+                          className="w-full px-6 py-4 bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-between"
+                        >
+                          <div className="flex items-center gap-4">
+                            <span className="font-semibold text-gray-900">
+                              Section {section.section_order}: {section.title}
+                            </span>
+                            <span className="text-sm text-gray-600">
+                              {section.course_lectures?.length || 0} lectures
+                            </span>
+                          </div>
+                          <IconWrapper 
+                            icon={FaChevronDown} 
+                            className={`transform transition-transform ${
+                              expandedSections.includes(section.id) ? 'rotate-180' : ''
+                            }`} 
+                            size={16}
+                          />
+                        </button>
+                        
+                        {expandedSections.includes(section.id) && section.course_lectures && (
+                          <div className="px-6 py-4 space-y-3">
+                            {section.course_lectures.map((lecture, lectureIndex) => (
+                              <div key={lecture.id} className="flex items-center justify-between py-2">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                                    {lecture.lecture_type === 'video' && <IconWrapper icon={FaPlay} size={12} />}
+                                    {lecture.lecture_type === 'article' && <IconWrapper icon={FaFileAlt} size={12} />}
+                                    {lecture.lecture_type === 'quiz' && <IconWrapper icon={FaCheck} size={12} />}
+                                  </div>
+                                  <div>
+                                    <p className="font-medium text-gray-900">{lecture.title}</p>
+                                    {lecture.description && (
+                                      <p className="text-sm text-gray-600">{lecture.description}</p>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center gap-3 text-sm text-gray-600">
+                                  {lecture.video_duration_seconds && (
+                                    <span>{formatDuration(lecture.video_duration_seconds)}</span>
+                                  )}
+                                  {lecture.is_preview && (
+                                    <span className="px-2 py-1 bg-blue-100 text-blue-600 rounded text-xs font-semibold">
+                                      Preview
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'instructor' && (
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-6">About the Instructor</h3>
+                  <div className="flex items-start gap-6">
+                    <div className="w-24 h-24 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-bold text-2xl flex-shrink-0">
+                      {selectedCourse.instructor_name.charAt(0)}
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-semibold text-gray-900 mb-2">{selectedCourse.instructor_name}</h4>
+                      {selectedCourse.instructor_bio && (
+                        <p className="text-gray-700 leading-relaxed">{selectedCourse.instructor_bio}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'reviews' && (
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-6">Student Reviews</h3>
+                  <div className="text-center py-12 text-gray-500">
+                    <IconWrapper icon={FaStar} className="text-4xl mx-auto mb-4 opacity-50" />
+                    <p>No reviews yet. Be the first to review this course!</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        <Footer />
+      </div>
+    );
+  };
+
+  // Main render
+  if (currentView === 'details') {
+    return renderCourseDetails();
+  }
+
+  return renderCourseBrowse();
 };
 
 export default Courses; 

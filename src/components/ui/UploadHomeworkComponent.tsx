@@ -450,11 +450,11 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
       const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer sk-80beadf6603b4832981d0d65896b1ae0',
+          'Authorization': 'Bearer sk-176f2c5aba034fc2970fb14b2cb2d301',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: "qvq-max",
+          model: "qvq-max-latest",
           messages: [
             {
               role: "user",

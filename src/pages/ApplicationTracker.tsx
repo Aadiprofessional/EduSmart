@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaEdit, FaTrash, FaCheck, FaTimes, FaCalendarAlt, FaUniversity, FaChartBar, FaFilter, FaSort, FaSortAmountUp, FaSortAmountDown } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaEye, FaCalendarAlt, FaUniversity, FaGraduationCap, FaCheckCircle, FaClock, FaExclamationTriangle, FaSpinner, FaSearch, FaFilter, FaTimes, FaSort, FaSortAmountUp, FaSortAmountDown, FaCheck } from 'react-icons/fa';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
+import PageHeader from '../components/ui/PageHeader';
 import IconComponent from '../components/ui/IconComponent';
+import { motion } from 'framer-motion';
 import { useLanguage } from '../utils/LanguageContext';
 
 interface Application {
@@ -289,18 +291,25 @@ const ApplicationTracker: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      <main className="flex-grow pt-8 pb-16 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-teal-800">{t('applicationTracker.title')}</h1>
+      <main className="flex-grow">
+        <PageHeader
+          title={t('applicationTracker.title') || 'Application Tracker'}
+          subtitle={t('applicationTracker.subtitle') || 'Track and manage your university applications'}
+          height="md"
+        >
+          {/* Add Application Button */}
+          <div className="flex justify-center">
             <button
               onClick={() => setIsAddingApplication(true)}
-              className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-2"
+              className="bg-white/20 hover:bg-white/30 text-white px-6 py-3 rounded-xl font-medium transition-colors flex items-center gap-2 border border-white/30"
             >
-              <IconComponent icon={FaPlus} /> {t('applicationTracker.addApplication')}
+              <IconComponent icon={FaPlus} />
+              {t('applicationTracker.addApplication') || 'Add Application'}
             </button>
           </div>
-          
+        </PageHeader>
+        
+        <div className="container mx-auto px-4 py-8">
           {/* Statistics */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             <div className="bg-white rounded-lg shadow-md p-4">

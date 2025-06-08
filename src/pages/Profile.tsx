@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FaUser, FaGraduationCap, FaMapMarkerAlt, FaBook, FaSave, FaEdit, FaCheck, FaTimes, FaGlobe, FaDollarSign, FaCalendarAlt, FaChartLine, FaSync } from 'react-icons/fa';
+import { FaUser, FaGraduationCap, FaMapMarkerAlt, FaBook, FaSave, FaEdit, FaCheck, FaTimes, FaGlobe, FaDollarSign, FaCalendarAlt, FaChartLine, FaSync, FaCamera, FaEnvelope, FaPhone, FaLinkedin, FaGithub, FaTwitter } from 'react-icons/fa';
 import { HiOutlineAcademicCap } from 'react-icons/hi';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
+import PageHeader from '../components/ui/PageHeader';
 import IconComponent from '../components/ui/IconComponent';
 import { fadeIn, staggerContainer } from '../utils/animations';
 import { useAuth } from '../utils/AuthContext';
 import { userProfileAPI, UserProfile } from '../utils/userProfileAPI';
+import { useLanguage } from '../utils/LanguageContext';
 
 const Profile: React.FC = () => {
   const { user, session } = useAuth();
+  const { t } = useLanguage();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -398,29 +401,11 @@ const Profile: React.FC = () => {
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Header />
       <main className="flex-grow">
-        {/* Hero Section */}
-        <motion.section 
-          className="bg-gradient-to-r from-primary to-primary-dark text-white py-16"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8 }}
-        >
-          <div className="container mx-auto px-4">
-            <motion.div 
-              className="text-center"
-              variants={fadeIn("up", 0.3)}
-              initial="hidden"
-              animate="show"
-            >
-              <h1 className="text-4xl lg:text-5xl font-bold mb-4">
-                Your Academic <span className="text-secondary">Profile</span>
-              </h1>
-              <p className="text-xl text-gray-100 max-w-2xl mx-auto">
-                Build your comprehensive academic profile to get personalized university recommendations and AI-powered insights.
-              </p>
-            </motion.div>
-          </div>
-        </motion.section>
+        <PageHeader 
+          title={t('profile.title') || 'Academic Profile'}
+          subtitle={t('profile.subtitle') || 'Build your comprehensive academic profile to get personalized university recommendations and AI-powered insights'}
+          height="md"
+        />
 
         {/* Profile Form */}
         <section className="py-12">

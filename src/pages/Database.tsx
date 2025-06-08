@@ -5,6 +5,7 @@ import { HiOutlineAcademicCap, HiOutlineLocationMarker } from 'react-icons/hi';
 import { RiArrowDropDownLine, RiArrowDropUpLine } from 'react-icons/ri';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
+import PageHeader from '../components/ui/PageHeader';
 import IconComponent from '../components/ui/IconComponent';
 import { fadeIn, staggerContainer, slideIn } from '../utils/animations';
 import { useAuth } from '../utils/AuthContext';
@@ -1187,6 +1188,7 @@ const Database: React.FC = () => {
     country: '',
     qsRanking: [1, 2000],
     tuitionFees: [0, 100000],
+    tuitionRange: [0, 100000],
     minGPA: [0, 4],
     rankingType: '',
     region: '',
@@ -1196,11 +1198,63 @@ const Database: React.FC = () => {
     campusType: '',
     employmentRate: '',
     major: '',
+    type: '',
     qsRankingRange: [1, 2000],
     researchOutput: '',
     showOnlyOpenApplications: false,
     admissionDifficulty: '',
-    testScores: ''
+    testScores: '',
+    // Additional comprehensive filters
+    acceptanceRateRange: [0, 100],
+    studentPopulationRange: [0, 100000],
+    facultyCountRange: [0, 10000],
+    establishedYearRange: [1800, 2024],
+    applicationFeeRange: [0, 500],
+    campusSize: '',
+    accreditation: '',
+    scholarshipAvailable: false,
+    financialAidAvailable: false,
+    languageRequirements: '',
+    testScoreRequirements: '',
+    essayRequired: '',
+    interviewRequired: '',
+    workExperienceRequired: '',
+    portfolioRequired: '',
+    applicationDeadline: '',
+    programLevel: '', // undergraduate, graduate, both
+    researchFocus: '',
+    internationalStudents: '',
+    onlineProgramsAvailable: false,
+    exchangeProgramsAvailable: false,
+    dormitoriesAvailable: false,
+    sportsPrograms: false,
+    clubsAndOrganizations: false,
+    careerServices: false,
+    alumniNetwork: '',
+    industryConnections: '',
+    jobPlacementRate: '',
+    averageSalary: '',
+    graduationRate: '',
+    retentionRate: '',
+    diversityIndex: '',
+    internationalRanking: '',
+    nationalRanking: '',
+    subjectRanking: '',
+    researchRanking: '',
+    teachingQuality: '',
+    studentSatisfaction: '',
+    facultyStudentRatio: '',
+    libraryResources: '',
+    labFacilities: '',
+    technologyResources: '',
+    sustainabilityRating: '',
+    safetyRating: '',
+    weatherClimate: '',
+    costOfLiving: '',
+    publicTransportation: false,
+    nearbyAirports: false,
+    culturalAttractions: false,
+    recreationalActivities: false
   });
   const [sortBy, setSortBy] = useState('qsRanking');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -1229,6 +1283,8 @@ const Database: React.FC = () => {
   const [availableRankingYears, setAvailableRankingYears] = useState<number[]>([]);
   const [qsRankingRange, setQsRankingRange] = useState<[number, number]>([1, 2000]);
   const [tuitionFeeRange, setTuitionFeeRange] = useState<[number, number]>([0, 100000]);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [showMoreFiltersModal, setShowMoreFiltersModal] = useState(false);
 
   const extractFilterOptions = (universitiesData: University[]) => {
     // Extract unique countries
@@ -1568,6 +1624,7 @@ const Database: React.FC = () => {
       country: '',
       qsRanking: [1, 2000],
       tuitionFees: [0, 100000],
+      tuitionRange: [0, 100000],
       minGPA: [0, 4],
       rankingType: '',
       region: '',
@@ -1577,11 +1634,63 @@ const Database: React.FC = () => {
       campusType: '',
       employmentRate: '',
       major: '',
+      type: '',
       qsRankingRange: [1, 2000],
       researchOutput: '',
       showOnlyOpenApplications: false,
       admissionDifficulty: '',
-      testScores: ''
+      testScores: '',
+      // Additional comprehensive filters
+      acceptanceRateRange: [0, 100],
+      studentPopulationRange: [0, 100000],
+      facultyCountRange: [0, 10000],
+      establishedYearRange: [1800, 2024],
+      applicationFeeRange: [0, 500],
+      campusSize: '',
+      accreditation: '',
+      scholarshipAvailable: false,
+      financialAidAvailable: false,
+      languageRequirements: '',
+      testScoreRequirements: '',
+      essayRequired: '',
+      interviewRequired: '',
+      workExperienceRequired: '',
+      portfolioRequired: '',
+      applicationDeadline: '',
+      programLevel: '', // undergraduate, graduate, both
+      researchFocus: '',
+      internationalStudents: '',
+      onlineProgramsAvailable: false,
+      exchangeProgramsAvailable: false,
+      dormitoriesAvailable: false,
+      sportsPrograms: false,
+      clubsAndOrganizations: false,
+      careerServices: false,
+      alumniNetwork: '',
+      industryConnections: '',
+      jobPlacementRate: '',
+      averageSalary: '',
+      graduationRate: '',
+      retentionRate: '',
+      diversityIndex: '',
+      internationalRanking: '',
+      nationalRanking: '',
+      subjectRanking: '',
+      researchRanking: '',
+      teachingQuality: '',
+      studentSatisfaction: '',
+      facultyStudentRatio: '',
+      libraryResources: '',
+      labFacilities: '',
+      technologyResources: '',
+      sustainabilityRating: '',
+      safetyRating: '',
+      weatherClimate: '',
+      costOfLiving: '',
+      publicTransportation: false,
+      nearbyAirports: false,
+      culturalAttractions: false,
+      recreationalActivities: false
     });
     setCurrentPage(1);
   };
@@ -2411,7 +2520,7 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                 ]
               }
             ],
-            stream: true
+            stream: false
           })
         });
 
@@ -2530,617 +2639,420 @@ Return format: <recommendation><university id="X"/></recommendation>`;
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Header />
       <main className="flex-grow">
-        <motion.section 
-          className="bg-gradient-to-r from-primary to-primary-dark text-white py-16 relative overflow-hidden"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8 }}
+        {/* Hero Section with PageHeader */}
+        <PageHeader
+          title={t('database.title')}
+          subtitle={t('database.subtitle')}
+          height="lg"
         >
-          {/* Animated background elements */}
-          <div className="absolute inset-0 overflow-hidden">
-            <motion.div 
-              className="absolute w-96 h-96 bg-primary-light rounded-full opacity-20" 
-              style={{ filter: 'blur(80px)', top: '-10%', right: '5%' }}
-              animate={{
-                scale: [1, 1.2, 1],
-                x: [0, 30, 0],
-              }}
-              transition={{
-                duration: 15,
-                repeat: Infinity,
-                repeatType: "reverse"
-              }}
-            />
-            <motion.div 
-              className="absolute w-64 h-64 bg-secondary rounded-full opacity-20" 
-              style={{ filter: 'blur(60px)', bottom: '-5%', left: '10%' }}
-              animate={{
-                scale: [1, 1.1, 1],
-                y: [0, -20, 0],
-              }}
-              transition={{
-                duration: 10,
-                repeat: Infinity,
-                repeatType: "reverse"
-              }}
-            />
-            <motion.div 
-              className="absolute w-40 h-40 bg-secondary-light rounded-full opacity-20" 
-              style={{ filter: 'blur(40px)', top: '30%', left: '25%' }}
-              animate={{
-                scale: [1, 1.3, 1],
-                y: [0, 30, 0],
-              }}
-              transition={{
-                duration: 12,
-                repeat: Infinity,
-                repeatType: "reverse"
-              }}
-            />
-            
-            {/* Grid pattern overlay */}
-            <div className="absolute inset-0 opacity-10" style={gridPatternStyle}></div>
-          </div>
-          
-          <div className="container mx-auto px-4 relative z-10">
-            <motion.div 
-              className="flex flex-col lg:flex-row items-center justify-between gap-8 max-w-6xl mx-auto"
-              variants={staggerContainer(0.1, 0.2)}
-              initial="hidden"
-              animate="show"
-            >
-              <motion.div className="lg:w-1/2 text-center lg:text-left" variants={fadeIn("right", 0.3)}>
-                <h1 className="text-4xl lg:text-5xl font-bold mb-4 leading-tight">
-                  {t('database.title')}
-                </h1>
-                <p className="text-xl mb-8 text-gray-100 lg:pr-8">
-                  {t('database.subtitle')}
-                </p>
-                <div className="flex flex-wrap gap-3 justify-center lg:justify-start">
-                  <motion.button 
-                    className="bg-secondary hover:bg-secondary-light text-white font-medium py-2 px-6 rounded-full flex items-center"
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
-                  >
-                    <IconComponent icon={HiOutlineAcademicCap} className="mr-2 text-xl" /> {t('database.explorePrograms')}
-                  </motion.button>
-                  <motion.button 
-                    className="bg-transparent hover:bg-white/10 border border-white text-white font-medium py-2 px-6 rounded-full flex items-center"
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
-                  >
-                    <IconComponent icon={FaGlobe} className="mr-2" /> {t('database.topUniversities')}
-                  </motion.button>
+          {/* Enhanced Search Bar */}
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-2 shadow-2xl border border-white/20">
+              <div className="flex flex-col lg:flex-row gap-2">
+                {/* Search Input */}
+                <div className="flex-1 relative">
+                  <input
+                    type="text"
+                    placeholder={t('database.searchPlaceholder')}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-6 py-4 pl-12 bg-white/90 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white transition-all text-lg placeholder-gray-500"
+                  />
+                  <IconComponent icon={FaSearch} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
                 </div>
-              </motion.div>
-              
-              <motion.div 
-                className="lg:w-1/2 w-full max-w-lg"
-                variants={fadeIn("left", 0.4)}
-              >
-                <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl shadow-lg border border-white/30">
-                  <h3 className="text-xl font-semibold mb-4 flex items-center">
-                    <IconComponent icon={FaSearch} className="mr-2" /> {t('database.advancedSearch')}
-                  </h3>
-                  <div className="mb-4">
-                    <div className="relative">
-                      <input
-                        type="text"
-                        placeholder={t('database.searchPlaceholder')}
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full px-5 py-3 pr-12 rounded-lg bg-white/80 backdrop-blur-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-secondary placeholder-gray-500"
-                      />
-                      <IconComponent icon={FaSearch} className="absolute right-4 top-3.5 text-gray-600" />
-                    </div>
-                  </div>
+                
+                {/* Quick Filters */}
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <select
+                    name="country"
+                    value={filters.country}
+                    onChange={handleFilterChange}
+                    className="px-4 py-4 bg-white/90 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-white/50 min-w-[150px]"
+                  >
+                    <option value="">{t('database.allCountries')}</option>
+                    {availableCountries.map((country) => (
+                      <option key={country} value={country}>{country}</option>
+                    ))}
+                  </select>
                   
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div>
-                      <select
-                        name="country"
-                        value={filters.country}
-                        onChange={handleFilterChange}
-                        className="w-full p-2 border-0 rounded-lg bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-secondary"
-                      >
-                        <option value="">{t('database.allCountries')}</option>
-                        {availableCountries.map((country) => (
-                          <option key={country} value={country}>
-                            {country}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <select
-                        name="major"
-                        value={filters.major}
-                        onChange={handleFilterChange}
-                        className="w-full p-2 border-0 rounded-lg bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-secondary"
-                      >
-                        <option value="">{t('database.allMajors')}</option>
-                        {availableMajors.slice(0, 10).map((major) => (
-                          <option key={major} value={major}>
-                            {major}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
+                  <select
+                    name="major"
+                    value={filters.major}
+                    onChange={handleFilterChange}
+                    className="px-4 py-4 bg-white/90 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-white/50 min-w-[150px] max-w-[200px] w-[180px]"
+                  >
+                    <option value="">{t('database.allMajors')}</option>
+                    {availableMajors.slice(0, 10).map((major) => (
+                      <option key={major} value={major}>{major}</option>
+                    ))}
+                  </select>
                   
-                  <div className="flex gap-2">
-                    <motion.button
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.97 }}
-                      className="bg-secondary hover:bg-secondary-light text-white py-2 px-4 rounded-lg w-full flex items-center justify-center"
-                    >
-                      <IconComponent icon={FaSearch} className="mr-2" /> {t('common.search')}
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={resetFilters}
-                      className="bg-white/30 hover:bg-white/40 text-white py-2 px-4 rounded-lg flex items-center justify-center"
-                    >
-                      {t('database.reset')}
-                    </motion.button>
-                  </div>
+                  <button
+                    className="px-6 py-4 bg-white/20 hover:bg-white/30 text-white rounded-xl font-medium transition-colors flex items-center gap-2 border border-white/30"
+                  >
+                    <IconComponent icon={FaSearch} />
+                    <span className="hidden sm:inline">{t('common.search')}</span>
+                  </button>
                 </div>
-              </motion.div>
-            </motion.div>
+              </div>
+            </div>
           </div>
-        </motion.section>
+        </PageHeader>
 
         <section className="py-12">
           <div className="container mx-auto px-4">
-            <motion.div 
-              className="bg-white rounded-2xl shadow-xl overflow-hidden mb-10"
-              variants={fadeIn("up", 0.3)}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, amount: 0.25 }}
-            >
-              <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 border-b">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div className="flex items-center">
-                    <IconComponent icon={FaFilter} className="text-primary mr-2" />
-                    <h2 className="text-xl font-bold text-gray-800">{t('database.advancedFilters')}</h2>
-                  </div>
-                  <div className="flex items-center gap-3">
-                   
-                    
-                 
-                    
-                    <motion.button
+            <div className="flex flex-col lg:flex-row gap-8">
+              {/* Sidebar Filters */}
+              <div className="lg:w-1/4">
+                <div className="bg-white rounded-xl shadow-lg p-6 sticky top-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-bold text-gray-800 flex items-center">
+                      <IconComponent icon={FaFilter} className="mr-2 text-blue-600" />
+                      {t('database.advancedFilters')}
+                    </h3>
+                    <button
                       onClick={resetFilters}
-                      className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm flex items-center"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                     >
-                      {t('database.resetFilters')}
-                    </motion.button>
-                    
-                    {/* AI Analysis Button */}
-                    <motion.button
-                      onClick={handleAIAnalysis}
-                      disabled={isLoadingAI}
-                      className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-4 py-2 rounded text-sm flex items-center disabled:opacity-50"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <IconComponent icon={FaRobot} className="mr-2" />
-                      {isLoadingAI ? t('common.loading') : t('database.aiAnalysis')}
-                    </motion.button>
-                    
-                    {compareList.length > 0 && (
-                      <motion.button
-                        onClick={handleOpenCompare}
-                        className="bg-secondary hover:bg-secondary-light text-white px-4 py-2 rounded text-sm flex items-center"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        {t('database.compareUniversities')} ({compareList.length})
-                      </motion.button>
-                    )}
-                    
-                    {/* Get Recommendations Button */}
-                    <motion.button
-                      onClick={handleGetRecommendations}
-                      disabled={isLoadingAI}
-                      className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-2 rounded flex items-center text-sm disabled:opacity-50"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <IconComponent icon={FaLightbulb} className="mr-1" /> 
-                      {isLoadingAI ? t('common.loading') : t('database.getRecommendations')}
-                    </motion.button>
-                    
-                 
+                      {t('database.reset')}
+                    </button>
                   </div>
-                </div>
-              </div>
-              
-              <div className="p-6 grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="md:col-span-1">
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="font-semibold text-gray-700 mb-3 flex items-center">
-                        <IconComponent icon={HiOutlineLocationMarker} className="mr-2" /> Location
-                      </h3>
+
+                  {/* Location Filters */}
+                  <div className="mb-6">
+                    <h4 className="text-md font-semibold text-gray-700 mb-3 flex items-center">
+                      <IconComponent icon={FaMapMarkerAlt} className="mr-2 text-green-600" />
+                      Location
+                    </h4>
+                    <div className="space-y-3">
                       <select
                         name="country"
                         value={filters.country}
                         onChange={handleFilterChange}
-                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary mb-3"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value="">All Countries</option>
                         {availableCountries.map((country) => (
-                          <option key={country} value={country}>
-                            {country}
-                          </option>
-                        ))}
-                      </select>
-                      
-                      <select
-                        name="region"
-                        value={filters.region}
-                        onChange={handleFilterChange}
-                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary"
-                      >
-                        <option value="">All Regions</option>
-                        {availableRegions.map((region) => (
-                          <option key={region} value={region}>
-                            {region}
-                          </option>
+                          <option key={country} value={country}>{country}</option>
                         ))}
                       </select>
                     </div>
-                    
-                    <div>
-                      <h3 className="font-semibold text-gray-700 mb-3 flex items-center">
-                        <IconComponent icon={FaGraduationCap} className="mr-2" /> Field of Study
-                      </h3>
+                  </div>
+
+                  {/* Academic Filters */}
+                  <div className="mb-6">
+                    <h4 className="text-md font-semibold text-gray-700 mb-3 flex items-center">
+                      <IconComponent icon={FaGraduationCap} className="mr-2 text-purple-600" />
+                      Academic
+                    </h4>
+                    <div className="space-y-3">
                       <select
                         name="major"
                         value={filters.major}
                         onChange={handleFilterChange}
-                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
-                        <option value="">All Fields</option>
-                        {availableMajors.map((major) => (
-                          <option key={major} value={major}>
-                            {major}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <h3 className="font-semibold text-gray-700 mb-3 flex items-center">
-                        <IconComponent icon={FaTrophy} className="mr-2" /> Rankings
-                      </h3>
-                      <select
-                        name="rankingType"
-                        value={filters.rankingType}
-                        onChange={handleFilterChange}
-                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary mb-3"
-                      >
-                        <option value="">All Rankings</option>
-                        {availableRankingTypes.map((rankingType) => (
-                          <option key={rankingType} value={rankingType}>
-                            {rankingType}
-                          </option>
+                        <option value="">All Majors</option>
+                        {availableMajors.slice(0, 15).map((major) => (
+                          <option key={major} value={major}>{major}</option>
                         ))}
                       </select>
                       
-                      <div className="px-2">
-                        <div className="flex justify-between text-xs text-gray-600 mb-1">
-                          <span>Top {qsRankingRange[0]}</span>
-                          <span>Top {qsRankingRange[1]}</span>
-                        </div>
-                        <input 
-                          type="range"
-                          min={qsRankingRange[0]}
-                          max={qsRankingRange[1]}
-                          value={filters.qsRankingRange[1]}
-                          onChange={(e) => handleRangeChange('qsRankingRange', [qsRankingRange[0], parseInt(e.target.value)])}
-                          className="w-full accent-secondary"
-                        />
-                        <div className="text-center mt-1 text-sm font-medium text-primary">
-                          Top {filters.qsRankingRange[1]}
-                        </div>
-                      </div>
+                      <select
+                        name="type"
+                        value={filters.type}
+                        onChange={handleFilterChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="">All Types</option>
+                        {availableUniversityTypes.map((type) => (
+                          <option key={type} value={type}>{type}</option>
+                        ))}
+                      </select>
                     </div>
-                    
-                    <div>
-                      <h3 className="font-semibold text-gray-700 mb-3 flex items-center">
-                        <IconComponent icon={FaCalendarAlt} className="mr-2" /> Application & Year
-                      </h3>
-                      <div className="flex items-center mb-3">
+                  </div>
+
+                  {/* Financial Filters */}
+                  <div className="mb-6">
+                    <h4 className="text-md font-semibold text-gray-700 mb-3 flex items-center">
+                      <IconComponent icon={FaDollarSign} className="mr-2 text-yellow-600" />
+                      Financial
+                    </h4>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm text-gray-600 mb-2">
+                          Tuition Range: ${filters.tuitionRange[0].toLocaleString()} - ${filters.tuitionRange[1].toLocaleString()}
+                        </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100000"
+                          step="5000"
+                          value={filters.tuitionRange[0]}
+                          onChange={(e) => handleRangeChange('tuitionRange', [parseInt(e.target.value), filters.tuitionRange[1]])}
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                        />
+                        <input
+                          type="range"
+                          min="0"
+                          max="100000"
+                          step="5000"
+                          value={filters.tuitionRange[1]}
+                          onChange={(e) => handleRangeChange('tuitionRange', [filters.tuitionRange[0], parseInt(e.target.value)])}
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2"
+                        />
+                      </div>
+
+                      <div className="flex items-center space-x-2">
                         <input
                           type="checkbox"
-                          id="openApplications"
-                          name="showOnlyOpenApplications"
-                          checked={filters.showOnlyOpenApplications}
-                          onChange={handleFilterChange}
-                          className="mr-2 accent-secondary h-4 w-4"
+                          name="scholarshipAvailable"
+                          checked={filters.scholarshipAvailable}
+                          onChange={(e) => setFilters(prev => ({ ...prev, scholarshipAvailable: e.target.checked }))}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
-                        <label htmlFor="openApplications" className="text-gray-700 text-sm">
-                          Show only open applications
-                        </label>
+                        <label className="text-sm text-gray-700">Scholarships Available</label>
                       </div>
-                      
-                      <select
-                        name="rankingYear"
-                        value={filters.rankingYear}
-                        onChange={handleFilterChange}
-                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary"
-                      >
-                        <option value="">All Years</option>
-                        {availableRankingYears.map((year) => (
-                          <option key={year} value={year.toString()}>
-                            {year}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <h3 className="font-semibold text-gray-700 mb-3 flex items-center">
-                        <IconComponent icon={FaGraduationCap} className="mr-2" /> Additional Filters
-                      </h3>
-                      <select
-                        name="admissionDifficulty"
-                        value={filters.admissionDifficulty}
-                        onChange={handleFilterChange}
-                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary mb-3"
-                      >
-                        <option value="">Any Difficulty</option>
-                        <option value="high">Highly Competitive</option>
-                        <option value="medium">Moderately Competitive</option>
-                        <option value="low">Less Competitive</option>
-                      </select>
-                      
-                      <select
-                        name="campusType"
-                        value={filters.campusType}
-                        onChange={handleFilterChange}
-                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary mb-3"
-                      >
-                        <option value="">All Campus Types</option>
-                        {availableCampusTypes.map((campusType) => (
-                          <option key={campusType} value={campusType}>
-                            {campusType}
-                          </option>
-                        ))}
-                      </select>
-                      
-                      <select
-                        name="studentPopulation"
-                        value={filters.studentPopulation}
-                        onChange={handleFilterChange}
-                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary mb-3"
-                      >
-                        <option value="">All Sizes</option>
-                        <option value="small">Small (≤15,000)</option>
-                        <option value="medium">Medium (15,001-40,000)</option>
-                        <option value="large">Large ({'>'}40,000)</option>
-                      </select>
-                      
-                      <select
-                        name="acceptanceRate"
-                        value={filters.acceptanceRate}
-                        onChange={handleFilterChange}
-                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary"
-                      >
-                        <option value="">All Acceptance Rates</option>
-                        <option value="low">Highly Selective (≤10%)</option>
-                        <option value="medium">Moderately Selective (11-50%)</option>
-                        <option value="high">Less Selective ({'>'}50%)</option>
-                      </select>
                     </div>
                   </div>
-                    </div>
-                    
-                <div className="md:col-span-3">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                    <h2 className="text-lg font-bold text-primary">Results ({sortedUniversities.length})</h2>
-                    
-                    <div className="flex flex-wrap items-center gap-3">
-                      <div className="flex items-center border border-gray-300 rounded overflow-hidden">
-                        <button 
-                          onClick={() => setViewMode('list')} 
-                          className={`p-2 ${viewMode === 'list' ? 'bg-primary text-white' : 'bg-white text-gray-700'}`}
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                          </svg>
-                        </button>
-                        <button 
-                          onClick={() => setViewMode('grid')} 
-                          className={`p-2 ${viewMode === 'grid' ? 'bg-primary text-white' : 'bg-white text-gray-700'}`}
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                          </svg>
-                        </button>
-                      </div>
-                      {compareList.length > 0 && (
-                      <motion.button
-                        onClick={handleOpenCompare}
-                        className="bg-secondary text-white px-3 py-2 rounded flex items-center text-sm"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <IconComponent icon={FaTrophy} className="mr-1" /> Compare ({compareList.length})
-                      </motion.button>
-                    )}
-                    
-                    {compareList.length === 0 && (
-                      <motion.button
-                        onClick={handleOpenCompare}
-                        className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-3 py-2 rounded flex items-center text-sm"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <IconComponent icon={FaRobot} className="mr-1" /> Smart Compare
-                      </motion.button>
-                    )}
-                    
-                   
-                      {/* AI Analysis and Recommendation buttons */}
-                 
-                      
-                    
-                  </div>
-                </div>
-                  
-                  {sortedUniversities.length === 0 ? (
-                    <div className="bg-gray-50 rounded-lg p-8 text-center">
-                      <div className="text-gray-400 text-5xl mb-4">
-                        <IconComponent icon={FaUniversity} className="mx-auto" />
-                      </div>
-                      <h3 className="text-xl font-bold text-gray-700 mb-2">
-                        {isLoading ? 'Loading Universities...' : 'No Universities Found'}
-                      </h3>
-                      <p className="text-gray-600 mb-4">
-                        {isLoading 
-                          ? 'Please wait while we fetch university data...' 
-                          : 'Try adjusting your filters or search criteria to see more results.'
-                        }
-                      </p>
-                      {!isLoading && (
-                        <button 
-                          onClick={resetFilters}
-                          className="bg-primary hover:bg-primary-dark text-white font-medium py-2 px-4 rounded"
-                        >
-                          Reset Filters
-                        </button>
-                      )}
-                      {isLoading && (
-                        <div className="flex justify-center">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <motion.div
-                      variants={staggerContainer(0.05, 0)}
-                      initial="hidden"
-                      animate="show"
-                      className={viewMode === 'grid' ? 
-                        (isMobile ? 'grid grid-cols-2 gap-3' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4') : 
-                        'space-y-4'
-                      }
+
+                  {/* More Filters Button */}
+                  <div className="mb-6">
+                    <button
+                      onClick={() => setShowMoreFiltersModal(true)}
+                      className="w-full bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white py-3 px-4 rounded-lg font-medium transition-all flex items-center justify-center"
                     >
-                      {currentUniversities.map((university) => (
-                        viewMode === 'grid' ? (
-                          <UniversityCard 
-                            key={university.id}
-                            university={university}
-                            onSelect={() => {
-                              setSelectedUniversity(university);
-                              setShowDetailModal(true);
-                            }}
-                            inCompareList={compareList.some(u => u.id === university.id)}
-                            onToggleCompare={() => toggleCompare(university)}
-                          />
-                        ) : (
-                          <UniversityListItem 
-                            key={university.id}
-                            university={university}
-                            onSelect={() => {
-                              setSelectedUniversity(university);
-                              setShowDetailModal(true);
-                            }}
-                            inCompareList={compareList.some(u => u.id === university.id)}
-                            onToggleCompare={() => toggleCompare(university)}
-                          />
-                        )
-                      ))}
-                    </motion.div>
-                  )}
+                      <IconComponent icon={FaFilter} className="mr-2" />
+                      More Filters
+                    </button>
+                  </div>
+
+                  {/* AI Actions */}
+                  <div className="space-y-3">
+                    <button
+                      onClick={handleAIAnalysis}
+                      disabled={isLoadingAI}
+                      className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-3 px-4 rounded-lg font-medium transition-all disabled:opacity-50 flex items-center justify-center"
+                    >
+                      <IconComponent icon={FaRobot} className="mr-2" />
+                      {isLoadingAI ? t('common.loading') : t('database.aiAnalysis')}
+                    </button>
+                    
+                    <button
+                      onClick={handleGetRecommendations}
+                      disabled={isLoadingAI}
+                      className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 px-4 rounded-lg font-medium transition-all disabled:opacity-50 flex items-center justify-center"
+                    >
+                      <IconComponent icon={FaLightbulb} className="mr-2" />
+                      {isLoadingAI ? t('common.loading') : t('database.getRecommendations')}
+                    </button>
+                    
+                    {compareList.length > 0 && (
+                      <button
+                        onClick={handleOpenCompare}
+                        className="w-full bg-gradient-to-r from-teal-500 to-teal-600 text-white py-3 px-4 rounded-lg font-medium transition-all flex items-center justify-center"
+                      >
+                        <IconComponent icon={FaBookmark} className="mr-2" />
+                        {t('database.compareUniversities')} ({compareList.length})
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </motion.div>
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <motion.div 
-                className="flex flex-col sm:flex-row justify-center items-center mt-8 mb-10 space-y-4 sm:space-y-0 sm:space-x-4"
-                variants={fadeIn("up", 0.2)}
-                initial="hidden"
-                animate="show"
-              >
-                <div className="flex items-center space-x-2">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      currentPage === 1 
-                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
-                        : 'bg-primary text-white hover:bg-primary-dark'
-                    }`}
-                  >
-                    Previous
-                  </motion.button>
-
-                  <div className="flex space-x-1">
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNumber: number;
-                      if (totalPages <= 5) {
-                        pageNumber = i + 1;
-                      } else if (currentPage <= 3) {
-                        pageNumber = i + 1;
-                      } else if (currentPage >= totalPages - 2) {
-                        pageNumber = totalPages - 4 + i;
-                      } else {
-                        pageNumber = currentPage - 2 + i;
-                      }
-
-                      return (
-                        <motion.button
-                          key={pageNumber}
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => setCurrentPage(pageNumber)}
-                          className={`w-10 h-10 rounded-lg font-medium transition-colors ${
-                            currentPage === pageNumber
-                              ? 'bg-primary text-white'
-                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                          }`}
-                        >
-                          {pageNumber}
-                        </motion.button>
-                      );
-                    })}
+              {/* Main Content */}
+              <div className="lg:w-3/4">
+                {/* Results Header */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 bg-white rounded-xl shadow-lg p-6">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                      University Database
+                      {searchQuery && (
+                        <span className="text-lg font-normal text-gray-600 ml-2">
+                          - Results for "{searchQuery}"
+                        </span>
+                      )}
+                    </h2>
+                    <p className="text-gray-600">
+                      Showing {filteredUniversities.length} universit{filteredUniversities.length !== 1 ? 'ies' : 'y'}
+                    </p>
                   </div>
+                  
+                  <div className="flex items-center gap-4 mt-4 sm:mt-0">
+                    <div className="flex items-center gap-2">
+                      <IconComponent icon={FaSortAmountDown} className="text-gray-500" />
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      >
+                        <option value="ranking">Best Ranking</option>
+                        <option value="name">Name A-Z</option>
+                        <option value="tuition_low">Lowest Tuition</option>
+                        <option value="tuition_high">Highest Tuition</option>
+                        <option value="acceptance_rate">Acceptance Rate</option>
+                      </select>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setViewMode('grid')}
+                        className={`p-2 rounded-lg ${viewMode === 'grid' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}`}
+                      >
+                        <IconComponent icon={FaUniversity} />
+                      </button>
+                      <button
+                        onClick={() => setViewMode('list')}
+                        className={`p-2 rounded-lg ${viewMode === 'list' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}`}
+                      >
+                        <IconComponent icon={FaGlobe} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
 
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      currentPage === totalPages 
-                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
-                        : 'bg-primary text-white hover:bg-primary-dark'
-                    }`}
+                {sortedUniversities.length === 0 ? (
+                  <div className="bg-gray-50 rounded-lg p-8 text-center">
+                    <div className="text-gray-400 text-5xl mb-4">
+                      <IconComponent icon={FaUniversity} className="mx-auto" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-700 mb-2">
+                      {isLoading ? 'Loading Universities...' : 'No Universities Found'}
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                      {isLoading 
+                        ? 'Please wait while we fetch university data...' 
+                        : 'Try adjusting your filters or search criteria to see more results.'
+                      }
+                    </p>
+                    {!isLoading && (
+                      <button 
+                        onClick={resetFilters}
+                        className="bg-primary hover:bg-primary-dark text-white font-medium py-2 px-4 rounded"
+                      >
+                        Reset Filters
+                      </button>
+                    )}
+                    {isLoading && (
+                      <div className="flex justify-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <motion.div
+                    variants={staggerContainer(0.05, 0)}
+                    initial="hidden"
+                    animate="show"
+                    className={viewMode === 'grid' ? 
+                      (isMobile ? 'grid grid-cols-2 gap-3' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4') : 
+                      'space-y-4'
+                    }
                   >
-                    Next
-                  </motion.button>
-                </div>
+                    {currentUniversities.map((university) => (
+                      viewMode === 'grid' ? (
+                        <UniversityCard 
+                          key={university.id}
+                          university={university}
+                          onSelect={() => {
+                            setSelectedUniversity(university);
+                            setShowDetailModal(true);
+                          }}
+                          inCompareList={compareList.some(u => u.id === university.id)}
+                          onToggleCompare={() => toggleCompare(university)}
+                        />
+                      ) : (
+                        <UniversityListItem 
+                          key={university.id}
+                          university={university}
+                          onSelect={() => {
+                            setSelectedUniversity(university);
+                            setShowDetailModal(true);
+                          }}
+                          inCompareList={compareList.some(u => u.id === university.id)}
+                          onToggleCompare={() => toggleCompare(university)}
+                        />
+                      )
+                    ))}
+                  </motion.div>
+                )}
 
-                <div className="text-sm text-gray-600">
-                  Showing {startIndex + 1}-{Math.min(endIndex, sortedUniversities.length)} of {sortedUniversities.length} universities
-                </div>
-              </motion.div>
-            )}
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <motion.div 
+                    className="flex flex-col sm:flex-row justify-center items-center mt-8 mb-10 space-y-4 sm:space-y-0 sm:space-x-4"
+                    variants={fadeIn("up", 0.2)}
+                    initial="hidden"
+                    animate="show"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                          currentPage === 1 
+                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                            : 'bg-primary text-white hover:bg-primary-dark'
+                        }`}
+                      >
+                        Previous
+                      </motion.button>
 
-            {/* Enhanced Filter Section - Removed and integrated into main filters */}
+                      <div className="flex space-x-1">
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                          let pageNumber: number;
+                          if (totalPages <= 5) {
+                            pageNumber = i + 1;
+                          } else if (currentPage <= 3) {
+                            pageNumber = i + 1;
+                          } else if (currentPage >= totalPages - 2) {
+                            pageNumber = totalPages - 4 + i;
+                          } else {
+                            pageNumber = currentPage - 2 + i;
+                          }
 
+                          return (
+                            <motion.button
+                              key={pageNumber}
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => setCurrentPage(pageNumber)}
+                              className={`w-10 h-10 rounded-lg font-medium transition-colors ${
+                                currentPage === pageNumber
+                                  ? 'bg-primary text-white'
+                                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                              }`}
+                            >
+                              {pageNumber}
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                          currentPage === totalPages 
+                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                            : 'bg-primary text-white hover:bg-primary-dark'
+                        }`}
+                      >
+                        Next
+                      </motion.button>
+                    </div>
+
+                    <div className="text-sm text-gray-600">
+                      Showing {startIndex + 1}-{Math.min(endIndex, sortedUniversities.length)} of {sortedUniversities.length} universities
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            </div>
           </div>
         </section>
       </main>
@@ -3397,6 +3309,453 @@ Return format: <recommendation><university id="X"/></recommendation>`;
       {/* Profile Completion Modal */}
       {showProfileModal && (
         <ProfileCompletionModal onClose={() => setShowProfileModal(false)} />
+      )}
+
+      {/* More Filters Modal */}
+      {showMoreFiltersModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div 
+            className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden"
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="bg-gradient-to-r from-gray-500 to-gray-600 text-white p-6">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center">
+                  <IconComponent icon={FaFilter} className="mr-3 text-2xl" />
+                  <div>
+                    <h2 className="text-2xl font-bold">Advanced Filters</h2>
+                    <p className="text-gray-100">Refine your university search with detailed criteria</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowMoreFiltersModal(false)}
+                  className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-8rem)]">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                
+                {/* Location Filters */}
+                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-green-800 mb-4 flex items-center">
+                    <IconComponent icon={FaMapMarkerAlt} className="mr-2" /> Location
+                  </h3>
+                  <div className="space-y-3">
+                    <select
+                      name="region"
+                      value={filters.region}
+                      onChange={handleFilterChange}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">All Regions</option>
+                      {availableRegions.map((region) => (
+                        <option key={region} value={region}>{region}</option>
+                      ))}
+                    </select>
+                    
+                    <select
+                      name="campusType"
+                      value={filters.campusType}
+                      onChange={handleFilterChange}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">All Campus Types</option>
+                      <option value="urban">Urban</option>
+                      <option value="suburban">Suburban</option>
+                      <option value="rural">Rural</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Academic Filters */}
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-purple-800 mb-4 flex items-center">
+                    <IconComponent icon={FaGraduationCap} className="mr-2" /> Academic
+                  </h3>
+                  <div className="space-y-3">
+                    <select
+                      name="programLevel"
+                      value={filters.programLevel}
+                      onChange={handleFilterChange}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">All Program Levels</option>
+                      <option value="undergraduate">Undergraduate</option>
+                      <option value="graduate">Graduate</option>
+                      <option value="both">Both</option>
+                    </select>
+
+                    <select
+                      name="rankingType"
+                      value={filters.rankingType}
+                      onChange={handleFilterChange}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">All Ranking Types</option>
+                      {availableRankingTypes.map((type) => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Rankings & Statistics */}
+                <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-yellow-800 mb-4 flex items-center">
+                    <IconComponent icon={FaTrophy} className="mr-2" /> Rankings & Statistics
+                  </h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-2">
+                        QS Ranking: {filters.qsRankingRange[0]} - {filters.qsRankingRange[1]}
+                      </label>
+                      <input
+                        type="range"
+                        min="1"
+                        max="2000"
+                        step="10"
+                        value={filters.qsRankingRange[0]}
+                        onChange={(e) => handleRangeChange('qsRankingRange', [parseInt(e.target.value), filters.qsRankingRange[1]])}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <input
+                        type="range"
+                        min="1"
+                        max="2000"
+                        step="10"
+                        value={filters.qsRankingRange[1]}
+                        onChange={(e) => handleRangeChange('qsRankingRange', [filters.qsRankingRange[0], parseInt(e.target.value)])}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-2">
+                        Acceptance Rate: {filters.acceptanceRateRange[0]}% - {filters.acceptanceRateRange[1]}%
+                      </label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value={filters.acceptanceRateRange[0]}
+                        onChange={(e) => handleRangeChange('acceptanceRateRange', [parseInt(e.target.value), filters.acceptanceRateRange[1]])}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value={filters.acceptanceRateRange[1]}
+                        onChange={(e) => handleRangeChange('acceptanceRateRange', [filters.acceptanceRateRange[0], parseInt(e.target.value)])}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Financial Filters */}
+                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-green-800 mb-4 flex items-center">
+                    <IconComponent icon={FaDollarSign} className="mr-2" /> Financial
+                  </h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-2">
+                        Application Fee: ${filters.applicationFeeRange[0]} - ${filters.applicationFeeRange[1]}
+                      </label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="500"
+                        step="25"
+                        value={filters.applicationFeeRange[0]}
+                        onChange={(e) => handleRangeChange('applicationFeeRange', [parseInt(e.target.value), filters.applicationFeeRange[1]])}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <input
+                        type="range"
+                        min="0"
+                        max="500"
+                        step="25"
+                        value={filters.applicationFeeRange[1]}
+                        onChange={(e) => handleRangeChange('applicationFeeRange', [filters.applicationFeeRange[0], parseInt(e.target.value)])}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2"
+                      />
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        name="financialAidAvailable"
+                        checked={filters.financialAidAvailable}
+                        onChange={(e) => setFilters(prev => ({ ...prev, financialAidAvailable: e.target.checked }))}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <label className="text-sm text-gray-700">Financial Aid Available</label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Campus & Environment */}
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-blue-800 mb-4 flex items-center">
+                    <IconComponent icon={FaBuilding} className="mr-2" /> Campus & Environment
+                  </h3>
+                  <div className="space-y-3">
+                    <select
+                      name="campusSize"
+                      value={filters.campusSize}
+                      onChange={handleFilterChange}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">All Campus Sizes</option>
+                      <option value="small">Small (&lt; 5,000 students)</option>
+                      <option value="medium">Medium (5,000 - 15,000 students)</option>
+                      <option value="large">Large (&gt; 15,000 students)</option>
+                    </select>
+
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-2">
+                        Student Population: {filters.studentPopulationRange[0].toLocaleString()} - {filters.studentPopulationRange[1].toLocaleString()}
+                      </label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100000"
+                        step="1000"
+                        value={filters.studentPopulationRange[0]}
+                        onChange={(e) => handleRangeChange('studentPopulationRange', [parseInt(e.target.value), filters.studentPopulationRange[1]])}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <input
+                        type="range"
+                        min="0"
+                        max="100000"
+                        step="1000"
+                        value={filters.studentPopulationRange[1]}
+                        onChange={(e) => handleRangeChange('studentPopulationRange', [filters.studentPopulationRange[0], parseInt(e.target.value)])}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2"
+                      />
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        name="dormitoriesAvailable"
+                        checked={filters.dormitoriesAvailable}
+                        onChange={(e) => setFilters(prev => ({ ...prev, dormitoriesAvailable: e.target.checked }))}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <label className="text-sm text-gray-700">On-Campus Housing</label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        name="sportsPrograms"
+                        checked={filters.sportsPrograms}
+                        onChange={(e) => setFilters(prev => ({ ...prev, sportsPrograms: e.target.checked }))}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <label className="text-sm text-gray-700">Sports Programs</label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Admission Requirements */}
+                <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-red-800 mb-4 flex items-center">
+                    <IconComponent icon={FaCheckCircle} className="mr-2" /> Admission Requirements
+                  </h3>
+                  <div className="space-y-3">
+                    <select
+                      name="admissionDifficulty"
+                      value={filters.admissionDifficulty}
+                      onChange={handleFilterChange}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">All Difficulty Levels</option>
+                      <option value="highly_competitive">Highly Competitive</option>
+                      <option value="moderately_competitive">Moderately Competitive</option>
+                      <option value="less_competitive">Less Competitive</option>
+                    </select>
+
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-2">
+                        Minimum GPA: {filters.minGPA[0]} - {filters.minGPA[1]}
+                      </label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="4"
+                        step="0.1"
+                        value={filters.minGPA[0]}
+                        onChange={(e) => handleRangeChange('minGPA', [parseFloat(e.target.value), filters.minGPA[1]])}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <input
+                        type="range"
+                        min="0"
+                        max="4"
+                        step="0.1"
+                        value={filters.minGPA[1]}
+                        onChange={(e) => handleRangeChange('minGPA', [filters.minGPA[0], parseFloat(e.target.value)])}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2"
+                      />
+                    </div>
+
+                    <select
+                      name="testScoreRequirements"
+                      value={filters.testScoreRequirements}
+                      onChange={handleFilterChange}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">All Test Requirements</option>
+                      <option value="sat_required">SAT Required</option>
+                      <option value="act_required">ACT Required</option>
+                      <option value="gre_required">GRE Required</option>
+                      <option value="gmat_required">GMAT Required</option>
+                      <option value="no_test_required">No Test Required</option>
+                    </select>
+
+                    <select
+                      name="languageRequirements"
+                      value={filters.languageRequirements}
+                      onChange={handleFilterChange}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">All Language Requirements</option>
+                      <option value="ielts_required">IELTS Required</option>
+                      <option value="toefl_required">TOEFL Required</option>
+                      <option value="no_language_test">No Language Test Required</option>
+                    </select>
+
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        name="essayRequired"
+                        checked={filters.essayRequired === 'true'}
+                        onChange={(e) => setFilters(prev => ({ ...prev, essayRequired: e.target.checked ? 'true' : '' }))}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <label className="text-sm text-gray-700">Essay Required</label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        name="interviewRequired"
+                        checked={filters.interviewRequired === 'true'}
+                        onChange={(e) => setFilters(prev => ({ ...prev, interviewRequired: e.target.checked ? 'true' : '' }))}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <label className="text-sm text-gray-700">Interview Required</label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        name="showOnlyOpenApplications"
+                        checked={filters.showOnlyOpenApplications}
+                        onChange={(e) => setFilters(prev => ({ ...prev, showOnlyOpenApplications: e.target.checked }))}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <label className="text-sm text-gray-700">Open Applications Only</label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Features */}
+                <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-orange-800 mb-4 flex items-center">
+                    <IconComponent icon={FaStar} className="mr-2" /> Additional Features
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        name="onlineProgramsAvailable"
+                        checked={filters.onlineProgramsAvailable}
+                        onChange={(e) => setFilters(prev => ({ ...prev, onlineProgramsAvailable: e.target.checked }))}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <label className="text-sm text-gray-700">Online Programs</label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        name="exchangeProgramsAvailable"
+                        checked={filters.exchangeProgramsAvailable}
+                        onChange={(e) => setFilters(prev => ({ ...prev, exchangeProgramsAvailable: e.target.checked }))}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <label className="text-sm text-gray-700">Exchange Programs</label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        name="careerServices"
+                        checked={filters.careerServices}
+                        onChange={(e) => setFilters(prev => ({ ...prev, careerServices: e.target.checked }))}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <label className="text-sm text-gray-700">Career Services</label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        name="clubsAndOrganizations"
+                        checked={filters.clubsAndOrganizations}
+                        onChange={(e) => setFilters(prev => ({ ...prev, clubsAndOrganizations: e.target.checked }))}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <label className="text-sm text-gray-700">Clubs & Organizations</label>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+              
+              {/* Modal Actions */}
+              <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
+                <button
+                  onClick={resetFilters}
+                  className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors"
+                >
+                  Reset All Filters
+                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowMoreFiltersModal(false)}
+                    className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => setShowMoreFiltersModal(false)}
+                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                  >
+                    Apply Filters
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
       )}
     </div>
   );

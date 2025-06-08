@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { FaSearch, FaFilter, FaDollarSign, FaGraduationCap, FaCalendarAlt, FaGlobe, FaUniversity, FaExternalLinkAlt, FaBookmark, FaUsers, FaClock, FaAward, FaStar, FaChevronLeft, FaChevronRight, FaEye, FaRobot, FaLightbulb, FaBolt, FaAtom, FaRocket } from 'react-icons/fa';
+import { FaGraduationCap, FaUniversity, FaCalendarAlt, FaDollarSign, FaMapMarkerAlt, FaSearch, FaFilter, FaBookmark, FaRegBookmark, FaExternalLinkAlt, FaSpinner, FaTimesCircle, FaTimes, FaCheck, FaEye, FaHeart, FaStar, FaAward, FaGlobe, FaRobot, FaAtom, FaBolt, FaRocket, FaUsers, FaClock, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { HiOutlineAcademicCap, HiOutlineLocationMarker } from 'react-icons/hi';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
+import PageHeader from '../components/ui/PageHeader';
 import IconComponent from '../components/ui/IconComponent';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLanguage } from '../utils/LanguageContext';
 import { scholarshipAPI } from '../utils/apiService';
 
 interface Scholarship {
@@ -117,6 +119,7 @@ const Scholarships: React.FC = () => {
   const [totalScholarships, setTotalScholarships] = useState(0);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isAIAnalyzing, setIsAIAnalyzing] = useState(false);
+  const { t } = useLanguage();
 
   useEffect(() => {
     fetchScholarships();
@@ -379,248 +382,37 @@ const Scholarships: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 relative overflow-hidden">
       <Header />
       <main>
-        {/* Futuristic Hero Section */}
-        <motion.section 
-          className="relative py-24 overflow-hidden"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1 }}
+        <PageHeader
+          title={t('scholarships.title') || 'Future-Ready Scholarship Portal'}
+          subtitle={t('scholarships.subtitle') || 'Unlock your academic potential with our intelligent scholarship matching system'}
+          height="lg"
         >
-          {/* Animated Background Elements */}
-          <div className="absolute inset-0">
-            <motion.div 
-              className="absolute w-96 h-96 bg-blue-500 rounded-full opacity-20" 
-              style={{ filter: 'blur(100px)', top: '10%', right: '10%' }}
-              animate={{
-                scale: [1, 1.2, 1],
-                x: [0, 30, 0],
-              }}
-              transition={{
-                duration: 15,
-                repeat: Infinity,
-                repeatType: "reverse"
-              }}
-            />
-            <motion.div 
-              className="absolute w-64 h-64 bg-purple-500 rounded-full opacity-20" 
-              style={{ filter: 'blur(60px)', bottom: '-5%', left: '10%' }}
-              animate={{
-                scale: [1, 1.1, 1],
-                y: [0, -20, 0],
-              }}
-              transition={{
-                duration: 10,
-                repeat: Infinity,
-                repeatType: "reverse"
-              }}
-            />
-            <motion.div 
-              className="absolute w-40 h-40 bg-cyan-400 rounded-full opacity-20" 
-              style={{ filter: 'blur(40px)', top: '30%', left: '25%' }}
-              animate={{
-                scale: [1, 1.3, 1],
-                y: [0, 30, 0],
-              }}
-              transition={{
-                duration: 12,
-                repeat: Infinity,
-                repeatType: "reverse"
-              }}
-            />
-            
-            {/* Futuristic Grid Pattern */}
-            <div className="absolute inset-0 opacity-10" style={gridPatternStyle}></div>
-            
-            {/* Floating Particles */}
-            {[...Array(20)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute w-2 h-2 bg-blue-400 rounded-full opacity-30"
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`,
-                }}
-                animate={{
-                  y: [0, -100, 0],
-                  opacity: [0.3, 0.8, 0.3],
-                }}
-                transition={{
-                  duration: 3 + Math.random() * 4,
-                  repeat: Infinity,
-                  delay: Math.random() * 2,
-                }}
-              />
-            ))}
-          </div>
-          
-          <div className="container mx-auto px-4 relative z-10">
-            <motion.div 
-              className="text-center text-white max-w-6xl mx-auto"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-            >
-              <motion.div
-                variants={itemVariants}
-                className="mb-8"
-              >
-                <motion.div
-                  className="inline-flex items-center bg-white/10 backdrop-blur-md rounded-full px-6 py-3 border border-white/20 mb-6"
-                  whileHover={{ scale: 1.05 }}
+          {/* Enhanced Search Bar */}
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-2 shadow-2xl border border-white/20">
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <input
+                    type="text"
+                    placeholder={t('scholarships.searchPlaceholder') || 'Search scholarships with AI assistance...'}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-6 py-4 pl-12 bg-white/90 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white transition-all text-lg placeholder-gray-500"
+                  />
+                  <IconComponent icon={FaSearch} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
+                </div>
+                <button 
+                  onClick={handleAIAnalysis}
+                  disabled={isAIAnalyzing}
+                  className="px-6 py-4 bg-white/20 hover:bg-white/30 text-white rounded-xl font-medium transition-colors flex items-center gap-2 border border-white/30 disabled:opacity-50"
                 >
-                  <IconComponent icon={FaStar} className="mr-2 text-cyan-400" />
-                  <span className="text-sm font-medium">AI-Powered Scholarship Discovery</span>
-                </motion.div>
-              </motion.div>
-
-              <motion.h1 
-                className="text-5xl md:text-7xl font-bold mb-8 leading-tight"
-                variants={itemVariants}
-              >
-                Future-Ready <br />
-                <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">
-                  Scholarship Portal
-                </span>
-              </motion.h1>
-              
-              <motion.p 
-                className="text-xl md:text-2xl mb-12 text-gray-300 leading-relaxed max-w-3xl mx-auto"
-                variants={itemVariants}
-              >
-                Unlock your academic potential with our intelligent scholarship matching system
-              </motion.p>
-              
-              {/* Enhanced Statistics */}
-              <motion.div 
-                className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-16"
-                variants={containerVariants}
-              >
-                {[
-                  { icon: FaAward, value: totalScholarships, label: "Active Scholarships", color: "from-yellow-400 to-orange-500" },
-                  { icon: FaDollarSign, value: "$2M+", label: "Total Funding", color: "from-green-400 to-emerald-500" },
-                  { icon: FaGlobe, value: countries.length, label: "Countries", color: "from-blue-400 to-cyan-500" },
-                  { icon: FaUniversity, value: universities.length, label: "Universities", color: "from-purple-400 to-pink-500" }
-                ].map((stat, index) => (
-                  <motion.div 
-                    key={index}
-                    className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all duration-300 group"
-                    variants={itemVariants}
-                    whileHover={{ scale: 1.05, y: -5 }}
-                  >
-                    <motion.div 
-                      className={`w-12 h-12 bg-gradient-to-r ${stat.color} rounded-xl flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform`}
-                    >
-                      <IconComponent icon={stat.icon} className="text-white text-xl" />
-                    </motion.div>
-                    <div className="text-2xl md:text-3xl font-bold text-white mb-2">{stat.value}</div>
-                    <div className="text-sm md:text-base text-gray-300">{stat.label}</div>
-                  </motion.div>
-                ))}
-              </motion.div>
-            </motion.div>
-            
-            {/* Futuristic Search Interface */}
-            <motion.div 
-              className="max-w-5xl mx-auto mt-16"
-              initial={{ y: 50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.6 }}
-            >
-              <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 border border-white/20 shadow-2xl">
-                <div className="flex items-center justify-center mb-6">
-                  <motion.div
-                    className="flex items-center bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full px-6 py-3"
-                    whileHover={{ scale: 1.05 }}
-                  >
-                    <IconComponent icon={FaRobot} className="mr-2 text-white" />
-                    <span className="text-white font-medium">Intelligent Search Engine</span>
-                  </motion.div>
-                </div>
-
-                <div className="space-y-6">
-                  <div className="flex flex-col md:flex-row gap-4">
-                    <div className="flex-1 relative group">
-                      <IconComponent icon={FaSearch} className="absolute left-6 top-1/2 transform -translate-y-1/2 text-gray-400 group-hover:text-blue-400 transition-colors" />
-                      <input
-                        type="text"
-                        placeholder="Search scholarships with AI assistance..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-14 pr-6 py-4 border-0 rounded-2xl bg-white/90 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 text-gray-800 placeholder-gray-500 shadow-lg text-lg"
-                      />
-                      <motion.div
-                        className="absolute right-4 top-1/2 transform -translate-y-1/2"
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                      >
-                        <IconComponent icon={FaAtom} className="text-blue-400" />
-                      </motion.div>
-                    </div>
-                    
-                    <motion.button
-                      onClick={handleAIAnalysis}
-                      disabled={isAIAnalyzing}
-                      className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white py-4 px-8 rounded-2xl font-medium flex items-center justify-center shadow-lg disabled:opacity-50"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      {isAIAnalyzing ? (
-                        <>
-                          <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                            className="mr-2"
-                          >
-                            <IconComponent icon={FaAtom} />
-                          </motion.div>
-                          Analyzing...
-                        </>
-                      ) : (
-                        <>
-                          <IconComponent icon={FaBolt} className="mr-2" />
-                          AI Search
-                        </>
-                      )}
-                    </motion.button>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                    {[
-                      { name: 'country', placeholder: 'All Countries', options: countries },
-                      { name: 'university', placeholder: 'All Universities', options: universities.slice(0, 20) },
-                      { name: 'minAmount', placeholder: 'Min Amount', options: ['1000', '5000', '10000', '25000', '50000'] },
-                      { name: 'maxAmount', placeholder: 'Max Amount', options: ['10000', '25000', '50000', '100000'] }
-                    ].map((filter, index) => (
-                      <select
-                        key={filter.name}
-                        value={filters[filter.name as keyof typeof filters]}
-                        onChange={(e) => setFilters({...filters, [filter.name]: e.target.value})}
-                        className="p-3 border-0 rounded-xl bg-white/90 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 text-sm shadow-lg"
-                      >
-                        <option value="">{filter.placeholder}</option>
-                        {filter.options.map((option) => (
-                          <option key={option} value={option}>
-                            {filter.name.includes('Amount') ? `$${Number(option).toLocaleString()}${filter.name === 'minAmount' ? '+' : ''}` : option}
-                          </option>
-                        ))}
-                      </select>
-                    ))}
-                    
-                    <motion.button
-                      onClick={resetFilters}
-                      className="bg-white/30 hover:bg-white/40 text-white py-3 px-4 rounded-xl flex items-center justify-center shadow-lg backdrop-blur-sm border border-white/20"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <IconComponent icon={FaStar} className="mr-2" />
-                      Reset
-                    </motion.button>
-                  </div>
-                </div>
+                  <IconComponent icon={FaRobot} />
+                  <span className="hidden sm:inline">{isAIAnalyzing ? 'Analyzing...' : 'AI Search'}</span>
+                </button>
               </div>
-            </motion.div>
+            </div>
           </div>
-        </motion.section>
+        </PageHeader>
 
         {/* Futuristic Scholarships Section */}
         <section className="py-20 relative">

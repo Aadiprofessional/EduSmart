@@ -79,6 +79,195 @@ code {
   animation: gradient-animation 15s ease infinite;
 }
 
+/* Custom Gradient Animations */
+@keyframes gradient-x {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes gradient-xy {
+  0%, 100% {
+    background-position: 0% 0%;
+  }
+  25% {
+    background-position: 100% 0%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+  75% {
+    background-position: 0% 100%;
+  }
+}
+
+@keyframes gradient-radial {
+  0% {
+    background-position: 0% 50%;
+    transform: scale(1);
+  }
+  50% {
+    background-position: 100% 50%;
+    transform: scale(1.02);
+  }
+  100% {
+    background-position: 0% 50%;
+    transform: scale(1);
+  }
+}
+
+@keyframes gradient-wave {
+  0%, 100% {
+    background-position: 0% 50%;
+    filter: hue-rotate(0deg);
+  }
+  33% {
+    background-position: 50% 0%;
+    filter: hue-rotate(10deg);
+  }
+  66% {
+    background-position: 100% 50%;
+    filter: hue-rotate(-10deg);
+  }
+}
+
+@keyframes gradient-pulse {
+  0%, 100% {
+    background-position: 0% 50%;
+    opacity: 0.9;
+  }
+  50% {
+    background-position: 100% 50%;
+    opacity: 1;
+  }
+}
+
+@keyframes gradient-diagonal {
+  0% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+  100% {
+    background-position: 0% 0%;
+  }
+}
+
+@keyframes gradient-spin {
+  0% {
+    background-position: 0% 50%;
+    transform: rotate(0deg);
+  }
+  100% {
+    background-position: 100% 50%;
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes gradient-bounce {
+  0%, 100% {
+    background-position: 0% 50%;
+    transform: translateY(0px);
+  }
+  50% {
+    background-position: 100% 50%;
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes gradient-float {
+  0%, 100% {
+    background-position: 0% 50%;
+    transform: translateY(0px) scale(1);
+  }
+  33% {
+    background-position: 50% 0%;
+    transform: translateY(-3px) scale(1.01);
+  }
+  66% {
+    background-position: 100% 50%;
+    transform: translateY(3px) scale(0.99);
+  }
+}
+
+@keyframes gradient-slide {
+  0% {
+    background-position: -200% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+@keyframes gradient-flow {
+  0%, 100% {
+    background-position: 0% 50%;
+    background-size: 200% 200%;
+  }
+  50% {
+    background-position: 100% 50%;
+    background-size: 300% 300%;
+  }
+}
+
+.animate-gradient-x {
+  background-size: 400% 400%;
+  animation: gradient-x 8s ease infinite;
+}
+
+.animate-gradient-xy {
+  background-size: 400% 400%;
+  animation: gradient-xy 12s ease infinite;
+}
+
+.animate-gradient-radial {
+  background-size: 400% 400%;
+  animation: gradient-radial 10s ease infinite;
+}
+
+.animate-gradient-wave {
+  background-size: 400% 400%;
+  animation: gradient-wave 15s ease infinite;
+}
+
+.animate-gradient-pulse {
+  background-size: 400% 400%;
+  animation: gradient-pulse 6s ease infinite;
+}
+
+.animate-gradient-diagonal {
+  background-size: 400% 400%;
+  animation: gradient-diagonal 9s ease infinite;
+}
+
+.animate-gradient-spin {
+  background-size: 400% 400%;
+  animation: gradient-spin 20s linear infinite;
+}
+
+.animate-gradient-bounce {
+  background-size: 400% 400%;
+  animation: gradient-bounce 7s ease infinite;
+}
+
+.animate-gradient-float {
+  background-size: 400% 400%;
+  animation: gradient-float 11s ease infinite;
+}
+
+.animate-gradient-slide {
+  background-size: 400% 400%;
+  animation: gradient-slide 14s linear infinite;
+}
+
+.animate-gradient-flow {
+  animation: gradient-flow 13s ease infinite;
+}
+
 /* Page Transitions */
 .page-enter {
   opacity: 0;

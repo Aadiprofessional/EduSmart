@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaGraduationCap, FaStar, FaUniversity, FaCertificate, FaRobot, FaLaptopCode, FaSearch, FaTag, FaChalkboardTeacher, FaBookmark, FaRegBookmark, FaChevronRight, FaTimes, FaUserTie, FaFilter } from 'react-icons/fa';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
+import PageHeader from '../components/ui/PageHeader';
 import IconComponent from '../components/ui/IconComponent';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../utils/LanguageContext';
@@ -610,113 +611,38 @@ const AICourses: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Header />
       <main className="flex-grow">
-        <motion.section 
-          className="bg-gradient-to-r from-teal-700 to-teal-900 text-white py-12 relative overflow-hidden"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
+        <PageHeader
+          title={t('aiCourses.title') || 'AI Courses & Teachers'}
+          subtitle={t('aiCourses.subtitle') || 'Learn from expert AI instructors and advance your skills'}
+          height="lg"
         >
-          {/* Animated background elements */}
-          <motion.div 
-            className="absolute w-96 h-96 bg-teal-600 rounded-full opacity-10" 
-            style={{ filter: 'blur(80px)', top: '-10%', right: '5%' }}
-            animate={{
-              scale: [1, 1.2, 1],
-              x: [0, 30, 0],
-            }}
-            transition={{
-              duration: 15,
-              repeat: Infinity,
-              repeatType: "reverse"
-            }}
-          />
-          <motion.div 
-            className="absolute w-64 h-64 bg-orange-500 rounded-full opacity-10" 
-            style={{ filter: 'blur(60px)', bottom: '-5%', left: '10%' }}
-            animate={{
-              scale: [1, 1.1, 1],
-              y: [0, -20, 0],
-            }}
-            transition={{
-              duration: 10,
-              repeat: Infinity,
-              repeatType: "reverse"
-            }}
-          />
-          
-          <div className="container mx-auto px-4 relative z-10">
-            <div className="text-center max-w-3xl mx-auto">
-              <motion.h1 
-                className="text-4xl font-bold mb-4"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-              >
-                {t('aiCourses.title')}
-              </motion.h1>
-              <motion.p 
-                className="text-xl mb-8"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-              >
-                {t('aiCourses.subtitle')}
-              </motion.p>
-              <motion.div 
-                className="relative"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-              >
-                <input
-                  type="text"
-                  placeholder={t('aiCourses.searchPlaceholder')}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full max-w-md mx-auto px-4 py-3 pl-12 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                />
-                <IconComponent icon={FaSearch} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              </motion.div>
-
-              {/* Display Mode Toggle */}
-              <motion.div 
-                className="mt-6 flex justify-center"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-              >
-                <div className="bg-teal-800 bg-opacity-50 rounded-full p-1 flex">
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
-                      viewMode === 'grid'
-                        ? 'bg-white text-teal-800'
-                        : 'text-white hover:bg-teal-600 hover:bg-opacity-50'
-                    }`}
-                  >
-                    {t('courses.title')}
-                  </button>
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`px-5 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
-                      viewMode === 'list'
-                        ? 'bg-white text-teal-800'
-                        : 'text-white hover:bg-teal-600 hover:bg-opacity-50'
-                    }`}
-                  >
-                    <IconComponent icon={FaChalkboardTeacher} className="text-xs" />
-                    Teachers
-                  </button>
+          {/* Search Bar */}
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-2 shadow-2xl border border-white/20">
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <input
+                    type="text"
+                    placeholder={t('aiCourses.searchPlaceholder') || 'Search courses and teachers...'}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-6 py-4 pl-12 bg-white/90 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white transition-all text-lg placeholder-gray-500"
+                  />
+                  <IconComponent icon={FaSearch} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
                 </div>
-              </motion.div>
+                <button className="px-6 py-4 bg-white/20 hover:bg-white/30 text-white rounded-xl font-medium transition-colors flex items-center gap-2 border border-white/30">
+                  <IconComponent icon={FaSearch} />
+                  <span className="hidden sm:inline">Search</span>
+                </button>
+              </div>
             </div>
           </div>
-        </motion.section>
+        </PageHeader>
 
-        <section className="py-12 bg-gray-50">
+        <section className="py-12">
           <div className="container mx-auto px-4">
             {/* Featured Courses */}
             {viewMode === 'grid' && (

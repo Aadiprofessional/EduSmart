@@ -7,6 +7,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import About from './pages/About';
 import Courses from './pages/Courses';
+import CoursePlayer from './pages/CoursePlayer';
 import Database from './pages/Database';
 import CaseStudies from './pages/CaseStudies';
 import NotFound from './pages/NotFound';
@@ -42,6 +43,27 @@ function App() {
             <Route path="/signup" element={<Signup />} />
             <Route path="/about" element={<About />} />
             <Route path="/courses" element={<Courses />} />
+            <Route path="/courses/:id" element={<Courses />} />
+            <Route path="/course/:courseId" element={
+              <ProtectedRoute>
+                <CoursePlayer />
+              </ProtectedRoute>
+            } />
+            <Route path="/course/:courseId/lecture/:lectureId" element={
+              <ProtectedRoute>
+                <CoursePlayer />
+              </ProtectedRoute>
+            } />
+            <Route path="/learn/:courseId" element={
+              <ProtectedRoute>
+                <CoursePlayer />
+              </ProtectedRoute>
+            } />
+            <Route path="/learn/:courseId/:lectureId" element={
+              <ProtectedRoute>
+                <CoursePlayer />
+              </ProtectedRoute>
+            } />
             <Route path="/database" element={<Database />} />
             <Route path="/case-studies" element={<CaseStudies />} />
             <Route path="/ai-courses" element={<Courses />} />

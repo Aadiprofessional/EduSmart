@@ -46,6 +46,8 @@ interface Mistake {
   correction: string;
   type: string;
   lineNumber?: number;
+  pageNumber?: number;
+  isStreaming?: boolean;
 }
 
 interface CheckMistakesComponentProps {
@@ -60,6 +62,8 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
   const [fullScreenDocument, setFullScreenDocument] = useState(false);
   const [extractedTexts, setExtractedTexts] = useState<string[]>([]);
   const [processingStatus, setProcessingStatus] = useState<string>('');
+  const [streamingMistakes, setStreamingMistakes] = useState<Map<number, string>>(new Map());
+  const [currentlyProcessingPage, setCurrentlyProcessingPage] = useState<number | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -160,11 +164,11 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
       const apiResponse = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer sk-80beadf6603b4832981d0d65896b1ae0',
+          'Authorization': 'Bearer sk-176f2c5aba034fc2970fb14b2cb2d301',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: "qvq-max",
+          model: "qvq-max-latest",
           messages: [
             {
               role: "user",
@@ -251,9 +255,15 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
     }
   };
 
-  // Check for mistakes using QVQ model with streaming
+  // Check for mistakes using QVQ model with real-time streaming
   const checkMistakes = async (text: string, pageNumber: number): Promise<Mistake[]> => {
     try {
+      setCurrentlyProcessingPage(pageNumber);
+      
+      // Add a placeholder for streaming content
+      const streamingId = Date.now() + pageNumber * 1000;
+      setStreamingMistakes(prev => new Map(prev.set(pageNumber, '')));
+      
       const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -308,7 +318,7 @@ Use your reasoning capabilities to thoroughly analyze the text and provide accur
         return [];
       }
 
-      // Handle streaming response
+      // Handle streaming response with real-time updates
       const reader = response.body?.getReader();
       if (!reader) {
         throw new Error('No response body reader available');
@@ -346,6 +356,9 @@ Use your reasoning capabilities to thoroughly analyze the text and provide accur
                     }
                     if (isAnswering) {
                       analysisContent += delta.content;
+                      
+                      // Update streaming content in real-time
+                      setStreamingMistakes(prev => new Map(prev.set(pageNumber, analysisContent)));
                     }
                   }
                 }
@@ -358,6 +371,12 @@ Use your reasoning capabilities to thoroughly analyze the text and provide accur
         }
       } finally {
         reader.releaseLock();
+        setCurrentlyProcessingPage(null);
+        setStreamingMistakes(prev => {
+          const newMap = new Map(prev);
+          newMap.delete(pageNumber);
+          return newMap;
+        });
       }
 
       const analysisText = analysisContent.trim();
@@ -383,7 +402,8 @@ Use your reasoning capabilities to thoroughly analyze the text and provide accur
                 line: originalMatch[1].trim(),
                 correction: correctedMatch[1].trim(),
                 type: typeMatch[1].trim(),
-                lineNumber: lineMatch ? parseInt(lineMatch[1].trim()) : index + 1
+                lineNumber: lineMatch ? parseInt(lineMatch[1].trim()) : index + 1,
+                pageNumber: pageNumber
               });
             }
           });
@@ -396,7 +416,8 @@ Use your reasoning capabilities to thoroughly analyze the text and provide accur
               line: `Page ${pageNumber} analysis completed`,
               correction: messageMatch[1].trim(),
               type: 'Info',
-              lineNumber: 1
+              lineNumber: 1,
+              pageNumber: pageNumber
             });
           } else {
             // Fallback: try to extract any useful information from the response
@@ -428,7 +449,8 @@ Use your reasoning capabilities to thoroughly analyze the text and provide accur
                     line: line.trim(),
                     correction: line.replace(pattern.wrong, pattern.correct),
                     type: 'Spelling',
-                    lineNumber: lineNumber
+                    lineNumber: lineNumber,
+                    pageNumber: pageNumber
                   });
                   foundMistakes = true;
                 }
@@ -452,7 +474,8 @@ Use your reasoning capabilities to thoroughly analyze the text and provide accur
                     line: line.trim(),
                     correction: line.replace(pattern.wrong, pattern.correct),
                     type: pattern.type,
-                    lineNumber: lineNumber
+                    lineNumber: lineNumber,
+                    pageNumber: pageNumber
                   });
                   foundMistakes = true;
                 }
@@ -466,7 +489,8 @@ Use your reasoning capabilities to thoroughly analyze the text and provide accur
                 line: `Page ${pageNumber} analysis completed`,
                 correction: 'No obvious spelling or grammar mistakes detected. The text appears to be well-written.',
                 type: 'Info',
-                lineNumber: 1
+                lineNumber: 1,
+                pageNumber: pageNumber
               });
             }
           }
@@ -478,27 +502,37 @@ Use your reasoning capabilities to thoroughly analyze the text and provide accur
           line: `Page ${pageNumber} parsing error`,
           correction: 'Unable to parse AI response. Please try again.',
           type: 'Error',
-          lineNumber: 1
+          lineNumber: 1,
+          pageNumber: pageNumber
         });
       }
 
       return mistakes;
     } catch (error) {
       console.error('QVQ Grammar check error:', error);
+      setCurrentlyProcessingPage(null);
+      setStreamingMistakes(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(pageNumber);
+        return newMap;
+      });
       return [{
         id: Date.now() + pageNumber * 1000,
         line: `Page ${pageNumber} API Error`,
         correction: `Error checking grammar: ${error instanceof Error ? error.message : 'Unknown error'}`,
         type: 'Error',
-        lineNumber: 1
+        lineNumber: 1,
+        pageNumber: pageNumber
       }];
     }
   };
 
-  // Process uploaded file
+  // Process uploaded file with real-time updates
   const processFile = async (file: File) => {
     setLoading(true);
     setProcessingStatus('Starting file processing...');
+    setMistakes([]); // Clear previous results
+    setStreamingMistakes(new Map()); // Clear streaming state
     
     try {
       let imageUrls: string[] = [];
@@ -523,7 +557,7 @@ Use your reasoning capabilities to thoroughly analyze the text and provide accur
       setDocumentPages(imageUrls);
       setCurrentPage(0);
       
-      // Extract text from all pages and check for mistakes
+      // Extract text from all pages and check for mistakes with real-time updates
       const allTexts: string[] = [];
       const allMistakes: Mistake[] = [];
       
@@ -537,28 +571,38 @@ Use your reasoning capabilities to thoroughly analyze the text and provide accur
           allTexts.push(extractedText);
           
           if (extractedText && !extractedText.startsWith('Error')) {
+            // Process mistakes with real-time streaming
             const pageMistakes = await checkMistakes(extractedText, i + 1);
             allMistakes.push(...pageMistakes);
+            
+            // Update mistakes in real-time as each page is processed
+            setMistakes(prev => [...prev, ...pageMistakes]);
           } else {
             // Add error info to mistakes if text extraction failed
-            allMistakes.push({
+            const errorMistake = {
               id: Date.now() + i * 1000,
               line: `Page ${i + 1} processing error`,
               correction: extractedText.startsWith('Error') ? extractedText : 'Failed to extract text from this page',
               type: 'Error',
-              lineNumber: 1
-            });
+              lineNumber: 1,
+              pageNumber: i + 1
+            };
+            allMistakes.push(errorMistake);
+            setMistakes(prev => [...prev, errorMistake]);
           }
         } catch (pageError) {
           console.error(`Error processing page ${i + 1}:`, pageError);
           allTexts.push(`Error processing page ${i + 1}`);
-          allMistakes.push({
+          const errorMistake = {
             id: Date.now() + i * 1000,
             line: `Page ${i + 1} processing error`,
             correction: `Failed to process page: ${pageError instanceof Error ? pageError.message : 'Unknown error'}`,
             type: 'Error',
-            lineNumber: 1
-          });
+            lineNumber: 1,
+            pageNumber: i + 1
+          };
+          allMistakes.push(errorMistake);
+          setMistakes(prev => [...prev, errorMistake]);
         }
         
         // Add a small delay between API calls to avoid rate limiting
@@ -568,21 +612,23 @@ Use your reasoning capabilities to thoroughly analyze the text and provide accur
       }
       
       setExtractedTexts(allTexts);
-      setMistakes(allMistakes);
       setProcessingStatus('Processing completed!');
       
     } catch (error) {
       console.error('File processing error:', error);
       setProcessingStatus('Error processing file');
-      setMistakes([{
+      const errorMistake = {
         id: Date.now(),
         line: 'Error processing file',
         correction: `Failed to process file: ${error instanceof Error ? error.message : 'Unknown error'}`,
         type: 'Error',
         lineNumber: 1
-      }]);
+      };
+      setMistakes([errorMistake]);
     } finally {
       setLoading(false);
+      setCurrentlyProcessingPage(null);
+      setStreamingMistakes(new Map());
       setTimeout(() => setProcessingStatus(''), 3000);
     }
   };
@@ -689,19 +735,32 @@ Use your reasoning capabilities to thoroughly analyze the text and provide accur
                 <h3 className="text-lg font-medium text-teal-800 mb-4 flex items-center">
                   <IconComponent icon={AiOutlineSearch} className="mr-2" /> 
                   Identified Mistakes
+                  {currentlyProcessingPage && (
+                    <span className="ml-2 text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                      Processing Page {currentlyProcessingPage}
+                    </span>
+                  )}
                 </h3>
                 
                 {loading ? (
                   <div className="flex flex-col items-center justify-center h-64 text-gray-500">
                     <IconComponent icon={AiOutlineLoading3Quarters} className="h-12 w-12 mb-3 animate-spin text-teal-600" />
                     <p className="text-center">{processingStatus}</p>
+                    {currentlyProcessingPage && (
+                      <p className="text-sm text-blue-600 mt-2">
+                        Analyzing page {currentlyProcessingPage} in real-time...
+                      </p>
+                    )}
                   </div>
-                ) : mistakes.length > 0 ? (
+                ) : mistakes.length > 0 || streamingMistakes.size > 0 ? (
                   <div className="space-y-4 overflow-y-auto" style={{ maxHeight: "500px" }}>
+                    {/* Show completed mistakes */}
                     {mistakes.map((mistake) => (
                       <motion.div
                         key={mistake.id}
                         variants={itemVariants}
+                        initial="hidden"
+                        animate="visible"
                         className="border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow"
                         whileHover={{ y: -2 }}
                       >
@@ -710,13 +769,19 @@ Use your reasoning capabilities to thoroughly analyze the text and provide accur
                             mistake.type === 'Grammar' ? 'bg-red-100 text-red-800' :
                             mistake.type === 'Spelling' ? 'bg-orange-100 text-orange-800' :
                             mistake.type === 'Error' ? 'bg-red-100 text-red-800' :
-                            'bg-blue-100 text-blue-800'
+                            mistake.type === 'Info' ? 'bg-blue-100 text-blue-800' :
+                            'bg-purple-100 text-purple-800'
                           }`}>
                             {mistake.type}
                           </span>
-                          {mistake.lineNumber && (
-                            <span className="text-xs text-gray-500">Line {mistake.lineNumber}</span>
-                          )}
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            {mistake.pageNumber && (
+                              <span>Page {mistake.pageNumber}</span>
+                            )}
+                            {mistake.lineNumber && (
+                              <span>Line {mistake.lineNumber}</span>
+                            )}
+                          </div>
                         </div>
                         <div className="mt-2">
                           <p className="text-sm line-through text-gray-500">{mistake.line}</p>
@@ -724,11 +789,36 @@ Use your reasoning capabilities to thoroughly analyze the text and provide accur
                         </div>
                       </motion.div>
                     ))}
+                    
+                    {/* Show streaming content for pages being processed */}
+                    {Array.from(streamingMistakes.entries()).map(([pageNumber, content]) => (
+                      <motion.div
+                        key={`streaming-${pageNumber}`}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="border border-blue-200 bg-blue-50 rounded-lg p-3"
+                      >
+                        <div className="flex items-center mb-2">
+                          <IconComponent icon={AiOutlineLoading3Quarters} className="h-4 w-4 animate-spin text-blue-600 mr-2" />
+                          <span className="text-sm font-medium text-blue-800">
+                            Analyzing Page {pageNumber}...
+                          </span>
+                        </div>
+                        {content && (
+                          <div className="mt-2 p-2 bg-white rounded border">
+                            <p className="text-xs text-gray-600 font-mono whitespace-pre-wrap">
+                              {content.length > 200 ? content.substring(0, 200) + '...' : content}
+                            </p>
+                          </div>
+                        )}
+                      </motion.div>
+                    ))}
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-64 text-gray-500">
                     <IconComponent icon={AiOutlineSearch} className="h-12 w-12 mb-3 opacity-50" />
-                    <p className="text-center">No mistakes found on this page.</p>
+                    <p className="text-center">No mistakes found yet.</p>
+                    <p className="text-sm text-center mt-1">Upload a document to start analysis.</p>
                   </div>
                 )}
               </div>

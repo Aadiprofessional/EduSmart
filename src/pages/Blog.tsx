@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { FaCalendarAlt, FaUser, FaTag, FaSearch, FaArrowLeft, FaClock, FaArrowRight, FaChartLine, FaGraduationCap, FaGlobe, FaTimes, FaShare, FaBookmark, FaEye, FaFilter, FaChevronDown, FaSort } from 'react-icons/fa';
+import { FaCalendarAlt, FaUser, FaTag, FaSearch, FaArrowLeft, FaClock, FaArrowRight, FaChartLine, FaGraduationCap, FaGlobe, FaTimes, FaShare, FaBookmark, FaEye, FaFilter, FaChevronDown, FaSort, FaHeart, FaRegHeart } from 'react-icons/fa';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
+import PageHeader from '../components/ui/PageHeader';
 import IconComponent from '../components/ui/IconComponent';
 import { motion, AnimatePresence } from 'framer-motion';
 import { blogAPI } from '../utils/apiService';
@@ -356,119 +357,33 @@ const Blog: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-blue-50 to-indigo-50">
       <Header />
       <main className="flex-grow">
-        {/* Hero Section with Enhanced Search */}
-        <motion.section 
-          className="bg-gradient-to-r from-blue-600 via-purple-700 to-teal-800 text-white py-20 relative overflow-hidden"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
+        <PageHeader
+          title={t('blog.title') || 'Blog & Insights'}
+          subtitle={t('blog.subtitle') || 'Stay updated with the latest trends in education and technology'}
+          height="lg"
         >
-          {/* Background elements */}
-          <motion.div 
-            className="absolute top-0 right-0 w-96 h-96 bg-purple-500 rounded-full opacity-20" 
-            animate={{
-              x: [0, 20, 0],
-              y: [0, 30, 0],
-            }}
-            transition={{
-              duration: 15,
-              repeat: Infinity,
-              repeatType: "reverse"
-            }}
-            style={{ filter: 'blur(70px)', top: '-20%', right: '5%' }}
-          />
-          <motion.div 
-            className="absolute bottom-0 left-0 w-64 h-64 bg-teal-500 rounded-full opacity-10" 
-            animate={{
-              x: [0, -30, 0],
-              y: [0, -20, 0],
-            }}
-            transition={{
-              duration: 10,
-              repeat: Infinity,
-              repeatType: "reverse"
-            }}
-            style={{ filter: 'blur(50px)', bottom: '-10%', left: '10%' }}
-          />
-          
-          <div className="container mx-auto px-4 relative z-10">
-            <div className="text-center max-w-4xl mx-auto">
-              <motion.h1 
-                className="text-5xl md:text-6xl font-bold mb-6"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-              >
-                Explore Our Blog
-              </motion.h1>
-              <motion.p 
-                className="text-xl md:text-2xl mb-12 text-blue-100"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-              >
-                Discover insights, tips, and stories to guide your educational journey
-              </motion.p>
-              
-              {/* Enhanced Search Bar */}
-              <motion.div 
-                className="max-w-4xl mx-auto"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-              >
-                <div className="bg-white rounded-2xl p-2 shadow-2xl">
-                  <div className="flex flex-col lg:flex-row gap-2">
-                    {/* Search Input */}
-                    <div className="flex-1 relative">
-                      <input
-                        type="text"
-                        placeholder="Search articles, authors, or topics..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full px-6 py-4 pl-12 bg-gray-50 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-lg"
-                      />
-                      <IconComponent icon={FaSearch} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
-                      {searchQuery && (
-                        <button
-                          onClick={() => setSearchQuery('')}
-                          className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        >
-                          <IconComponent icon={FaTimes} />
-                        </button>
-                      )}
-                    </div>
-                    
-                    {/* Quick Filters */}
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <select
-                        value={activeCategory}
-                        onChange={(e) => setActiveCategory(e.target.value)}
-                        className="px-4 py-4 bg-gray-50 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[150px]"
-                      >
-                        <option value="all">All Categories</option>
-                        {categories.map((category) => (
-                          <option key={category} value={category}>{category}</option>
-                        ))}
-                      </select>
-                      
-                      <motion.button
-                        className="px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors flex items-center gap-2"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => setShowFilters(!showFilters)}
-                      >
-                        <IconComponent icon={FaFilter} />
-                        <span className="hidden sm:inline">More Filters</span>
-                        <IconComponent icon={FaChevronDown} className={`transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-                      </motion.button>
-                    </div>
-                  </div>
+          {/* Enhanced Search Bar */}
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-2 shadow-2xl border border-white/20">
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <input
+                    type="text"
+                    placeholder={t('blog.searchPlaceholder') || 'Search articles...'}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-6 py-4 pl-12 bg-white/90 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white transition-all text-lg placeholder-gray-500"
+                  />
+                  <IconComponent icon={FaSearch} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
                 </div>
-              </motion.div>
+                <button className="px-6 py-4 bg-white/20 hover:bg-white/30 text-white rounded-xl font-medium transition-colors flex items-center gap-2 border border-white/30">
+                  <IconComponent icon={FaSearch} />
+                  <span className="hidden sm:inline">Search</span>
+                </button>
+              </div>
             </div>
           </div>
-        </motion.section>
+        </PageHeader>
 
         {/* Main Content */}
         <section className="py-12">

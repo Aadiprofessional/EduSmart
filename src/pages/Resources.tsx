@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { FaGraduationCap, FaBook, FaFileAlt, FaBriefcase, FaSearch, FaRegFileAlt, FaDownload, FaVideo, FaFilter, FaChevronDown, FaTimes, FaSort, FaEye, FaBookmark, FaPlay } from 'react-icons/fa';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
+import PageHeader from '../components/ui/PageHeader';
 import IconComponent from '../components/ui/IconComponent';
 import { motion } from 'framer-motion';
-import { fetchResponses, fetchResponseCategories, fetchResponseTypes } from '../utils/apiService';
+import { responseAPI } from '../utils/apiService';
+import { useLanguage } from '../utils/LanguageContext';
 
 interface Resource {
   id: string;
@@ -141,32 +143,38 @@ const Resources: React.FC = () => {
       console.log('Loading resources...');
       
       const [responsesData, categoriesData, typesData] = await Promise.all([
-        fetchResponses(),
-        fetchResponseCategories(),
-        fetchResponseTypes()
+        responseAPI.getAll(),
+        responseAPI.getCategories(),
+        responseAPI.getTypes()
       ]);
       
       console.log('Resources API responses:', { responsesData, categoriesData, typesData });
       
       // Handle resources data
-      if (responsesData && responsesData.responses && Array.isArray(responsesData.responses)) {
-        setResources(responsesData.responses);
+      if (responsesData && responsesData.success && responsesData.data && Array.isArray(responsesData.data)) {
+        setResources(responsesData.data);
+      } else if (responsesData && responsesData.success && responsesData.data && responsesData.data.responses && Array.isArray(responsesData.data.responses)) {
+        setResources(responsesData.data.responses);
       } else {
         console.warn('Using sample resources data');
         setResources(sampleResources);
       }
       
       // Handle categories data
-      if (categoriesData && categoriesData.categories && Array.isArray(categoriesData.categories)) {
-        setCategories(categoriesData.categories);
+      if (categoriesData && categoriesData.success && categoriesData.data && Array.isArray(categoriesData.data)) {
+        setCategories(categoriesData.data);
+      } else if (categoriesData && categoriesData.success && categoriesData.data && categoriesData.data.categories && Array.isArray(categoriesData.data.categories)) {
+        setCategories(categoriesData.data.categories);
       } else {
         const uniqueCategories = Array.from(new Set(sampleResources.map(resource => resource.category)));
         setCategories(uniqueCategories);
       }
       
       // Handle types data
-      if (typesData && typesData.types && Array.isArray(typesData.types)) {
-        setTypes(typesData.types);
+      if (typesData && typesData.success && typesData.data && Array.isArray(typesData.data)) {
+        setTypes(typesData.data);
+      } else if (typesData && typesData.success && typesData.data && typesData.data.types && Array.isArray(typesData.data.types)) {
+        setTypes(typesData.data.types);
       } else {
         const uniqueTypes = Array.from(new Set(sampleResources.map(resource => resource.type)));
         setTypes(uniqueTypes);
@@ -341,135 +349,37 @@ const Resources: React.FC = () => {
   console.log('Rendering resources:', resources.length, 'filtered:', sortedResources.length);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-blue-50 to-indigo-50">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Header />
       <main className="flex-grow">
-        {/* Hero Section with Enhanced Search */}
-        <motion.section 
-          className="bg-gradient-to-r from-green-600 via-teal-700 to-blue-800 text-white py-20 relative overflow-hidden"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
+        <PageHeader
+          title="Educational Resources"
+          subtitle="Comprehensive guides, templates, and tools for your academic journey"
+          height="lg"
         >
-          {/* Background elements */}
-          <motion.div 
-            className="absolute top-0 right-0 w-96 h-96 bg-green-500 rounded-full opacity-20" 
-            animate={{
-              x: [0, 20, 0],
-              y: [0, 30, 0],
-            }}
-            transition={{
-              duration: 15,
-              repeat: Infinity,
-              repeatType: "reverse"
-            }}
-            style={{ filter: 'blur(70px)', top: '-20%', right: '5%' }}
-          />
-          <motion.div 
-            className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500 rounded-full opacity-10" 
-            animate={{
-              x: [0, -30, 0],
-              y: [0, -20, 0],
-            }}
-            transition={{
-              duration: 10,
-              repeat: Infinity,
-              repeatType: "reverse"
-            }}
-            style={{ filter: 'blur(50px)', bottom: '-10%', left: '10%' }}
-          />
-          
-          <div className="container mx-auto px-4 relative z-10">
-            <div className="text-center max-w-4xl mx-auto">
-              <motion.h1 
-                className="text-5xl md:text-6xl font-bold mb-6"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-              >
-                Educational Resources
-              </motion.h1>
-              <motion.p 
-                className="text-xl md:text-2xl mb-12 text-green-100"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-              >
-                Access high-quality guides, templates, videos, and more to support your educational journey
-              </motion.p>
-              
-              {/* Enhanced Search Bar */}
-              <motion.div 
-                className="max-w-4xl mx-auto"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-              >
-                <div className="bg-white rounded-2xl p-2 shadow-2xl">
-                  <div className="flex flex-col lg:flex-row gap-2">
-                    {/* Search Input */}
-                    <div className="flex-1 relative">
-                      <input
-                        type="text"
-                        placeholder="Search resources, guides, templates..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full px-6 py-4 pl-12 bg-gray-50 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:bg-white transition-all text-lg"
-                      />
-                      <IconComponent icon={FaSearch} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
-                      {searchQuery && (
-                        <button
-                          onClick={() => setSearchQuery('')}
-                          className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        >
-                          <IconComponent icon={FaTimes} />
-                        </button>
-                      )}
-                    </div>
-                    
-                    {/* Quick Filters */}
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <select
-                        value={activeCategory}
-                        onChange={(e) => setActiveCategory(e.target.value)}
-                        className="px-4 py-4 bg-gray-50 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 min-w-[150px]"
-                      >
-                        <option value="all">All Categories</option>
-                        {categories.map((category) => (
-                          <option key={category} value={category}>{getCategoryLabel(category)}</option>
-                        ))}
-                      </select>
-                      
-                      <select
-                        value={activeType}
-                        onChange={(e) => setActiveType(e.target.value)}
-                        className="px-4 py-4 bg-gray-50 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 min-w-[130px]"
-                      >
-                        <option value="all">All Types</option>
-                        {types.map((type) => (
-                          <option key={type} value={type}>{getTypeLabel(type)}</option>
-                        ))}
-                      </select>
-                      
-                      <motion.button
-                        className="px-6 py-4 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-colors flex items-center gap-2"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => setShowFilters(!showFilters)}
-                      >
-                        <IconComponent icon={FaFilter} />
-                        <span className="hidden sm:inline">More Filters</span>
-                        <IconComponent icon={FaChevronDown} className={`transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-                      </motion.button>
-                    </div>
-                  </div>
+          {/* Search Bar */}
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-2 shadow-2xl border border-white/20">
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <input
+                    type="text"
+                    placeholder="Search resources..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-6 py-4 pl-12 bg-white/90 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white transition-all text-lg placeholder-gray-500"
+                  />
+                  <IconComponent icon={FaSearch} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
                 </div>
-              </motion.div>
+                <button className="px-6 py-4 bg-white/20 hover:bg-white/30 text-white rounded-xl font-medium transition-colors flex items-center gap-2 border border-white/30">
+                  <IconComponent icon={FaSearch} />
+                  <span className="hidden sm:inline">Search</span>
+                </button>
+              </div>
             </div>
           </div>
-        </motion.section>
+        </PageHeader>
 
-        {/* Main Content */}
         <section className="py-12">
           <div className="container mx-auto px-4">
             <div className="flex flex-col lg:flex-row gap-8">

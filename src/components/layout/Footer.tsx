@@ -1,12 +1,15 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaYoutube } from 'react-icons/fa';
 import IconComponent from '../ui/IconComponent';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../../utils/LanguageContext';
+import { getFooterTheme } from '../../utils/pageThemes';
 
 const Footer: React.FC = () => {
   const { t } = useLanguage();
+  const location = useLocation();
+  const theme = getFooterTheme(location.pathname);
 
   const socialVariants = {
     hover: { scale: 1.2, rotate: 5, transition: { duration: 0.2 } }
@@ -33,10 +36,10 @@ const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="bg-teal-900 text-white relative overflow-hidden">
+    <footer className={`${theme.bg} text-white relative overflow-hidden`}>
       {/* Background decoration */}
       <motion.div 
-        className="absolute w-96 h-96 rounded-full bg-teal-800"
+        className={`absolute w-96 h-96 rounded-full ${theme.accent}`}
         style={{ top: '-15%', right: '-10%', filter: 'blur(80px)', opacity: 0.4 }}
         animate={{
           scale: [1, 1.1, 1],
@@ -48,7 +51,7 @@ const Footer: React.FC = () => {
         }}
       />
       <motion.div 
-        className="absolute w-64 h-64 rounded-full bg-orange-500"
+        className={`absolute w-64 h-64 rounded-full ${theme.secondary}`}
         style={{ bottom: '-5%', left: '-5%', filter: 'blur(60px)', opacity: 0.2 }}
         animate={{
           scale: [1, 1.2, 1],

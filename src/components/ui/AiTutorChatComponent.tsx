@@ -200,11 +200,11 @@ Student question: ${message}`
       const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer sk-80beadf6603b4832981d0d65896b1ae0',
+          'Authorization': 'Bearer sk-6b53808e778c4e11a9928d6416ae7e3e',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: "qvq-max",
+          model: "qvq-max-latest",
           messages: [
             {
               role: "user",
@@ -320,86 +320,103 @@ Student question: ${message}`
   const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim() || isLoading) return;
-    
-    const userMessage = chatInput.trim();
-    setChatInput('');
-    
-    // Update chat title if this is the first user message
-    updateChatTitleIfNeeded(userMessage);
-    
-    // Add user message
-    const newUserMessage: ChatMessage = {
+
+    const userMessage: ChatMessage = {
       id: generateMessageId(),
       role: 'user',
-      content: userMessage,
+      content: chatInput,
       timestamp: new Date()
     };
-    
-    setChatSessions(prev => prev.map(session => 
-      session.id === currentChatId 
-        ? { 
-          ...session, 
-          messages: [...session.messages, newUserMessage],
-          lastUpdated: new Date()
-        }
-        : session
-    ));
+
+    // Add user message immediately
+    setChatSessions(prev => 
+      prev.map(session => 
+        session.id === currentChatId 
+          ? { 
+              ...session, 
+              messages: [...session.messages, userMessage],
+              lastUpdated: new Date()
+            }
+          : session
+      )
+    );
+
+    const userInput = chatInput;
+    setChatInput('');
     setIsLoading(true);
-    
-    // Create placeholder AI message for streaming
-    const aiMessageId = generateMessageId();
-    const newAiMessage: ChatMessage = {
-      id: aiMessageId,
+    setStreamingMessage('');
+
+    // Create assistant message placeholder for streaming
+    const assistantMessageId = generateMessageId();
+    const assistantMessage: ChatMessage = {
+      id: assistantMessageId,
       role: 'assistant',
       content: '',
       timestamp: new Date()
     };
-    
-    setChatSessions(prev => prev.map(session => 
-      session.id === currentChatId 
-        ? { 
-          ...session, 
-          messages: [...session.messages, newAiMessage],
-          lastUpdated: new Date()
-        }
-        : session
-    ));
-    
-    try {
-      // Get AI response with streaming
-      await sendMessageToAI(userMessage, (chunk: string) => {
-        // Update the AI message content in real-time
-        setChatSessions(prev => prev.map(session => 
-          session.id === currentChatId 
-            ? { 
-              ...session, 
-              messages: session.messages.map(msg => 
-                msg.id === aiMessageId 
-                  ? { ...msg, content: msg.content + chunk }
-                  : msg
-              ),
-              lastUpdated: new Date()
-            }
-            : session
-        ));
-      });
-    } catch (error) {
-      console.error('Chat error:', error);
-      setChatSessions(prev => prev.map(session => 
+
+    // Add empty assistant message
+    setChatSessions(prev => 
+      prev.map(session => 
         session.id === currentChatId 
           ? { 
-            ...session, 
-            messages: session.messages.map(msg => 
-              msg.id === aiMessageId 
-                ? { ...msg, content: 'I apologize, but I encountered an error. Please try asking your question again.' }
-                : msg
-            ),
-            lastUpdated: new Date()
-          }
+              ...session, 
+              messages: [...session.messages, assistantMessage],
+              lastUpdated: new Date()
+            }
           : session
-      ));
+      )
+    );
+
+    try {
+      // Stream the response
+      await sendMessageToAI(userInput, (chunk: string) => {
+        // Update the streaming message state
+        setStreamingMessage(prev => prev + chunk);
+        
+        // Update the assistant message in real-time
+        setChatSessions(prev => 
+          prev.map(session => 
+            session.id === currentChatId 
+              ? { 
+                  ...session, 
+                  messages: session.messages.map(msg => 
+                    msg.id === assistantMessageId 
+                      ? { ...msg, content: msg.content + chunk }
+                      : msg
+                  ),
+                  lastUpdated: new Date()
+                }
+              : session
+          )
+        );
+      });
+
+      // Update chat title if this is the first user message
+      updateChatTitleIfNeeded(userInput);
+      
+    } catch (error) {
+      console.error('Error sending message:', error);
+      
+      // Update with error message
+      setChatSessions(prev => 
+        prev.map(session => 
+          session.id === currentChatId 
+            ? { 
+                ...session, 
+                messages: session.messages.map(msg => 
+                  msg.id === assistantMessageId 
+                    ? { ...msg, content: 'Sorry, I encountered an error. Please try again.' }
+                    : msg
+                ),
+                lastUpdated: new Date()
+              }
+            : session
+        )
+      );
     } finally {
       setIsLoading(false);
+      setStreamingMessage('');
     }
   };
 

@@ -6,11 +6,13 @@ import IconComponent from '../components/ui/IconComponent';
 import { useAuth } from '../utils/AuthContext';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
+import PageHeader from '../components/ui/PageHeader';
 import CitationGenerator from '../components/ui/CitationGenerator';
 import { ContentWriterComponent } from '../components/ui/ContentWriterComponent';
 import CheckMistakesComponent from '../components/ui/CheckMistakesComponent';
 import AiTutorChatComponent from '../components/ui/AiTutorChatComponent';
 import UploadHomeworkComponent from '../components/ui/UploadHomeworkComponent';
+import StudyPlannerComponent from '../components/ui/StudyPlannerComponent';
 import { useLanguage } from '../utils/LanguageContext';
 
 const AiStudy: React.FC = () => {
@@ -41,13 +43,6 @@ const AiStudy: React.FC = () => {
     {question: 'What is the Pythagorean theorem?', answer: 'In a right-angled triangle, the square of the hypotenuse equals the sum of squares of the other two sides: a² + b² = c².', mastered: false},
   ]);
 
-  const [studyTasks, setStudyTasks] = useState<{task: string, subject: string, date: string, completed: boolean}[]>([
-    {task: 'Complete math homework', subject: 'Mathematics', date: '2023-06-25', completed: false},
-    {task: 'Prepare for biology test', subject: 'Biology', date: '2023-06-27', completed: false},
-    {task: 'Read chapter 5 for literature', subject: 'Literature', date: '2023-06-24', completed: true},
-  ]);
-
-  const [newTask, setNewTask] = useState({task: '', subject: '', date: ''});
   const [currentFlashcard, setCurrentFlashcard] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [showFullScreen, setShowFullScreen] = useState(false);
@@ -124,26 +119,6 @@ const AiStudy: React.FC = () => {
     { id: 'progress-tracker', name: t('aiStudy.progressTracker'), icon: FiTrendingUp },
   ];
 
-  const handleAddTask = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTask.task.trim() || !newTask.subject.trim() || !newTask.date) return;
-    
-    setStudyTasks(prev => [
-      ...prev,
-      {...newTask, completed: false}
-    ]);
-    
-    setNewTask({task: '', subject: '', date: ''});
-  };
-
-  const handleTaskToggle = (index: number) => {
-    setStudyTasks(prev => 
-      prev.map((task, i) => 
-        i === index ? {...task, completed: !task.completed} : task
-      )
-    );
-  };
-
   const handleNextFlashcard = () => {
     setShowAnswer(false);
     setCurrentFlashcard(prev => 
@@ -204,6 +179,11 @@ const AiStudy: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen overflow-hidden">
       <Header />
+      <PageHeader
+        title={t('aiStudy.title') || 'AI Study Assistant'}
+        subtitle={t('aiStudy.subtitle') || 'Your intelligent companion for academic success'}
+        height="lg"
+      />
       <motion.div
         className="flex-grow bg-gradient-to-b from-gray-50 to-gray-100 py-16"
         initial={{ opacity: 0 }}
@@ -211,31 +191,6 @@ const AiStudy: React.FC = () => {
         transition={{ duration: 0.5 }}
       >
         <div className="container mx-auto px-4">
-          <motion.div
-            className="text-center mb-8"
-            initial={{ y: -50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            <h1 className="text-4xl font-bold text-teal-800 mb-3">
-              {t('aiStudy.title')}
-            </h1>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              {t('aiStudy.subtitle')}
-            </p>
-            
-            {/* Content Writer Button */}
-            <motion.button
-              whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.1)" }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setActiveTab('content-writer')}
-              className="mt-4 inline-flex items-center px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg shadow-md font-medium"
-            >
-              <IconComponent icon={AiOutlineEdit} className="mr-2 h-5 w-5" />
-              {t('aiStudy.contentWriter')}
-            </motion.button>
-          </motion.div>
-
           <motion.div 
             className="bg-white rounded-2xl shadow-xl overflow-hidden max-w-7xl mx-auto"
             variants={containerVariants}
@@ -340,128 +295,7 @@ const AiStudy: React.FC = () => {
 
               <div className={activeTab === 'study-planner' ? 'block' : 'hidden'}>
                 {componentStates['study-planner'] && (
-                  <motion.div variants={containerVariants}>
-                    <h2 className="text-2xl font-semibold text-teal-800 mb-6">Study Planner</h2>
-                    
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                      {/* Add new task */}
-                      <motion.div 
-                        variants={itemVariants}
-                        className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm"
-                      >
-                        <h3 className="text-lg font-medium text-teal-800 mb-4 flex items-center">
-                          <IconComponent icon={FiCalendar} className="mr-2" /> Add New Study Task
-                        </h3>
-                        
-                        <form onSubmit={handleAddTask}>
-                          <div className="mb-4">
-                            <label className="block text-gray-700 mb-1 text-sm font-medium">
-                              Task Description
-                            </label>
-                            <input
-                              type="text"
-                              value={newTask.task}
-                              onChange={(e) => setNewTask({...newTask, task: e.target.value})}
-                              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                              placeholder="What do you need to study?"
-                            />
-                          </div>
-                          
-                          <div className="mb-4">
-                            <label className="block text-gray-700 mb-1 text-sm font-medium">
-                              Subject
-                            </label>
-                            <input
-                              type="text"
-                              value={newTask.subject}
-                              onChange={(e) => setNewTask({...newTask, subject: e.target.value})}
-                              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                              placeholder="e.g. Math, Science, History"
-                            />
-                          </div>
-                          
-                          <div className="mb-4">
-                            <label className="block text-gray-700 mb-1 text-sm font-medium">
-                              Due Date
-                            </label>
-                            <input
-                              type="date"
-                              value={newTask.date}
-                              onChange={(e) => setNewTask({...newTask, date: e.target.value})}
-                              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                            />
-                          </div>
-                          
-                          <motion.button
-                            type="submit"
-                            className="w-full py-2 bg-gradient-to-r from-teal-600 to-teal-700 rounded-lg text-white font-medium shadow-md hover:shadow-lg"
-                            variants={buttonVariants}
-                            whileHover="hover"
-                            whileTap="tap"
-                          >
-                            Add to Study Plan
-                          </motion.button>
-                        </form>
-                      </motion.div>
-                      
-                      {/* Task List */}
-                      <motion.div 
-                        variants={itemVariants}
-                        className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm lg:col-span-2"
-                      >
-                        <h3 className="text-lg font-medium text-teal-800 mb-4 flex items-center">
-                          <IconComponent icon={FiClock} className="mr-2" /> Your Study Schedule
-                        </h3>
-                        
-                        {studyTasks.length > 0 ? (
-                          <div className="space-y-3">
-                            {studyTasks.map((task, index) => (
-                              <motion.div
-                                key={index}
-                                variants={itemVariants}
-                                className={`border rounded-lg p-3 flex items-start justify-between ${
-                                  task.completed ? 'bg-gray-50 border-gray-200' : 'bg-white border-gray-200'
-                                }`}
-                                whileHover={{ y: -2, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)" }}
-                              >
-                                <div className="flex items-start flex-1">
-                                  <motion.button
-                                    className={`mt-1 mr-3 w-5 h-5 flex-shrink-0 rounded-full border ${
-                                      task.completed ? 'bg-teal-500 border-teal-500' : 'border-gray-300'
-                                    }`}
-                                    whileHover={{ scale: 1.1 }}
-                                    whileTap={{ scale: 0.9 }}
-                                    onClick={() => handleTaskToggle(index)}
-                                  >
-                                    {task.completed && (
-                                      <IconComponent icon={FiCheck} className="text-white w-full h-full p-0.5" />
-                                    )}
-                                  </motion.button>
-                                  <div className="flex-1">
-                                    <p className={`font-medium ${task.completed ? 'text-gray-500 line-through' : 'text-gray-800'}`}>
-                                      {task.task}
-                                    </p>
-                                    <div className="flex items-center mt-1 text-sm text-gray-500">
-                                      <span className="bg-teal-100 text-teal-700 px-2 py-1 rounded-full text-xs mr-2">
-                                        {task.subject}
-                                      </span>
-                                      <span>{task.date}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </motion.div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="text-center py-8 text-gray-500">
-                            <IconComponent icon={FiCalendar} className="mx-auto text-4xl mb-2" />
-                            <p>No study tasks yet</p>
-                            <p className="text-sm mt-1">Add your first task to get started</p>
-                          </div>
-                        )}
-                      </motion.div>
-                    </div>
-                  </motion.div>
+                  <StudyPlannerComponent />
                 )}
               </div>
 
@@ -735,15 +569,15 @@ const AiStudy: React.FC = () => {
               <div className="bg-teal-100 w-14 h-14 rounded-full flex items-center justify-center mb-4">
                 <IconComponent icon={AiOutlineUpload} className="h-7 w-7 text-teal-600" />
               </div>
-              <h3 className="text-xl font-semibold text-teal-800 mb-2">Instant Homework Help</h3>
-              <p className="text-gray-600">{t('instant_homework_help')}</p>
+              <h3 className="text-xl font-semibold text-teal-800 mb-2">{t('aiStudy.instantHomeworkHelpTitle')}</h3>
+              <p className="text-gray-600">{t('aiStudy.instantHomeworkHelpDesc')}</p>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveTab('upload')}
                 className="mt-4 text-teal-600 font-medium flex items-center text-sm"
               >
-                {t('try_now')}
+                {t('aiStudy.tryNowBtn')}
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
@@ -758,15 +592,15 @@ const AiStudy: React.FC = () => {
               <div className="bg-orange-100 w-14 h-14 rounded-full flex items-center justify-center mb-4">
                 <IconComponent icon={AiOutlineEdit} className="h-7 w-7 text-orange-500" />
               </div>
-              <h3 className="text-xl font-semibold text-teal-800 mb-2">AI Content Writer</h3>
-              <p className="text-gray-600">{t('ai_content_writer')}</p>
+              <h3 className="text-xl font-semibold text-teal-800 mb-2">{t('aiStudy.aiContentWriterTitle')}</h3>
+              <p className="text-gray-600">{t('aiStudy.aiContentWriterDesc')}</p>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveTab('content-writer')}
                 className="mt-4 text-orange-500 font-medium flex items-center text-sm"
               >
-                {t('start_writing')}
+                {t('aiStudy.startWritingBtn')}
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
@@ -781,15 +615,15 @@ const AiStudy: React.FC = () => {
               <div className="bg-teal-100 w-14 h-14 rounded-full flex items-center justify-center mb-4">
                 <IconComponent icon={AiOutlineRobot} className="h-7 w-7 text-teal-600" />
               </div>
-              <h3 className="text-xl font-semibold text-teal-800 mb-2">AI Tutor Chat</h3>
-              <p className="text-gray-600">{t('ai_tutor_chat')}</p>
+              <h3 className="text-xl font-semibold text-teal-800 mb-2">{t('aiStudy.aiTutorChatTitle')}</h3>
+              <p className="text-gray-600">{t('aiStudy.aiTutorChatDesc')}</p>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveTab('ai-tutor')}
                 className="mt-4 text-teal-600 font-medium flex items-center text-sm"
               >
-                {t('chat_now')}
+                {t('aiStudy.chatNowBtn')}
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>

@@ -16,13 +16,15 @@ import Newsletter from '../components/ui/Newsletter';
 import Footer from '../components/layout/Footer';
 import AnimatedSection from '../components/ui/AnimatedSection';
 import { useScrollReveal } from '../utils/scrollUtils';
+import { useLanguage } from '../utils/LanguageContext';
 
 const Home: React.FC = () => {
+  const { t } = useLanguage();
   // Activate scroll reveal effect for elements with reveal-on-scroll class
   useScrollReveal();
   
   return (
-    <div className="flex flex-col min-h-screen overflow-hidden">
+    <div className="flex flex-col min-h-screen overflow-hidden bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-600 animate-gradient-x">
       <Header />
       <main className="flex-grow">
         <Hero />
