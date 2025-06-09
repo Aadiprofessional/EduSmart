@@ -26,9 +26,9 @@ export const pageThemes: Record<string, PageTheme> = {
   },
   '/case-studies': {
     name: 'Success Stories',
-    gradient: 'bg-gradient-to-br from-rose-400 via-pink-500 to-red-600',
-    footerBg: 'bg-gradient-to-br from-rose-900 via-pink-900 to-red-900',
-    footerAccent: 'bg-rose-800',
+    gradient: 'bg-gradient-to-br from-blue-400 via-teal-500 to-cyan-600',
+    footerBg: 'bg-gradient-to-br from-blue-900 via-teal-900 to-cyan-900',
+    footerAccent: 'bg-blue-800',
     footerSecondary: 'bg-orange-500',
     animationClass: 'animate-gradient-radial'
   },

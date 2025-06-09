@@ -1186,7 +1186,6 @@ const Database: React.FC = () => {
   const [filters, setFilters] = useState({
     search: '',
     country: '',
-    qsRanking: [1, 2000],
     tuitionFees: [0, 100000],
     tuitionRange: [0, 100000],
     minGPA: [0, 4],
@@ -1199,7 +1198,6 @@ const Database: React.FC = () => {
     employmentRate: '',
     major: '',
     type: '',
-    qsRankingRange: [1, 2000],
     researchOutput: '',
     showOnlyOpenApplications: false,
     admissionDifficulty: '',
@@ -1281,7 +1279,6 @@ const Database: React.FC = () => {
   const [availableUniversityTypes, setAvailableUniversityTypes] = useState<string[]>([]);
   const [availableMajors, setAvailableMajors] = useState<string[]>([]);
   const [availableRankingYears, setAvailableRankingYears] = useState<number[]>([]);
-  const [qsRankingRange, setQsRankingRange] = useState<[number, number]>([1, 2000]);
   const [tuitionFeeRange, setTuitionFeeRange] = useState<[number, number]>([0, 100000]);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [showMoreFiltersModal, setShowMoreFiltersModal] = useState(false);
@@ -1315,14 +1312,6 @@ const Database: React.FC = () => {
     // Extract unique ranking years
     const rankingYears = Array.from(new Set(universitiesData.map(uni => uni.rankingYear).filter(Boolean)));
     setAvailableRankingYears(rankingYears.sort((a, b) => b - a)); // Sort descending
-
-    // Calculate QS ranking range
-    const rankings = universitiesData.map(uni => uni.qsRanking || uni.ranking).filter(r => r && r > 0);
-    if (rankings.length > 0) {
-      const minRanking = Math.min(...rankings);
-      const maxRanking = Math.max(...rankings);
-      setQsRankingRange([minRanking, maxRanking]);
-    }
 
     // Calculate tuition fee range
     const tuitionFees = universitiesData.map(uni => uni.tuition_fee).filter(f => f && f > 0);
@@ -1501,21 +1490,11 @@ const Database: React.FC = () => {
       return false;
     }
     
-    // QS Ranking filter - be more inclusive for high rankings
-    if (university.qsRanking > 0 && university.qsRanking < filters.qsRankingRange[0]) {
-      return false;
-    }
-    
-    // Only apply upper limit if it's not the maximum (2000)
-    if (filters.qsRankingRange[1] < 2000 && university.qsRanking > filters.qsRankingRange[1]) {
-      return false;
-    }
-
     // Ranking Type filter
     if (filters.rankingType && university.rankingType !== filters.rankingType) {
       return false;
     }
-
+    
     // Region filter
     if (filters.region && university.region !== filters.region) {
       return false;
@@ -1622,7 +1601,6 @@ const Database: React.FC = () => {
     setFilters({
       search: '',
       country: '',
-      qsRanking: [1, 2000],
       tuitionFees: [0, 100000],
       tuitionRange: [0, 100000],
       minGPA: [0, 4],
@@ -1635,7 +1613,6 @@ const Database: React.FC = () => {
       employmentRate: '',
       major: '',
       type: '',
-      qsRankingRange: [1, 2000],
       researchOutput: '',
       showOnlyOpenApplications: false,
       admissionDifficulty: '',
@@ -3414,30 +3391,6 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                     <IconComponent icon={FaTrophy} className="mr-2" /> Rankings & Statistics
                   </h3>
                   <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-2">
-                        QS Ranking: {filters.qsRankingRange[0]} - {filters.qsRankingRange[1]}
-                      </label>
-                      <input
-                        type="range"
-                        min="1"
-                        max="2000"
-                        step="10"
-                        value={filters.qsRankingRange[0]}
-                        onChange={(e) => handleRangeChange('qsRankingRange', [parseInt(e.target.value), filters.qsRankingRange[1]])}
-                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                      />
-                      <input
-                        type="range"
-                        min="1"
-                        max="2000"
-                        step="10"
-                        value={filters.qsRankingRange[1]}
-                        onChange={(e) => handleRangeChange('qsRankingRange', [filters.qsRankingRange[0], parseInt(e.target.value)])}
-                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2"
-                      />
-                    </div>
-
                     <div>
                       <label className="block text-sm text-gray-600 mb-2">
                         Acceptance Rate: {filters.acceptanceRateRange[0]}% - {filters.acceptanceRateRange[1]}%

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { AiOutlineBulb } from 'react-icons/ai';
-import { FiCalendar, FiClock, FiCheck, FiPlus, FiEdit, FiTrash2, FiFilter } from 'react-icons/fi';
+import { FiCalendar, FiClock, FiCheck, FiPlus, FiEdit, FiTrash2, FiFilter, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { FaCalendarAlt, FaSort, FaSortAmountDown, FaTimes } from 'react-icons/fa';
 import IconComponent from './IconComponent';
 import { useLanguage } from '../../utils/LanguageContext';
@@ -31,7 +31,7 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
       id: '1',
       task: 'Complete math homework',
       subject: 'Mathematics',
-      date: '2023-06-25',
+      date: '2025-06-25',
       completed: false,
       priority: 'high',
       estimatedHours: 2
@@ -40,7 +40,7 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
       id: '2',
       task: 'Prepare for biology test',
       subject: 'Biology',
-      date: '2023-06-27',
+      date: '2025-06-27',
       completed: false,
       priority: 'medium',
       estimatedHours: 3
@@ -49,10 +49,28 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
       id: '3',
       task: 'Read chapter 5 for literature',
       subject: 'Literature',
-      date: '2023-06-24',
+      date: '2025-06-24',
       completed: true,
       priority: 'low',
       estimatedHours: 1
+    },
+    {
+      id: '4',
+      task: 'Physics lab report',
+      subject: 'Physics',
+      date: '2025-06-30',
+      completed: false,
+      priority: 'high',
+      estimatedHours: 4
+    },
+    {
+      id: '5',
+      task: 'History essay draft',
+      subject: 'History',
+      date: '2025-06-02',
+      completed: false,
+      priority: 'medium',
+      estimatedHours: 3
     },
   ]);
 
@@ -70,6 +88,8 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
   const [filterPriority, setFilterPriority] = useState('all');
   const [filterSubject, setFilterSubject] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | null>(null);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -90,6 +110,156 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
   const buttonVariants = {
     hover: { scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.1)" },
     tap: { scale: 0.98 }
+  };
+
+  // Calendar helper functions
+  const getDaysInMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+  };
+
+  const formatDateForComparison = (date: Date) => {
+    return date.toISOString().split('T')[0];
+  };
+
+  const getTasksForDate = (date: Date) => {
+    const dateString = formatDateForComparison(date);
+    return studyTasks.filter(task => task.date === dateString);
+  };
+
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    setCurrentDate(prev => {
+      const newDate = new Date(prev);
+      if (direction === 'prev') {
+        newDate.setMonth(prev.getMonth() - 1);
+      } else {
+        newDate.setMonth(prev.getMonth() + 1);
+      }
+      return newDate;
+    });
+  };
+
+  const renderCalendar = () => {
+    const daysInMonth = getDaysInMonth(currentDate);
+    const firstDay = getFirstDayOfMonth(currentDate);
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    const days = [];
+    
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < firstDay; i++) {
+      days.push(
+        <div key={`empty-${i}`} className="h-24 border border-slate-600/30"></div>
+      );
+    }
+
+    // Add days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+      const tasksForDay = getTasksForDate(date);
+      const isToday = formatDateForComparison(date) === formatDateForComparison(new Date());
+      const isSelected = selectedCalendarDate && formatDateForComparison(date) === formatDateForComparison(selectedCalendarDate);
+
+      days.push(
+        <motion.div
+          key={day}
+          className={`h-24 border border-slate-600/30 p-1 cursor-pointer transition-all duration-200 ${
+            isToday ? 'bg-cyan-500/20 border-cyan-500/50' : 
+            isSelected ? 'bg-blue-500/20 border-blue-500/50' : 
+            'hover:bg-slate-600/20'
+          }`}
+          onClick={() => setSelectedCalendarDate(date)}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <div className={`text-sm font-medium mb-1 ${
+            isToday ? 'text-cyan-400' : 
+            isSelected ? 'text-blue-400' : 
+            'text-slate-300'
+          }`}>
+            {day}
+          </div>
+          <div className="space-y-1 overflow-hidden">
+            {tasksForDay.slice(0, 2).map((task, index) => (
+              <div
+                key={task.id}
+                className={`text-xs px-1 py-0.5 rounded truncate ${
+                  task.priority === 'high' ? 'bg-red-500/20 text-red-400' :
+                  task.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                  'bg-green-500/20 text-green-400'
+                } ${task.completed ? 'opacity-50 line-through' : ''}`}
+                title={task.task}
+              >
+                {task.task}
+              </div>
+            ))}
+            {tasksForDay.length > 2 && (
+              <div className="text-xs text-slate-400 px-1">
+                +{tasksForDay.length - 2} more
+              </div>
+            )}
+          </div>
+        </motion.div>
+      );
+    }
+
+    return (
+      <div className="bg-slate-700/30 backdrop-blur-sm rounded-xl border border-white/10 p-4">
+        {/* Calendar Header */}
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-cyan-400">
+            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+          </h3>
+          <div className="flex items-center space-x-2">
+            <motion.button
+              onClick={() => navigateMonth('prev')}
+              className="p-2 bg-slate-600/50 hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <IconComponent icon={FiChevronLeft} className="h-4 w-4" />
+            </motion.button>
+            <motion.button
+              onClick={() => setCurrentDate(new Date())}
+              className="px-3 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 rounded-lg text-cyan-400 text-sm font-medium transition-colors"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              Today
+            </motion.button>
+            <motion.button
+              onClick={() => navigateMonth('next')}
+              className="p-2 bg-slate-600/50 hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <IconComponent icon={FiChevronRight} className="h-4 w-4" />
+            </motion.button>
+          </div>
+        </div>
+
+        {/* Day Names */}
+        <div className="grid grid-cols-7 gap-1 mb-2">
+          {dayNames.map(day => (
+            <div key={day} className="text-center text-sm font-medium text-slate-400 py-2">
+              {day}
+            </div>
+          ))}
+        </div>
+
+        {/* Calendar Grid */}
+        <div className="grid grid-cols-7 gap-1">
+          {days}
+        </div>
+      </div>
+    );
   };
 
   const handleAddTask = (e: React.FormEvent) => {
@@ -127,16 +297,22 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'high': return 'bg-red-100 text-red-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'high': return 'bg-red-500/20 text-red-400 border-red-500/30';
+      case 'medium': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+      case 'low': return 'bg-green-500/20 text-green-400 border-green-500/30';
+      default: return 'bg-slate-500/20 text-slate-400 border-slate-500/30';
     }
   };
 
   // Filter and sort tasks
   const getFilteredAndSortedTasks = () => {
     let filtered = studyTasks;
+
+    // Filter by selected calendar date
+    if (selectedCalendarDate) {
+      const selectedDateString = formatDateForComparison(selectedCalendarDate);
+      filtered = filtered.filter(task => task.date === selectedDateString);
+    }
 
     // Filter by selected date
     if (selectedDate) {
@@ -175,7 +351,7 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
         case 'hours_desc':
           return a.estimatedHours - b.estimatedHours;
         case 'time_added':
-          return parseInt(a.id) - parseInt(b.id); // Assuming ID represents creation order
+          return parseInt(a.id) - parseInt(b.id);
         case 'time_added_desc':
           return parseInt(b.id) - parseInt(a.id);
         case 'completion':
@@ -196,363 +372,308 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
     setFilterPriority('all');
     setFilterSubject('all');
     setSortBy('date');
+    setSelectedCalendarDate(null);
   };
 
-  const today = new Date();
-  const currentMonth = today.getMonth();
   const filteredTasks = getFilteredAndSortedTasks();
 
   return (
-    <div className={`${className}`}>
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="space-y-8"
-      >
-        {/* Enhanced Header with Calendar Picker */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <h2 className="text-3xl font-bold text-teal-800 flex items-center">
-                <IconComponent icon={FaCalendarAlt} className="mr-3 text-teal-600" />
-                {t('aiStudy.studyPlannerCalendar')}
-              </h2>
-              
-              {/* Date Picker */}
-              <div className="flex items-center gap-2">
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                />
-                {selectedDate && (
-                  <motion.button
-                    onClick={() => setSelectedDate('')}
-                    className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    <IconComponent icon={FaTimes} />
-                  </motion.button>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              {/* Filter Toggle */}
-              <motion.button
-                variants={buttonVariants}
-                whileHover="hover"
-                whileTap="tap"
-                onClick={() => setShowFilters(!showFilters)}
-                className={`px-4 py-2 rounded-lg flex items-center space-x-2 font-medium transition-colors ${
-                  showFilters ? 'bg-teal-100 text-teal-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                <IconComponent icon={FiFilter} className="h-4 w-4" />
-                <span>Filters</span>
-              </motion.button>
-
-              {/* Add Task Button */}
-              <motion.button
-                variants={buttonVariants}
-                whileHover="hover"
-                whileTap="tap"
-                onClick={() => setShowAddForm(!showAddForm)}
-                className="bg-teal-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 font-medium"
-              >
-                <IconComponent icon={FiPlus} className="h-4 w-4" />
-                <span>{t('aiStudy.addTask')}</span>
-              </motion.button>
-            </div>
+    <motion.div
+      className={`bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl shadow-lg overflow-hidden ${className}`}
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      {/* Header */}
+      <div className="bg-slate-700/50 backdrop-blur-sm px-6 py-4 border-b border-white/10">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <IconComponent icon={FiCalendar} className="h-6 w-6 text-cyan-400" />
+            <h2 className="text-xl font-bold text-cyan-400">Study Planner</h2>
           </div>
-
-          {/* Filters Section */}
-          {showFilters && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mt-6 pt-6 border-t border-gray-200"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                {/* Sort By */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <IconComponent icon={FaSort} className="inline mr-1" />
-                    Sort By
-                  </label>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  >
-                    <option value="date">Date</option>
-                    <option value="date_desc">Date (Descending)</option>
-                    <option value="priority">Priority</option>
-                    <option value="priority_desc">Priority (Descending)</option>
-                    <option value="subject">Subject</option>
-                    <option value="subject_desc">Subject (Descending)</option>
-                    <option value="hours">Estimated Hours</option>
-                    <option value="hours_desc">Estimated Hours (Descending)</option>
-                    <option value="time_added">Time Added</option>
-                    <option value="time_added_desc">Time Added (Descending)</option>
-                    <option value="completion">Completion</option>
-                  </select>
-                </div>
-
-                {/* Filter by Priority */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
-                  <select
-                    value={filterPriority}
-                    onChange={(e) => setFilterPriority(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  >
-                    <option value="all">All Priorities</option>
-                    <option value="high">High</option>
-                    <option value="medium">Medium</option>
-                    <option value="low">Low</option>
-                  </select>
-                </div>
-
-                {/* Filter by Subject */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
-                  <select
-                    value={filterSubject}
-                    onChange={(e) => setFilterSubject(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  >
-                    <option value="all">All Subjects</option>
-                    {getUniqueSubjects().map((subject) => (
-                      <option key={subject} value={subject}>{subject}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Clear Filters */}
-                <div className="flex items-end">
-                  <motion.button
-                    onClick={clearFilters}
-                    className="w-full px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    Clear Filters
-                  </motion.button>
-                </div>
-              </div>
-
-              {/* Active Filters Display */}
-              {(selectedDate || filterPriority !== 'all' || filterSubject !== 'all') && (
-                <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <span className="text-sm text-gray-600 font-medium">Active filters:</span>
-                  {selectedDate && (
-                    <span className="bg-teal-100 text-teal-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                      Date: {new Date(selectedDate).toLocaleDateString()}
-                      <button onClick={() => setSelectedDate('')}>
-                        <IconComponent icon={FaTimes} className="text-xs" />
-                      </button>
-                    </span>
-                  )}
-                  {filterPriority !== 'all' && (
-                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                      Priority: {filterPriority}
-                      <button onClick={() => setFilterPriority('all')}>
-                        <IconComponent icon={FaTimes} className="text-xs" />
-                      </button>
-                    </span>
-                  )}
-                  {filterSubject !== 'all' && (
-                    <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                      Subject: {filterSubject}
-                      <button onClick={() => setFilterSubject('all')}>
-                        <IconComponent icon={FaTimes} className="text-xs" />
-                      </button>
-                    </span>
-                  )}
-                </div>
-              )}
-            </motion.div>
-          )}
-        </div>
-
-        {/* Add Task Form */}
-        {showAddForm && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="bg-white border border-gray-200 rounded-xl p-6 shadow-lg"
+          <motion.button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="flex items-center px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg text-white font-medium shadow-md hover:shadow-lg transition-all"
+            variants={buttonVariants}
+            whileHover="hover"
+            whileTap="tap"
           >
-            <h3 className="text-lg font-medium text-teal-800 mb-4 flex items-center">
-              <IconComponent icon={FiCalendar} className="mr-2" />
-              {t('aiStudy.addNewStudyTask')}
-            </h3>
-            
-            <form onSubmit={handleAddTask} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <IconComponent icon={FiPlus} className="h-4 w-4 mr-2" />
+            Add Task
+          </motion.button>
+        </div>
+      </div>
+
+      {/* Add Task Form */}
+      {showAddForm && (
+        <motion.div
+          className="p-6 border-b border-white/10 bg-slate-700/30 backdrop-blur-sm"
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+        >
+          <form onSubmit={handleAddTask} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-gray-700 mb-1 text-sm font-medium">
-                  {t('aiStudy.taskDescription')}
-                </label>
+                <label className="block text-slate-300 text-sm font-medium mb-2">Task</label>
                 <input
                   type="text"
                   value={newTask.task}
                   onChange={(e) => setNewTask({...newTask, task: e.target.value})}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                  placeholder={t('aiStudy.whatDoYouNeedToStudy')}
+                  className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 placeholder-slate-400 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  placeholder="Enter task description"
                   required
                 />
               </div>
-              
+
               <div>
-                <label className="block text-gray-700 mb-1 text-sm font-medium">
-                  {t('aiStudy.subject')}
-                </label>
+                <label className="block text-slate-300 text-sm font-medium mb-2">Subject</label>
                 <input
                   type="text"
                   value={newTask.subject}
                   onChange={(e) => setNewTask({...newTask, subject: e.target.value})}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                  placeholder={t('aiStudy.egMathScienceHistory')}
+                  className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 placeholder-slate-400 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  placeholder="Enter subject"
                   required
                 />
               </div>
-              
+
               <div>
-                <label className="block text-gray-700 mb-1 text-sm font-medium">
-                  {t('aiStudy.dueDate')}
-                </label>
+                <label className="block text-slate-300 text-sm font-medium mb-2">Due Date</label>
                 <input
                   type="date"
                   value={newTask.date}
                   onChange={(e) => setNewTask({...newTask, date: e.target.value})}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                   required
                 />
               </div>
-              
+
               <div>
-                <label className="block text-gray-700 mb-1 text-sm font-medium">
-                  {t('aiStudy.priority')}
-                </label>
+                <label className="block text-slate-300 text-sm font-medium mb-2">Priority</label>
                 <select
                   value={newTask.priority}
                   onChange={(e) => setNewTask({...newTask, priority: e.target.value as 'low' | 'medium' | 'high'})}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                 >
-                  <option value="low">{t('aiStudy.lowPriority')}</option>
-                  <option value="medium">{t('aiStudy.mediumPriority')}</option>
-                  <option value="high">{t('aiStudy.highPriority')}</option>
+                  <option value="low">Low Priority</option>
+                  <option value="medium">Medium Priority</option>
+                  <option value="high">High Priority</option>
                 </select>
               </div>
-              
+
               <div>
-                <label className="block text-gray-700 mb-1 text-sm font-medium">
-                  {t('aiStudy.estimatedHours')}
-                </label>
+                <label className="block text-slate-300 text-sm font-medium mb-2">Estimated Hours</label>
                 <input
                   type="number"
-                  min="0.5"
-                  max="12"
-                  step="0.5"
+                  min="1"
+                  max="24"
                   value={newTask.estimatedHours}
-                  onChange={(e) => setNewTask({...newTask, estimatedHours: parseFloat(e.target.value)})}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  onChange={(e) => setNewTask({...newTask, estimatedHours: parseInt(e.target.value)})}
+                  className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                 />
               </div>
-              
-              <div className="flex space-x-2">
-                <motion.button
-                  type="submit"
-                  className="flex-1 py-2 bg-gradient-to-r from-teal-600 to-teal-700 rounded-lg text-white font-medium shadow-md hover:shadow-lg"
-                  variants={buttonVariants}
-                  whileHover="hover"
-                  whileTap="tap"
-                >
-                  {t('aiStudy.addToStudyPlan')}
-                </motion.button>
-                <motion.button
-                  type="button"
-                  onClick={() => setShowAddForm(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium"
-                  variants={buttonVariants}
-                  whileHover="hover"
-                  whileTap="tap"
-                >
-                  {t('aiStudy.cancel')}
-                </motion.button>
-              </div>
-            </form>
-          </motion.div>
-        )}
+            </div>
 
-        <div className="grid grid-cols-1 gap-8">
-          {/* Task List - Now takes full width */}
-          <motion.div
-            variants={itemVariants}
-            className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm"
-          >
-            <h3 className="text-lg font-medium text-teal-800 mb-4 flex items-center">
-              <IconComponent icon={FiClock} className="mr-2" />
-              {t('aiStudy.yourStudySchedule')}
-            </h3>
-            
-            {filteredTasks.length > 0 ? (
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {filteredTasks.map((task) => (
+            <div className="flex items-center space-x-4">
+              <motion.button
+                type="submit"
+                className="flex items-center px-6 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg text-white font-medium shadow-md hover:shadow-lg transition-all"
+                variants={buttonVariants}
+                whileHover="hover"
+                whileTap="tap"
+              >
+                <IconComponent icon={FiCheck} className="h-4 w-4 mr-2" />
+                Add Task
+              </motion.button>
+
+              <motion.button
+                type="button"
+                onClick={() => setShowAddForm(false)}
+                className="px-6 py-2 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10"
+                variants={buttonVariants}
+                whileHover="hover"
+                whileTap="tap"
+              >
+                Cancel
+              </motion.button>
+            </div>
+          </form>
+        </motion.div>
+      )}
+
+      {/* Main Content - Calendar and Tasks */}
+      <div className="flex flex-col lg:flex-row h-[600px]">
+        {/* Left Half - Calendar */}
+        <div className="lg:w-1/2 p-6 border-r border-white/10">
+          {renderCalendar()}
+        </div>
+
+        {/* Right Half - Tasks */}
+        <div className="lg:w-1/2 flex flex-col">
+          {/* Filters and Sort */}
+          <div className="p-6 border-b border-white/10">
+            <div className="flex flex-wrap items-center gap-4 mb-4">
+              <motion.button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center px-3 py-2 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10"
+                variants={buttonVariants}
+                whileHover="hover"
+                whileTap="tap"
+              >
+                <IconComponent icon={FiFilter} className="h-4 w-4 mr-2" />
+                Filters
+              </motion.button>
+
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+              >
+                <option value="date">Sort by Date</option>
+                <option value="date_desc">Sort by Date (Desc)</option>
+                <option value="priority">Sort by Priority</option>
+                <option value="priority_desc">Sort by Priority (Desc)</option>
+                <option value="subject">Sort by Subject</option>
+                <option value="subject_desc">Sort by Subject (Desc)</option>
+                <option value="hours">Sort by Hours</option>
+                <option value="hours_desc">Sort by Hours (Desc)</option>
+                <option value="completion">Sort by Completion</option>
+              </select>
+
+              {(selectedDate || selectedCalendarDate || filterPriority !== 'all' || filterSubject !== 'all') && (
+                <motion.button
+                  onClick={clearFilters}
+                  className="flex items-center px-3 py-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-red-400 transition-colors border border-red-500/30"
+                  variants={buttonVariants}
+                  whileHover="hover"
+                  whileTap="tap"
+                >
+                  <IconComponent icon={FaTimes} className="h-4 w-4 mr-2" />
+                  Clear Filters
+                </motion.button>
+              )}
+            </div>
+
+            {showFilters && (
+              <motion.div
+                className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-700/30 backdrop-blur-sm rounded-lg border border-white/10"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+              >
+                <div>
+                  <label className="block text-slate-300 text-sm font-medium mb-2">Filter by Date</label>
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 text-sm font-medium mb-2">Filter by Priority</label>
+                  <select
+                    value={filterPriority}
+                    onChange={(e) => setFilterPriority(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  >
+                    <option value="all">All Priorities</option>
+                    <option value="high">High Priority</option>
+                    <option value="medium">Medium Priority</option>
+                    <option value="low">Low Priority</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 text-sm font-medium mb-2">Filter by Subject</label>
+                  <select
+                    value={filterSubject}
+                    onChange={(e) => setFilterSubject(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  >
+                    <option value="all">All Subjects</option>
+                    {getUniqueSubjects().map(subject => (
+                      <option key={subject} value={subject}>{subject}</option>
+                    ))}
+                  </select>
+                </div>
+              </motion.div>
+            )}
+
+            {selectedCalendarDate && (
+              <div className="mt-4 p-3 bg-blue-500/20 rounded-lg border border-blue-500/30">
+                <p className="text-blue-400 text-sm">
+                  Showing tasks for: {selectedCalendarDate.toLocaleDateString()}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Tasks List */}
+          <div className="flex-1 overflow-y-auto p-6">
+            {filteredTasks.length === 0 ? (
+              <div className="text-center py-12">
+                <IconComponent icon={AiOutlineBulb} className="h-12 w-12 mx-auto mb-4 text-slate-400" />
+                <h3 className="text-lg font-medium text-slate-300 mb-2">No tasks found</h3>
+                <p className="text-slate-400">
+                  {selectedCalendarDate ? 'No tasks scheduled for this date.' : 'Add a new task or adjust your filters to see tasks here.'}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredTasks.map((task, index) => (
                   <motion.div
                     key={task.id}
-                    variants={itemVariants}
-                    className={`border rounded-lg p-3 ${
-                      task.completed ? 'bg-gray-50 border-gray-200' : 'bg-white border-gray-200'
+                    className={`p-4 bg-slate-700/30 backdrop-blur-sm rounded-lg border border-white/10 transition-all ${
+                      task.completed ? 'opacity-75' : ''
                     }`}
-                    whileHover={{ y: -2, boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)" }}
+                    variants={itemVariants}
+                    initial="hidden"
+                    animate="visible"
+                    transition={{ delay: index * 0.1 }}
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start flex-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4 flex-1">
                         <motion.button
-                          className={`mt-1 mr-3 w-5 h-5 flex-shrink-0 rounded-full border ${
-                            task.completed ? 'bg-teal-500 border-teal-500' : 'border-gray-300'
+                          onClick={() => handleTaskToggle(task.id)}
+                          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                            task.completed
+                              ? 'bg-green-500 border-green-500 text-white'
+                              : 'border-slate-400 hover:border-cyan-400'
                           }`}
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
-                          onClick={() => handleTaskToggle(task.id)}
                         >
-                          {task.completed && (
-                            <IconComponent icon={FiCheck} className="text-white w-full h-full p-0.5" />
-                          )}
+                          {task.completed && <IconComponent icon={FiCheck} className="h-3 w-3" />}
                         </motion.button>
+
                         <div className="flex-1">
-                          <p className={`font-medium text-sm ${
-                            task.completed ? 'line-through text-gray-500' : 'text-gray-800'
-                          }`}>
+                          <h4 className={`font-medium ${task.completed ? 'line-through text-slate-400' : 'text-slate-200'}`}>
                             {task.task}
-                          </p>
-                          <div className="flex items-center flex-wrap gap-2 mt-1">
-                            <span className="bg-teal-100 text-teal-800 px-2 py-0.5 rounded text-xs">
-                              {task.subject}
-                            </span>
-                            <span className={`px-2 py-0.5 rounded text-xs ${getPriorityColor(task.priority)}`}>
-                              {task.priority}
-                            </span>
-                            <span className="flex items-center text-xs text-gray-500">
+                          </h4>
+                          <div className="flex items-center space-x-4 mt-1">
+                            <span className="text-sm text-cyan-400">{task.subject}</span>
+                            <span className="text-sm text-slate-400 flex items-center">
                               <IconComponent icon={FiCalendar} className="h-3 w-3 mr-1" />
                               {new Date(task.date).toLocaleDateString()}
                             </span>
-                            <span className="flex items-center text-xs text-gray-500">
+                            <span className="text-sm text-slate-400 flex items-center">
                               <IconComponent icon={FiClock} className="h-3 w-3 mr-1" />
                               {task.estimatedHours}h
                             </span>
                           </div>
                         </div>
+
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(task.priority)}`}>
+                          {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                        </span>
                       </div>
+
                       <motion.button
                         onClick={() => handleDeleteTask(task.id)}
-                        className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                        className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
                       >
@@ -562,51 +683,11 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
                   </motion.div>
                 ))}
               </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <IconComponent icon={FiCalendar} className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p className="text-sm">{t('aiStudy.studyTasksWillAppearHere')}</p>
-              </div>
             )}
-          </motion.div>
-        </div>
-
-        {/* AI Study Recommendations */}
-        <motion.div 
-          variants={itemVariants}
-          className="bg-gradient-to-br from-teal-600 to-teal-700 rounded-xl p-6 shadow-md text-white"
-        >
-          <h3 className="text-lg font-medium mb-4 flex items-center">
-            <IconComponent icon={AiOutlineBulb} className="mr-2" />
-            {t('aiStudy.smartStudyRecommendations')}
-          </h3>
-          
-          <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
-            <p className="mb-3">{t('aiStudy.basedOnYourUpcomingTasks')}:</p>
-            <ul className="space-y-2">
-              <li className="flex items-start">
-                <span className="bg-white text-teal-800 rounded-full p-1 mr-2 flex-shrink-0">
-                  <IconComponent icon={FiCheck} className="h-3 w-3" />
-                </span>
-                <span>{t('aiStudy.startWithMathematicsHomework')}</span>
-              </li>
-              <li className="flex items-start">
-                <span className="bg-white text-teal-800 rounded-full p-1 mr-2 flex-shrink-0">
-                  <IconComponent icon={FiCheck} className="h-3 w-3" />
-                </span>
-                <span>{t('aiStudy.block2HourFocusSessions')}</span>
-              </li>
-              <li className="flex items-start">
-                <span className="bg-white text-teal-800 rounded-full p-1 mr-2 flex-shrink-0">
-                  <IconComponent icon={FiCheck} className="h-3 w-3" />
-                </span>
-                <span>{t('aiStudy.useTheAiStudyAssistant')}</span>
-              </li>
-            </ul>
           </div>
-        </motion.div>
-      </motion.div>
-    </div>
+        </div>
+      </div>
+    </motion.div>
   );
 };
 

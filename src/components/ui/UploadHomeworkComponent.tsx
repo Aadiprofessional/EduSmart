@@ -1,11 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AiOutlineUpload, AiOutlineCamera, AiOutlineFullscreen, AiOutlineBulb, AiOutlineFileText, AiOutlineLoading3Quarters, AiOutlineHistory } from 'react-icons/ai';
+import { AiOutlineUpload, AiOutlineCamera, AiOutlineFullscreen, AiOutlineBulb, AiOutlineFileText, AiOutlineHistory } from 'react-icons/ai';
 import { FiDownload, FiCopy, FiShare2, FiClock, FiTrash2 } from 'react-icons/fi';
 import IconComponent from './IconComponent';
 import * as pdfjsLib from 'pdfjs-dist';
 import { jsPDF } from 'jspdf';
 import { Document, Paragraph, TextRun, Packer } from 'docx';
+
+// Import markdown and math libraries
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import 'katex/dist/katex.min.css';
 
 // Set up PDF.js worker with a more reliable approach
 if (typeof window !== 'undefined') {
@@ -56,6 +65,15 @@ interface HomeworkHistoryItem {
   fileType: string;
 }
 
+// Add new interface for page solutions
+interface PageSolution {
+  pageNumber: number;
+  solution: string;
+  isLoading: boolean;
+  isComplete: boolean;
+  error?: string;
+}
+
 const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ className = '' }) => {
   const [file, setFile] = useState<File | null>(null);
   const [question, setQuestion] = useState('');
@@ -65,10 +83,13 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
   const [currentPage, setCurrentPage] = useState(0);
   const [fullScreenSolution, setFullScreenSolution] = useState(false);
   const [processingStatus, setProcessingStatus] = useState<string>('');
-  const [extractedTexts, setExtractedTexts] = useState<string[]>([]);
   const [showDownloadOptions, setShowDownloadOptions] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [homeworkHistory, setHomeworkHistory] = useState<HomeworkHistoryItem[]>([]);
+  
+  // Add new state for page solutions
+  const [pageSolutions, setPageSolutions] = useState<PageSolution[]>([]);
+  const [overallProcessingComplete, setOverallProcessingComplete] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -135,129 +156,74 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
     return date.toLocaleDateString();
   };
 
-  // Add custom CSS for mathematical expressions
-  useEffect(() => {
-    const style = document.createElement('style');
-    style.textContent = `
-      .math-inline {
-        font-family: 'Times New Roman', serif;
-        font-style: italic;
-        background-color: #f0f9ff;
-        padding: 2px 4px;
-        border-radius: 3px;
-        border: 1px solid #e0f2fe;
-        margin: 0 2px;
-        display: inline-block;
-      }
-      
-      .math-block {
-        font-family: 'Times New Roman', serif;
-        font-style: italic;
-        background-color: #f8fafc;
-        padding: 12px 16px;
-        border-radius: 8px;
-        border-left: 4px solid #0891b2;
-        margin: 12px 0;
-        text-align: center;
-        font-size: 1.1em;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      }
-      
-      .solution-content {
-        line-height: 1.8;
-        font-size: 16px;
-      }
-      
-      .solution-content h1, .solution-content h2, .solution-content h3, .solution-content h4 {
-        margin-top: 1.5rem;
-        margin-bottom: 0.75rem;
-      }
-      
-      .solution-content .math-inline {
-        font-size: 1.05em;
-      }
-      
-      .solution-content .math-block {
-        font-size: 1.15em;
-        line-height: 1.6;
-      }
-    `;
-    document.head.appendChild(style);
-    
-    return () => {
-      document.head.removeChild(style);
-    };
-  }, []);
-
-  // Function to convert content text to HTML with proper formatting (enhanced for math content)
-  const contentToHTML = (text: string) => {
-    return text
-      // Handle LaTeX math expressions first
-      .replace(/\\\((.*?)\\\)/g, '<span class="math-inline">$1</span>') // Inline math \( \)
-      .replace(/\\\[(.*?)\\\]/g, '<div class="math-block">$1</div>') // Block math \[ \]
-      .replace(/\$\$(.*?)\$\$/g, '<div class="math-block">$1</div>') // Block math $$ $$
-      .replace(/\$(.*?)\$/g, '<span class="math-inline">$1</span>') // Inline math $ $
-      
-      // Handle bold text
-      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-teal-800">$1</strong>')
-      
-      // Handle italic text
-      .replace(/\*(.*?)\*/g, '<em class="italic text-teal-700">$1</em>')
-      
-      // Handle underlined text
-      .replace(/_(.*?)_/g, '<u class="underline text-teal-700">$1</u>')
-      
-      // Handle highlighted text
-      .replace(/==(.*?)==/g, '<mark class="bg-yellow-200 px-1 rounded">$1</mark>')
-      
-      // Handle headers
-      .replace(/^### (.*$)/gim, '<h3 class="text-xl font-bold text-teal-800 mt-6 mb-3">$1</h3>')
-      .replace(/^## (.*$)/gim, '<h2 class="text-2xl font-bold text-teal-800 mt-8 mb-4">$1</h2>')
-      .replace(/^# (.*$)/gim, '<h1 class="text-3xl font-bold text-teal-800 mt-10 mb-5">$1</h1>')
-      
-      // Handle numbered lists
-      .replace(/^(\d+)\.\s+(.*$)/gim, '<div class="mb-3"><span class="font-semibold text-teal-800">$1.</span> $2</div>')
-      
-      // Handle bullet points
-      .replace(/^[-•]\s+(.*$)/gim, '<div class="ml-4 mb-2 flex items-start"><span class="text-teal-600 mr-2">•</span><span>$1</span></div>')
-      
-      // Handle question formatting
-      .replace(/^(Question\s+\d+(?:\.\d+)*)/gim, '<h3 class="text-xl font-bold text-teal-800 mt-8 mb-4 border-b-2 border-teal-200 pb-2">$1</h3>')
-      
-      // Handle final answers section
-      .replace(/^(Final answers?:)/gim, '<h4 class="text-lg font-semibold text-green-800 mt-6 mb-3 bg-green-50 p-3 rounded-lg border-l-4 border-green-500">$1</h4>')
-      
-      // Handle concepts section
-      .replace(/^(Concepts? and formulas? used:)/gim, '<h4 class="text-lg font-semibold text-blue-800 mt-6 mb-3 bg-blue-50 p-3 rounded-lg border-l-4 border-blue-500">$1</h4>')
-      
-      // Handle step indicators
-      .replace(/^(Step \d+:)/gim, '<div class="font-semibold text-teal-700 mt-4 mb-2 bg-teal-50 p-2 rounded">$1</div>')
-      
-      // Handle solution indicators
-      .replace(/^(Solution:)/gim, '<div class="font-semibold text-orange-700 mt-4 mb-2 bg-orange-50 p-2 rounded border-l-4 border-orange-500">$1</div>')
-      
-      // Convert line breaks to proper spacing
-      .replace(/\n\n/g, '<br><br>')
-      .replace(/\n/g, '<br>')
-      
-      // Add proper spacing for mathematical expressions
-      .replace(/(<\/span>|<\/div>)(<span class="math|<div class="math)/g, '$1 $2')
-      .replace(/(<span class="math-inline">.*?<\/span>)/g, ' $1 ');
+  // Preprocess LaTeX for react-markdown
+  const preprocessLaTeX = (content: string) => {
+    return content
+      .replace(/\\\[(.*?)\\\]/g, (_, eq) => `$$${eq}$$`)   // block math
+      .replace(/\\\((.*?)\\\)/g, (_, eq) => `$${eq}$`);    // inline math
   };
 
-  // Clean AI response function
-  const cleanAIResponse = (content: string) => {
-    // Remove any AI formatting markers, separator lines, etc.
-    return content
-      .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
-      .replace(/\*(.*?)\*/g, '$1') // Remove italic
-      .replace(/_(.*?)_/g, '$1') // Remove underline
-      .replace(/==(.*?)==/g, '$1') // Remove highlight
-      .replace(/\n- (.*)/g, '• $1') // Convert unordered lists
-      .replace(/\n\d+\. (.*)/g, '$1') // Convert ordered lists
-      .replace(/#{1,6} (.*)/g, '$1') // Remove headers
-      .replace(/---/g, '') // Remove separators
-      .replace(/\n/g, '\n'); // Keep newlines
+  // Custom components for ReactMarkdown
+  const markdownComponents = {
+    code({ node, inline, className, children, ...props }: any) {
+      const match = /language-(\w+)/.exec(className || '');
+      return !inline && match ? (
+        <SyntaxHighlighter
+          style={vscDarkPlus}
+          language={match[1]}
+          PreTag="div"
+          className="rounded-lg"
+          {...props}
+        >
+          {String(children).replace(/\n$/, '')}
+        </SyntaxHighlighter>
+      ) : (
+        <code className={`${className} bg-slate-600/50 text-cyan-300 px-2 py-1 rounded text-sm font-mono`} {...props}>
+          {children}
+        </code>
+      );
+    },
+    h1: ({ children }: any) => <h1 className="text-3xl font-bold text-cyan-400 mt-8 mb-4 border-b-2 border-cyan-500/30 pb-2">{children}</h1>,
+    h2: ({ children }: any) => <h2 className="text-2xl font-bold text-blue-400 mt-6 mb-3 border-b border-blue-500/30 pb-1">{children}</h2>,
+    h3: ({ children }: any) => <h3 className="text-xl font-bold text-teal-400 mt-4 mb-2 bg-teal-500/10 px-3 py-2 rounded border border-teal-500/20">{children}</h3>,
+    h4: ({ children }: any) => <h4 className="text-lg font-semibold text-slate-300 mt-3 mb-2">{children}</h4>,
+    p: ({ children }: any) => <p className="text-slate-300 mb-4 leading-relaxed">{children}</p>,
+    ul: ({ children }: any) => <ul className="list-disc list-inside mb-4 text-slate-300 space-y-1">{children}</ul>,
+    ol: ({ children }: any) => <ol className="list-decimal list-inside mb-4 text-slate-300 space-y-1">{children}</ol>,
+    li: ({ children }: any) => <li className="mb-1 pl-2">{children}</li>,
+    blockquote: ({ children }: any) => (
+      <blockquote className="border-l-4 border-cyan-500 pl-4 my-4 bg-cyan-500/10 py-3 rounded-r italic text-slate-300">
+        {children}
+      </blockquote>
+    ),
+    strong: ({ children }: any) => <strong className="font-bold text-cyan-400 bg-cyan-500/10 px-1 rounded">{children}</strong>,
+    em: ({ children }: any) => <em className="italic text-slate-300">{children}</em>,
+    table: ({ children }: any) => (
+      <div className="overflow-x-auto my-4">
+        <table className="min-w-full border border-gray-300 rounded-lg overflow-hidden">{children}</table>
+      </div>
+    ),
+    thead: ({ children }: any) => <thead className="bg-gray-100">{children}</thead>,
+    tbody: ({ children }: any) => <tbody>{children}</tbody>,
+    tr: ({ children }: any) => <tr className="border-b border-gray-200 hover:bg-gray-50">{children}</tr>,
+    th: ({ children }: any) => <th className="px-4 py-2 text-left font-semibold text-gray-800">{children}</th>,
+    td: ({ children }: any) => <td className="px-4 py-2 text-gray-700">{children}</td>,
+    a: ({ children, href }: any) => (
+      <a href={href} className="text-blue-600 hover:text-blue-800 underline font-medium" target="_blank" rel="noopener noreferrer">
+        {children}
+      </a>
+    ),
+    // Custom styling for step indicators that might appear in solutions
+    div: ({ children, className }: any) => {
+      if (typeof children === 'string' && children.toLowerCase().includes('step')) {
+        return (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 p-4 my-4 rounded-r-lg">
+            <strong className="text-blue-800 text-lg">{children}</strong>
+          </div>
+        );
+      }
+      return <div className={className}>{children}</div>;
+    },
   };
 
   // Download functionality (same as ContentWriterComponent)
@@ -444,30 +410,56 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
     }
   };
 
-  // Combined function to extract text and solve homework with streaming
-  const extractAndSolveHomework = async (imageUrl: string): Promise<string> => {
+  // Combined function to extract text and solve homework - works for both images and text
+  const extractAndSolveHomework = async (imageUrl?: string, textQuestion?: string, pageNumber?: number): Promise<string> => {
+    console.log(`🔄 Starting extractAndSolveHomework process for page ${pageNumber || 'text'}`);
+    console.log('📸 Image URL received:', imageUrl ? 'Image URL present' : 'No image URL');
+    console.log('📝 Text question received:', textQuestion ? `Text question: ${textQuestion.substring(0, 100)}...` : 'No text question');
+    console.log('⏰ Process start time:', new Date().toISOString());
+    
     try {
-      const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer sk-176f2c5aba034fc2970fb14b2cb2d301',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: "qvq-max-latest",
-          messages: [
-            {
-              role: "user",
-              content: [
-                {
-                  type: "image_url",
-                  image_url: {
-                    url: imageUrl
-                  }
-                },
-                {
-                  type: "text",
-                  text: `Please analyze this image and solve any homework problems you find. Follow these steps:
+      console.log('📡 Preparing API request to Qwen VL Max');
+      console.log('🔗 API Endpoint: https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions');
+      console.log('🤖 Model: qwen-vl-max');
+      
+      // Build content array based on whether we have image or text
+      const content: any[] = [];
+      
+      if (imageUrl) {
+        content.push({
+          type: "image_url",
+          image_url: {
+            url: imageUrl
+          }
+        });
+      }
+      
+      if (textQuestion) {
+        content.push({
+          type: "text",
+          text: `Please solve this homework problem with detailed step-by-step explanations:
+
+${textQuestion}
+
+Please provide:
+1. A clear understanding of what the problem is asking
+2. Step-by-step solution with explanations
+3. Final answer
+4. Any relevant concepts or formulas used
+
+Make sure to explain each step so the student can learn from the solution. Show your reasoning process and provide comprehensive explanations.
+
+Format your response with:
+- Use **bold** for important terms and concepts
+- Use proper mathematical notation with LaTeX format for equations
+- Structure your solution with clear headings and numbered steps
+- Highlight final answers prominently
+- Use bullet points for lists and key points`
+        });
+      } else {
+        content.push({
+          type: "text",
+          text: `Please analyze this image and solve any homework problems you find. Follow these steps:
 
 1. First, extract and read all text from the image
 2. Identify the homework questions or problems
@@ -480,111 +472,85 @@ Please provide:
 - Final answers
 - Any relevant concepts or formulas used
 
-Make sure to explain each step so the student can learn from the solution.`
-                }
-              ]
-            }
-          ],
-          stream: true
-        })
+Make sure to explain each step so the student can learn from the solution and only give the solution to the homework problems.
+
+Format your response with:
+- Use **bold** for important terms and concepts
+- Use proper mathematical notation with LaTeX format for equations
+- Structure your solution with clear headings and numbered steps
+- Highlight final answers prominently
+- Use bullet points for lists and key points`
+        });
+      }
+      
+      const requestPayload = {
+        model: "qwen-vl-max",
+        messages: [
+          {
+            role: "system",
+            content: [
+              {
+                type: "text", 
+                text: "You are a helpful homework assistant. Analyze images containing homework problems or solve text-based homework problems and provide detailed step-by-step solutions with explanations. Format your responses clearly with proper mathematical notation using LaTeX syntax when needed."
+              }
+            ]
+          },
+          {
+            role: "user",
+            content: content
+          }
+        ],
+        stream: true
+      };
+
+      console.log('📤 Request payload prepared');
+      console.log('📋 Payload details:', {
+        model: requestPayload.model,
+        messagesCount: requestPayload.messages.length,
+        hasImage: content.some(c => c.type === 'image_url'),
+        hasText: content.some(c => c.type === 'text'),
+        contentItems: content.length,
+        textPromptLength: content.find(c => c.type === 'text')?.text?.length || 0,
+        streamEnabled: true,
+        pageNumber: pageNumber || 'N/A'
       });
 
-      if (!response.ok) {
-        console.error('QVQ Combined API Error:', response.status, response.statusText);
-        throw new Error(`API request failed: ${response.status}`);
-      }
+      const apiStartTime = Date.now();
+      console.log(`🚀 Sending streaming API request for page ${pageNumber || 'text'} at:`, new Date(apiStartTime).toISOString());
 
-      // Handle streaming response
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('No response body reader available');
-      }
-
-      let solutionContent = '';
-      let isAnswering = false;
-
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = new TextDecoder().decode(value);
-          const lines = chunk.split('\n');
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              if (data === '[DONE]') continue;
-
-              try {
-                const parsed = JSON.parse(data);
-                const content = parsed.choices?.[0]?.delta?.content;
-                
-                if (content) {
-                  solutionContent += content;
-                  isAnswering = true;
-                  
-                  // Update the answer in real-time for streaming effect
-                  setAnswer(solutionContent);
-                }
-              } catch (parseError) {
-                // Skip invalid JSON lines
-                continue;
-              }
-            }
-          }
-        }
-      } finally {
-        reader.releaseLock();
-      }
-
-      return solutionContent.trim() || 'No solution could be generated';
-    } catch (error) {
-      console.error('Combined API Error:', error);
-      return `Error processing image and solving homework: ${error instanceof Error ? error.message : 'Unknown error'}`;
-    }
-  };
-
-  // Solve homework using QVQ model with streaming (for text questions)
-  const solveHomework = async (text: string): Promise<string> => {
-    try {
-      const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer sk-80beadf6603b4832981d0d65896b1ae0',
+          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model: "qvq-max",
-          messages: [
-            {
-              role: "user",
-              content: [
-                {
-                  type: "text",
-                  text: `Please solve this homework problem with detailed step-by-step explanations:
-
-${text}
-
-Please provide:
-1. A clear understanding of what the problem is asking
-2. Step-by-step solution with explanations
-3. Final answer
-4. Any relevant concepts or formulas used
-
-Make sure to explain each step so the student can learn from the solution. Show your reasoning process and provide comprehensive explanations.`
-                }
-              ]
-            }
-          ],
-          stream: true
-        })
+        body: JSON.stringify(requestPayload)
       });
 
+      const apiResponseTime = Date.now();
+      const responseTimeMs = apiResponseTime - apiStartTime;
+      console.log(`📥 Streaming API response received for page ${pageNumber || 'text'}`);
+      console.log('⏱️ Initial response time:', responseTimeMs + 'ms');
+      console.log('📊 Response status:', response.status, response.statusText);
+
       if (!response.ok) {
-        console.error('QVQ Homework API Error:', response.status, response.statusText);
-        throw new Error(`API request failed: ${response.status}`);
+        console.error(`❌ API request failed for page ${pageNumber || 'text'}`);
+        console.error('🔴 Status:', response.status);
+        console.error('🔴 Status text:', response.statusText);
+        
+        let errorBody = '';
+        try {
+          errorBody = await response.text();
+          console.error('🔴 Error response body:', errorBody);
+        } catch (e) {
+          console.error('🔴 Could not read error response body:', e);
+        }
+        
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
       }
+
+      console.log(`✅ API request successful for page ${pageNumber || 'text'}, starting stream processing`);
+      console.log('📖 Reading streaming response body...');
 
       // Handle streaming response
       const reader = response.body?.getReader();
@@ -592,13 +558,16 @@ Make sure to explain each step so the student can learn from the solution. Show 
         throw new Error('No response body reader available');
       }
 
-      let solutionContent = '';
-      let isAnswering = false;
+      let fullContent = '';
+      let isFirstChunk = true;
 
       try {
         while (true) {
           const { done, value } = await reader.read();
-          if (done) break;
+          if (done) {
+            console.log(`🏁 Streaming completed for page ${pageNumber || 'text'}`);
+            break;
+          }
 
           const chunk = new TextDecoder().decode(value);
           const lines = chunk.split('\n');
@@ -606,18 +575,34 @@ Make sure to explain each step so the student can learn from the solution. Show 
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               const data = line.slice(6);
-              if (data === '[DONE]') continue;
+              if (data === '[DONE]') {
+                console.log(`✅ Stream marked as DONE for page ${pageNumber || 'text'}`);
+                continue;
+              }
 
               try {
                 const parsed = JSON.parse(data);
-                const content = parsed.choices?.[0]?.delta?.content;
+                const content_chunk = parsed.choices?.[0]?.delta?.content;
                 
-                if (content) {
-                  solutionContent += content;
-                  isAnswering = true;
+                if (content_chunk) {
+                  if (isFirstChunk) {
+                    console.log(`📝 First content chunk received for page ${pageNumber || 'text'}, starting real-time display`);
+                    isFirstChunk = false;
+                  }
                   
-                  // Update the answer in real-time for streaming effect
-                  setAnswer(solutionContent);
+                  fullContent += content_chunk;
+                  
+                  // Update page solution in real-time if pageNumber is provided
+                  if (pageNumber !== undefined) {
+                    setPageSolutions(prev => prev.map(ps => 
+                      ps.pageNumber === pageNumber 
+                        ? { ...ps, solution: fullContent, isLoading: true }
+                        : ps
+                    ));
+                  } else {
+                    // For text questions, update answer directly
+                    setAnswer(fullContent);
+                  }
                 }
               } catch (parseError) {
                 // Skip invalid JSON lines
@@ -630,85 +615,190 @@ Make sure to explain each step so the student can learn from the solution. Show 
         reader.releaseLock();
       }
 
-      const rawContent = solutionContent.trim() || 'Unable to generate solution. Please try again.';
-      
-      // Clean up the AI response
-      return cleanAIResponse(rawContent);
+      const totalProcessTime = Date.now() - apiStartTime;
+      console.log(`📄 Full content received for page ${pageNumber || 'text'}`);
+      console.log('📊 Final content length:', fullContent.length);
+      console.log('📝 Content preview (first 200 chars):', fullContent.substring(0, 200) + '...');
+      console.log('⏰ Total streaming time:', totalProcessTime + 'ms');
+      console.log(`🎯 Streaming process completed successfully for page ${pageNumber || 'text'}`);
+
+      return fullContent.trim() || 'No solution could be generated';
+
     } catch (error) {
-      console.error('QVQ Homework solving error:', error);
-      return `Error solving homework: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      console.error(`💥 Error in extractAndSolveHomework for page ${pageNumber || 'text'}`);
+      console.error('🔴 Error type:', error instanceof Error ? error.constructor.name : typeof error);
+      console.error('🔴 Error message:', error instanceof Error ? error.message : String(error));
+      console.error('🔴 Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      console.error('⏰ Error occurred at:', new Date().toISOString());
+      
+      throw error;
     }
   };
 
-  // Process uploaded file with combined extraction and solving
+  // Process uploaded file with parallel processing for all pages
   const processFile = async (file: File) => {
+    console.log('🚀 Starting processFile with parallel processing');
+    console.log('📁 File details:', {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      lastModified: new Date(file.lastModified).toISOString()
+    });
+    
     setLoading(true);
     setProcessingStatus('Starting file processing...');
     setAnswer(''); // Clear previous answer
+    setPageSolutions([]); // Clear previous page solutions
+    setOverallProcessingComplete(false);
+    
+    const processStartTime = Date.now();
+    console.log('⏰ File processing start time:', new Date(processStartTime).toISOString());
     
     try {
       let imageUrls: string[] = [];
       
       if (file.type === 'application/pdf') {
+        console.log('📄 Processing PDF file');
         // Convert PDF to images
         imageUrls = await convertPdfToImages(file);
+        console.log('✅ PDF converted to', imageUrls.length, 'images');
       } else if (file.type.startsWith('image/')) {
+        console.log('🖼️ Processing image file');
         // Convert image file to data URL
         setProcessingStatus('Processing image...');
+        
+        const imageProcessStartTime = Date.now();
+        console.log('⏰ Image conversion start time:', new Date(imageProcessStartTime).toISOString());
+        
         const imageDataUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = reject;
+          reader.onload = () => {
+            const result = reader.result as string;
+            console.log('✅ Image converted to data URL');
+            console.log('📊 Data URL length:', result.length);
+            console.log('📊 Data URL preview:', result.substring(0, 100) + '...');
+            resolve(result);
+          };
+          reader.onerror = (error) => {
+            console.error('❌ Error converting image to data URL:', error);
+            reject(error);
+          };
           reader.readAsDataURL(file);
         });
+        
+        const imageProcessTime = Date.now() - imageProcessStartTime;
+        console.log('⏱️ Image conversion time:', imageProcessTime + 'ms');
+        
         imageUrls = [imageDataUrl];
       } else {
+        console.error('❌ Unsupported file type:', file.type);
         throw new Error('Unsupported file type. Please upload a PDF or image file.');
       }
       
+      console.log('📸 Total images to process:', imageUrls.length);
       setDocumentPages(imageUrls);
       setCurrentPage(0);
       
-      setProcessingStatus('Analyzing and solving homework problems...');
+      // Initialize page solutions for all pages
+      const initialPageSolutions: PageSolution[] = imageUrls.map((_, index) => ({
+        pageNumber: index + 1,
+        solution: '',
+        isLoading: true,
+        isComplete: false
+      }));
+      setPageSolutions(initialPageSolutions);
       
-      // Process all pages and combine solutions
-      let combinedSolution = '';
+      setProcessingStatus(`Processing all ${imageUrls.length} pages in parallel...`);
+      setLoading(false); // Set loading to false so user can navigate pages
       
-      for (let i = 0; i < imageUrls.length; i++) {
-        setProcessingStatus(`Processing page ${i + 1} of ${imageUrls.length}...`);
+      // Process all pages in parallel
+      console.log('🔄 Starting parallel processing of all pages');
+      const processingPromises = imageUrls.map(async (imageUrl, index) => {
+        const pageNumber = index + 1;
+        console.log(`🚀 Starting processing for page ${pageNumber}`);
         
         try {
-          const solution = await extractAndSolveHomework(imageUrls[i]);
-          if (imageUrls.length > 1) {
-            combinedSolution += `\n\n--- Page ${i + 1} ---\n\n${solution}`;
-          } else {
-            combinedSolution = solution;
-          }
-        } catch (pageError) {
-          console.error(`Error processing page ${i + 1}:`, pageError);
-          combinedSolution += `\n\nError processing page ${i + 1}: ${pageError instanceof Error ? pageError.message : 'Unknown error'}`;
+          const solution = await extractAndSolveHomework(imageUrl, undefined, pageNumber);
+          
+          // Mark page as complete
+          setPageSolutions(prev => prev.map(ps => 
+            ps.pageNumber === pageNumber 
+              ? { ...ps, solution, isLoading: false, isComplete: true }
+              : ps
+          ));
+          
+          console.log(`✅ Page ${pageNumber} processing completed successfully`);
+          return { pageNumber, solution, success: true };
+        } catch (error) {
+          console.error(`❌ Error processing page ${pageNumber}:`, error);
+          
+          // Mark page as error
+          setPageSolutions(prev => prev.map(ps => 
+            ps.pageNumber === pageNumber 
+              ? { 
+                  ...ps, 
+                  solution: `Error processing page ${pageNumber}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                  isLoading: false, 
+                  isComplete: true,
+                  error: error instanceof Error ? error.message : 'Unknown error'
+                }
+              : ps
+          ));
+          
+          return { pageNumber, error: error instanceof Error ? error.message : 'Unknown error', success: false };
         }
-        
-        // Add a small delay between API calls to avoid rate limiting
-        if (i < imageUrls.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+      });
+      
+      // Wait for all pages to complete
+      console.log('⏳ Waiting for all pages to complete processing...');
+      const results = await Promise.allSettled(processingPromises);
+      
+      const totalProcessTime = Date.now() - processStartTime;
+      console.log('✅ All pages processing completed');
+      console.log('⏱️ Total file processing time:', totalProcessTime + 'ms');
+      console.log('📊 Processing results:', results.map((result, index) => ({
+        page: index + 1,
+        status: result.status,
+        success: result.status === 'fulfilled' ? result.value.success : false
+      })));
+      
+      // Create combined solution for history
+      const completedSolutions = pageSolutions.filter(ps => ps.isComplete && !ps.error);
+      let combinedSolution = '';
+      if (completedSolutions.length > 0) {
+        if (imageUrls.length > 1) {
+          combinedSolution = completedSolutions.map(ps => 
+            `--- Page ${ps.pageNumber} ---\n\n${ps.solution}`
+          ).join('\n\n');
+        } else {
+          combinedSolution = completedSolutions[0]?.solution || '';
         }
       }
       
-      setAnswer(combinedSolution);
-      
       // Add to history
-      addToHistory(file.name, 'Image/PDF Analysis', combinedSolution, file.type);
+      if (combinedSolution) {
+        addToHistory(file.name, 'PDF/Image Analysis', combinedSolution, file.type);
+        console.log('💾 Added to history');
+      }
       
-      setProcessingStatus('Processing completed!');
+      setOverallProcessingComplete(true);
+      setProcessingStatus('All pages processed successfully!');
+      console.log('🎉 File processing completed successfully');
       
     } catch (error) {
-      console.error('File processing error:', error);
+      const totalProcessTime = Date.now() - processStartTime;
+      console.error('💥 File processing error after', totalProcessTime + 'ms');
+      console.error('🔴 Error type:', error instanceof Error ? error.constructor.name : typeof error);
+      console.error('🔴 Error message:', error instanceof Error ? error.message : String(error));
+      console.error('🔴 Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      
       setProcessingStatus('Error processing file');
       setAnswer(`Failed to process file: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
       setLoading(false);
+      setOverallProcessingComplete(true);
+    } finally {
       setTimeout(() => setProcessingStatus(''), 3000);
+      console.log('🏁 processFile function completed');
     }
   };
 
@@ -725,7 +815,6 @@ Make sure to explain each step so the student can learn from the solution. Show 
     setDocumentPages([]);
     setCurrentPage(0);
     setAnswer('');
-    setExtractedTexts([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -735,19 +824,24 @@ Make sure to explain each step so the student can learn from the solution. Show 
     e.preventDefault();
     if (!question.trim() || loading) return;
     
+    console.log('🚀 Starting text question submission');
+    console.log('📝 Question:', question);
+    
     setLoading(true);
     setProcessingStatus('Solving homework problem...');
     setAnswer(''); // Clear previous answer
+    setPageSolutions([]); // Clear page solutions for text questions
     
     try {
-      // Use the streaming solve function for text questions
-      const solution = await solveHomework(question);
+      // Use the same API function for text questions
+      const solution = await extractAndSolveHomework(undefined, question);
       setAnswer(solution);
       
       // Add to history
       addToHistory('Text Question', question, solution, 'text');
+      console.log('✅ Text question processed successfully');
     } catch (error) {
-      console.error('Submit error:', error);
+      console.error('💥 Text submission error:', error);
       setAnswer(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
@@ -784,27 +878,27 @@ Make sure to explain each step so the student can learn from the solution. Show 
       >
         {/* Input Section */}
         <motion.div variants={itemVariants}>
-          <h2 className="text-2xl font-semibold text-teal-800 mb-6">Submit Your Question</h2>
+          <h2 className="text-2xl font-semibold text-cyan-400 mb-6">Submit Your Question</h2>
           
           <form onSubmit={handleSubmit}>
             <div className="mb-6">
-              <label className="block text-gray-700 mb-2 font-medium">
+              <label className="block text-slate-300 mb-2 font-medium">
                 Describe your question or problem
               </label>
               <textarea
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
-                className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none h-40"
+                className="w-full p-4 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none h-40 text-slate-200 placeholder-slate-400"
                 placeholder="Type your question or problem here..."
               />
             </div>
             
             <div className="mb-6">
-              <label className="block text-gray-700 mb-2 font-medium">
+              <label className="block text-slate-300 mb-2 font-medium">
                 Or upload your question
               </label>
               <div 
-                className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-teal-500 cursor-pointer transition-colors relative"
+                className="border-2 border-dashed border-white/20 rounded-lg p-8 text-center hover:border-cyan-500/50 cursor-pointer transition-colors relative bg-slate-600/30 backdrop-blur-sm"
                 onClick={() => !file && fileInputRef.current?.click()}
               >
                 <input 
@@ -815,7 +909,7 @@ Make sure to explain each step so the student can learn from the solution. Show 
                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                 />
                 {file ? (
-                  <div className="text-gray-700 relative">
+                  <div className="text-slate-300 relative">
                     <motion.button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -829,12 +923,12 @@ Make sure to explain each step so the student can learn from the solution. Show 
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     </motion.button>
-                    <IconComponent icon={AiOutlineFileText} className="h-8 w-8 mx-auto mb-2 text-teal-600" />
+                    <IconComponent icon={AiOutlineFileText} className="h-8 w-8 mx-auto mb-2 text-cyan-400" />
                     <p className="font-medium">{file.name}</p>
-                    <p className="text-sm text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <p className="text-sm text-slate-400">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
                   </div>
                 ) : (
-                  <div className="text-gray-500">
+                  <div className="text-slate-400">
                     <IconComponent icon={AiOutlineUpload} className="h-8 w-8 mx-auto mb-2" />
                     <p>Drag and drop your file here, or click to browse</p>
                     <p className="text-sm mt-1">Supports PDF, Word, and images</p>
@@ -846,7 +940,7 @@ Make sure to explain each step so the student can learn from the solution. Show 
             <div className="flex items-center justify-between flex-wrap gap-2">
               <motion.button
                 type="button"
-                className="flex items-center justify-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50"
+                className="flex items-center justify-center px-4 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 font-medium hover:bg-slate-500/50"
                 variants={buttonVariants}
                 whileHover="hover"
                 whileTap="tap"
@@ -858,7 +952,7 @@ Make sure to explain each step so the student can learn from the solution. Show 
               
               <motion.button
                 type="button"
-                className="flex items-center justify-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50"
+                className="flex items-center justify-center px-4 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 font-medium hover:bg-slate-500/50"
                 variants={buttonVariants}
                 whileHover="hover"
                 whileTap="tap"
@@ -870,7 +964,7 @@ Make sure to explain each step so the student can learn from the solution. Show 
               
               <motion.button
                 type="submit"
-                className="flex items-center justify-center px-6 py-3 bg-gradient-to-r from-teal-600 to-teal-700 rounded-lg text-white font-medium shadow-md hover:shadow-lg"
+                className="flex items-center justify-center px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg text-white font-medium shadow-md hover:shadow-lg"
                 variants={buttonVariants}
                 whileHover="hover"
                 whileTap="tap"
@@ -886,14 +980,14 @@ Make sure to explain each step so the student can learn from the solution. Show 
         {/* Results Section */}
         <motion.div variants={itemVariants}>
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-semibold text-teal-800">Solution</h2>
-            {answer && (
+            <h2 className="text-2xl font-semibold text-cyan-400">Solution</h2>
+            {(answer || pageSolutions.length > 0) && (
               <motion.button
                 variants={buttonVariants}
                 whileHover="hover"
                 whileTap="tap"
                 onClick={() => setFullScreenSolution(!fullScreenSolution)}
-                className="flex items-center text-teal-600 font-medium"
+                className="flex items-center text-cyan-400 font-medium hover:text-cyan-300"
               >
                 <IconComponent 
                   icon={AiOutlineFullscreen} 
@@ -905,52 +999,367 @@ Make sure to explain each step so the student can learn from the solution. Show 
           </div>
           
           <motion.div
-            className={`bg-gray-50 rounded-xl p-6 overflow-y-auto transition-all duration-300 ${
+            className={`bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl p-6 overflow-y-auto transition-all duration-300 ${
               fullScreenSolution ? 
-                "fixed top-0 left-0 right-0 bottom-0 z-50 rounded-none" : 
+                "fixed top-0 left-0 right-0 bottom-0 z-50 rounded-none bg-slate-900" : 
                 "h-[450px]"
             }`}
             variants={itemVariants}
-            animate={answer ? { boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)" } : {}}
+            animate={(answer || pageSolutions.length > 0) ? { boxShadow: "0 4px 20px rgba(6, 182, 212, 0.1)" } : {}}
           >
-            {loading ? (
-              <div className="flex flex-col items-center justify-center h-full text-gray-500">
+            {fullScreenSolution ? (
+              // Fullscreen mode with document on left and solution on right
+              <div className="h-full flex flex-col">
+                {/* Top navigation bar */}
+                <div className="flex justify-between items-center p-4 bg-slate-800/90 backdrop-blur-sm border-b border-white/10 flex-shrink-0">
+                  <div className="flex items-center space-x-4">
+                    {pageSolutions.length > 0 && (
+                      <>
+                        <button
+                          onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                          disabled={currentPage === 0}
+                          className="flex items-center px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          ← Previous
+                        </button>
+                        <span className="text-slate-300 font-medium">
+                          Page {currentPage + 1} of {pageSolutions.length}
+                        </span>
+                        <button
+                          onClick={() => setCurrentPage(Math.min(pageSolutions.length - 1, currentPage + 1))}
+                          disabled={currentPage === pageSolutions.length - 1}
+                          className="flex items-center px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Next →
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  
+                  <motion.button
+                    variants={buttonVariants}
+                    whileHover="hover"
+                    whileTap="tap"
+                    onClick={() => setFullScreenSolution(false)}
+                    className="bg-slate-600/50 backdrop-blur-sm text-slate-300 px-4 py-2 rounded-lg shadow-md hover:bg-slate-500/50 border border-white/10"
+                  >
+                    Exit Fullscreen
+                  </motion.button>
+                </div>
+                
+                {/* Content area - split view */}
+                <div className="flex-1 flex overflow-hidden">
+                  {/* Left half - Document */}
+                  {documentPages.length > 0 && (
+                    <div className="w-1/2 p-4 border-r border-white/10 bg-slate-800/30 backdrop-blur-sm flex flex-col">
+                      <h3 className="text-lg font-semibold text-cyan-400 mb-4 flex-shrink-0">Document - Page {currentPage + 1}</h3>
+                      <div className="flex-1 bg-slate-700/50 backdrop-blur-sm rounded-lg overflow-hidden shadow-sm border border-white/10">
+                        <img 
+                          src={documentPages[currentPage]} 
+                          alt={`Document page ${currentPage + 1}`}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Right half - Solution */}
+                  <div className={`${documentPages.length > 0 ? 'w-1/2' : 'w-full'} p-4 flex flex-col`}>
+                    <h3 className="text-lg font-semibold text-cyan-400 mb-4 flex-shrink-0">
+                      {pageSolutions.length > 0 ? `Page ${currentPage + 1} Solution` : 'Solution'}
+                    </h3>
+                    <div className="flex-1 overflow-y-auto">
+                      {pageSolutions.length > 0 ? (
+                        // Page solution content
+                        <div>
+                          {/* Page solution status */}
+                          <div className="mb-4 p-3 bg-blue-500/10 backdrop-blur-sm rounded-lg border border-blue-500/20 flex-shrink-0">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                {pageSolutions[currentPage]?.isLoading && (
+                                  <div className="flex items-center text-blue-400">
+                                    <motion.div
+                                      className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full mr-2"
+                                      animate={{ rotate: 360 }}
+                                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                    />
+                                    <span className="text-sm">Processing...</span>
+                                  </div>
+                                )}
+                                {pageSolutions[currentPage]?.isComplete && !pageSolutions[currentPage]?.error && (
+                                  <span className="text-sm text-emerald-400 font-medium">✓ Complete</span>
+                                )}
+                                {pageSolutions[currentPage]?.error && (
+                                  <span className="text-sm text-red-400 font-medium">⚠ Error</span>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Progress indicator for all pages */}
+                            <div className="mt-2">
+                              <div className="flex items-center space-x-1">
+                                {pageSolutions.map((ps, index) => (
+                                  <div
+                                    key={index}
+                                    className={`w-3 h-3 rounded-full ${
+                                      ps.isComplete && !ps.error
+                                        ? 'bg-green-500'
+                                        : ps.error
+                                        ? 'bg-red-500'
+                                        : ps.isLoading
+                                        ? 'bg-blue-500 animate-pulse'
+                                        : 'bg-slate-500'
+                                    }`}
+                                    title={`Page ${index + 1}: ${
+                                      ps.isComplete && !ps.error
+                                        ? 'Complete'
+                                        : ps.error
+                                        ? 'Error'
+                                        : ps.isLoading
+                                        ? 'Processing'
+                                        : 'Pending'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <p className="text-xs text-slate-400 mt-1">
+                                {pageSolutions.filter(ps => ps.isComplete && !ps.error).length} of {pageSolutions.length} pages completed
+                              </p>
+                            </div>
+                          </div>
+                          
+                          {/* Current page solution content */}
+                          <div
+                            className="prose prose-lg max-w-none
+                              prose-headings:text-cyan-400 
+                              prose-p:text-slate-300 prose-p:leading-relaxed
+                              prose-strong:text-slate-200 prose-strong:font-bold
+                              prose-em:text-slate-300 prose-em:italic
+                              prose-code:bg-slate-700/50 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-sm prose-code:text-cyan-300
+                              prose-pre:bg-slate-700/50 prose-pre:border prose-pre:border-slate-600
+                              prose-blockquote:border-l-4 prose-blockquote:border-cyan-500 prose-blockquote:bg-cyan-500/10
+                              prose-ul:space-y-1 prose-ol:space-y-1
+                              prose-li:marker:text-cyan-400 prose-li:text-slate-300
+                              prose-a:text-cyan-400 prose-a:font-medium
+                              prose-table:border prose-table:border-slate-600
+                              prose-th:bg-slate-700/50 prose-th:font-semibold prose-th:text-cyan-400
+                              prose-td:border-t prose-td:border-slate-600 prose-td:text-slate-300"
+                          >
+                            {pageSolutions[currentPage]?.solution ? (
+                              <ReactMarkdown
+                                remarkPlugins={[remarkMath, remarkGfm]}
+                                rehypePlugins={[rehypeKatex]}
+                                components={markdownComponents}
+                              >
+                                {preprocessLaTeX(pageSolutions[currentPage].solution)}
+                              </ReactMarkdown>
+                            ) : pageSolutions[currentPage]?.isLoading ? (
+                              <div className="flex items-center justify-center py-8">
+                                <motion.div
+                                  className="w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full mr-3"
+                                  animate={{ rotate: 360 }}
+                                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                />
+                                <span className="text-slate-300">Generating solution for this page...</span>
+                              </div>
+                            ) : (
+                              <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                                <IconComponent icon={AiOutlineBulb} className="h-12 w-12 mb-3 opacity-50" />
+                                <p className="text-center">Your solution will appear here after submitting your homework problem.</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : answer ? (
+                        // Text question answer
+                        <div
+                          className="prose prose-lg max-w-none
+                            prose-headings:text-cyan-400 
+                            prose-p:text-slate-300 prose-p:leading-relaxed
+                            prose-strong:text-slate-200 prose-strong:font-bold
+                            prose-em:text-slate-300 prose-em:italic
+                            prose-code:bg-slate-700/50 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-sm prose-code:text-cyan-300
+                            prose-pre:bg-slate-700/50 prose-pre:border prose-pre:border-slate-600
+                            prose-blockquote:border-l-4 prose-blockquote:border-cyan-500 prose-blockquote:bg-cyan-500/10
+                            prose-ul:space-y-1 prose-ol:space-y-1
+                            prose-li:marker:text-cyan-400 prose-li:text-slate-300
+                            prose-a:text-cyan-400 prose-a:font-medium
+                            prose-table:border prose-table:border-slate-600
+                            prose-th:bg-slate-700/50 prose-th:font-semibold prose-th:text-cyan-400
+                            prose-td:border-t prose-td:border-slate-600 prose-td:text-slate-300"
+                        >
+                          <ReactMarkdown
+                            remarkPlugins={[remarkMath, remarkGfm]}
+                            rehypePlugins={[rehypeKatex]}
+                            components={markdownComponents}
+                          >
+                            {preprocessLaTeX(answer)}
+                          </ReactMarkdown>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                          <IconComponent icon={AiOutlineBulb} className="h-12 w-12 mb-3 opacity-50" />
+                          <p className="text-center">Your solution will appear here after submitting your homework problem.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : loading ? (
+              // Loading state
+              <div className="flex flex-col items-center justify-center h-full text-slate-300">
                 <motion.div
-                  className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full mb-4"
+                  className="w-16 h-16 border-4 border-cyan-500 border-t-transparent rounded-full mb-4"
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                 />
-                <p className="text-center">{processingStatus || 'Analyzing your homework...'}</p>
+                <p className="text-center text-slate-300">{processingStatus || 'Analyzing your homework...'}</p>
               </div>
-            ) : answer ? (
+            ) : pageSolutions.length > 0 ? (
+              // Show page-specific solution
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5 }}
                 className="relative"
               >
-                {fullScreenSolution && (
-                  <div className="sticky top-2 right-2 flex justify-end mb-4">
-                    <motion.button
-                      variants={buttonVariants}
-                      whileHover="hover"
-                      whileTap="tap"
-                      onClick={() => setFullScreenSolution(false)}
-                      className="bg-white text-gray-700 p-2 rounded-full shadow-md"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </motion.button>
+                {/* Page solution header */}
+                <div className="mb-4 p-3 bg-blue-500/10 backdrop-blur-sm rounded-lg border border-blue-500/20">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-blue-100">
+                      Page {currentPage + 1} Solution
+                    </h3>
+                    <div className="flex items-center space-x-2">
+                      {pageSolutions[currentPage]?.isLoading && (
+                        <div className="flex items-center text-blue-400">
+                          <motion.div
+                            className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full mr-2"
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          />
+                          <span className="text-sm">Processing...</span>
+                        </div>
+                      )}
+                      {pageSolutions[currentPage]?.isComplete && !pageSolutions[currentPage]?.error && (
+                        <span className="text-sm text-emerald-400 font-medium">✓ Complete</span>
+                      )}
+                      {pageSolutions[currentPage]?.error && (
+                        <span className="text-sm text-red-400 font-medium">⚠ Error</span>
+                      )}
+                    </div>
                   </div>
-                )}
-                <div 
-                  className="solution-content prose prose-teal max-w-none"
-                  dangerouslySetInnerHTML={{ __html: contentToHTML(answer) }}
-                />
+                  
+                  {/* Progress indicator for all pages */}
+                  <div className="mt-2">
+                    <div className="flex items-center space-x-1">
+                      {pageSolutions.map((ps, index) => (
+                        <div
+                          key={index}
+                          className={`w-3 h-3 rounded-full ${
+                            ps.isComplete && !ps.error
+                              ? 'bg-green-500'
+                              : ps.error
+                              ? 'bg-red-500'
+                              : ps.isLoading
+                              ? 'bg-blue-500 animate-pulse'
+                              : 'bg-slate-500'
+                          }`}
+                          title={`Page ${index + 1}: ${
+                            ps.isComplete && !ps.error
+                              ? 'Complete'
+                              : ps.error
+                              ? 'Error'
+                              : ps.isLoading
+                              ? 'Processing'
+                              : 'Pending'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {pageSolutions.filter(ps => ps.isComplete && !ps.error).length} of {pageSolutions.length} pages completed
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Current page solution content */}
+                <div
+                  className="prose prose-lg max-w-none
+                    prose-headings:text-cyan-400 
+                    prose-p:text-slate-300 prose-p:leading-relaxed
+                    prose-strong:text-slate-200 prose-strong:font-bold
+                    prose-em:text-slate-300 prose-em:italic
+                    prose-code:bg-slate-700/50 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-sm prose-code:text-cyan-300
+                    prose-pre:bg-slate-700/50 prose-pre:border prose-pre:border-slate-600
+                    prose-blockquote:border-l-4 prose-blockquote:border-cyan-500 prose-blockquote:bg-cyan-500/10
+                    prose-ul:space-y-1 prose-ol:space-y-1
+                    prose-li:marker:text-cyan-400 prose-li:text-slate-300
+                    prose-a:text-cyan-400 prose-a:font-medium
+                    prose-table:border prose-table:border-slate-600
+                    prose-th:bg-slate-700/50 prose-th:font-semibold prose-th:text-cyan-400
+                    prose-td:border-t prose-td:border-slate-600 prose-td:text-slate-300"
+                >
+                  {pageSolutions[currentPage]?.solution ? (
+                    <ReactMarkdown
+                      remarkPlugins={[remarkMath, remarkGfm]}
+                      rehypePlugins={[rehypeKatex]}
+                      components={markdownComponents}
+                    >
+                      {preprocessLaTeX(pageSolutions[currentPage].solution)}
+                    </ReactMarkdown>
+                  ) : pageSolutions[currentPage]?.isLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <motion.div
+                        className="w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full mr-3"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      />
+                      <span className="text-slate-300">Generating solution for this page...</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                      <IconComponent icon={AiOutlineBulb} className="h-12 w-12 mb-3 opacity-50" />
+                      <p className="text-center">Your solution will appear here after submitting your homework problem.</p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            ) : answer ? (
+              // Show text question answer
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
+                className="relative"
+              >
+                <div
+                  className="prose prose-lg max-w-none
+                    prose-headings:text-cyan-400 
+                    prose-p:text-slate-300 prose-p:leading-relaxed
+                    prose-strong:text-slate-200 prose-strong:font-bold
+                    prose-em:text-slate-300 prose-em:italic
+                    prose-code:bg-slate-700/50 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-sm prose-code:text-cyan-300
+                    prose-pre:bg-slate-700/50 prose-pre:border prose-pre:border-slate-600
+                    prose-blockquote:border-l-4 prose-blockquote:border-cyan-500 prose-blockquote:bg-cyan-500/10
+                    prose-ul:space-y-1 prose-ol:space-y-1
+                    prose-li:marker:text-cyan-400 prose-li:text-slate-300
+                    prose-a:text-cyan-400 prose-a:font-medium
+                    prose-table:border prose-table:border-slate-600
+                    prose-th:bg-slate-700/50 prose-th:font-semibold prose-th:text-cyan-400
+                    prose-td:border-t prose-td:border-slate-600 prose-td:text-slate-300"
+                >
+                  <ReactMarkdown
+                    remarkPlugins={[remarkMath, remarkGfm]}
+                    rehypePlugins={[rehypeKatex]}
+                    components={markdownComponents}
+                  >
+                    {preprocessLaTeX(answer)}
+                  </ReactMarkdown>
+                </div>
               </motion.div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-gray-500">
+              <div className="flex flex-col items-center justify-center h-full text-slate-400">
                 <IconComponent icon={AiOutlineBulb} className="h-12 w-12 mb-3 opacity-50" />
                 <p className="text-center">Your solution will appear here after submitting your homework problem.</p>
               </div>
@@ -958,13 +1367,18 @@ Make sure to explain each step so the student can learn from the solution. Show 
           </motion.div>
 
           {/* Action Buttons */}
-          {answer && (
+          {(answer || (pageSolutions.length > 0 && pageSolutions[currentPage]?.solution)) && (
             <div className="mt-4 flex flex-wrap gap-3">
               <motion.button
                 variants={buttonVariants}
                 whileHover="hover"
                 whileTap="tap"
-                onClick={handleCopyContent}
+                onClick={() => {
+                  const contentToCopy = pageSolutions.length > 0 
+                    ? pageSolutions[currentPage]?.solution || ''
+                    : answer;
+                  handleCopyContent();
+                }}
                 className="flex items-center text-sm px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg"
               >
                 <IconComponent icon={FiCopy} className="mr-2" /> Copy
@@ -1053,38 +1467,38 @@ Make sure to explain each step so the student can learn from the solution. Show 
       {/* Document Preview Section (if file uploaded) - Always fullscreen */}
       {documentPages.length > 0 && (
         <motion.div 
-          className="mt-8 bg-white border border-gray-200 rounded-xl p-6 shadow-sm"
+          className="mt-8 bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl p-6 shadow-sm"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium text-teal-800">Uploaded Document</h3>
+            <h3 className="text-lg font-medium text-cyan-400">Uploaded Document</h3>
             <div className="flex items-center space-x-4">
               <div className="flex space-x-2">
                 <button 
-                  className="px-3 py-1 bg-gray-200 rounded-md disabled:opacity-50"
+                  className="px-3 py-1 bg-slate-600/50 backdrop-blur-sm text-slate-300 rounded-md disabled:opacity-50 border border-white/10"
                   disabled={currentPage === 0}
                   onClick={() => setCurrentPage(prev => prev - 1)}
                 >
                   Previous
                 </button>
                 <button 
-                  className="px-3 py-1 bg-gray-200 rounded-md disabled:opacity-50"
+                  className="px-3 py-1 bg-slate-600/50 backdrop-blur-sm text-slate-300 rounded-md disabled:opacity-50 border border-white/10"
                   disabled={currentPage === documentPages.length - 1}
                   onClick={() => setCurrentPage(prev => prev + 1)}
                 >
                   Next
                 </button>
               </div>
-              <div className="text-gray-600">
+              <div className="text-slate-400">
                 Page {currentPage + 1} of {documentPages.length}
               </div>
             </div>
           </div>
           
           {/* Always show fullscreen image */}
-          <div className="w-full h-[600px] bg-gray-100 rounded-lg overflow-hidden">
+          <div className="w-full h-[600px] bg-slate-700/50 backdrop-blur-sm rounded-lg overflow-hidden border border-white/10">
             <img 
               src={documentPages[currentPage]} 
               alt={`Document page ${currentPage + 1}`}
@@ -1098,14 +1512,14 @@ Make sure to explain each step so the student can learn from the solution. Show 
       <AnimatePresence>
         {showHistory && (
           <motion.div 
-            className="mt-8 bg-white border border-gray-200 rounded-xl p-6 shadow-sm"
+            className="mt-8 bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl p-6 shadow-sm"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-teal-800">Homework History</h3>
+              <h3 className="text-lg font-medium text-cyan-400">Homework History</h3>
               <div className="flex items-center space-x-2">
                 {homeworkHistory.length > 0 && (
                   <motion.button
@@ -1113,14 +1527,14 @@ Make sure to explain each step so the student can learn from the solution. Show 
                     whileHover="hover"
                     whileTap="tap"
                     onClick={clearAllHistory}
-                    className="px-3 py-1 bg-red-100 text-red-600 rounded-lg text-sm font-medium hover:bg-red-200 transition-colors"
+                    className="px-3 py-1 bg-red-500/20 text-red-400 rounded-lg text-sm font-medium hover:bg-red-500/30 transition-colors border border-red-500/30"
                   >
                     Clear All
                   </motion.button>
                 )}
                 <button
                   onClick={() => setShowHistory(false)}
-                  className="text-sm text-gray-400 hover:text-gray-600"
+                  className="text-sm text-slate-400 hover:text-slate-300"
                 >
                   Hide
                 </button>
@@ -1132,7 +1546,7 @@ Make sure to explain each step so the student can learn from the solution. Show 
                 homeworkHistory.map((item) => (
                   <motion.div
                     key={item.id}
-                    className="p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors group"
+                    className="p-4 bg-slate-600/40 backdrop-blur-sm rounded-lg cursor-pointer hover:bg-slate-500/40 transition-colors group border border-white/10"
                     onClick={() => loadFromHistory(item)}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -1142,20 +1556,20 @@ Make sure to explain each step so the student can learn from the solution. Show 
                         <div className="flex items-center space-x-2 mb-2">
                           <IconComponent 
                             icon={item.fileType === 'text' ? AiOutlineFileText : AiOutlineUpload} 
-                            className="h-4 w-4 text-teal-600" 
+                            className="h-4 w-4 text-cyan-400" 
                           />
-                          <p className="text-sm font-medium text-gray-700 truncate">
+                          <p className="text-sm font-medium text-slate-300 truncate">
                             {item.fileName}
                           </p>
-                          <span className="text-xs text-gray-400">
+                          <span className="text-xs text-slate-400">
                             <IconComponent icon={FiClock} className="h-3 w-3 inline mr-1" />
                             {formatRelativeTime(item.timestamp)}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-600 truncate mb-2">
+                        <p className="text-sm text-slate-400 truncate mb-2">
                           {item.question.length > 100 ? `${item.question.substring(0, 100)}...` : item.question}
                         </p>
-                        <p className="text-xs text-gray-500 truncate">
+                        <p className="text-xs text-slate-500 truncate">
                           Solution: {item.answer.length > 80 ? `${item.answer.substring(0, 80)}...` : item.answer}
                         </p>
                       </div>
@@ -1165,7 +1579,7 @@ Make sure to explain each step so the student can learn from the solution. Show 
                           e.stopPropagation();
                           deleteHistoryItem(item.id);
                         }}
-                        className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 transition-all"
+                        className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-400 transition-all"
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
                       >
@@ -1175,7 +1589,7 @@ Make sure to explain each step so the student can learn from the solution. Show 
                   </motion.div>
                 ))
               ) : (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-slate-400">
                   <IconComponent icon={AiOutlineHistory} className="mx-auto text-4xl mb-2" />
                   <p>No homework history yet</p>
                   <p className="text-sm mt-1">Your solved homework will appear here</p>

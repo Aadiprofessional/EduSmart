@@ -3,11 +3,80 @@ import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { jsPDF } from 'jspdf';
 import { Document, Paragraph, TextRun, Packer } from 'docx';
-import { FiEdit, FiDownload, FiShare2, FiSave, FiSettings, FiRotateCw, FiRefreshCw, FiCopy, FiTrash, FiBook, FiFileText, FiMail, FiClipboard } from 'react-icons/fi';
-import { AiOutlineFontSize, AiOutlineHighlight, AiOutlineAlignLeft, AiOutlineAlignCenter, AiOutlineAlignRight, AiOutlineBold, AiOutlineItalic, AiOutlineUnderline, AiOutlineOrderedList, AiOutlineUnorderedList, AiOutlineLink, AiOutlineRobot, AiOutlineBulb, AiOutlineHistory } from 'react-icons/ai';
+import { FiEdit, FiDownload, FiShare2, FiSave, FiSettings, FiRotateCw, FiRefreshCw, FiCopy, FiTrash, FiBook, FiFileText, FiMail, FiClipboard, FiX, FiPlus, FiMinus } from 'react-icons/fi';
+import { AiOutlineFontSize, AiOutlineHighlight, AiOutlineAlignLeft, AiOutlineAlignCenter, AiOutlineAlignRight, AiOutlineBold, AiOutlineItalic, AiOutlineUnderline, AiOutlineOrderedList, AiOutlineUnorderedList, AiOutlineLink, AiOutlineRobot, AiOutlineBulb, AiOutlineHistory, AiOutlineLoading3Quarters, AiOutlinePlus, AiOutlineMinus } from 'react-icons/ai';
+import { BsQuote } from 'react-icons/bs';
 import IconComponent from './IconComponent';
 
+// Import markdown and math libraries
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import 'katex/dist/katex.min.css';
+
 const ContentWriterComponent: React.FC = () => {
+  // Preprocess LaTeX for react-markdown
+  const preprocessLaTeX = (content: string) => {
+    return content
+      .replace(/\\\[(.*?)\\\]/g, (_, eq) => `$$${eq}$$`)   // block math
+      .replace(/\\\((.*?)\\\)/g, (_, eq) => `$${eq}$`);    // inline math
+  };
+
+  // Custom components for ReactMarkdown
+  const markdownComponents = {
+    code({ node, inline, className, children, ...props }: any) {
+      const match = /language-(\w+)/.exec(className || '');
+      return !inline && match ? (
+        <SyntaxHighlighter
+          style={vscDarkPlus}
+          language={match[1]}
+          PreTag="div"
+          className="rounded-lg"
+          {...props}
+        >
+          {String(children).replace(/\n$/, '')}
+        </SyntaxHighlighter>
+      ) : (
+        <code className={`${className} bg-slate-700/50 px-2 py-1 rounded text-sm font-mono text-cyan-300`} {...props}>
+          {children}
+        </code>
+      );
+    },
+    h1: ({ children }: any) => <h1 className="text-2xl font-bold text-cyan-400 mt-6 mb-4 border-b-2 border-cyan-500/30 pb-2">{children}</h1>,
+    h2: ({ children }: any) => <h2 className="text-xl font-bold text-cyan-400 mt-5 mb-3 border-b border-cyan-500/20 pb-1">{children}</h2>,
+    h3: ({ children }: any) => <h3 className="text-lg font-bold text-blue-400 mt-4 mb-2 bg-blue-500/10 px-3 py-2 rounded border border-blue-500/20">{children}</h3>,
+    h4: ({ children }: any) => <h4 className="text-base font-semibold text-slate-300 mt-3 mb-2">{children}</h4>,
+    p: ({ children }: any) => <p className="text-slate-300 mb-4 leading-relaxed">{children}</p>,
+    ul: ({ children }: any) => <ul className="list-disc list-inside mb-4 text-slate-300 space-y-1">{children}</ul>,
+    ol: ({ children }: any) => <ol className="list-decimal list-inside mb-4 text-slate-300 space-y-1">{children}</ol>,
+    li: ({ children }: any) => <li className="mb-1 pl-2">{children}</li>,
+    blockquote: ({ children }: any) => (
+      <blockquote className="border-l-4 border-cyan-500 pl-4 my-4 bg-cyan-500/10 py-3 rounded-r italic text-slate-300 backdrop-blur-sm">
+        {children}
+      </blockquote>
+    ),
+    strong: ({ children }: any) => <strong className="font-bold text-slate-200 bg-yellow-500/20 px-1 rounded">{children}</strong>,
+    em: ({ children }: any) => <em className="italic text-slate-300">{children}</em>,
+    table: ({ children }: any) => (
+      <div className="overflow-x-auto my-4">
+        <table className="min-w-full border border-slate-600 rounded-lg overflow-hidden bg-slate-700/30 backdrop-blur-sm">{children}</table>
+      </div>
+    ),
+    thead: ({ children }: any) => <thead className="bg-slate-600/50">{children}</thead>,
+    tbody: ({ children }: any) => <tbody>{children}</tbody>,
+    tr: ({ children }: any) => <tr className="border-b border-slate-600 hover:bg-slate-600/30">{children}</tr>,
+    th: ({ children }: any) => <th className="px-4 py-2 text-left font-semibold text-cyan-400">{children}</th>,
+    td: ({ children }: any) => <td className="px-4 py-2 text-slate-300">{children}</td>,
+    a: ({ children, href }: any) => (
+      <a href={href} className="text-cyan-400 hover:text-cyan-300 underline font-medium" target="_blank" rel="noopener noreferrer">
+        {children}
+      </a>
+    ),
+  };
+
   const [prompt, setPrompt] = useState('');
   const [generatedContent, setGeneratedContent] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -121,6 +190,9 @@ const ContentWriterComponent: React.FC = () => {
     retries = 3, 
     onChunk?: (chunk: string) => void
   ): Promise<string> => {
+    console.log('🔄 Starting Content Writer API request');
+    console.log('📝 Prompt:', prompt.substring(0, 200) + '...');
+    
     for (let i = 0; i < retries; i++) {
       try {
         // Add delay between retries
@@ -128,23 +200,47 @@ const ContentWriterComponent: React.FC = () => {
           await delay(2000 * i); // Exponential backoff
         }
 
-        const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+        const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
           method: 'POST',
           headers: {
-            'Authorization': 'Bearer sk-80beadf6603b4832981d0d65896b1ae0',
+            'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: "qvq-max",
+            model: "qwen-vl-max",
             messages: [
+              {
+                role: "system",
+                content: [
+                  {
+                    type: "text", 
+                    text: "You are a professional academic writing assistant. Generate high-quality, well-structured content based on user prompts. Focus on clarity, coherence, and academic standards. Use proper markdown formatting for better readability."
+                  }
+                ]
+              },
               {
                 role: "user",
                 content: [
                   {
                     type: "text",
-                    text: `You are a professional academic writing assistant. Generate high-quality, well-structured content based on user prompts. Focus on clarity, coherence, and academic standards.
+                    text: `Please help me create well-written content based on this request:
 
-User request: ${prompt}`
+${prompt}
+
+Please provide:
+1. Well-structured and organized content
+2. Clear and engaging writing style
+3. Proper grammar and formatting
+4. Relevant examples and details where appropriate
+
+Format your response with:
+- Use **bold** for important terms and concepts
+- Use proper headings and subheadings for structure
+- Use bullet points for lists and key points
+- Provide comprehensive, high-quality content
+- Make it engaging and informative
+
+Create professional, academic-quality content that meets the request requirements.`
                   }
                 ]
               }
@@ -153,7 +249,10 @@ User request: ${prompt}`
           })
         });
 
+        console.log('📊 API Response status:', response.status);
+
         if (!response.ok) {
+          console.error('❌ API request failed:', response.status, response.statusText);
           throw new Error(`API call failed: ${response.status} ${response.statusText}`);
         }
 
@@ -164,46 +263,46 @@ User request: ${prompt}`
         }
 
         let fullContent = '';
-        let isAnswering = false;
+        let isFirstChunk = true;
         
         try {
           while (true) {
             const { done, value } = await reader.read();
-            if (done) break;
+            if (done) {
+              console.log('🏁 Streaming completed');
+              break;
+            }
             
             const chunk = new TextDecoder().decode(value);
-            const lines = chunk.split('\n').filter(line => line.trim() !== '');
+            const lines = chunk.split('\n');
             
             for (const line of lines) {
               if (line.startsWith('data: ')) {
                 const data = line.slice(6);
-                if (data === '[DONE]') continue;
+                if (data === '[DONE]') {
+                  console.log('✅ Stream marked as DONE');
+                  continue;
+                }
                 
                 try {
                   const parsed = JSON.parse(data);
-                  if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta) {
-                    const delta = parsed.choices[0].delta;
+                  const content_chunk = parsed.choices?.[0]?.delta?.content;
+                  
+                  if (content_chunk) {
+                    if (isFirstChunk) {
+                      console.log('📝 First content chunk received');
+                      isFirstChunk = false;
+                    }
                     
-                    // Skip reasoning content, only collect the final answer
-                    if (delta.reasoning_content) {
-                      // This is the thinking process, we can skip it for content writing
-                      continue;
-                    } else if (delta.content) {
-                      // This is the actual answer content
-                      if (!isAnswering && delta.content.trim() !== '') {
-                        isAnswering = true;
-                      }
-                      if (isAnswering) {
-                        fullContent += delta.content;
-                        // Call the chunk callback if provided
-                        if (onChunk) {
-                          onChunk(delta.content);
-                        }
-                      }
+                    fullContent += content_chunk;
+                    
+                    // Call the chunk callback if provided for real-time updates
+                    if (onChunk) {
+                      onChunk(content_chunk);
                     }
                   }
                 } catch (parseError) {
-                  // Skip invalid JSON chunks
+                  // Skip invalid JSON lines
                   continue;
                 }
               }
@@ -213,13 +312,20 @@ User request: ${prompt}`
           reader.releaseLock();
         }
 
-        return fullContent.trim() || 'Error generating content';
+        console.log('✅ Content Writer API request completed successfully');
+        console.log('📊 Final content length:', fullContent.length);
+        
+        return fullContent.trim() || 'I apologize, but I could not generate content. Please try again.';
       } catch (error) {
-        if (i === retries - 1) throw error; // Throw on last retry
-        console.warn('API call failed, retrying...', error);
+        console.error(`💥 Error in makeAPICall attempt ${i + 1}:`, error);
+        
+        if (i === retries - 1) {
+          throw new Error(`Failed to generate content after ${retries} attempts. Please try again.`);
+        }
       }
     }
-    throw new Error('API call failed after retries');
+    
+    return '';
   };
 
   // Generate content with streaming
@@ -602,19 +708,6 @@ User request: ${prompt}`
     return contentLines.slice(startLine, endLine).join('\n');
   };
   
-  // Function to convert content text to HTML with proper formatting
-  const contentToHTML = (text: string) => {
-    return text
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
-      .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
-      .replace(/_(.*?)_/g, '<u>$1</u>') // Underline
-      .replace(/==(.*?)==/g, '<mark>$1</mark>') // Highlight
-      .replace(/\n- (.*)/g, '<ul><li>$1</li></ul>') // Unordered list
-      .replace(/\n\d+\. (.*)/g, '<ol><li>$1</li></ol>') // Ordered list
-      .replace(/#{1,6} (.*)/g, '<h3>$1</h3>') // Headers
-      .replace(/\n/g, '<br />'); // Newlines
-  };
-
   // Basic formatting functionality
   const applyFormatting = (format: string) => {
     if (!editorRef.current) return;
@@ -1037,16 +1130,16 @@ ${prompt}`
       initial="hidden"
       animate="visible"
       variants={containerVariants}
-      className="bg-gradient-to-b from-teal-50 to-white p-4"
+      className="bg-gradient-to-br from-slate-900 via-blue-900 to-teal-900 p-4 min-h-screen"
     >
       <div className="container mx-auto">
         {/* Header Section */}
         <motion.div variants={itemVariants} className="mb-6">
-          <h1 className="text-3xl font-bold text-primary">
+          <h1 className="text-3xl font-bold text-cyan-400">
             AI Content Writer
-            <span className="ml-2 text-lg font-normal text-teal-600">for Students</span>
+            <span className="ml-2 text-lg font-normal text-slate-300">for Students</span>
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-slate-400 mt-1">
             Generate professional content for applications, essays, letters, and more.
           </p>
         </motion.div>
@@ -1054,8 +1147,8 @@ ${prompt}`
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Left Panel - Template Selection & Input */}
           <motion.div variants={itemVariants} className="w-full lg:w-1/3">
-            <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-              <h2 className="text-xl font-bold text-primary mb-4 flex items-center">
+            <div className="bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl shadow-lg p-6 mb-6">
+              <h2 className="text-xl font-bold text-cyan-400 mb-4 flex items-center">
                 <IconComponent icon={FiFileText} className="mr-2" /> Templates
               </h2>
               <div className="grid grid-cols-2 gap-3 mb-6">
@@ -1066,10 +1159,11 @@ ${prompt}`
                     whileHover="hover"
                     whileTap="tap"
                     onClick={() => selectTemplate(template.id)}
-                    className={`flex flex-col items-center justify-center p-4 rounded-lg transition-colors
-                      ${activeTemplate === template.id 
-                        ? 'bg-primary text-white shadow-md' 
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                    className={`flex flex-col items-center justify-center p-4 rounded-lg transition-colors border ${
+                      activeTemplate === template.id 
+                        ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-md border-cyan-500/30' 
+                        : 'bg-slate-600/30 backdrop-blur-sm text-slate-300 hover:bg-slate-500/30 border-white/10'
+                    }`}
                   >
                     <IconComponent icon={template.icon} className="text-2xl mb-2" />
                     <span className="text-sm text-center">{template.name}</span>
@@ -1077,14 +1171,14 @@ ${prompt}`
                 ))}
               </div>
 
-              <h2 className="text-xl font-bold text-primary mb-4 flex items-center">
+              <h2 className="text-xl font-bold text-cyan-400 mb-4 flex items-center">
                 <IconComponent icon={AiOutlineRobot} className="mr-2" /> Prompt
               </h2>
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Describe what you want to generate... For example: Write a compelling college application essay about my passion for computer science."
-                className="w-full h-40 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+                className="w-full h-40 p-4 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 placeholder-slate-400 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none"
               />
               <motion.button
                 variants={buttonVariants}
@@ -1092,7 +1186,7 @@ ${prompt}`
                 whileTap="tap"
                 onClick={handleGenerateContent}
                 disabled={isGenerating}
-                className="mt-4 w-full bg-secondary hover:bg-secondary-light text-white font-medium py-3 px-6 rounded-lg flex items-center justify-center transition-colors disabled:opacity-50"
+                className="mt-4 w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:shadow-lg text-white font-medium py-3 px-6 rounded-lg flex items-center justify-center transition-all disabled:opacity-50"
               >
                 {isGenerating ? (
                   <>
@@ -1113,7 +1207,7 @@ ${prompt}`
                 whileHover="hover"
                 whileTap="tap"
                 onClick={() => setShowHistory(!showHistory)}
-                className="mt-3 w-full bg-white border border-gray-300 text-gray-700 font-medium py-2 px-6 rounded-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
+                className="mt-3 w-full bg-slate-600/50 backdrop-blur-sm border border-white/10 text-slate-300 font-medium py-2 px-6 rounded-lg flex items-center justify-center hover:bg-slate-500/50 transition-colors"
               >
                 <IconComponent icon={AiOutlineHistory} className="mr-2" /> 
                 View History
@@ -1121,25 +1215,25 @@ ${prompt}`
             </div>
 
             {/* Tips Section */}
-            <motion.div variants={itemVariants} className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-xl font-bold text-primary mb-4 flex items-center">
+            <motion.div variants={itemVariants} className="bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl shadow-lg p-6">
+              <h2 className="text-xl font-bold text-cyan-400 mb-4 flex items-center">
                 <IconComponent icon={FiBook} className="mr-2" /> Tips
               </h2>
-              <ul className="space-y-3 text-gray-700">
+              <ul className="space-y-3 text-slate-300">
                 <li className="flex items-start">
-                  <span className="bg-teal-100 text-teal-700 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0">1</span>
+                  <span className="bg-teal-500/20 text-teal-400 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 text-xs border border-teal-500/30">1</span>
                   <span>Be specific in your prompt for better results</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="bg-teal-100 text-teal-700 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0">2</span>
+                  <span className="bg-teal-500/20 text-teal-400 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 text-xs border border-teal-500/30">2</span>
                   <span>Edit the generated content to personalize it</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="bg-teal-100 text-teal-700 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0">3</span>
+                  <span className="bg-teal-500/20 text-teal-400 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 text-xs border border-teal-500/30">3</span>
                   <span>Use formatting tools to improve readability</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="bg-teal-100 text-teal-700 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0">4</span>
+                  <span className="bg-teal-500/20 text-teal-400 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 text-xs border border-teal-500/30">4</span>
                   <span>Always review and personalize AI-generated content</span>
                 </li>
               </ul>
@@ -1148,15 +1242,15 @@ ${prompt}`
 
           {/* Right Panel - Editor */}
           <motion.div variants={itemVariants} className="w-full lg:w-2/3">
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div className="bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl shadow-lg overflow-hidden">
               {/* Toolbar */}
-              <div className="bg-gray-100 p-3 border-b border-gray-200 flex flex-wrap items-center gap-2">
+              <div className="bg-slate-700/50 backdrop-blur-sm p-3 border-b border-white/10 flex flex-wrap items-center gap-2">
                 <motion.button
                   variants={buttonVariants}
                   whileHover="hover"
                   whileTap="tap"
                   onClick={() => applyFormatting('bold')}
-                  className="p-2 rounded hover:bg-gray-200"
+                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
                   title="Bold"
                 >
                   <IconComponent icon={AiOutlineBold} />
@@ -1166,7 +1260,7 @@ ${prompt}`
                   whileHover="hover"
                   whileTap="tap"
                   onClick={() => applyFormatting('italic')}
-                  className="p-2 rounded hover:bg-gray-200"
+                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
                   title="Italic"
                 >
                   <IconComponent icon={AiOutlineItalic} />
@@ -1176,18 +1270,18 @@ ${prompt}`
                   whileHover="hover"
                   whileTap="tap"
                   onClick={() => applyFormatting('underline')}
-                  className="p-2 rounded hover:bg-gray-200"
+                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
                   title="Underline"
                 >
                   <IconComponent icon={AiOutlineUnderline} />
                 </motion.button>
-                <div className="h-6 w-px bg-gray-300 mx-1"></div>
+                <div className="h-6 w-px bg-white/20 mx-1"></div>
                 <motion.button
                   variants={buttonVariants}
                   whileHover="hover"
                   whileTap="tap"
                   onClick={() => applyFormatting('list-ordered')}
-                  className="p-2 rounded hover:bg-gray-200"
+                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
                   title="Ordered List"
                 >
                   <IconComponent icon={AiOutlineOrderedList} />
@@ -1197,7 +1291,7 @@ ${prompt}`
                   whileHover="hover"
                   whileTap="tap"
                   onClick={() => applyFormatting('list-unordered')}
-                  className="p-2 rounded hover:bg-gray-200"
+                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
                   title="Unordered List"
                 >
                   <IconComponent icon={AiOutlineUnorderedList} />
@@ -1206,453 +1300,362 @@ ${prompt}`
                   variants={buttonVariants}
                   whileHover="hover"
                   whileTap="tap"
-                  onClick={() => applyFormatting('highlight')}
-                  className="p-2 rounded hover:bg-gray-200"
-                  title="Highlight"
+                  onClick={() => applyFormatting('quote')}
+                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
+                  title="Quote"
                 >
-                  <IconComponent icon={AiOutlineHighlight} />
+                  <IconComponent icon={BsQuote} />
                 </motion.button>
-                <div className="h-6 w-px bg-gray-300 mx-1"></div>
-                <div className="flex items-center">
-                  <motion.button
-                    variants={buttonVariants}
-                    whileHover="hover"
-                    whileTap="tap"
-                    onClick={() => changeFontSize(-1)}
-                    className="p-2 rounded hover:bg-gray-200"
-                    title="Decrease font size"
-                  >
-                    <IconComponent icon={AiOutlineFontSize} className="text-sm" />
-                  </motion.button>
-                  <span className="text-sm mx-1">{fontSize}px</span>
-                  <motion.button
-                    variants={buttonVariants}
-                    whileHover="hover"
-                    whileTap="tap"
-                    onClick={() => changeFontSize(1)}
-                    className="p-2 rounded hover:bg-gray-200"
-                    title="Increase font size"
-                  >
-                    <IconComponent icon={AiOutlineFontSize} className="text-lg" />
-                  </motion.button>
-                </div>
-                
-                <div className="flex-grow"></div>
-                
+                <div className="h-6 w-px bg-white/20 mx-1"></div>
                 <motion.button
                   variants={buttonVariants}
                   whileHover="hover"
                   whileTap="tap"
-                  onClick={() => setShowPreview(!showPreview)}
-                  className={`px-3 py-1 rounded text-sm font-medium ${showPreview ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                  title="Toggle Preview"
+                  onClick={() => changeFontSize(2)}
+                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
+                  title="Increase Font Size"
                 >
-                  {showPreview ? 'Edit Mode' : 'Preview'}
+                  <IconComponent icon={AiOutlinePlus} />
                 </motion.button>
-                
                 <motion.button
                   variants={buttonVariants}
                   whileHover="hover"
                   whileTap="tap"
-                  onClick={() => setShowAIEditModal(true)}
-                  className="flex items-center px-3 py-1 rounded text-sm font-medium bg-gradient-to-r from-purple-500 to-indigo-600 text-white hover:from-purple-600 hover:to-indigo-700"
+                  onClick={() => changeFontSize(-2)}
+                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
+                  title="Decrease Font Size"
                 >
-                  <IconComponent icon={AiOutlineRobot} className="mr-2" />
-                  AI Edit
+                  <IconComponent icon={AiOutlineMinus} />
+                </motion.button>
+                <div className="h-6 w-px bg-white/20 mx-1"></div>
+                <motion.button
+                  variants={buttonVariants}
+                  whileHover="hover"
+                  whileTap="tap"
+                  onClick={handleCopyContent}
+                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
+                  title="Copy Content"
+                >
+                  <IconComponent icon={FiCopy} />
+                </motion.button>
+                <motion.button
+                  variants={buttonVariants}
+                  whileHover="hover"
+                  whileTap="tap"
+                  onClick={() => handleDownloadContent('txt')}
+                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
+                  title="Download"
+                >
+                  <IconComponent icon={FiDownload} />
+                </motion.button>
+                <motion.button
+                  variants={buttonVariants}
+                  whileHover="hover"
+                  whileTap="tap"
+                  onClick={handleShareContent}
+                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
+                  title="Share"
+                >
+                  <IconComponent icon={FiShare2} />
                 </motion.button>
               </div>
 
-              {/* Content Panel */}
-              <div className="p-6">
-                {showPreview ? (
-                  <div className="flex flex-col items-center">
-                    <div 
-                      className="min-h-[800px] w-full max-w-[650px] p-8 border border-gray-200 rounded-lg prose max-w-none bg-white shadow-md mx-auto"
-                      style={{ 
-                        fontSize: `${fontSize}px`,
-                        height: `${pageHeight}px`,
-                        overflow: 'hidden',
-                        position: 'relative',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
-                      }}
-                    >
-                      <div 
-                        style={{ 
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          padding: '2.5rem',
-                          overflowY: 'hidden'
-                        }}
-                        dangerouslySetInnerHTML={{ __html: contentToHTML(getCurrentPageContent()) }}
-                      />
-                      
-                      {/* Page number indicator */}
-                      <div className="absolute bottom-4 right-4 text-gray-500 text-sm font-medium">
-                        Page {currentPage} of {totalPages}
-                      </div>
-                    </div>
-                    
-                    {/* Pagination Controls */}
-                    {totalPages > 1 && (
-                      <div className="flex justify-center mt-6">
-                        <div className="flex space-x-4 items-center">
-                          <button
-                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                            disabled={currentPage === 1}
-                            className="px-4 py-2 border rounded-lg disabled:opacity-50 hover:bg-gray-50 flex items-center"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                            Previous
-                          </button>
-                          <span className="px-4 py-2 bg-gray-100 rounded-lg font-medium">
-                            {currentPage} / {totalPages}
-                          </span>
-                          <button
-                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                            disabled={currentPage === totalPages}
-                            className="px-4 py-2 border rounded-lg disabled:opacity-50 hover:bg-gray-50 flex items-center"
-                          >
-                            Next
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="relative">
+              {/* Editor Content */}
+              <div className="flex h-[600px]">
+                {/* Editor */}
+                <div className="w-1/2 border-r border-white/10">
+                  <div className="h-full relative">
                     <textarea
                       ref={editorRef}
                       value={editedContent}
                       onChange={(e) => setEditedContent(e.target.value)}
                       onFocus={handleEditorFocus}
-                      placeholder="Your content will appear here after generation. You can edit it as needed."
-                      className="w-full min-h-[400px] p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent font-mono resize-none"
-                      style={{ fontSize: `${fontSize}px` }}
+                      placeholder="Start writing or generate content using AI..."
+                      className="w-full h-full p-6 bg-slate-700/30 backdrop-blur-sm text-slate-300 placeholder-slate-400 resize-none focus:outline-none border-none"
+                      style={{ fontSize: `${fontSize}px`, lineHeight: '1.6' }}
                     />
-                    {/* Ask AI Button that appears when text is selected */}
+                    
+                    {/* Ask AI Button */}
                     {showAskAIButton && selectionData && (
-                      <div 
-                        className="fixed z-50" 
-                        ref={askAIButtonRef}
-                        style={{
-                          pointerEvents: 'auto',
-                        }}
+                      <motion.button
+                        ref={askAIButtonRef as any}
+                        onClick={handleAskAIForSelection}
+                        className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-3 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all text-sm font-medium flex items-center space-x-2"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                       >
-                        <motion.button
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          onClick={handleAskAIForSelection}
-                          className="flex items-center justify-center px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-700 text-white rounded-lg shadow-lg hover:from-purple-700 hover:to-indigo-800 transition-all"
-                          style={{
-                            minWidth: '110px',
-                            minHeight: '40px',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          <IconComponent icon={AiOutlineRobot} className="mr-2 text-lg" />
-                          <span className="font-medium">Ask AI</span>
-                        </motion.button>
-                      </div>
+                        <IconComponent icon={AiOutlineRobot} className="h-4 w-4" />
+                        <span>Ask AI</span>
+                      </motion.button>
                     )}
-                    {highlightedSections.map((section, index) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="absolute left-0 right-0 bg-purple-100 bg-opacity-30 pointer-events-none"
-                        style={{
-                          top: `${section.start * 1.5}em`,
-                          height: `${(section.end - section.start) * 1.5}em`
-                        }}
-                      />
-                    ))}
                   </div>
-                )}
+                </div>
 
-                {/* Action Buttons */}
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <motion.button
-                    variants={buttonVariants}
-                    whileHover="hover"
-                    whileTap="tap"
-                    onClick={handleCopyContent}
-                    className="flex items-center text-sm px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg"
-                  >
-                    <IconComponent icon={FiCopy} className="mr-2" /> Copy
-                  </motion.button>
-                  
-                  {/* Download Buttons */}
-                  <div className="flex items-center space-x-2">
-                    <motion.button
-                      variants={buttonVariants}
-                      whileHover="hover"
-                      whileTap="tap"
-                      onClick={() => setShowDownloadOptions(!showDownloadOptions)}
-                      className={`flex items-center text-sm px-4 py-2 rounded-lg transition-all duration-300 ${
-                        showDownloadOptions 
-                          ? 'bg-primary text-white' 
-                          : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                      }`}
-                    >
-                      <IconComponent icon={FiDownload} className="mr-2" /> 
-                      {showDownloadOptions ? 'Close' : 'Download'}
-                    </motion.button>
-
-                    <AnimatePresence>
-                      {showDownloadOptions && (
-                        <motion.div 
-                          className="flex items-center space-x-2"
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: -20 }}
-                          transition={{ duration: 0.3 }}
-                        >
-                          <motion.button
-                            whileHover={{ scale: 1.05, y: -2 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => handleDownloadContent('pdf')}
-                            className="flex items-center text-sm px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
-                          >
-                            <div className="flex items-center">
-                              <span className="mr-2 text-lg">📑</span>
-                              <span className="font-medium">PDF</span>
-                            </div>
-                          </motion.button>
-
-                          <motion.button
-                            whileHover={{ scale: 1.05, y: -2 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => handleDownloadContent('doc')}
-                            className="flex items-center text-sm px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
-                          >
-                            <div className="flex items-center">
-                              <span className="mr-2 text-lg">📝</span>
-                              <span className="font-medium">DOC</span>
-                            </div>
-                          </motion.button>
-
-                          <motion.button
-                            whileHover={{ scale: 1.05, y: -2 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => handleDownloadContent('txt')}
-                            className="flex items-center text-sm px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
-                          >
-                            <div className="flex items-center">
-                              <span className="mr-2 text-lg">📄</span>
-                              <span className="font-medium">TXT</span>
-                            </div>
-                          </motion.button>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                {/* Preview */}
+                <div className="w-1/2 bg-slate-700/20 backdrop-blur-sm overflow-y-auto">
+                  <div className="p-6">
+                    <div className="prose prose-invert max-w-none">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkMath, remarkGfm]}
+                        rehypePlugins={[rehypeKatex]}
+                        components={markdownComponents}
+                      >
+                        {preprocessLaTeX(getCurrentPageContent())}
+                      </ReactMarkdown>
+                    </div>
                   </div>
-                  
-                  <motion.button
-                    variants={buttonVariants}
-                    whileHover="hover"
-                    whileTap="tap"
-                    onClick={handleShareContent}
-                    className="flex items-center text-sm px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg"
-                  >
-                    <IconComponent icon={FiShare2} className="mr-2" /> Share
-                  </motion.button>
-                  
-                  <motion.button
-                    variants={buttonVariants}
-                    whileHover="hover"
-                    whileTap="tap"
-                    className="flex items-center text-sm px-4 py-2 bg-primary text-white hover:bg-primary-light rounded-lg ml-auto"
-                  >
-                    <IconComponent icon={FiSave} className="mr-2" /> Save
-                  </motion.button>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="bg-slate-700/50 backdrop-blur-sm px-6 py-3 border-t border-white/10 flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <span className="text-sm text-slate-400">
+                    Words: {editedContent.split(/\s+/).filter(word => word.length > 0).length}
+                  </span>
+                  <span className="text-sm text-slate-400">
+                    Characters: {editedContent.length}
+                  </span>
+                  <span className="text-sm text-slate-400">
+                    Pages: {calculateTotalPages()}
+                  </span>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  {calculateTotalPages() > 1 && (
+                    <>
+                      <motion.button
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded text-slate-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-white/10"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        Previous
+                      </motion.button>
+                      <span className="text-sm text-slate-400">
+                        Page {currentPage} of {calculateTotalPages()}
+                      </span>
+                      <motion.button
+                        onClick={() => setCurrentPage(p => Math.min(calculateTotalPages(), p + 1))}
+                        disabled={currentPage === calculateTotalPages()}
+                        className="px-3 py-1 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded text-slate-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-white/10"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        Next
+                      </motion.button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
           </motion.div>
         </div>
 
-        {/* History Drawer */}
+        {/* History Panel */}
         <AnimatePresence>
           {showHistory && (
             <motion.div
-              className="fixed top-0 right-0 w-full md:w-96 h-full bg-white shadow-lg z-50 overflow-y-auto"
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25 }}
-            >
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold text-primary">Your Content History</h2>
-                  <button 
-                    onClick={() => setShowHistory(false)}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-                
-                <div className="space-y-4">
-                  {contentHistory.map((item, index) => (
-                    <motion.div
-                      key={index}
-                      variants={itemVariants}
-                      initial="hidden"
-                      animate="visible"
-                      exit="hidden"
-                      className="p-4 border border-gray-200 rounded-lg hover:border-primary cursor-pointer transition-colors"
-                      onClick={() => loadFromHistory(item)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-medium text-gray-800">{item.title}</h3>
-                        <span className="text-xs text-gray-500">{item.date}</span>
-                      </div>
-                      <div className="mt-2">
-                        <span className="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full mb-2">
-                          {templates.find(t => t.id === item.template)?.name || 'Custom'}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-2 line-clamp-2">{item.content.substring(0, 100)}...</p>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* AI Edit Modal */}
-        <AnimatePresence>
-          {showAIEditModal && (
-            <motion.div
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
             >
               <motion.div
-                initial={{ scale: 0.9, y: 20 }}
-                animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.9, y: 20 }}
-                className="bg-white rounded-xl shadow-xl p-6 w-full max-w-2xl"
+                className="bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl shadow-lg max-w-4xl w-full max-h-[80vh] overflow-hidden"
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
               >
-                <h2 className="text-2xl font-bold text-primary mb-4">AI Content Editor</h2>
-                <p className="text-gray-600 mb-4">
-                  Describe what specific changes you want to make. For example: "Change all mentions of MIT to Stanford" or "Update the basketball reference to football"
-                </p>
+                <div className="bg-slate-700/50 backdrop-blur-sm px-6 py-4 border-b border-white/10 flex items-center justify-between">
+                  <h3 className="text-xl font-bold text-cyan-400">Content History</h3>
+                  <motion.button
+                    onClick={() => setShowHistory(false)}
+                    className="p-2 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <IconComponent icon={FiX} className="h-5 w-5" />
+                  </motion.button>
+                </div>
                 
-                <textarea
-                  value={editInstructions}
-                  onChange={(e) => setEditInstructions(e.target.value)}
-                  placeholder="Example: Change all mentions of MIT to Stanford, or update the basketball reference to football..."
-                  className="w-full h-32 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none mb-4"
-                />
-                
-                {isEditing && (
-                  <div className="mb-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-600">
-                        {editStep === 'analyzing' && 'Analyzing content and instructions...'}
-                        {editStep === 'searching' && 'Identifying sections to update...'}
-                        {editStep === 'updating' && 'Applying changes and checking consistency...'}
-                      </span>
-                      <span className="text-sm font-medium">{Math.round(editProgress)}%</span>
+                <div className="p-6 overflow-y-auto max-h-[60vh]">
+                  {contentHistory.length === 0 ? (
+                    <div className="text-center py-12">
+                      <IconComponent icon={AiOutlineHistory} className="h-12 w-12 mx-auto mb-4 text-slate-400" />
+                      <h3 className="text-lg font-medium text-slate-300 mb-2">No history yet</h3>
+                      <p className="text-slate-400">Generated content will appear here for easy access.</p>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2.5">
-                      <motion.div
-                        className="bg-gradient-to-r from-purple-500 to-indigo-600 h-2.5 rounded-full"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${editProgress}%` }}
-                      />
+                  ) : (
+                    <div className="space-y-4">
+                      {contentHistory.map((item, index) => (
+                        <motion.div
+                          key={index}
+                          className="bg-slate-700/30 backdrop-blur-sm border border-white/10 rounded-lg p-4 hover:bg-slate-600/30 transition-colors cursor-pointer"
+                          onClick={() => loadFromHistory(item)}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-cyan-400 mb-1">{item.title}</h4>
+                              <p className="text-sm text-slate-400 mb-2">{item.date}</p>
+                              <p className="text-sm text-slate-300 line-clamp-2">{item.content.substring(0, 150)}...</p>
+                            </div>
+                            <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded border border-blue-500/30">
+                              {item.template}
+                            </span>
+                          </div>
+                        </motion.div>
+                      ))}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* AI Ask Modal */}
+        {/* Ask AI Modal */}
         <AnimatePresence>
           {showAskAIModal && (
             <motion.div
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]"
-              onClick={() => {
-                setShowAskAIModal(false);
-                setAskAIInstruction('');
-              }}
             >
               <motion.div
-                initial={{ scale: 0.9, y: 20 }}
-                animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.9, y: 20 }}
-                className="bg-white rounded-xl shadow-xl p-6 w-full max-w-2xl"
-                onClick={(e) => e.stopPropagation()}
+                className="bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl shadow-lg max-w-2xl w-full"
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
               >
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-bold text-primary">Ask AI to Modify Text</h2>
-                  <button 
-                    onClick={() => {
-                      setShowAskAIModal(false);
-                      setAskAIInstruction('');
-                    }}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-                
-                <p className="text-gray-600 mb-2">Selected text:</p>
-                <div className="p-3 bg-gray-100 rounded-lg mb-4 text-gray-800 max-h-32 overflow-y-auto">
-                  {selectionData?.text}
-                </div>
-                
-                <textarea
-                  value={askAIInstruction}
-                  onChange={(e) => setAskAIInstruction(e.target.value)}
-                  placeholder="What would you like to do with this text? E.g., 'Make it more formal', 'Fix grammar', 'Simplify the language'"
-                  className="w-full h-32 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none mb-4"
-                  autoFocus
-                />
-                
-                <div className="flex justify-end gap-3">
+                <div className="bg-slate-700/50 backdrop-blur-sm px-6 py-4 border-b border-white/10 flex items-center justify-between">
+                  <h3 className="text-xl font-bold text-cyan-400">Ask AI about Selection</h3>
                   <motion.button
-                    variants={buttonVariants}
-                    whileHover="hover"
-                    whileTap="tap"
-                    onClick={() => {
-                      setShowAskAIModal(false);
-                      setAskAIInstruction('');
-                    }}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    onClick={() => setShowAskAIModal(false)}
+                    className="p-2 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                   >
-                    Cancel
+                    <IconComponent icon={FiX} className="h-5 w-5" />
+                  </motion.button>
+                </div>
+                
+                <div className="p-6">
+                  {selectionData && (
+                    <div className="mb-4 p-3 bg-slate-700/30 backdrop-blur-sm rounded-lg border border-white/10">
+                      <p className="text-sm text-slate-400 mb-1">Selected text:</p>
+                      <p className="text-slate-300 italic">"{selectionData.text}"</p>
+                    </div>
+                  )}
+                  
+                  <textarea
+                    value={askAIInstruction}
+                    onChange={(e) => setAskAIInstruction(e.target.value)}
+                    placeholder="What would you like to know about this text? (e.g., 'Improve this paragraph', 'Make it more formal', 'Explain this concept')"
+                    className="w-full h-32 p-4 bg-slate-700/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 placeholder-slate-400 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none"
+                  />
+                  
+                  <div className="flex items-center justify-end space-x-3 mt-4">
+                    <motion.button
+                      onClick={() => setShowAskAIModal(false)}
+                      className="px-4 py-2 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      Cancel
+                    </motion.button>
+                    <motion.button
+                      onClick={processAskAIRequest}
+                      disabled={!askAIInstruction.trim() || isProcessingSelection}
+                      className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:shadow-lg rounded-lg text-white font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      {isProcessingSelection ? (
+                        <>
+                          <IconComponent icon={AiOutlineLoading3Quarters} className="animate-spin mr-2" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <IconComponent icon={AiOutlineRobot} className="mr-2" />
+                          Ask AI
+                        </>
+                      )}
+                    </motion.button>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* AI Response Modal */}
+        <AnimatePresence>
+          {showAskAIModal && (
+            <motion.div
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <motion.div
+                className="bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl shadow-lg max-w-4xl w-full max-h-[80vh] overflow-hidden"
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+              >
+                <div className="bg-slate-700/50 backdrop-blur-sm px-6 py-4 border-b border-white/10 flex items-center justify-between">
+                  <h3 className="text-xl font-bold text-cyan-400">AI Response</h3>
+                  <motion.button
+                    onClick={() => setShowAskAIModal(false)}
+                    className="p-2 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <IconComponent icon={FiX} className="h-5 w-5" />
+                  </motion.button>
+                </div>
+                
+                <div className="p-6 overflow-y-auto max-h-[60vh]">
+                  <div className="prose prose-invert max-w-none">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkMath, remarkGfm]}
+                      rehypePlugins={[rehypeKatex]}
+                      components={markdownComponents}
+                    >
+                      {preprocessLaTeX(askAISuggestion)}
+                    </ReactMarkdown>
+                  </div>
+                </div>
+                
+                <div className="bg-slate-700/50 backdrop-blur-sm px-6 py-4 border-t border-white/10 flex items-center justify-end space-x-3">
+                  <motion.button
+                    onClick={() => {
+                      navigator.clipboard.writeText(askAISuggestion);
+                      // You could add a toast notification here
+                    }}
+                    className="px-4 py-2 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10 flex items-center"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <IconComponent icon={FiCopy} className="mr-2 h-4 w-4" />
+                    Copy
                   </motion.button>
                   <motion.button
-                    variants={buttonVariants}
-                    whileHover="hover"
-                    whileTap="tap"
-                    onClick={processAskAIRequest}
-                    disabled={isProcessingSelection || !askAIInstruction.trim()}
-                    className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-700 text-white rounded-lg disabled:opacity-50"
+                    onClick={() => setShowAskAIModal(false)}
+                    className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:shadow-lg rounded-lg text-white font-medium transition-all"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                   >
-                    {isProcessingSelection ? 'Processing...' : 'Apply Changes'}
+                    Close
                   </motion.button>
                 </div>
               </motion.div>

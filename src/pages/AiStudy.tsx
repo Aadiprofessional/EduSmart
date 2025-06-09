@@ -6,13 +6,13 @@ import IconComponent from '../components/ui/IconComponent';
 import { useAuth } from '../utils/AuthContext';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
-import PageHeader from '../components/ui/PageHeader';
 import CitationGenerator from '../components/ui/CitationGenerator';
 import { ContentWriterComponent } from '../components/ui/ContentWriterComponent';
 import CheckMistakesComponent from '../components/ui/CheckMistakesComponent';
 import AiTutorChatComponent from '../components/ui/AiTutorChatComponent';
 import UploadHomeworkComponent from '../components/ui/UploadHomeworkComponent';
 import StudyPlannerComponent from '../components/ui/StudyPlannerComponent';
+import FlashcardComponent from '../components/ui/FlashcardComponent';
 import { useLanguage } from '../utils/LanguageContext';
 
 const AiStudy: React.FC = () => {
@@ -37,14 +37,6 @@ const AiStudy: React.FC = () => {
     {date: '1 week ago', question: 'Solve x^2 - 4 = 0', snippet: 'Using the quadratic formula, we find x = ±2...'},
   ]);
   
-  const [flashcards, setFlashcards] = useState<{question: string, answer: string, mastered: boolean}[]>([
-    {question: 'What is photosynthesis?', answer: 'The process by which green plants and some other organisms use sunlight to synthesize nutrients from carbon dioxide and water.', mastered: false},
-    {question: 'What is Newton\'s First Law?', answer: 'An object at rest stays at rest and an object in motion stays in motion with the same speed and in the same direction unless acted upon by an unbalanced force.', mastered: true},
-    {question: 'What is the Pythagorean theorem?', answer: 'In a right-angled triangle, the square of the hypotenuse equals the sum of squares of the other two sides: a² + b² = c².', mastered: false},
-  ]);
-
-  const [currentFlashcard, setCurrentFlashcard] = useState(0);
-  const [showAnswer, setShowAnswer] = useState(false);
   const [showFullScreen, setShowFullScreen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
@@ -119,47 +111,125 @@ const AiStudy: React.FC = () => {
     { id: 'progress-tracker', name: t('aiStudy.progressTracker'), icon: FiTrendingUp },
   ];
 
-  const handleNextFlashcard = () => {
-    setShowAnswer(false);
-    setCurrentFlashcard(prev => 
-      prev === flashcards.length - 1 ? 0 : prev + 1
-    );
+  // Function to generate flashcards from notes using AI
+  const generateFlashcardsFromNotes = async () => {
+    try {
+      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: "qwen-vl-max",
+          messages: [
+            {
+              role: "system",
+              content: [
+                {
+                  type: "text", 
+                  text: "You are an AI assistant that creates educational flashcards. Generate 5-10 high-quality flashcards based on common study topics. Each flashcard should have a clear question and a comprehensive answer. Format your response as a JSON array with objects containing 'question' and 'answer' fields."
+                }
+              ]
+            },
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: "Please generate educational flashcards covering important concepts in science, mathematics, history, and literature. Make sure the questions are clear and the answers are informative but concise."
+                }
+              ]
+            }
+          ],
+          stream: false
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API call failed: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices[0].message.content;
+      
+      // Try to parse the JSON response
+      try {
+        const flashcards = JSON.parse(content);
+        console.log('Generated flashcards:', flashcards);
+        // You can add logic here to update the flashcards in the FlashcardComponent
+        return flashcards;
+      } catch (parseError) {
+        console.error('Failed to parse flashcards JSON:', parseError);
+        throw new Error('Failed to parse generated flashcards');
+      }
+    } catch (error) {
+      console.error('Error generating flashcards from notes:', error);
+      throw error;
+    }
   };
 
-  const handlePrevFlashcard = () => {
-    setShowAnswer(false);
-    setCurrentFlashcard(prev => 
-      prev === 0 ? flashcards.length - 1 : prev - 1
-    );
-  };
+  // Function to generate flashcards from PDF using AI
+  const generateFlashcardsFromPDF = async (file: File) => {
+    try {
+      // Convert PDF to images (page by page)
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // For now, we'll extract text from the PDF and then generate flashcards
+      // In a real implementation, you'd convert PDF to images first
+      
+      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: "qwen-vl-max",
+          messages: [
+            {
+              role: "system",
+              content: [
+                {
+                  type: "text", 
+                  text: "You are an AI assistant that creates educational flashcards from document content. Generate 5-10 high-quality flashcards based on the provided content. Each flashcard should have a clear question and a comprehensive answer. Format your response as a JSON array with objects containing 'question' and 'answer' fields."
+                }
+              ]
+            },
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: `Please generate educational flashcards from this PDF document: ${file.name}. Create questions that test understanding of key concepts, definitions, and important facts from the document.`
+                }
+              ]
+            }
+          ],
+          stream: false
+        })
+      });
 
-  const toggleFlashcardMastery = () => {
-    setFlashcards(prev => 
-      prev.map((card, i) => 
-        i === currentFlashcard ? {...card, mastered: !card.mastered} : card
-      )
-    );
-  };
+      if (!response.ok) {
+        throw new Error(`API call failed: ${response.status} ${response.statusText}`);
+      }
 
-  // For creating new flashcards
-  const [newFlashcard, setNewFlashcard] = useState({ question: '', answer: '' });
-
-  const handleAddFlashcard = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!newFlashcard.question.trim() || !newFlashcard.answer.trim()) return;
-    
-    // Add the new flashcard
-    setFlashcards(prev => [
-      ...prev,
-      { ...newFlashcard, mastered: false }
-    ]);
-    
-    // Reset form
-    setNewFlashcard({ question: '', answer: '' });
-    
-    // Optionally, switch to the newly added card
-    setCurrentFlashcard(flashcards.length);
+      const data = await response.json();
+      const content = data.choices[0].message.content;
+      
+      try {
+        const flashcards = JSON.parse(content);
+        console.log('Generated flashcards from PDF:', flashcards);
+        return flashcards;
+      } catch (parseError) {
+        console.error('Failed to parse flashcards JSON:', parseError);
+        throw new Error('Failed to parse generated flashcards');
+      }
+    } catch (error) {
+      console.error('Error generating flashcards from PDF:', error);
+      throw error;
+    }
   };
 
   // Scroll to top on initial load
@@ -177,29 +247,82 @@ const AiStudy: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen overflow-hidden">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-teal-900">
       <Header />
-      <PageHeader
-        title={t('aiStudy.title') || 'AI Study Assistant'}
-        subtitle={t('aiStudy.subtitle') || 'Your intelligent companion for academic success'}
-        height="lg"
-      />
+      
+      {/* Modern Hero Section */}
       <motion.div
-        className="flex-grow bg-gradient-to-b from-gray-50 to-gray-100 py-16"
+        className="relative overflow-hidden pt-20 pb-10"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.8 }}
+      >
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-cyan-400/20 to-blue-500/20 rounded-full blur-3xl"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-teal-400/20 to-emerald-500/20 rounded-full blur-3xl"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-purple-400/10 to-pink-500/10 rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="relative container mx-auto px-4 text-center">
+          <motion.div
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.8 }}
+            className="max-w-4xl mx-auto"
+          >
+            <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-teal-400 bg-clip-text text-transparent mb-6">
+              AI Study Assistant
+            </h1>
+            <p className="text-xl md:text-2xl text-slate-300 mb-8 max-w-2xl mx-auto">
+              Enhance your learning with AI-powered tools
+            </p>
+            
+            {/* Quick Stats */}
+            <motion.div
+              className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.4, duration: 0.8 }}
+            >
+              <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg p-4 border border-white/10">
+                <div className="text-2xl font-bold text-cyan-400">AI-Powered</div>
+                <div className="text-sm text-slate-300">Solutions</div>
+              </div>
+              <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg p-4 border border-white/10">
+                <div className="text-2xl font-bold text-blue-400">Instant</div>
+                <div className="text-sm text-slate-300">Analysis</div>
+              </div>
+              <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg p-4 border border-white/10">
+                <div className="text-2xl font-bold text-teal-400">Step-by-Step</div>
+                <div className="text-sm text-slate-300">Explanations</div>
+              </div>
+              <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg p-4 border border-white/10">
+                <div className="text-2xl font-bold text-emerald-400">Personalized</div>
+                <div className="text-sm text-slate-300">Learning</div>
+              </div>
+            </motion.div>
+          </motion.div>
+        </div>
+      </motion.div>
+
+      {/* Main Content */}
+      <motion.div
+        className="flex-grow pb-16"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6, duration: 0.8 }}
       >
         <div className="container mx-auto px-4">
           <motion.div 
-            className="bg-white rounded-2xl shadow-xl overflow-hidden max-w-7xl mx-auto"
+            className="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 overflow-hidden max-w-7xl mx-auto shadow-2xl"
             variants={containerVariants}
             initial="hidden"
             animate="visible"
           >
             {/* Tabs - Mobile Version */}
             <div className="md:hidden">
-              <div className="flex justify-between items-center bg-gradient-to-r from-teal-700 to-teal-900 text-white p-4 rounded-t-2xl">
+              <div className="flex justify-between items-center bg-gradient-to-r from-slate-800/90 to-blue-800/90 backdrop-blur-sm text-white p-4 rounded-t-3xl border-b border-white/10">
                 <span className="font-medium flex items-center">
                   <IconComponent icon={tools.find(tool => tool.id === activeTab)?.icon || FiEdit} className="mr-2 h-5 w-5" />
                   {tools.find(tool => tool.id === activeTab)?.name}
@@ -207,7 +330,7 @@ const AiStudy: React.FC = () => {
                 <motion.button
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                   whileTap={{ scale: 0.95 }}
-                  className="p-2 bg-white/10 rounded-lg"
+                  className="p-2 bg-white/10 rounded-lg border border-white/20"
                 >
                   <IconComponent icon={FiMenu} className="h-6 w-6" />
                 </motion.button>
@@ -215,7 +338,7 @@ const AiStudy: React.FC = () => {
               
               {mobileMenuOpen && (
                 <motion.div 
-                  className="bg-white shadow-lg rounded-b-lg absolute z-50 w-full"
+                  className="bg-slate-800/95 backdrop-blur-sm shadow-lg absolute z-50 w-full border-b border-white/10"
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
@@ -225,7 +348,9 @@ const AiStudy: React.FC = () => {
                     <motion.button
                       key={tool.id}
                       className={`flex items-center py-3 px-4 w-full text-left ${
-                        activeTab === tool.id ? 'bg-orange-50 text-orange-600 font-medium' : 'text-gray-700 hover:bg-gray-50'
+                        activeTab === tool.id 
+                          ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-400 font-medium border-l-4 border-cyan-400' 
+                          : 'text-slate-300 hover:bg-white/5'
                       }`}
                       onClick={() => {
                         handleTabSwitch(tool.id);
@@ -242,17 +367,17 @@ const AiStudy: React.FC = () => {
             </div>
 
             {/* Tabs - Desktop Version */}
-            <div className="hidden md:flex bg-gradient-to-r from-teal-700 to-teal-900 text-white rounded-t-2xl overflow-hidden">
+            <div className="hidden md:flex bg-gradient-to-r from-slate-800/90 to-blue-800/90 backdrop-blur-sm text-white rounded-t-3xl overflow-hidden border-b border-white/10">
               {tools.map((tool) => (
                 <motion.button
                   key={tool.id}
-                  className={`flex items-center py-4 px-6 flex-1 justify-center ${
+                  className={`flex items-center py-4 px-6 flex-1 justify-center transition-all duration-300 ${
                     activeTab === tool.id
-                      ? 'bg-teal-600 text-white font-medium border-b-2 border-orange-500'
-                      : 'hover:bg-white/10'
+                      ? 'bg-gradient-to-r from-cyan-500/30 to-blue-500/30 text-cyan-400 font-medium border-b-2 border-cyan-400'
+                      : 'hover:bg-white/10 text-slate-300'
                   }`}
                   onClick={() => handleTabSwitch(tool.id)}
-                  whileHover={{ backgroundColor: activeTab === tool.id ? "rgba(20, 184, 166, 0.8)" : "rgba(255, 255, 255, 0.1)" }}
+                  whileHover={{ backgroundColor: activeTab === tool.id ? "rgba(6, 182, 212, 0.2)" : "rgba(255, 255, 255, 0.1)" }}
                   whileTap={{ scale: 0.98 }}
                 >
                   <IconComponent icon={tool.icon} className="h-5 w-5 mr-2" />
@@ -261,33 +386,45 @@ const AiStudy: React.FC = () => {
               ))}
             </div>
 
-            {/* Tab Content - All components are mounted but hidden when not active */}
-            <div className="p-6">
+            {/* Tab Content */}
+            <div className="p-8 bg-slate-900/20 backdrop-blur-sm">
               <div className={activeTab === 'upload' ? 'block' : 'hidden'}>
-                {componentStates['upload'] && <UploadHomeworkComponent />}
+                {componentStates['upload'] && (
+                  <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+                    <UploadHomeworkComponent />
+                  </div>
+                )}
               </div>
 
               <div className={activeTab === 'ai-tutor' ? 'block' : 'hidden'}>
-                {componentStates['ai-tutor'] && <AiTutorChatComponent />}
+                {componentStates['ai-tutor'] && (
+                  <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+                    <AiTutorChatComponent />
+                  </div>
+                )}
               </div>
 
               <div className={activeTab === 'mistake-checker' ? 'block' : 'hidden'}>
                 {componentStates['mistake-checker'] && (
-                  <motion.div variants={containerVariants}>
-                    <h2 className="text-2xl font-semibold text-teal-800 mb-6">Check Mistakes</h2>
+                  <motion.div variants={containerVariants} className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+                    <h2 className="text-2xl font-semibold text-cyan-400 mb-6">Check Mistakes</h2>
                     <CheckMistakesComponent />
                   </motion.div>
                 )}
               </div>
 
               <div className={activeTab === 'content-writer' ? 'block' : 'hidden'}>
-                {componentStates['content-writer'] && <ContentWriterComponent />}
+                {componentStates['content-writer'] && (
+                  <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+                    <ContentWriterComponent />
+                  </div>
+                )}
               </div>
 
               <div className={activeTab === 'citation-generator' ? 'block' : 'hidden'}>
                 {componentStates['citation-generator'] && (
-                  <motion.div variants={containerVariants}>
-                    <h2 className="text-2xl font-semibold text-teal-800 mb-6">Citation Generator</h2>
+                  <motion.div variants={containerVariants} className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+                    <h2 className="text-2xl font-semibold text-cyan-400 mb-6">Citation Generator</h2>
                     <CitationGenerator />
                   </motion.div>
                 )}
@@ -295,254 +432,72 @@ const AiStudy: React.FC = () => {
 
               <div className={activeTab === 'study-planner' ? 'block' : 'hidden'}>
                 {componentStates['study-planner'] && (
-                  <StudyPlannerComponent />
+                  <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+                    <StudyPlannerComponent />
+                  </div>
                 )}
               </div>
 
               <div className={activeTab === 'flashcards' ? 'block' : 'hidden'}>
                 {componentStates['flashcards'] && (
-                  <motion.div variants={containerVariants}>
-                    <h2 className="text-2xl font-semibold text-teal-800 mb-6">Flashcards</h2>
-                    
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                      {/* Flashcard Viewer */}
-                      <motion.div 
-                        variants={itemVariants}
-                        className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm"
-                      >
-                        <h3 className="text-lg font-medium text-teal-800 mb-4 flex items-center">
-                          <IconComponent icon={FiLayers} className="mr-2" /> Study Cards
-                        </h3>
-                        
-                        {flashcards.length > 0 ? (
-                          <div className="space-y-4">
-                            <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl p-6 min-h-[200px] flex flex-col justify-center">
-                              <div className="text-center">
-                                <div className="mb-4">
-                                  <span className="text-sm text-teal-600 font-medium">
-                                    Card {currentFlashcard + 1} of {flashcards.length}
-                                  </span>
-                                  {flashcards[currentFlashcard].mastered && (
-                                    <span className="ml-2 bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">
-                                      Mastered
-                                    </span>
-                                  )}
-                                </div>
-                                
-                                <div className="mb-6">
-                                  <p className="text-lg font-medium text-gray-800 mb-4">
-                                    {flashcards[currentFlashcard].question}
-                                  </p>
-                                  
-                                  {showAnswer && (
-                                    <motion.div
-                                      initial={{ opacity: 0, y: 20 }}
-                                      animate={{ opacity: 1, y: 0 }}
-                                      className="bg-white rounded-lg p-4 border border-teal-200"
-                                    >
-                                      <p className="text-gray-700">
-                                        {flashcards[currentFlashcard].answer}
-                                      </p>
-                                    </motion.div>
-                                  )}
-                                </div>
-                                
-                                <div className="flex justify-center space-x-3">
-                                  {!showAnswer ? (
-                                    <motion.button
-                                      variants={buttonVariants}
-                                      whileHover="hover"
-                                      whileTap="tap"
-                                      onClick={() => setShowAnswer(true)}
-                                      className="bg-teal-600 text-white px-6 py-2 rounded-lg font-medium"
-                                    >
-                                      Show Answer
-                                    </motion.button>
-                                  ) : (
-                                    <div className="flex space-x-2">
-                                      <motion.button
-                                        variants={buttonVariants}
-                                        whileHover="hover"
-                                        whileTap="tap"
-                                        onClick={toggleFlashcardMastery}
-                                        className={`px-4 py-2 rounded-lg font-medium ${
-                                          flashcards[currentFlashcard].mastered
-                                            ? 'bg-gray-200 text-gray-700'
-                                            : 'bg-green-600 text-white'
-                                        }`}
-                                      >
-                                        {flashcards[currentFlashcard].mastered ? 'Unmark' : 'Mark as Mastered'}
-                                      </motion.button>
-                                      
-                                      <motion.button
-                                        variants={buttonVariants}
-                                        whileHover="hover"
-                                        whileTap="tap"
-                                        onClick={() => setShowAnswer(false)}
-                                        className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium"
-                                      >
-                                        Hide Answer
-                                      </motion.button>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div className="flex justify-between items-center">
-                              <motion.button
-                                variants={buttonVariants}
-                                whileHover="hover"
-                                whileTap="tap"
-                                onClick={handlePrevFlashcard}
-                                className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg flex items-center"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                </svg>
-                                Previous
-                              </motion.button>
-                              
-                              <motion.button
-                                variants={buttonVariants}
-                                whileHover="hover"
-                                whileTap="tap"
-                                onClick={handleNextFlashcard}
-                                className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg flex items-center"
-                              >
-                                Next
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                </svg>
-                              </motion.button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="text-center py-8 text-gray-500">
-                            <IconComponent icon={FiLayers} className="mx-auto text-4xl mb-2" />
-                            <p>No flashcards yet</p>
-                            <p className="text-sm mt-1">Create your first flashcard to start studying</p>
-                          </div>
-                        )}
-                      </motion.div>
-                      
-                      {/* Create New Flashcards */}
-                      <motion.div 
-                        variants={itemVariants}
-                        className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm"
-                      >
-                        <h3 className="text-lg font-medium text-teal-800 mb-4 flex items-center">
-                          <IconComponent icon={FiBookmark} className="mr-2" /> Create Flashcards
-                        </h3>
-                        
-                        <div className="mb-4">
-                          <button 
-                            className="w-full py-3 bg-teal-600 text-white rounded-lg flex items-center justify-center font-medium"
-                          >
-                            <IconComponent icon={AiOutlineBulb} className="mr-2" />
-                            Generate from Notes
-                          </button>
-                        </div>
-                        
-                        <div className="text-center relative my-4">
-                          <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t border-gray-300"></div>
-                          </div>
-                          <span className="relative bg-white px-2 text-sm text-gray-500">or create manually</span>
-                        </div>
-                        
-                        <form onSubmit={handleAddFlashcard}>
-                          <div className="mb-3">
-                            <label className="block text-gray-700 mb-1 text-sm font-medium">
-                              Question
-                            </label>
-                            <textarea
-                              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none h-20"
-                              placeholder="Enter your question here"
-                              value={newFlashcard.question}
-                              onChange={(e) => setNewFlashcard({...newFlashcard, question: e.target.value})}
-                            />
-                          </div>
-                          
-                          <div className="mb-4">
-                            <label className="block text-gray-700 mb-1 text-sm font-medium">
-                              Answer
-                            </label>
-                            <textarea
-                              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none h-20"
-                              placeholder="Enter the answer here"
-                              value={newFlashcard.answer}
-                              onChange={(e) => setNewFlashcard({...newFlashcard, answer: e.target.value})}
-                            />
-                          </div>
-                          
-                          <motion.button
-                            type="submit"
-                            variants={buttonVariants}
-                            whileHover="hover"
-                            whileTap="tap"
-                            className="w-full py-2 bg-gradient-to-r from-teal-600 to-teal-700 rounded-lg text-white font-medium shadow-md hover:shadow-lg"
-                          >
-                            Add Flashcard
-                          </motion.button>
-                        </form>
-                      </motion.div>
-                    </div>
-                  </motion.div>
+                  <FlashcardComponent 
+                    onGenerateFromNotes={generateFlashcardsFromNotes}
+                    onGenerateFromPDF={generateFlashcardsFromPDF}
+                  />
                 )}
               </div>
 
               <div className={activeTab === 'progress-tracker' ? 'block' : 'hidden'}>
                 {componentStates['progress-tracker'] && (
-                  <motion.div variants={containerVariants}>
-                    <h2 className="text-2xl font-semibold text-teal-800 mb-6">{t('aiStudy.progressTracker')}</h2>
-                    <div className="bg-white rounded-lg shadow-lg p-6">
-                      <p className="text-gray-600">Track your learning progress and achievements.</p>
+                  <motion.div variants={containerVariants} className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+                    <h2 className="text-2xl font-semibold text-cyan-400 mb-6">{t('aiStudy.progressTracker')}</h2>
+                    <div className="bg-slate-700/50 backdrop-blur-sm rounded-lg shadow-lg p-6 border border-white/10">
+                      <p className="text-slate-300">Track your learning progress and achievements.</p>
                       
                       {/* Progress Overview */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-                        <div className="bg-gradient-to-r from-teal-500 to-teal-600 rounded-lg p-4 text-white">
-                          <h3 className="text-lg font-semibold mb-2">Study Sessions</h3>
+                        <div className="bg-gradient-to-r from-cyan-500/20 to-blue-500/20 backdrop-blur-sm rounded-lg p-4 text-white border border-cyan-500/30">
+                          <h3 className="text-lg font-semibold mb-2 text-cyan-400">Study Sessions</h3>
                           <p className="text-2xl font-bold">24</p>
-                          <p className="text-sm opacity-90">This month</p>
+                          <p className="text-sm opacity-90 text-slate-300">This month</p>
                         </div>
                         
-                        <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg p-4 text-white">
-                          <h3 className="text-lg font-semibold mb-2">Problems Solved</h3>
+                        <div className="bg-gradient-to-r from-orange-500/20 to-red-500/20 backdrop-blur-sm rounded-lg p-4 text-white border border-orange-500/30">
+                          <h3 className="text-lg font-semibold mb-2 text-orange-400">Problems Solved</h3>
                           <p className="text-2xl font-bold">156</p>
-                          <p className="text-sm opacity-90">Total</p>
+                          <p className="text-sm opacity-90 text-slate-300">Total</p>
                         </div>
                         
-                        <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-4 text-white">
-                          <h3 className="text-lg font-semibold mb-2">Accuracy Rate</h3>
+                        <div className="bg-gradient-to-r from-emerald-500/20 to-green-500/20 backdrop-blur-sm rounded-lg p-4 text-white border border-emerald-500/30">
+                          <h3 className="text-lg font-semibold mb-2 text-emerald-400">Accuracy Rate</h3>
                           <p className="text-2xl font-bold">87%</p>
-                          <p className="text-sm opacity-90">Average</p>
+                          <p className="text-sm opacity-90 text-slate-300">Average</p>
                         </div>
                       </div>
                       
                       {/* Recent Activity */}
                       <div className="mt-8">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h3>
+                        <h3 className="text-lg font-semibold text-slate-200 mb-4">Recent Activity</h3>
                         <div className="space-y-3">
-                          <div className="flex items-center p-3 bg-gray-50 rounded-lg">
-                            <div className="w-2 h-2 bg-teal-500 rounded-full mr-3"></div>
+                          <div className="flex items-center p-3 bg-slate-600/30 backdrop-blur-sm rounded-lg border border-white/10">
+                            <div className="w-2 h-2 bg-cyan-500 rounded-full mr-3"></div>
                             <div className="flex-1">
-                              <p className="text-sm font-medium text-gray-800">Completed Math homework</p>
-                              <p className="text-xs text-gray-500">2 hours ago</p>
+                              <p className="text-sm font-medium text-slate-200">Completed Math homework</p>
+                              <p className="text-xs text-slate-400">2 hours ago</p>
                             </div>
                           </div>
-                          <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center p-3 bg-slate-600/30 backdrop-blur-sm rounded-lg border border-white/10">
                             <div className="w-2 h-2 bg-orange-500 rounded-full mr-3"></div>
                             <div className="flex-1">
-                              <p className="text-sm font-medium text-gray-800">Used AI Tutor for Physics</p>
-                              <p className="text-xs text-gray-500">5 hours ago</p>
+                              <p className="text-sm font-medium text-slate-200">Used AI Tutor for Physics</p>
+                              <p className="text-xs text-slate-400">5 hours ago</p>
                             </div>
                           </div>
-                          <div className="flex items-center p-3 bg-gray-50 rounded-lg">
-                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                          <div className="flex items-center p-3 bg-slate-600/30 backdrop-blur-sm rounded-lg border border-white/10">
+                            <div className="w-2 h-2 bg-emerald-500 rounded-full mr-3"></div>
                             <div className="flex-1">
-                              <p className="text-sm font-medium text-gray-800">Created 5 new flashcards</p>
-                              <p className="text-xs text-gray-500">1 day ago</p>
+                              <p className="text-sm font-medium text-slate-200">Created 5 new flashcards</p>
+                              <p className="text-xs text-slate-400">1 day ago</p>
                             </div>
                           </div>
                         </div>
@@ -562,20 +517,20 @@ const AiStudy: React.FC = () => {
             animate="visible"
           >
             <motion.div 
-              className="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300"
+              className="bg-white/10 backdrop-blur-lg p-6 rounded-xl border border-white/20 hover:border-cyan-400/50 transition-all duration-300"
               variants={itemVariants}
-              whileHover={{ y: -5, boxShadow: "0 15px 30px rgba(0, 0, 0, 0.1)" }}
+              whileHover={{ y: -5, boxShadow: "0 25px 50px rgba(6, 182, 212, 0.15)" }}
             >
-              <div className="bg-teal-100 w-14 h-14 rounded-full flex items-center justify-center mb-4">
-                <IconComponent icon={AiOutlineUpload} className="h-7 w-7 text-teal-600" />
+              <div className="bg-gradient-to-br from-cyan-400/20 to-blue-500/20 w-14 h-14 rounded-full flex items-center justify-center mb-4 border border-cyan-400/30">
+                <IconComponent icon={AiOutlineUpload} className="h-7 w-7 text-cyan-400" />
               </div>
-              <h3 className="text-xl font-semibold text-teal-800 mb-2">{t('aiStudy.instantHomeworkHelpTitle')}</h3>
-              <p className="text-gray-600">{t('aiStudy.instantHomeworkHelpDesc')}</p>
+              <h3 className="text-xl font-semibold text-cyan-400 mb-2">{t('aiStudy.instantHomeworkHelpTitle')}</h3>
+              <p className="text-slate-300">Upload your homework images and get instant AI-powered solutions with step-by-step explanations</p>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveTab('upload')}
-                className="mt-4 text-teal-600 font-medium flex items-center text-sm"
+                className="mt-4 text-cyan-400 font-medium flex items-center text-sm hover:text-cyan-300 transition-colors"
               >
                 {t('aiStudy.tryNowBtn')}
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -585,20 +540,20 @@ const AiStudy: React.FC = () => {
             </motion.div>
             
             <motion.div 
-              className="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300"
+              className="bg-white/10 backdrop-blur-lg p-6 rounded-xl border border-white/20 hover:border-orange-400/50 transition-all duration-300"
               variants={itemVariants}
-              whileHover={{ y: -5, boxShadow: "0 15px 30px rgba(0, 0, 0, 0.1)" }}
+              whileHover={{ y: -5, boxShadow: "0 25px 50px rgba(251, 146, 60, 0.15)" }}
             >
-              <div className="bg-orange-100 w-14 h-14 rounded-full flex items-center justify-center mb-4">
-                <IconComponent icon={AiOutlineEdit} className="h-7 w-7 text-orange-500" />
+              <div className="bg-gradient-to-br from-orange-400/20 to-red-500/20 w-14 h-14 rounded-full flex items-center justify-center mb-4 border border-orange-400/30">
+                <IconComponent icon={AiOutlineEdit} className="h-7 w-7 text-orange-400" />
               </div>
-              <h3 className="text-xl font-semibold text-teal-800 mb-2">{t('aiStudy.aiContentWriterTitle')}</h3>
-              <p className="text-gray-600">{t('aiStudy.aiContentWriterDesc')}</p>
+              <h3 className="text-xl font-semibold text-orange-400 mb-2">{t('aiStudy.aiContentWriterTitle')}</h3>
+              <p className="text-slate-300">Generate high-quality essays, reports, and creative content with AI assistance and plagiarism checking</p>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveTab('content-writer')}
-                className="mt-4 text-orange-500 font-medium flex items-center text-sm"
+                className="mt-4 text-orange-400 font-medium flex items-center text-sm hover:text-orange-300 transition-colors"
               >
                 {t('aiStudy.startWritingBtn')}
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -608,20 +563,20 @@ const AiStudy: React.FC = () => {
             </motion.div>
             
             <motion.div 
-              className="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300"
+              className="bg-white/10 backdrop-blur-lg p-6 rounded-xl border border-white/20 hover:border-teal-400/50 transition-all duration-300"
               variants={itemVariants}
-              whileHover={{ y: -5, boxShadow: "0 15px 30px rgba(0, 0, 0, 0.1)" }}
+              whileHover={{ y: -5, boxShadow: "0 25px 50px rgba(20, 184, 166, 0.15)" }}
             >
-              <div className="bg-teal-100 w-14 h-14 rounded-full flex items-center justify-center mb-4">
-                <IconComponent icon={AiOutlineRobot} className="h-7 w-7 text-teal-600" />
+              <div className="bg-gradient-to-br from-teal-400/20 to-emerald-500/20 w-14 h-14 rounded-full flex items-center justify-center mb-4 border border-teal-400/30">
+                <IconComponent icon={AiOutlineRobot} className="h-7 w-7 text-teal-400" />
               </div>
-              <h3 className="text-xl font-semibold text-teal-800 mb-2">{t('aiStudy.aiTutorChatTitle')}</h3>
-              <p className="text-gray-600">{t('aiStudy.aiTutorChatDesc')}</p>
+              <h3 className="text-xl font-semibold text-teal-400 mb-2">{t('aiStudy.aiTutorChatTitle')}</h3>
+              <p className="text-slate-300">Interactive AI tutor available 24/7 for personalized learning support across all subjects</p>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveTab('ai-tutor')}
-                className="mt-4 text-teal-600 font-medium flex items-center text-sm"
+                className="mt-4 text-teal-400 font-medium flex items-center text-sm hover:text-teal-300 transition-colors"
               >
                 {t('aiStudy.chatNowBtn')}
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -631,20 +586,20 @@ const AiStudy: React.FC = () => {
             </motion.div>
             
             <motion.div 
-              className="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300"
+              className="bg-white/10 backdrop-blur-lg p-6 rounded-xl border border-white/20 hover:border-blue-400/50 transition-all duration-300"
               variants={itemVariants}
-              whileHover={{ y: -5, boxShadow: "0 15px 30px rgba(0, 0, 0, 0.1)" }}
+              whileHover={{ y: -5, boxShadow: "0 25px 50px rgba(59, 130, 246, 0.15)" }}
             >
-              <div className="bg-blue-100 w-14 h-14 rounded-full flex items-center justify-center mb-4">
-                <IconComponent icon={FiCalendar} className="h-7 w-7 text-blue-600" />
+              <div className="bg-gradient-to-br from-blue-400/20 to-indigo-500/20 w-14 h-14 rounded-full flex items-center justify-center mb-4 border border-blue-400/30">
+                <IconComponent icon={FiCalendar} className="h-7 w-7 text-blue-400" />
               </div>
-              <h3 className="text-xl font-semibold text-teal-800 mb-2">Study Planner</h3>
-              <p className="text-gray-600">Organize your study schedule with AI-powered task management and smart recommendations</p>
+              <h3 className="text-xl font-semibold text-blue-400 mb-2">Smart Study Planner</h3>
+              <p className="text-slate-300">AI-powered study scheduling with personalized recommendations and progress tracking</p>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveTab('study-planner')}
-                className="mt-4 text-blue-600 font-medium flex items-center text-sm"
+                className="mt-4 text-blue-400 font-medium flex items-center text-sm hover:text-blue-300 transition-colors"
               >
                 Plan Your Studies
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -656,8 +611,12 @@ const AiStudy: React.FC = () => {
 
           {/* Floating Action Button */}
           <motion.button
-            className="fixed bottom-5 right-5 md:right-20 z-40 bg-gradient-to-r from-orange-500 to-orange-600 text-white p-4 rounded-full shadow-lg flex items-center justify-center"
-            whileHover={{ scale: 1.1, boxShadow: "0 8px 20px rgba(0, 0, 0, 0.2)" }}
+            className="fixed bottom-5 right-5 md:right-20 z-40 bg-gradient-to-r from-orange-500 to-red-500 text-white p-4 rounded-full shadow-2xl flex items-center justify-center backdrop-blur-sm border border-orange-400/30"
+            whileHover={{ 
+              scale: 1.1, 
+              boxShadow: "0 20px 40px rgba(251, 146, 60, 0.4)",
+              backgroundColor: "rgba(251, 146, 60, 0.9)"
+            }}
             whileTap={{ scale: 0.95 }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

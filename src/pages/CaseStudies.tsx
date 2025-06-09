@@ -278,8 +278,8 @@ const CaseStudies: React.FC = () => {
       <Header />
       <main className="flex-grow">
         <PageHeader
-          title={t('caseStudies.title') || 'Success Stories'}
-          subtitle={t('caseStudies.subtitle') || 'Inspiring journeys of students who achieved their dreams'}
+          title="Success Stories"
+          subtitle="Inspiring journeys of students who achieved their dreams"
           height="lg"
         >
           {/* Search Bar */}
@@ -326,7 +326,7 @@ const CaseStudies: React.FC = () => {
                     <select
                       value={activeFilters.category}
                       onChange={(e) => toggleFilter('category', e.target.value)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white transition-all duration-200 hover:border-teal-300"
+                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all duration-200 hover:border-blue-300"
                     >
                       <option value="">All Categories</option>
                       {(categories || []).map(category => (
@@ -337,7 +337,7 @@ const CaseStudies: React.FC = () => {
                     <select
                       value={activeFilters.outcome}
                       onChange={(e) => toggleFilter('outcome', e.target.value)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white transition-all duration-200 hover:border-teal-300"
+                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all duration-200 hover:border-blue-300"
                     >
                       <option value="">All Outcomes</option>
                       {(outcomes || []).map(outcome => (
@@ -348,7 +348,7 @@ const CaseStudies: React.FC = () => {
                     <select
                       value={activeFilters.country}
                       onChange={(e) => toggleFilter('country', e.target.value)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white transition-all duration-200 hover:border-teal-300"
+                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all duration-200 hover:border-blue-300"
                     >
                       <option value="">All Countries</option>
                       {(countries || []).map(country => (
@@ -359,7 +359,7 @@ const CaseStudies: React.FC = () => {
                     <select
                       value={activeFilters.field}
                       onChange={(e) => toggleFilter('field', e.target.value)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white transition-all duration-200 hover:border-teal-300"
+                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all duration-200 hover:border-blue-300"
                     >
                       <option value="">All Fields</option>
                       {(fields || []).map(field => (
@@ -371,8 +371,8 @@ const CaseStudies: React.FC = () => {
                       onClick={() => toggleFilter('featured', true)}
                       className={`px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 ${
                         activeFilters.featured === true
-                          ? 'bg-yellow-500 text-white shadow-lg'
-                          : 'bg-white text-gray-700 hover:bg-yellow-50 border border-gray-300'
+                          ? 'bg-blue-500 text-white shadow-lg'
+                          : 'bg-white text-gray-700 hover:bg-blue-50 border border-gray-300'
                       }`}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
@@ -406,7 +406,7 @@ const CaseStudies: React.FC = () => {
                 {loading ? (
                   <div className="flex justify-center items-center py-20">
                     <div className="text-center">
-                      <IconComponent icon={FaSpinner} className="animate-spin text-4xl text-teal-600 mb-4 mx-auto" />
+                      <IconComponent icon={FaSpinner} className="animate-spin text-4xl text-blue-600 mb-4 mx-auto" />
                       <p className="text-gray-600 mb-4">Please wait while we load the success stories.</p>
                     </div>
                   </div>
@@ -430,7 +430,7 @@ const CaseStudies: React.FC = () => {
                       >
                         <div className="relative">
                           {/* Student Image or Placeholder */}
-                          <div className="h-48 bg-gradient-to-br from-teal-400 to-blue-500 relative overflow-hidden">
+                          <div className="h-48 bg-gradient-to-br from-blue-400 to-indigo-500 relative overflow-hidden">
                             {caseStudy.student_image ? (
                               <img 
                                 src={caseStudy.student_image} 
@@ -448,7 +448,7 @@ const CaseStudies: React.FC = () => {
                             {/* Featured Badge */}
                             {caseStudy.featured && (
                               <div className="absolute top-4 right-4">
-                                <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-full font-medium flex items-center gap-1">
+                                <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-medium flex items-center gap-1">
                                   <IconComponent icon={FaStar} className="text-xs" />
                                   Featured
                                 </span>
@@ -469,7 +469,7 @@ const CaseStudies: React.FC = () => {
 
                           {/* Card Content */}
                           <div className="p-6">
-                            <h4 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-teal-600 transition-colors">
+                            <h4 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
                               {caseStudy.title}
                             </h4>
                             
@@ -481,7 +481,7 @@ const CaseStudies: React.FC = () => {
                             <div className="flex flex-wrap gap-2 mb-4 text-sm">
                               {caseStudy.target_university && (
                                 <div className="flex items-center gap-1">
-                                  <IconComponent icon={FaUniversity} className="text-teal-500" />
+                                  <IconComponent icon={FaUniversity} className="text-blue-500" />
                                   <span className="truncate">{caseStudy.target_university}</span>
                                 </div>
                               )}
@@ -534,7 +534,7 @@ const CaseStudies: React.FC = () => {
                                   </div>
                                 )}
                               </div>
-                              <button className="text-teal-600 hover:text-teal-700 font-medium text-sm group-hover:translate-x-1 transition-transform">
+                              <button className="text-blue-600 hover:text-blue-700 font-medium text-sm group-hover:translate-x-1 transition-transform">
                                 Read More →
                               </button>
                             </div>
@@ -551,7 +551,7 @@ const CaseStudies: React.FC = () => {
                       <p className="text-gray-600 mb-4">Try adjusting your search or filters to find relevant success stories.</p>
                       <button
                         onClick={clearAllFilters}
-                        className="px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+                        className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                       >
                         Clear Filters
                       </button>
@@ -579,7 +579,7 @@ const CaseStudies: React.FC = () => {
                             onClick={() => setCurrentPage(page)}
                             className={`px-4 py-2 rounded-lg ${
                               currentPage === page
-                                ? 'bg-teal-600 text-white'
+                                ? 'bg-blue-600 text-white'
                                 : 'border border-gray-300 hover:bg-gray-50'
                             }`}
                           >

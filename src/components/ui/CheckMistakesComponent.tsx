@@ -1,8 +1,18 @@
-import React, { useState, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { AiOutlineUpload, AiOutlineCamera, AiOutlineFullscreen, AiOutlineSearch, AiOutlineLoading3Quarters } from 'react-icons/ai';
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { AiOutlineUpload, AiOutlineCamera, AiOutlineFullscreen, AiOutlineBulb, AiOutlineFileText, AiOutlineHistory, AiOutlineLoading3Quarters, AiOutlineLeft, AiOutlineRight } from 'react-icons/ai';
+import { FiDownload, FiCopy, FiShare2, FiClock, FiTrash2 } from 'react-icons/fi';
 import IconComponent from './IconComponent';
 import * as pdfjsLib from 'pdfjs-dist';
+
+// Import markdown and math libraries
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import 'katex/dist/katex.min.css';
 
 // Set up PDF.js worker with a more reliable approach
 if (typeof window !== 'undefined') {
@@ -42,12 +52,19 @@ interface PDFDocumentProxy {
 
 interface Mistake {
   id: number;
-  line: string;
-  correction: string;
+  incorrect: string;
+  correct: string;
   type: string;
-  lineNumber?: number;
-  pageNumber?: number;
-  isStreaming?: boolean;
+  explanation?: string;
+}
+
+// Add new interface for page mistakes
+interface PageMistakes {
+  pageNumber: number;
+  mistakes: Mistake[];
+  isLoading: boolean;
+  isComplete: boolean;
+  error?: string;
 }
 
 interface CheckMistakesComponentProps {
@@ -55,32 +72,18 @@ interface CheckMistakesComponentProps {
 }
 
 const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ className = '' }) => {
+  const [file, setFile] = useState<File | null>(null);
   const [documentPages, setDocumentPages] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
-  const [mistakes, setMistakes] = useState<Mistake[]>([]);
   const [loading, setLoading] = useState(false);
-  const [fullScreenDocument, setFullScreenDocument] = useState(false);
-  const [extractedTexts, setExtractedTexts] = useState<string[]>([]);
   const [processingStatus, setProcessingStatus] = useState<string>('');
-  const [streamingMistakes, setStreamingMistakes] = useState<Map<number, string>>(new Map());
-  const [currentlyProcessingPage, setCurrentlyProcessingPage] = useState<number | null>(null);
+  const [fullScreenDocument, setFullScreenDocument] = useState(false);
+  
+  // Add new state for page mistakes
+  const [pageMistakes, setPageMistakes] = useState<PageMistakes[]>([]);
+  const [overallProcessingComplete, setOverallProcessingComplete] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Convert file to base64 for direct API usage
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        const result = reader.result as string;
-        // Extract just the base64 part without the data URL prefix
-        const base64 = result.split(',')[1];
-        resolve(base64);
-      };
-      reader.onerror = error => reject(error);
-    });
-  };
 
   // Convert PDF to images using PDF.js
   const convertPdfToImages = async (file: File): Promise<string[]> => {
@@ -140,48 +143,41 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
     }
   };
 
-  // Extract text from image using QVQ model with streaming
-  const extractTextFromImage = async (imageUrl: string): Promise<string> => {
+  // Check for mistakes in a page with concise response
+  const checkMistakesForPage = async (imageUrl: string, pageNumber: number): Promise<Mistake[]> => {
+    console.log(`🔄 Starting mistake checking for page ${pageNumber}`);
+    
     try {
-      // Ensure we have the correct format for the API
-      let base64Image = imageUrl;
-      
-      // If it's a data URL, extract the base64 part
-      if (imageUrl.startsWith('data:')) {
-        base64Image = imageUrl;
-      } else {
-        // If it's a blob URL, convert it to base64
-        const response = await fetch(imageUrl);
-        const blob = await response.blob();
-        const file = new File([blob], 'image.jpg', { type: 'image/jpeg' });
-        const reader = new FileReader();
-        base64Image = await new Promise((resolve) => {
-          reader.onload = () => resolve(reader.result as string);
-          reader.readAsDataURL(file);
-        });
-      }
-
-      const apiResponse = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer sk-176f2c5aba034fc2970fb14b2cb2d301',
+          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: "qvq-max-latest",
+          model: "qwen-vl-max",
           messages: [
+            {
+              role: "system",
+              content: [
+                {
+                  type: "text",
+                  text: "You are a precise proofreader. Analyze the image and identify ONLY actual mistakes. For each mistake found, provide EXACTLY in this format:\n\nMISTAKE: [incorrect text]\nCORRECTION: [corrected text]\nTYPE: [grammar/spelling/punctuation]\n\nBe concise and only show actual errors. Do not provide explanations or analysis."
+                }
+              ]
+            },
             {
               role: "user",
               content: [
                 {
                   type: "image_url",
                   image_url: {
-                    url: base64Image
+                    url: imageUrl
                   }
                 },
                 {
                   type: "text",
-                  text: "Please extract all text from this image exactly as it appears, maintaining line breaks and formatting. Focus on accuracy and completeness. If there are any visual elements or formatting that affects the text meaning, please describe them."
+                  text: "Analyze this image and find mistakes. For each mistake, respond ONLY in this exact format:\n\nMISTAKE: [exact incorrect text]\nCORRECTION: [exact corrected text]\nTYPE: [mistake type]\n\nDo not include any other text, explanations, or analysis. Just list the mistakes in the specified format."
                 }
               ]
             }
@@ -190,180 +186,60 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
         })
       });
 
-      if (!apiResponse.ok) {
-        const errorData = await apiResponse.json().catch(() => ({}));
-        console.error('QVQ API Error:', errorData);
-        throw new Error(`QVQ API failed: ${apiResponse.status} ${apiResponse.statusText}`);
+      console.log(`📊 API Response status for page ${pageNumber}:`, response.status);
+
+      if (!response.ok) {
+        console.error(`❌ API request failed for page ${pageNumber}:`, response.status, response.statusText);
+        throw new Error(`API call failed: ${response.status} ${response.statusText}`);
       }
 
       // Handle streaming response
-      const reader = apiResponse.body?.getReader();
-      if (!reader) {
-        throw new Error('No response body reader available');
-      }
-
-      let extractedContent = '';
-      let isAnswering = false;
-      
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          
-          const chunk = new TextDecoder().decode(value);
-          const lines = chunk.split('\n').filter(line => line.trim() !== '');
-          
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              if (data === '[DONE]') continue;
-              
-              try {
-                const parsed = JSON.parse(data);
-                if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta) {
-                  const delta = parsed.choices[0].delta;
-                  
-                  // Skip reasoning content, only collect the final answer
-                  if (delta.reasoning_content) {
-                    // This is the thinking process, we can skip it for OCR
-                    continue;
-                  } else if (delta.content) {
-                    // This is the actual answer content
-                    if (!isAnswering && delta.content.trim() !== '') {
-                      isAnswering = true;
-                    }
-                    if (isAnswering) {
-                      extractedContent += delta.content;
-                    }
-                  }
-                }
-              } catch (parseError) {
-                // Skip invalid JSON chunks
-                continue;
-              }
-            }
-          }
-        }
-      } finally {
-        reader.releaseLock();
-      }
-
-      return extractedContent.trim() || 'No text found in image';
-    } catch (error) {
-      console.error('QVQ OCR Error:', error);
-      return `Error extracting text: ${error instanceof Error ? error.message : 'Unknown error'}`;
-    }
-  };
-
-  // Check for mistakes using QVQ model with real-time streaming
-  const checkMistakes = async (text: string, pageNumber: number): Promise<Mistake[]> => {
-    try {
-      setCurrentlyProcessingPage(pageNumber);
-      
-      // Add a placeholder for streaming content
-      const streamingId = Date.now() + pageNumber * 1000;
-      setStreamingMistakes(prev => new Map(prev.set(pageNumber, '')));
-      
-      const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer sk-80beadf6603b4832981d0d65896b1ae0',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: "qvq-max",
-          messages: [
-            {
-              role: "user",
-              content: [
-                {
-                  type: "text",
-                  text: `Please analyze the following text for grammar mistakes, spelling errors, and other writing issues. 
-
-IMPORTANT: Format your response ONLY as XML with the following structure:
-<mistakes>
-  <mistake>
-    <original>the incorrect text</original>
-    <corrected>the corrected text</corrected>
-    <type>Grammar|Spelling|Punctuation|Style</type>
-    <line>line number</line>
-  </mistake>
-</mistakes>
-
-If no mistakes are found, respond with:
-<mistakes>
-  <message>No mistakes found in the text.</message>
-</mistakes>
-
-Text to analyze (Page ${pageNumber}):
-${text}
-
-Please identify specific mistakes and provide corrections. Focus on:
-1. Grammar errors
-2. Spelling mistakes  
-3. Punctuation issues
-4. Word usage errors
-
-Use your reasoning capabilities to thoroughly analyze the text and provide accurate corrections. Respond ONLY with the XML format above, no additional text.`
-                }
-              ]
-            }
-          ],
-          stream: true
-        })
-      });
-
-      if (!response.ok) {
-        console.error('QVQ Grammar API Error:', response.status, response.statusText);
-        return [];
-      }
-
-      // Handle streaming response with real-time updates
       const reader = response.body?.getReader();
       if (!reader) {
         throw new Error('No response body reader available');
       }
 
-      let analysisContent = '';
-      let isAnswering = false;
-      
+      let fullContent = '';
+
       try {
         while (true) {
           const { done, value } = await reader.read();
-          if (done) break;
-          
+          if (done) {
+            console.log(`🏁 Streaming completed for page ${pageNumber}`);
+            break;
+          }
+
           const chunk = new TextDecoder().decode(value);
-          const lines = chunk.split('\n').filter(line => line.trim() !== '');
-          
+          const lines = chunk.split('\n');
+
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               const data = line.slice(6);
-              if (data === '[DONE]') continue;
-              
+              if (data === '[DONE]') {
+                console.log(`✅ Stream marked as DONE for page ${pageNumber}`);
+                continue;
+              }
+
               try {
                 const parsed = JSON.parse(data);
-                if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta) {
-                  const delta = parsed.choices[0].delta;
+                const content_chunk = parsed.choices?.[0]?.delta?.content;
+
+                if (content_chunk) {
+                  fullContent += content_chunk;
                   
-                  // Skip reasoning content, only collect the final answer
-                  if (delta.reasoning_content) {
-                    // This is the thinking process - we could optionally use this for better analysis
-                    continue;
-                  } else if (delta.content) {
-                    // This is the actual analysis content
-                    if (!isAnswering && delta.content.trim() !== '') {
-                      isAnswering = true;
-                    }
-                    if (isAnswering) {
-                      analysisContent += delta.content;
-                      
-                      // Update streaming content in real-time
-                      setStreamingMistakes(prev => new Map(prev.set(pageNumber, analysisContent)));
-                    }
-                  }
+                  // Update page mistakes in real-time
+                  setPageMistakes(prev => prev.map(pm => 
+                    pm.pageNumber === pageNumber 
+                      ? { 
+                          ...pm, 
+                          mistakes: parseMistakesFromText(fullContent, pageNumber),
+                          isLoading: true 
+                        }
+                      : pm
+                  ));
                 }
               } catch (parseError) {
-                // Skip invalid JSON chunks
+                // Skip invalid JSON lines
                 continue;
               }
             }
@@ -371,271 +247,210 @@ Use your reasoning capabilities to thoroughly analyze the text and provide accur
         }
       } finally {
         reader.releaseLock();
-        setCurrentlyProcessingPage(null);
-        setStreamingMistakes(prev => {
-          const newMap = new Map(prev);
-          newMap.delete(pageNumber);
-          return newMap;
-        });
       }
 
-      const analysisText = analysisContent.trim();
-      console.log(`QVQ Analysis Response for page ${pageNumber}:`, analysisText);
-      
-      // Parse XML response
-      const mistakes: Mistake[] = [];
-      
-      try {
-        // Simple XML parsing for mistakes
-        const mistakeMatches = analysisText.match(/<mistake>[\s\S]*?<\/mistake>/g);
-        
-        if (mistakeMatches) {
-          mistakeMatches.forEach((mistakeXml: string, index: number) => {
-            const originalMatch = mistakeXml.match(/<original>([\s\S]*?)<\/original>/);
-            const correctedMatch = mistakeXml.match(/<corrected>([\s\S]*?)<\/corrected>/);
-            const typeMatch = mistakeXml.match(/<type>([\s\S]*?)<\/type>/);
-            const lineMatch = mistakeXml.match(/<line>([\s\S]*?)<\/line>/);
-            
-            if (originalMatch && correctedMatch && typeMatch) {
-              mistakes.push({
-                id: Date.now() + index + pageNumber * 1000,
-                line: originalMatch[1].trim(),
-                correction: correctedMatch[1].trim(),
-                type: typeMatch[1].trim(),
-                lineNumber: lineMatch ? parseInt(lineMatch[1].trim()) : index + 1,
-                pageNumber: pageNumber
-              });
-            }
-          });
-        } else {
-          // Check if it's a "no mistakes" message
-          const messageMatch = analysisText.match(/<message>([\s\S]*?)<\/message>/);
-          if (messageMatch) {
-            mistakes.push({
-              id: Date.now() + pageNumber * 1000,
-              line: `Page ${pageNumber} analysis completed`,
-              correction: messageMatch[1].trim(),
-              type: 'Info',
-              lineNumber: 1,
-              pageNumber: pageNumber
-            });
-          } else {
-            // Fallback: try to extract any useful information from the response
-            const lines = text.split('\n');
-            let foundMistakes = false;
-            
-            // Enhanced pattern matching for common mistakes
-            lines.forEach((line, index) => {
-              const lineNumber = index + 1;
-              
-              // Common spelling mistakes
-              const spellingPatterns = [
-                { wrong: /\brecieve\b/gi, correct: 'receive' },
-                { wrong: /\balot\b/gi, correct: 'a lot' },
-                { wrong: /\bdefinately\b/gi, correct: 'definitely' },
-                { wrong: /\boccured\b/gi, correct: 'occurred' },
-                { wrong: /\bseperate\b/gi, correct: 'separate' },
-                { wrong: /\bneccessary\b/gi, correct: 'necessary' },
-                { wrong: /\baccommodate\b/gi, correct: 'accommodate' },
-                { wrong: /\bexistance\b/gi, correct: 'existence' },
-                { wrong: /\bmaintainance\b/gi, correct: 'maintenance' },
-                { wrong: /\bprivelege\b/gi, correct: 'privilege' }
-              ];
-              
-              spellingPatterns.forEach(pattern => {
-                if (pattern.wrong.test(line)) {
-                  mistakes.push({
-                    id: Date.now() + Math.random() + pageNumber * 1000,
-                    line: line.trim(),
-                    correction: line.replace(pattern.wrong, pattern.correct),
-                    type: 'Spelling',
-                    lineNumber: lineNumber,
-                    pageNumber: pageNumber
-                  });
-                  foundMistakes = true;
-                }
-              });
-              
-              // Grammar patterns
-              const grammarPatterns = [
-                { wrong: /\bthere going\b/gi, correct: "they're going", type: 'Grammar' },
-                { wrong: /\byour going\b/gi, correct: "you're going", type: 'Grammar' },
-                { wrong: /\bits going\b/gi, correct: "it's going", type: 'Grammar' },
-                { wrong: /\bwho's\b/gi, correct: 'whose', type: 'Grammar' },
-                { wrong: /\bshould of\b/gi, correct: 'should have', type: 'Grammar' },
-                { wrong: /\bcould of\b/gi, correct: 'could have', type: 'Grammar' },
-                { wrong: /\bwould of\b/gi, correct: 'would have', type: 'Grammar' }
-              ];
-              
-              grammarPatterns.forEach(pattern => {
-                if (pattern.wrong.test(line)) {
-                  mistakes.push({
-                    id: Date.now() + Math.random() + pageNumber * 1000,
-                    line: line.trim(),
-                    correction: line.replace(pattern.wrong, pattern.correct),
-                    type: pattern.type,
-                    lineNumber: lineNumber,
-                    pageNumber: pageNumber
-                  });
-                  foundMistakes = true;
-                }
-              });
-            });
-            
-            // If no mistakes found with patterns, add a general message
-            if (!foundMistakes) {
-              mistakes.push({
-                id: Date.now() + pageNumber * 1000,
-                line: `Page ${pageNumber} analysis completed`,
-                correction: 'No obvious spelling or grammar mistakes detected. The text appears to be well-written.',
-                type: 'Info',
-                lineNumber: 1,
-                pageNumber: pageNumber
-              });
-            }
-          }
-        }
-      } catch (parseError) {
-        console.error('XML parsing error:', parseError);
-        mistakes.push({
-          id: Date.now() + pageNumber * 1000,
-          line: `Page ${pageNumber} parsing error`,
-          correction: 'Unable to parse AI response. Please try again.',
-          type: 'Error',
-          lineNumber: 1,
-          pageNumber: pageNumber
-        });
-      }
+      console.log(`✅ Mistake checking completed for page ${pageNumber}`);
+      console.log('📊 Final content length:', fullContent.length);
 
-      return mistakes;
+      // Parse the final response to extract structured mistakes
+      const finalMistakes = parseMistakesFromText(fullContent, pageNumber);
+      return finalMistakes;
+
     } catch (error) {
-      console.error('QVQ Grammar check error:', error);
-      setCurrentlyProcessingPage(null);
-      setStreamingMistakes(prev => {
-        const newMap = new Map(prev);
-        newMap.delete(pageNumber);
-        return newMap;
-      });
-      return [{
-        id: Date.now() + pageNumber * 1000,
-        line: `Page ${pageNumber} API Error`,
-        correction: `Error checking grammar: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        type: 'Error',
-        lineNumber: 1,
-        pageNumber: pageNumber
-      }];
+      console.error(`💥 Error in checkMistakesForPage for page ${pageNumber}:`, error);
+      throw new Error(`Failed to check mistakes: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
-  // Process uploaded file with real-time updates
+  // Parse mistakes from API response text
+  const parseMistakesFromText = (text: string, pageNumber: number): Mistake[] => {
+    const mistakes: Mistake[] = [];
+    let mistakeId = 1;
+    
+    // Split by lines and look for the MISTAKE/CORRECTION/TYPE pattern
+    const lines = text.split('\n');
+    let currentMistake: Partial<Mistake> = {};
+    
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      
+      if (trimmedLine.startsWith('MISTAKE:')) {
+        // If we have a current mistake being built, save it first
+        if (currentMistake.incorrect && currentMistake.correct) {
+          mistakes.push({
+            id: mistakeId++,
+            incorrect: currentMistake.incorrect,
+            correct: currentMistake.correct,
+            type: currentMistake.type || 'other'
+          });
+        }
+        
+        // Start new mistake
+        currentMistake = {
+          incorrect: trimmedLine.replace('MISTAKE:', '').trim()
+        };
+      } else if (trimmedLine.startsWith('CORRECTION:')) {
+        currentMistake.correct = trimmedLine.replace('CORRECTION:', '').trim();
+      } else if (trimmedLine.startsWith('TYPE:')) {
+        currentMistake.type = trimmedLine.replace('TYPE:', '').trim().toLowerCase();
+      }
+    }
+    
+    // Add the last mistake if it's complete
+    if (currentMistake.incorrect && currentMistake.correct) {
+      mistakes.push({
+        id: mistakeId++,
+        incorrect: currentMistake.incorrect,
+        correct: currentMistake.correct,
+        type: currentMistake.type || 'other'
+      });
+    }
+    
+    return mistakes;
+  };
+
   const processFile = async (file: File) => {
+    console.log('🚀 Starting processFile with parallel mistake checking');
+    console.log('📁 File details:', {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      lastModified: new Date(file.lastModified).toISOString()
+    });
+    
     setLoading(true);
     setProcessingStatus('Starting file processing...');
-    setMistakes([]); // Clear previous results
-    setStreamingMistakes(new Map()); // Clear streaming state
+    setPageMistakes([]); // Clear previous page mistakes
+    setOverallProcessingComplete(false);
+    
+    const processStartTime = Date.now();
+    console.log('⏰ File processing start time:', new Date(processStartTime).toISOString());
     
     try {
       let imageUrls: string[] = [];
       
       if (file.type === 'application/pdf') {
-        // Convert PDF to images
+        console.log('📄 Processing PDF file');
         imageUrls = await convertPdfToImages(file);
+        console.log('✅ PDF converted to', imageUrls.length, 'images');
       } else if (file.type.startsWith('image/')) {
-        // Convert image file to data URL
+        console.log('🖼️ Processing image file');
         setProcessingStatus('Processing image...');
+        
         const imageDataUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = reject;
+          reader.onload = () => {
+            const result = reader.result as string;
+            console.log('✅ Image converted to data URL');
+            resolve(result);
+          };
+          reader.onerror = (error) => {
+            console.error('❌ Error converting image to data URL:', error);
+            reject(error);
+          };
           reader.readAsDataURL(file);
         });
+        
         imageUrls = [imageDataUrl];
       } else {
+        console.error('❌ Unsupported file type:', file.type);
         throw new Error('Unsupported file type. Please upload a PDF or image file.');
       }
       
+      console.log('📸 Total images to process:', imageUrls.length);
       setDocumentPages(imageUrls);
       setCurrentPage(0);
+      setFile(file);
       
-      // Extract text from all pages and check for mistakes with real-time updates
-      const allTexts: string[] = [];
-      const allMistakes: Mistake[] = [];
+      // Initialize page mistakes for all pages
+      const initialPageMistakes: PageMistakes[] = imageUrls.map((_, index) => ({
+        pageNumber: index + 1,
+        mistakes: [],
+        isLoading: true,
+        isComplete: false
+      }));
+      setPageMistakes(initialPageMistakes);
       
-      setProcessingStatus('Extracting text and analyzing mistakes...');
+      setProcessingStatus(`Processing all ${imageUrls.length} pages in parallel...`);
+      setLoading(false); // Set loading to false so user can navigate pages
       
-      for (let i = 0; i < imageUrls.length; i++) {
-        setProcessingStatus(`Processing page ${i + 1} of ${imageUrls.length}...`);
+      // Process all pages in parallel
+      console.log('🔄 Starting parallel processing of all pages');
+      const processingPromises = imageUrls.map(async (imageUrl, index) => {
+        const pageNumber = index + 1;
+        console.log(`🚀 Starting processing for page ${pageNumber}`);
         
         try {
-          const extractedText = await extractTextFromImage(imageUrls[i]);
-          allTexts.push(extractedText);
+          const mistakes = await checkMistakesForPage(imageUrl, pageNumber);
           
-          if (extractedText && !extractedText.startsWith('Error')) {
-            // Process mistakes with real-time streaming
-            const pageMistakes = await checkMistakes(extractedText, i + 1);
-            allMistakes.push(...pageMistakes);
-            
-            // Update mistakes in real-time as each page is processed
-            setMistakes(prev => [...prev, ...pageMistakes]);
-          } else {
-            // Add error info to mistakes if text extraction failed
-            const errorMistake = {
-              id: Date.now() + i * 1000,
-              line: `Page ${i + 1} processing error`,
-              correction: extractedText.startsWith('Error') ? extractedText : 'Failed to extract text from this page',
-              type: 'Error',
-              lineNumber: 1,
-              pageNumber: i + 1
-            };
-            allMistakes.push(errorMistake);
-            setMistakes(prev => [...prev, errorMistake]);
-          }
-        } catch (pageError) {
-          console.error(`Error processing page ${i + 1}:`, pageError);
-          allTexts.push(`Error processing page ${i + 1}`);
-          const errorMistake = {
-            id: Date.now() + i * 1000,
-            line: `Page ${i + 1} processing error`,
-            correction: `Failed to process page: ${pageError instanceof Error ? pageError.message : 'Unknown error'}`,
-            type: 'Error',
-            lineNumber: 1,
-            pageNumber: i + 1
-          };
-          allMistakes.push(errorMistake);
-          setMistakes(prev => [...prev, errorMistake]);
+          // Mark page as complete
+          setPageMistakes(prev => prev.map(pm => 
+            pm.pageNumber === pageNumber 
+              ? { ...pm, mistakes, isLoading: false, isComplete: true }
+              : pm
+          ));
+          
+          console.log(`✅ Page ${pageNumber} processing completed successfully`);
+          return { pageNumber, mistakes, success: true };
+        } catch (error) {
+          console.error(`❌ Error processing page ${pageNumber}:`, error);
+          
+          // Mark page as error
+          setPageMistakes(prev => prev.map(pm => 
+            pm.pageNumber === pageNumber 
+              ? { 
+                  ...pm, 
+                  mistakes: [],
+                  isLoading: false, 
+                  isComplete: true,
+                  error: error instanceof Error ? error.message : 'Unknown error'
+                }
+              : pm
+          ));
+          
+          return { pageNumber, error: error instanceof Error ? error.message : 'Unknown error', success: false };
         }
-        
-        // Add a small delay between API calls to avoid rate limiting
-        if (i < imageUrls.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      }
+      });
       
-      setExtractedTexts(allTexts);
-      setProcessingStatus('Processing completed!');
+      // Wait for all pages to complete
+      console.log('⏳ Waiting for all pages to complete processing...');
+      const results = await Promise.allSettled(processingPromises);
+      
+      const totalProcessTime = Date.now() - processStartTime;
+      console.log('✅ All pages processing completed');
+      console.log('⏱️ Total file processing time:', totalProcessTime + 'ms');
+      
+      setOverallProcessingComplete(true);
+      setProcessingStatus('All pages processed successfully!');
+      console.log('🎉 File processing completed successfully');
       
     } catch (error) {
-      console.error('File processing error:', error);
+      const totalProcessTime = Date.now() - processStartTime;
+      console.error('💥 File processing error after', totalProcessTime + 'ms');
+      console.error('🔴 Error message:', error instanceof Error ? error.message : String(error));
+      
       setProcessingStatus('Error processing file');
-      const errorMistake = {
-        id: Date.now(),
-        line: 'Error processing file',
-        correction: `Failed to process file: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        type: 'Error',
-        lineNumber: 1
-      };
-      setMistakes([errorMistake]);
-    } finally {
       setLoading(false);
-      setCurrentlyProcessingPage(null);
-      setStreamingMistakes(new Map());
+      setOverallProcessingComplete(true);
+    } finally {
       setTimeout(() => setProcessingStatus(''), 3000);
+      console.log('🏁 processFile function completed');
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       processFile(e.target.files[0]);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setFile(null);
+    setDocumentPages([]);
+    setCurrentPage(0);
+    setPageMistakes([]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -649,241 +464,291 @@ Use your reasoning capabilities to thoroughly analyze the text and provide accur
     visible: { y: 0, opacity: 1 }
   };
 
-  return (
-    <div className={className}>
-      <input 
-        type="file" 
-        ref={fileInputRef}
-        onChange={handleFileChange}
-        className="hidden"
-        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-      />
-      
-      {documentPages.length > 0 ? (
-        <div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-4">
-            <div className="lg:col-span-2">
-              <div className="flex justify-between items-center mb-4">
-                <div className="flex space-x-2">
-                  <button 
-                    className="px-3 py-1 bg-gray-200 rounded-md disabled:opacity-50"
-                    disabled={currentPage === 0}
-                    onClick={() => setCurrentPage(prev => prev - 1)}
-                  >
-                    Previous
-                  </button>
-                  <button 
-                    className="px-3 py-1 bg-gray-200 rounded-md disabled:opacity-50"
-                    disabled={currentPage === documentPages.length - 1}
-                    onClick={() => setCurrentPage(prev => prev + 1)}
-                  >
-                    Next
-                  </button>
-                </div>
-                <div className="text-gray-600">
-                  Page {currentPage + 1} of {documentPages.length}
-                </div>
-                <motion.button
-                  variants={buttonVariants}
-                  whileHover="hover"
-                  whileTap="tap"
-                  onClick={() => setFullScreenDocument(!fullScreenDocument)}
-                  className="flex items-center text-teal-600"
-                >
-                  <IconComponent icon={AiOutlineFullscreen} className="h-5 w-5 mr-1" />
-                  <span className="hidden sm:inline">Fullscreen</span>
-                </motion.button>
-              </div>
-              
-              <div className={`relative ${
-                fullScreenDocument ? 
-                  "fixed top-0 left-0 right-0 bottom-0 z-50 bg-gray-900 flex items-center justify-center p-4" : 
-                  "aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden"
-              }`}>
-                {fullScreenDocument && (
-                  <motion.button
-                    variants={buttonVariants}
-                    whileHover="hover"
-                    whileTap="tap"
-                    onClick={() => setFullScreenDocument(false)}
-                    className="absolute top-4 right-4 bg-white p-2 rounded-full shadow-md z-10"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </motion.button>
-                )}
-                <img 
-                  src={documentPages[currentPage]} 
-                  alt={`Document page ${currentPage + 1}`}
-                  className={`${fullScreenDocument ? 'max-h-full max-w-full object-contain' : 'w-full h-full object-cover'}`}
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1 }
+  };
+
+  // If no file is uploaded, show upload interface
+  if (!file) {
+    return (
+      <div className={className}>
+        <motion.div 
+          className="max-w-4xl mx-auto"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <motion.div
+            className="bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl p-8 shadow-sm"
+            whileHover={{ boxShadow: "0 8px 32px rgba(6, 182, 212, 0.1)" }}
+          >
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-cyan-400 mb-2">Check Mistakes</h2>
+              <p className="text-slate-300">Upload your document to check for grammar, spelling, and punctuation mistakes</p>
+            </div>
+            
+            <div className="mb-6">
+              <div 
+                className="border-2 border-dashed border-white/20 rounded-lg p-12 text-center hover:border-cyan-500/50 cursor-pointer transition-colors relative bg-slate-600/20 backdrop-blur-sm"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input 
+                  type="file" 
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  className="hidden"
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                 />
-                
-                {loading && (
-                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                    <div className="bg-white rounded-lg p-4 flex items-center">
-                      <IconComponent icon={AiOutlineLoading3Quarters} className="h-6 w-6 animate-spin mr-2 text-teal-600" />
-                      <span>{processingStatus}</span>
-                    </div>
-                  </div>
-                )}
+                <div className="text-slate-400">
+                  <IconComponent icon={AiOutlineUpload} className="h-12 w-12 mx-auto mb-4 text-cyan-400" />
+                  <p className="text-lg font-medium text-slate-300 mb-2">Drag and drop your file here, or click to browse</p>
+                  <p className="text-sm">Supports PDF, Word documents, and images</p>
+                </div>
               </div>
             </div>
             
-            <div className="lg:col-span-1">
-              <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm h-full">
-                <h3 className="text-lg font-medium text-teal-800 mb-4 flex items-center">
-                  <IconComponent icon={AiOutlineSearch} className="mr-2" /> 
-                  Identified Mistakes
-                  {currentlyProcessingPage && (
-                    <span className="ml-2 text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
-                      Processing Page {currentlyProcessingPage}
-                    </span>
-                  )}
-                </h3>
-                
+            <div className="flex items-center justify-center">
+              <motion.button
+                onClick={() => file && processFile(file)}
+                disabled={!file || loading}
+                className="flex items-center justify-center px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg text-white font-medium shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                whileHover={!loading ? { scale: 1.02 } : {}}
+                whileTap={!loading ? { scale: 0.98 } : {}}
+              >
                 {loading ? (
-                  <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-                    <IconComponent icon={AiOutlineLoading3Quarters} className="h-12 w-12 mb-3 animate-spin text-teal-600" />
-                    <p className="text-center">{processingStatus}</p>
-                    {currentlyProcessingPage && (
-                      <p className="text-sm text-blue-600 mt-2">
-                        Analyzing page {currentlyProcessingPage} in real-time...
-                      </p>
-                    )}
-                  </div>
-                ) : mistakes.length > 0 || streamingMistakes.size > 0 ? (
-                  <div className="space-y-4 overflow-y-auto" style={{ maxHeight: "500px" }}>
-                    {/* Show completed mistakes */}
-                    {mistakes.map((mistake) => (
-                      <motion.div
-                        key={mistake.id}
-                        variants={itemVariants}
-                        initial="hidden"
-                        animate="visible"
-                        className="border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow"
-                        whileHover={{ y: -2 }}
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                            mistake.type === 'Grammar' ? 'bg-red-100 text-red-800' :
-                            mistake.type === 'Spelling' ? 'bg-orange-100 text-orange-800' :
-                            mistake.type === 'Error' ? 'bg-red-100 text-red-800' :
-                            mistake.type === 'Info' ? 'bg-blue-100 text-blue-800' :
-                            'bg-purple-100 text-purple-800'
-                          }`}>
-                            {mistake.type}
-                          </span>
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
-                            {mistake.pageNumber && (
-                              <span>Page {mistake.pageNumber}</span>
-                            )}
-                            {mistake.lineNumber && (
-                              <span>Line {mistake.lineNumber}</span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="mt-2">
-                          <p className="text-sm line-through text-gray-500">{mistake.line}</p>
-                          <p className="text-sm font-medium text-green-700 mt-1">{mistake.correction}</p>
-                        </div>
-                      </motion.div>
-                    ))}
-                    
-                    {/* Show streaming content for pages being processed */}
-                    {Array.from(streamingMistakes.entries()).map(([pageNumber, content]) => (
-                      <motion.div
-                        key={`streaming-${pageNumber}`}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="border border-blue-200 bg-blue-50 rounded-lg p-3"
-                      >
-                        <div className="flex items-center mb-2">
-                          <IconComponent icon={AiOutlineLoading3Quarters} className="h-4 w-4 animate-spin text-blue-600 mr-2" />
-                          <span className="text-sm font-medium text-blue-800">
-                            Analyzing Page {pageNumber}...
-                          </span>
-                        </div>
-                        {content && (
-                          <div className="mt-2 p-2 bg-white rounded border">
-                            <p className="text-xs text-gray-600 font-mono whitespace-pre-wrap">
-                              {content.length > 200 ? content.substring(0, 200) + '...' : content}
-                            </p>
-                          </div>
-                        )}
-                      </motion.div>
-                    ))}
-                  </div>
+                  <>
+                    <motion.div
+                      className="w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-3"
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    />
+                    Processing...
+                  </>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-                    <IconComponent icon={AiOutlineSearch} className="h-12 w-12 mb-3 opacity-50" />
-                    <p className="text-center">No mistakes found yet.</p>
-                    <p className="text-sm text-center mt-1">Upload a document to start analysis.</p>
-                  </div>
+                  <>
+                    Check for Mistakes
+                    <IconComponent icon={AiOutlineBulb} className="h-5 w-5 ml-2" />
+                  </>
                 )}
-              </div>
+              </motion.button>
             </div>
+            
+            {processingStatus && (
+              <motion.div
+                className="mt-6 p-4 bg-blue-500/10 backdrop-blur-sm rounded-lg border border-blue-500/20"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                <p className="text-sm text-blue-400 flex items-center justify-center">
+                  <motion.div
+                    className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full mr-2"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  />
+                  {processingStatus}
+                </p>
+              </motion.div>
+            )}
+          </motion.div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // After file upload, show split view with document on left and mistakes on right
+  return (
+    <div className={className}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-4">
+          <motion.button
+            onClick={handleRemoveFile}
+            className="flex items-center px-4 py-2 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <IconComponent icon={AiOutlineLeft} className="h-4 w-4 mr-2" />
+            Back to Upload
+          </motion.button>
+          <div>
+            <h1 className="text-2xl font-bold text-cyan-400">Check Mistakes</h1>
+            <p className="text-slate-300">{file.name}</p>
+          </div>
+        </div>
+        
+        {documentPages.length > 1 && (
+          <div className="flex items-center space-x-4">
+            <button 
+              className="px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-cyan-400 border border-cyan-500/30"
+              disabled={currentPage === 0}
+              onClick={() => setCurrentPage(prev => prev - 1)}
+            >
+              Previous
+            </button>
+            <span className="text-slate-300 font-medium">
+              Page {currentPage + 1} of {documentPages.length}
+            </span>
+            <button 
+              className="px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-cyan-400 border border-cyan-500/30"
+              disabled={currentPage === documentPages.length - 1}
+              onClick={() => setCurrentPage(prev => prev + 1)}
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Split View: Document on Left, Mistakes on Right */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-200px)]">
+        {/* Left Side - Document */}
+        <div className="bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl shadow-lg overflow-hidden">
+          <div className="bg-slate-700/50 backdrop-blur-sm px-6 py-4 border-b border-white/10">
+            <h2 className="text-lg font-semibold text-cyan-400">Document</h2>
+          </div>
+          <div className="h-full p-4">
+            <div className="w-full h-full bg-slate-700/30 backdrop-blur-sm rounded-lg overflow-hidden border border-white/10">
+              <img 
+                src={documentPages[currentPage]} 
+                alt={`Document page ${currentPage + 1}`}
+                className="w-full h-full object-contain"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side - Mistakes */}
+        <div className="bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl shadow-lg overflow-hidden flex flex-col">
+          <div className="bg-slate-700/50 backdrop-blur-sm px-6 py-4 border-b border-white/10 flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-cyan-400">Mistakes Found</h2>
+              {pageMistakes[currentPage] && (
+                <div className="flex items-center space-x-2">
+                  {pageMistakes[currentPage].isLoading && (
+                    <div className="flex items-center text-cyan-400">
+                      <motion.div
+                        className="w-4 h-4 border-2 border-cyan-400 border-t-transparent rounded-full mr-2"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      />
+                      <span className="text-sm">Processing...</span>
+                    </div>
+                  )}
+                  {pageMistakes[currentPage].isComplete && !pageMistakes[currentPage].error && (
+                    <span className="text-sm text-green-400 font-medium">✓ Complete</span>
+                  )}
+                  {pageMistakes[currentPage].error && (
+                    <span className="text-sm text-red-400 font-medium">⚠ Error</span>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            {/* Progress indicator for all pages */}
+            {pageMistakes.length > 0 && (
+              <div className="mt-3">
+                <div className="flex items-center space-x-1">
+                  {pageMistakes.map((pm, index) => (
+                    <div
+                      key={index}
+                      className={`w-3 h-3 rounded-full ${
+                        pm.isComplete && !pm.error
+                          ? 'bg-green-500'
+                          : pm.error
+                          ? 'bg-red-500'
+                          : pm.isLoading
+                          ? 'bg-cyan-500 animate-pulse'
+                          : 'bg-slate-500'
+                      }`}
+                      title={`Page ${index + 1}: ${
+                        pm.isComplete && !pm.error
+                          ? 'Complete'
+                          : pm.error
+                          ? 'Error'
+                          : pm.isLoading
+                          ? 'Processing'
+                          : 'Pending'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <p className="text-xs text-slate-400 mt-1">
+                  {pageMistakes.filter(pm => pm.isComplete && !pm.error).length} of {pageMistakes.length} pages completed
+                </p>
+              </div>
+            )}
           </div>
           
-          <div className="bg-gray-50 p-4 rounded-lg mt-6">
-            <h3 className="text-lg font-medium text-teal-800 mb-3">Upload Document to Check</h3>
-            <div className="flex flex-wrap gap-4">
-              <motion.button
-                variants={buttonVariants}
-                whileHover="hover"
-                whileTap="tap"
-                className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <IconComponent icon={AiOutlineUpload} className="mr-2" />
-                Upload New Document
-              </motion.button>
-              <motion.button
-                variants={buttonVariants}
-                whileHover="hover"
-                whileTap="tap"
-                className="flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <IconComponent icon={AiOutlineCamera} className="mr-2" />
-                Take Photo
-              </motion.button>
-            </div>
+          <div className="flex-1 overflow-y-auto p-6">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                <motion.div
+                  className="w-16 h-16 border-4 border-cyan-500 border-t-transparent rounded-full mb-4"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                />
+                <p className="text-center">{processingStatus || 'Checking for mistakes...'}</p>
+              </div>
+            ) : pageMistakes[currentPage] && pageMistakes[currentPage].mistakes.length > 0 ? (
+              <div className="space-y-4">
+                <div className="mb-4 p-3 bg-teal-500/10 backdrop-blur-sm rounded-lg border border-teal-500/20">
+                  <h3 className="text-lg font-semibold text-teal-400">
+                    Page {currentPage + 1} - {pageMistakes[currentPage].mistakes.length} mistake(s) found
+                  </h3>
+                </div>
+                
+                {pageMistakes[currentPage].mistakes.map((mistake) => (
+                  <motion.div
+                    key={mistake.id}
+                    className="bg-slate-700/30 backdrop-blur-sm rounded-lg p-4 border border-white/10"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: mistake.id * 0.1 }}
+                  >
+                    <div className="mb-2">
+                      <span className="inline-block px-2 py-1 bg-yellow-500/20 text-yellow-400 text-xs font-medium rounded border border-yellow-500/30">
+                        {mistake.type}
+                      </span>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <h4 className="text-sm font-medium text-red-400 mb-1">Incorrect:</h4>
+                      <div className="bg-red-500/10 border-l-4 border-red-500 p-3 rounded-r">
+                        <p className="text-slate-300 font-mono">{mistake.incorrect}</p>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-sm font-medium text-green-400 mb-1">Correction:</h4>
+                      <div className="bg-green-500/10 border-l-4 border-green-500 p-3 rounded-r">
+                        <p className="text-slate-300 font-mono">{mistake.correct}</p>
+                      </div>
+                    </div>
+                    
+                    {mistake.explanation && (
+                      <div className="mt-3 p-3 bg-blue-500/10 rounded border border-blue-500/20">
+                        <p className="text-sm text-blue-400">{mistake.explanation}</p>
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            ) : pageMistakes[currentPage] && pageMistakes[currentPage].isComplete ? (
+              <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                <div className="text-6xl mb-4">✅</div>
+                <h3 className="text-xl font-semibold text-green-400 mb-2">No Mistakes Found!</h3>
+                <p className="text-center">This page appears to be error-free. Great job!</p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                <IconComponent icon={AiOutlineBulb} className="h-12 w-12 mb-3 opacity-50" />
+                <p className="text-center">Mistakes will appear here after processing your document.</p>
+              </div>
+            )}
           </div>
         </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-16 text-gray-500">
-          <div className="bg-gray-100 rounded-full p-6 mb-4">
-            <IconComponent icon={AiOutlineUpload} className="h-12 w-12 opacity-70" />
-          </div>
-          <h3 className="text-xl font-medium text-gray-700 mb-2">No Documents Uploaded</h3>
-          <p className="text-gray-500 mb-6 text-center max-w-md">
-            Upload a document or take a photo to check for mistakes, grammar issues, and suggestions.
-          </p>
-          <div className="flex flex-wrap gap-4 justify-center">
-            <motion.button
-              variants={buttonVariants}
-              whileHover="hover"
-              whileTap="tap"
-              className="flex items-center px-6 py-3 bg-teal-600 text-white rounded-lg shadow-md"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <IconComponent icon={AiOutlineUpload} className="mr-2" />
-              Upload Document
-            </motion.button>
-            <motion.button
-              variants={buttonVariants}
-              whileHover="hover"
-              whileTap="tap"
-              className="flex items-center px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <IconComponent icon={AiOutlineCamera} className="mr-2" />
-              Take Photo
-            </motion.button>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };

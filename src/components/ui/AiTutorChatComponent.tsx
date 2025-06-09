@@ -16,7 +16,15 @@ import {
 } from 'react-icons/ai';
 import { FiSend, FiThumbsUp, FiThumbsDown, FiRefreshCw, FiMaximize2, FiMinimize2, FiShare2, FiImage, FiTrash2, FiEdit3, FiCopy, FiDownload, FiPlus, FiMessageSquare } from 'react-icons/fi';
 import IconComponent from './IconComponent';
-import FormattedMessage from './FormattedMessage';
+
+// Import markdown and math libraries
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import 'katex/dist/katex.min.css';
 
 interface ChatMessage {
   id: string;
@@ -69,6 +77,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
   const [showHistory, setShowHistory] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState<{ file: File; base64: string; extractedText: string } | null>(null);
   
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -93,29 +102,113 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
     }
   }, [editingMessageId]);
 
+  // Preprocess LaTeX for react-markdown
+  const preprocessLaTeX = (content: string) => {
+    return content
+      .replace(/\\\[(.*?)\\\]/g, (_, eq) => `$$${eq}$$`)   // block math
+      .replace(/\\\((.*?)\\\)/g, (_, eq) => `$${eq}$`);    // inline math
+  };
+
+  // Custom components for ReactMarkdown
+  const markdownComponents = {
+    code({ node, inline, className, children, ...props }: any) {
+      const match = /language-(\w+)/.exec(className || '');
+      return !inline && match ? (
+        <SyntaxHighlighter
+          style={vscDarkPlus}
+          language={match[1]}
+          PreTag="div"
+          className="rounded-lg"
+          {...props}
+        >
+          {String(children).replace(/\n$/, '')}
+        </SyntaxHighlighter>
+      ) : (
+        <code className={`${className} bg-slate-600/50 text-cyan-300 px-2 py-1 rounded text-sm font-mono`} {...props}>
+          {children}
+        </code>
+      );
+    },
+    h1: ({ children }: any) => <h1 className="text-2xl font-bold text-cyan-400 mt-6 mb-3 border-b-2 border-cyan-500/30 pb-2">{children}</h1>,
+    h2: ({ children }: any) => <h2 className="text-xl font-bold text-blue-400 mt-5 mb-2 border-b border-blue-500/30 pb-1">{children}</h2>,
+    h3: ({ children }: any) => <h3 className="text-lg font-bold text-teal-400 mt-4 mb-2 bg-teal-500/10 px-3 py-2 rounded border border-teal-500/20">{children}</h3>,
+    h4: ({ children }: any) => <h4 className="text-base font-semibold text-slate-300 mt-3 mb-2">{children}</h4>,
+    p: ({ children }: any) => <p className="text-slate-300 mb-3 leading-relaxed">{children}</p>,
+    ul: ({ children }: any) => <ul className="list-disc list-inside mb-3 text-slate-300 space-y-1">{children}</ul>,
+    ol: ({ children }: any) => <ol className="list-decimal list-inside mb-3 text-slate-300 space-y-1">{children}</ol>,
+    li: ({ children }: any) => <li className="mb-1 pl-2">{children}</li>,
+    blockquote: ({ children }: any) => (
+      <blockquote className="border-l-4 border-cyan-500 pl-4 my-3 bg-cyan-500/10 py-3 rounded-r italic text-slate-300">
+        {children}
+      </blockquote>
+    ),
+    strong: ({ children }: any) => <strong className="font-bold text-cyan-400 bg-cyan-500/10 px-1 rounded">{children}</strong>,
+    em: ({ children }: any) => <em className="italic text-slate-300">{children}</em>,
+    table: ({ children }: any) => (
+      <div className="overflow-x-auto my-3">
+        <table className="min-w-full border border-white/20 rounded-lg overflow-hidden">{children}</table>
+      </div>
+    ),
+    thead: ({ children }: any) => <thead className="bg-slate-600/50">{children}</thead>,
+    tbody: ({ children }: any) => <tbody>{children}</tbody>,
+    tr: ({ children }: any) => <tr className="border-b border-white/10 hover:bg-slate-600/30">{children}</tr>,
+    th: ({ children }: any) => <th className="px-3 py-2 text-left font-semibold text-cyan-400 text-sm">{children}</th>,
+    td: ({ children }: any) => <td className="px-3 py-2 text-slate-300 text-sm">{children}</td>,
+    a: ({ children, href }: any) => (
+      <a href={href} className="text-cyan-400 hover:text-cyan-300 underline font-medium" target="_blank" rel="noopener noreferrer">
+        {children}
+      </a>
+    ),
+  };
+
   // Send message to AI API with streaming
   const sendMessageToAI = async (
     message: string, 
     onChunk?: (chunk: string) => void
   ): Promise<string> => {
+    console.log('🔄 Starting AI Tutor API request');
+    console.log('📝 Message:', message);
+    
     try {
-      const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer sk-80beadf6603b4832981d0d65896b1ae0',
+          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: "qvq-max",
+          model: "qwen-vl-max",
           messages: [
+            {
+              role: "system",
+              content: [
+                {
+                  type: "text", 
+                  text: "You are an AI tutor assistant helping students with their homework and studies. Provide helpful, educational responses with clear explanations and examples that students can easily understand. Use proper markdown formatting for better readability."
+                }
+              ]
+            },
             {
               role: "user",
               content: [
                 {
                   type: "text",
-                  text: `You are an AI tutor assistant from Hong Kong helping students with their homework and studies. Please provide helpful, educational responses with a friendly Hong Kong perspective. Use clear explanations and examples that students can easily understand.
+                  text: `Please help me with this question or topic:
 
-Student question: ${message}`
+${message}
+
+Please provide:
+1. A clear explanation of the concept or solution
+2. Step-by-step guidance if applicable
+3. Examples to help understanding
+4. Any relevant tips or additional insights
+
+Format your response with:
+- Use **bold** for important terms and concepts
+- Use proper mathematical notation with LaTeX format for equations
+- Structure your response with clear headings and numbered steps
+- Use bullet points for lists and key points
+- Provide comprehensive explanations that help learning`
                 }
               ]
             }
@@ -124,7 +217,10 @@ Student question: ${message}`
         })
       });
 
+      console.log('📊 API Response status:', response.status);
+
       if (!response.ok) {
+        console.error('❌ API request failed:', response.status, response.statusText);
         throw new Error(`API call failed: ${response.status} ${response.statusText}`);
       }
 
@@ -135,39 +231,47 @@ Student question: ${message}`
       }
 
       let fullContent = '';
+      let isFirstChunk = true;
       
       try {
         while (true) {
           const { done, value } = await reader.read();
-          if (done) break;
+          if (done) {
+            console.log('🏁 Streaming completed');
+            break;
+          }
           
           const chunk = new TextDecoder().decode(value);
-          const lines = chunk.split('\n').filter(line => line.trim() !== '');
+          const lines = chunk.split('\n');
           
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               const data = line.slice(6);
-              if (data === '[DONE]') continue;
+              if (data === '[DONE]') {
+                console.log('✅ Stream marked as DONE');
+                continue;
+              }
               
               try {
                 const parsed = JSON.parse(data);
-                if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta) {
-                  const delta = parsed.choices[0].delta;
+                const content_chunk = parsed.choices?.[0]?.delta?.content;
+                
+                if (content_chunk) {
+                  if (isFirstChunk) {
+                    console.log('📝 First content chunk received');
+                    isFirstChunk = false;
+                  }
                   
-                  // Skip reasoning content, only collect the final answer
-                  if (delta.reasoning_content) {
-                    // This is the thinking process, we can skip it for tutoring
-                    continue;
-                  } else if (delta.content) {
-                    // This is the actual answer content
-                    fullContent += delta.content;
-                    if (onChunk) {
-                      onChunk(delta.content);
-                    }
+                  fullContent += content_chunk;
+                  
+                  // Call the chunk callback if provided for real-time updates
+                  if (onChunk) {
+                    onChunk(content_chunk);
                   }
                 }
               } catch (parseError) {
-                console.warn('Failed to parse streaming data:', parseError);
+                // Skip invalid JSON lines
+                continue;
               }
             }
           }
@@ -176,9 +280,12 @@ Student question: ${message}`
         reader.releaseLock();
       }
 
-      return fullContent.trim();
+      console.log('✅ AI Tutor API request completed successfully');
+      console.log('📊 Final content length:', fullContent.length);
+      
+      return fullContent.trim() || 'I apologize, but I could not generate a response. Please try again.';
     } catch (error) {
-      console.error('Error calling AI API:', error);
+      console.error('💥 Error in sendMessageToAI:', error);
       throw new Error('Failed to get response from AI. Please try again.');
     }
   };
@@ -295,17 +402,34 @@ Student question: ${message}`
     }
 
     try {
-      setIsLoading(true);
+      setIsUploading(true);
+      
+      // Convert image to base64
+      const base64Image = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          resolve(result);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      // Extract text from image
       const extractedText = await handleImageUpload(file);
       
-      if (extractedText) {
-        setChatInput(prev => prev + (prev ? '\n\n' : '') + `[Image uploaded: ${file.name}]\n\nExtracted text:\n${extractedText}`);
-      }
+      // Set uploaded image data
+      setUploadedImage({
+        file,
+        base64: base64Image,
+        extractedText
+      });
+      
     } catch (error) {
       console.error('Error processing image:', error);
       alert('Failed to process image. Please try again.');
     } finally {
-      setIsLoading(false);
+      setIsUploading(false);
       // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -319,12 +443,16 @@ Student question: ${message}`
 
   const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!chatInput.trim() || isLoading) return;
+    if ((!chatInput.trim() && !uploadedImage) || isLoading) return;
+
+    const messageContent = uploadedImage 
+      ? `${chatInput}\n\n[Image: ${uploadedImage.file.name}]\n\nExtracted text from image:\n${uploadedImage.extractedText}`
+      : chatInput;
 
     const userMessage: ChatMessage = {
       id: generateMessageId(),
       role: 'user',
-      content: chatInput,
+      content: messageContent,
       timestamp: new Date()
     };
 
@@ -341,10 +469,10 @@ Student question: ${message}`
       )
     );
 
-    const userInput = chatInput;
+    const userInput = messageContent;
     setChatInput('');
+    setUploadedImage(null);
     setIsLoading(true);
-    setStreamingMessage('');
 
     // Create assistant message placeholder for streaming
     const assistantMessageId = generateMessageId();
@@ -371,9 +499,6 @@ Student question: ${message}`
     try {
       // Stream the response
       await sendMessageToAI(userInput, (chunk: string) => {
-        // Update the streaming message state
-        setStreamingMessage(prev => prev + chunk);
-        
         // Update the assistant message in real-time
         setChatSessions(prev => 
           prev.map(session => 
@@ -416,7 +541,6 @@ Student question: ${message}`
       );
     } finally {
       setIsLoading(false);
-      setStreamingMessage('');
     }
   };
 
@@ -681,471 +805,445 @@ Student question: ${message}`
     visible: { opacity: 1, y: 0 }
   };
 
-  const containerClass = isFullscreen 
-    ? "fixed inset-0 z-50 bg-white flex flex-col" 
-    : `flex flex-col h-[700px] ${className}`;
+  const containerClass = isFullscreen
+    ? 'fixed inset-0 z-50 bg-slate-900 backdrop-blur-sm'
+    : `${className}`;
 
   return (
     <div className={containerClass}>
-      {/* Chat Header */}
-      <div className="flex justify-between items-center p-4 bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-lg">
-        <div className="flex items-center flex-1">
-          <div className="relative">
-            <IconComponent icon={AiOutlineRobot} className="h-8 w-8 mr-3" />
-            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-semibold truncate">{currentChat.title}</h3>
-            <p className="text-xs text-teal-100">Online • Ready to help</p>
+      <div 
+        className={`${isFullscreen ? 'h-screen w-screen rounded-none' : 'h-full rounded-xl'} bg-slate-600/30 backdrop-blur-sm border border-white/10 shadow-lg overflow-hidden flex flex-col`}
+      >
+        {/* Header */}
+        <div className="bg-gradient-to-r from-slate-800 to-blue-800 backdrop-blur-sm px-6 py-4 border-b border-white/10 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
+                <IconComponent icon={AiOutlineRobot} className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-cyan-400">AI Tutor</h2>
+                <p className="text-slate-300 text-sm">Your personal study assistant</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <motion.button
+                onClick={() => setShowHistory(!showHistory)}
+                className="p-2 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                title="Chat History"
+              >
+                <IconComponent icon={AiOutlineHistory} className="h-5 w-5" />
+              </motion.button>
+              
+              <motion.button
+                onClick={() => setIsFullscreen(!isFullscreen)}
+                className="p-2 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+              >
+                <IconComponent icon={isFullscreen ? FiMinimize2 : FiMaximize2} className="h-5 w-5" />
+              </motion.button>
+              
+              <motion.button
+                onClick={clearChat}
+                className="p-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-red-400 transition-colors border border-red-500/30"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                title="Clear Chat"
+              >
+                <IconComponent icon={FiTrash2} className="h-5 w-5" />
+              </motion.button>
+            </div>
           </div>
         </div>
-        
-        <div className="flex items-center space-x-2">
-          <motion.button
-            variants={buttonVariants}
-            whileHover="hover"
-            whileTap="tap"
-            onClick={createNewChat}
-            className="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
-            title="New chat"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-          </motion.button>
-          
-          <motion.button
-            variants={buttonVariants}
-            whileHover="hover"
-            whileTap="tap"
-            onClick={() => setShowHistory(!showHistory)}
-            className="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
-            title="Chat history"
-          >
-            <IconComponent icon={AiOutlineHistory} className="h-5 w-5" />
-          </motion.button>
-          
-          <motion.button
-            variants={buttonVariants}
-            whileHover="hover"
-            whileTap="tap"
-            onClick={downloadChat}
-            className="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
-            title="Download chat"
-          >
-            <IconComponent icon={AiOutlineDownload} className="h-5 w-5" />
-          </motion.button>
-          
-          <motion.button
-            variants={buttonVariants}
-            whileHover="hover"
-            whileTap="tap"
-            onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
-            title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-          >
-            <IconComponent icon={isFullscreen ? FiMinimize2 : FiMaximize2} className="h-5 w-5" />
-          </motion.button>
-          
-          <motion.button
-            variants={buttonVariants}
-            whileHover="hover"
-            whileTap="tap"
-            onClick={clearChat}
-            className="px-3 py-2 bg-white/20 rounded-lg text-sm font-medium hover:bg-white/30 transition-colors"
-          >
-            Clear Chat
-          </motion.button>
-        </div>
-      </div>
 
-      {/* Chat Messages */}
-      <div ref={chatContainerRef} className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50 to-gray-100 p-4 space-y-4">
-        <AnimatePresence>
-          {chatMessages.map((msg, index) => (
-            <motion.div
-              key={msg.id}
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              variants={messageVariants}
-              initial="hidden"
-              animate="visible"
-              exit="hidden"
-              transition={{ duration: 0.3, delay: index * 0.05 }}
-            >
-              <div className={`max-w-[85%] group ${msg.role === 'user' ? 'order-2' : 'order-1'}`}>
-                {/* Message bubble */}
-                <div className={`relative rounded-2xl px-4 py-3 shadow-sm ${
-                  msg.role === 'user' 
-                    ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-tr-none ml-auto' 
-                    : 'bg-white border border-gray-200 rounded-tl-none shadow-md'
-                }`}>
-                  {editingMessageId === msg.id ? (
-                    <div className="space-y-2">
-                      <textarea
-                        ref={editInputRef}
-                        value={editingContent}
-                        onChange={(e) => setEditingContent(e.target.value)}
-                        className="w-full p-2 border border-gray-300 rounded-lg resize-none text-gray-800"
-                        rows={3}
-                      />
-                      <div className="flex justify-end space-x-2">
-                        <button
-                          onClick={() => saveEdit(msg.id)}
-                          className="px-3 py-1 bg-teal-600 text-white rounded-lg text-sm hover:bg-teal-700"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={cancelEdit}
-                          className="px-3 py-1 bg-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-400"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      {msg.role === 'assistant' ? (
-                        <FormattedMessage content={msg.content} />
-                      ) : (
-                        <p className="text-sm md:text-base leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                      )}
-                      {msg.edited && (
-                        <p className="text-xs mt-1 opacity-70 italic">
-                          (edited)
-                        </p>
-                      )}
-                    </>
-                  )}
-                  
-                  {/* Timestamp */}
-                  <div className="flex items-center justify-between mt-2">
-                    <p className={`text-xs ${
-                      msg.role === 'user' ? 'text-teal-100' : 'text-gray-500'
-                    }`}>
-                      {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                    
-                    {/* Message actions */}
-                    {editingMessageId !== msg.id && (
-                      <div className={`flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity ${
-                        msg.role === 'user' ? 'text-teal-100' : 'text-gray-500'
-                      }`}>
-                        <button
-                          onClick={() => copyToClipboard(msg.content)}
-                          className="p-1 hover:bg-black/10 rounded"
-                          title="Copy message"
-                        >
-                          <IconComponent icon={AiOutlineCopy} className="h-3 w-3" />
-                        </button>
-                        
-                        <button
-                          onClick={() => shareMessage(msg)}
-                          className="p-1 hover:bg-black/10 rounded"
-                          title="Share message"
-                        >
-                          <IconComponent icon={FiShare2} className="h-3 w-3" />
-                        </button>
-                        
-                        {msg.role === 'user' && (
-                          <button
-                            onClick={() => startEditing(msg)}
-                            className="p-1 hover:bg-black/10 rounded"
-                            title="Edit message"
-                          >
-                            <IconComponent icon={FiEdit3} className="h-3 w-3" />
-                          </button>
-                        )}
-                        
-                        <button
-                          onClick={() => deleteMessage(msg.id)}
-                          className="p-1 hover:bg-black/10 rounded"
-                          title="Delete message"
-                        >
-                          <IconComponent icon={FiTrash2} className="h-3 w-3" />
-                        </button>
-                      </div>
-                    )}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Chat History Sidebar */}
+          <AnimatePresence>
+            {showHistory && (
+              <motion.div
+                className="w-80 bg-slate-700/30 backdrop-blur-sm border-r border-white/10 flex flex-col"
+                initial={{ x: -320, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: -320, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="p-4 border-b border-white/10">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-cyan-400">Chat History</h3>
+                    <motion.button
+                      onClick={createNewChat}
+                      className="p-2 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg text-white hover:shadow-lg transition-all"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      title="New Chat"
+                    >
+                      <IconComponent icon={FiPlus} className="h-4 w-4" />
+                    </motion.button>
                   </div>
                 </div>
                 
-                {/* AI message actions */}
-                {msg.role === 'assistant' && editingMessageId !== msg.id && (
-                  <div className="flex items-center justify-start mt-2 space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => likeMessage(msg.id)}
-                      className={`p-1 rounded-full transition-colors ${
-                        msg.liked ? 'bg-green-100 text-green-600' : 'hover:bg-gray-100 text-gray-500'
+                <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                  {chatSessions.map((session) => (
+                    <motion.div
+                      key={session.id}
+                      className={`p-3 rounded-lg cursor-pointer transition-all border ${
+                        session.id === currentChatId
+                          ? 'bg-cyan-500/20 border-cyan-500/30 text-cyan-400'
+                          : 'bg-slate-600/30 border-white/10 text-slate-300 hover:bg-slate-600/50'
                       }`}
-                      title="Like response"
+                      onClick={() => switchToChat(session.id)}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                     >
-                      <IconComponent icon={FiThumbsUp} className="h-4 w-4" />
-                    </button>
-                    
-                    <button
-                      onClick={() => dislikeMessage(msg.id)}
-                      className={`p-1 rounded-full transition-colors ${
-                        msg.disliked ? 'bg-red-100 text-red-600' : 'hover:bg-gray-100 text-gray-500'
-                      }`}
-                      title="Dislike response"
-                    >
-                      <IconComponent icon={FiThumbsDown} className="h-4 w-4" />
-                    </button>
-                    
-                    <button
-                      onClick={() => regenerateResponse(msg.id)}
-                      className="p-1 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
-                      title="Regenerate response"
-                      disabled={isLoading}
-                    >
-                      <IconComponent icon={FiRefreshCw} className="h-4 w-4" />
-                    </button>
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium truncate">{session.title}</h4>
+                          <p className="text-xs opacity-75 mt-1">
+                            {formatRelativeTime(session.lastUpdated)}
+                          </p>
+                        </div>
+                        {session.id !== 'default' && (
+                          <motion.button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteChat(session.id);
+                            }}
+                            className="p-1 text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                          >
+                            <IconComponent icon={FiTrash2} className="h-3 w-3" />
+                          </motion.button>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Main Chat Area */}
+          <div className="flex-1 flex flex-col">
+            {/* Messages */}
+            <div 
+              ref={chatContainerRef}
+              className="flex-1 overflow-y-auto p-6 space-y-4"
+            >
+              {/* Chat Messages */}
+              <AnimatePresence>
+                {chatMessages.map((message, index) => (
+                  <motion.div
+                    key={message.id}
+                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} mb-4`}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <div className={`max-w-[80%] ${message.role === 'user' ? 'order-2' : 'order-1'}`}>
+                      {/* Message Header */}
+                      <div className={`flex items-center space-x-2 mb-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          message.role === 'user' 
+                            ? 'bg-gradient-to-r from-cyan-500 to-blue-500' 
+                            : 'bg-gradient-to-r from-teal-500 to-green-500'
+                        }`}>
+                          <IconComponent 
+                            icon={message.role === 'user' ? AiOutlineUser : AiOutlineRobot} 
+                            className="h-4 w-4 text-white" 
+                          />
+                        </div>
+                        <span className="text-sm text-slate-400">
+                          {message.role === 'user' ? 'You' : 'AI Tutor'}
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          {message.timestamp.toLocaleTimeString()}
+                        </span>
+                      </div>
+
+                      {/* Message Content */}
+                      <div className={`p-4 rounded-2xl backdrop-blur-sm border ${
+                        message.role === 'user'
+                          ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border-cyan-500/30 text-slate-200'
+                          : 'bg-slate-600/30 border-white/10 text-slate-300'
+                      }`}>
+                        {editingMessageId === message.id ? (
+                          <div className="space-y-3">
+                            <textarea
+                              ref={editInputRef}
+                              value={editingContent}
+                              onChange={(e) => setEditingContent(e.target.value)}
+                              className="w-full p-3 bg-slate-700/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 placeholder-slate-400 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none"
+                              rows={3}
+                            />
+                            <div className="flex items-center space-x-2">
+                              <motion.button
+                                onClick={() => saveEdit(message.id)}
+                                className="px-3 py-1 bg-green-500/20 hover:bg-green-500/30 rounded text-green-400 text-sm transition-colors border border-green-500/30"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                              >
+                                Save
+                              </motion.button>
+                              <motion.button
+                                onClick={cancelEdit}
+                                className="px-3 py-1 bg-slate-600/50 hover:bg-slate-500/50 rounded text-slate-300 text-sm transition-colors border border-white/10"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                              >
+                                Cancel
+                              </motion.button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="prose prose-invert max-w-none">
+                            <ReactMarkdown
+                              remarkPlugins={[remarkMath, remarkGfm]}
+                              rehypePlugins={[rehypeKatex]}
+                              components={markdownComponents}
+                            >
+                              {preprocessLaTeX(message.content)}
+                            </ReactMarkdown>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Message Actions */}
+                      {editingMessageId !== message.id && (
+                        <div className={`flex items-center space-x-2 mt-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                          <motion.button
+                            onClick={() => copyToClipboard(message.content)}
+                            className="p-1 text-slate-400 hover:text-cyan-400 transition-colors"
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            title="Copy"
+                          >
+                            <IconComponent icon={FiCopy} className="h-4 w-4" />
+                          </motion.button>
+                          
+                          <motion.button
+                            onClick={() => startEditing(message)}
+                            className="p-1 text-slate-400 hover:text-blue-400 transition-colors"
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            title="Edit"
+                          >
+                            <IconComponent icon={FiEdit3} className="h-4 w-4" />
+                          </motion.button>
+                          
+                          <motion.button
+                            onClick={() => shareMessage(message)}
+                            className="p-1 text-slate-400 hover:text-green-400 transition-colors"
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            title="Share"
+                          >
+                            <IconComponent icon={FiShare2} className="h-4 w-4" />
+                          </motion.button>
+                          
+                          {message.role === 'assistant' && (
+                            <motion.button
+                              onClick={() => regenerateResponse(message.id)}
+                              className="p-1 text-slate-400 hover:text-yellow-400 transition-colors"
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              title="Regenerate"
+                            >
+                              <IconComponent icon={FiRefreshCw} className="h-4 w-4" />
+                            </motion.button>
+                          )}
+                          
+                          <motion.button
+                            onClick={() => deleteMessage(message.id)}
+                            className="p-1 text-slate-400 hover:text-red-400 transition-colors"
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            title="Delete"
+                          >
+                            <IconComponent icon={FiTrash2} className="h-4 w-4" />
+                          </motion.button>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+
+              {/* Loading Indicator */}
+              {isLoading && (
+                <motion.div
+                  className="flex justify-start mb-4"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <div className="flex items-center space-x-3 p-4 bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-2xl">
+                    <div className="w-8 h-8 bg-gradient-to-r from-teal-500 to-green-500 rounded-full flex items-center justify-center">
+                      <IconComponent icon={AiOutlineRobot} className="h-4 w-4 text-white" />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <motion.div
+                        className="w-2 h-2 bg-cyan-400 rounded-full"
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
+                      />
+                      <motion.div
+                        className="w-2 h-2 bg-cyan-400 rounded-full"
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
+                      />
+                      <motion.div
+                        className="w-2 h-2 bg-cyan-400 rounded-full"
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
+                      />
+                      <span className="text-slate-400 text-sm ml-2">AI is thinking...</span>
+                    </div>
                   </div>
-                )}
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-        
-        {/* Loading indicator */}
-        {isLoading && (
-          <motion.div
-            className="flex justify-start"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-none px-4 py-3 shadow-md">
-              <div className="flex items-center space-x-2">
-                <IconComponent icon={AiOutlineLoading3Quarters} className="h-4 w-4 animate-spin text-teal-600" />
-                <span className="text-gray-600">AI is thinking...</span>
-              </div>
+                </motion.div>
+              )}
+
+              <div ref={chatEndRef} />
             </div>
-          </motion.div>
-        )}
-        
-        <div ref={chatEndRef} />
-      </div>
-      
-      {/* History Panel */}
-      {showHistory && (
-        <motion.div 
-          className="px-4 py-3 bg-white border-t border-gray-200 max-h-80 overflow-y-auto"
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-medium text-gray-700">Chat History</h4>
-            <div className="flex items-center space-x-2">
-              <motion.button
-                variants={buttonVariants}
-                whileHover="hover"
-                whileTap="tap"
-                onClick={createNewChat}
-                className="px-3 py-1 bg-teal-600 text-white rounded-lg text-xs font-medium hover:bg-teal-700 transition-colors"
-              >
-                + New Chat
-              </motion.button>
-              <button
-                onClick={() => setShowHistory(false)}
-                className="text-xs text-gray-400 hover:text-gray-600"
-              >
-                Hide
-              </button>
-            </div>
-          </div>
-          <div className="space-y-2">
-            {chatSessions.map((session) => (
-              <motion.div
-                key={session.id}
-                className={`p-3 rounded-lg cursor-pointer transition-colors group ${
-                  session.id === currentChatId 
-                    ? 'bg-teal-50 border border-teal-200' 
-                    : 'bg-gray-50 hover:bg-gray-100'
-                }`}
-                onClick={() => switchToChat(session.id)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium truncate ${
-                      session.id === currentChatId ? 'text-teal-700' : 'text-gray-700'
-                    }`}>
-                      {session.title}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {formatRelativeTime(session.lastUpdated)}
-                    </p>
-                    {session.messages.length > 1 && (
-                      <p className="text-xs text-gray-400 mt-1 truncate">
-                        {session.messages[session.messages.length - 1].content.substring(0, 50)}...
-                      </p>
-                    )}
-                  </div>
-                  
-                  {/* Delete button - only show if not the last chat */}
-                  {chatSessions.length > 1 && (
+
+            {/* Input Area */}
+            <div className="p-6 border-t border-white/10 bg-slate-700/30 backdrop-blur-sm">
+              <form onSubmit={handleChatSubmit} className="space-y-4">
+                {/* Image Preview */}
+                {uploadedImage && (
+                  <div className="flex items-center space-x-3 p-3 bg-slate-600/50 rounded-lg border border-white/10">
+                    <img 
+                      src={uploadedImage.base64} 
+                      alt="Uploaded" 
+                      className="w-12 h-12 object-cover rounded border border-white/20"
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm text-slate-300 font-medium">{uploadedImage.file.name}</p>
+                      <p className="text-xs text-slate-400">Image attached - add your question above</p>
+                    </div>
                     <motion.button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteChat(session.id);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 transition-all"
+                      type="button"
+                      onClick={() => setUploadedImage(null)}
+                      className="p-1 text-slate-400 hover:text-red-400 transition-colors"
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                     >
-                      <IconComponent icon={FiTrash2} className="h-3 w-3" />
+                      <IconComponent icon={FiTrash2} className="h-4 w-4" />
                     </motion.button>
-                  )}
+                  </div>
+                )}
+
+                <div className="flex items-end space-x-4">
+                  <div className="flex-1">
+                    <textarea
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      placeholder={uploadedImage ? "Ask a question about the uploaded image..." : "Ask me anything about your studies..."}
+                      className="w-full p-4 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-xl text-slate-300 placeholder-slate-400 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none"
+                      rows={3}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleChatSubmit(e);
+                        }
+                      }}
+                    />
+                  </div>
+                  
+                  <div className="flex flex-col space-y-2">
+                    <motion.button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isLoading || isUploading}
+                      className="p-3 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-xl text-slate-300 transition-colors border border-white/10 disabled:opacity-50"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      title="Upload Image"
+                    >
+                      {isUploading ? (
+                        <motion.div
+                          className="w-5 h-5"
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        >
+                          <IconComponent icon={AiOutlineLoading3Quarters} className="h-5 w-5" />
+                        </motion.div>
+                      ) : (
+                        <IconComponent icon={FiImage} className="h-5 w-5" />
+                      )}
+                    </motion.button>
+                    
+                    <motion.button
+                      type="submit"
+                      disabled={(!chatInput.trim() && !uploadedImage) || isLoading}
+                      className="p-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl text-white shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      whileHover={!isLoading ? { scale: 1.05 } : {}}
+                      whileTap={!isLoading ? { scale: 0.95 } : {}}
+                    >
+                      {isLoading ? (
+                        <motion.div
+                          className="w-5 h-5"
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        >
+                          <IconComponent icon={AiOutlineLoading3Quarters} className="h-5 w-5" />
+                        </motion.div>
+                      ) : (
+                        <IconComponent icon={FiSend} className="h-5 w-5" />
+                      )}
+                    </motion.button>
+                  </div>
                 </div>
                 
-                {/* Message count indicator */}
-                <div className="flex items-center justify-between mt-2">
-                  <span className="text-xs text-gray-400">
-                    {session.messages.length} message{session.messages.length !== 1 ? 's' : ''}
-                  </span>
-                  {session.id === currentChatId && (
-                    <span className="text-xs text-teal-600 font-medium">Current</span>
-                  )}
-                </div>
-              </motion.div>
-            ))}
-          </div>
-          
-          {chatSessions.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              <IconComponent icon={AiOutlineHistory} className="mx-auto text-4xl mb-2" />
-              <p>No chat history yet</p>
-              <motion.button
-                variants={buttonVariants}
-                whileHover="hover"
-                whileTap="tap"
-                onClick={createNewChat}
-                className="mt-2 px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium"
-              >
-                Start Your First Chat
-              </motion.button>
-            </div>
-          )}
-        </motion.div>
-      )}
-      
-      {/* Quick Actions */}
-      {showQuickActions && chatMessages.length <= 1 && (
-        <motion.div 
-          className="px-4 py-2 bg-white border-t border-gray-200"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-gray-600 font-medium">Quick actions:</p>
-            <button
-              onClick={() => setShowQuickActions(false)}
-              className="text-xs text-gray-400 hover:text-gray-600"
-            >
-              Hide
-            </button>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {quickActions.map((action, index) => (
-              <motion.button
-                key={index}
-                onClick={() => setChatInput(action.text)}
-                className="flex items-center p-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-sm text-gray-700 transition-colors"
-                variants={buttonVariants}
-                whileHover="hover"
-                whileTap="tap"
-              >
-                <IconComponent icon={action.icon} className="h-4 w-4 mr-2 text-teal-600" />
-                <span className="truncate">{action.text}</span>
-              </motion.button>
-            ))}
-          </div>
-        </motion.div>
-      )}
-      
-      {/* Chat Input */}
-      <motion.div 
-        className="p-4 bg-white border-t border-gray-200"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <form onSubmit={handleChatSubmit} className="relative">
-          <div className="relative flex items-end space-x-2">
-            <div className="flex-1 relative">
-              <textarea
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleChatSubmit(e);
-                  }
-                }}
-                className="w-full p-3 pr-20 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white shadow-sm resize-none max-h-32"
-                placeholder="Ask anything about your homework... (Shift+Enter for new line)"
-                disabled={isLoading}
-                rows={1}
-                style={{ minHeight: '44px' }}
-              />
-              
-              <div className="absolute right-2 top-1/2 transform -translate-y-5 flex items-center space-x-1">
-                {/* Attachment Button */}
-                <motion.button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="p-2 text-gray-500 hover:text-teal-600 hover:bg-teal-50 rounded-full transition-colors"
-                  variants={buttonVariants}
-                  whileHover="hover"
-                  whileTap="tap"
-                  disabled={isLoading}
-                  title="Upload image"
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+              </form>
+
+              {/* Quick Questions */}
+              {chatMessages.length <= 1 && (
+                <motion.div
+                  className="mt-4"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
                 >
-                  <IconComponent icon={FiImage} className="h-4 w-4" />
-                </motion.button>
-                
-                {/* Send Button */}
-                <motion.button
-                  type="submit"
-                  className={`p-2 rounded-full transition-colors ${
-                    isLoading || !chatInput.trim()
-                      ? 'bg-gray-300 cursor-not-allowed'
-                      : 'bg-teal-600 hover:bg-teal-700'
-                  } text-white`}
-                  variants={buttonVariants}
-                  whileHover={!isLoading && chatInput.trim() ? "hover" : undefined}
-                  whileTap={!isLoading && chatInput.trim() ? "tap" : undefined}
-                  disabled={isLoading || !chatInput.trim()}
-                >
-                  {isLoading ? (
-                    <IconComponent icon={AiOutlineLoading3Quarters} className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <IconComponent icon={AiOutlineSend} className="h-5 w-5" />
-                  )}
-                </motion.button>
-              </div>
+                  <p className="text-sm text-slate-400 mb-3">Quick questions to get started:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      "Help me solve this math problem",
+                      "Explain photosynthesis",
+                      "What is the Pythagorean theorem?",
+                      "How do I write a good essay?",
+                      "What causes climate change?",
+                      "Explain Newton's laws of motion"
+                    ].map((question, index) => (
+                      <motion.button
+                        key={index}
+                        onClick={() => setChatInput(question)}
+                        className="px-3 py-2 bg-slate-600/30 hover:bg-slate-600/50 rounded-lg text-sm text-slate-300 border border-white/10 transition-colors"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        {question}
+                      </motion.button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
             </div>
           </div>
-          
-          {/* Hidden File Input */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-        </form>
-        
-        <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
-          <span>AI can make mistakes. Please verify important information.</span>
-          <span>{chatInput.length}/2000</span>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 };
