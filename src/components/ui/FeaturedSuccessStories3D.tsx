@@ -67,22 +67,22 @@ const FeaturedSuccessStories3D: React.FC = () => {
           x: 300,  // 300px to the right of component center (near title)
           y: -200, // 200px above component center
           z: 3,
-          scale: 2.0,
-          rotation: { x: 0.2, y: -0.8, z: 0.1 },
+          scale: 1.0,
+          rotation: { x: 0.2, y: -0.9, z: 1.6 },
           visible: true
         },
         eraser: {
-          x: -350, // 350px to the left of component center (near "View All" button area)
+          x: -250, // 350px to the left of component center (near "View All" button area)
           y: 250,  // 250px below component center
           z: 2,
-          scale: 1.3,
+          scale: 1,
           visible: true
         },
         sharpener: {
-          x: 350,  // 350px to the right of component center (near "View All" button area)
+          x: 250,  // 350px to the right of component center (near "View All" button area)
           y: 250,  // 250px below component center
           z: 2,
-          scale: 1.3,
+          scale: 1,
           visible: true
         }
       });

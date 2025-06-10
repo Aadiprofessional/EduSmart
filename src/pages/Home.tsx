@@ -25,20 +25,20 @@ const OurImpactSection: React.FC = () => {
           z: 2,
           scale: 1.4,
           rotation: { x: 0, y: 1.5, z: 0 },
-          visible: true
+          visible: false
         },
         eraser: {
-          x: -300, // 300px to the left of component center
-          y: 100,  // 100px below component center
+          x: -500, // 300px to the left of component center
+          y: -150,  // 100px below component center
           z: 2,
-          scale: 1.2,
+          scale: 1.4,
           visible: true
         },
         sharpener: {
-          x: 300,  // 300px to the right of component center
-          y: 100,  // 100px below component center
+          x: 600,  // 300px to the right of component center
+          y: -100,  // 100px below component center
           z: 2,
-          scale: 1.2,
+          scale: 0.8,
           visible: true
         }
       });
@@ -140,24 +140,24 @@ const ReadyToTransformSection: React.FC = () => {
       registerComponent('ready-to-transform', sectionRef.current, {
         pencil: {
           x: 0,    // Centered horizontally
-          y: -100, // 100px above component center (horizontal/sleeping position)
+          y: -230, // 100px above component center (horizontal/sleeping position)
           z: 2,
-          scale: 1.8,
+          scale: 4.8,
           rotation: { x: 0, y: 0, z: 1.5 }, // Horizontal/sleeping rotation
           visible: true
         },
         eraser: {
-          x: -400, // 400px to the left of component center
+          x: -600, // 400px to the left of component center
           y: 0,    // Same vertical level as component center
           z: 1,
-          scale: 1.6,
+          scale: 0.8,
           visible: true
         },
         sharpener: {
-          x: 400,  // 400px to the right of component center
+          x: 600,  // 400px to the right of component center
           y: 0,    // Same vertical level as component center
           z: 1,
-          scale: 1.6,
+          scale: 1.2,
           visible: true
         }
       });

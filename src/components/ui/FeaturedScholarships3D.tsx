@@ -16,10 +16,10 @@ const FeaturedScholarships3D: React.FC = () => {
     if (containerRef.current) {
       registerComponent('scholarships', containerRef.current, {
         pencil: {
-          x: 0,    // Centered horizontally (pointing to scholarship cards)
-          y: 100,  // 100px below component center
+          x: 500,    // Centered horizontally (pointing to scholarship cards)
+          y: 300,  // 100px below component center
           z: 3,
-          scale: 1.8,
+          scale: 2.8,
           rotation: { x: -0.3, y: 0.6, z: 0.1 },
           visible: true
         },
@@ -28,11 +28,11 @@ const FeaturedScholarships3D: React.FC = () => {
           y: 0,    // Same vertical level as component center
           z: 2,
           scale: 1.5,
-          visible: true
+          visible: false
         },
         sharpener: {
-          x: 400,  // 400px to the right of component center
-          y: 0,    // Same vertical level as component center
+          x: -600,  // 400px to the right of component center
+          y: -500,    // Same vertical level as component center
           z: 2,
           scale: 1.5,
           visible: true
