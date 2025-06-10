@@ -22,6 +22,7 @@ import Profile from './pages/Profile';
 
 // Components
 import ChatBot from './components/ui/ChatBot';
+import MagneticCursor from './components/ui/MagneticCursor';
 import ProtectedRoute from './utils/ProtectedRoute';
 
 // Utils
@@ -37,6 +38,9 @@ function App() {
     <AuthProvider>
       <LanguageProvider>
         <Router>
+          {/* Global Magnetic Cursor */}
+          <MagneticCursor />
+          
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />

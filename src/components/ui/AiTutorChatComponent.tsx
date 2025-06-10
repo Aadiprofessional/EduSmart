@@ -193,22 +193,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
               content: [
                 {
                   type: "text",
-                  text: `Please help me with this question or topic:
-
-${message}
-
-Please provide:
-1. A clear explanation of the concept or solution
-2. Step-by-step guidance if applicable
-3. Examples to help understanding
-4. Any relevant tips or additional insights
-
-Format your response with:
-- Use **bold** for important terms and concepts
-- Use proper mathematical notation with LaTeX format for equations
-- Structure your response with clear headings and numbered steps
-- Use bullet points for lists and key points
-- Provide comprehensive explanations that help learning`
+                  text: `Please help me with this question or topic:${message}`
                 }
               ]
             }

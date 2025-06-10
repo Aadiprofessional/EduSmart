@@ -1,7 +1,8 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { FaGraduationCap, FaStar, FaUsers, FaClock, FaPlay } from 'react-icons/fa';
 import IconComponent from './IconComponent';
+import { useModelPosition } from '../../utils/ModelPositionContext';
 
 interface Course {
   id: string;
@@ -58,6 +59,7 @@ const sampleCourses: Course[] = [
 
 const FeaturedCourses3D: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const { registerComponent, unregisterComponent } = useModelPosition();
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start end", "end start"]
@@ -65,6 +67,40 @@ const FeaturedCourses3D: React.FC = () => {
 
   const y = useTransform(scrollYProgress, [0, 1], [100, -100]);
   const opacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0, 1, 1, 0]);
+
+  // Register component for 3D models
+  useEffect(() => {
+    if (containerRef.current) {
+      registerComponent('featured-courses', containerRef.current, {
+        pencil: {
+          x: -500,    // Centered horizontally
+          y: 200, // 120px above component center
+          z: 2,
+          scale: 2.0,
+          rotation: { x: 0, y: 0, z: 4.1 },
+          visible: true
+        },
+        eraser: {
+          x: -370, // 350px to the left of component center
+          y: -320, // 200px above component center
+          z: 1,
+          scale: 0.6,
+          visible: true
+        },
+        sharpener: {
+          x: 370,  // 350px to the right of component center
+          y: -320, // 200px above component center
+          z: 1,
+          scale: 0.6,
+          visible: true
+        }
+      });
+    }
+
+    return () => {
+      unregisterComponent('featured-courses');
+    };
+  }, [registerComponent, unregisterComponent]);
 
   return (
     <section ref={containerRef} className="py-20 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden">
@@ -86,42 +122,15 @@ const FeaturedCourses3D: React.FC = () => {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-5xl md:text-6xl font-bold text-white mb-6 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-            Featured Courses
-          </h2>
+          <div className="relative">
+            <h2 className="text-5xl md:text-6xl font-bold text-white mb-6 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+              Featured Courses
+            </h2>
+          </div>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
             Discover our most popular AI-powered courses designed to accelerate your learning journey
           </p>
         </motion.div>
-
-        {/* Animated Course Preview */}
-        <div className="h-96 mb-16 flex items-center justify-center">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl">
-            {sampleCourses.map((course, index) => (
-              <motion.div
-                key={course.id}
-                className="relative group"
-                animate={{
-                  y: [0, -20, 0],
-                  rotateY: [0, 10, 0],
-                }}
-                transition={{
-                  duration: 6 + index * 2,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: index * 0.5,
-                }}
-              >
-                <div className="w-32 h-40 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg shadow-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <div className="text-center text-white">
-                    <IconComponent icon={FaGraduationCap} className="text-3xl mb-2 mx-auto" />
-                    <div className="text-xs font-semibold">{course.title.split(' ')[0]}</div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
 
         {/* Course Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -203,7 +212,7 @@ const FeaturedCourses3D: React.FC = () => {
                     ${course.price}
                   </div>
                   <motion.button
-                    className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-2 rounded-full font-semibold hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-300"
+                    className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full text-white font-semibold hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-300"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
@@ -213,28 +222,27 @@ const FeaturedCourses3D: React.FC = () => {
               </div>
 
               {/* Hover Glow Effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-purple-500/0 to-pink-500/0 group-hover:from-blue-500/10 group-hover:via-purple-500/10 group-hover:to-pink-500/10 transition-all duration-500 pointer-events-none"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-all duration-500 pointer-events-none rounded-2xl"></div>
             </motion.div>
           ))}
         </div>
 
         {/* View All Courses Button */}
         <motion.div
-          className="text-center mt-12"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.8 }}
           viewport={{ once: true }}
+          className="text-center mt-12"
         >
           <motion.button
-            className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-4 rounded-full font-semibold text-lg hover:shadow-2xl hover:shadow-blue-500/25 transition-all duration-300"
+            className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full text-white font-semibold text-lg shadow-2xl hover:shadow-blue-500/25 transition-all duration-300"
             whileHover={{ 
               scale: 1.05,
               boxShadow: "0 20px 40px rgba(59, 130, 246, 0.3)"
             }}
             whileTap={{ scale: 0.95 }}
           >
-            <IconComponent icon={FaGraduationCap} className="inline mr-2" />
             View All Courses
           </motion.button>
         </motion.div>

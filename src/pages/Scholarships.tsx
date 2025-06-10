@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaGraduationCap, FaUniversity, FaCalendarAlt, FaDollarSign, FaMapMarkerAlt, FaSearch, FaFilter, FaBookmark, FaRegBookmark, FaExternalLinkAlt, FaSpinner, FaTimesCircle, FaTimes, FaCheck, FaEye, FaHeart, FaStar, FaAward, FaGlobe, FaRobot, FaAtom, FaBolt, FaRocket, FaUsers, FaClock, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { HiOutlineAcademicCap, HiOutlineLocationMarker } from 'react-icons/hi';
-import Header from '../components/layout/Header';
-import Footer from '../components/layout/Footer';
-import PageHeader from '../components/ui/PageHeader';
 import IconComponent from '../components/ui/IconComponent';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../utils/LanguageContext';
@@ -269,11 +266,9 @@ const Scholarships: React.FC = () => {
     }, 3000);
   };
 
-  if (loading && scholarships.length === 0) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 relative overflow-hidden">
-        <Header />
-        
         {/* Animated Background Elements */}
         <div className="absolute inset-0">
           <motion.div 
@@ -305,7 +300,7 @@ const Scholarships: React.FC = () => {
           <div className="absolute inset-0 opacity-10" style={gridPatternStyle}></div>
         </div>
 
-        <div className="flex justify-center items-center h-64 relative z-10">
+        <div className="flex justify-center items-center h-screen relative z-10">
           <motion.div 
             className="relative"
             animate={{ rotate: 360 }}
@@ -322,7 +317,6 @@ const Scholarships: React.FC = () => {
             </motion.div>
           </motion.div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -330,8 +324,6 @@ const Scholarships: React.FC = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 relative overflow-hidden">
-        <Header />
-        
         {/* Animated Background */}
         <div className="absolute inset-0">
           <motion.div 
@@ -343,7 +335,7 @@ const Scholarships: React.FC = () => {
           <div className="absolute inset-0 opacity-5" style={gridPatternStyle}></div>
         </div>
 
-        <div className="container mx-auto px-4 py-16 relative z-10">
+        <div className="container mx-auto px-4 py-16 relative z-10 flex items-center justify-center min-h-screen">
           <motion.div 
             className="text-center bg-white/10 backdrop-blur-md rounded-3xl p-12 border border-white/20"
             initial={{ opacity: 0, y: 50 }}
@@ -373,20 +365,36 @@ const Scholarships: React.FC = () => {
             </motion.button>
           </motion.div>
         </div>
-        <Footer />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 relative overflow-hidden">
-      <Header />
-      <main>
-        <PageHeader
-          title={t('scholarships.title') || 'Future-Ready Scholarship Portal'}
-          subtitle={t('scholarships.subtitle') || 'Unlock your academic potential with our intelligent scholarship matching system'}
-          height="lg"
-        >
+      <main className="pt-20">
+        {/* Hero Section with Search */}
+        <section className="py-20 relative overflow-hidden">
+          {/* Background Effects */}
+          <div className="absolute inset-0 opacity-20">
+            <div className="absolute top-10 left-10 w-96 h-96 bg-yellow-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
+            <div className="absolute bottom-10 right-10 w-96 h-96 bg-orange-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-1000"></div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-amber-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-500"></div>
+          </div>
+
+          <div className="container mx-auto px-4 relative z-10">
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              className="text-center mb-16"
+            >
+              <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent">
+                {t('scholarships.title') || 'Future-Ready Scholarship Portal'}
+              </h1>
+              <p className="text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto mb-12">
+                {t('scholarships.subtitle') || 'Unlock your academic potential with our intelligent scholarship matching system'}
+              </p>
+
           {/* Enhanced Search Bar */}
           <div className="max-w-2xl mx-auto">
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-2 shadow-2xl border border-white/20">
@@ -412,7 +420,9 @@ const Scholarships: React.FC = () => {
               </div>
             </div>
           </div>
-        </PageHeader>
+            </motion.div>
+          </div>
+        </section>
 
         {/* Futuristic Scholarships Section */}
         <section className="py-20 relative">
@@ -774,8 +784,6 @@ const Scholarships: React.FC = () => {
           </div>
         </section>
       </main>
-
-      <Footer />
     </div>
   );
 };

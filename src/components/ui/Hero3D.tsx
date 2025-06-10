@@ -1,125 +1,13 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Sphere, MeshDistortMaterial, Text, Float, Environment, PerspectiveCamera } from '@react-three/drei';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../../utils/LanguageContext';
-import * as THREE from 'three';
-
-// Animated 3D Sphere Component
-const AnimatedSphere: React.FC<{ position: [number, number, number] }> = ({ position }) => {
-  const meshRef = useRef<THREE.Mesh>(null);
-  
-  useFrame((state) => {
-    if (meshRef.current) {
-      meshRef.current.rotation.x = state.clock.elapsedTime * 0.2;
-      meshRef.current.rotation.y = state.clock.elapsedTime * 0.3;
-      meshRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime) * 0.1;
-    }
-  });
-
-  return (
-    <Float speed={1.5} rotationIntensity={1} floatIntensity={2}>
-      <Sphere ref={meshRef} args={[1, 64, 64]} position={position}>
-        <MeshDistortMaterial
-          color="#4F46E5"
-          attach="material"
-          distort={0.3}
-          speed={2}
-          roughness={0.2}
-          metalness={0.8}
-        />
-      </Sphere>
-    </Float>
-  );
-};
-
-// Floating Text Component
-const FloatingText: React.FC<{ text: string; position: [number, number, number] }> = ({ text, position }) => {
-  return (
-    <Float speed={2} rotationIntensity={0.5} floatIntensity={1}>
-      <Text
-        position={position}
-        fontSize={0.5}
-        color="#ffffff"
-        anchorX="center"
-        anchorY="middle"
-      >
-        {text}
-      </Text>
-    </Float>
-  );
-};
-
-// Particle System
-const ParticleField: React.FC = () => {
-  const pointsRef = useRef<THREE.Points>(null);
-  const particleCount = 1000;
-  
-  const positions = React.useMemo(() => {
-    const pos = new Float32Array(particleCount * 3);
-    for (let i = 0; i < particleCount; i++) {
-      pos[i * 3] = (Math.random() - 0.5) * 20;
-      pos[i * 3 + 1] = (Math.random() - 0.5) * 20;
-      pos[i * 3 + 2] = (Math.random() - 0.5) * 20;
-    }
-    return pos;
-  }, []);
-
-  useFrame((state) => {
-    if (pointsRef.current) {
-      pointsRef.current.rotation.x = state.clock.elapsedTime * 0.05;
-      pointsRef.current.rotation.y = state.clock.elapsedTime * 0.1;
-    }
-  });
-
-  return (
-    <points ref={pointsRef}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={particleCount}
-          array={positions}
-          itemSize={3}
-        />
-      </bufferGeometry>
-      <pointsMaterial size={0.02} color="#60A5FA" transparent opacity={0.6} />
-    </points>
-  );
-};
-
-// Main 3D Scene
-const Scene3D: React.FC = () => {
-  const { camera } = useThree();
-  
-  useEffect(() => {
-    if (camera) {
-      camera.position.set(0, 0, 8);
-    }
-  }, [camera]);
-
-  return (
-    <>
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[10, 10, 5]} intensity={1} />
-      <pointLight position={[-10, -10, -10]} color="#4F46E5" intensity={0.5} />
-      
-      <ParticleField />
-      <AnimatedSphere position={[0, 0, 0]} />
-      <AnimatedSphere position={[3, 1, -2]} />
-      <AnimatedSphere position={[-3, -1, -1]} />
-      
-      <FloatingText text="AI" position={[2, 2, 1]} />
-      <FloatingText text="LEARN" position={[-2, -2, 1]} />
-      <FloatingText text="GROW" position={[0, -3, 2]} />
-      
-      <OrbitControls enableZoom={false} enablePan={false} enableRotate={true} autoRotate autoRotateSpeed={0.5} />
-    </>
-  );
-};
+import { useModelPosition } from '../../utils/ModelPositionContext';
 
 const Hero3D: React.FC = () => {
   const { t } = useLanguage();
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const sectionRef = useRef<HTMLElement>(null);
+  const { registerComponent, unregisterComponent } = useModelPosition();
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -133,18 +21,45 @@ const Hero3D: React.FC = () => {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  return (
-    <section className="relative h-screen overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* 3D Canvas Background */}
-      <div className="absolute inset-0 z-0">
-        <Canvas
-          camera={{ position: [0, 0, 8], fov: 75 }}
-          gl={{ antialias: true, alpha: true }}
-        >
-          <Scene3D />
-        </Canvas>
-      </div>
+  // Register component for 3D models
+  useEffect(() => {
+    if (sectionRef.current) {
+      registerComponent('hero', sectionRef.current, {
+        pencil: {
+          x: 400, // 400px to the right of component center
+          y: 0,   // Same vertical level as component center
+          z: 3,
+          scale: 2.2,
+          rotation: { x: 0.3, y: 0.5, z: 0.2 },
+          visible: true
+        },
+        eraser: {
+          x: -400, // 300px to the left of component center
+          y: 200,  // 100px below component center
+          z: 2,
+          scale: 1.0,
+          visible: true // Hidden in hero section
+        },
+        sharpener: {
+          x: -500,  // 300px to the right of component center
+          y: -200,  // 100px below component center
+          z: 0,
+          scale: 1.0,
+          visible: true // Hidden in hero section
+        }
+      });
+    }
 
+    return () => {
+      unregisterComponent('hero');
+    };
+  }, [registerComponent, unregisterComponent]);
+
+  return (
+    <section 
+      ref={sectionRef}
+      className="relative h-screen overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900"
+    >
       {/* Overlay Content */}
       <div className="relative z-10 flex items-center justify-center h-full">
         <div className="text-center text-white px-4 max-w-4xl mx-auto">
@@ -157,7 +72,7 @@ const Hero3D: React.FC = () => {
               EduSmart
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-gray-300">
-              {t('hero.subtitle') || 'Revolutionizing Education with AI-Powered Learning'}
+              {t('hero.subtitle') || 'EduSmart leverages AI to provide personalized, expert-level tutoring, making quality education accessible for all students and fostering efficient learning and confident growth. We also offer comprehensive study abroad support, including AI-driven university matching, customized application strategies, essay optimization, and visa guidance to boost admission success. Through advanced technology, EduSmart ensures fairer, more efficient access to global educational resources, empowering every student to achieve their academic goals.'}
             </p>
           </motion.div>
 
