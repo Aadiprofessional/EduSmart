@@ -136,6 +136,11 @@ const CaseStudies: React.FC = () => {
       }
     } catch (error) {
       console.error('Error loading filter options:', error);
+      // Set mock data if API fails
+      setCategories(["Medical School", "Graduate School", "Business School", "Law School"]);
+      setOutcomes(["Accepted with Full Scholarship", "Accepted with Merit Scholarship", "Accepted with Research Assistantship", "Accepted"]);
+      setCountries(["United States", "United Kingdom", "Canada", "Australia", "Germany"]);
+      setFields(["Medicine", "Computer Science", "Business Administration", "Engineering", "Law"]);
     }
   };
 
@@ -236,12 +241,21 @@ const CaseStudies: React.FC = () => {
           created_at: "2023-12-15T00:00:00Z"
         }
       ]);
-      setCategories(["Medical School", "Graduate School", "Business School", "Law School"]);
-      setOutcomes(["Accepted with Full Scholarship", "Accepted with Merit Scholarship", "Accepted with Research Assistantship", "Accepted"]);
-      setCountries(["United States", "United Kingdom", "Canada", "Australia", "Germany"]);
-      setFields(["Medicine", "Computer Science", "Business Administration", "Engineering", "Law"]);
+      // Only set filter options if they haven't been set yet
+      if (categories.length === 0) {
+        setCategories(["Medical School", "Graduate School", "Business School", "Law School"]);
+      }
+      if (outcomes.length === 0) {
+        setOutcomes(["Accepted with Full Scholarship", "Accepted with Merit Scholarship", "Accepted with Research Assistantship", "Accepted"]);
+      }
+      if (countries.length === 0) {
+        setCountries(["United States", "United Kingdom", "Canada", "Australia", "Germany"]);
+      }
+      if (fields.length === 0) {
+        setFields(["Medicine", "Computer Science", "Business Administration", "Engineering", "Law"]);
+      }
     }
-  }, [caseStudies, loading]);
+  }, [caseStudies, loading, categories.length, outcomes.length, countries.length, fields.length]);
 
   const toggleFilter = (filterType: keyof typeof activeFilters, value: any) => {
     setActiveFilters(prev => ({
@@ -329,7 +343,7 @@ const CaseStudies: React.FC = () => {
                       className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all duration-200 hover:border-blue-300"
                     >
                       <option value="">All Categories</option>
-                      {(categories || []).map(category => (
+                      {Array.isArray(categories) && categories.map(category => (
                         <option key={category} value={category}>{category}</option>
                       ))}
                     </select>
@@ -340,7 +354,7 @@ const CaseStudies: React.FC = () => {
                       className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all duration-200 hover:border-blue-300"
                     >
                       <option value="">All Outcomes</option>
-                      {(outcomes || []).map(outcome => (
+                      {Array.isArray(outcomes) && outcomes.map(outcome => (
                         <option key={outcome} value={outcome}>{outcome}</option>
                       ))}
                     </select>
@@ -351,7 +365,7 @@ const CaseStudies: React.FC = () => {
                       className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all duration-200 hover:border-blue-300"
                     >
                       <option value="">All Countries</option>
-                      {(countries || []).map(country => (
+                      {Array.isArray(countries) && countries.map(country => (
                         <option key={country} value={country}>{country}</option>
                       ))}
                     </select>
@@ -362,7 +376,7 @@ const CaseStudies: React.FC = () => {
                       className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all duration-200 hover:border-blue-300"
                     >
                       <option value="">All Fields</option>
-                      {(fields || []).map(field => (
+                      {Array.isArray(fields) && fields.map(field => (
                         <option key={field} value={field}>{field}</option>
                       ))}
                     </select>

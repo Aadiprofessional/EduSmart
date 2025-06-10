@@ -49,11 +49,15 @@ import {
   FaMagic,
   FaAtom,
   FaRocket,
-  FaExclamationTriangle
+  FaExclamationTriangle,
+  FaUser
 } from 'react-icons/fa';
 import IconWrapper from '../components/IconWrapper';
 
 const API_BASE = 'http://localhost:8000/api/v2';
+
+// Simple ID generator
+const generateId = () => Date.now().toString() + Math.random().toString(36).substr(2, 9);
 
 interface Course {
   id: string;
@@ -82,6 +86,7 @@ interface CourseLecture {
   lecture_order: number;
   is_preview: boolean;
   is_free: boolean;
+  summary?: string;
 }
 
 interface LectureProgress {
@@ -105,6 +110,21 @@ interface Note {
   timestamp: number;
   lecture_id: string;
   created_at: string;
+}
+
+interface AIMessage {
+  id: string;
+  type: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
+interface FormattedSummary {
+  mainTopic: string;
+  keyConcepts: string[];
+  learningObjectives: string[];
+  importantDetails: string[];
+  conclusion: string;
 }
 
 const CoursePlayer: React.FC = () => {
@@ -150,6 +170,10 @@ const CoursePlayer: React.FC = () => {
   const [bookmarks, setBookmarks] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
+  const [aiMessages, setAiMessages] = useState<AIMessage[]>([]);
+  const [isAiTyping, setIsAiTyping] = useState(false);
+  const [formattedSummary, setFormattedSummary] = useState<FormattedSummary | null>(null);
+  const [showFullSummary, setShowFullSummary] = useState(false);
 
   useEffect(() => {
     if (courseId) {
@@ -176,6 +200,15 @@ const CoursePlayer: React.FC = () => {
     // Generate AI insights when lecture changes
     if (currentLecture) {
       generateAIInsights();
+    }
+  }, [currentLecture]);
+
+  useEffect(() => {
+    // Format AI summary when lecture changes
+    if (currentLecture?.summary) {
+      formatAISummary(currentLecture.summary);
+    } else {
+      setFormattedSummary(null);
     }
   }, [currentLecture]);
 
@@ -468,15 +501,79 @@ const CoursePlayer: React.FC = () => {
     if (!newNote.trim() || !currentLecture) return;
     
     const note: Note = {
-      id: Date.now().toString(),
-      content: newNote,
+      id: generateId(),
+      content: newNote.trim(),
       timestamp: currentTime,
       lecture_id: currentLecture.id,
       created_at: new Date().toISOString()
     };
     
-    setNotes(prev => [...prev, note]);
+    setNotes(prev => [note, ...prev]);
     setNewNote('');
+  };
+
+  const sendAIMessage = async (message: string) => {
+    if (!message.trim() || !currentLecture) return;
+    
+    // Add user message
+    const userMessage: AIMessage = {
+      id: generateId(),
+      type: 'user',
+      content: message.trim(),
+      timestamp: new Date()
+    };
+    
+    setAiMessages(prev => [...prev, userMessage]);
+    setAiQuestion('');
+    setIsAiTyping(true);
+    
+    try {
+      // Prepare context with lecture summary
+      let context = `Current lecture: "${currentLecture.title}"`;
+      if (currentLecture.description) {
+        context += `\nDescription: ${currentLecture.description}`;
+      }
+      if (currentLecture.summary) {
+        context += `\nLecture Summary: ${currentLecture.summary}`;
+      }
+      
+      // Simulate AI response (replace with actual AI API call)
+      setTimeout(() => {
+        const aiResponse: AIMessage = {
+          id: generateId(),
+          type: 'assistant',
+          content: generateAIResponse(message, context),
+          timestamp: new Date()
+        };
+        
+        setAiMessages(prev => [...prev, aiResponse]);
+        setIsAiTyping(false);
+      }, 1500);
+      
+    } catch (error) {
+      console.error('Error sending AI message:', error);
+      const errorMessage: AIMessage = {
+        id: generateId(),
+        type: 'assistant',
+        content: 'Sorry, I encountered an error. Please try again.',
+        timestamp: new Date()
+      };
+      setAiMessages(prev => [...prev, errorMessage]);
+      setIsAiTyping(false);
+    }
+  };
+  
+  const generateAIResponse = (question: string, context: string): string => {
+    // This is a simple response generator - replace with actual AI API
+    const responses = [
+      `Based on the lecture content, ${question.toLowerCase().includes('what') ? 'the main concept is' : 'I can help explain that'}...`,
+      `From the lecture summary, this topic relates to the key concepts we discussed...`,
+      `Let me break this down based on what we covered in this lecture...`,
+      `According to the lecture content, here's what you should know...`
+    ];
+    
+    return responses[Math.floor(Math.random() * responses.length)] + 
+           ` The lecture "${currentLecture?.title}" covers important aspects that directly relate to your question.`;
   };
 
   const renderVideoPlayer = () => {
@@ -1112,75 +1209,145 @@ const CoursePlayer: React.FC = () => {
 
             {activeTab === 'ai' && (
               <div className="h-96 flex flex-col">
-                {/* AI Chat Header */}
-                <div className="p-4 border-b border-gray-700">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                      <IconWrapper icon={FaRobot} size={16} />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold">AI Learning Assistant</h4>
-                      <p className="text-xs text-gray-400">Ask questions about this lecture</p>
+                {/* AI Summary Preview */}
+                {formattedSummary && (
+                  <div className="p-4 border-b border-gray-700">
+                    <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-xl p-4 border border-purple-500/20">
+                      <div className="flex items-center gap-2 mb-3">
+                        <IconWrapper icon={FaBrain} className="text-purple-400" size={16} />
+                        <h4 className="font-semibold text-purple-300">Lecture Summary</h4>
+                      </div>
+                      <p className="text-gray-200 text-sm mb-3 line-clamp-2">
+                        {formattedSummary.mainTopic}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4 text-xs text-gray-400">
+                          {formattedSummary.keyConcepts.length > 0 && (
+                            <span className="flex items-center gap-1">
+                              <IconWrapper icon={FaLightbulb} className="text-yellow-400" size={10} />
+                              {formattedSummary.keyConcepts.length} concepts
+                            </span>
+                          )}
+                          {formattedSummary.learningObjectives.length > 0 && (
+                            <span className="flex items-center gap-1">
+                              <IconWrapper icon={FaTrophy} className="text-green-400" size={10} />
+                              {formattedSummary.learningObjectives.length} objectives
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => setActiveTab('content')}
+                          className="text-xs text-purple-300 hover:text-white transition-colors"
+                        >
+                          View Full Summary
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  
+                )}
+                
+                {/* AI Chat Messages */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  {aiMessages.length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <IconWrapper icon={FaRobot} size={24} className="text-white" />
+                      </div>
+                      <h4 className="font-semibold text-white mb-2">AI Learning Assistant</h4>
+                      <p className="text-gray-400 text-sm mb-4">
+                        Ask me anything about this lecture! I have access to the full summary and can help explain concepts.
+                      </p>
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        {[
+                          "What are the key concepts?",
+                          "Explain the main topic",
+                          "What should I learn from this?",
+                          "Give me a quick summary"
+                        ].map((suggestion, index) => (
+                          <button
+                            key={index}
+                            onClick={() => setAiQuestion(suggestion)}
+                            className="px-3 py-1 bg-gray-800 text-gray-300 rounded-full text-xs hover:bg-gray-700 transition-colors"
+                          >
+                            {suggestion}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {aiMessages.map((message) => (
+                        <motion.div
+                          key={message.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                        >
+                          {message.type === 'assistant' && (
+                            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
+                              <IconWrapper icon={FaRobot} size={14} className="text-white" />
+                            </div>
+                          )}
+                          <div className={`max-w-[80%] p-3 rounded-2xl ${
+                            message.type === 'user' 
+                              ? 'bg-blue-600 text-white' 
+                              : 'bg-gray-800 text-gray-200'
+                          }`}>
+                            <p className="text-sm">{message.content}</p>
+                            <p className="text-xs opacity-70 mt-1">
+                              {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                          {message.type === 'user' && (
+                            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                              <IconWrapper icon={FaUser} size={14} className="text-white" />
+                            </div>
+                          )}
+                        </motion.div>
+                      ))}
+                      
+                      {isAiTyping && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="flex gap-3 justify-start"
+                        >
+                          <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
+                            <IconWrapper icon={FaRobot} size={14} className="text-white" />
+                          </div>
+                          <div className="bg-gray-800 p-3 rounded-2xl">
+                            <div className="flex items-center gap-1">
+                              <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
+                              <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                              <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </>
+                  )}
+                </div>
+                
+                {/* AI Chat Input */}
+                <div className="p-4 border-t border-gray-700">
                   <div className="flex gap-2">
                     <input
                       type="text"
                       value={aiQuestion}
                       onChange={(e) => setAiQuestion(e.target.value)}
-                      placeholder="Ask AI about this topic..."
+                      onKeyPress={(e) => e.key === 'Enter' && sendAIMessage(aiQuestion)}
+                      placeholder="Ask AI about this lecture..."
                       className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      disabled={isAiTyping}
                     />
-                    <button className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                    <button 
+                      onClick={() => sendAIMessage(aiQuestion)}
+                      disabled={!aiQuestion.trim() || isAiTyping}
+                      className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
                       <IconWrapper icon={FaRocket} size={14} />
                     </button>
                   </div>
-                </div>
-
-                {/* AI Insights */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                  {aiInsights.map((insight) => (
-                    <motion.div
-                      key={insight.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className={`p-3 rounded-lg ${
-                        insight.type === 'summary' ? 'bg-blue-900/50 border border-blue-700' :
-                        insight.type === 'tip' ? 'bg-green-900/50 border border-green-700' :
-                        insight.type === 'question' ? 'bg-purple-900/50 border border-purple-700' :
-                        'bg-gray-800 border border-gray-700'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        <IconWrapper 
-                          icon={
-                            insight.type === 'summary' ? FaAtom :
-                            insight.type === 'tip' ? FaLightbulb :
-                            insight.type === 'question' ? FaQuestionCircle :
-                            FaMagic
-                          } 
-                          size={14}
-                          className={
-                            insight.type === 'summary' ? 'text-blue-400' :
-                            insight.type === 'tip' ? 'text-green-400' :
-                            insight.type === 'question' ? 'text-purple-400' :
-                            'text-gray-400'
-                          }
-                        />
-                        <span className="text-xs font-semibold uppercase tracking-wide">
-                          {insight.type}
-                        </span>
-                        <div className="ml-auto flex items-center gap-1">
-                          <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                          <span className="text-xs text-gray-400">
-                            {Math.round(insight.confidence * 100)}%
-                          </span>
-                        </div>
-                      </div>
-                      <p className="text-sm text-gray-200">{insight.content}</p>
-                    </motion.div>
-                  ))}
                 </div>
               </div>
             )}
@@ -1201,6 +1368,102 @@ const CoursePlayer: React.FC = () => {
       )}
     </div>
   );
+
+  const formatAISummary = (summaryText: string) => {
+    try {
+      // Parse the AI-generated summary into structured format
+      const lines = summaryText.split('\n').filter(line => line.trim());
+      
+      let mainTopic = '';
+      let keyConcepts: string[] = [];
+      let learningObjectives: string[] = [];
+      let importantDetails: string[] = [];
+      let conclusion = '';
+      
+      let currentSection = '';
+      
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        
+        // Skip empty lines
+        if (!trimmedLine) continue;
+        
+        // Detect sections
+        if (trimmedLine.toLowerCase().includes('main topic') || 
+            trimmedLine.toLowerCase().includes('overview') ||
+            trimmedLine.toLowerCase().includes('introduction')) {
+          currentSection = 'main';
+          continue;
+        } else if (trimmedLine.toLowerCase().includes('key concept') ||
+                   trimmedLine.toLowerCase().includes('important concept')) {
+          currentSection = 'concepts';
+          continue;
+        } else if (trimmedLine.toLowerCase().includes('learning objective') ||
+                   trimmedLine.toLowerCase().includes('what you will learn')) {
+          currentSection = 'objectives';
+          continue;
+        } else if (trimmedLine.toLowerCase().includes('important detail') ||
+                   trimmedLine.toLowerCase().includes('key point')) {
+          currentSection = 'details';
+          continue;
+        } else if (trimmedLine.toLowerCase().includes('conclusion') ||
+                   trimmedLine.toLowerCase().includes('summary')) {
+          currentSection = 'conclusion';
+          continue;
+        }
+        
+        // Extract content based on current section
+        const cleanLine = trimmedLine.replace(/^[-•*]\s*/, '').replace(/^\d+\.\s*/, '');
+        
+        if (currentSection === 'main' && !mainTopic) {
+          mainTopic = cleanLine;
+        } else if (currentSection === 'concepts') {
+          keyConcepts.push(cleanLine);
+        } else if (currentSection === 'objectives') {
+          learningObjectives.push(cleanLine);
+        } else if (currentSection === 'details') {
+          importantDetails.push(cleanLine);
+        } else if (currentSection === 'conclusion' && !conclusion) {
+          conclusion = cleanLine;
+        } else if (!mainTopic && trimmedLine.length > 20) {
+          // If no main topic found yet, use the first substantial line
+          mainTopic = cleanLine;
+        }
+      }
+      
+      // Fallback: if no structured content found, use the first few lines
+      if (!mainTopic && lines.length > 0) {
+        mainTopic = lines[0].trim();
+      }
+      
+      // If still no structured content, parse as general text
+      if (keyConcepts.length === 0 && learningObjectives.length === 0) {
+        const sentences = summaryText.split(/[.!?]+/).filter(s => s.trim().length > 10);
+        keyConcepts = sentences.slice(1, 4).map(s => s.trim());
+        if (sentences.length > 4) {
+          conclusion = sentences[sentences.length - 1].trim();
+        }
+      }
+      
+      setFormattedSummary({
+        mainTopic: mainTopic || 'AI-generated summary available',
+        keyConcepts,
+        learningObjectives,
+        importantDetails,
+        conclusion: conclusion || 'This lecture provides valuable insights for your learning journey.'
+      });
+    } catch (error) {
+      console.error('Error formatting AI summary:', error);
+      // Fallback formatting
+      setFormattedSummary({
+        mainTopic: summaryText.substring(0, 200) + '...',
+        keyConcepts: [],
+        learningObjectives: [],
+        importantDetails: [],
+        conclusion: 'AI summary is available for this lecture.'
+      });
+    }
+  };
 
   if (loading) {
     return (
@@ -1385,6 +1648,140 @@ const CoursePlayer: React.FC = () => {
                           </button>
                         </div>
                       </div>
+                      
+                      {/* AI Summary Section */}
+                      {formattedSummary && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="mt-6 bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-2xl p-6 border border-purple-500/20"
+                        >
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                              <IconWrapper icon={FaBrain} className="text-white" size={20} />
+                            </div>
+                            <div>
+                              <h3 className="text-lg font-bold text-white">AI-Generated Summary</h3>
+                              <p className="text-sm text-purple-300">Key insights from this lecture</p>
+                            </div>
+                            <button
+                              onClick={() => setShowFullSummary(!showFullSummary)}
+                              className="ml-auto p-2 text-purple-300 hover:text-white hover:bg-purple-800/50 rounded-lg transition-colors"
+                            >
+                              <IconWrapper icon={showFullSummary ? FaChevronUp : FaChevronDown} />
+                            </button>
+                          </div>
+                          
+                          {/* Main Topic */}
+                          <div className="mb-4">
+                            <div className="flex items-center gap-2 mb-2">
+                              <IconWrapper icon={FaAtom} className="text-blue-400" size={16} />
+                              <h4 className="font-semibold text-blue-300">Main Topic</h4>
+                            </div>
+                            <p className="text-gray-200 bg-gray-800/50 rounded-lg p-3">
+                              {formattedSummary.mainTopic}
+                            </p>
+                          </div>
+                          
+                          <AnimatePresence>
+                            {showFullSummary && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="space-y-4"
+                              >
+                                {/* Key Concepts */}
+                                {formattedSummary.keyConcepts.length > 0 && (
+                                  <div>
+                                    <div className="flex items-center gap-2 mb-3">
+                                      <IconWrapper icon={FaLightbulb} className="text-yellow-400" size={16} />
+                                      <h4 className="font-semibold text-yellow-300">Key Concepts</h4>
+                                    </div>
+                                    <div className="grid gap-2">
+                                      {formattedSummary.keyConcepts.map((concept, index) => (
+                                        <motion.div
+                                          key={index}
+                                          initial={{ opacity: 0, x: -20 }}
+                                          animate={{ opacity: 1, x: 0 }}
+                                          transition={{ delay: index * 0.1 }}
+                                          className="flex items-start gap-3 bg-gray-800/50 rounded-lg p-3"
+                                        >
+                                          <div className="w-6 h-6 bg-yellow-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                            <span className="text-yellow-400 text-xs font-bold">{index + 1}</span>
+                                          </div>
+                                          <p className="text-gray-200 text-sm">{concept}</p>
+                                        </motion.div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Learning Objectives */}
+                                {formattedSummary.learningObjectives.length > 0 && (
+                                  <div>
+                                    <div className="flex items-center gap-2 mb-3">
+                                      <IconWrapper icon={FaTrophy} className="text-green-400" size={16} />
+                                      <h4 className="font-semibold text-green-300">Learning Objectives</h4>
+                                    </div>
+                                    <div className="grid gap-2">
+                                      {formattedSummary.learningObjectives.map((objective, index) => (
+                                        <motion.div
+                                          key={index}
+                                          initial={{ opacity: 0, x: -20 }}
+                                          animate={{ opacity: 1, x: 0 }}
+                                          transition={{ delay: index * 0.1 }}
+                                          className="flex items-start gap-3 bg-gray-800/50 rounded-lg p-3"
+                                        >
+                                          <IconWrapper icon={FaCheck} className="text-green-400 flex-shrink-0 mt-1" size={12} />
+                                          <p className="text-gray-200 text-sm">{objective}</p>
+                                        </motion.div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Important Details */}
+                                {formattedSummary.importantDetails.length > 0 && (
+                                  <div>
+                                    <div className="flex items-center gap-2 mb-3">
+                                      <IconWrapper icon={FaFire} className="text-orange-400" size={16} />
+                                      <h4 className="font-semibold text-orange-300">Important Details</h4>
+                                    </div>
+                                    <div className="grid gap-2">
+                                      {formattedSummary.importantDetails.map((detail, index) => (
+                                        <motion.div
+                                          key={index}
+                                          initial={{ opacity: 0, x: -20 }}
+                                          animate={{ opacity: 1, x: 0 }}
+                                          transition={{ delay: index * 0.1 }}
+                                          className="flex items-start gap-3 bg-gray-800/50 rounded-lg p-3"
+                                        >
+                                          <div className="w-2 h-2 bg-orange-400 rounded-full flex-shrink-0 mt-2"></div>
+                                          <p className="text-gray-200 text-sm">{detail}</p>
+                                        </motion.div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Conclusion */}
+                                {formattedSummary.conclusion && (
+                                  <div>
+                                    <div className="flex items-center gap-2 mb-3">
+                                      <IconWrapper icon={FaRocket} className="text-purple-400" size={16} />
+                                      <h4 className="font-semibold text-purple-300">Conclusion</h4>
+                                    </div>
+                                    <p className="text-gray-200 bg-gray-800/50 rounded-lg p-3 italic">
+                                      {formattedSummary.conclusion}
+                                    </p>
+                                  </div>
+                                )}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </motion.div>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -1422,7 +1819,7 @@ const CoursePlayer: React.FC = () => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md h-96 flex flex-col"
+              className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl h-[600px] flex flex-col"
             >
               <div className="p-4 border-b border-gray-700 flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -1431,7 +1828,9 @@ const CoursePlayer: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-white">AI Learning Assistant</h3>
-                    <p className="text-xs text-gray-400">Ask me anything about this course</p>
+                    <p className="text-xs text-gray-400">
+                      {currentLecture?.title ? `Discussing: ${currentLecture.title}` : 'Ask me anything about this course'}
+                    </p>
                   </div>
                 </div>
                 <button
@@ -1442,14 +1841,106 @@ const CoursePlayer: React.FC = () => {
                 </button>
               </div>
               
+              {/* Summary Context Banner */}
+              {formattedSummary && (
+                <div className="p-4 bg-gradient-to-r from-purple-900/20 to-blue-900/20 border-b border-gray-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <IconWrapper icon={FaBrain} className="text-purple-400" size={14} />
+                    <span className="text-sm font-medium text-purple-300">Lecture Context Available</span>
+                  </div>
+                  <p className="text-xs text-gray-400 line-clamp-2">
+                    I have access to the full lecture summary including {formattedSummary.keyConcepts.length} key concepts
+                    {formattedSummary.learningObjectives.length > 0 && ` and ${formattedSummary.learningObjectives.length} learning objectives`}.
+                  </p>
+                </div>
+              )}
+              
               <div className="flex-1 p-4 overflow-y-auto">
                 <div className="space-y-4">
-                  <div className="bg-gray-800 rounded-lg p-3">
-                    <p className="text-gray-200 text-sm">
-                      👋 Hi! I'm your AI learning assistant. I can help you understand concepts, 
-                      answer questions, and provide additional insights about this course.
-                    </p>
-                  </div>
+                  {aiMessages.length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="bg-gray-800 rounded-lg p-4 mb-4">
+                        <p className="text-gray-200 text-sm">
+                          👋 Hi! I'm your AI learning assistant. I can help you understand concepts, 
+                          answer questions, and provide additional insights about this course.
+                          {formattedSummary && " I have access to the full lecture summary to provide contextual answers."}
+                        </p>
+                      </div>
+                      
+                      {formattedSummary && (
+                        <div className="grid grid-cols-2 gap-2 mb-4">
+                          {[
+                            "Explain the main topic",
+                            "What are the key concepts?",
+                            "What should I focus on?",
+                            "Give me a quick summary"
+                          ].map((suggestion, index) => (
+                            <button
+                              key={index}
+                              onClick={() => {
+                                setAiQuestion(suggestion);
+                                sendAIMessage(suggestion);
+                              }}
+                              className="p-2 bg-gray-800 text-gray-300 rounded-lg text-xs hover:bg-gray-700 transition-colors"
+                            >
+                              {suggestion}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      {aiMessages.map((message) => (
+                        <motion.div
+                          key={message.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                        >
+                          {message.type === 'assistant' && (
+                            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
+                              <IconWrapper icon={FaRobot} size={14} className="text-white" />
+                            </div>
+                          )}
+                          <div className={`max-w-[75%] p-3 rounded-2xl ${
+                            message.type === 'user' 
+                              ? 'bg-blue-600 text-white' 
+                              : 'bg-gray-800 text-gray-200'
+                          }`}>
+                            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                            <p className="text-xs opacity-70 mt-1">
+                              {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                          {message.type === 'user' && (
+                            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                              <IconWrapper icon={FaUser} size={14} className="text-white" />
+                            </div>
+                          )}
+                        </motion.div>
+                      ))}
+                      
+                      {isAiTyping && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="flex gap-3 justify-start"
+                        >
+                          <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
+                            <IconWrapper icon={FaRobot} size={14} className="text-white" />
+                          </div>
+                          <div className="bg-gray-800 p-3 rounded-2xl">
+                            <div className="flex items-center gap-1">
+                              <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
+                              <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                              <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
               
@@ -1457,11 +1948,19 @@ const CoursePlayer: React.FC = () => {
                 <div className="flex gap-2">
                   <input
                     type="text"
-                    placeholder="Ask me anything..."
+                    placeholder="Ask me anything about this lecture..."
+                    value={aiQuestion}
+                    onChange={(e) => setAiQuestion(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && !isAiTyping && sendAIMessage(aiQuestion)}
                     className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    disabled={isAiTyping}
                   />
-                  <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
-                    <IconWrapper icon={FaRocket} />
+                  <button 
+                    onClick={() => sendAIMessage(aiQuestion)}
+                    disabled={!aiQuestion.trim() || isAiTyping}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <IconWrapper icon={FaRocket} size={14} />
                   </button>
                 </div>
               </div>

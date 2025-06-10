@@ -304,14 +304,14 @@ Format your response with:
         reader.readAsDataURL(file);
       });
 
-      const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer sk-6b53808e778c4e11a9928d6416ae7e3e',
+          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: "qvq-max-latest",
+          model: "qwen-vl-max",
           messages: [
             {
               role: "user",

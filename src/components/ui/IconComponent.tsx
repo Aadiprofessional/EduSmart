@@ -6,9 +6,8 @@ interface IconComponentProps extends IconBaseProps {
 }
 
 const IconComponent: React.FC<IconComponentProps> = ({ icon, ...props }) => {
-  // Using type assertion to convert IconType to a valid JSX element
-  const IconElement = icon as React.ElementType;
-  return <IconElement {...props} />;
+  const Icon = icon as React.ComponentType<IconBaseProps>;
+  return <Icon {...props} />;
 };
 
 export default IconComponent; 
