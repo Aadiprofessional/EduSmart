@@ -89,7 +89,6 @@ const Footer: React.FC = () => {
                   variants={socialVariants} 
                   whileHover="hover"
                   data-magnetic
-                  data-cursor-text="Follow Us"
                 >
                   <IconComponent icon={social.icon} size={20} />
                 </motion.a>
@@ -114,7 +113,6 @@ const Footer: React.FC = () => {
                       to={link.href} 
                       className="text-gray-300 hover:text-white inline-flex items-center group transition-all duration-300"
                       data-magnetic
-                      data-cursor-text={link.name}
                     >
                       <span className="w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full mr-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
                       {link.name}
@@ -142,7 +140,6 @@ const Footer: React.FC = () => {
                       to={link.href} 
                       className="text-gray-300 hover:text-white inline-flex items-center group transition-all duration-300"
                       data-magnetic
-                      data-cursor-text={link.name}
                     >
                       <span className="w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full mr-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
                       {link.name}
@@ -222,7 +219,6 @@ const Footer: React.FC = () => {
                   backgroundColor: "rgba(255, 255, 255, 0.05)"
                 }}
                 data-magnetic
-                data-cursor-text="AI Powered"
               >
                 🤖 AI Powered Learning
               </motion.div>
@@ -235,7 +231,6 @@ const Footer: React.FC = () => {
                   backgroundColor: "rgba(255, 255, 255, 0.05)"
                 }}
                 data-magnetic
-                data-cursor-text="24/7 Support"
               >
                 🌟 24/7 Support
               </motion.div>

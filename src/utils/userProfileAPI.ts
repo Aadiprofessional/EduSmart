@@ -1,6 +1,50 @@
 import { Session } from '@supabase/supabase-js';
 
-const API_BASE_URL = 'https://edusmart-server.vercel.app/api';
+// Use the same base URL and apiCall function as other APIs
+const BASE_URL = 'https://edusmart-server.vercel.app';
+
+// Helper function to make API calls (same as in apiService.ts)
+const apiCall = async (method: string, endpoint: string, data: any = null, session?: Session | null) => {
+  try {
+    const headers: any = {
+      'Content-Type': 'application/json'
+    };
+
+    // Add authorization header if session is provided
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`;
+    }
+
+    const config = {
+      method,
+      url: `${BASE_URL}${endpoint}`,
+      headers,
+      ...(data && { data })
+    };
+
+    console.log(`Making ${method} request to ${BASE_URL}${endpoint}`);
+    
+    // Use dynamic import to avoid circular dependency
+    const axios = (await import('axios')).default;
+    const response = await axios(config);
+    return { success: true, data: response.data };
+  } catch (error: any) {
+    console.error('API Call Error:', {
+      method,
+      endpoint,
+      url: `${BASE_URL}${endpoint}`,
+      error: error.message,
+      status: error.response?.status,
+      data: error.response?.data
+    });
+    
+    return { 
+      success: false, 
+      error: error.response?.data || error.message,
+      status: error.response?.status 
+    };
+  }
+};
 
 export interface UserProfile {
   id?: string;
@@ -66,33 +110,19 @@ export interface UserProfile {
 }
 
 class UserProfileAPI {
-  private getAuthHeaders(session?: Session | null): HeadersInit {
-    const token = session?.access_token || '';
-    
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': token ? `Bearer ${token}` : '',
-    };
-  }
-
   async getUserProfile(session?: Session | null): Promise<{ success: boolean; profile?: UserProfile; error?: string }> {
     try {
-      const response = await fetch(`${API_BASE_URL}/user/profile`, {
-        method: 'GET',
-        headers: this.getAuthHeaders(session),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
+      const response = await apiCall('GET', '/api/user/profile', null, session);
+      
+      if (response.success) {
         return {
           success: true,
-          profile: data.data || data.profile,
+          profile: response.data.data || response.data.profile || response.data,
         };
       } else {
         return {
           success: false,
-          error: data.error || 'Failed to fetch profile',
+          error: response.error || 'Failed to fetch profile',
         };
       }
     } catch (error) {
@@ -106,23 +136,17 @@ class UserProfileAPI {
 
   async createOrUpdateProfile(profileData: Partial<UserProfile>, session?: Session | null): Promise<{ success: boolean; profile?: UserProfile; error?: string }> {
     try {
-      const response = await fetch(`${API_BASE_URL}/user/profile`, {
-        method: 'POST',
-        headers: this.getAuthHeaders(session),
-        body: JSON.stringify(profileData),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
+      const response = await apiCall('POST', '/api/user/profile', profileData, session);
+      
+      if (response.success) {
         return {
           success: true,
-          profile: data.profile,
+          profile: response.data.profile || response.data,
         };
       } else {
         return {
           success: false,
-          error: data.error || 'Failed to create/update profile',
+          error: response.error || 'Failed to create/update profile',
         };
       }
     } catch (error) {
@@ -136,23 +160,17 @@ class UserProfileAPI {
 
   async updateProfile(profileData: Partial<UserProfile>, session?: Session | null): Promise<{ success: boolean; profile?: UserProfile; error?: string }> {
     try {
-      const response = await fetch(`${API_BASE_URL}/user/profile`, {
-        method: 'PUT',
-        headers: this.getAuthHeaders(session),
-        body: JSON.stringify(profileData),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
+      const response = await apiCall('PUT', '/api/user/profile', profileData, session);
+      
+      if (response.success) {
         return {
           success: true,
-          profile: data.profile,
+          profile: response.data.profile || response.data,
         };
       } else {
         return {
           success: false,
-          error: data.error || 'Failed to update profile',
+          error: response.error || 'Failed to update profile',
         };
       }
     } catch (error) {
@@ -166,23 +184,17 @@ class UserProfileAPI {
 
   async updateProfileFields(fields: Partial<UserProfile>, session?: Session | null): Promise<{ success: boolean; profile?: UserProfile; error?: string }> {
     try {
-      const response = await fetch(`${API_BASE_URL}/user/profile`, {
-        method: 'PATCH',
-        headers: this.getAuthHeaders(session),
-        body: JSON.stringify(fields),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
+      const response = await apiCall('PATCH', '/api/user/profile', fields, session);
+      
+      if (response.success) {
         return {
           success: true,
-          profile: data.profile,
+          profile: response.data.profile || response.data,
         };
       } else {
         return {
           success: false,
-          error: data.error || 'Failed to update profile fields',
+          error: response.error || 'Failed to update profile fields',
         };
       }
     } catch (error) {
@@ -196,21 +208,16 @@ class UserProfileAPI {
 
   async deleteProfile(session?: Session | null): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await fetch(`${API_BASE_URL}/user/profile`, {
-        method: 'DELETE',
-        headers: this.getAuthHeaders(session),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
+      const response = await apiCall('DELETE', '/api/user/profile', null, session);
+      
+      if (response.success) {
         return {
           success: true,
         };
       } else {
         return {
           success: false,
-          error: data.error || 'Failed to delete profile',
+          error: response.error || 'Failed to delete profile',
         };
       }
     } catch (error) {
@@ -224,22 +231,17 @@ class UserProfileAPI {
 
   async getProfileCompletion(session?: Session | null): Promise<{ success: boolean; completion_percentage?: number; error?: string }> {
     try {
-      const response = await fetch(`${API_BASE_URL}/user/profile/completion`, {
-        method: 'GET',
-        headers: this.getAuthHeaders(session),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
+      const response = await apiCall('GET', '/api/user/profile/completion', null, session);
+      
+      if (response.success) {
         return {
           success: true,
-          completion_percentage: data.completion_percentage,
+          completion_percentage: response.data.completion_percentage,
         };
       } else {
         return {
           success: false,
-          error: data.error || 'Failed to fetch profile completion',
+          error: response.error || 'Failed to fetch profile completion',
         };
       }
     } catch (error) {

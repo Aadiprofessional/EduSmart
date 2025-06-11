@@ -175,7 +175,6 @@ const FeaturedScholarships3D: React.FC = () => {
               }}
               className="group relative"
               data-magnetic
-              data-cursor-text="Learn More"
             >
               {/* Glow Effect */}
               <div className={`absolute -inset-1 bg-gradient-to-r ${scholarship.color} rounded-2xl blur opacity-0 group-hover:opacity-20 transition-all duration-500`}></div>

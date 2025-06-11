@@ -109,7 +109,6 @@ const OurImpactSection: React.FC = () => {
               }}
               className="group relative bg-white/5 backdrop-blur-lg rounded-2xl p-8 border border-white/10 hover:border-white/30 transition-all duration-500"
               data-magnetic
-              data-cursor-text="View Details"
             >
               <div className="text-center">
                 <div className={`text-4xl md:text-5xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent mb-2`}>
@@ -216,7 +215,6 @@ const ReadyToTransformSection: React.FC = () => {
               }}
               whileTap={{ scale: 0.95 }}
               data-magnetic
-              data-cursor-text="Start Learning"
             >
               Start Your Journey
             </motion.button>
@@ -229,7 +227,6 @@ const ReadyToTransformSection: React.FC = () => {
               }}
               whileTap={{ scale: 0.95 }}
               data-magnetic
-              data-cursor-text="Learn More"
             >
               Explore Features
             </motion.button>
@@ -295,7 +292,6 @@ const Home: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 2 }}
           data-magnetic
-          data-cursor-text="Back to Top"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />

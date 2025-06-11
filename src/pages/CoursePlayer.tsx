@@ -54,7 +54,7 @@ import {
 } from 'react-icons/fa';
 import IconWrapper from '../components/IconWrapper';
 
-const API_BASE = 'http://localhost:8000/api/v2';
+const API_BASE = 'https://edusmart-server.vercel.app/api/v2';
 
 // Simple ID generator
 const generateId = () => Date.now().toString() + Math.random().toString(36).substr(2, 9);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaSearch, FaFilter, FaMapMarkerAlt, FaDollarSign, FaGraduationCap, FaUsers, FaStar, FaHeart, FaEye, FaPlus, FaTimes, FaChevronDown, FaChevronUp, FaRobot, FaLightbulb, FaUser, FaSpinner, FaExternalLinkAlt, FaUniversity, FaGlobe, FaCalendarAlt, FaBookOpen, FaAward, FaChartLine, FaBuilding, FaPhone, FaEnvelope, FaInfoCircle, FaCheckCircle, FaExclamationTriangle, FaBookmark, FaSortAmountDown, FaTrophy } from 'react-icons/fa';
+import { FaSearch, FaFilter, FaMapMarkerAlt, FaDollarSign, FaGraduationCap, FaUsers, FaStar, FaHeart, FaEye, FaPlus, FaTimes, FaChevronDown, FaChevronUp, FaRobot, FaLightbulb, FaUser, FaSpinner, FaExternalLinkAlt, FaUniversity, FaGlobe, FaCalendarAlt, FaBookOpen, FaAward, FaChartLine, FaBuilding, FaPhone, FaEnvelope, FaInfoCircle, FaCheckCircle, FaExclamationTriangle, FaBookmark, FaSortAmountDown, FaTrophy, FaCheck } from 'react-icons/fa';
 import { HiOutlineAcademicCap, HiOutlineLocationMarker } from 'react-icons/hi';
 import { RiArrowDropDownLine, RiArrowDropUpLine } from 'react-icons/ri';
 import Header from '../components/layout/Header';
@@ -1282,6 +1282,7 @@ const Database: React.FC = () => {
   const [tuitionFeeRange, setTuitionFeeRange] = useState<[number, number]>([0, 100000]);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [showMoreFiltersModal, setShowMoreFiltersModal] = useState(false);
+  const [selectedRankingTypes, setSelectedRankingTypes] = useState<string[]>([]);
 
   const extractFilterOptions = (universitiesData: University[]) => {
     // Extract unique countries
@@ -1495,6 +1496,11 @@ const Database: React.FC = () => {
       return false;
     }
     
+    // Multiple Ranking Types filter
+    if (selectedRankingTypes.length > 0 && !selectedRankingTypes.includes(university.rankingType)) {
+      return false;
+    }
+    
     // Region filter
     if (filters.region && university.region !== filters.region) {
       return false;
@@ -1571,7 +1577,7 @@ const Database: React.FC = () => {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, filters, sortBy]);
+  }, [searchQuery, filters, sortBy, selectedRankingTypes]);
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
     const { name, value, type } = e.target as HTMLInputElement;
@@ -1595,6 +1601,16 @@ const Database: React.FC = () => {
       ...prevFilters,
       [name]: values
     }));
+  };
+
+  const handleRankingTypeToggle = (rankingType: string) => {
+    setSelectedRankingTypes(prev => {
+      if (prev.includes(rankingType)) {
+        return prev.filter(type => type !== rankingType);
+      } else {
+        return [...prev, rankingType];
+      }
+    });
   };
 
   const resetFilters = () => {
@@ -1669,7 +1685,7 @@ const Database: React.FC = () => {
       culturalAttractions: false,
       recreationalActivities: false
     });
-    setCurrentPage(1);
+    setSelectedRankingTypes([]);
   };
 
   const toggleCompare = (university: University) => {
@@ -2790,6 +2806,39 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                         />
                         <label className="text-sm text-gray-700">Scholarships Available</label>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Ranking Filters */}
+                  <div className="mb-6">
+                    <h4 className="text-md font-semibold text-gray-700 mb-3 flex items-center">
+                      <IconComponent icon={FaTrophy} className="mr-2 text-orange-600" />
+                      Ranking Types
+                    </h4>
+                    <div className="space-y-2">
+                      {availableRankingTypes.map((rankingType) => (
+                        <button
+                          key={rankingType}
+                          onClick={() => handleRankingTypeToggle(rankingType)}
+                          className={`w-full p-3 text-left rounded-lg border transition-all text-sm font-medium ${
+                            selectedRankingTypes.includes(rankingType)
+                              ? 'bg-blue-50 border-blue-500 text-blue-700'
+                              : 'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="truncate">{rankingType}</span>
+                            {selectedRankingTypes.includes(rankingType) && (
+                              <IconComponent icon={FaCheck} className="text-blue-600 ml-2 flex-shrink-0" />
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                      {selectedRankingTypes.length > 0 && (
+                        <div className="text-xs text-gray-500 mt-2">
+                          {selectedRankingTypes.length} ranking type{selectedRankingTypes.length > 1 ? 's' : ''} selected
+                        </div>
+                      )}
                     </div>
                   </div>
 

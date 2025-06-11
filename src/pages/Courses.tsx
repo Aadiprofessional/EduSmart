@@ -47,7 +47,7 @@ import PageHeader from '../components/ui/PageHeader';
 import IconComponent from '../components/ui/IconComponent';
 
 // Enhanced API service
-const API_BASE = 'http://localhost:8000/api/v2';
+const API_BASE = 'https://edusmart-server.vercel.app/api/v2';
 
 interface Course {
   id: string;

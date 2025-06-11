@@ -63,6 +63,8 @@ interface HomeworkHistoryItem {
   answer: string;
   timestamp: Date;
   fileType: string;
+  documentPages?: string[];
+  file?: File;
 }
 
 // Add new interface for page solutions
@@ -72,6 +74,12 @@ interface PageSolution {
   isLoading: boolean;
   isComplete: boolean;
   error?: string;
+}
+
+// Add interface for related knowledge - simplified for streaming
+interface RelatedKnowledge {
+  content: string; // Raw markdown content that will be streamed
+  isComplete: boolean;
 }
 
 const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ className = '' }) => {
@@ -86,6 +94,10 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
   const [showDownloadOptions, setShowDownloadOptions] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [homeworkHistory, setHomeworkHistory] = useState<HomeworkHistoryItem[]>([]);
+  const [showGetAnswerButton, setShowGetAnswerButton] = useState(false);
+  const [showRelatedKnowledge, setShowRelatedKnowledge] = useState(false);
+  const [relatedKnowledge, setRelatedKnowledge] = useState<RelatedKnowledge | null>(null);
+  const [loadingKnowledge, setLoadingKnowledge] = useState(false);
   
   // Add new state for page solutions
   const [pageSolutions, setPageSolutions] = useState<PageSolution[]>([]);
@@ -114,24 +126,55 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
     localStorage.setItem('homeworkHistory', JSON.stringify(homeworkHistory));
   }, [homeworkHistory]);
 
-  // Function to add item to history
-  const addToHistory = (fileName: string, question: string, answer: string, fileType: string) => {
+  // Function to add item to history - updated to include document pages
+  const addToHistory = (fileName: string, question: string, answer: string, fileType: string, documentPages?: string[], originalFile?: File) => {
     const newItem: HomeworkHistoryItem = {
       id: Date.now().toString(),
       fileName,
       question,
       answer,
       timestamp: new Date(),
-      fileType
+      fileType,
+      documentPages,
+      file: originalFile
     };
     setHomeworkHistory(prev => [newItem, ...prev.slice(0, 19)]); // Keep only last 20 items
   };
 
-  // Function to load from history
+  // Function to load from history - updated to restore file and document pages
   const loadFromHistory = (item: HomeworkHistoryItem) => {
     setQuestion(item.question);
     setAnswer(item.answer);
     setShowHistory(false);
+    
+    // Restore document pages if available
+    if (item.documentPages && item.documentPages.length > 0) {
+      setDocumentPages(item.documentPages);
+      setCurrentPage(0);
+      
+      // If we have document pages, show the get answer button
+      setShowGetAnswerButton(true);
+      
+      // Initialize page solutions for historical data
+      const initialPageSolutions: PageSolution[] = item.documentPages.map((_, index) => ({
+        pageNumber: index + 1,
+        solution: index === 0 ? item.answer : '', // Only first page has the answer for now
+        isLoading: false,
+        isComplete: true
+      }));
+      setPageSolutions(initialPageSolutions);
+    } else {
+      // Clear document-related state for text questions
+      setDocumentPages([]);
+      setPageSolutions([]);
+      setShowGetAnswerButton(false);
+    }
+    
+    // Clear file state since we're loading from history
+    setFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   // Function to delete history item
@@ -447,6 +490,12 @@ Please provide:
 3. Final answer
 4. Any relevant concepts or formulas used
 
+**Language Instructions**: 
+- If the question is in English, respond in English
+- If the question is in Chinese, respond in Chinese
+- If the question is in another language, respond in that same language
+- If no specific language is detected, default to English
+
 Make sure to explain each step so the student can learn from the solution. Show your reasoning process and provide comprehensive explanations.
 
 Format your response with:
@@ -465,6 +514,12 @@ Format your response with:
 2. Identify the homework questions or problems
 3. Provide detailed step-by-step solutions with explanations
 4. Show your reasoning process and provide comprehensive explanations
+
+**Language Instructions**: 
+- If the questions in the image are in English, respond in English
+- If the questions in the image are in Chinese, respond in Chinese
+- If the questions are in another language, respond in that same language
+- If no specific language is detected, default to English
 
 Please provide:
 - A clear understanding of what each problem is asking
@@ -491,7 +546,7 @@ Format your response with:
             content: [
               {
                 type: "text", 
-                text: "You are a helpful homework assistant. Analyze images containing homework problems or solve text-based homework problems and provide detailed step-by-step solutions with explanations. Format your responses clearly with proper mathematical notation using LaTeX syntax when needed."
+                text: "You are a helpful homework assistant. Analyze images containing homework problems or solve text-based homework problems and provide detailed step-by-step solutions with explanations. Always respond in the same language as the question - English for English questions, Chinese for Chinese questions, etc. Format your responses clearly with proper mathematical notation using LaTeX syntax when needed."
               }
             ]
           },
@@ -635,9 +690,9 @@ Format your response with:
     }
   };
 
-  // Process uploaded file with parallel processing for all pages
+  // Process uploaded file - now just loads the file and shows Get Answer button
   const processFile = async (file: File) => {
-    console.log('🚀 Starting processFile with parallel processing');
+    console.log('🚀 Starting processFile - loading file for preview');
     console.log('📁 File details:', {
       name: file.name,
       size: file.size,
@@ -646,13 +701,13 @@ Format your response with:
     });
     
     setLoading(true);
-    setProcessingStatus('Starting file processing...');
+    setProcessingStatus('Loading file for preview...');
     setAnswer(''); // Clear previous answer
     setPageSolutions([]); // Clear previous page solutions
     setOverallProcessingComplete(false);
     
     const processStartTime = Date.now();
-    console.log('⏰ File processing start time:', new Date(processStartTime).toISOString());
+    console.log('⏰ File loading start time:', new Date(processStartTime).toISOString());
     
     try {
       let imageUrls: string[] = [];
@@ -665,7 +720,7 @@ Format your response with:
       } else if (file.type.startsWith('image/')) {
         console.log('🖼️ Processing image file');
         // Convert image file to data URL
-        setProcessingStatus('Processing image...');
+        setProcessingStatus('Loading image...');
         
         const imageProcessStartTime = Date.now();
         console.log('⏰ Image conversion start time:', new Date(imageProcessStartTime).toISOString());
@@ -695,108 +750,30 @@ Format your response with:
         throw new Error('Unsupported file type. Please upload a PDF or image file.');
       }
       
-      console.log('📸 Total images to process:', imageUrls.length);
+      console.log('📸 Total images loaded:', imageUrls.length);
       setDocumentPages(imageUrls);
       setCurrentPage(0);
       
-      // Initialize page solutions for all pages
-      const initialPageSolutions: PageSolution[] = imageUrls.map((_, index) => ({
-        pageNumber: index + 1,
-        solution: '',
-        isLoading: true,
-        isComplete: false
-      }));
-      setPageSolutions(initialPageSolutions);
-      
-      setProcessingStatus(`Processing all ${imageUrls.length} pages in parallel...`);
-      setLoading(false); // Set loading to false so user can navigate pages
-      
-      // Process all pages in parallel
-      console.log('🔄 Starting parallel processing of all pages');
-      const processingPromises = imageUrls.map(async (imageUrl, index) => {
-        const pageNumber = index + 1;
-        console.log(`🚀 Starting processing for page ${pageNumber}`);
-        
-        try {
-          const solution = await extractAndSolveHomework(imageUrl, undefined, pageNumber);
-          
-          // Mark page as complete
-          setPageSolutions(prev => prev.map(ps => 
-            ps.pageNumber === pageNumber 
-              ? { ...ps, solution, isLoading: false, isComplete: true }
-              : ps
-          ));
-          
-          console.log(`✅ Page ${pageNumber} processing completed successfully`);
-          return { pageNumber, solution, success: true };
-        } catch (error) {
-          console.error(`❌ Error processing page ${pageNumber}:`, error);
-          
-          // Mark page as error
-          setPageSolutions(prev => prev.map(ps => 
-            ps.pageNumber === pageNumber 
-              ? { 
-                  ...ps, 
-                  solution: `Error processing page ${pageNumber}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                  isLoading: false, 
-                  isComplete: true,
-                  error: error instanceof Error ? error.message : 'Unknown error'
-                }
-              : ps
-          ));
-          
-          return { pageNumber, error: error instanceof Error ? error.message : 'Unknown error', success: false };
-        }
-      });
-      
-      // Wait for all pages to complete
-      console.log('⏳ Waiting for all pages to complete processing...');
-      const results = await Promise.allSettled(processingPromises);
+      // Show the Get Answer button instead of auto-processing
+      setShowGetAnswerButton(true);
+      setProcessingStatus('File loaded successfully! You can now add additional questions or click "Get Answer" to solve.');
       
       const totalProcessTime = Date.now() - processStartTime;
-      console.log('✅ All pages processing completed');
-      console.log('⏱️ Total file processing time:', totalProcessTime + 'ms');
-      console.log('📊 Processing results:', results.map((result, index) => ({
-        page: index + 1,
-        status: result.status,
-        success: result.status === 'fulfilled' ? result.value.success : false
-      })));
-      
-      // Create combined solution for history
-      const completedSolutions = pageSolutions.filter(ps => ps.isComplete && !ps.error);
-      let combinedSolution = '';
-      if (completedSolutions.length > 0) {
-        if (imageUrls.length > 1) {
-          combinedSolution = completedSolutions.map(ps => 
-            `--- Page ${ps.pageNumber} ---\n\n${ps.solution}`
-          ).join('\n\n');
-        } else {
-          combinedSolution = completedSolutions[0]?.solution || '';
-        }
-      }
-      
-      // Add to history
-      if (combinedSolution) {
-        addToHistory(file.name, 'PDF/Image Analysis', combinedSolution, file.type);
-        console.log('💾 Added to history');
-      }
-      
-      setOverallProcessingComplete(true);
-      setProcessingStatus('All pages processed successfully!');
-      console.log('🎉 File processing completed successfully');
+      console.log('✅ File loading completed');
+      console.log('⏱️ Total file loading time:', totalProcessTime + 'ms');
       
     } catch (error) {
       const totalProcessTime = Date.now() - processStartTime;
-      console.error('💥 File processing error after', totalProcessTime + 'ms');
+      console.error('💥 File loading error after', totalProcessTime + 'ms');
       console.error('🔴 Error type:', error instanceof Error ? error.constructor.name : typeof error);
       console.error('🔴 Error message:', error instanceof Error ? error.message : String(error));
       console.error('🔴 Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       
-      setProcessingStatus('Error processing file');
-      setAnswer(`Failed to process file: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      setLoading(false);
-      setOverallProcessingComplete(true);
+      setProcessingStatus('Error loading file');
+      setAnswer(`Failed to load file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setShowGetAnswerButton(false);
     } finally {
+      setLoading(false);
       setTimeout(() => setProcessingStatus(''), 3000);
       console.log('🏁 processFile function completed');
     }
@@ -815,13 +792,421 @@ Format your response with:
     setDocumentPages([]);
     setCurrentPage(0);
     setAnswer('');
+    setPageSolutions([]);
+    setShowGetAnswerButton(false);
+    setOverallProcessingComplete(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
+  // New function to handle getting the answer (combines document + text question)
+  const handleGetAnswer = async () => {
+    if (loading) return;
+    
+    console.log('🚀 Starting handleGetAnswer');
+    console.log('📝 Question:', question);
+    console.log('📄 Document pages:', documentPages.length);
+    
+    setLoading(true);
+    setProcessingStatus('Analyzing and solving...');
+    setAnswer(''); // Clear previous answer
+    setPageSolutions([]); // Clear previous page solutions
+    setOverallProcessingComplete(false);
+    setShowGetAnswerButton(false); // Hide the button while processing
+    
+    try {
+      if (documentPages.length > 0) {
+        // Process document with optional additional question
+        console.log('🔄 Processing document with', documentPages.length, 'pages');
+        
+        // Initialize page solutions for all pages
+        const initialPageSolutions: PageSolution[] = documentPages.map((_, index) => ({
+          pageNumber: index + 1,
+          solution: '',
+          isLoading: true,
+          isComplete: false
+        }));
+        setPageSolutions(initialPageSolutions);
+        
+        setProcessingStatus(`Processing all ${documentPages.length} pages in parallel...`);
+        setLoading(false); // Set loading to false so user can navigate pages
+        
+        // Process all pages in parallel
+        console.log('🔄 Starting parallel processing of all pages');
+        const processingPromises = documentPages.map(async (imageUrl, index) => {
+          const pageNumber = index + 1;
+          console.log(`🚀 Starting processing for page ${pageNumber}`);
+          
+          try {
+            // Combine image with additional text question if provided
+            const combinedQuestion = question.trim() ? question : undefined;
+            const solution = await extractAndSolveHomework(imageUrl, combinedQuestion, pageNumber);
+            
+            // Mark page as complete
+            setPageSolutions(prev => prev.map(ps => 
+              ps.pageNumber === pageNumber 
+                ? { ...ps, solution, isLoading: false, isComplete: true }
+                : ps
+            ));
+            
+            console.log(`✅ Page ${pageNumber} processing completed successfully`);
+            return { pageNumber, solution, success: true };
+          } catch (error) {
+            console.error(`❌ Error processing page ${pageNumber}:`, error);
+            
+            // Mark page as error
+            setPageSolutions(prev => prev.map(ps => 
+              ps.pageNumber === pageNumber 
+                ? { 
+                    ...ps, 
+                    solution: `Error processing page ${pageNumber}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                    isLoading: false, 
+                    isComplete: true,
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                  }
+                : ps
+            ));
+            
+            return { pageNumber, error: error instanceof Error ? error.message : 'Unknown error', success: false };
+          }
+        });
+        
+        // Wait for all pages to complete
+        console.log('⏳ Waiting for all pages to complete processing...');
+        const results = await Promise.allSettled(processingPromises);
+        
+        console.log('✅ All pages processing completed');
+        
+        // Create combined solution for history
+        const completedSolutions = pageSolutions.filter(ps => ps.isComplete && !ps.error);
+        let combinedSolution = '';
+        if (completedSolutions.length > 0) {
+          if (documentPages.length > 1) {
+            combinedSolution = completedSolutions.map(ps => 
+              `--- Page ${ps.pageNumber} ---\n\n${ps.solution}`
+            ).join('\n\n');
+          } else {
+            combinedSolution = completedSolutions[0]?.solution || '';
+          }
+        }
+        
+        // Add to history with document pages
+        if (combinedSolution && file) {
+          addToHistory(file.name, question || 'Document Analysis', combinedSolution, file.type, documentPages, file);
+          console.log('💾 Added to history with document pages');
+        }
+        
+        setOverallProcessingComplete(true);
+        setProcessingStatus('All pages processed successfully!');
+        
+      } else if (question.trim()) {
+        // Process text question only
+        console.log('🔄 Processing text question only');
+        const solution = await extractAndSolveHomework(undefined, question);
+        setAnswer(solution);
+        
+        // Add to history
+        addToHistory('Text Question', question, solution, 'text');
+        console.log('✅ Text question processed successfully');
+      } else {
+        throw new Error('Please provide a question or upload a document');
+      }
+      
+    } catch (error) {
+      console.error('💥 Get answer error:', error);
+      setAnswer(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setShowGetAnswerButton(true); // Show button again on error
+    } finally {
+      setLoading(false);
+      setProcessingStatus('');
+    }
+  };
+
+  const buttonVariants = {
+    hover: { scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.1)" },
+    tap: { scale: 0.98 }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { y: 0, opacity: 1 }
+  };
+
+  // Function to get related knowledge
+  const getRelatedKnowledge = async (questionText?: string, imageUrl?: string): Promise<RelatedKnowledge> => {
+    console.log('🧠 Starting getRelatedKnowledge process');
+    
+    try {
+      const content: any[] = [];
+      
+      if (imageUrl) {
+        content.push({
+          type: "image_url",
+          image_url: {
+            url: imageUrl
+          }
+        });
+      }
+      
+      if (questionText) {
+        content.push({
+          type: "text",
+          text: `Analyze this homework problem and provide the key knowledge points needed to solve it:
+
+${questionText}
+
+Please provide a structured breakdown of:
+1. Key concepts and theories required
+2. Mathematical formulas or principles needed
+3. Prerequisites knowledge the student should have
+4. Important points to remember
+
+**Language Instructions**: 
+- If the question is in English, respond in English
+- If the question is in Chinese, respond in Chinese
+- If the question is in another language, respond in that same language
+
+Format your response as a clear, organized list of knowledge points that would help a student understand and solve this type of problem.`
+        });
+      } else {
+        content.push({
+          type: "text",
+          text: `Analyze the homework problems in this image and provide the key knowledge points needed to solve them.
+
+Please provide a structured breakdown of:
+1. Key concepts and theories required
+2. Mathematical formulas or principles needed
+3. Prerequisites knowledge the student should have
+4. Important points to remember
+
+**Language Instructions**: 
+- If the questions in the image are in English, respond in English
+- If the questions in the image are in Chinese, respond in Chinese
+- If the questions are in another language, respond in that same language
+
+Format your response as a clear, organized list of knowledge points that would help a student understand and solve these types of problems.`
+        });
+      }
+      
+      const requestPayload = {
+        model: "qwen-vl-max",
+        messages: [
+          {
+            role: "system",
+            content: [
+              {
+                type: "text", 
+                text: "You are an educational knowledge assistant. Analyze homework problems and provide structured knowledge points, concepts, and prerequisites needed to solve them. Always respond in the same language as the question."
+              }
+            ]
+          },
+          {
+            role: "user",
+            content: content
+          }
+        ],
+        stream: false
+      };
+
+      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestPayload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const knowledgeText = data.choices?.[0]?.message?.content || '';
+      
+      // Parse the knowledge text into structured format
+      // This is a simple parsing - you might want to make it more sophisticated
+      const lines = knowledgeText.split('\n').filter((line: string) => line.trim());
+      
+      return {
+        content: lines.join('\n'),
+        isComplete: true
+      };
+
+    } catch (error) {
+      console.error('💥 Error in getRelatedKnowledge:', error);
+      throw error;
+    }
+  };
+
+  // Handle related knowledge button click
+  const handleRelatedKnowledge = async () => {
+    setLoadingKnowledge(true);
+    setShowRelatedKnowledge(true);
+    setRelatedKnowledge({ content: '', isComplete: false }); // Initialize with empty content
+    
+    try {
+      let solutionToAnalyze = '';
+      
+      // Get the current solution to analyze
+      if (pageSolutions.length > 0 && pageSolutions[currentPage]?.solution) {
+        solutionToAnalyze = pageSolutions[currentPage].solution;
+      } else if (answer) {
+        solutionToAnalyze = answer;
+      } else {
+        throw new Error('No solution available to analyze');
+      }
+      
+      // Use the streaming solution analysis API
+      const knowledge = await getRelatedKnowledgeFromSolution(solutionToAnalyze);
+      
+      // Mark as complete
+      setRelatedKnowledge({
+        content: knowledge.content,
+        isComplete: true
+      });
+    } catch (error) {
+      console.error('Error getting related knowledge:', error);
+      setRelatedKnowledge({
+        content: 'Error loading knowledge points. Please try again.',
+        isComplete: false
+      });
+    } finally {
+      setLoadingKnowledge(false);
+    }
+  };
+
+  // New function to get related knowledge from solution with streaming
+  const getRelatedKnowledgeFromSolution = async (solutionText: string): Promise<RelatedKnowledge> => {
+    console.log('🧠 Starting getRelatedKnowledgeFromSolution process with streaming');
+    
+    try {
+      const content = [
+        {
+          type: "text",
+          text: `Analyze this homework solution  give small bullet points and identify the key knowledge points, concepts, and topics that students need to understand to solve similar problems:
+
+${solutionText}
+
+please give small bullet points of what knowlegde is needed to solve the problems`
+        }
+      ];
+      
+      const requestPayload = {
+        model: "qwen-vl-max",
+        messages: [
+          {
+            role: "system",
+            content: [
+              {
+                type: "text", 
+                text: "You are an educational knowledge assistant. Analyze homework solutions and identify the key knowledge points, concepts, formulas, and prerequisites that students need to understand to solve similar problems. Always respond in the same language as the solution and use clear markdown formatting with proper structure."
+              }
+            ]
+          },
+          {
+            role: "user",
+            content: content
+          }
+        ],
+        stream: true // Enable streaming
+      };
+
+      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestPayload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      }
+
+      // Handle streaming response
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body reader available');
+      }
+
+      let fullContent = '';
+      let isFirstChunk = true;
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            console.log('🏁 Related knowledge streaming completed');
+            break;
+          }
+
+          const chunk = new TextDecoder().decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') {
+                console.log('✅ Related knowledge stream marked as DONE');
+                continue;
+              }
+
+              try {
+                const parsed = JSON.parse(data);
+                const content_chunk = parsed.choices?.[0]?.delta?.content;
+                
+                if (content_chunk) {
+                  if (isFirstChunk) {
+                    console.log('📝 First related knowledge chunk received, starting real-time display');
+                    isFirstChunk = false;
+                  }
+                  
+                  fullContent += content_chunk;
+                  
+                  // Update related knowledge in real-time
+                  setRelatedKnowledge({
+                    content: fullContent,
+                    isComplete: false
+                  });
+                }
+              } catch (parseError) {
+                // Skip invalid JSON lines
+                continue;
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+
+      console.log('📄 Full related knowledge content received');
+      console.log('📊 Final content length:', fullContent.length);
+      
+      return {
+        content: fullContent.trim() || 'No knowledge points could be generated',
+        isComplete: true
+      };
+
+    } catch (error) {
+      console.error('💥 Error in getRelatedKnowledgeFromSolution:', error);
+      throw error;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // If we have a document uploaded, use handleGetAnswer instead
+    if (documentPages.length > 0) {
+      handleGetAnswer();
+      return;
+    }
+    
+    // Only handle pure text questions here
     if (!question.trim() || loading) return;
     
     console.log('🚀 Starting text question submission');
@@ -847,16 +1232,6 @@ Format your response with:
       setLoading(false);
       setProcessingStatus('');
     }
-  };
-
-  const buttonVariants = {
-    hover: { scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.1)" },
-    tap: { scale: 0.98 }
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1 }
   };
 
   return (
@@ -962,17 +1337,33 @@ Format your response with:
                 Take Photo
               </motion.button>
               
-              <motion.button
-                type="submit"
-                className="flex items-center justify-center px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg text-white font-medium shadow-md hover:shadow-lg"
-                variants={buttonVariants}
-                whileHover="hover"
-                whileTap="tap"
-                disabled={loading}
-              >
-                {loading ? 'Processing...' : 'Get Solution'}
-                <IconComponent icon={AiOutlineBulb} className="h-5 w-5 ml-2" />
-              </motion.button>
+              {/* Get Answer Button - shows when file is uploaded or question is typed */}
+              {showGetAnswerButton || (question.trim() && !documentPages.length) ? (
+                <motion.button
+                  type="button"
+                  className="flex items-center justify-center px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg text-white font-medium shadow-md hover:shadow-lg"
+                  variants={buttonVariants}
+                  whileHover="hover"
+                  whileTap="tap"
+                  onClick={handleGetAnswer}
+                  disabled={loading}
+                >
+                  {loading ? 'Processing...' : 'Get Answer'}
+                  <IconComponent icon={AiOutlineBulb} className="h-5 w-5 ml-2" />
+                </motion.button>
+              ) : (
+                <motion.button
+                  type="submit"
+                  className="flex items-center justify-center px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg text-white font-medium shadow-md hover:shadow-lg"
+                  variants={buttonVariants}
+                  whileHover="hover"
+                  whileTap="tap"
+                  disabled={loading || (!question.trim() && documentPages.length === 0)}
+                >
+                  {loading ? 'Processing...' : 'Get Solution'}
+                  <IconComponent icon={AiOutlineBulb} className="h-5 w-5 ml-2" />
+                </motion.button>
+              )}
             </div>
           </form>
         </motion.div>
@@ -981,21 +1372,38 @@ Format your response with:
         <motion.div variants={itemVariants}>
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-semibold text-cyan-400">Solution</h2>
-            {(answer || pageSolutions.length > 0) && (
-              <motion.button
-                variants={buttonVariants}
-                whileHover="hover"
-                whileTap="tap"
-                onClick={() => setFullScreenSolution(!fullScreenSolution)}
-                className="flex items-center text-cyan-400 font-medium hover:text-cyan-300"
-              >
-                <IconComponent 
-                  icon={AiOutlineFullscreen} 
-                  className="h-5 w-5 mr-1" 
-                />
-                {fullScreenSolution ? "Exit Fullscreen" : "Fullscreen"}
-              </motion.button>
-            )}
+            <div className="flex items-center space-x-3">
+              {/* Related Knowledge Button - appears after answer is complete */}
+              {((answer && !loading) || (pageSolutions.length > 0 && pageSolutions.some(ps => ps.isComplete && !ps.error))) && (
+                <motion.button
+                  variants={buttonVariants}
+                  whileHover="hover"
+                  whileTap="tap"
+                  onClick={handleRelatedKnowledge}
+                  disabled={loadingKnowledge}
+                  className="flex items-center px-4 py-2 bg-purple-600/50 backdrop-blur-sm border border-purple-500/30 rounded-lg text-purple-200 font-medium hover:bg-purple-500/50 transition-colors"
+                >
+                  <IconComponent icon={AiOutlineBulb} className="h-4 w-4 mr-2" />
+                  {loadingKnowledge ? 'Loading...' : 'Related Knowledge'}
+                </motion.button>
+              )}
+              
+              {(answer || pageSolutions.length > 0) && (
+                <motion.button
+                  variants={buttonVariants}
+                  whileHover="hover"
+                  whileTap="tap"
+                  onClick={() => setFullScreenSolution(!fullScreenSolution)}
+                  className="flex items-center text-cyan-400 font-medium hover:text-cyan-300"
+                >
+                  <IconComponent 
+                    icon={AiOutlineFullscreen} 
+                    className="h-5 w-5 mr-1" 
+                  />
+                  {fullScreenSolution ? "Exit Fullscreen" : "Fullscreen"}
+                </motion.button>
+              )}
+            </div>
           </div>
           
           <motion.div
@@ -1377,9 +1785,9 @@ Format your response with:
                   const contentToCopy = pageSolutions.length > 0 
                     ? pageSolutions[currentPage]?.solution || ''
                     : answer;
-                  handleCopyContent();
+                  navigator.clipboard.writeText(contentToCopy.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1'));
                 }}
-                className="flex items-center text-sm px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg"
+                className="flex items-center text-sm px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-700"
               >
                 <IconComponent icon={FiCopy} className="mr-2" /> Copy
               </motion.button>
@@ -1413,7 +1821,16 @@ Format your response with:
                       <motion.button
                         whileHover={{ scale: 1.05, y: -2 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => handleDownloadContent('pdf')}
+                        onClick={() => {
+                          // Set answer to current content for download
+                          const currentContent = pageSolutions.length > 0 
+                            ? pageSolutions[currentPage]?.solution || ''
+                            : answer;
+                          const originalAnswer = answer;
+                          setAnswer(currentContent);
+                          handleDownloadContent('pdf');
+                          setAnswer(originalAnswer);
+                        }}
                         className="flex items-center text-sm px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
                       >
                         <div className="flex items-center">
@@ -1425,7 +1842,15 @@ Format your response with:
                       <motion.button
                         whileHover={{ scale: 1.05, y: -2 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => handleDownloadContent('doc')}
+                        onClick={() => {
+                          const currentContent = pageSolutions.length > 0 
+                            ? pageSolutions[currentPage]?.solution || ''
+                            : answer;
+                          const originalAnswer = answer;
+                          setAnswer(currentContent);
+                          handleDownloadContent('doc');
+                          setAnswer(originalAnswer);
+                        }}
                         className="flex items-center text-sm px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
                       >
                         <div className="flex items-center">
@@ -1437,7 +1862,15 @@ Format your response with:
                       <motion.button
                         whileHover={{ scale: 1.05, y: -2 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => handleDownloadContent('txt')}
+                        onClick={() => {
+                          const currentContent = pageSolutions.length > 0 
+                            ? pageSolutions[currentPage]?.solution || ''
+                            : answer;
+                          const originalAnswer = answer;
+                          setAnswer(currentContent);
+                          handleDownloadContent('txt');
+                          setAnswer(originalAnswer);
+                        }}
                         className="flex items-center text-sm px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
                       >
                         <div className="flex items-center">
@@ -1454,8 +1887,23 @@ Format your response with:
                 variants={buttonVariants}
                 whileHover="hover"
                 whileTap="tap"
-                onClick={handleShareContent}
-                className="flex items-center text-sm px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg"
+                onClick={() => {
+                  const contentToShare = pageSolutions.length > 0 
+                    ? pageSolutions[currentPage]?.solution || ''
+                    : answer;
+                  const cleanContent = contentToShare.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1');
+                  
+                  if (navigator.share) {
+                    navigator.share({
+                      title: 'Homework Solution',
+                      text: cleanContent,
+                    }).catch(console.error);
+                  } else {
+                    navigator.clipboard.writeText(cleanContent);
+                    alert('Content copied to clipboard!');
+                  }
+                }}
+                className="flex items-center text-sm px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-700"
               >
                 <IconComponent icon={FiShare2} className="mr-2" /> Share
               </motion.button>
@@ -1596,6 +2044,110 @@ Format your response with:
                 </div>
               )}
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Related Knowledge Modal */}
+      <AnimatePresence>
+        {showRelatedKnowledge && (
+          <motion.div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowRelatedKnowledge(false)}
+          >
+            <motion.div 
+              className="bg-slate-800/90 backdrop-blur-sm border border-white/10 rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-purple-400 flex items-center">
+                  <IconComponent icon={AiOutlineBulb} className="h-6 w-6 mr-2" />
+                  Related Knowledge
+                </h3>
+                <button
+                  onClick={() => setShowRelatedKnowledge(false)}
+                  className="text-slate-400 hover:text-slate-300 p-2 rounded-lg hover:bg-slate-700/50"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              {loadingKnowledge ? (
+                <div className="flex items-center justify-center py-8">
+                  <motion.div
+                    className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mr-3"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  />
+                  <span className="text-slate-300">Loading knowledge points...</span>
+                </div>
+              ) : relatedKnowledge ? (
+                <div className="space-y-6">
+                  {relatedKnowledge.content && (
+                    <div className="prose prose-lg max-w-none
+                      prose-headings:text-cyan-400 
+                      prose-p:text-slate-300 prose-p:leading-relaxed
+                      prose-strong:text-slate-200 prose-strong:font-bold
+                      prose-em:text-slate-300 prose-em:italic
+                      prose-code:bg-slate-700/50 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-sm prose-code:text-cyan-300
+                      prose-pre:bg-slate-700/50 prose-pre:border prose-pre:border-slate-600
+                      prose-blockquote:border-l-4 prose-blockquote:border-cyan-500 prose-blockquote:bg-cyan-500/10
+                      prose-ul:space-y-1 prose-ol:space-y-1
+                      prose-li:marker:text-cyan-400 prose-li:text-slate-300
+                      prose-a:text-cyan-400 prose-a:font-medium
+                      prose-table:border prose-table:border-slate-600
+                      prose-th:bg-slate-700/50 prose-th:font-semibold prose-th:text-cyan-400
+                      prose-td:border-t prose-td:border-slate-600 prose-td:text-slate-300
+                      prose-h2:text-xl prose-h2:font-bold prose-h2:text-purple-400 prose-h2:mt-6 prose-h2:mb-4 prose-h2:border-b prose-h2:border-purple-500/30 prose-h2:pb-2
+                      prose-h3:text-lg prose-h3:font-semibold prose-h3:text-blue-400 prose-h3:mt-4 prose-h3:mb-3
+                      prose-h4:text-base prose-h4:font-medium prose-h4:text-teal-400 prose-h4:mt-3 prose-h4:mb-2"
+                    >
+                      <ReactMarkdown
+                        remarkPlugins={[remarkMath, remarkGfm]}
+                        rehypePlugins={[rehypeKatex]}
+                        components={markdownComponents}
+                      >
+                        {preprocessLaTeX(relatedKnowledge.content)}
+                      </ReactMarkdown>
+                    </div>
+                  )}
+                  
+                  {/* Show loading indicator if still streaming */}
+                  {!relatedKnowledge.isComplete && relatedKnowledge.content && (
+                    <div className="flex items-center justify-center py-4">
+                      <motion.div
+                        className="w-6 h-6 border-3 border-purple-500 border-t-transparent rounded-full mr-2"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      />
+                      <span className="text-slate-400 text-sm">Generating more content...</span>
+                    </div>
+                  )}
+                  
+                  {!relatedKnowledge.content && !loadingKnowledge && (
+                    <div className="text-center py-8 text-slate-400">
+                      <IconComponent icon={AiOutlineBulb} className="mx-auto text-4xl mb-2 opacity-50" />
+                      <p>No knowledge points available</p>
+                      <p className="text-sm mt-1">Please try again</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-slate-400">
+                  <IconComponent icon={AiOutlineBulb} className="mx-auto text-4xl mb-2 opacity-50" />
+                  <p>Failed to load knowledge points</p>
+                  <p className="text-sm mt-1">Please try again</p>
+                </div>
+              )}
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

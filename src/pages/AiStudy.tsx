@@ -13,6 +13,7 @@ import AiTutorChatComponent from '../components/ui/AiTutorChatComponent';
 import UploadHomeworkComponent from '../components/ui/UploadHomeworkComponent';
 import StudyPlannerComponent from '../components/ui/StudyPlannerComponent';
 import FlashcardComponent from '../components/ui/FlashcardComponent';
+import DocumentSummarizerComponent from '../components/ui/DocumentSummarizerComponent';
 import { useLanguage } from '../utils/LanguageContext';
 
 const AiStudy: React.FC = () => {
@@ -30,6 +31,7 @@ const AiStudy: React.FC = () => {
     'content-writer': false,
     'citation-generator': false,
     'progress-tracker': false,
+    'document-summarizer': false,
   });
 
   const [history, setHistory] = useState<{date: string, question: string, snippet: string}[]>([
@@ -108,7 +110,8 @@ const AiStudy: React.FC = () => {
     { id: 'flashcards', name: t('aiStudy.flashcards'), icon: FiLayers },
     { id: 'content-writer', name: t('aiStudy.contentWriter'), icon: FiPenTool },
     { id: 'citation-generator', name: t('aiStudy.citationGenerator'), icon: FiBookOpen },
-    { id: 'progress-tracker', name: t('aiStudy.progressTracker'), icon: FiTrendingUp },
+  
+    { id: 'document-summarizer', name: 'Document Summarizer', icon: AiOutlineSearch },
   ];
 
   // Function to get unique colors for each tool
@@ -184,15 +187,16 @@ const AiStudy: React.FC = () => {
         hoverText: 'group-hover:from-indigo-300 group-hover:via-blue-300 group-hover:to-cyan-300',
         hoverIcon: 'group-hover:from-indigo-400/30 group-hover:to-blue-400/30'
       },
-      'progress-tracker': {
+     
+      'document-summarizer': {
         text: isActive 
           ? 'bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent'
-          : 'bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 bg-clip-text text-transparent',
+          : 'bg-gradient-to-r from-violet-400 via-purple-400 to-fuchsia-400 bg-clip-text text-transparent',
         icon: isActive 
           ? 'bg-blue-500/20 text-blue-400'
-          : 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-400',
-        hoverText: 'group-hover:from-green-300 group-hover:via-emerald-300 group-hover:to-teal-300',
-        hoverIcon: 'group-hover:from-green-400/30 group-hover:to-emerald-400/30'
+          : 'bg-gradient-to-r from-violet-500/20 to-purple-500/20 text-violet-400',
+        hoverText: 'group-hover:from-violet-300 group-hover:via-purple-300 group-hover:to-fuchsia-300',
+        hoverIcon: 'group-hover:from-violet-400/30 group-hover:to-purple-400/30'
       }
     };
     
@@ -551,65 +555,12 @@ const AiStudy: React.FC = () => {
                 )}
               </div>
 
-              <div className={activeTab === 'progress-tracker' ? 'block' : 'hidden'}>
-                {componentStates['progress-tracker'] && (
-                  <motion.div variants={containerVariants} className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-                    <h2 className="text-2xl font-semibold text-cyan-400 mb-6">{t('aiStudy.progressTracker')}</h2>
-                    <div className="bg-slate-700/50 backdrop-blur-sm rounded-lg shadow-lg p-6 border border-white/10">
-                      <p className="text-slate-300">Track your learning progress and achievements.</p>
-                      
-                      {/* Progress Overview */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-                        <div className="bg-gradient-to-r from-cyan-500/20 to-blue-500/20 backdrop-blur-sm rounded-lg p-4 text-white border border-cyan-500/30">
-                          <h3 className="text-lg font-semibold mb-2 text-cyan-400">Study Sessions</h3>
-                          <p className="text-2xl font-bold">24</p>
-                          <p className="text-sm opacity-90 text-slate-300">This month</p>
-                        </div>
-                        
-                        <div className="bg-gradient-to-r from-orange-500/20 to-red-500/20 backdrop-blur-sm rounded-lg p-4 text-white border border-orange-500/30">
-                          <h3 className="text-lg font-semibold mb-2 text-orange-400">Problems Solved</h3>
-                          <p className="text-2xl font-bold">156</p>
-                          <p className="text-sm opacity-90 text-slate-300">Total</p>
-                        </div>
-                        
-                        <div className="bg-gradient-to-r from-emerald-500/20 to-green-500/20 backdrop-blur-sm rounded-lg p-4 text-white border border-emerald-500/30">
-                          <h3 className="text-lg font-semibold mb-2 text-emerald-400">Accuracy Rate</h3>
-                          <p className="text-2xl font-bold">87%</p>
-                          <p className="text-sm opacity-90 text-slate-300">Average</p>
-                        </div>
-                      </div>
-                      
-                      {/* Recent Activity */}
-                      <div className="mt-8">
-                        <h3 className="text-lg font-semibold text-slate-200 mb-4">Recent Activity</h3>
-                        <div className="space-y-3">
-                          <div className="flex items-center p-3 bg-slate-600/30 backdrop-blur-sm rounded-lg border border-white/10">
-                            <div className="w-2 h-2 bg-cyan-500 rounded-full mr-3"></div>
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-slate-200">Completed Math homework</p>
-                              <p className="text-xs text-slate-400">2 hours ago</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center p-3 bg-slate-600/30 backdrop-blur-sm rounded-lg border border-white/10">
-                            <div className="w-2 h-2 bg-orange-500 rounded-full mr-3"></div>
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-slate-200">Used AI Tutor for Physics</p>
-                              <p className="text-xs text-slate-400">5 hours ago</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center p-3 bg-slate-600/30 backdrop-blur-sm rounded-lg border border-white/10">
-                            <div className="w-2 h-2 bg-emerald-500 rounded-full mr-3"></div>
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-slate-200">Created 5 new flashcards</p>
-                              <p className="text-xs text-slate-400">1 day ago</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
+ <div className={activeTab === 'document-summarizer' ? 'block' : 'hidden'}>
+                {componentStates['document-summarizer'] && (
+                  <DocumentSummarizerComponent/>
                 )}
               </div>
+              
             </div>
           </motion.div>
 

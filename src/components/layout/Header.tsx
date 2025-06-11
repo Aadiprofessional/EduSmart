@@ -162,7 +162,6 @@ const Header: React.FC = () => {
             variants={logoVariants}
             whileHover="hover"
             data-magnetic
-            data-cursor-text="Home"
           >
             <Link to="/" className="flex items-center">
               <span className={`font-bold ${isMobile ? 'text-xl' : 'text-2xl lg:text-3xl'} bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent whitespace-nowrap`}>
@@ -180,7 +179,6 @@ const Header: React.FC = () => {
                   variants={navItemVariants}
                   whileHover="hover"
                   data-magnetic
-                  data-cursor-text={item.name}
                   className="flex-shrink-0"
                 >
                   <Link
@@ -215,7 +213,6 @@ const Header: React.FC = () => {
                   whileHover="hover"
                   whileTap="tap"
                   data-magnetic
-                  data-cursor-text="Profile"
                 >
                   <IconComponent icon={AiOutlineUser} className="h-4 w-4 xl:h-5 xl:w-5 mr-1.5 xl:mr-2 flex-shrink-0" />
                   <span className="max-w-[80px] xl:max-w-[120px] 2xl:max-w-[150px] truncate text-xs xl:text-sm font-medium">
@@ -260,7 +257,6 @@ const Header: React.FC = () => {
                     to="/login"
                     className="px-3 xl:px-4 py-1.5 xl:py-2 text-gray-300 hover:text-white transition-all duration-300 rounded-full hover:bg-white/5 text-xs xl:text-sm font-medium whitespace-nowrap"
                     data-magnetic
-                    data-cursor-text="Login"
                   >
                     Login
                   </Link>
@@ -270,7 +266,6 @@ const Header: React.FC = () => {
                     to="/signup"
                     className="px-3 xl:px-4 2xl:px-6 py-1.5 xl:py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full font-medium shadow-lg hover:shadow-blue-500/25 transition-all duration-300 text-xs xl:text-sm whitespace-nowrap"
                     data-magnetic
-                    data-cursor-text="Sign Up"
                   >
                     Sign Up
                   </Link>

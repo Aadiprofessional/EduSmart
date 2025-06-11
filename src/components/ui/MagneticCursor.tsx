@@ -5,7 +5,6 @@ const MagneticCursor: React.FC = () => {
   const cursorRef = useRef<HTMLDivElement>(null);
   const cursorDotRef = useRef<HTMLDivElement>(null);
   const [isHovering, setIsHovering] = useState(false);
-  const [cursorText, setCursorText] = useState('');
 
   useEffect(() => {
     const cursor = cursorRef.current;
@@ -46,8 +45,6 @@ const MagneticCursor: React.FC = () => {
       magneticElements.forEach((element) => {
         const handleMouseEnter = () => {
           setIsHovering(true);
-          const text = element.getAttribute('data-cursor-text');
-          if (text) setCursorText(text);
           
           gsap.to(cursor, {
             scale: 2,
@@ -58,7 +55,6 @@ const MagneticCursor: React.FC = () => {
 
         const handleMouseLeave = () => {
           setIsHovering(false);
-          setCursorText('');
           
           gsap.to(cursor, {
             scale: 1,
@@ -154,13 +150,7 @@ const MagneticCursor: React.FC = () => {
           backdropFilter: 'blur(10px)',
           border: '1px solid rgba(255, 255, 255, 0.2)',
         }}
-      >
-        {cursorText && (
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white text-xs font-medium whitespace-nowrap">
-            {cursorText}
-          </div>
-        )}
-      </div>
+      />
 
       {/* Cursor dot */}
       <div

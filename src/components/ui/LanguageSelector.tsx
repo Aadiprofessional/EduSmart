@@ -77,7 +77,7 @@ const LanguageSelector: React.FC = () => {
     <div className="relative" ref={dropdownRef}>
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-orange-500 transition-colors duration-200 rounded-lg hover:bg-gray-50"
+        className="flex items-center space-x-2 px-1 py-0 text-sm font-medium text-gray-700 hover:text-orange-500 transition-colors duration-200 rounded-lg hover:bg-gray-50"
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         aria-label={t('languageSelector.title')}
@@ -108,7 +108,7 @@ const LanguageSelector: React.FC = () => {
               <motion.button
                 key={option.code}
                 onClick={() => handleLanguageChange(option.code)}
-                className={`w-full flex items-center space-x-3 px-3 py-2 text-sm hover:bg-gray-50 transition-colors duration-150 ${
+                className={`w-full flex items-center space-x-3 px-2 py-1 text-sm hover:bg-gray-50 transition-colors duration-150 ${
                   language === option.code
                     ? 'text-orange-500 bg-orange-50'
                     : 'text-gray-700'
