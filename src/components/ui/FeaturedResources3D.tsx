@@ -83,17 +83,17 @@ const FeaturedResources3D: React.FC = () => {
           visible: true
         },
         eraser: {
-          x: -600, // 400px to the left of component center
-          y: -230, // 200px above component center
+          x: -900, // 400px to the left of component center
+          y: -50, // 200px above component center
           z: 1,
-          scale: 1.2,
+          scale: 1,
           visible: true
         },
         sharpener: {
-          x: 400,  // 400px to the right of component center
-          y: -200, // 200px above component center
+          x: 100,  // 400px to the right of component center
+          y: 200, // 200px above component center
           z: 1,
-          scale: 1.4,
+          scale: 1,
           visible: false
         }
       });

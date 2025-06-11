@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaEnvelope, FaLock, FaUserAlt, FaGoogle, FaFacebook, FaEye, FaEyeSlash } from 'react-icons/fa';
-import Header from '../components/layout/Header';
-import Footer from '../components/layout/Footer';
 import IconComponent from '../components/ui/IconComponent';
 import { useAuth } from '../utils/AuthContext';
 import { useLanguage } from '../utils/LanguageContext';
@@ -144,249 +142,297 @@ const Signup: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Header />
-      <main className="flex-grow py-12 bg-gray-50 relative overflow-hidden">
-        {/* Background decoration */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0">
         <motion.div 
-          className="absolute w-96 h-96 bg-teal-600 rounded-full opacity-5" 
-          style={{ filter: 'blur(80px)', top: '-10%', right: '5%' }}
+          className="absolute w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl" 
+          style={{ top: '5%', right: '15%' }}
+          animate={{
+            scale: [1, 1.3, 1],
+            opacity: [0.2, 0.5, 0.2],
+          }}
+          transition={{
+            duration: 9,
+            repeat: Infinity,
+            repeatType: "reverse"
+          }}
+        />
+        <motion.div 
+          className="absolute w-80 h-80 bg-blue-500/20 rounded-full blur-3xl" 
+          style={{ top: '50%', left: '10%' }}
           animate={{
             scale: [1, 1.2, 1],
-            x: [0, 30, 0],
+            opacity: [0.3, 0.6, 0.3],
           }}
           transition={{
-            duration: 15,
+            duration: 11,
             repeat: Infinity,
-            repeatType: "reverse"
+            repeatType: "reverse",
+            delay: 3
           }}
         />
         <motion.div 
-          className="absolute w-64 h-64 bg-orange-500 rounded-full opacity-5" 
-          style={{ filter: 'blur(60px)', bottom: '-5%', left: '10%' }}
+          className="absolute w-72 h-72 bg-purple-500/20 rounded-full blur-3xl" 
+          style={{ bottom: '10%', right: '25%' }}
           animate={{
             scale: [1, 1.1, 1],
-            y: [0, -20, 0],
+            opacity: [0.4, 0.7, 0.4],
           }}
           transition={{
-            duration: 10,
+            duration: 13,
             repeat: Infinity,
-            repeatType: "reverse"
+            repeatType: "reverse",
+            delay: 6
           }}
         />
-        
-        <div className="container mx-auto px-4 relative z-10">
-          <motion.div 
-            className="max-w-md mx-auto bg-white rounded-lg shadow-md overflow-hidden"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            <div className="bg-gradient-to-r from-teal-700 to-teal-900 py-6 px-8">
-              <motion.h1 
-                className="text-2xl font-bold text-white text-center"
-                variants={itemVariants}
+      </div>
+
+      {/* Grid Pattern */}
+      <div className="absolute inset-0 opacity-[0.02]" style={{
+        backgroundImage: `
+          linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
+        `,
+        backgroundSize: '60px 60px'
+      }} />
+
+      <div className="relative z-10 w-full max-w-md">
+        {/* Logo */}
+        <motion.div 
+          className="text-center mb-8"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <Link to="/" className="inline-block">
+            <span className="text-4xl font-bold bg-gradient-to-r from-emerald-400 via-blue-500 to-purple-500 bg-clip-text text-transparent">
+              EduSmart
+            </span>
+          </Link>
+        </motion.div>
+
+        <motion.div 
+          className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl overflow-hidden"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          {/* Header */}
+          <div className="bg-gradient-to-r from-emerald-600/20 to-blue-600/20 backdrop-blur-sm p-8 border-b border-white/10">
+            <motion.h1 
+              className="text-3xl font-bold text-white text-center"
+              variants={itemVariants}
+            >
+              {t('auth.signup.createAccount')}
+            </motion.h1>
+            <motion.p 
+              className="text-emerald-200 text-center mt-2"
+              variants={itemVariants}
+            >
+              {t('auth.signup.joinEduSmart')}
+            </motion.p>
+          </div>
+          
+          <div className="p-8">
+            {/* Social signup buttons */}
+            <motion.div 
+              className="grid grid-cols-2 gap-4 mb-6"
+              variants={itemVariants}
+            >
+              <motion.button
+                onClick={() => handleSocialSignup('Google')}
+                className="flex items-center justify-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 text-white px-4 py-3 rounded-xl hover:bg-white/20 transition-all duration-300"
+                whileHover={{ y: -2, scale: 1.02 }}
+                whileTap={{ y: 0, scale: 0.98 }}
               >
-                {t('auth.signup.createAccount')}
-              </motion.h1>
-              <motion.p 
-                className="text-teal-100 text-center mt-2"
-                variants={itemVariants}
+                <IconComponent icon={FaGoogle} className="text-red-400" />
+                <span className="font-medium">Google</span>
+              </motion.button>
+              <motion.button
+                onClick={() => handleSocialSignup('Facebook')}
+                className="flex items-center justify-center gap-2 bg-blue-600/20 backdrop-blur-sm border border-blue-500/30 text-white px-4 py-3 rounded-xl hover:bg-blue-600/30 transition-all duration-300"
+                whileHover={{ y: -2, scale: 1.02 }}
+                whileTap={{ y: 0, scale: 0.98 }}
               >
-                {t('auth.signup.joinEduSmart')}
-              </motion.p>
-            </div>
+                <IconComponent icon={FaFacebook} className="text-blue-400" />
+                <span className="font-medium">Facebook</span>
+              </motion.button>
+            </motion.div>
             
-            <div className="py-8 px-8">
-              {/* Social signup buttons */}
+            <motion.div 
+              className="flex items-center justify-center mb-6"
+              variants={itemVariants}
+            >
+              <div className="border-t border-white/20 flex-grow"></div>
+              <span className="px-4 text-gray-300 text-sm font-medium">{t('auth.signup.orSignUpWith')}</span>
+              <div className="border-t border-white/20 flex-grow"></div>
+            </motion.div>
+
+            {/* Auth error display */}
+            {authError && (
               <motion.div 
-                className="grid grid-cols-2 gap-4 mb-6"
-                variants={itemVariants}
+                className="bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-xl mb-4 backdrop-blur-sm"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
               >
-                <motion.button
-                  onClick={() => handleSocialSignup('Google')}
-                  className="flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
-                  whileHover={{ y: -2, boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }}
-                  whileTap={{ y: 0 }}
-                >
-                  <IconComponent icon={FaGoogle} className="text-red-500" />
-                  <span>Google</span>
-                </motion.button>
-                <motion.button
-                  onClick={() => handleSocialSignup('Facebook')}
-                  className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                  whileHover={{ y: -2, boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }}
-                  whileTap={{ y: 0 }}
-                >
-                  <IconComponent icon={FaFacebook} />
-                  <span>Facebook</span>
-                </motion.button>
+                {authError}
+              </motion.div>
+            )}
+            
+            <form onSubmit={handleSubmit}>
+              <motion.div className="mb-4" variants={itemVariants}>
+                <label htmlFor="name" className="block text-gray-200 text-sm font-medium mb-2">
+                  {t('auth.signup.nameLabel')}
+                </label>
+                <div className="relative">
+                  <IconComponent icon={FaUserAlt} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    className={`w-full pl-12 pr-4 py-3 bg-white/10 backdrop-blur-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-white placeholder-gray-400 transition-all duration-300 ${
+                      errors.name ? 'border-red-500/50' : 'border-white/20 hover:border-white/30'
+                    }`}
+                    placeholder={t('auth.signup.namePlaceholder')}
+                  />
+                </div>
+                {errors.name && <p className="text-red-400 text-sm mt-1">{errors.name}</p>}
+              </motion.div>
+
+              <motion.div className="mb-4" variants={itemVariants}>
+                <label htmlFor="email" className="block text-gray-200 text-sm font-medium mb-2">
+                  {t('auth.signup.emailLabel')}
+                </label>
+                <div className="relative">
+                  <IconComponent icon={FaEnvelope} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className={`w-full pl-12 pr-4 py-3 bg-white/10 backdrop-blur-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-white placeholder-gray-400 transition-all duration-300 ${
+                      errors.email ? 'border-red-500/50' : 'border-white/20 hover:border-white/30'
+                    }`}
+                    placeholder={t('auth.signup.emailPlaceholder')}
+                  />
+                </div>
+                {errors.email && <p className="text-red-400 text-sm mt-1">{errors.email}</p>}
               </motion.div>
               
-              <motion.div 
-                className="flex items-center justify-center mb-6"
+              <motion.div className="mb-4" variants={itemVariants}>
+                <label htmlFor="password" className="block text-gray-200 text-sm font-medium mb-2">
+                  {t('auth.signup.passwordLabel')}
+                </label>
+                <div className="relative">
+                  <IconComponent icon={FaLock} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    id="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className={`w-full pl-12 pr-12 py-3 bg-white/10 backdrop-blur-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-white placeholder-gray-400 transition-all duration-300 ${
+                      errors.password ? 'border-red-500/50' : 'border-white/20 hover:border-white/30'
+                    }`}
+                    placeholder={t('auth.signup.passwordPlaceholder')}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
+                  >
+                    <IconComponent icon={showPassword ? FaEyeSlash : FaEye} />
+                  </button>
+                </div>
+                {errors.password && <p className="text-red-400 text-sm mt-1">{errors.password}</p>}
+              </motion.div>
+
+              <motion.div className="mb-4" variants={itemVariants}>
+                <label htmlFor="confirmPassword" className="block text-gray-200 text-sm font-medium mb-2">
+                  {t('auth.signup.confirmPasswordLabel')}
+                </label>
+                <div className="relative">
+                  <IconComponent icon={FaLock} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    className={`w-full pl-12 pr-12 py-3 bg-white/10 backdrop-blur-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-white placeholder-gray-400 transition-all duration-300 ${
+                      errors.confirmPassword ? 'border-red-500/50' : 'border-white/20 hover:border-white/30'
+                    }`}
+                    placeholder={t('auth.signup.confirmPasswordPlaceholder')}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
+                  >
+                    <IconComponent icon={showConfirmPassword ? FaEyeSlash : FaEye} />
+                  </button>
+                </div>
+                {errors.confirmPassword && <p className="text-red-400 text-sm mt-1">{errors.confirmPassword}</p>}
+              </motion.div>
+              
+              <motion.div className="mb-6" variants={itemVariants}>
+                <label className="flex items-start">
+                  <input
+                    type="checkbox"
+                    checked={agreeToTerms}
+                    onChange={(e) => setAgreeToTerms(e.target.checked)}
+                    className="mr-3 mt-1 text-emerald-500 bg-white/10 border-white/20 rounded focus:ring-emerald-500 focus:ring-2"
+                  />
+                  <span className="text-sm text-gray-300">
+                    {t('auth.signup.agreeToTerms')} {' '}
+                    <Link to="/terms" className="text-emerald-400 hover:text-emerald-300 transition-colors">
+                      {t('auth.signup.termsAndConditions')}
+                    </Link>
+                    {' '} and {' '}
+                    <Link to="/privacy" className="text-emerald-400 hover:text-emerald-300 transition-colors">
+                      {t('auth.signup.privacyPolicy')}
+                    </Link>
+                  </span>
+                </label>
+                {errors.terms && <p className="text-red-400 text-sm mt-1">{errors.terms}</p>}
+              </motion.div>
+              
+              <motion.button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
                 variants={itemVariants}
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
               >
-                <div className="border-t border-gray-300 flex-grow"></div>
-                <span className="px-4 text-gray-500 text-sm">{t('auth.signup.orSignUpWith')}</span>
-                <div className="border-t border-gray-300 flex-grow"></div>
-              </motion.div>
-
-              {/* Auth error display */}
-              {authError && (
-                <motion.div 
-                  className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                >
-                  {authError}
-                </motion.div>
-              )}
-              
-              <form onSubmit={handleSubmit}>
-                <motion.div className="mb-4" variants={itemVariants}>
-                  <label htmlFor="name" className="block text-gray-700 text-sm font-medium mb-2">
-                    {t('auth.signup.nameLabel')}
-                  </label>
-                  <div className="relative">
-                    <IconComponent icon={FaUserAlt} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="text"
-                      id="name"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                        errors.name ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder={t('auth.signup.namePlaceholder')}
+                {isSubmitting ? (
+                  <div className="flex items-center justify-center">
+                    <motion.div
+                      className="w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2"
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                     />
+                    {t('common.loading')}
                   </div>
-                  {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
-                </motion.div>
-
-                <motion.div className="mb-4" variants={itemVariants}>
-                  <label htmlFor="email" className="block text-gray-700 text-sm font-medium mb-2">
-                    {t('auth.signup.emailLabel')}
-                  </label>
-                  <div className="relative">
-                    <IconComponent icon={FaEnvelope} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                        errors.email ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder={t('auth.signup.emailPlaceholder')}
-                    />
-                  </div>
-                  {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-                </motion.div>
-                
-                <motion.div className="mb-4" variants={itemVariants}>
-                  <label htmlFor="password" className="block text-gray-700 text-sm font-medium mb-2">
-                    {t('auth.signup.passwordLabel')}
-                  </label>
-                  <div className="relative">
-                    <IconComponent icon={FaLock} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      id="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      className={`w-full pl-10 pr-12 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                        errors.password ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder={t('auth.signup.passwordPlaceholder')}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      <IconComponent icon={showPassword ? FaEyeSlash : FaEye} />
-                    </button>
-                  </div>
-                  {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
-                </motion.div>
-
-                <motion.div className="mb-4" variants={itemVariants}>
-                  <label htmlFor="confirmPassword" className="block text-gray-700 text-sm font-medium mb-2">
-                    {t('auth.signup.confirmPasswordLabel')}
-                  </label>
-                  <div className="relative">
-                    <IconComponent icon={FaLock} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    <input
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      className={`w-full pl-10 pr-12 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                        errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder={t('auth.signup.confirmPasswordPlaceholder')}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      <IconComponent icon={showConfirmPassword ? FaEyeSlash : FaEye} />
-                    </button>
-                  </div>
-                  {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
-                </motion.div>
-                
-                <motion.div className="mb-6" variants={itemVariants}>
-                  <label className="flex items-start">
-                    <input
-                      type="checkbox"
-                      checked={agreeToTerms}
-                      onChange={(e) => setAgreeToTerms(e.target.checked)}
-                      className="mr-2 mt-1 text-teal-600 focus:ring-teal-500"
-                    />
-                    <span className="text-sm text-gray-700">
-                      {t('auth.signup.agreeToTerms')} {' '}
-                      <Link to="/terms" className="text-teal-600 hover:text-teal-800">
-                        {t('auth.signup.termsAndConditions')}
-                      </Link>
-                      {' '} and {' '}
-                      <Link to="/privacy" className="text-teal-600 hover:text-teal-800">
-                        {t('auth.signup.privacyPolicy')}
-                      </Link>
-                    </span>
-                  </label>
-                  {errors.terms && <p className="text-red-500 text-sm mt-1">{errors.terms}</p>}
-                </motion.div>
-                
-                <motion.button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  variants={itemVariants}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  {isSubmitting ? t('common.loading') : t('auth.signup.signUpButton')}
-                </motion.button>
-              </form>
-              
-              <motion.div className="text-center mt-6" variants={itemVariants}>
-                <span className="text-gray-600">{t('auth.signup.haveAccount')} </span>
-                <Link to="/login" className="text-teal-600 hover:text-teal-800 font-medium">
-                  {t('auth.signup.signIn')}
-                </Link>
-              </motion.div>
-            </div>
-          </motion.div>
-        </div>
-      </main>
-      <Footer />
+                ) : (
+                  t('auth.signup.signUpButton')
+                )}
+              </motion.button>
+            </form>
+            
+            <motion.div className="text-center mt-6" variants={itemVariants}>
+              <span className="text-gray-300">{t('auth.signup.haveAccount')} </span>
+              <Link to="/login" className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors">
+                {t('auth.signup.signIn')}
+              </Link>
+            </motion.div>
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 };

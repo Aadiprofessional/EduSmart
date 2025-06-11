@@ -72,8 +72,8 @@ const FeaturedSuccessStories3D: React.FC = () => {
           visible: true
         },
         eraser: {
-          x: -250, // 350px to the left of component center (near "View All" button area)
-          y: 250,  // 250px below component center
+          x: -750, // 350px to the left of component center (near "View All" button area)
+          y: 450,  // 250px below component center
           z: 2,
           scale: 1,
           visible: true
@@ -82,7 +82,7 @@ const FeaturedSuccessStories3D: React.FC = () => {
           x: 250,  // 350px to the right of component center (near "View All" button area)
           y: 250,  // 250px below component center
           z: 2,
-          scale: 1,
+          scale: 0.02,
           visible: true
         }
       });

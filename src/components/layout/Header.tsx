@@ -29,29 +29,25 @@ const Header: React.FC = () => {
     { name: t('nav.blog'), href: '/blog', icon: AiOutlineRead },
   ];
 
-  // Define pages where header should be visible
+  // Define pages where header should be visible - removed login and signup
   const headerVisiblePages = [
     '/',
     '/database',
     '/case-studies',
     '/ai-courses',
+   
     '/ai-study',
     '/resources',
     '/blog',
-    '/about',
+ 
     '/courses',
-    '/login',
-    '/signup',
-    '/profile',
-    '/application-tracker',
-    '/chatbot',
-    '/scholarships'
+  
   ];
 
   // Check if device is mobile and handle scroll
   useEffect(() => {
     const checkIfMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      setIsMobile(window.innerWidth < 1024); // Changed from 768 to 1024 for better layout
     };
     
     const handleScroll = () => {
@@ -157,71 +153,72 @@ const Header: React.FC = () => {
           : 'bg-transparent'
       }`}
     >
-      <div className="container mx-auto px-4">
-        {/* Header with logo and navigation */}
-        <div className="flex justify-between items-center py-4">
-          {/* Logo section */}
+      <div className="w-full max-w-none px-4 sm:px-6 lg:px-8">
+        {/* Header with logo and navigation - improved spacing and alignment */}
+        <div className="flex justify-between items-center py-3 min-h-[70px] max-w-[1600px] mx-auto">
+          {/* Logo section - increased left margin */}
           <motion.div 
-            className="flex items-center"
+            className="flex items-center flex-shrink-0 mr-4 lg:mr-8"
             variants={logoVariants}
             whileHover="hover"
             data-magnetic
             data-cursor-text="Home"
           >
             <Link to="/" className="flex items-center">
-              <span className={`font-bold ${isMobile ? 'text-2xl' : 'text-3xl'} bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent`}>
+              <span className={`font-bold ${isMobile ? 'text-xl' : 'text-2xl lg:text-3xl'} bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent whitespace-nowrap`}>
                 {isMobile ? 'ES' : 'EduSmart'}
               </span>
             </Link>
           </motion.div>
           
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-2">
-            {navigation.map((item) => (
-              <motion.div
-                key={item.name}
-                variants={navItemVariants}
-                whileHover="hover"
-                data-magnetic
-                data-cursor-text={item.name}
-              >
-                <Link
-                  to={item.href}
-                  className={`px-3 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-                    isActive(item.href)
-                      ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border border-blue-500/30 shadow-lg shadow-blue-500/25'
-                      : 'text-gray-300 hover:text-white hover:bg-white/5'
-                  }`}
+          {/* Desktop Navigation - improved spacing and responsive breakpoints */}
+          <nav className="hidden lg:flex items-center justify-center flex-1 px-2">
+            <div className="flex items-center space-x-0.5 xl:space-x-1 2xl:space-x-2">
+              {navigation.map((item) => (
+                <motion.div
+                  key={item.name}
+                  variants={navItemVariants}
+                  whileHover="hover"
+                  data-magnetic
+                  data-cursor-text={item.name}
+                  className="flex-shrink-0"
                 >
-                  <div className="flex items-center space-x-2">
-                    <IconComponent icon={item.icon} className="h-4 w-4" />
-                    <span>{item.name}</span>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
+                  <Link
+                    to={item.href}
+                    className={`flex items-center space-x-1 px-2 lg:px-3 xl:px-4 py-2 rounded-xl text-xs lg:text-xs xl:text-sm font-medium transition-all duration-300 whitespace-nowrap ${
+                      isActive(item.href)
+                        ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border border-blue-500/40 shadow-lg shadow-blue-500/25 backdrop-blur-sm'
+                        : 'text-gray-300 hover:text-white hover:bg-white/5 hover:backdrop-blur-sm'
+                    }`}
+                  >
+                    <IconComponent icon={item.icon} className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5 flex-shrink-0" />
+                    <span className="text-xs lg:text-xs xl:text-sm font-medium hidden sm:inline">{item.name}</span>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
           </nav>
           
-          {/* Desktop auth buttons and language selector */}
-          <div className="hidden md:flex items-center space-x-3">
+          {/* Desktop auth buttons and language selector - improved spacing */}
+          <div className="hidden lg:flex items-center space-x-2 xl:space-x-3 flex-shrink-0 ml-2">
             {/* Language Selector with better visibility */}
-            <div className="px-3 py-2 bg-white/5 backdrop-blur-sm rounded-full border border-white/10 hover:border-white/20 transition-all duration-300">
+            <div className="px-2 xl:px-3 py-1.5 xl:py-2 bg-white backdrop-blur-sm rounded-full border border-white/10 hover:border-white/20 transition-all duration-300 flex-shrink-0">
               <LanguageSelector />
             </div>
             
             {user ? (
-              <div className="relative">
+              <div className="relative flex-shrink-0">
                 <motion.button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-sm rounded-full border border-white/10 text-white hover:border-white/30 transition-all duration-300"
+                  className="flex items-center px-3 xl:px-4 py-1.5 xl:py-2 bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-sm rounded-full border border-white/10 text-white hover:border-white/30 transition-all duration-300"
                   variants={buttonVariants}
                   whileHover="hover"
                   whileTap="tap"
                   data-magnetic
                   data-cursor-text="Profile"
                 >
-                  <IconComponent icon={AiOutlineUser} className="h-5 w-5 mr-2" />
-                  <span className="max-w-[150px] truncate text-sm font-medium">
+                  <IconComponent icon={AiOutlineUser} className="h-4 w-4 xl:h-5 xl:w-5 mr-1.5 xl:mr-2 flex-shrink-0" />
+                  <span className="max-w-[80px] xl:max-w-[120px] 2xl:max-w-[150px] truncate text-xs xl:text-sm font-medium">
                     {user.user_metadata?.name || user.email?.split('@')[0] || 'User'}
                   </span>
                 </motion.button>
@@ -257,11 +254,11 @@ const Header: React.FC = () => {
                 </AnimatePresence>
               </div>
             ) : (
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1 xl:space-x-2 flex-shrink-0">
                 <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap">
                   <Link
                     to="/login"
-                    className="px-4 py-2 text-gray-300 hover:text-white transition-all duration-300 rounded-full hover:bg-white/5"
+                    className="px-3 xl:px-4 py-1.5 xl:py-2 text-gray-300 hover:text-white transition-all duration-300 rounded-full hover:bg-white/5 text-xs xl:text-sm font-medium whitespace-nowrap"
                     data-magnetic
                     data-cursor-text="Login"
                   >
@@ -271,7 +268,7 @@ const Header: React.FC = () => {
                 <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap">
                   <Link
                     to="/signup"
-                    className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full font-medium shadow-lg hover:shadow-blue-500/25 transition-all duration-300"
+                    className="px-3 xl:px-4 2xl:px-6 py-1.5 xl:py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full font-medium shadow-lg hover:shadow-blue-500/25 transition-all duration-300 text-xs xl:text-sm whitespace-nowrap"
                     data-magnetic
                     data-cursor-text="Sign Up"
                   >
@@ -285,7 +282,7 @@ const Header: React.FC = () => {
           {/* Mobile menu button */}
           <motion.button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-all duration-200"
+            className="lg:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-all duration-200 flex-shrink-0 ml-2"
             variants={buttonVariants}
             whileHover="hover"
             whileTap="tap"
@@ -302,7 +299,7 @@ const Header: React.FC = () => {
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
-              className="md:hidden bg-black/95 backdrop-blur-xl rounded-2xl border border-white/10 mt-4 overflow-hidden"
+              className="lg:hidden bg-black/95 backdrop-blur-xl rounded-2xl border border-white/10 mt-4 overflow-hidden"
               variants={mobileMenuVariants}
               initial="hidden"
               animate="visible"
@@ -331,8 +328,8 @@ const Header: React.FC = () => {
                   </motion.div>
                 ))}
                 
-                <div className="border-t border-white/10 pt-4 mt-4">
-                  <div className="mb-4 p-3 bg-white/5 rounded-xl">
+                <div className="border-t border-white/20 pt-4 mt-4">
+                  <div className="mb-4 p-3 bg-white rounded-xl">
                     <LanguageSelector />
                   </div>
                   

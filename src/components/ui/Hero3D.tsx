@@ -34,17 +34,17 @@ const Hero3D: React.FC = () => {
           visible: true
         },
         eraser: {
-          x: -400, // 300px to the left of component center
-          y: 200,  // 100px below component center
+          x: -750, // 300px to the left of component center
+          y: 350,  // 100px below component center
           z: 2,
           scale: 1.0,
           visible: true // Hidden in hero section
         },
         sharpener: {
-          x: -500,  // 300px to the right of component center
+          x: -600,  // 300px to the right of component center
           y: -200,  // 100px below component center
           z: 0,
-          scale: 1.0,
+          scale: 0.03,
           visible: true // Hidden in hero section
         }
       });

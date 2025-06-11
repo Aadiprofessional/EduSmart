@@ -28,17 +28,17 @@ const OurImpactSection: React.FC = () => {
           visible: false
         },
         eraser: {
-          x: -500, // 300px to the left of component center
-          y: -150,  // 100px below component center
+          x: -700, // 300px to the left of component center
+          y: 50,  // 100px below component center
           z: 2,
-          scale: 1.4,
+          scale: 0.8,
           visible: true
         },
         sharpener: {
-          x: 600,  // 300px to the right of component center
+          x: 400,  // 300px to the right of component center
           y: -100,  // 100px below component center
           z: 2,
-          scale: 0.8,
+          scale: 0.02,
           visible: true
         }
       });
@@ -147,17 +147,17 @@ const ReadyToTransformSection: React.FC = () => {
           visible: true
         },
         eraser: {
-          x: -600, // 400px to the left of component center
-          y: 0,    // Same vertical level as component center
+          x: -900, // 400px to the left of component center
+          y: 400,    // Same vertical level as component center
           z: 1,
-          scale: 0.8,
+          scale: 0.9,
           visible: true
         },
         sharpener: {
           x: 600,  // 400px to the right of component center
           y: 0,    // Same vertical level as component center
           z: 1,
-          scale: 1.2,
+          scale: 0.02,
           visible: true
         }
       });
@@ -288,7 +288,7 @@ const Home: React.FC = () => {
         {/* Scroll to top button */}
         <motion.button
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="fixed bottom-8 right-8 z-40 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white p-4 rounded-full shadow-2xl hover:shadow-blue-500/25 transition-all duration-300"
+          className="fixed bottom-20 right-5 z-40 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white p-4 rounded-full shadow-2xl hover:shadow-blue-500/25 transition-all duration-300"
           whileHover={{ scale: 1.1, rotate: 360 }}
           whileTap={{ scale: 0.9 }}
           initial={{ opacity: 0, y: 100 }}

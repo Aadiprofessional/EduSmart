@@ -10,10 +10,10 @@ export interface PageTheme {
 export const pageThemes: Record<string, PageTheme> = {
   '/': {
     name: 'Home',
-    gradient: 'bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-600',
-    footerBg: 'bg-gradient-to-br from-emerald-900 via-teal-900 to-cyan-900',
-    footerAccent: 'bg-emerald-800',
-    footerSecondary: 'bg-orange-500',
+    gradient: 'bg-gradient-to-br from-blue-400 via-purple-500 to-indigo-600',
+    footerBg: 'bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900',
+    footerAccent: 'bg-blue-800',
+    footerSecondary: 'bg-purple-500',
     animationClass: 'animate-gradient-x'
   },
   '/database': {

@@ -34,7 +34,7 @@ const FeaturedScholarships3D: React.FC = () => {
           x: -600,  // 400px to the right of component center
           y: -500,    // Same vertical level as component center
           z: 2,
-          scale: 1.5,
+          scale: 0.025,
           visible: true
         }
       });

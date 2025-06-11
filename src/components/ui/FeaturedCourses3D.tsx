@@ -81,17 +81,17 @@ const FeaturedCourses3D: React.FC = () => {
           visible: true
         },
         eraser: {
-          x: -370, // 350px to the left of component center
-          y: -320, // 200px above component center
+          x: -700, // 350px to the left of component center
+          y: -150, // 200px above component center
           z: 1,
-          scale: 0.6,
+          scale: 0.8,
           visible: true
         },
         sharpener: {
           x: 370,  // 350px to the right of component center
-          y: -320, // 200px above component center
-          z: 1,
-          scale: 0.6,
+          y: -330, // 200px above component center
+          z: 2,
+          scale: 0.02,
           visible: true
         }
       });
