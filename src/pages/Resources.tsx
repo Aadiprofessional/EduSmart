@@ -334,18 +334,6 @@ const Resources: React.FC = () => {
     setSortBy('featured');
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-blue-50 to-indigo-50">
-        <Header />
-        <div className="flex justify-center items-center min-h-[50vh]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
   console.log('Rendering resources:', resources.length, 'filtered:', sortedResources.length);
 
   return (
@@ -382,353 +370,362 @@ const Resources: React.FC = () => {
 
         <section className="py-12">
           <div className="container mx-auto px-4">
-            <div className="flex flex-col lg:flex-row gap-8">
-              {/* Sidebar Filters */}
-              <motion.div 
-                className="lg:w-1/4"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-              >
-                <div className="bg-white rounded-xl shadow-lg p-6 sticky top-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-bold text-gray-800">Filters</h3>
-                    {(searchQuery || activeCategory !== 'all' || activeType !== 'all') && (
-                      <button
-                        onClick={clearAllFilters}
-                        className="text-sm text-green-600 hover:text-green-700 font-medium"
-                      >
-                        Clear All
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Categories */}
-                  <div className="mb-6">
-                    <h4 className="text-md font-semibold text-gray-700 mb-3">Categories</h4>
-                    <div className="space-y-2">
-                      <motion.button
-                        className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                          activeCategory === 'all'
-                            ? 'bg-green-100 text-green-800 font-medium'
-                            : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                        onClick={() => setActiveCategory('all')}
-                        whileHover={{ x: 2 }}
-                      >
-                        All Categories ({resources.length})
-                      </motion.button>
-                      {categories.map((category) => {
-                        const count = resources.filter(r => r.category === category).length;
-                        return (
-                          <motion.button
-                            key={category}
-                            className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center ${
-                              activeCategory === category
-                                ? 'bg-green-100 text-green-800 font-medium'
-                                : 'text-gray-700 hover:bg-gray-100'
-                            }`}
-                            onClick={() => setActiveCategory(category)}
-                            whileHover={{ x: 2 }}
-                          >
-                            <span className="mr-2">{getResourceCategoryIcon(category)}</span>
-                            {getCategoryLabel(category)} ({count})
-                          </motion.button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Types */}
-                  <div className="mb-6">
-                    <h4 className="text-md font-semibold text-gray-700 mb-3">Resource Types</h4>
-                    <div className="space-y-2">
-                      <motion.button
-                        className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                          activeType === 'all'
-                            ? 'bg-blue-100 text-blue-800 font-medium'
-                            : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                        onClick={() => setActiveType('all')}
-                        whileHover={{ x: 2 }}
-                      >
-                        All Types
-                      </motion.button>
-                      {types.map((type) => {
-                        const count = resources.filter(r => r.type === type).length;
-                        return (
-                          <motion.button
-                            key={type}
-                            className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center ${
-                              activeType === type
-                                ? 'bg-blue-100 text-blue-800 font-medium'
-                                : 'text-gray-700 hover:bg-gray-100'
-                            }`}
-                            onClick={() => setActiveType(type)}
-                            whileHover={{ x: 2 }}
-                          >
-                            <span className="mr-2">{getResourceTypeIcon(type)}</span>
-                            {getTypeLabel(type)} ({count})
-                          </motion.button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Popular Tags */}
-                  <div>
-                    <h4 className="text-md font-semibold text-gray-700 mb-3">Popular Tags</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {Array.from(new Set(resources.flatMap(resource => resource.tags || []))).slice(0, 10).map(tag => (
-                        <motion.button
-                          key={tag}
-                          className="bg-gray-100 hover:bg-green-100 hover:text-green-800 text-gray-700 text-xs font-medium px-3 py-1 rounded-full transition-colors"
-                          onClick={() => setSearchQuery(tag)}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
+            {loading ? (
+              <div className="flex justify-center items-center min-h-[400px]">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading resources...</p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col lg:flex-row gap-8">
+                {/* Sidebar Filters */}
+                <motion.div 
+                  className="lg:w-1/4"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
+                >
+                  <div className="bg-white rounded-xl shadow-lg p-6 sticky top-6">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-lg font-bold text-gray-800">Filters</h3>
+                      {(searchQuery || activeCategory !== 'all' || activeType !== 'all') && (
+                        <button
+                          onClick={clearAllFilters}
+                          className="text-sm text-green-600 hover:text-green-700 font-medium"
                         >
-                          #{tag}
+                          Clear All
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Categories */}
+                    <div className="mb-6">
+                      <h4 className="text-md font-semibold text-gray-700 mb-3">Categories</h4>
+                      <div className="space-y-2">
+                        <motion.button
+                          className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                            activeCategory === 'all'
+                              ? 'bg-green-100 text-green-800 font-medium'
+                              : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                          onClick={() => setActiveCategory('all')}
+                          whileHover={{ x: 2 }}
+                        >
+                          All Categories ({resources.length})
                         </motion.button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Main Content */}
-              <motion.div 
-                className="lg:w-3/4"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-              >
-                {/* Results Header */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 bg-white rounded-xl shadow-lg p-6">
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                      {activeCategory === 'all' && activeType === 'all' 
-                        ? 'All Resources' 
-                        : activeCategory !== 'all' && activeType !== 'all'
-                          ? `${getTypeLabel(activeType)} in ${getCategoryLabel(activeCategory)}`
-                          : activeCategory !== 'all'
-                            ? getCategoryLabel(activeCategory)
-                            : getTypeLabel(activeType)
-                      }
-                      {searchQuery && (
-                        <span className="text-lg font-normal text-gray-600 ml-2">
-                          - Results for "{searchQuery}"
-                        </span>
-                      )}
-                    </h2>
-                    <p className="text-gray-600">
-                      Showing {sortedResources.length} resource{sortedResources.length !== 1 ? 's' : ''}
-                    </p>
-                  </div>
-                  
-                  <div className="flex items-center gap-4 mt-4 sm:mt-0">
-                    {/* Sort Dropdown */}
-                    <div className="flex items-center gap-2">
-                      <IconComponent icon={FaSort} className="text-gray-500" />
-                      <select
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value)}
-                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                      >
-                        <option value="featured">Featured First</option>
-                        <option value="downloads">Most Downloaded</option>
-                        <option value="views">Most Viewed</option>
-                        <option value="newest">Newest First</option>
-                        <option value="oldest">Oldest First</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Active Filters */}
-                {(searchQuery || activeCategory !== 'all' || activeType !== 'all') && (
-                  <motion.div 
-                    className="mb-6 bg-white rounded-xl shadow-lg p-4"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                  >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm text-gray-600 font-medium">Active filters:</span>
-                      {searchQuery && (
-                        <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                          Search: "{searchQuery}"
-                          <button onClick={() => setSearchQuery('')}>
-                            <IconComponent icon={FaTimes} className="text-xs" />
-                          </button>
-                        </span>
-                      )}
-                      {activeCategory !== 'all' && (
-                        <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                          Category: {getCategoryLabel(activeCategory)}
-                          <button onClick={() => setActiveCategory('all')}>
-                            <IconComponent icon={FaTimes} className="text-xs" />
-                          </button>
-                        </span>
-                      )}
-                      {activeType !== 'all' && (
-                        <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                          Type: {getTypeLabel(activeType)}
-                          <button onClick={() => setActiveType('all')}>
-                            <IconComponent icon={FaTimes} className="text-xs" />
-                          </button>
-                        </span>
-                      )}
-                      <button
-                        onClick={clearAllFilters}
-                        className="text-gray-500 hover:text-gray-700 text-sm underline ml-2"
-                      >
-                        Clear all
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-                
-                {/* Resources Grid */}
-                {sortedResources.length > 0 ? (
-                  <motion.div 
-                    className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                  >
-                    {sortedResources.map((resource) => (
-                      <motion.div
-                        key={resource.id}
-                        className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 flex flex-col group"
-                        variants={itemVariants}
-                        whileHover={{ y: -8, scale: 1.02 }}
-                      >
-                        <div className="relative overflow-hidden">
-                          <img 
-                            src={resource.thumbnail || '/api/placeholder/400/250'} 
-                            alt={resource.title}
-                            className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
-                          />
-                          <div className="absolute top-3 right-3 bg-white px-3 py-1 rounded-full text-sm font-bold text-green-600 shadow-md flex items-center">
-                            <IconComponent icon={FaDownload} className="mr-1" />
-                            {resource.downloads.toLocaleString()}
-                          </div>
-                          {resource.featured && (
-                            <div className="absolute top-3 left-3 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
-                              Featured
-                            </div>
-                          )}
-                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
+                        {categories.map((category) => {
+                          const count = resources.filter(r => r.category === category).length;
+                          return (
                             <motion.button
-                              className="bg-white text-green-600 p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
+                              key={category}
+                              className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center ${
+                                activeCategory === category
+                                  ? 'bg-green-100 text-green-800 font-medium'
+                                  : 'text-gray-700 hover:bg-gray-100'
+                              }`}
+                              onClick={() => setActiveCategory(category)}
+                              whileHover={{ x: 2 }}
                             >
-                              {resource.download_link ? <IconComponent icon={FaDownload} /> : <IconComponent icon={FaPlay} />}
+                              <span className="mr-2">{getResourceCategoryIcon(category)}</span>
+                              {getCategoryLabel(category)} ({count})
                             </motion.button>
-                          </div>
-                        </div>
-                        
-                        <div className="p-6 flex-1 flex flex-col">
-                          <div className="flex items-center gap-2 mb-3">
-                            <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full flex items-center">
-                              {getResourceTypeIcon(resource.type)}
-                              <span className="ml-1">{getTypeLabel(resource.type)}</span>
-                            </span>
-                            <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full flex items-center">
-                              {getResourceCategoryIcon(resource.category)}
-                              <span className="ml-1">{getCategoryLabel(resource.category)}</span>
-                            </span>
-                          </div>
-                          
-                          <h3 className="text-lg font-bold text-gray-800 mb-2 line-clamp-2 flex-shrink-0 group-hover:text-green-600 transition-colors">
-                            {resource.title}
-                          </h3>
-                          <p className="text-gray-600 mb-4 text-sm line-clamp-3 flex-1">{resource.description}</p>
-                          
-                          <div className="flex items-center justify-between mb-4 text-sm text-gray-600">
-                            <div className="flex items-center">
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Types */}
+                    <div className="mb-6">
+                      <h4 className="text-md font-semibold text-gray-700 mb-3">Resource Types</h4>
+                      <div className="space-y-2">
+                        <motion.button
+                          className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                            activeType === 'all'
+                              ? 'bg-blue-100 text-blue-800 font-medium'
+                              : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                          onClick={() => setActiveType('all')}
+                          whileHover={{ x: 2 }}
+                        >
+                          All Types
+                        </motion.button>
+                        {types.map((type) => {
+                          const count = resources.filter(r => r.type === type).length;
+                          return (
+                            <motion.button
+                              key={type}
+                              className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center ${
+                                activeType === type
+                                  ? 'bg-blue-100 text-blue-800 font-medium'
+                                  : 'text-gray-700 hover:bg-gray-100'
+                              }`}
+                              onClick={() => setActiveType(type)}
+                              whileHover={{ x: 2 }}
+                            >
+                              <span className="mr-2">{getResourceTypeIcon(type)}</span>
+                              {getTypeLabel(type)} ({count})
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Popular Tags */}
+                    <div>
+                      <h4 className="text-md font-semibold text-gray-700 mb-3">Popular Tags</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {Array.from(new Set(resources.flatMap(resource => resource.tags || []))).slice(0, 10).map(tag => (
+                          <motion.button
+                            key={tag}
+                            className="bg-gray-100 hover:bg-green-100 hover:text-green-800 text-gray-700 text-xs font-medium px-3 py-1 rounded-full transition-colors"
+                            onClick={() => setSearchQuery(tag)}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            #{tag}
+                          </motion.button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* Main Content */}
+                <motion.div 
+                  className="lg:w-3/4"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
+                >
+                  {/* Results Header */}
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 bg-white rounded-xl shadow-lg p-6">
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                        {activeCategory === 'all' && activeType === 'all' 
+                          ? 'All Resources' 
+                          : activeCategory !== 'all' && activeType !== 'all'
+                            ? `${getTypeLabel(activeType)} in ${getCategoryLabel(activeCategory)}`
+                            : activeCategory !== 'all'
+                              ? getCategoryLabel(activeCategory)
+                              : getTypeLabel(activeType)
+                        }
+                        {searchQuery && (
+                          <span className="text-lg font-normal text-gray-600 ml-2">
+                            - Results for "{searchQuery}"
+                          </span>
+                        )}
+                      </h2>
+                      <p className="text-gray-600">
+                        Showing {sortedResources.length} resource{sortedResources.length !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-center gap-4 mt-4 sm:mt-0">
+                      {/* Sort Dropdown */}
+                      <div className="flex items-center gap-2">
+                        <IconComponent icon={FaSort} className="text-gray-500" />
+                        <select
+                          value={sortBy}
+                          onChange={(e) => setSortBy(e.target.value)}
+                          className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                        >
+                          <option value="featured">Featured First</option>
+                          <option value="downloads">Most Downloaded</option>
+                          <option value="views">Most Viewed</option>
+                          <option value="newest">Newest First</option>
+                          <option value="oldest">Oldest First</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Active Filters */}
+                  {(searchQuery || activeCategory !== 'all' || activeType !== 'all') && (
+                    <motion.div 
+                      className="mb-6 bg-white rounded-xl shadow-lg p-4"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                    >
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm text-gray-600 font-medium">Active filters:</span>
+                        {searchQuery && (
+                          <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                            Search: "{searchQuery}"
+                            <button onClick={() => setSearchQuery('')}>
+                              <IconComponent icon={FaTimes} className="text-xs" />
+                            </button>
+                          </span>
+                        )}
+                        {activeCategory !== 'all' && (
+                          <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                            Category: {getCategoryLabel(activeCategory)}
+                            <button onClick={() => setActiveCategory('all')}>
+                              <IconComponent icon={FaTimes} className="text-xs" />
+                            </button>
+                          </span>
+                        )}
+                        {activeType !== 'all' && (
+                          <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                            Type: {getTypeLabel(activeType)}
+                            <button onClick={() => setActiveType('all')}>
+                              <IconComponent icon={FaTimes} className="text-xs" />
+                            </button>
+                          </span>
+                        )}
+                        <button
+                          onClick={clearAllFilters}
+                          className="text-gray-500 hover:text-gray-700 text-sm underline ml-2"
+                        >
+                          Clear all
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                  
+                  {/* Resources Grid */}
+                  {sortedResources.length > 0 ? (
+                    <motion.div 
+                      className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
+                      variants={containerVariants}
+                      initial="hidden"
+                      animate="visible"
+                    >
+                      {sortedResources.map((resource) => (
+                        <motion.div
+                          key={resource.id}
+                          className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 flex flex-col group"
+                          variants={itemVariants}
+                          whileHover={{ y: -8, scale: 1.02 }}
+                        >
+                          <div className="relative overflow-hidden">
+                            <img 
+                              src={resource.thumbnail || '/api/placeholder/400/250'} 
+                              alt={resource.title}
+                              className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
+                            />
+                            <div className="absolute top-3 right-3 bg-white px-3 py-1 rounded-full text-sm font-bold text-green-600 shadow-md flex items-center">
                               <IconComponent icon={FaDownload} className="mr-1" />
-                              <span>{resource.downloads.toLocaleString()} downloads</span>
+                              {resource.downloads.toLocaleString()}
                             </div>
-                            {resource.views && (
-                              <div className="flex items-center">
-                                <IconComponent icon={FaEye} className="mr-1" />
-                                <span>{resource.views.toLocaleString()} views</span>
+                            {resource.featured && (
+                              <div className="absolute top-3 left-3 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+                                Featured
                               </div>
                             )}
-                          </div>
-                          
-                          {/* Tags */}
-                          {resource.tags && resource.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mb-4">
-                              {resource.tags.slice(0, 3).map(tag => (
-                                <span key={tag} className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">
-                                  #{tag}
-                                </span>
-                              ))}
+                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
+                              <motion.button
+                                className="bg-white text-green-600 p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                              >
+                                {resource.download_link ? <IconComponent icon={FaDownload} /> : <IconComponent icon={FaPlay} />}
+                              </motion.button>
                             </div>
-                          )}
-                          
-                          <div className="flex gap-2 mt-auto">
-                            <motion.a
-                              href={resource.download_link || resource.video_link || resource.url}
-                              className="flex-1 bg-gradient-to-r from-green-600 to-teal-700 hover:from-green-700 hover:to-teal-800 text-white py-3 px-4 rounded-lg font-medium transition-all text-sm shadow-lg text-center flex items-center justify-center"
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                            >
-                              {resource.download_link ? (
-                                <>
-                                  <IconComponent icon={FaDownload} className="mr-2" />
-                                  Download
-                                </>
-                              ) : (
-                                <>
-                                  <IconComponent icon={FaPlay} className="mr-2" />
-                                  View
-                                </>
-                              )}
-                            </motion.a>
-                            <motion.button
-                              className="bg-gray-100 hover:bg-gray-200 text-gray-700 p-3 rounded-lg transition-colors"
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                            >
-                              <IconComponent icon={FaBookmark} />
-                            </motion.button>
                           </div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </motion.div>
-                ) : (
-                  <motion.div 
-                    className="text-center py-16 bg-white rounded-xl shadow-lg"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    <IconComponent icon={FaGraduationCap} className="mx-auto text-6xl text-gray-300 mb-4" />
-                    <h3 className="text-2xl font-semibold text-gray-600 mb-2">No resources found</h3>
-                    <p className="text-gray-500 mb-6">Try adjusting your search terms or filters to find what you're looking for.</p>
-                    <motion.button
-                      onClick={clearAllFilters}
-                      className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                          
+                          <div className="p-6 flex-1 flex flex-col">
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full flex items-center">
+                                {getResourceTypeIcon(resource.type)}
+                                <span className="ml-1">{getTypeLabel(resource.type)}</span>
+                              </span>
+                              <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full flex items-center">
+                                {getResourceCategoryIcon(resource.category)}
+                                <span className="ml-1">{getCategoryLabel(resource.category)}</span>
+                              </span>
+                            </div>
+                            
+                            <h3 className="text-lg font-bold text-gray-800 mb-2 line-clamp-2 flex-shrink-0 group-hover:text-green-600 transition-colors">
+                              {resource.title}
+                            </h3>
+                            <p className="text-gray-600 mb-4 text-sm line-clamp-3 flex-1">{resource.description}</p>
+                            
+                            <div className="flex items-center justify-between mb-4 text-sm text-gray-600">
+                              <div className="flex items-center">
+                                <IconComponent icon={FaDownload} className="mr-1" />
+                                <span>{resource.downloads.toLocaleString()} downloads</span>
+                              </div>
+                              {resource.views && (
+                                <div className="flex items-center">
+                                  <IconComponent icon={FaEye} className="mr-1" />
+                                  <span>{resource.views.toLocaleString()} views</span>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Tags */}
+                            {resource.tags && resource.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mb-4">
+                                {resource.tags.slice(0, 3).map(tag => (
+                                  <span key={tag} className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">
+                                    #{tag}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            
+                            <div className="flex gap-2 mt-auto">
+                              <motion.a
+                                href={resource.download_link || resource.video_link || resource.url}
+                                className="flex-1 bg-gradient-to-r from-green-600 to-teal-700 hover:from-green-700 hover:to-teal-800 text-white py-3 px-4 rounded-lg font-medium transition-all text-sm shadow-lg text-center flex items-center justify-center"
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                              >
+                                {resource.download_link ? (
+                                  <>
+                                    <IconComponent icon={FaDownload} className="mr-2" />
+                                    Download
+                                  </>
+                                ) : (
+                                  <>
+                                    <IconComponent icon={FaPlay} className="mr-2" />
+                                    View
+                                  </>
+                                )}
+                              </motion.a>
+                              <motion.button
+                                className="bg-gray-100 hover:bg-gray-200 text-gray-700 p-3 rounded-lg transition-colors"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                              >
+                                <IconComponent icon={FaBookmark} />
+                              </motion.button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </motion.div>
+                  ) : (
+                    <motion.div 
+                      className="text-center py-16 bg-white rounded-xl shadow-lg"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.5 }}
                     >
-                      Clear all filters
-                    </motion.button>
-                  </motion.div>
-                )}
-                
-                {/* Debug Info */}
-                {error && (
-                  <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-yellow-800">{error}</p>
-                  </div>
-                )}
-              </motion.div>
-            </div>
+                      <IconComponent icon={FaGraduationCap} className="mx-auto text-6xl text-gray-300 mb-4" />
+                      <h3 className="text-2xl font-semibold text-gray-600 mb-2">No resources found</h3>
+                      <p className="text-gray-500 mb-6">Try adjusting your search terms or filters to find what you're looking for.</p>
+                      <motion.button
+                        onClick={clearAllFilters}
+                        className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        Clear all filters
+                      </motion.button>
+                    </motion.div>
+                  )}
+                  
+                  {/* Debug Info */}
+                  {error && (
+                    <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-yellow-800">{error}</p>
+                    </div>
+                  )}
+                </motion.div>
+              </div>
+            )}
           </div>
         </section>
       </main>

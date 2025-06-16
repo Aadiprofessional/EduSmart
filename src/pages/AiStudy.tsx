@@ -30,7 +30,6 @@ const AiStudy: React.FC = () => {
     'flashcards': false,
     'content-writer': false,
     'citation-generator': false,
-    'progress-tracker': false,
     'document-summarizer': false,
   });
 
@@ -430,7 +429,7 @@ const AiStudy: React.FC = () => {
               
               {mobileMenuOpen && (
                 <motion.div 
-                  className="bg-slate-800/95 backdrop-blur-sm shadow-lg absolute z-50 w-full border-b border-white/10"
+                  className="bg-slate-800/95 backdrop-blur-sm shadow-lg absolute z-30 w-full border-b border-white/10"
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
@@ -555,7 +554,7 @@ const AiStudy: React.FC = () => {
                 )}
               </div>
 
- <div className={activeTab === 'document-summarizer' ? 'block' : 'hidden'}>
+              <div className={activeTab === 'document-summarizer' ? 'block' : 'hidden'}>
                 {componentStates['document-summarizer'] && (
                   <DocumentSummarizerComponent/>
                 )}
@@ -584,7 +583,7 @@ const AiStudy: React.FC = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setActiveTab('upload')}
+                onClick={() => handleTabSwitch('upload')}
                 className="mt-4 text-cyan-400 font-medium flex items-center text-sm hover:text-cyan-300 transition-colors"
               >
                 {t('aiStudy.tryNowBtn')}
@@ -607,7 +606,7 @@ const AiStudy: React.FC = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setActiveTab('content-writer')}
+                onClick={() => handleTabSwitch('content-writer')}
                 className="mt-4 text-orange-400 font-medium flex items-center text-sm hover:text-orange-300 transition-colors"
               >
                 {t('aiStudy.startWritingBtn')}
@@ -630,7 +629,7 @@ const AiStudy: React.FC = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setActiveTab('ai-tutor')}
+                onClick={() => handleTabSwitch('ai-tutor')}
                 className="mt-4 text-emerald-400 font-medium flex items-center text-sm hover:text-emerald-300 transition-colors"
               >
                 {t('aiStudy.chatNowBtn')}
@@ -653,7 +652,7 @@ const AiStudy: React.FC = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setActiveTab('study-planner')}
+                onClick={() => handleTabSwitch('study-planner')}
                 className="mt-4 text-purple-400 font-medium flex items-center text-sm hover:text-purple-300 transition-colors"
               >
                 Plan Your Studies
@@ -676,7 +675,7 @@ const AiStudy: React.FC = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setActiveTab('mistake-checker')}
+                onClick={() => handleTabSwitch('mistake-checker')}
                 className="mt-4 text-red-400 font-medium flex items-center text-sm hover:text-red-300 transition-colors"
               >
                 Check Mistakes
@@ -699,7 +698,7 @@ const AiStudy: React.FC = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setActiveTab('flashcards')}
+                onClick={() => handleTabSwitch('flashcards')}
                 className="mt-4 text-yellow-400 font-medium flex items-center text-sm hover:text-yellow-300 transition-colors"
               >
                 Create Flashcards
@@ -722,7 +721,7 @@ const AiStudy: React.FC = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setActiveTab('citation-generator')}
+                onClick={() => handleTabSwitch('citation-generator')}
                 className="mt-4 text-indigo-400 font-medium flex items-center text-sm hover:text-indigo-300 transition-colors"
               >
                 Generate Citations
@@ -738,17 +737,17 @@ const AiStudy: React.FC = () => {
               whileHover={{ y: -5, boxShadow: "0 25px 50px rgba(34, 197, 94, 0.15)" }}
             >
               <div className="bg-gradient-to-br from-green-400/20 to-emerald-500/20 w-14 h-14 rounded-full flex items-center justify-center mb-4 border border-green-400/30">
-                <IconComponent icon={FiTrendingUp} className="h-7 w-7 text-green-400" />
+                <IconComponent icon={AiOutlineSearch} className="h-7 w-7 text-green-400" />
               </div>
-              <h3 className="text-xl font-semibold text-green-400 mb-2">{t('aiStudy.progressTracker')}</h3>
-              <p className="text-slate-300">Track your learning progress, study sessions, and performance analytics</p>
+              <h3 className="text-xl font-semibold text-green-400 mb-2">Document Summarizer</h3>
+              <p className="text-slate-300">AI-powered document analysis and summarization with interactive mind maps</p>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setActiveTab('progress-tracker')}
+                onClick={() => handleTabSwitch('document-summarizer')}
                 className="mt-4 text-green-400 font-medium flex items-center text-sm hover:text-green-300 transition-colors"
               >
-                View Progress
+                Summarize Documents
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
@@ -768,10 +767,10 @@ const AiStudy: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            onClick={() => setActiveTab('ai-tutor')}
+            onClick={() => handleTabSwitch('ai-tutor')}
           >
             <IconComponent icon={AiOutlineRobot} className="h-6 w-6" />
-            <span className="ml-2 font-medium hidden md:inline">{t('ask_ai_tutor')}</span>
+            <span className="ml-2 font-medium hidden md:inline">{t('aiStudy.ask_ai_tutor')}</span>
           </motion.button>
         </div>
       </motion.div>

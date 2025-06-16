@@ -140,22 +140,36 @@ const MagneticCursor: React.FC = () => {
 
   return (
     <>
-      {/* Main cursor */}
+      {/* Main cursor with magnifying effect */}
       <div
         ref={cursorRef}
-        className="fixed top-0 left-0 w-10 h-10 pointer-events-none z-[9999] mix-blend-difference"
+        className="fixed top-0 left-0 w-10 h-10 pointer-events-none z-[9999]"
         style={{
           background: 'rgba(255, 255, 255, 0.1)',
           borderRadius: '50%',
-          backdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
+          backdropFilter: 'blur(2px) brightness(1.4) contrast(1.3) saturate(1.2)',
+          border: '2px solid rgba(255, 255, 255, 0.3)',
+          boxShadow: '0 0 15px rgba(59, 130, 246, 0.3), inset 0 0 15px rgba(255, 255, 255, 0.1)',
+          mixBlendMode: 'normal',
         }}
-      />
+      >
+        {/* Inner magnifying lens effect */}
+        <div
+          className="absolute inset-1 rounded-full"
+          style={{
+            background: 'radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.4) 0%, transparent 60%)',
+            pointerEvents: 'none',
+          }}
+        />
+        
+        {/* Subtle crosshairs for magnifying glass effect */}
+      
+      </div>
 
       {/* Cursor dot */}
       <div
         ref={cursorDotRef}
-        className="fixed top-0 left-0 w-2 h-2 bg-white rounded-full pointer-events-none z-[9999] mix-blend-difference"
+        className="fixed top-0 left-0 w-2 h-2 bg-white rounded-full pointer-events-none z-[9999] mix-blend-difference opacity-60"
       />
     </>
   );

@@ -2711,6 +2711,74 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                     </button>
                   </div>
 
+           
+                  {/* More Filters Button - Moved to top */}
+                
+
+                  {/* AI Actions - Moved to top */}
+                  <div className="space-y-3 mb-6">
+                    <button
+                      onClick={handleAIAnalysis}
+                      disabled={isLoadingAI}
+                      className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-3 px-4 rounded-lg font-medium transition-all disabled:opacity-50 flex items-center justify-center"
+                    >
+                      <IconComponent icon={FaRobot} className="mr-2" />
+                      {isLoadingAI ? t('common.loading') : t('database.aiAnalysis')}
+                    </button>
+                    
+                    <button
+                      onClick={handleGetRecommendations}
+                      disabled={isLoadingAI}
+                      className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 px-4 rounded-lg font-medium transition-all disabled:opacity-50 flex items-center justify-center"
+                    >
+                      <IconComponent icon={FaLightbulb} className="mr-2" />
+                      {isLoadingAI ? t('common.loading') : t('database.getRecommendations')}
+                    </button>
+                    
+                    {compareList.length > 0 && (
+                      <button
+                        onClick={handleOpenCompare}
+                        className="w-full bg-gradient-to-r from-teal-500 to-teal-600 text-white py-3 px-4 rounded-lg font-medium transition-all flex items-center justify-center"
+                      >
+                        <IconComponent icon={FaBookmark} className="mr-2" />
+                        {t('database.compareUniversities')} ({compareList.length})
+                      </button>
+                    )}
+                  </div>
+                         {/* Ranking Filters - Moved to top */}
+                         <div className="mb-6">
+                    <h4 className="text-md font-semibold text-gray-700 mb-3 flex items-center">
+                      <IconComponent icon={FaTrophy} className="mr-2 text-orange-600" />
+                      Ranking Types
+                    </h4>
+                    <div className="space-y-2">
+                      {availableRankingTypes.map((rankingType) => (
+                        <button
+                          key={rankingType}
+                          onClick={() => handleRankingTypeToggle(rankingType)}
+                          className={`w-full p-3 text-left rounded-lg border transition-all text-sm font-medium ${
+                            selectedRankingTypes.includes(rankingType)
+                              ? 'bg-blue-50 border-blue-500 text-blue-700'
+                              : 'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="truncate">{rankingType}</span>
+                            {selectedRankingTypes.includes(rankingType) && (
+                              <IconComponent icon={FaCheck} className="text-blue-600 ml-2 flex-shrink-0" />
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                      {selectedRankingTypes.length > 0 && (
+                        <div className="text-xs text-gray-500 mt-2">
+                          {selectedRankingTypes.length} ranking type{selectedRankingTypes.length > 1 ? 's' : ''} selected
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+
                   {/* Location Filters */}
                   <div className="mb-6">
                     <h4 className="text-md font-semibold text-gray-700 mb-3 flex items-center">
@@ -2809,40 +2877,6 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                     </div>
                   </div>
 
-                  {/* Ranking Filters */}
-                  <div className="mb-6">
-                    <h4 className="text-md font-semibold text-gray-700 mb-3 flex items-center">
-                      <IconComponent icon={FaTrophy} className="mr-2 text-orange-600" />
-                      Ranking Types
-                    </h4>
-                    <div className="space-y-2">
-                      {availableRankingTypes.map((rankingType) => (
-                        <button
-                          key={rankingType}
-                          onClick={() => handleRankingTypeToggle(rankingType)}
-                          className={`w-full p-3 text-left rounded-lg border transition-all text-sm font-medium ${
-                            selectedRankingTypes.includes(rankingType)
-                              ? 'bg-blue-50 border-blue-500 text-blue-700'
-                              : 'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="truncate">{rankingType}</span>
-                            {selectedRankingTypes.includes(rankingType) && (
-                              <IconComponent icon={FaCheck} className="text-blue-600 ml-2 flex-shrink-0" />
-                            )}
-                          </div>
-                        </button>
-                      ))}
-                      {selectedRankingTypes.length > 0 && (
-                        <div className="text-xs text-gray-500 mt-2">
-                          {selectedRankingTypes.length} ranking type{selectedRankingTypes.length > 1 ? 's' : ''} selected
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* More Filters Button */}
                   <div className="mb-6">
                     <button
                       onClick={() => setShowMoreFiltersModal(true)}
@@ -2853,36 +2887,58 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                     </button>
                   </div>
 
-                  {/* AI Actions */}
-                  <div className="space-y-3">
-                    <button
-                      onClick={handleAIAnalysis}
-                      disabled={isLoadingAI}
-                      className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-3 px-4 rounded-lg font-medium transition-all disabled:opacity-50 flex items-center justify-center"
-                    >
-                      <IconComponent icon={FaRobot} className="mr-2" />
-                      {isLoadingAI ? t('common.loading') : t('database.aiAnalysis')}
-                    </button>
-                    
-                    <button
-                      onClick={handleGetRecommendations}
-                      disabled={isLoadingAI}
-                      className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 px-4 rounded-lg font-medium transition-all disabled:opacity-50 flex items-center justify-center"
-                    >
-                      <IconComponent icon={FaLightbulb} className="mr-2" />
-                      {isLoadingAI ? t('common.loading') : t('database.getRecommendations')}
-                    </button>
-                    
-                    {compareList.length > 0 && (
-                      <button
-                        onClick={handleOpenCompare}
-                        className="w-full bg-gradient-to-r from-teal-500 to-teal-600 text-white py-3 px-4 rounded-lg font-medium transition-all flex items-center justify-center"
-                      >
-                        <IconComponent icon={FaBookmark} className="mr-2" />
-                        {t('database.compareUniversities')} ({compareList.length})
-                      </button>
-                    )}
+                  {/* Additional Features */}
+                  <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6">
+                    <h3 className="text-lg font-bold text-orange-800 mb-4 flex items-center">
+                      <IconComponent icon={FaStar} className="mr-2" /> Additional Features
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          name="onlineProgramsAvailable"
+                          checked={filters.onlineProgramsAvailable}
+                          onChange={(e) => setFilters(prev => ({ ...prev, onlineProgramsAvailable: e.target.checked }))}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <label className="text-sm text-gray-700">Online Programs</label>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          name="exchangeProgramsAvailable"
+                          checked={filters.exchangeProgramsAvailable}
+                          onChange={(e) => setFilters(prev => ({ ...prev, exchangeProgramsAvailable: e.target.checked }))}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <label className="text-sm text-gray-700">Exchange Programs</label>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          name="careerServices"
+                          checked={filters.careerServices}
+                          onChange={(e) => setFilters(prev => ({ ...prev, careerServices: e.target.checked }))}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <label className="text-sm text-gray-700">Career Services</label>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          name="clubsAndOrganizations"
+                          checked={filters.clubsAndOrganizations}
+                          onChange={(e) => setFilters(prev => ({ ...prev, clubsAndOrganizations: e.target.checked }))}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <label className="text-sm text-gray-700">Clubs & Organizations</label>
+                      </div>
+                    </div>
                   </div>
+
                 </div>
               </div>
 

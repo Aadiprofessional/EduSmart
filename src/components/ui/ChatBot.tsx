@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaRobot, FaTimes, FaPaperPlane, FaQuestion, FaGraduationCap, FaCalendarAlt, FaInfo } from 'react-icons/fa';
+import { useLocation } from 'react-router-dom';
 import IconComponent from './IconComponent';
 
 interface Message {
@@ -17,6 +18,7 @@ const preDefinedCommands = [
 ];
 
 const ChatBot: React.FC = () => {
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     { id: 1, text: 'Hello! How can I assist you with EduSmart today?', sender: 'bot' },
@@ -30,6 +32,15 @@ const ChatBot: React.FC = () => {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
+
+  // Hide ChatBot on CoursePlayer pages
+  const shouldHideChatBot = location.pathname.includes('/course/') || 
+                           location.pathname.includes('/learn/');
+
+  // Don't render if on CoursePlayer page
+  if (shouldHideChatBot) {
+    return null;
+  }
 
   const toggleChat = () => {
     setIsOpen(!isOpen);

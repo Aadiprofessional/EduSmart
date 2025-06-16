@@ -3,12 +3,12 @@ import { useEffect } from 'react';
 // Hook to enable smooth scrolling across the entire application
 export const useSmoothScroll = () => {
   useEffect(() => {
-    // Update CSS for smooth scrolling
+    // Use CSS-only smooth scrolling without JavaScript interference
     document.documentElement.style.scrollBehavior = 'smooth';
     
     // Cleanup function to revert changes
     return () => {
-      document.documentElement.style.scrollBehavior = '';
+      document.documentElement.style.scrollBehavior = 'auto';
     };
   }, []);
 };
@@ -33,6 +33,8 @@ export const useScrollReveal = () => {
     const revealElements = document.querySelectorAll('.reveal-on-scroll');
     
     const revealOnScroll = () => {
+      const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
+      
       for (let i = 0; i < revealElements.length; i++) {
         const windowHeight = window.innerHeight;
         const elementTop = revealElements[i].getBoundingClientRect().top;
@@ -46,7 +48,7 @@ export const useScrollReveal = () => {
       }
     };
     
-    window.addEventListener('scroll', revealOnScroll);
+    window.addEventListener('scroll', revealOnScroll, { passive: true });
     revealOnScroll(); // Check on initial load
     
     return () => window.removeEventListener('scroll', revealOnScroll);

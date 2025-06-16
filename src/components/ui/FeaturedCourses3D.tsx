@@ -1,6 +1,6 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { FaGraduationCap, FaStar, FaUsers, FaClock, FaPlay } from 'react-icons/fa';
+import { FaStar, FaUsers, FaClock, FaPlay } from 'react-icons/fa';
 import IconComponent from './IconComponent';
 import { useModelPosition } from '../../utils/ModelPositionContext';
 
@@ -65,8 +65,7 @@ const FeaturedCourses3D: React.FC = () => {
     offset: ["start end", "end start"]
   });
 
-  const y = useTransform(scrollYProgress, [0, 1], [100, -100]);
-  const opacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0, 1, 1, 0]);
+  const y = useTransform(scrollYProgress, [0, 1], [50, -50]);
 
   // Register component for 3D models
   useEffect(() => {
@@ -113,13 +112,13 @@ const FeaturedCourses3D: React.FC = () => {
 
       <motion.div 
         className="container mx-auto px-4 relative z-10"
-        style={{ y, opacity }}
+        style={{ y }}
       >
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          viewport={{ once: true }}
+          viewport={{ once: true, amount: 0.1 }}
           className="text-center mb-16"
         >
           <div className="relative">
@@ -140,7 +139,7 @@ const FeaturedCourses3D: React.FC = () => {
               initial={{ opacity: 0, y: 50 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: index * 0.2 }}
-              viewport={{ once: true }}
+              viewport={{ once: true, amount: 0.1 }}
               whileHover={{ 
                 y: -10,
                 rotateY: 5,
@@ -232,7 +231,7 @@ const FeaturedCourses3D: React.FC = () => {
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.8 }}
-          viewport={{ once: true }}
+          viewport={{ once: true, amount: 0.1 }}
           className="text-center mt-12"
         >
           <motion.button

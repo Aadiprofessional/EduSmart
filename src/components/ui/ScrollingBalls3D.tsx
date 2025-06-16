@@ -12,10 +12,12 @@ const lerp = (start: number, end: number, factor: number) => {
 // 3D Pencil Component
 const AnimatedPencil: React.FC = () => {
   const groupRef = useRef<THREE.Group>(null);
-  const { getCurrentPositions, activeComponent } = useModelPosition();
   const [previousComponent, setPreviousComponent] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  
+  // Always call the hook at the top level
+  const modelPositionContext = useModelPosition();
   
   // Check for mobile screen
   useEffect(() => {
@@ -28,15 +30,16 @@ const AnimatedPencil: React.FC = () => {
   }, []);
   
   useFrame((state) => {
-    if (!groupRef.current) return;
+    if (!groupRef.current || !modelPositionContext?.getCurrentPositions) return;
     
-    const positions = getCurrentPositions();
+    const positions = modelPositionContext.getCurrentPositions();
     const targetPos = positions.pencil;
     
     // Detect component transitions
-    if (activeComponent !== previousComponent) {
+    if (modelPositionContext.activeComponent !== previousComponent) {
       setIsTransitioning(true);
-      setPreviousComponent(activeComponent);
+      setPreviousComponent(modelPositionContext.activeComponent);
+      console.log('Pencil: Active component changed from', previousComponent, 'to', modelPositionContext.activeComponent);
       setTimeout(() => setIsTransitioning(false), 1000);
     }
     
@@ -80,6 +83,11 @@ const AnimatedPencil: React.FC = () => {
       groupRef.current.visible = false;
     }
   });
+
+  // Don't render if context is not available
+  if (!modelPositionContext?.getCurrentPositions) {
+    return null;
+  }
 
   return (
     <Float speed={1.2} rotationIntensity={0.3} floatIntensity={0.2}>
@@ -136,13 +144,15 @@ const AnimatedPencil: React.FC = () => {
 // 3D Eraser Component using GLTF model
 const AnimatedEraser: React.FC = () => {
   const groupRef = useRef<THREE.Group>(null);
-  const { getCurrentPositions, activeComponent } = useModelPosition();
   const [previousComponent, setPreviousComponent] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   
   // Load the GLTF model
   const { scene } = useGLTF('/models/testing/scene.gltf');
+  
+  // Always call the hook at the top level
+  const modelPositionContext = useModelPosition();
   
   // Check for mobile screen
   useEffect(() => {
@@ -155,15 +165,16 @@ const AnimatedEraser: React.FC = () => {
   }, []);
   
   useFrame((state) => {
-    if (!groupRef.current) return;
+    if (!groupRef.current || !modelPositionContext?.getCurrentPositions) return;
     
-    const positions = getCurrentPositions();
+    const positions = modelPositionContext.getCurrentPositions();
     const targetPos = positions.eraser;
     
     // Detect component transitions
-    if (activeComponent !== previousComponent) {
+    if (modelPositionContext.activeComponent !== previousComponent) {
       setIsTransitioning(true);
-      setPreviousComponent(activeComponent);
+      setPreviousComponent(modelPositionContext.activeComponent);
+      console.log('Eraser: Active component changed from', previousComponent, 'to', modelPositionContext.activeComponent);
       setTimeout(() => setIsTransitioning(false), 1000);
     }
     
@@ -198,6 +209,11 @@ const AnimatedEraser: React.FC = () => {
     }
   });
 
+  // Don't render if context is not available
+  if (!modelPositionContext?.getCurrentPositions) {
+    return null;
+  }
+
   return (
     <Float speed={3} rotationIntensity={0.1} floatIntensity={0.05}>
       <group ref={groupRef}>
@@ -210,7 +226,6 @@ const AnimatedEraser: React.FC = () => {
 // 3D Sharpener Component using GLTF model
 const AnimatedSharpener: React.FC = () => {
   const groupRef = useRef<THREE.Group>(null);
-  const { getCurrentPositions, activeComponent } = useModelPosition();
   const [previousComponent, setPreviousComponent] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -218,6 +233,9 @@ const AnimatedSharpener: React.FC = () => {
   // Load the GLTF model
   const gltf = useGLTF('/models/scene.gltf');
   const scene = gltf?.scene;
+  
+  // Always call the hook at the top level
+  const modelPositionContext = useModelPosition();
   
   useEffect(() => {
     if (scene) {
@@ -245,20 +263,21 @@ const AnimatedSharpener: React.FC = () => {
   }, []);
   
   useFrame((state) => {
-    if (!groupRef.current) return;
+    if (!groupRef.current || !modelPositionContext?.getCurrentPositions) return;
     
-    const positions = getCurrentPositions();
+    const positions = modelPositionContext.getCurrentPositions();
     const targetPos = positions.sharpener;
     
     // Debug: Log when sharpener should be visible
-    if (targetPos.visible && activeComponent === 'sharpener') {
+    if (targetPos.visible && modelPositionContext.activeComponent === 'sharpener') {
       console.log('Sharpener should be visible at:', targetPos);
     }
     
     // Detect component transitions
-    if (activeComponent !== previousComponent) {
+    if (modelPositionContext.activeComponent !== previousComponent) {
       setIsTransitioning(true);
-      setPreviousComponent(activeComponent);
+      setPreviousComponent(modelPositionContext.activeComponent);
+      console.log('Sharpener: Active component changed from', previousComponent, 'to', modelPositionContext.activeComponent);
       setTimeout(() => setIsTransitioning(false), 1000);
     }
     
@@ -292,6 +311,11 @@ const AnimatedSharpener: React.FC = () => {
       groupRef.current.visible = false;
     }
   });
+
+  // Don't render if context is not available
+  if (!modelPositionContext?.getCurrentPositions) {
+    return null;
+  }
 
   return (
     <Float speed={3} rotationIntensity={0.1} floatIntensity={0.05}>
@@ -395,11 +419,11 @@ const Scene3D: React.FC = () => {
 
 const ScrollingBalls3D: React.FC = () => {
   return (
-    <div className="fixed inset-0 z-30 pointer-events-none">
+    <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 39 }}>
       <Canvas
         camera={{ position: [0, 0, 8], fov: 75 }}
         gl={{ antialias: true, alpha: true }}
-        style={{ background: 'transparent' }}
+        style={{ background: 'transparent', pointerEvents: 'none' }}
       >
         <Scene3D />
       </Canvas>

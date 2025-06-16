@@ -1,7 +1,7 @@
 import { Session } from '@supabase/supabase-js';
 
 // Use the same base URL and apiCall function as other APIs
-const BASE_URL = 'https://edusmart-server.vercel.app';
+const BASE_URL = 'https://edusmart-server.pages.dev';
 
 // Helper function to make API calls (same as in apiService.ts)
 const apiCall = async (method: string, endpoint: string, data: any = null, session?: Session | null) => {

@@ -39,30 +39,62 @@ const Header: React.FC = () => {
     '/ai-study',
     '/resources',
     '/blog',
+    '/profile',
  
-    '/courses',
+    
   
   ];
 
   // Check if device is mobile and handle scroll
   useEffect(() => {
     const checkIfMobile = () => {
-      setIsMobile(window.innerWidth < 1024); // Changed from 768 to 1024 for better layout
+      setIsMobile(window.innerWidth < 1024);
     };
     
     const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
+      // Simplified scroll detection - just use window.scrollY
+      const scrollPosition = window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
+      setScrolled(scrollPosition > 10);
+    };
+    
+    // Force header positioning
+    const enforceHeaderPosition = () => {
+      const header = document.querySelector('header');
+      if (header) {
+        header.style.position = 'fixed';
+        header.style.top = '0px';
+        header.style.left = '0px';
+        header.style.right = '0px';
+        header.style.width = '100vw';
+        header.style.maxWidth = '100vw';
+        header.style.zIndex = '999999';
+        header.style.transform = 'translate3d(0, 0, 0)';
+        header.style.margin = '0';
+        header.style.padding = '0';
+        header.style.boxSizing = 'border-box';
+      }
     };
     
     checkIfMobile();
     handleScroll();
+    enforceHeaderPosition();
+    
+    // Enforce positioning on every scroll
+    const combinedHandler = () => {
+      handleScroll();
+      enforceHeaderPosition();
+    };
     
     window.addEventListener('resize', checkIfMobile);
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', combinedHandler, { passive: true });
+    
+    // Also enforce on intervals to catch any CSS conflicts
+    const interval = setInterval(enforceHeaderPosition, 1000);
     
     return () => {
       window.removeEventListener('resize', checkIfMobile);
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('scroll', combinedHandler);
+      clearInterval(interval);
     };
   }, []);
 
@@ -147,11 +179,35 @@ const Header: React.FC = () => {
 
   return (
     <header 
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled 
-          ? 'bg-black/80 backdrop-blur-xl border-b border-white/10 shadow-2xl' 
-          : 'bg-transparent'
-      }`}
+      className={`header-fixed fixed top-0 left-0 right-0 z-[999999] transition-all duration-500 ease-out`}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        width: '100vw',
+        maxWidth: '100vw',
+        zIndex: 999999,
+        transform: 'translate3d(0, 0, 0)',
+        WebkitTransform: 'translate3d(0, 0, 0)',
+        backfaceVisibility: 'hidden',
+        WebkitBackfaceVisibility: 'hidden',
+        margin: 0,
+        padding: 0,
+        boxSizing: 'border-box',
+        backgroundColor: scrolled ? 'rgba(0, 0, 0, 0.8)' : 'transparent',
+        background: scrolled 
+          ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.95) 0%, rgba(147, 51, 234, 0.95) 25%, rgba(236, 72, 153, 0.95) 50%, rgba(249, 115, 22, 0.95) 75%, rgba(34, 197, 94, 0.95) 100%)' 
+          : 'transparent',
+        backdropFilter: scrolled ? 'blur(20px) saturate(200%)' : 'none',
+        boxShadow: scrolled 
+          ? '0 8px 32px rgba(59, 130, 246, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1) inset' 
+          : 'none',
+        borderBottom: scrolled ? '1px solid rgba(255, 255, 255, 0.2)' : 'none',
+        WebkitBackdropFilter: scrolled ? 'blur(20px) saturate(200%)' : 'none',
+        backgroundSize: scrolled ? '300% 300%' : '100% 100%',
+        animation: scrolled ? 'header-gradient 12s ease infinite' : 'none',
+      }}
     >
       <div className="w-full max-w-none px-4 sm:px-6 lg:px-8">
         {/* Header with logo and navigation - improved spacing and alignment */}

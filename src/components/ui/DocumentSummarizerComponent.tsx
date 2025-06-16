@@ -9,7 +9,7 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { synthwave84 } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import 'katex/dist/katex.min.css';
 import * as echarts from 'echarts';
 import { jsPDF } from 'jspdf';
@@ -146,115 +146,229 @@ const DocumentSummarizerComponent: React.FC<DocumentSummarizerComponentProps> = 
   // Initialize mindmap chart with improved styling
   useEffect(() => {
     if (mindmapRef.current && mindmapData && showMindmap) {
+      // Clean up any existing chart instance first
       if (mindmapChart.current) {
-        mindmapChart.current.dispose();
+        try {
+          mindmapChart.current.dispose();
+          mindmapChart.current = null;
+        } catch (error) {
+          console.warn('Error disposing previous chart:', error);
+          mindmapChart.current = null;
+        }
       }
       
-      mindmapChart.current = echarts.init(mindmapRef.current);
-      
-      const option = {
-        backgroundColor: 'transparent',
-        tooltip: {
-          trigger: 'item',
-          triggerOn: 'mousemove',
-          backgroundColor: 'rgba(15, 23, 42, 0.95)',
-          borderColor: 'rgba(6, 182, 212, 0.5)',
-          borderWidth: 1,
-          textStyle: {
-            color: '#e2e8f0',
-            fontSize: 12
-          },
-          formatter: function(params: any) {
-            return `<div style="padding: 8px;">
-              <div style="color: #06b6d4; font-weight: bold; margin-bottom: 4px;">${params.name}</div>
-              <div style="color: #94a3b8; font-size: 11px;">Click to expand/collapse</div>
-            </div>`;
-          }
-        },
-        series: [
-          {
-            type: 'tree',
-            data: [mindmapData],
-            top: '5%',
-            left: '7%',
-            bottom: '5%',
-            right: '20%',
-            symbolSize: [14, 14],
-            label: {
-              position: 'left',
-              verticalAlign: 'middle',
-              align: 'right',
-              fontSize: 13,
-              color: '#e2e8f0',
-              fontWeight: 'bold',
-              backgroundColor: 'rgba(15, 23, 42, 0.8)',
-              borderColor: 'rgba(6, 182, 212, 0.3)',
-              borderWidth: 1,
-              borderRadius: 4,
-              padding: [4, 8]
-            },
-            leaves: {
-              label: {
-                position: 'right',
-                verticalAlign: 'middle',
-                align: 'left',
-                color: '#94a3b8',
-                fontSize: 12,
-                backgroundColor: 'rgba(15, 23, 42, 0.6)',
-                borderColor: 'rgba(148, 163, 184, 0.2)',
-                borderWidth: 1,
-                borderRadius: 3,
-                padding: [3, 6]
+      // Add a small delay to ensure DOM is ready
+      const timeoutId = setTimeout(() => {
+        if (mindmapRef.current && showMindmap) {
+          try {
+            mindmapChart.current = echarts.init(mindmapRef.current);
+            
+            const option = {
+              backgroundColor: 'transparent',
+              // Global configuration to prevent black lines
+              color: ['#06b6d4', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#f97316', '#14b8a6'],
+              tooltip: {
+                trigger: 'item',
+                triggerOn: 'mousemove',
+                backgroundColor: 'rgba(30, 41, 59, 0.95)',
+                borderColor: 'rgba(6, 182, 212, 0.8)',
+                borderWidth: 2,
+                textStyle: {
+                  color: '#f1f5f9',
+                  fontSize: 13,
+                  fontWeight: 'bold'
+                },
+                formatter: function(params: any) {
+                  return `<div style="padding: 10px;">
+                    <div style="color: #06b6d4; font-weight: bold; margin-bottom: 6px; font-size: 14px;">${params.name}</div>
+                    <div style="color: #cbd5e1; font-size: 12px;">Click to expand/collapse</div>
+                  </div>`;
+                }
+              },
+              series: [
+                {
+                  type: 'tree',
+                  data: [mindmapData],
+                  top: '5%',
+                  left: '7%',
+                  bottom: '5%',
+                  right: '20%',
+                  symbolSize: [16, 16],
+                  label: {
+                    position: 'left',
+                    verticalAlign: 'middle',
+                    align: 'right',
+                    fontSize: 14,
+                    color: '#f1f5f9',
+                    fontWeight: 'bold',
+                    backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                    borderColor: 'rgba(6, 182, 212, 0.6)',
+                    borderWidth: 2,
+                    borderRadius: 6,
+                    padding: [6, 12],
+                    shadowBlur: 8,
+                    shadowColor: 'rgba(6, 182, 212, 0.3)'
+                  },
+                  leaves: {
+                    label: {
+                      position: 'right',
+                      verticalAlign: 'middle',
+                      align: 'left',
+                      color: '#e2e8f0',
+                      fontSize: 13,
+                      backgroundColor: 'rgba(51, 65, 85, 0.9)',
+                      borderColor: 'rgba(139, 92, 246, 0.5)',
+                      borderWidth: 2,
+                      borderRadius: 5,
+                      padding: [4, 8],
+                      shadowBlur: 6,
+                      shadowColor: 'rgba(139, 92, 246, 0.3)'
+                    }
+                  },
+                  emphasis: {
+                    focus: 'descendant',
+                    itemStyle: {
+                      color: '#0891b2',
+                      borderColor: '#06b6d4',
+                      borderWidth: 4,
+                      shadowBlur: 15,
+                      shadowColor: 'rgba(6, 182, 212, 0.7)'
+                    },
+                    label: {
+                      backgroundColor: 'rgba(6, 182, 212, 0.2)',
+                      borderColor: '#06b6d4',
+                      color: '#ffffff',
+                      fontWeight: 'bold'
+                    },
+                    lineStyle: {
+                      color: '#06b6d4',
+                      width: 6,
+                      shadowBlur: 8,
+                      shadowColor: 'rgba(6, 182, 212, 0.6)'
+                    }
+                  },
+                  expandAndCollapse: true,
+                  animationDuration: 750,
+                  animationDurationUpdate: 1000,
+                  itemStyle: {
+                    color: function(params: any) {
+                      // Use vibrant colors for nodes based on hierarchy level
+                      const nodeColors = ['#06b6d4', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#f97316', '#14b8a6'];
+                      return nodeColors[params.treeAncestors?.length % nodeColors.length] || '#06b6d4';
+                    },
+                    borderColor: function(params: any) {
+                      const borderColors = ['#0891b2', '#7c3aed', '#059669', '#d97706', '#dc2626', '#2563eb', '#ea580c', '#0d9488'];
+                      return borderColors[params.treeAncestors?.length % borderColors.length] || '#0891b2';
+                    },
+                    borderWidth: 3,
+                    shadowBlur: 10,
+                    shadowColor: function(params: any) {
+                      const shadowColors = ['rgba(6, 182, 212, 0.5)', 'rgba(139, 92, 246, 0.5)', 'rgba(16, 185, 129, 0.5)', 'rgba(245, 158, 11, 0.5)', 'rgba(239, 68, 68, 0.5)', 'rgba(59, 130, 246, 0.5)', 'rgba(249, 115, 22, 0.5)', 'rgba(20, 184, 166, 0.5)'];
+                      return shadowColors[params.treeAncestors?.length % shadowColors.length] || 'rgba(6, 182, 212, 0.5)';
+                    }
+                  },
+                  lineStyle: {
+                    // Force colorful connecting lines with multiple approaches
+                    color: '#06b6d4', // Default cyan color
+                    width: 6,
+                    curveness: 0.4,
+                    shadowBlur: 8,
+                    shadowColor: 'rgba(6, 182, 212, 0.4)',
+                    opacity: 1,
+                    type: 'solid'
+                  },
+                  // Add additional line styling options
+                  edgeStyle: {
+                    color: function(params: any) {
+                      const colors = ['#06b6d4', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#f97316', '#14b8a6'];
+                      return colors[params.dataIndex % colors.length] || '#06b6d4';
+                    },
+                    width: 6,
+                    opacity: 1
+                  }
+                }
+              ],
+              // Global text style to prevent any black text
+              textStyle: {
+                color: '#f1f5f9',
+                fontFamily: 'Inter, system-ui, sans-serif'
               }
-            },
-            emphasis: {
-              focus: 'descendant',
-              itemStyle: {
-                color: '#0891b2',
-                borderColor: '#06b6d4',
-                borderWidth: 3,
-                shadowBlur: 10,
-                shadowColor: 'rgba(6, 182, 212, 0.5)'
+            };
+            
+            mindmapChart.current.setOption(option as any);
+            
+            // Post-render fix for black lines
+            setTimeout(() => {
+              const chartContainer = mindmapRef.current;
+              if (chartContainer) {
+                const svgElements = chartContainer.querySelectorAll('svg path');
+                svgElements.forEach((path: any, index: number) => {
+                  const stroke = path.getAttribute('stroke');
+                  if (stroke === '#000000' || stroke === 'black' || stroke === '#000' || !stroke || stroke === 'none') {
+                    const colors = ['#06b6d4', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#f97316', '#14b8a6'];
+                    path.setAttribute('stroke', colors[index % colors.length]);
+                    path.setAttribute('stroke-width', '6');
+                    path.setAttribute('opacity', '1');
+                  }
+                });
               }
-            },
-            expandAndCollapse: true,
-            animationDuration: 750,
-            animationDurationUpdate: 1000,
-            itemStyle: {
-              color: '#06b6d4',
-              borderColor: '#0891b2',
-              borderWidth: 2,
-              shadowBlur: 5,
-              shadowColor: 'rgba(6, 182, 212, 0.3)'
-            },
-            lineStyle: {
-              color: '#475569',
-              width: 2,
-              curveness: 0.3,
-              shadowBlur: 3,
-              shadowColor: 'rgba(71, 85, 105, 0.5)'
-            }
+            }, 500);
+            
+            // Handle resize
+            const handleResize = () => {
+              if (mindmapChart.current && !mindmapChart.current.isDisposed()) {
+                try {
+                  mindmapChart.current.resize();
+                } catch (error) {
+                  console.warn('Error resizing chart:', error);
+                }
+              }
+            };
+            
+            window.addEventListener('resize', handleResize);
+            
+            // Store cleanup function
+            return () => {
+              window.removeEventListener('resize', handleResize);
+              if (mindmapChart.current && !mindmapChart.current.isDisposed()) {
+                try {
+                  mindmapChart.current.dispose();
+                  mindmapChart.current = null;
+                } catch (error) {
+                  console.warn('Error disposing chart on cleanup:', error);
+                  mindmapChart.current = null;
+                }
+              }
+            };
+          } catch (error) {
+            console.error('Error initializing mindmap chart:', error);
           }
-        ]
-      };
-      
-      mindmapChart.current.setOption(option as any);
-      
-      // Handle resize
-      const handleResize = () => {
-        if (mindmapChart.current) {
-          mindmapChart.current.resize();
         }
-      };
-      
-      window.addEventListener('resize', handleResize);
+      }, 100);
       
       return () => {
-        window.removeEventListener('resize', handleResize);
-        if (mindmapChart.current) {
-          mindmapChart.current.dispose();
+        clearTimeout(timeoutId);
+        if (mindmapChart.current && !mindmapChart.current.isDisposed()) {
+          try {
+            mindmapChart.current.dispose();
+            mindmapChart.current = null;
+          } catch (error) {
+            console.warn('Error disposing chart on unmount:', error);
+            mindmapChart.current = null;
+          }
         }
       };
+    } else if (!showMindmap && mindmapChart.current) {
+      // Clean up chart when hiding mindmap
+      try {
+        if (!mindmapChart.current.isDisposed()) {
+          mindmapChart.current.dispose();
+        }
+        mindmapChart.current = null;
+      } catch (error) {
+        console.warn('Error disposing chart when hiding:', error);
+        mindmapChart.current = null;
+      }
     }
   }, [mindmapData, showMindmap]);
 
@@ -265,34 +379,53 @@ const DocumentSummarizerComponent: React.FC<DocumentSummarizerComponentProps> = 
     }
   }, [summaryComplete, summary, mindmapData, isGeneratingMindmap]);
 
-  // Markdown components (same as UploadHomeworkComponent)
+  // Markdown components with colorful styling
   const markdownComponents = {
     code({ node, inline, className, children, ...props }: any) {
       const match = /language-(\w+)/.exec(className || '');
       return !inline && match ? (
         <SyntaxHighlighter
-          style={vscDarkPlus}
+          style={synthwave84}
           language={match[1]}
           PreTag="div"
-          className="rounded-lg"
+          className="rounded-lg border border-cyan-500/30 shadow-lg"
+          customStyle={{
+            background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(51, 65, 85, 0.9))',
+            border: '1px solid rgba(6, 182, 212, 0.3)',
+            borderRadius: '8px',
+            padding: '16px'
+          }}
           {...props}
         >
           {String(children).replace(/\n$/, '')}
         </SyntaxHighlighter>
       ) : (
-        <code className={`${className} bg-slate-600/50 text-cyan-300 px-2 py-1 rounded text-sm font-mono`} {...props}>
+        <code className={`${className} bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-300 px-3 py-1 rounded-md text-sm font-mono border border-cyan-500/30`} {...props}>
           {children}
         </code>
       );
     },
-    h1: ({ children }: any) => <h1 className="text-3xl font-bold text-cyan-400 mt-8 mb-4 border-b-2 border-cyan-500/30 pb-2">{children}</h1>,
-    h2: ({ children }: any) => <h2 className="text-2xl font-bold text-blue-400 mt-6 mb-3 border-b border-blue-500/30 pb-1">{children}</h2>,
-    h3: ({ children }: any) => <h3 className="text-xl font-bold text-teal-400 mt-4 mb-2 bg-teal-500/10 px-3 py-2 rounded border border-teal-500/20">{children}</h3>,
-    p: ({ children }: any) => <p className="text-slate-300 mb-4 leading-relaxed">{children}</p>,
-    ul: ({ children }: any) => <ul className="list-disc list-inside mb-4 text-slate-300 space-y-1">{children}</ul>,
-    ol: ({ children }: any) => <ol className="list-decimal list-inside mb-4 text-slate-300 space-y-1">{children}</ol>,
-    li: ({ children }: any) => <li className="mb-1 pl-2">{children}</li>,
-    strong: ({ children }: any) => <strong className="font-bold text-cyan-400 bg-cyan-500/10 px-1 rounded">{children}</strong>,
+    h1: ({ children }: any) => <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent mt-8 mb-4 border-b-2 border-cyan-500/30 pb-2">{children}</h1>,
+    h2: ({ children }: any) => <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mt-6 mb-3 border-b border-blue-500/30 pb-1">{children}</h2>,
+    h3: ({ children }: any) => <h3 className="text-xl font-bold text-teal-300 mt-4 mb-2 bg-gradient-to-r from-teal-500/20 to-cyan-500/20 px-4 py-3 rounded-lg border border-teal-500/30 shadow-lg">{children}</h3>,
+    h4: ({ children }: any) => <h4 className="text-lg font-bold text-emerald-300 mt-4 mb-2 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 px-3 py-2 rounded-lg border border-emerald-500/30">{children}</h4>,
+    h5: ({ children }: any) => <h5 className="text-base font-bold text-cyan-300 mt-3 mb-2 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 px-3 py-2 rounded-lg border border-cyan-500/30">{children}</h5>,
+    h6: ({ children }: any) => <h6 className="text-sm font-bold text-blue-300 mt-3 mb-2 bg-gradient-to-r from-blue-500/20 to-indigo-500/20 px-3 py-2 rounded-lg border border-blue-500/30">{children}</h6>,
+    p: ({ children }: any) => <p className="text-slate-200 mb-4 leading-relaxed">{children}</p>,
+    ul: ({ children }: any) => <ul className="list-disc list-inside mb-4 text-slate-200 space-y-2">{children}</ul>,
+    ol: ({ children }: any) => <ol className="list-decimal list-inside mb-4 text-slate-200 space-y-2">{children}</ol>,
+    li: ({ children }: any) => <li className="mb-1 pl-2 text-slate-200">{children}</li>,
+    strong: ({ children }: any) => <strong className="font-bold text-cyan-300 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 px-2 py-1 rounded-md border border-cyan-500/30">{children}</strong>,
+    em: ({ children }: any) => <em className="italic text-purple-300 bg-gradient-to-r from-purple-500/10 to-pink-500/10 px-1 rounded">{children}</em>,
+    blockquote: ({ children }: any) => <blockquote className="border-l-4 border-cyan-500 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 pl-4 py-2 my-4 text-slate-200 italic rounded-r-lg">{children}</blockquote>,
+    table: ({ children }: any) => <div className="overflow-x-auto my-4"><table className="min-w-full bg-gradient-to-r from-slate-600/30 to-slate-700/30 rounded-lg border border-cyan-500/30">{children}</table></div>,
+    th: ({ children }: any) => <th className="px-4 py-2 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-300 font-bold border-b border-cyan-500/30">{children}</th>,
+    td: ({ children }: any) => <td className="px-4 py-2 text-slate-200 border-b border-slate-600/30">{children}</td>,
+    // Add additional text elements to ensure no black text
+    span: ({ children }: any) => <span className="text-slate-200">{children}</span>,
+    div: ({ children }: any) => <div className="text-slate-200">{children}</div>,
+    // Override any default text styling
+    text: ({ children }: any) => <span className="text-slate-200">{children}</span>,
   };
 
   // Preprocess LaTeX for react-markdown
@@ -1433,7 +1566,10 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
             <div className="p-2 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg">
               <IconComponent icon={AiOutlineBulb} className="h-6 w-6 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-cyan-400">Document Summarizer</h2>
+            <div>
+              <h2 className="text-2xl font-bold text-cyan-400">Document Summarizer</h2>
+              <p className="text-cyan-300 text-sm mt-1 font-medium">Comprehensive analysis and key insights</p>
+            </div>
           </div>
           
           {/* Enhanced File Upload */}
@@ -1654,7 +1790,10 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
               <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
                 <IconComponent icon={AiOutlineBulb} className="h-6 w-6 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-cyan-400">Results</h2>
+              <div>
+                <h2 className="text-2xl font-bold text-cyan-400">Results</h2>
+                <p className="text-purple-300 text-sm mt-1 font-medium">AI-powered document analysis</p>
+              </div>
             </div>
             <div className="flex items-center space-x-3">
               {/* Show mindmap button only when summary is complete and mindmap is generated */}
@@ -1690,7 +1829,7 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
           </div>
           
           <motion.div
-            className="bg-gradient-to-br from-slate-600/20 to-slate-700/20 backdrop-blur-sm border border-cyan-500/20 rounded-xl p-6 overflow-y-auto h-[500px] shadow-xl"
+            className="bg-gradient-to-br from-slate-600/20 to-slate-700/20 backdrop-blur-sm border border-cyan-500/20 rounded-xl p-6 overflow-y-auto h-[660px] shadow-xl"
             variants={itemVariants}
           >
             {loading && !streamingText && pageSummaries.length === 0 ? (
@@ -2055,14 +2194,14 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
       <AnimatePresence>
         {fullScreenView && (
           <motion.div 
-            className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 backdrop-blur-xl z-50 flex items-center justify-center p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setFullScreenView(null)}
           >
             <motion.div 
-              className="bg-gradient-to-br from-slate-800/95 to-slate-900/95 backdrop-blur-sm border border-cyan-500/30 rounded-2xl p-8 max-w-7xl w-full max-h-[95vh] overflow-hidden shadow-2xl"
+              className="bg-gradient-to-br from-slate-700/95 via-slate-800/95 to-slate-900/95 backdrop-blur-xl border-2 border-cyan-500/40 rounded-3xl p-8 max-w-7xl w-full max-h-[95vh] overflow-hidden shadow-2xl"
               initial={{ scale: 0.9, opacity: 0, y: 50 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 50 }}
@@ -2071,17 +2210,17 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
             >
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center space-x-4">
-                  <div className="p-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl">
+                  <div className="p-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl shadow-lg">
                     <IconComponent 
                       icon={fullScreenView === 'mindmap' ? FiEye : AiOutlineBulb} 
                       className="h-7 w-7 text-white" 
                     />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-bold text-cyan-400">
+                    <h3 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
                       {fullScreenView === 'mindmap' ? '🧠 Interactive Mindmap' : '📄 Document Summary'}
                     </h3>
-                    <p className="text-slate-400 text-sm mt-1">
+                    <p className="text-slate-300 text-base mt-2 font-medium">
                       {fullScreenView === 'mindmap' 
                         ? 'Explore the hierarchical structure of your document' 
                         : 'Comprehensive analysis and key insights'
@@ -2093,28 +2232,28 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
                   {fullScreenView === 'summary' && summaryComplete && mindmapData && (
                     <motion.button
                       onClick={() => setFullScreenView('mindmap')}
-                      className="flex items-center px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300"
+                      className="flex items-center px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
-                      <IconComponent icon={FiEye} className="h-4 w-4 mr-2" />
+                      <IconComponent icon={FiEye} className="h-5 w-5 mr-2" />
                       View Mindmap
                     </motion.button>
                   )}
                   {fullScreenView === 'mindmap' && (
                     <motion.button
                       onClick={() => setFullScreenView('summary')}
-                      className="flex items-center px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300"
+                      className="flex items-center px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
-                      <IconComponent icon={AiOutlineBulb} className="h-4 w-4 mr-2" />
+                      <IconComponent icon={AiOutlineBulb} className="h-5 w-5 mr-2" />
                       View Summary
                     </motion.button>
                   )}
                   <motion.button
                     onClick={() => setFullScreenView(null)}
-                    className="text-slate-400 hover:text-slate-300 p-3 rounded-xl hover:bg-slate-700/50 transition-all duration-300"
+                    className="text-slate-300 hover:text-white p-3 rounded-xl bg-slate-600/50 hover:bg-slate-500/50 transition-all duration-300 border border-slate-500/30"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
@@ -2127,18 +2266,18 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
               
               <div className="overflow-y-auto max-h-[calc(95vh-12rem)] custom-scrollbar">
                 {fullScreenView === 'mindmap' && mindmapData ? (
-                  <div className="h-[75vh] bg-gradient-to-br from-slate-700/20 to-slate-800/20 rounded-xl border border-cyan-500/20">
-                    <div ref={mindmapRef} className="w-full h-full rounded-xl" />
+                  <div className="h-[75vh] bg-gradient-to-br from-slate-600/30 via-slate-700/30 to-slate-800/30 rounded-2xl border-2 border-cyan-500/30 shadow-inner">
+                    <div ref={mindmapRef} className="w-full h-full rounded-2xl" />
                   </div>
                 ) : summary ? (
-                  <div className="bg-gradient-to-br from-slate-700/20 to-slate-800/20 rounded-xl p-8 border border-cyan-500/20">
+                  <div className="bg-gradient-to-br from-slate-600/30 via-slate-700/30 to-slate-800/30 rounded-2xl p-8 border-2 border-cyan-500/30 shadow-inner">
                     <div
                       className="prose prose-xl max-w-none
-                        prose-headings:text-cyan-400 
-                        prose-p:text-slate-300 prose-p:leading-relaxed prose-p:text-lg
-                        prose-strong:text-slate-200 prose-strong:font-bold
+                        prose-headings:text-cyan-400 prose-headings:font-bold
+                        prose-p:text-slate-200 prose-p:leading-relaxed prose-p:text-lg
+                        prose-strong:text-slate-100 prose-strong:font-bold
                         prose-ul:space-y-2 prose-ol:space-y-2
-                        prose-li:marker:text-cyan-400 prose-li:text-slate-300 prose-li:text-lg
+                        prose-li:marker:text-cyan-400 prose-li:text-slate-200 prose-li:text-lg
                         prose-code:bg-slate-600/50 prose-code:text-cyan-300 prose-code:px-2 prose-code:py-1 prose-code:rounded"
                     >
                       <ReactMarkdown
@@ -2161,24 +2300,107 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
       <style dangerouslySetInnerHTML={{
         __html: `
           .custom-scrollbar::-webkit-scrollbar {
-            width: 8px;
+            width: 10px;
           }
           .custom-scrollbar::-webkit-scrollbar-track {
-            background: rgba(51, 65, 85, 0.3);
-            border-radius: 4px;
+            background: rgba(51, 65, 85, 0.4);
+            border-radius: 6px;
           }
           .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(6, 182, 212, 0.5);
-            border-radius: 4px;
+            background: linear-gradient(45deg, #06b6d4, #8b5cf6);
+            border-radius: 6px;
+            border: 2px solid rgba(51, 65, 85, 0.4);
           }
           .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: rgba(6, 182, 212, 0.7);
+            background: linear-gradient(45deg, #0891b2, #7c3aed);
           }
           .line-clamp-2 {
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
+          }
+          
+          /* Force override any black text in the component */
+          .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+            color: inherit !important;
+          }
+          
+          /* Ensure all text elements have proper colors */
+          .prose * {
+            color: inherit !important;
+          }
+          
+          /* Force all paragraph and text content to be light colored */
+          .prose p, .prose div, .prose span, .prose text {
+            color: #e2e8f0 !important;
+          }
+          
+          /* Force all list items and their content */
+          .prose ul li, .prose ol li, .prose li * {
+            color: #e2e8f0 !important;
+          }
+          
+          /* Override any default markdown styling that might be black */
+          .prose .markdown-body h1,
+          .prose .markdown-body h2,
+          .prose .markdown-body h3,
+          .prose .markdown-body h4,
+          .prose .markdown-body h5,
+          .prose .markdown-body h6 {
+            color: inherit !important;
+          }
+          
+          .prose .markdown-body p,
+          .prose .markdown-body div,
+          .prose .markdown-body span,
+          .prose .markdown-body li {
+            color: #e2e8f0 !important;
+          }
+          
+          /* Force all text in the document summarizer to never be black */
+          [class*="DocumentSummarizerComponent"] * {
+            color: inherit !important;
+          }
+          
+          /* Specific overrides for ReactMarkdown content */
+          .prose-p\\:text-slate-300 p,
+          .prose-li\\:text-slate-300 li,
+          .prose-strong\\:text-slate-200 strong {
+            color: #e2e8f0 !important;
+          }
+          
+          /* Override any possible black text from external libraries */
+          .prose-headings\\:text-cyan-400 h1,
+          .prose-headings\\:text-cyan-400 h2,
+          .prose-headings\\:text-cyan-400 h3,
+          .prose-headings\\:text-cyan-400 h4,
+          .prose-headings\\:text-cyan-400 h5,
+          .prose-headings\\:text-cyan-400 h6 {
+            color: #22d3ee !important;
+          }
+          
+          .prose-headings\\:text-purple-400 h1,
+          .prose-headings\\:text-purple-400 h2,
+          .prose-headings\\:text-purple-400 h3,
+          .prose-headings\\:text-purple-400 h4,
+          .prose-headings\\:text-purple-400 h5,
+          .prose-headings\\:text-purple-400 h6 {
+            color: #c084fc !important;
+          }
+          
+          /* Force ECharts mindmap lines to be colorful */
+          .echarts-for-react svg path {
+            stroke: #06b6d4 !important;
+            stroke-width: 6 !important;
+          }
+          
+          /* Alternative ECharts line styling */
+          svg[class*="echarts"] path[stroke="#000000"],
+          svg[class*="echarts"] path[stroke="black"],
+          svg[class*="echarts"] path[stroke="#000"] {
+            stroke: #06b6d4 !important;
+            stroke-width: 6 !important;
           }
         `
       }} />

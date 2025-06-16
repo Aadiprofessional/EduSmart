@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Environment-aware base URL configuration
-const BASE_URL = 'https://edusmart-server.vercel.app'; // Force production URL for now
+const BASE_URL = 'https://edusmart-server.pages.dev'; // Force production URL for now
 
 // Helper function to make API calls
 const apiCall = async (method: string, endpoint: string, data: any = null) => {

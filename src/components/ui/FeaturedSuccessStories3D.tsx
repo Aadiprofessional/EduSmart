@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { FaQuoteLeft, FaStar, FaGraduationCap, FaArrowRight } from 'react-icons/fa';
+import { FaQuoteLeft, FaStar, FaGraduationCap, FaMapMarkerAlt, FaArrowRight } from 'react-icons/fa';
 import IconComponent from './IconComponent';
 import { useModelPosition } from '../../utils/ModelPositionContext';
 
@@ -56,32 +56,31 @@ const FeaturedSuccessStories3D: React.FC = () => {
     offset: ["start end", "end start"]
   });
 
-  const y = useTransform(scrollYProgress, [0, 1], [80, -80]);
-  const opacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0, 1, 1, 0]);
+  const y = useTransform(scrollYProgress, [0, 1], [50, -50]);
 
   // Register component for 3D models
   useEffect(() => {
     if (containerRef.current) {
       registerComponent('success-stories', containerRef.current, {
         pencil: {
-          x: 300,  // 300px to the right of component center (near title)
-          y: -200, // 200px above component center
-          z: 3,
-          scale: 1.0,
-          rotation: { x: 0.2, y: -0.9, z: 1.6 },
+          x: -300,    // Centered horizontally
+          y: -100, // 200px above component center
+          z: 2,
+          scale: 1.8,
+          rotation: { x: 0, y: 0, z: 2.8 },
           visible: true
         },
         eraser: {
-          x: -750, // 350px to the left of component center (near "View All" button area)
-          y: 450,  // 250px below component center
-          z: 2,
-          scale: 1,
+          x: 600, // 400px to the left of component center
+          y: 200, // 200px above component center
+          z: 1,
+          scale: 1.2,
           visible: true
         },
         sharpener: {
-          x: 250,  // 350px to the right of component center (near "View All" button area)
-          y: 250,  // 250px below component center
-          z: 2,
+          x: -800,  // 400px to the right of component center
+          y: 300, // 200px above component center
+          z: 1,
           scale: 0.02,
           visible: true
         }
@@ -94,32 +93,32 @@ const FeaturedSuccessStories3D: React.FC = () => {
   }, [registerComponent, unregisterComponent]);
 
   return (
-    <section ref={containerRef} className="py-20 bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 relative overflow-hidden">
+    <section ref={containerRef} className="py-20 bg-gradient-to-br from-purple-900 via-indigo-900 to-purple-900 relative overflow-hidden">
       {/* Background Effects */}
       <div className="absolute inset-0 opacity-20">
-        <div className="absolute top-20 right-20 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 left-20 w-80 h-80 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-2000"></div>
+        <div className="absolute top-20 left-10 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-2000"></div>
       </div>
 
       <motion.div 
         className="container mx-auto px-4 relative z-10"
-        style={{ y, opacity }}
+        style={{ y }}
       >
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          viewport={{ once: true }}
+          viewport={{ once: true, amount: 0.1 }}
           className="text-center mb-16"
         >
           <div className="relative">
-            <h2 className="text-5xl md:text-6xl font-bold text-white mb-6 bg-gradient-to-r from-purple-400 via-indigo-500 to-blue-500 bg-clip-text text-transparent">
+            <h2 className="text-5xl md:text-6xl font-bold text-white mb-6 bg-gradient-to-r from-purple-400 via-pink-500 to-indigo-500 bg-clip-text text-transparent">
               Success Stories
             </h2>
           </div>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-            Discover how our students achieved their dreams with personalized AI-powered education
+            Hear from students who have transformed their academic journey with EduSmart
           </p>
         </motion.div>
 
@@ -131,7 +130,7 @@ const FeaturedSuccessStories3D: React.FC = () => {
               initial={{ opacity: 0, y: 50 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: index * 0.2 }}
-              viewport={{ once: true }}
+              viewport={{ once: true, amount: 0.1 }}
               whileHover={{ 
                 y: -10,
                 scale: 1.02
@@ -199,7 +198,7 @@ const FeaturedSuccessStories3D: React.FC = () => {
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.8 }}
-          viewport={{ once: true }}
+          viewport={{ once: true, amount: 0.1 }}
           className="text-center"
         >
           <motion.button

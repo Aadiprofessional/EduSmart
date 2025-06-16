@@ -78,30 +78,55 @@ export const ModelPositionProvider: React.FC<{ children: React.ReactNode }> = ({
   // Determine active component based on viewport center
   useEffect(() => {
     const updateActiveComponent = () => {
-      const viewportCenter = window.scrollY + window.innerHeight / 2;
+      // Use more reliable scroll position detection
+      const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
+      const viewportCenter = scrollY + window.innerHeight / 2;
       let closestComponent: string | null = null;
       let minDistance = Infinity;
 
       components.forEach(component => {
         const rect = component.element.getBoundingClientRect();
-        const elementCenter = rect.top + window.scrollY + rect.height / 2;
+        const elementCenter = rect.top + scrollY + rect.height / 2;
         const distance = Math.abs(elementCenter - viewportCenter);
         
-        // Check if element is significantly visible in viewport
-        const isVisible = rect.top < window.innerHeight * 0.8 && rect.bottom > window.innerHeight * 0.2;
+        // More lenient visibility check - component should be at least partially visible
+        const isVisible = rect.bottom > 0 && rect.top < window.innerHeight;
         
-        if (isVisible && distance < minDistance) {
+        // Additional check: component should be significantly in view (at least 20% visible)
+        const visibleHeight = Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0);
+        const visibilityRatio = visibleHeight / rect.height;
+        const isSignificantlyVisible = visibilityRatio > 0.2;
+        
+        if (isVisible && isSignificantlyVisible && distance < minDistance) {
           minDistance = distance;
           closestComponent = component.id;
         }
       });
 
+      // If no component is significantly visible, find the closest one that's at least partially visible
+      if (!closestComponent) {
+        components.forEach(component => {
+          const rect = component.element.getBoundingClientRect();
+          const elementCenter = rect.top + scrollY + rect.height / 2;
+          const distance = Math.abs(elementCenter - viewportCenter);
+          
+          const isVisible = rect.bottom > 0 && rect.top < window.innerHeight;
+          
+          if (isVisible && distance < minDistance) {
+            minDistance = distance;
+            closestComponent = component.id;
+          }
+        });
+      }
+
       if (closestComponent !== activeComponent) {
+        console.log('Active component changed from', activeComponent, 'to', closestComponent);
         setActiveComponent(closestComponent);
       }
     };
 
     const handleScroll = () => {
+      // Use requestAnimationFrame for smooth updates while maintaining responsiveness
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
@@ -111,12 +136,13 @@ export const ModelPositionProvider: React.FC<{ children: React.ReactNode }> = ({
     // Initial update
     updateActiveComponent();
     
+    // Use direct scroll event without throttling for better responsiveness
     window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('resize', handleScroll, { passive: true });
+    window.addEventListener('resize', updateActiveComponent, { passive: true });
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', handleScroll);
+      window.removeEventListener('resize', updateActiveComponent);
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }

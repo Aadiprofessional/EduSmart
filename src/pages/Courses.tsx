@@ -47,7 +47,7 @@ import PageHeader from '../components/ui/PageHeader';
 import IconComponent from '../components/ui/IconComponent';
 
 // Enhanced API service
-const API_BASE = 'https://edusmart-server.vercel.app/api/v2';
+const API_BASE = 'https://edusmart-server.pages.dev/api';
 
 interface Course {
   id: string;
@@ -189,17 +189,18 @@ const Courses: React.FC = () => {
       setError(null);
       
       const params = new URLSearchParams();
+      params.append('page', '1');
+      params.append('limit', '50'); // Get more courses for better UX
       if (searchQuery) params.append('search', searchQuery);
       if (activeCategory) params.append('category', activeCategory);
       if (activeLevel) params.append('level', activeLevel);
       if (priceRange[0] > 0) params.append('price_min', priceRange[0].toString());
       if (priceRange[1] < 200) params.append('price_max', priceRange[1].toString());
-      params.append('sort_by', sortBy);
       
       const response = await fetch(`${API_BASE}/courses?${params}`);
       const data = await response.json();
       
-      if (data.success) {
+      if (response.ok && data.success && data.data) {
         setCourses(data.data.courses || []);
       } else {
         throw new Error(data.error || 'Failed to fetch courses');
@@ -215,11 +216,17 @@ const Courses: React.FC = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch(`${API_BASE}/course-categories`);
+      const response = await fetch(`${API_BASE}/courses/categories`);
       const data = await response.json();
       
-      if (data.success) {
-        setCategories(data.data.categories || []);
+      if (response.ok && data.success && data.data) {
+        // Convert categories array to the expected format
+        const formattedCategories = data.data.categories.map((cat: string, index: number) => ({
+          id: index.toString(),
+          name: cat,
+          slug: cat.toLowerCase().replace(/\s+/g, '-')
+        }));
+        setCategories(formattedCategories);
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -233,7 +240,7 @@ const Courses: React.FC = () => {
       const response = await fetch(`${API_BASE}/users/${user.id}/enrollments`);
       const data = await response.json();
       
-      if (data.success) {
+      if (data.success && data.data) {
         const enrolledCourseIds = data.data.enrollments.map((e: any) => e.course_id);
         setEnrolledCourses(enrolledCourseIds);
       }
@@ -250,11 +257,10 @@ const Courses: React.FC = () => {
       const response = await fetch(`${API_BASE}/courses/${courseId}`);
       const data = await response.json();
       
-      if (data.success) {
+      if (response.ok && data.success && data.data) {
         setSelectedCourse(data.data.course);
-        if (data.data.course.course_sections) {
-          setCourseSections(data.data.course.course_sections);
-        }
+        // Note: Course sections would need to be fetched separately if needed
+        // as our tested API doesn't include sections in the course details
       } else {
         throw new Error(data.error || 'Course not found');
       }
@@ -569,7 +575,7 @@ const Courses: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 whileHover={{ y: -5 }}
-                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer"
+                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col h-full"
                 onClick={() => {
                   setSelectedCourse(course);
                   setCurrentView('details');
@@ -605,14 +611,14 @@ const Courses: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="p-6">
+                <div className="p-6 flex flex-col flex-grow">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-blue-600 font-semibold capitalize">{course.category}</span>
                     <span className="text-sm text-gray-500 capitalize">{course.level}</span>
                   </div>
                   
-                  <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">{course.title}</h3>
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">{course.description}</p>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 min-h-[3.5rem]">{course.title}</h3>
+                  <p className="text-gray-600 text-sm mb-4 line-clamp-2 min-h-[2.5rem] flex-grow">{course.description}</p>
                   
                   <div className="flex items-center gap-4 mb-4 text-sm text-gray-500">
                     <div className="flex items-center gap-1">
@@ -641,7 +647,7 @@ const Courses: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 mt-auto">
                     {isEnrolled(course.id) ? (
                       <button
                         onClick={(e) => {
