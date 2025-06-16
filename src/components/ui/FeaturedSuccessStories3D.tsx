@@ -21,7 +21,7 @@ const sampleStories: SuccessStory[] = [
     id: '1',
     name: 'Sarah Chen',
     achievement: 'Accepted to MIT',
-    story: 'EduSmart\'s AI tutoring helped me master calculus and physics, leading to my acceptance at MIT for Computer Science.',
+    story: 'MatrixEdu\'s AI tutoring helped me master calculus and physics, leading to my acceptance at MIT for Computer Science.',
     image: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=400',
     rating: 5,
     university: 'MIT',
@@ -41,7 +41,7 @@ const sampleStories: SuccessStory[] = [
     id: '3',
     name: 'Emily Rodriguez',
     achievement: 'Career Transformation',
-    story: 'Transitioned from marketing to data science with EduSmart\'s comprehensive courses and mentorship program.',
+    story: 'Transitioned from marketing to data science with MatrixEdu\'s comprehensive courses and mentorship program.',
     image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400',
     rating: 5,
     course: 'Data Science'
@@ -63,8 +63,8 @@ const FeaturedSuccessStories3D: React.FC = () => {
     if (containerRef.current) {
       registerComponent('success-stories', containerRef.current, {
         pencil: {
-          x: -300,    // Centered horizontally
-          y: -100, // 200px above component center
+          x: 500,    // Centered horizontally
+          y: -300, // 200px above component center
           z: 2,
           scale: 1.8,
           rotation: { x: 0, y: 0, z: 2.8 },
@@ -118,7 +118,7 @@ const FeaturedSuccessStories3D: React.FC = () => {
             </h2>
           </div>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-            Hear from students who have transformed their academic journey with EduSmart
+            Hear from students who have transformed their academic journey with MatrixEdu
           </p>
         </motion.div>
 

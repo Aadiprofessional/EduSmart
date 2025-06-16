@@ -3,42 +3,24 @@ import { gsap } from 'gsap';
 
 const MagneticCursor: React.FC = () => {
   const cursorRef = useRef<HTMLDivElement>(null);
-  const cursorDotRef = useRef<HTMLDivElement>(null);
   const [isHovering, setIsHovering] = useState(false);
 
   useEffect(() => {
     const cursor = cursorRef.current;
-    const cursorDot = cursorDotRef.current;
-    
-    if (!cursor || !cursorDot) return;
+    if (!cursor) return;
 
-    let mouseX = 0;
-    let mouseY = 0;
-    let cursorX = 0;
-    let cursorY = 0;
-
-    // Mouse move handler
+    // High-performance mouse tracking with immediate response
     const handleMouseMove = (e: MouseEvent) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
+      // Use requestAnimationFrame for smooth 60fps updates but immediate positioning
+      requestAnimationFrame(() => {
+        if (cursor) {
+          cursor.style.left = `${e.clientX - 20}px`;
+          cursor.style.top = `${e.clientY - 20}px`;
+        }
+      });
     };
 
-    // Animation loop
-    const animateCursor = () => {
-      const speed = 0.15;
-      
-      cursorX += (mouseX - cursorX) * speed;
-      cursorY += (mouseY - cursorY) * speed;
-
-      if (cursor && cursorDot) {
-        cursor.style.transform = `translate(${cursorX - 20}px, ${cursorY - 20}px)`;
-        cursorDot.style.transform = `translate(${mouseX - 4}px, ${mouseY - 4}px)`;
-      }
-
-      requestAnimationFrame(animateCursor);
-    };
-
-    // Handle magnetic elements
+    // Handle magnetic elements with reduced effect for better control
     const handleMagneticElements = () => {
       const magneticElements = document.querySelectorAll('[data-magnetic]');
       
@@ -47,9 +29,9 @@ const MagneticCursor: React.FC = () => {
           setIsHovering(true);
           
           gsap.to(cursor, {
-            scale: 2,
-            duration: 0.3,
-            ease: "power2.out"
+            scale: 1.2,
+            duration: 0.15,
+            ease: "power1.out"
           });
         };
 
@@ -58,15 +40,15 @@ const MagneticCursor: React.FC = () => {
           
           gsap.to(cursor, {
             scale: 1,
-            duration: 0.3,
-            ease: "power2.out"
+            duration: 0.15,
+            ease: "power1.out"
           });
 
           gsap.to(element, {
             x: 0,
             y: 0,
-            duration: 0.5,
-            ease: "power2.out"
+            duration: 0.2,
+            ease: "power1.out"
           });
         };
 
@@ -76,14 +58,14 @@ const MagneticCursor: React.FC = () => {
           const centerX = rect.left + rect.width / 2;
           const centerY = rect.top + rect.height / 2;
           
-          const deltaX = (mouseEvent.clientX - centerX) * 0.2;
-          const deltaY = (mouseEvent.clientY - centerY) * 0.2;
+          const deltaX = (mouseEvent.clientX - centerX) * 0.1;
+          const deltaY = (mouseEvent.clientY - centerY) * 0.1;
 
           gsap.to(element, {
             x: deltaX,
             y: deltaY,
-            duration: 0.3,
-            ease: "power2.out"
+            duration: 0.15,
+            ease: "power1.out"
           });
         };
 
@@ -93,7 +75,7 @@ const MagneticCursor: React.FC = () => {
       });
     };
 
-    // Handle clickable elements
+    // Handle clickable elements with subtle effects
     const handleClickableElements = () => {
       const clickableElements = document.querySelectorAll('button, a, [role="button"]');
       
@@ -101,10 +83,9 @@ const MagneticCursor: React.FC = () => {
         const handleMouseEnter = () => {
           setIsHovering(true);
           gsap.to(cursor, {
-            scale: 1.5,
-            backgroundColor: 'rgba(59, 130, 246, 0.3)',
-            duration: 0.3,
-            ease: "power2.out"
+            scale: 1.1,
+            duration: 0.1,
+            ease: "power1.out"
           });
         };
 
@@ -112,9 +93,8 @@ const MagneticCursor: React.FC = () => {
           setIsHovering(false);
           gsap.to(cursor, {
             scale: 1,
-            backgroundColor: 'rgba(255, 255, 255, 0.1)',
-            duration: 0.3,
-            ease: "power2.out"
+            duration: 0.1,
+            ease: "power1.out"
           });
         };
 
@@ -123,9 +103,8 @@ const MagneticCursor: React.FC = () => {
       });
     };
 
-    // Initialize
-    document.addEventListener('mousemove', handleMouseMove);
-    animateCursor();
+    // Initialize with passive listeners for better performance
+    document.addEventListener('mousemove', handleMouseMove, { passive: true });
     handleMagneticElements();
     handleClickableElements();
 
@@ -139,39 +118,37 @@ const MagneticCursor: React.FC = () => {
   }, []);
 
   return (
-    <>
-      {/* Main cursor with magnifying effect */}
+    <div
+      ref={cursorRef}
+      className="fixed w-10 h-10 pointer-events-none z-[9999]"
+      style={{
+        background: 'transparent',
+        borderRadius: '50%',
+        backdropFilter: 'blur(0.5px) brightness(1.6) contrast(1.3) saturate(1.2)',
+        border: '1px solid rgba(255, 255, 255, 0.5)',
+        boxShadow: '0 0 15px rgba(255, 255, 255, 0.3), inset 0 0 15px rgba(255, 255, 255, 0.15)',
+        willChange: 'transform, left, top',
+        transform: 'translateZ(0)',
+      }}
+    >
+      {/* Magnifying glass lens effect */}
       <div
-        ref={cursorRef}
-        className="fixed top-0 left-0 w-10 h-10 pointer-events-none z-[9999]"
+        className="absolute inset-0 rounded-full"
         style={{
-          background: 'rgba(255, 255, 255, 0.1)',
-          borderRadius: '50%',
-          backdropFilter: 'blur(2px) brightness(1.4) contrast(1.3) saturate(1.2)',
-          border: '2px solid rgba(255, 255, 255, 0.3)',
-          boxShadow: '0 0 15px rgba(59, 130, 246, 0.3), inset 0 0 15px rgba(255, 255, 255, 0.1)',
-          mixBlendMode: 'normal',
+          background: 'radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.08) 45%, transparent 75%)',
+          pointerEvents: 'none',
         }}
-      >
-        {/* Inner magnifying lens effect */}
-        <div
-          className="absolute inset-1 rounded-full"
-          style={{
-            background: 'radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.4) 0%, transparent 60%)',
-            pointerEvents: 'none',
-          }}
-        />
-        
-        {/* Subtle crosshairs for magnifying glass effect */}
-      
-      </div>
-
-      {/* Cursor dot */}
-      <div
-        ref={cursorDotRef}
-        className="fixed top-0 left-0 w-2 h-2 bg-white rounded-full pointer-events-none z-[9999] mix-blend-difference opacity-60"
       />
-    </>
+      
+      {/* Precision center dot */}
+      <div
+        className="absolute top-1/2 left-1/2 w-0.5 h-0.5 bg-white rounded-full opacity-70"
+        style={{
+          transform: 'translate(-50%, -50%)',
+          pointerEvents: 'none',
+        }}
+      />
+    </div>
   );
 };
 

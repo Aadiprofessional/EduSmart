@@ -68,11 +68,12 @@ const Hero3D: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.5 }}
           >
-            <h1 className="text-6xl md:text-8xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-              EduSmart
+                       <h1 className="text-6xl md:text-8xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+              MatrixEdu
+
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-gray-300">
-              {t('hero.subtitle') || 'EduSmart leverages AI to provide personalized, expert-level tutoring, making quality education accessible for all students and fostering efficient learning and confident growth. We also offer comprehensive study abroad support, including AI-driven university matching, customized application strategies, essay optimization, and visa guidance to boost admission success. Through advanced technology, EduSmart ensures fairer, more efficient access to global educational resources, empowering every student to achieve their academic goals.'}
+              {t('hero.subtitle') || 'MatrixEdu leverages AI to provide personalized, expert-level tutoring, making quality education accessible for all students and fostering efficient learning and confident growth. We also offer comprehensive study abroad support, including AI-driven university matching, customized application strategies, essay optimization, and visa guidance to boost admission success. Through advanced technology, MatrixEdu ensures fairer, more efficient access to global educational resources, empowering every student to achieve their academic goals.'}
             </p>
           </motion.div>
 

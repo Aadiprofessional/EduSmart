@@ -1,7 +1,7 @@
 # AI Components Documentation
 
 ## Overview
-This document describes the AI-powered components in the EduSmart application, including the Check Mistakes component and AI Tutor Chat component.
+This document describes the AI-powered components in the MatrixEdu application, including the Check Mistakes component and AI Tutor Chat component.
 
 ## Components
 

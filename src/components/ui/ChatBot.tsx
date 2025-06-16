@@ -14,14 +14,14 @@ const preDefinedCommands = [
   { command: 'help', description: 'Display available commands', icon: <IconComponent icon={FaQuestion} /> },
   { command: 'courses', description: 'Show featured courses', icon: <IconComponent icon={FaGraduationCap} /> },
   { command: 'schedule', description: 'View upcoming events', icon: <IconComponent icon={FaCalendarAlt} /> },
-  { command: 'about', description: 'Learn about EduSmart', icon: <IconComponent icon={FaInfo} /> },
+  { command: 'about', description: 'Learn about MatrixEdu', icon: <IconComponent icon={FaInfo} /> },
 ];
 
 const ChatBot: React.FC = () => {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { id: 1, text: 'Hello! How can I assist you with EduSmart today?', sender: 'bot' },
+    { id: 1, text: 'Hello! How can I assist you with MatrixEdu today?', sender: 'bot' },
   ]);
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -61,7 +61,7 @@ const ChatBot: React.FC = () => {
       case 'schedule':
         return 'Upcoming Events: AI Symposium (May 15), Career Fair (June 2), Programming Workshop (June 10)';
       case 'about':
-        return 'EduSmart is your one-stop platform for educational resources, courses, scholarships, and career planning. We help students and professionals navigate their learning journey with smart tools and curated content.';
+        return 'MatrixEdu is your one-stop platform for educational resources, courses, scholarships, and career planning. We help students and professionals navigate their learning journey with smart tools and curated content.';
       default:
         return `I don't recognize that command. Type 'help' to see available commands.`;
     }
@@ -143,7 +143,7 @@ const ChatBot: React.FC = () => {
             {/* Chat header */}
             <div className="bg-teal-700 text-white p-3">
               <h3 className="font-bold flex items-center">
-                <IconComponent icon={FaRobot} className="mr-2" /> EduSmart Assistant
+                <IconComponent icon={FaRobot} className="mr-2" /> MatrixEdu Assistant
               </h3>
             </div>
 

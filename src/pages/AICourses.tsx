@@ -323,7 +323,7 @@ const AICourses: React.FC = () => {
       video_preview_url: "https://www.youtube.com/watch?v=21EiKfQYZXc",
       course_materials: null,
       tags: ["AI", "Business", "Strategy"],
-      created_by: "coursera-admin",
+      created_by: "matrixedu-admin",
       created_at: "2024-01-01T00:00:00Z",
       updated_at: "2024-01-01T00:00:00Z"
     },
@@ -385,7 +385,7 @@ const AICourses: React.FC = () => {
       video_preview_url: "https://www.youtube.com/watch?v=example1",
       course_materials: null,
       tags: ["ChatGPT", "Writing", "Tutorial"],
-      created_by: "edusmart-admin",
+      created_by: "matrixedu-admin",
       created_at: "2024-01-01T00:00:00Z",
       updated_at: "2024-01-01T00:00:00Z"
     },
@@ -416,7 +416,7 @@ const AICourses: React.FC = () => {
       video_preview_url: "https://www.youtube.com/watch?v=example2",
       course_materials: null,
       tags: ["University", "Research", "Tutorial"],
-      created_by: "edusmart-admin",
+      created_by: "matrixedu-admin",
       created_at: "2024-01-01T00:00:00Z",
       updated_at: "2024-01-01T00:00:00Z"
     },

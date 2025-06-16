@@ -203,7 +203,7 @@ const ReadyToTransformSection: React.FC = () => {
             />
           </div>
           <p className="text-xl md:text-2xl text-gray-300 mb-12">
-            Join thousands of students who are already experiencing the future of education with EduSmart's AI-powered learning platform.
+            Join thousands of students who are already experiencing the future of education with MatrixEdu's AI-powered learning platform.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">

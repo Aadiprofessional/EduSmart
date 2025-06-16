@@ -44,7 +44,7 @@ export interface Translations {
       title: string;
       subtitle: string;
       createAccount: string;
-      joinEduSmart: string;
+      joinMatrixEdu: string;
       nameLabel: string;
       emailLabel: string;
       passwordLabel: string;
@@ -796,10 +796,10 @@ export const translations: Record<Language, Translations> = {
     },
     auth: {
       login: {
-        title: 'Login',
-        subtitle: 'Sign in to your account',
-        welcomeBack: 'Welcome Back',
-        signInToAccount: 'Sign in to your EduSmart account',
+        title: 'Welcome Back',
+        subtitle: 'Access your personalized learning dashboard',
+        welcomeBack: 'Welcome back!',
+        signInToAccount: 'Sign in to your MatrixEdu account',
         emailLabel: 'Email',
         passwordLabel: 'Password',
         emailPlaceholder: 'Enter your email',
@@ -808,18 +808,18 @@ export const translations: Record<Language, Translations> = {
         forgotPassword: 'Forgot password?',
         signInButton: 'Sign In',
         orSignInWith: 'Or sign in with',
-        noAccount: "Don't have an account?",
-        createAccount: 'Create an account',
+        noAccount: 'Don\'t have an account?',
+        createAccount: 'Create account',
         emailRequired: 'Email is required',
         emailInvalid: 'Email is invalid',
         passwordRequired: 'Password is required',
-        signInError: 'An error occurred during sign in',
+        signInError: 'Failed to sign in. Please check your credentials.',
       },
       signup: {
-        title: 'Sign Up',
-        subtitle: 'Create your account',
-        createAccount: 'Create an Account',
-        joinEduSmart: 'Join EduSmart to access all features and resources',
+        title: 'Create Account',
+        subtitle: 'Join thousands of students on their learning journey',
+        createAccount: 'Create your account',
+        joinMatrixEdu: 'Join MatrixEdu to access all features and resources',
         nameLabel: 'Full Name',
         emailLabel: 'Email',
         passwordLabel: 'Password',
@@ -831,11 +831,11 @@ export const translations: Record<Language, Translations> = {
         agreeToTerms: 'I agree to the',
         termsAndConditions: 'Terms and Conditions',
         privacyPolicy: 'Privacy Policy',
-        signUpButton: 'Sign Up',
+        signUpButton: 'Create Account',
         orSignUpWith: 'Or sign up with',
         haveAccount: 'Already have an account?',
         signIn: 'Sign in',
-        nameRequired: 'Name is required',
+        nameRequired: 'Full name is required',
         emailRequired: 'Email is required',
         emailInvalid: 'Email is invalid',
         passwordRequired: 'Password is required',
@@ -848,16 +848,16 @@ export const translations: Record<Language, Translations> = {
       },
     },
     hero: {
-      title: 'EduSmart - AI-Powered Education Platform',
-      subtitle: 'EduSmart leverages AI to provide personalized, expert-level tutoring, making quality education accessible for all students and fostering efficient learning and confident growth. We also offer comprehensive study abroad support, including AI-driven university matching, customized application strategies, essay optimization, and visa guidance to boost admission success. Through advanced technology, EduSmart ensures fairer, more efficient access to global educational resources, empowering every student to achieve their academic goals.',
+      title: 'MatrixEdu - AI-Powered Education Platform',
+      subtitle: 'MatrixEdu leverages AI to provide personalized, expert-level tutoring, making quality education accessible for all students and fostering efficient learning and confident growth. We also offer comprehensive study abroad support, including AI-driven university matching, customized application strategies, essay optimization, and visa guidance to boost admission success. Through advanced technology, MatrixEdu ensures fairer, more efficient access to global educational resources, empowering every student to achieve their academic goals.',
       exploreButton: 'Explore',
       learnMoreButton: 'Learn More',
       imageAlt: 'University education illustration',
     },
     about: {
-      title: 'About EduSmart',
+      title: 'About MatrixEdu',
       subtitle: 'Your AI-Powered Education Companion',
-      description: 'EduSmart revolutionizes the way students discover and apply to universities worldwide. Our AI-driven platform provides personalized recommendations, comprehensive university databases, and expert guidance to help you make informed decisions about your educational future.',
+      description: 'MatrixEdu revolutionizes the way students discover and apply to universities worldwide. Our AI-driven platform provides personalized recommendations, comprehensive university databases, and expert guidance to help you make informed decisions about your educational future.',
       features: {
         aiPowered: {
           title: 'AI-Powered Recommendations',
@@ -893,7 +893,7 @@ export const translations: Record<Language, Translations> = {
       viewAllButton: 'View All Programs',
     },
     bestFeatures: {
-      title: 'Why Choose EduSmart?',
+      title: 'Why Choose MatrixEdu?',
       features: {
         aiRecommendations: {
           title: 'AI Recommendations',
@@ -1002,7 +1002,7 @@ export const translations: Record<Language, Translations> = {
       errorMessage: 'Failed to subscribe. Please try again.',
     },
     footer: {
-      description: 'EduSmart is your AI-powered companion for discovering and applying to universities worldwide. We make higher education accessible and achievable for everyone.',
+      description: 'MatrixEdu is your AI-powered companion for discovering and applying to universities worldwide. We make higher education accessible and achievable for everyone.',
       quickLinks: {
         title: 'Quick Links',
         about: 'About Us',
@@ -1027,7 +1027,7 @@ export const translations: Record<Language, Translations> = {
         terms: 'Terms of Service',
       },
       followUs: 'Follow Us',
-      copyright: '© 2024 EduSmart. All rights reserved.',
+      copyright: '© 2024 MatrixEdu. All rights reserved.',
     },
     common: {
       loading: 'Loading...',
@@ -1269,17 +1269,17 @@ export const translations: Record<Language, Translations> = {
       scholarshipStories: 'Scholarship Stories',
     },
     chatBot: {
-      title: 'EduSmart ChatBot',
-      subtitle: 'Your AI-powered educational assistant',
+      title: 'MatrixEdu ChatBot',
+      subtitle: 'Get instant answers to your questions',
       backToHome: 'Back to Home',
-      chatTitle: 'Chat with EduSmart',
-      chatSubtitle: 'Ask any questions about your education journey',
-      messagePlaceholder: 'Type your message...',
+      chatTitle: 'Chat with MatrixEdu',
+      chatSubtitle: 'Ask me anything about education and universities',
+      messagePlaceholder: 'Type your message here...',
       sendButton: 'Send',
       you: 'You',
-      aiAssistant: 'EduSmart',
-      welcomeMessage: 'Hello! I\'m EduSmart, your AI-powered educational assistant. How can I help you today?',
-      helpMessage: 'I\'m here to help you with any questions you have about your education journey. Feel free to ask me anything!',
+      aiAssistant: 'MatrixEdu',
+      welcomeMessage: 'Hello! I\'m MatrixEdu, your AI-powered educational assistant. How can I help you today?',
+      helpMessage: 'You can ask me about universities, courses, scholarships, or any other educational topics.',
     },
     courses: {
       title: 'Courses',
@@ -1526,7 +1526,7 @@ export const translations: Record<Language, Translations> = {
         title: '登录',
         subtitle: '登录您的账户',
         welcomeBack: '欢迎回来',
-        signInToAccount: '登录您的EduSmart账户',
+        signInToAccount: '登录您的MatrixEdu账户',
         emailLabel: '邮箱',
         passwordLabel: '密码',
         emailPlaceholder: '请输入您的邮箱',
@@ -1546,7 +1546,7 @@ export const translations: Record<Language, Translations> = {
         title: '注册',
         subtitle: '创建您的账户',
         createAccount: '创建账户',
-        joinEduSmart: '加入EduSmart，访问所有功能和资源',
+        joinMatrixEdu: '加入MatrixEdu，访问所有功能和资源',
         nameLabel: '全名',
         emailLabel: '邮箱',
         passwordLabel: '密码',
@@ -1575,16 +1575,16 @@ export const translations: Record<Language, Translations> = {
       },
     },
     hero: {
-      title: 'EduSmart - AI智能教育平台',
-      subtitle: 'EduSmart 致力于用AI技术弥合教育资源鸿沟，打造智能学习平台，为不同阶层的学生提供个性化、名师级的辅导体验。通过精准诊断、智能总结，我们让优质教育资源触手可及，助力每位学生高效学习、自信成长，实现教育公平与卓越。我們也提供全面的留學支持，包括人工智慧驅動的大學配對、客製化申請策略、文書優化和簽證指導，助力學生成功入學。EduSmart 憑藉著先進的技術，確保更公平、更有效率地取得全球教育資源，賦予每位學生實現學術目標。',
+      title: 'MatrixEdu - AI智能教育平台',
+      subtitle: 'MatrixEdu 致力于用AI技术弥合教育资源鸿沟，打造智能学习平台，为不同阶层的学生提供个性化、名师级的辅导体验。通过精准诊断、智能总结，我们让优质教育资源触手可及，助力每位学生高效学习、自信成长，实现教育公平与卓越。我們也提供全面的留學支持，包括人工智慧驅動的大學配對、客製化申請策略、文書優化和簽證指導，助力學生成功入學。MatrixEdu 憑藉著先進的技術，確保更公平、更有效率地取得全球教育資源，賦予每位學生實現學術目標。',
       exploreButton: '探索',
       learnMoreButton: '了解更多',
       imageAlt: '大學教育插圖',
     },
     about: {
-      title: '关于EduSmart',
+      title: '关于MatrixEdu',
       subtitle: '您的AI智能教育伙伴',
-      description: 'EduSmart革命性地改变了学生发现和申请全球大学的方式。我们的AI驱动平台提供个性化推荐、全面的大学数据库和专家指导，帮助您对教育未来做出明智决策。',
+      description: 'MatrixEdu革命性地改变了学生发现和申请全球大学的方式。我们的AI驱动平台提供个性化推荐、全面的大学数据库和专家指导，帮助您对教育未来做出明智决策。',
       features: {
         aiPowered: {
           title: 'AI智能推荐',
@@ -1620,7 +1620,7 @@ export const translations: Record<Language, Translations> = {
       viewAllButton: '查看所有项目',
     },
     bestFeatures: {
-      title: '为什么选择EduSmart？',
+      title: '为什么选择MatrixEdu？',
       features: {
         aiRecommendations: {
           title: 'AI推荐',
@@ -1729,7 +1729,7 @@ export const translations: Record<Language, Translations> = {
       errorMessage: '订阅失败。请重试。',
     },
     footer: {
-      description: 'EduSmart是您发现和申请全球大学的AI智能伙伴。我们让高等教育对每个人都变得可及和可实现。',
+      description: 'MatrixEdu是您发现和申请全球大学的AI智能伙伴。我们让高等教育对每個人都變得可及和可實現。',
       quickLinks: {
         title: '快速链接',
         about: '关于我们',
@@ -1754,7 +1754,7 @@ export const translations: Record<Language, Translations> = {
         terms: '服务条款',
       },
       followUs: '关注我们',
-      copyright: '© 2024 EduSmart. 保留所有权利。',
+      copyright: '© 2024 MatrixEdu. 保留所有权利。',
     },
     common: {
       loading: '加载中...',
@@ -1996,16 +1996,16 @@ export const translations: Record<Language, Translations> = {
       scholarshipStories: '奖学金故事',
     },
     chatBot: {
-      title: 'EduSmart聊天机器人',
+      title: 'MatrixEdu聊天机器人',
       subtitle: '您的AI教育助手',
       backToHome: '返回首页',
-      chatTitle: '与EduSmart聊天',
+      chatTitle: '与MatrixEdu聊天',
       chatSubtitle: '询问您教育旅程中的任何问题',
       messagePlaceholder: '输入您的消息...',
       sendButton: '发送',
       you: '你',
-      aiAssistant: 'EduSmart',
-      welcomeMessage: '你好！我是EduSmart，您的AI教育助手。今天我能为您做些什麽？',
+      aiAssistant: 'MatrixEdu',
+      welcomeMessage: '你好！我是MatrixEdu，您的AI教育助手。今天我能为您做些什麽？',
       helpMessage: '我在此幫助您解決教育旅程中的任何問題。請隨時向我提問！',
     },
     courses: {
@@ -2253,7 +2253,7 @@ export const translations: Record<Language, Translations> = {
         title: '登入',
         subtitle: '登入您的帳戶',
         welcomeBack: '歡迎回來',
-        signInToAccount: '登入您的EduSmart帳戶',
+        signInToAccount: '登入您的MatrixEdu帳戶',
         emailLabel: '電子郵件',
         passwordLabel: '密碼',
         emailPlaceholder: '請輸入您的電子郵件',
@@ -2273,7 +2273,7 @@ export const translations: Record<Language, Translations> = {
         title: '註冊',
         subtitle: '建立您的帳戶',
         createAccount: '建立帳戶',
-        joinEduSmart: '加入EduSmart，存取所有功能和資源',
+        joinMatrixEdu: '加入MatrixEdu，存取所有功能和資源',
         nameLabel: '全名',
         emailLabel: '電子郵件',
         passwordLabel: '密碼',
@@ -2302,16 +2302,16 @@ export const translations: Record<Language, Translations> = {
       },
     },
     hero: {
-      title: 'EduSmart - AI智能教育平台',
+      title: 'MatrixEdu - AI智能教育平台',
       subtitle: '探索頂尖大學、個人化推薦和真實成功案例——全部由AI驅動，簡化您的高等教育之旅。',
       exploreButton: '探索',
       learnMoreButton: '了解更多',
       imageAlt: '大學教育插圖',
     },
     about: {
-      title: '關於EduSmart',
+      title: '關於MatrixEdu',
       subtitle: '您的AI智慧教育夥伴',
-      description: 'EduSmart革命性地改變了學生發現和申請全球大學的方式。我們的AI驅動平台提供個人化推薦、全面的大學資料庫和專家指導，幫助您對教育未來做出明智決策。',
+      description: 'MatrixEdu革命性地改變了學生發現和申請全球大學的方式。我們的AI驅動平台提供個人化推薦、全面的大學資料庫和專家指導，幫助您對教育未來做出明智決策。',
       features: {
         aiPowered: {
           title: 'AI智慧推薦',
@@ -2347,7 +2347,7 @@ export const translations: Record<Language, Translations> = {
       viewAllButton: '查看所有項目',
     },
     bestFeatures: {
-      title: '為什麼選擇EduSmart？',
+      title: '為什麽選擇MatrixEdu？',
       features: {
         aiRecommendations: {
           title: 'AI推薦',
@@ -2456,7 +2456,7 @@ export const translations: Record<Language, Translations> = {
       errorMessage: '訂閱失敗。請重試。',
     },
     footer: {
-      description: 'EduSmart是您發現和申請全球大學的AI智慧夥伴。我們讓高等教育對每個人都變得可及和可實現。',
+      description: 'MatrixEdu是您發現和申請全球大學的AI智慧夥伴。我們讓高等教育對每個人都變得可及和可實現。',
       quickLinks: {
         title: '快速連結',
         about: '關於我們',
@@ -2481,7 +2481,7 @@ export const translations: Record<Language, Translations> = {
         terms: '服務條款',
       },
       followUs: '關注我們',
-      copyright: '© 2024 EduSmart. 保留所有權利。',
+      copyright: '© 2024 MatrixEdu. 保留所有權利。',
     },
     common: {
       loading: '載入中...',
@@ -2723,16 +2723,16 @@ export const translations: Record<Language, Translations> = {
       scholarshipStories: '獎學金故事',
     },
     chatBot: {
-      title: 'EduSmart聊天機器人',
+      title: 'MatrixEdu聊天機器人',
       subtitle: '您的AI教育助手',
       backToHome: '返回首頁',
-      chatTitle: '與EduSmart聊天',
+      chatTitle: '與MatrixEdu聊天',
       chatSubtitle: '詢問您教育旅程中的任何問題',
       messagePlaceholder: '輸入您的消息...',
       sendButton: '發送',
       you: '你',
-      aiAssistant: 'EduSmart',
-      welcomeMessage: '你好！我是EduSmart，您的AI教育助手。今天我能為您做些什麽？',
+      aiAssistant: 'MatrixEdu',
+      welcomeMessage: '你好！我是MatrixEdu，您的AI教育助手。今天我能為您做些什麽？',
       helpMessage: '我在此幫助您解決教育旅程中的任何問題。請隨時向我提問！',
     },
     courses: {

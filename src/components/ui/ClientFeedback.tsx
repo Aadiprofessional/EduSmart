@@ -15,7 +15,7 @@ const ClientFeedback: React.FC = () => {
       university: 'Stanford University',
       program: 'Computer Science',
       rating: 5,
-      feedback: 'EduSmart helped me find the perfect university match. The AI recommendations were spot-on, and I got accepted to my dream school!',
+      feedback: 'MatrixEdu helped me find the perfect university match. The AI recommendations were spot-on, and I got accepted to my dream school!',
       image: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80'
     },
     {
@@ -33,7 +33,7 @@ const ClientFeedback: React.FC = () => {
       university: 'Oxford University',
       program: 'International Relations',
       rating: 5,
-      feedback: 'The application tracker kept me organized throughout the entire process. I highly recommend EduSmart to all students.',
+      feedback: 'The application tracker kept me organized throughout the entire process. I highly recommend MatrixEdu to all students.',
       image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80'
     }
   ];

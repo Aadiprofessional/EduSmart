@@ -40,13 +40,13 @@ const ChatBotPage: React.FC = () => {
     if (lowerMsg.includes('course') || lowerMsg.includes('class') || lowerMsg.includes('learn')) {
       return 'We offer various courses including AI Development, Data Science, Web Development, and more. Visit our Courses page for details.';
     } else if (lowerMsg.includes('scholarship') || lowerMsg.includes('financial') || lowerMsg.includes('aid')) {
-      return 'EduSmart provides information on various scholarships and financial aid options. Check our Scholarships page for the latest opportunities.';
+      return 'MatrixEdu provides information on various scholarships and financial aid options. Check our Scholarships page for the latest opportunities.';
     } else if (lowerMsg.includes('application') || lowerMsg.includes('apply') || lowerMsg.includes('track')) {
       return 'You can track your applications using our Application Tracker. It helps you organize deadlines and requirements for educational opportunities.';
     } else if (lowerMsg.includes('ai') || lowerMsg.includes('artificial intelligence')) {
       return 'We have specialized courses and resources. Our Courses section provides cutting-edge content in machine learning, deep learning, and AI ethics.';
     } else if (lowerMsg.includes('resource') || lowerMsg.includes('material') || lowerMsg.includes('tool')) {
-      return 'EduSmart offers various educational resources including e-books, tutorials, and interactive tools. Check our Resources page.';
+      return 'MatrixEdu offers various educational resources including e-books, tutorials, and interactive tools. Check our Resources page.';
     } else if (lowerMsg.includes('blog') || lowerMsg.includes('article') || lowerMsg.includes('news')) {
       return 'Our blog features articles on education trends, learning tips, and technology insights. Visit the Blog section for the latest posts.';
     } else if (lowerMsg.includes('hello') || lowerMsg.includes('hi') || lowerMsg.includes('hey')) {

@@ -67,7 +67,7 @@ const Footer: React.FC = () => {
           <motion.div variants={itemVariants}>
             <div className="mb-6">
               <h3 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent mb-4">
-                EduSmart
+                MatrixEdu
               </h3>
               <p className="text-gray-300 mb-6 leading-relaxed">
                 Revolutionizing education through AI-powered learning experiences and cutting-edge technology.
@@ -183,8 +183,8 @@ const Footer: React.FC = () => {
                   Email
                 </p>
                 <p className="text-sm">
-                  <a href="mailto:info@edusmart.com" className="text-pink-400 hover:text-pink-300 transition-colors duration-300">
-                    info@edusmart.com
+                  <a href="mailto:info@matrixedu.com" className="text-pink-400 hover:text-pink-300 transition-colors duration-300">
+                    info@matrixedu.com
                   </a>
                 </p>
               </div>
@@ -203,7 +203,7 @@ const Footer: React.FC = () => {
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="text-center md:text-left">
               <p className="text-gray-400 text-sm">
-                © 2024 EduSmart. All rights reserved.
+                © 2024 MatrixEdu. All rights reserved.
               </p>
               <p className="text-gray-500 text-xs mt-1">
                 Empowering the future of education through AI innovation.

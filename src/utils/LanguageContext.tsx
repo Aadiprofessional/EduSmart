@@ -17,13 +17,13 @@ interface LanguageProviderProps {
 export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
     // Get language from localStorage or default to English
-    const savedLanguage = localStorage.getItem('edusmart-language') as Language;
+    const savedLanguage = localStorage.getItem('matrixedu-language') as Language;
     return savedLanguage && ['en', 'zh-CN', 'zh-TW'].includes(savedLanguage) ? savedLanguage : 'en';
   });
 
   const setLanguage = (newLanguage: Language) => {
     setLanguageState(newLanguage);
-    localStorage.setItem('edusmart-language', newLanguage);
+    localStorage.setItem('matrixedu-language', newLanguage);
     
     // Update document language attribute for accessibility
     document.documentElement.lang = newLanguage === 'zh-CN' ? 'zh-Hans' : 

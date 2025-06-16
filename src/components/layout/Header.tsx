@@ -221,7 +221,7 @@ const Header: React.FC = () => {
           >
             <Link to="/" className="flex items-center">
               <span className={`font-bold ${isMobile ? 'text-xl' : 'text-2xl lg:text-3xl'} bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent whitespace-nowrap`}>
-                {isMobile ? 'ES' : 'EduSmart'}
+                {isMobile ? 'ME' : 'MatrixEdu'}
               </span>
             </Link>
           </motion.div>

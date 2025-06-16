@@ -274,7 +274,7 @@ const Signup: React.FC = () => {
               animate="animate"
             >
               <span className="text-6xl font-bold bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-600 bg-clip-text text-transparent">
-                EduSmart
+                MatrixEdu
               </span>
             </motion.div>
             <motion.p 
@@ -359,7 +359,7 @@ const Signup: React.FC = () => {
             >
               <Link to="/" className="inline-block">
                 <span className="text-4xl font-bold bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-600 bg-clip-text text-transparent">
-                  EduSmart
+                  MatrixEdu
                 </span>
               </Link>
             </motion.div>
@@ -381,13 +381,13 @@ const Signup: React.FC = () => {
                   className="text-3xl font-bold text-white text-center"
                   variants={itemVariants}
                 >
-                  {t('auth.signup.createAccount')}
+                  Join MatrixEdu Today
                 </motion.h1>
                 <motion.p 
                   className="text-emerald-200 text-center mt-2"
                   variants={itemVariants}
                 >
-                  {t('auth.signup.joinEduSmart')}
+                  Start your AI-powered learning journey with MatrixEdu
                 </motion.p>
                 
                 {/* Decorative elements */}

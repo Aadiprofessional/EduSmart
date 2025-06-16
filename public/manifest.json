@@ -1,6 +1,6 @@
 {
-  "short_name": "EduSmart",
-  "name": "EduSmart - Education Resources Platform",
+  "short_name": "MatrixEdu",
+  "name": "MatrixEdu - Education Resources Platform",
   "icons": [
     {
       "src": "favicon.ico",
@@ -10,12 +10,12 @@
     {
       "src": "logo192.png",
       "type": "image/png",
-      "sizes": "168x103"
+      "sizes": "192x192"
     },
     {
       "src": "logo512.png",
       "type": "image/png",
-      "sizes": "168x103"
+      "sizes": "512x512"
     }
   ],
   "start_url": ".",
