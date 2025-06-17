@@ -23,10 +23,10 @@ const PageHeader: React.FC<PageHeaderProps> = ({
 
   // Mobile-first height classes with more compact mobile design
   const heightClasses = {
-    sm: 'h-[120px] sm:h-[160px] lg:h-[200px]',
-    md: 'h-[140px] sm:h-[200px] lg:h-[280px] xl:h-[300px]',
-    lg: 'h-[160px] sm:h-[240px] lg:h-[350px] xl:h-[400px]',
-    xl: 'h-[180px] sm:h-[280px] lg:h-[400px] xl:h-[500px]'
+    sm: 'h-[120px] sm:h-[160px] lg:h-[400px]',
+    md: 'h-[140px] sm:h-[200px] lg:h-[560px] xl:h-[600px]',
+    lg: 'h-[160px] sm:h-[240px] lg:h-[700px] xl:h-[800px]',
+    xl: 'h-[180px] sm:h-[280px] lg:h-[800px] xl:h-[1000px]'
   };
 
   const containerVariants = {
@@ -73,7 +73,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   ));
 
   return (
-    <div className={`relative overflow-hidden ${heightClasses[height]} mt-16 ${className}`}>
+    <div className={`relative overflow-hidden ${heightClasses[height]} mt-16 lg:mt-0 ${className}`}>
       {/* Mobile-optimized gradient background */}
       <div 
         className={`absolute inset-0 ${theme.gradient} ${theme.animationClass}`}

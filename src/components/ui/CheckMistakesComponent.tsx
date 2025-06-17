@@ -124,7 +124,26 @@ interface MarkingSummary {
   }[];
 }
 
+// Add new interface for extracted text
+interface ExtractedText {
+  pageNumber: number;
+  text: string;
+  isLoading: boolean;
+  isComplete: boolean;
+  error?: string;
+}
+
+// Add new interface for highlighted text
+interface HighlightedText {
+  text: string;
+  isHighlighted: boolean;
+  mistakeType?: string;
+  correction?: string;
+  isSelected?: boolean;
+}
+
 type ViewMode = 'mistakes' | 'marking';
+type DocumentView = 'image' | 'text'; // New type for document view mode
 
 // Marking Standards Data
 const MARKING_STANDARDS: MarkingStandard[] = [
@@ -233,7 +252,27 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
   const [markingSummary, setMarkingSummary] = useState<MarkingSummary | null>(null);
   const [isGeneratingMarking, setIsGeneratingMarking] = useState(false);
   
+  // Add new state variables for the requested features
+  const [autoScroll, setAutoScroll] = useState(true);
+  const [textExtractionEnabled, setTextExtractionEnabled] = useState(false);
+  const [extractedTexts, setExtractedTexts] = useState<ExtractedText[]>([]);
+  const [documentView, setDocumentView] = useState<DocumentView>('image');
+  const [selectedMistakeId, setSelectedMistakeId] = useState<number | null>(null);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mistakesContainerRef = useRef<HTMLDivElement>(null); // Add ref for auto-scroll
+
+  // Add new state for text-only processing and marks summary
+  const [textOnlyMode, setTextOnlyMode] = useState(false);
+  const [directText, setDirectText] = useState('');
+  const [marksSummary, setMarksSummary] = useState<{
+    totalMistakes: number;
+    mistakesByType: { [key: string]: number };
+    score: number;
+    maxScore: number;
+    suggestions: string[];
+    overallFeedback: string;
+  } | null>(null);
 
   // Convert PDF to images using PDF.js
   const convertPdfToImages = async (file: File): Promise<string[]> => {
@@ -293,9 +332,9 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
     }
   };
 
-  // Check for mistakes in a page with concise response
-  const checkMistakesForPage = async (imageUrl: string, pageNumber: number): Promise<Mistake[]> => {
-    console.log(`🔄 Starting mistake checking for page ${pageNumber}`);
+  // Extract text from page using OCR API
+  const extractTextFromPage = async (imageUrl: string, pageNumber: number): Promise<string> => {
+    console.log(`📝 Starting text extraction for page ${pageNumber}`);
     
     try {
       const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
@@ -312,7 +351,7 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
               content: [
                 {
                   type: "text",
-                  text: "You are a precise proofreader. Analyze the image and identify ONLY actual mistakes. For each mistake found, provide EXACTLY in this format:\n\nMISTAKE: [incorrect text]\nCORRECTION: [corrected text]\nTYPE: [grammar/spelling/punctuation]\n\nBe concise and only show actual errors. Do not provide explanations or analysis."
+                  text: "You are an OCR (Optical Character Recognition) system. Extract ALL text from the image exactly as it appears, maintaining the original formatting, spacing, and structure. Do not add any explanations, corrections, or analysis. Only return the extracted text."
                 }
               ]
             },
@@ -327,7 +366,138 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
                 },
                 {
                   type: "text",
-                  text: "Analyze this image and find mistakes. For each mistake, respond ONLY in this exact format:\n\nMISTAKE: [exact incorrect text]\nCORRECTION: [exact corrected text]\nTYPE: [mistake type]\n\nDo not include any other text, explanations, or analysis. Just list the mistakes in the specified format."
+                  text: "Extract all text from this image exactly as it appears. Maintain original formatting and structure. Return only the extracted text with no additional commentary."
+                }
+              ]
+            }
+          ],
+          stream: false
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API call failed: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const extractedText = data.choices?.[0]?.message?.content || '';
+      
+      console.log(`✅ Text extraction completed for page ${pageNumber}`);
+      return extractedText;
+
+    } catch (error) {
+      console.error(`💥 Error in extractTextFromPage for page ${pageNumber}:`, error);
+      throw new Error(`Failed to extract text: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  // Highlight mistakes in extracted text
+  const highlightMistakesInText = (text: string, mistakes: Mistake[]): HighlightedText[] => {
+    if (!text || mistakes.length === 0) {
+      return [{ text, isHighlighted: false }];
+    }
+
+    let highlightedParts: HighlightedText[] = [];
+    let lastIndex = 0;
+
+    // Sort mistakes by their position in the text
+    const sortedMistakes = mistakes
+      .map(mistake => ({
+        ...mistake,
+        index: text.toLowerCase().indexOf(mistake.incorrect.toLowerCase()),
+        isSelected: selectedMistakeId === mistake.id
+      }))
+      .filter(mistake => mistake.index !== -1)
+      .sort((a, b) => a.index - b.index);
+
+    for (const mistake of sortedMistakes) {
+      const startIndex = mistake.index;
+      
+      if (startIndex > lastIndex) {
+        // Add non-highlighted text before the mistake
+        highlightedParts.push({
+          text: text.substring(lastIndex, startIndex),
+          isHighlighted: false
+        });
+      }
+      
+      // Add highlighted mistake
+      highlightedParts.push({
+        text: mistake.incorrect,
+        isHighlighted: true,
+        mistakeType: mistake.type,
+        correction: mistake.correct,
+        isSelected: mistake.isSelected
+      });
+      
+      lastIndex = startIndex + mistake.incorrect.length;
+    }
+    
+    // Add remaining non-highlighted text
+    if (lastIndex < text.length) {
+      highlightedParts.push({
+        text: text.substring(lastIndex),
+        isHighlighted: false
+      });
+    }
+    
+    return highlightedParts.filter(part => part.text.length > 0);
+  };
+
+  // Auto-scroll to bottom of mistakes container
+  const scrollToBottom = () => {
+    if (autoScroll && mistakesContainerRef.current) {
+      const container = mistakesContainerRef.current;
+      setTimeout(() => {
+        container.scrollTop = container.scrollHeight;
+      }, 100);
+    }
+  };
+
+  // Check for mistakes in a page with concise response
+  const checkMistakesForPage = async (imageUrl: string, pageNumber: number): Promise<Mistake[]> => {
+    console.log(`🔄 Starting mistake checking for page ${pageNumber}`);
+    
+    try {
+      // If text extraction is enabled, use a combined prompt that extracts text AND finds mistakes
+      const systemPrompt = textExtractionEnabled 
+        ? "You are an expert proofreader with OCR capabilities. First, extract ALL text from the image exactly as it appears. Then identify ONLY actual mistakes in that text. Respond in this EXACT format:\n\nEXTRACTED_TEXT:\n[exact text from image]\n\nMISTAKES:\nMISTAKE: [incorrect text]\nCORRECTION: [corrected text]\nTYPE: [grammar/spelling/punctuation]\n\nBe precise and only show actual errors."
+        : "You are a precise proofreader. Analyze the image and identify ONLY actual mistakes. For each mistake found, provide EXACTLY in this format:\n\nMISTAKE: [incorrect text]\nCORRECTION: [corrected text]\nTYPE: [grammar/spelling/punctuation]\n\nBe concise and only show actual errors. Do not provide explanations or analysis.";
+      
+      const userPrompt = textExtractionEnabled
+        ? "Extract all text from this image and then find mistakes. Use the exact format specified: first EXTRACTED_TEXT section, then MISTAKES section."
+        : "Analyze this image and find mistakes. For each mistake, respond ONLY in this exact format:\n\nMISTAKE: [exact incorrect text]\nCORRECTION: [exact corrected text]\nTYPE: [mistake type]\n\nDo not include any other text, explanations, or analysis. Just list the mistakes in the specified format.";
+
+      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: "qwen-vl-max",
+          messages: [
+            {
+              role: "system",
+              content: [
+                {
+                  type: "text",
+                  text: systemPrompt
+                }
+              ]
+            },
+            {
+              role: "user",
+              content: [
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: imageUrl
+                  }
+                },
+                {
+                  type: "text",
+                  text: userPrompt
                 }
               ]
             }
@@ -377,16 +547,42 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
                 if (content_chunk) {
                   fullContent += content_chunk;
                   
-                  // Update page mistakes in real-time
-                  setPageMistakes(prev => prev.map(pm => 
-                    pm.pageNumber === pageNumber 
-                      ? { 
-                          ...pm, 
-                          mistakes: parseMistakesFromText(fullContent, pageNumber),
-                          isLoading: true 
-                        }
-                      : pm
-                  ));
+                  // If text extraction is enabled, parse and update both text and mistakes
+                  if (textExtractionEnabled) {
+                    const { extractedText, mistakes } = parseTextAndMistakes(fullContent);
+                    
+                    // Update extracted text
+                    if (extractedText) {
+                      setExtractedTexts(prev => prev.map(et => 
+                        et.pageNumber === pageNumber 
+                          ? { ...et, text: extractedText, isLoading: false, isComplete: true }
+                          : et
+                      ));
+                    }
+                    
+                    // Update mistakes
+                    setPageMistakes(prev => prev.map(pm => 
+                      pm.pageNumber === pageNumber 
+                        ? { ...pm, mistakes, isLoading: true }
+                        : pm
+                    ));
+                  } else {
+                    // Update page mistakes in real-time (text extraction disabled)
+                    setPageMistakes(prev => prev.map(pm => 
+                      pm.pageNumber === pageNumber 
+                        ? { 
+                            ...pm, 
+                            mistakes: parseMistakesFromText(fullContent, pageNumber),
+                            isLoading: true 
+                          }
+                        : pm
+                    ));
+                  }
+                  
+                  // Auto-scroll to show latest content
+                  if (autoScroll && pageNumber === currentPage + 1) {
+                    setTimeout(scrollToBottom, 100);
+                  }
                 }
               } catch (parseError) {
                 // Skip invalid JSON lines
@@ -403,7 +599,15 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
       console.log('📊 Final content length:', fullContent.length);
 
       // Parse the final response to extract structured mistakes
-      const finalMistakes = parseMistakesFromText(fullContent, pageNumber);
+      let finalMistakes: Mistake[];
+      
+      if (textExtractionEnabled) {
+        const { mistakes } = parseTextAndMistakes(fullContent);
+        finalMistakes = mistakes;
+      } else {
+        finalMistakes = parseMistakesFromText(fullContent, pageNumber);
+      }
+      
       return finalMistakes;
 
     } catch (error) {
@@ -457,6 +661,64 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
     }
     
     return mistakes;
+  };
+
+  // Parse both extracted text and mistakes from combined API response
+  const parseTextAndMistakes = (text: string): { extractedText: string; mistakes: Mistake[] } => {
+    let extractedText = '';
+    const mistakes: Mistake[] = [];
+    let mistakeId = 1;
+    
+    // Split the response into sections
+    const extractedTextMatch = text.match(/EXTRACTED_TEXT:\s*([\s\S]*?)(?=MISTAKES:|$)/);
+    if (extractedTextMatch) {
+      extractedText = extractedTextMatch[1].trim();
+    }
+    
+    // Find the mistakes section
+    const mistakesMatch = text.match(/MISTAKES:\s*([\s\S]*)/);
+    if (mistakesMatch) {
+      const mistakesText = mistakesMatch[1];
+      const lines = mistakesText.split('\n');
+      let currentMistake: Partial<Mistake> = {};
+      
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        
+        if (trimmedLine.startsWith('MISTAKE:')) {
+          // If we have a current mistake being built, save it first
+          if (currentMistake.incorrect && currentMistake.correct) {
+            mistakes.push({
+              id: mistakeId++,
+              incorrect: currentMistake.incorrect,
+              correct: currentMistake.correct,
+              type: currentMistake.type || 'other'
+            });
+          }
+          
+          // Start new mistake
+          currentMistake = {
+            incorrect: trimmedLine.replace('MISTAKE:', '').trim()
+          };
+        } else if (trimmedLine.startsWith('CORRECTION:')) {
+          currentMistake.correct = trimmedLine.replace('CORRECTION:', '').trim();
+        } else if (trimmedLine.startsWith('TYPE:')) {
+          currentMistake.type = trimmedLine.replace('TYPE:', '').trim().toLowerCase();
+        }
+      }
+      
+      // Add the last mistake if it's complete
+      if (currentMistake.incorrect && currentMistake.correct) {
+        mistakes.push({
+          id: mistakeId++,
+          incorrect: currentMistake.incorrect,
+          correct: currentMistake.correct,
+          type: currentMistake.type || 'other'
+        });
+      }
+    }
+    
+    return { extractedText, mistakes };
   };
 
   // Teacher marking functions
@@ -849,6 +1111,20 @@ Be thorough and fair in your assessment.`
       }));
       setPageMistakes(initialPageMistakes);
       
+      // Initialize extracted texts if text extraction is enabled
+      if (textExtractionEnabled) {
+        const initialExtractedTexts: ExtractedText[] = imageUrls.map((_, index) => ({
+          pageNumber: index + 1,
+          text: '',
+          isLoading: true,
+          isComplete: false
+        }));
+        setExtractedTexts(initialExtractedTexts);
+        
+        // Text extraction will be handled within the mistake checking process
+        // No need for separate API calls when text extraction is enabled
+      }
+      
       setProcessingStatus(`Processing all ${imageUrls.length} pages in parallel...`);
       setLoading(false); // Set loading to false so user can navigate pages
       
@@ -1002,6 +1278,8 @@ Be thorough and fair in your assessment.`
     setPageMarkings([]);
     setMarkingSummary(null);
     setIsGeneratingMarking(false);
+    setExtractedTexts([]);
+    setDocumentView('image');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -1020,6 +1298,298 @@ Be thorough and fair in your assessment.`
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1 }
+  };
+
+  // Handle text extraction when toggle is enabled
+  useEffect(() => {
+    if (textExtractionEnabled && documentPages.length > 0 && extractedTexts.length === 0) {
+      // Initialize extracted texts
+      const initialExtractedTexts: ExtractedText[] = documentPages.map((_, index) => ({
+        pageNumber: index + 1,
+        text: '',
+        isLoading: true,
+        isComplete: false
+      }));
+      setExtractedTexts(initialExtractedTexts);
+      
+      // Extract text from all pages in parallel
+      console.log('📝 Starting text extraction after toggle enabled');
+      const textExtractionPromises = documentPages.map(async (imageUrl, index) => {
+        const pageNumber = index + 1;
+        try {
+          const extractedText = await extractTextFromPage(imageUrl, pageNumber);
+          
+          setExtractedTexts(prev => prev.map(et => 
+            et.pageNumber === pageNumber 
+              ? { ...et, text: extractedText, isLoading: false, isComplete: true }
+              : et
+          ));
+          
+          return { pageNumber, text: extractedText, success: true };
+        } catch (error) {
+          console.error(`❌ Error extracting text from page ${pageNumber}:`, error);
+          
+          setExtractedTexts(prev => prev.map(et => 
+            et.pageNumber === pageNumber 
+              ? { 
+                  ...et, 
+                  text: '',
+                  isLoading: false, 
+                  isComplete: true,
+                  error: error instanceof Error ? error.message : 'Unknown error'
+                }
+              : et
+          ));
+          
+          return { pageNumber, error: error instanceof Error ? error.message : 'Unknown error', success: false };
+        }
+      });
+      
+      Promise.allSettled(textExtractionPromises).then(() => {
+        console.log('✅ Text extraction after toggle completed');
+      });
+    } else if (!textExtractionEnabled) {
+      // Clear extracted texts when disabled
+      setExtractedTexts([]);
+      setDocumentView('image');
+    }
+  }, [textExtractionEnabled, documentPages.length]);
+
+  // Auto-scroll effect
+  useEffect(() => {
+    if (autoScroll && mistakesContainerRef.current) {
+      const container = mistakesContainerRef.current;
+      container.scrollTop = container.scrollHeight;
+    }
+  }, [pageMistakes, autoScroll, currentPage]);
+
+  // Process text directly without file upload
+  const processTextDirectly = async (text: string) => {
+    console.log('🔤 Starting direct text processing');
+    setTextOnlyMode(true);
+    setDirectText(text);
+    setLoading(true);
+    setProcessingStatus('Checking text for mistakes...');
+    setPageMistakes([]); // Clear previous mistakes
+    setOverallProcessingComplete(false);
+    
+    try {
+      // Create a single "page" for the text
+      setDocumentPages(['text-only']);
+      setCurrentPage(0);
+      
+      // Initialize page mistakes for text
+      const initialPageMistakes: PageMistakes[] = [{
+        pageNumber: 1,
+        mistakes: [],
+        isLoading: true,
+        isComplete: false
+      }];
+      setPageMistakes(initialPageMistakes);
+      
+      // Check mistakes for the text
+      const mistakes = await checkMistakesForText(text);
+      
+      // Update page mistakes
+      setPageMistakes([{
+        pageNumber: 1,
+        mistakes,
+        isLoading: false,
+        isComplete: true
+      }]);
+      
+      // Generate marks summary
+      const summary = generateMarksSummary(mistakes, text);
+      setMarksSummary(summary);
+      
+      setOverallProcessingComplete(true);
+      setProcessingStatus('Text analysis completed!');
+      console.log('✅ Direct text processing completed');
+      
+    } catch (error) {
+      console.error('💥 Error processing text:', error);
+      setProcessingStatus('Error processing text');
+      setPageMistakes([{
+        pageNumber: 1,
+        mistakes: [],
+        isLoading: false,
+        isComplete: true,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }]);
+    } finally {
+      setLoading(false);
+      setTimeout(() => setProcessingStatus(''), 3000);
+    }
+  };
+
+  // Check mistakes in text directly
+  const checkMistakesForText = async (text: string): Promise<Mistake[]> => {
+    console.log('🔄 Starting mistake checking for direct text');
+    
+    try {
+      const systemPrompt = "You are a precise proofreader. Analyze the provided text and identify ONLY actual mistakes. For each mistake found, provide EXACTLY in this format:\n\nMISTAKE: [incorrect text]\nCORRECTION: [corrected text]\nTYPE: [grammar/spelling/punctuation]\n\nBe concise and only show actual errors. Do not provide explanations or analysis.";
+      
+      const userPrompt = `Analyze this text and find mistakes. For each mistake, respond ONLY in this exact format:\n\nMISTAKE: [exact incorrect text]\nCORRECTION: [exact corrected text]\nTYPE: [mistake type]\n\nText to analyze:\n\n${text}`;
+
+      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: "qwen-vl-max",
+          messages: [
+            {
+              role: "system",
+              content: [{ type: "text", text: systemPrompt }]
+            },
+            {
+              role: "user",
+              content: [{ type: "text", text: userPrompt }]
+            }
+          ],
+          stream: true
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API call failed: ${response.status} ${response.statusText}`);
+      }
+
+      // Handle streaming response
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body reader available');
+      }
+
+      let fullContent = '';
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = new TextDecoder().decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+
+              try {
+                const parsed = JSON.parse(data);
+                const content_chunk = parsed.choices?.[0]?.delta?.content;
+
+                if (content_chunk) {
+                  fullContent += content_chunk;
+                  
+                  // Update mistakes in real-time
+                  setPageMistakes(prev => prev.map(pm => 
+                    pm.pageNumber === 1 
+                      ? { 
+                          ...pm, 
+                          mistakes: parseMistakesFromText(fullContent, 1),
+                          isLoading: true 
+                        }
+                      : pm
+                  ));
+                  
+                  // Auto-scroll to show latest content
+                  if (autoScroll) {
+                    setTimeout(scrollToBottom, 100);
+                  }
+                }
+              } catch (parseError) {
+                continue;
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+
+      // Parse final mistakes
+      const finalMistakes = parseMistakesFromText(fullContent, 1);
+      return finalMistakes;
+
+    } catch (error) {
+      console.error('💥 Error in checkMistakesForText:', error);
+      throw error;
+    }
+  };
+
+  // Generate marks summary based on mistakes
+  const generateMarksSummary = (mistakes: Mistake[], text: string) => {
+    const totalWords = text.trim().split(/\s+/).length;
+    const totalMistakes = mistakes.length;
+    
+    // Calculate mistakes by type
+    const mistakesByType = mistakes.reduce((acc, mistake) => {
+      acc[mistake.type] = (acc[mistake.type] || 0) + 1;
+      return acc;
+    }, {} as { [key: string]: number });
+    
+    // Calculate score (out of 100)
+    // Scoring logic: Start with 100, deduct points based on mistake density
+    let score = 100;
+    const mistakeRate = totalMistakes / totalWords;
+    
+    if (mistakeRate > 0.1) { // More than 10% mistake rate
+      score = Math.max(0, 100 - (mistakeRate * 400)); // Heavily penalize
+    } else if (mistakeRate > 0.05) { // 5-10% mistake rate
+      score = Math.max(20, 100 - (mistakeRate * 300));
+    } else if (mistakeRate > 0.02) { // 2-5% mistake rate
+      score = Math.max(40, 100 - (mistakeRate * 200));
+    } else if (mistakeRate > 0.01) { // 1-2% mistake rate
+      score = Math.max(60, 100 - (mistakeRate * 150));
+    } else { // Less than 1% mistake rate
+      score = Math.max(80, 100 - (mistakeRate * 100));
+    }
+    
+    score = Math.round(score);
+    
+    // Generate suggestions based on mistake types
+    const suggestions: string[] = [];
+    if (mistakesByType.grammar > 0) {
+      suggestions.push('Review grammar rules and sentence structure');
+    }
+    if (mistakesByType.spelling > 0) {
+      suggestions.push('Use spell-check tools and expand vocabulary');
+    }
+    if (mistakesByType.punctuation > 0) {
+      suggestions.push('Study punctuation rules and practice their application');
+    }
+    if (totalMistakes === 0) {
+      suggestions.push('Excellent work! Your text is error-free');
+    } else if (totalMistakes <= 3) {
+      suggestions.push('Great job! Only minor errors detected');
+    }
+    
+    // Generate overall feedback
+    let overallFeedback = '';
+    if (score >= 90) {
+      overallFeedback = 'Excellent work! Your writing demonstrates strong command of language with minimal errors.';
+    } else if (score >= 80) {
+      overallFeedback = 'Good work! Your writing is clear with only minor errors that can be easily corrected.';
+    } else if (score >= 70) {
+      overallFeedback = 'Decent work! Some errors present but overall communication is effective. Focus on the suggested areas.';
+    } else if (score >= 60) {
+      overallFeedback = 'Fair work! Multiple errors detected that may affect clarity. Review the suggestions for improvement.';
+    } else {
+      overallFeedback = 'Needs improvement! Significant errors detected that impact readability. Focus on fundamental language skills.';
+    }
+    
+    return {
+      totalMistakes,
+      mistakesByType,
+      score,
+      maxScore: 100,
+      suggestions,
+      overallFeedback
+    };
   };
 
   // If no file is uploaded, show upload interface
@@ -1081,6 +1651,42 @@ Be thorough and fair in your assessment.`
                 </div>
               </div>
 
+              {/* Control Settings */}
+              <div className="flex items-center justify-center mb-4">
+                <div className="flex items-center space-x-4 bg-slate-600/20 backdrop-blur-sm rounded-lg p-4 border border-white/10">
+                  {/* Auto Scroll Toggle */}
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="autoScroll"
+                      checked={autoScroll}
+                      onChange={(e) => setAutoScroll(e.target.checked)}
+                      className="w-4 h-4 text-cyan-600 bg-slate-600 border-slate-400 rounded focus:ring-cyan-500 focus:ring-2"
+                    />
+                    <label htmlFor="autoScroll" className="text-slate-300 text-sm font-medium cursor-pointer flex items-center">
+                      <IconComponent icon={AiOutlineLoading3Quarters} className="h-4 w-4 mr-1" />
+                      Auto Scroll
+                    </label>
+                  </div>
+
+                  {/* Text Extraction Toggle (only in mistakes mode) */}
+                  {viewMode === 'mistakes' && (
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="textExtract"
+                        checked={textExtractionEnabled}
+                        onChange={(e) => setTextExtractionEnabled(e.target.checked)}
+                        className="w-4 h-4 text-green-600 bg-slate-600 border-slate-400 rounded focus:ring-green-500 focus:ring-2"
+                      />
+                      <label htmlFor="textExtract" className="text-slate-300 text-sm font-medium cursor-pointer">
+                        Text Extract
+                      </label>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Marking Standard Selector (only show in marking mode) */}
               {viewMode === 'marking' && (
                 <div className="flex items-center justify-center mb-6">
@@ -1124,6 +1730,39 @@ Be thorough and fair in your assessment.`
                   <p className="text-lg font-medium text-slate-300 mb-2">Drag and drop your file here, or click to browse</p>
                   <p className="text-sm">Supports PDF, Word documents, and images</p>
                 </div>
+              </div>
+            </div>
+
+            {/* Text Input Option */}
+            <div className="mb-6">
+              <div className="text-center mb-4">
+                <span className="text-slate-400 text-sm">or</span>
+              </div>
+              <div className="bg-slate-600/20 backdrop-blur-sm rounded-lg p-4 border border-white/10">
+                <label className="block text-slate-300 mb-3 font-medium">
+                  Paste your text directly
+                </label>
+                <textarea
+                  placeholder="Paste your text here for mistake checking..."
+                  className="w-full h-32 p-3 bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 placeholder-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  onPaste={(e) => {
+                    const text = e.clipboardData.getData('text');
+                    if (text.trim()) {
+                      // Process text directly without file upload
+                      processTextDirectly(text.trim());
+                    }
+                  }}
+                  onChange={(e) => {
+                    const text = e.target.value;
+                    if (text.trim()) {
+                      // Process text directly
+                      processTextDirectly(text.trim());
+                    }
+                  }}
+                />
+                <p className="text-xs text-slate-400 mt-2">
+                  Text will be processed automatically as you type or paste
+                </p>
               </div>
             </div>
             
@@ -1210,59 +1849,217 @@ Be thorough and fair in your assessment.`
           </div>
         </div>
         
-        <div className="flex items-center space-x-4">
-          {/* Page Navigation */}
-          {documentPages.length > 1 && (
-            <div className="flex items-center space-x-4">
-              <button 
-                className="px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-cyan-400 border border-cyan-500/30"
-                disabled={currentPage === 0}
-                onClick={() => setCurrentPage(prev => prev - 1)}
-              >
-                Previous
-              </button>
-              <span className="text-slate-300 font-medium">
-                Page {currentPage + 1} of {documentPages.length}
-              </span>
-              <button 
-                className="px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-cyan-400 border border-cyan-500/30"
-                disabled={currentPage === documentPages.length - 1}
-                onClick={() => setCurrentPage(prev => prev + 1)}
-              >
-                Next
-              </button>
-            </div>
-          )}
-
-          {/* Show Summary Button for Marking Mode */}
-          {viewMode === 'marking' && markingSummary && (
-            <motion.button
-              onClick={() => setMarkingSummary(markingSummary)}
-              className="flex items-center px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg text-white font-medium shadow-md hover:shadow-lg transition-all"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+        {/* Page Navigation */}
+        {documentPages.length > 1 && (
+          <div className="flex items-center space-x-4">
+            <button 
+              className="px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-cyan-400 border border-cyan-500/30"
+              disabled={currentPage === 0}
+              onClick={() => setCurrentPage(prev => prev - 1)}
             >
-              View Summary
-              <IconComponent icon={AiOutlineHistory} className="h-4 w-4 ml-2" />
-            </motion.button>
-          )}
-        </div>
+              Previous
+            </button>
+            <span className="text-slate-300 font-medium">
+              Page {currentPage + 1} of {documentPages.length}
+            </span>
+            <button 
+              className="px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-cyan-400 border border-cyan-500/30"
+              disabled={currentPage === documentPages.length - 1}
+              onClick={() => setCurrentPage(prev => prev + 1)}
+            >
+              Next
+            </button>
+          </div>
+        )}
+
+        {/* Show Summary Button for Marking Mode */}
+        {viewMode === 'marking' && markingSummary && (
+          <motion.button
+            onClick={() => setMarkingSummary(markingSummary)}
+            className="flex items-center px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg text-white font-medium shadow-md hover:shadow-lg transition-all"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            View Summary
+            <IconComponent icon={AiOutlineHistory} className="h-4 w-4 ml-2" />
+          </motion.button>
+        )}
       </div>
 
       {/* Split View: Document on Left, Content on Right */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-200px)]">
         {/* Left Side - Document */}
         <div className="bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl shadow-lg overflow-hidden">
-          <div className="bg-slate-700/50 backdrop-blur-sm px-6 py-4 border-b border-white/10">
+          <div className="bg-slate-700/50 backdrop-blur-sm px-6 py-4 border-b border-white/10 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-cyan-400">Document</h2>
+            
+            {/* Document View Toggle (only show if text extraction is enabled and we have extracted text) */}
+            {textExtractionEnabled && extractedTexts[currentPage] && extractedTexts[currentPage].isComplete && !extractedTexts[currentPage].error && (
+              <div className="flex items-center bg-slate-600/30 backdrop-blur-sm rounded-lg p-1 border border-white/10">
+                <button
+                  onClick={() => setDocumentView('image')}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    documentView === 'image'
+                      ? 'bg-cyan-500 text-white shadow-md'
+                      : 'text-slate-300 hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center">
+                    <IconComponent icon={AiOutlineCamera} className="h-4 w-4 mr-1" />
+                    Image
+                  </div>
+                </button>
+                <button
+                  onClick={() => setDocumentView('text')}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    documentView === 'text'
+                      ? 'bg-cyan-500 text-white shadow-md'
+                      : 'text-slate-300 hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center">
+                    <IconComponent icon={AiOutlineFileText} className="h-4 w-4 mr-1" />
+                    Text
+                  </div>
+                </button>
+              </div>
+            )}
           </div>
           <div className="h-full p-4">
             <div className="w-full h-full bg-slate-700/30 backdrop-blur-sm rounded-lg overflow-hidden border border-white/10">
-              <img 
-                src={documentPages[currentPage]} 
-                alt={`Document page ${currentPage + 1}`}
-                className="w-full h-full object-contain"
-              />
+              {textOnlyMode ? (
+                /* Direct Text Display */
+                <div className="w-full h-full overflow-auto p-4">
+                  <div className="text-slate-300 whitespace-pre-wrap font-mono text-sm leading-relaxed">
+                    {directText ? (
+                      highlightMistakesInText(
+                        directText, 
+                        pageMistakes[0]?.mistakes || []
+                      ).map((part, index) => (
+                        part.isHighlighted ? (
+                          <span
+                            key={index}
+                            className={`${
+                              part.mistakeType === 'grammar' ? 'bg-red-500/30 border-b-2 border-red-500' :
+                              part.mistakeType === 'spelling' ? 'bg-yellow-500/30 border-b-2 border-yellow-500' :
+                              part.mistakeType === 'punctuation' ? 'bg-blue-500/30 border-b-2 border-blue-500' :
+                              'bg-orange-500/30 border-b-2 border-orange-500'
+                            } ${
+                              part.isSelected ? 'ring-2 ring-cyan-400 bg-cyan-500/20 shadow-lg animate-pulse' : ''
+                            } rounded px-1 cursor-help transition-all hover:bg-opacity-50`}
+                            title={`${part.mistakeType?.toUpperCase()}: ${part.text} → ${part.correction}`}
+                            onClick={() => {
+                              const mistakeId = pageMistakes[0]?.mistakes.find(m => m.incorrect === part.text)?.id;
+                              if (mistakeId) {
+                                setSelectedMistakeId(selectedMistakeId === mistakeId ? null : mistakeId);
+                              }
+                            }}
+                          >
+                            {part.text}
+                          </span>
+                        ) : (
+                          <span key={index}>{part.text}</span>
+                        )
+                      ))
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                        <IconComponent icon={AiOutlineFileText} className="h-8 w-8 mb-2 opacity-50" />
+                        <p className="text-sm">No text to display</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : documentView === 'image' ? (
+                <img 
+                  src={documentPages[currentPage]} 
+                  alt={`Document page ${currentPage + 1}`}
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                /* Text View with Highlighted Mistakes */
+                <div className="w-full h-full overflow-auto p-4">
+                  {extractedTexts[currentPage] && extractedTexts[currentPage].isLoading ? (
+                    <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                      <motion.div
+                        className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full mb-2"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      />
+                      <p className="text-sm">Extracting text...</p>
+                    </div>
+                  ) : extractedTexts[currentPage] && extractedTexts[currentPage].error ? (
+                    <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                      <div className="text-red-400 mb-2">⚠</div>
+                      <p className="text-sm">Error extracting text</p>
+                      <p className="text-xs text-slate-500">{extractedTexts[currentPage].error}</p>
+                    </div>
+                  ) : extractedTexts[currentPage] && extractedTexts[currentPage].text ? (
+                    <>
+                      <div className="text-slate-300 whitespace-pre-wrap font-mono text-sm leading-relaxed mb-4">
+                        {highlightMistakesInText(
+                          extractedTexts[currentPage].text, 
+                          pageMistakes[currentPage]?.mistakes || []
+                        ).map((part, index) => (
+                          part.isHighlighted ? (
+                            <span
+                              key={index}
+                              className={`${
+                                part.mistakeType === 'grammar' ? 'bg-red-500/30 border-b-2 border-red-500' :
+                                part.mistakeType === 'spelling' ? 'bg-yellow-500/30 border-b-2 border-yellow-500' :
+                                part.mistakeType === 'punctuation' ? 'bg-blue-500/30 border-b-2 border-blue-500' :
+                                'bg-orange-500/30 border-b-2 border-orange-500'
+                              } ${
+                                part.isSelected ? 'ring-2 ring-cyan-400 bg-cyan-500/20 shadow-lg animate-pulse' : ''
+                              } rounded px-1 cursor-help transition-all hover:bg-opacity-50`}
+                              title={`${part.mistakeType?.toUpperCase()}: ${part.text} → ${part.correction}`}
+                              onClick={() => {
+                                const mistakeId = pageMistakes[currentPage]?.mistakes.find(m => m.incorrect === part.text)?.id;
+                                if (mistakeId) {
+                                  setSelectedMistakeId(selectedMistakeId === mistakeId ? null : mistakeId);
+                                }
+                              }}
+                            >
+                              {part.text}
+                            </span>
+                          ) : (
+                            <span key={index}>{part.text}</span>
+                          )
+                        ))}
+                      </div>
+                      
+                      {/* Color Legend */}
+                      {pageMistakes[currentPage]?.mistakes && pageMistakes[currentPage].mistakes.length > 0 && (
+                        <div className="mt-4 p-3 bg-slate-600/30 rounded-lg border border-white/10">
+                          <h4 className="text-sm font-medium text-slate-300 mb-2">Mistake Types:</h4>
+                          <div className="flex flex-wrap gap-3 text-xs">
+                            <div className="flex items-center">
+                              <div className="w-3 h-3 bg-red-500/30 border-b-2 border-red-500 rounded mr-2"></div>
+                              <span className="text-slate-400">Grammar</span>
+                            </div>
+                            <div className="flex items-center">
+                              <div className="w-3 h-3 bg-yellow-500/30 border-b-2 border-yellow-500 rounded mr-2"></div>
+                              <span className="text-slate-400">Spelling</span>
+                            </div>
+                            <div className="flex items-center">
+                              <div className="w-3 h-3 bg-blue-500/30 border-b-2 border-blue-500 rounded mr-2"></div>
+                              <span className="text-slate-400">Punctuation</span>
+                            </div>
+                            <div className="flex items-center">
+                              <div className="w-3 h-3 bg-orange-500/30 border-b-2 border-orange-500 rounded mr-2"></div>
+                              <span className="text-slate-400">Other</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                      <IconComponent icon={AiOutlineFileText} className="h-8 w-8 mb-2 opacity-50" />
+                      <p className="text-sm">No text extracted</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1332,7 +2129,7 @@ Be thorough and fair in your assessment.`
                 )}
               </div>
               
-              <div className="flex-1 overflow-y-auto p-6">
+              <div className="flex-1 overflow-y-auto p-6" ref={mistakesContainerRef}>
                 {loading ? (
                   <div className="flex flex-col items-center justify-center h-full text-slate-400">
                     <motion.div
@@ -1342,61 +2139,130 @@ Be thorough and fair in your assessment.`
                     />
                     <p className="text-center">{processingStatus || 'Checking for mistakes...'}</p>
                   </div>
-                ) : pageMistakes[currentPage] && pageMistakes[currentPage].mistakes.length > 0 ? (
-                  <div className="space-y-4">
-                    <div className="mb-4 p-3 bg-teal-500/10 backdrop-blur-sm rounded-lg border border-teal-500/20">
-                      <h3 className="text-lg font-semibold text-teal-400">
-                        Page {currentPage + 1} - {pageMistakes[currentPage].mistakes.length} mistake(s) found
-                      </h3>
-                    </div>
-                    
-                    {pageMistakes[currentPage].mistakes.map((mistake) => (
-                      <motion.div
-                        key={mistake.id}
-                        className="bg-slate-700/30 backdrop-blur-sm rounded-lg p-4 border border-white/10"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: mistake.id * 0.1 }}
-                      >
-                        <div className="mb-2">
-                          <span className="inline-block px-2 py-1 bg-yellow-500/20 text-yellow-400 text-xs font-medium rounded border border-yellow-500/30">
-                            {mistake.type}
-                          </span>
-                        </div>
-                        
-                        <div className="mb-3">
-                          <h4 className="text-sm font-medium text-red-400 mb-1">Incorrect:</h4>
-                          <div className="bg-red-500/10 border-l-4 border-red-500 p-3 rounded-r">
-                            <p className="text-slate-300 font-mono">{mistake.incorrect}</p>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <h4 className="text-sm font-medium text-green-400 mb-1">Correction:</h4>
-                          <div className="bg-green-500/10 border-l-4 border-green-500 p-3 rounded-r">
-                            <p className="text-slate-300 font-mono">{mistake.correct}</p>
-                          </div>
-                        </div>
-                        
-                        {mistake.explanation && (
-                          <div className="mt-3 p-3 bg-blue-500/10 rounded border border-blue-500/20">
-                            <p className="text-sm text-blue-400">{mistake.explanation}</p>
-                          </div>
-                        )}
-                      </motion.div>
-                    ))}
-                  </div>
-                ) : pageMistakes[currentPage] && pageMistakes[currentPage].isComplete ? (
-                  <div className="flex flex-col items-center justify-center h-full text-slate-400">
-                    <div className="text-6xl mb-4">✅</div>
-                    <h3 className="text-xl font-semibold text-green-400 mb-2">No Mistakes Found!</h3>
-                    <p className="text-center">This page appears to be error-free. Great job!</p>
-                  </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-slate-400">
-                    <IconComponent icon={AiOutlineBulb} className="h-12 w-12 mb-3 opacity-50" />
-                    <p className="text-center">Mistakes will appear here after processing your document.</p>
-                  </div>
+                  <>
+                    {/* Marks Summary (shown when processing is complete and we have summary data) */}
+                    {marksSummary && overallProcessingComplete && (
+                      <div className="mb-6 bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20">
+                        <h3 className="text-lg font-semibold text-blue-400 mb-3">Analysis Summary</h3>
+                        
+                        {/* Score Display */}
+                        <div className="mb-4 text-center">
+                          <div className="text-3xl font-bold text-green-400 mb-2">
+                            {marksSummary.score}/{marksSummary.maxScore}
+                          </div>
+                          <div className="w-full bg-slate-600 rounded-full h-3">
+                            <div 
+                              className="bg-gradient-to-r from-green-500 to-emerald-500 h-3 rounded-full transition-all duration-1000"
+                              style={{ width: `${marksSummary.score}%` }}
+                            ></div>
+                          </div>
+                          <p className="text-sm text-blue-300 mt-2">{marksSummary.score}% Overall Score</p>
+                        </div>
+                        
+                        {/* Mistake Breakdown */}
+                        <div className="grid grid-cols-2 gap-3 mb-4">
+                          <div className="bg-slate-600/30 rounded p-3">
+                            <div className="text-sm text-slate-300 font-medium">Total Mistakes</div>
+                            <div className="text-xl text-red-400 font-bold">{marksSummary.totalMistakes}</div>
+                          </div>
+                          {Object.entries(marksSummary.mistakesByType).map(([type, count]) => (
+                            <div key={type} className="bg-slate-600/30 rounded p-3">
+                              <div className="text-sm text-slate-300 font-medium capitalize">{type}</div>
+                              <div className="text-lg text-yellow-400 font-bold">{count}</div>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {/* Overall Feedback */}
+                        <div className="bg-slate-600/30 rounded p-3 mb-3">
+                          <h4 className="text-sm font-medium text-slate-300 mb-2">Overall Feedback:</h4>
+                          <p className="text-sm text-slate-400">{marksSummary.overallFeedback}</p>
+                        </div>
+                        
+                        {/* Suggestions */}
+                        <div className="bg-slate-600/30 rounded p-3">
+                          <h4 className="text-sm font-medium text-slate-300 mb-2">Suggestions for Improvement:</h4>
+                          <ul className="space-y-1">
+                            {marksSummary.suggestions.map((suggestion, index) => (
+                              <li key={index} className="text-sm text-blue-300 flex items-center">
+                                <span className="text-blue-500 mr-2">•</span>
+                                {suggestion}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Mistakes Content */}
+                    {pageMistakes[currentPage] && pageMistakes[currentPage].mistakes.length > 0 ? (
+                      <div className="space-y-4">
+                        <div className="mb-4 p-3 bg-teal-500/10 backdrop-blur-sm rounded-lg border border-teal-500/20">
+                          <h3 className="text-lg font-semibold text-teal-400">
+                            {textOnlyMode ? 'Text Analysis' : `Page ${currentPage + 1}`} - {pageMistakes[currentPage].mistakes.length} mistake(s) found
+                          </h3>
+                        </div>
+                        
+                        {pageMistakes[currentPage].mistakes.map((mistake) => (
+                          <motion.div
+                            key={mistake.id}
+                            className={`bg-slate-700/30 backdrop-blur-sm rounded-lg p-4 border cursor-pointer transition-all ${
+                              selectedMistakeId === mistake.id 
+                                ? 'border-cyan-500/50 bg-cyan-500/10' 
+                                : 'border-white/10 hover:border-cyan-500/30'
+                            }`}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: mistake.id * 0.1 }}
+                            onClick={() => {
+                              setSelectedMistakeId(selectedMistakeId === mistake.id ? null : mistake.id);
+                              if (textExtractionEnabled && extractedTexts[currentPage]) {
+                                setDocumentView('text'); // Switch to text view to show highlighting
+                              }
+                            }}
+                          >
+                            <div className="mb-2">
+                              <span className="inline-block px-2 py-1 bg-yellow-500/20 text-yellow-400 text-xs font-medium rounded border border-yellow-500/30">
+                                {mistake.type}
+                              </span>
+                            </div>
+                            
+                            <div className="mb-3">
+                              <h4 className="text-sm font-medium text-red-400 mb-1">Incorrect:</h4>
+                              <div className="bg-red-500/10 border-l-4 border-red-500 p-3 rounded-r">
+                                <p className="text-slate-300 font-mono">{mistake.incorrect}</p>
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <h4 className="text-sm font-medium text-green-400 mb-1">Correction:</h4>
+                              <div className="bg-green-500/10 border-l-4 border-green-500 p-3 rounded-r">
+                                <p className="text-slate-300 font-mono">{mistake.correct}</p>
+                              </div>
+                            </div>
+                            
+                            {mistake.explanation && (
+                              <div className="mt-3 p-3 bg-blue-500/10 rounded border border-blue-500/20">
+                                <p className="text-sm text-blue-400">{mistake.explanation}</p>
+                              </div>
+                            )}
+                          </motion.div>
+                        ))}
+                      </div>
+                    ) : pageMistakes[currentPage] && pageMistakes[currentPage].isComplete ? (
+                      <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                        <div className="text-6xl mb-4">✅</div>
+                        <h3 className="text-xl font-semibold text-green-400 mb-2">No Mistakes Found!</h3>
+                        <p className="text-center">This page appears to be error-free. Great job!</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                        <IconComponent icon={AiOutlineBulb} className="h-12 w-12 mb-3 opacity-50" />
+                        <p className="text-center">Mistakes will appear here after processing your document.</p>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </>
@@ -1468,7 +2334,7 @@ Be thorough and fair in your assessment.`
                 )}
               </div>
               
-              <div className="flex-1 overflow-y-auto p-6">
+              <div className="flex-1 overflow-y-auto p-6" ref={mistakesContainerRef}>
                 {isGeneratingMarking && pageMarkings.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-slate-400">
                     <motion.div

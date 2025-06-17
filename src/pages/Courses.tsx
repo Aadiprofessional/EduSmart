@@ -40,7 +40,11 @@ import {
   FaRegBookmark,
   FaTimes,
   FaUserTie,
-  FaTimesCircle
+  FaTimesCircle,
+  FaSort,
+  FaRegHeart,
+  FaTh,
+  FaList
 } from 'react-icons/fa';
 import IconWrapper from '../components/IconWrapper';
 import PageHeader from '../components/ui/PageHeader';
@@ -472,10 +476,10 @@ const Courses: React.FC = () => {
       <PageHeader
         title={t('courses.title') || 'Learn Without Limits'}
         subtitle={t('courses.subtitle') || 'Start, switch, or advance your career with thousands of courses'}
-        height="lg"
+        height="sm"
       >
-        {/* Enhanced Search Bar */}
-        <div className="max-w-2xl mx-auto">
+        {/* Enhanced Search Bar - Desktop only */}
+        <div className="max-w-2xl mx-auto hidden lg:block">
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-2 shadow-2xl border border-white/20">
             <div className="flex gap-2">
               <div className="flex-1 relative">
@@ -497,9 +501,91 @@ const Courses: React.FC = () => {
         </div>
       </PageHeader>
 
-      {/* Filters */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+        {/* Mobile Search and Action Bar - Show on mobile only */}
+        <div className="block lg:hidden mb-6 space-y-4">
+          {/* Mobile Search Bar */}
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="What do you want to learn?"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <IconComponent icon={FaSearch} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <IconComponent icon={FaTimes} className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Mobile Filter and Action Buttons */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowFilters(true)}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <IconComponent icon={FaFilter} className="h-4 w-4" />
+              <span>Filters</span>
+              {((activeCategory ? 1 : 0) + (activeLevel ? 1 : 0) + (searchQuery ? 1 : 0)) > 0 && (
+                <span className="bg-blue-800 text-white text-xs px-2 py-1 rounded-full">
+                  {(activeCategory ? 1 : 0) + (activeLevel ? 1 : 0) + (searchQuery ? 1 : 0)}
+                </span>
+              )}
+            </button>
+
+            {/* View Mode Toggle */}
+            <button
+              onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+              className="px-3 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all flex items-center justify-center"
+            >
+              <IconComponent icon={viewMode === 'grid' ? FaFilter : FaSort} className="h-4 w-4" />
+            </button>
+
+            {/* Sort Toggle */}
+            <button
+              onClick={() => setSortBy(sortBy === 'featured' ? 'popular' : 'featured')}
+              className="px-3 py-3 bg-gradient-to-r from-teal-500 to-green-500 text-white rounded-lg hover:from-teal-600 hover:to-green-600 transition-all flex items-center justify-center"
+            >
+              <IconComponent icon={FaSort} className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Desktop Filters */}
+        <div className="hidden lg:block bg-white rounded-2xl shadow-lg p-6 mb-8">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-4">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">Available Courses</h2>
+              <p className="text-gray-600">
+                Showing {courses.length} course{courses.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-4 mt-4 lg:mt-0">
+              {/* View Mode Toggle - Desktop */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded ${viewMode === 'grid' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}
+                >
+                  <IconComponent icon={FaSort} />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded ${viewMode === 'list' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}
+                >
+                  <IconComponent icon={FaFilter} />
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <select
               value={activeLevel}
@@ -550,7 +636,7 @@ const Courses: React.FC = () => {
           </div>
         </div>
 
-        {/* Course Grid */}
+        {/* Course Grid/List */}
         {loading ? (
           <div className="flex justify-center items-center py-20">
             <IconWrapper icon={FaSpinner} className="animate-spin text-4xl text-blue-600" />
@@ -568,129 +654,367 @@ const Courses: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className={viewMode === 'grid' 
+            ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            : "space-y-6"
+          }>
             {courses.map((course) => (
               <motion.div
                 key={course.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 whileHover={{ y: -5 }}
-                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col h-full"
+                className={viewMode === 'grid' 
+                  ? "bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col h-full"
+                  : "bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col lg:flex-row"
+                }
                 onClick={() => {
                   setSelectedCourse(course);
                   setCurrentView('details');
                 }}
               >
-                <div className="relative">
-                  <img
-                    src={course.thumbnail_image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400'}
-                    alt={course.title}
-                    className="w-full h-48 object-cover"
-                  />
-                  
-                  {course.featured && (
-                    <div className="absolute top-3 left-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                      Featured
+                {viewMode === 'grid' ? (
+                  // Grid View Layout
+                  <>
+                    <div className="relative">
+                      <img
+                        src={course.thumbnail_image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400'}
+                        alt={course.title}
+                        className="w-full h-48 object-cover"
+                      />
+                      
+                      {course.featured && (
+                        <div className="absolute top-3 left-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                          Featured
+                        </div>
+                      )}
+                      
+                      <div className="absolute top-3 right-3">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleWishlist(course.id);
+                          }}
+                          className={`p-2 rounded-full transition-colors ${
+                            wishlist.includes(course.id) 
+                              ? 'bg-red-500 text-white' 
+                              : 'bg-white/80 text-gray-600 hover:bg-white'
+                          }`}
+                        >
+                          <IconWrapper icon={wishlist.includes(course.id) ? FaHeart : FaRegHeart} size={14} />
+                        </button>
+                      </div>
                     </div>
-                  )}
-                  
-                  <div className="absolute top-3 right-3">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleWishlist(course.id);
-                      }}
-                      className={`p-2 rounded-full transition-colors ${
-                        wishlist.includes(course.id) 
-                          ? 'bg-red-500 text-white' 
-                          : 'bg-white/80 text-gray-600 hover:bg-white'
-                      }`}
-                    >
-                      <IconWrapper icon={FaHeart} size={14} />
-                    </button>
-                  </div>
-                </div>
 
-                <div className="p-6 flex flex-col flex-grow">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-blue-600 font-semibold capitalize">{course.category}</span>
-                    <span className="text-sm text-gray-500 capitalize">{course.level}</span>
-                  </div>
-                  
-                  <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 min-h-[3.5rem]">{course.title}</h3>
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-2 min-h-[2.5rem] flex-grow">{course.description}</p>
-                  
-                  <div className="flex items-center gap-4 mb-4 text-sm text-gray-500">
-                    <div className="flex items-center gap-1">
-                      <IconWrapper icon={FaClock} size={12} />
-                      {course.duration}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <IconWrapper icon={FaUsers} size={12} />
-                      {course.total_students || 0}
-                    </div>
-                  </div>
+                    <div className="p-6 flex flex-col flex-grow">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-blue-600 font-semibold capitalize">{course.category}</span>
+                        <span className="text-sm text-gray-500 capitalize">{course.level}</span>
+                      </div>
+                      
+                      <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 min-h-[3.5rem]">{course.title}</h3>
+                      <p className="text-gray-600 text-sm mb-4 line-clamp-2 min-h-[2.5rem] flex-grow">{course.description}</p>
+                      
+                      <div className="flex items-center gap-4 mb-4 text-sm text-gray-500">
+                        <div className="flex items-center gap-1">
+                          <IconWrapper icon={FaClock} size={12} />
+                          {course.duration}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <IconWrapper icon={FaUsers} size={12} />
+                          {course.total_students || 0}
+                        </div>
+                      </div>
 
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl font-bold text-gray-900">${course.price}</span>
-                      {course.original_price && course.original_price > course.price && (
-                        <span className="text-lg text-gray-400 line-through">${course.original_price}</span>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl font-bold text-gray-900">${course.price}</span>
+                          {course.original_price && course.original_price > course.price && (
+                            <span className="text-lg text-gray-400 line-through">${course.original_price}</span>
+                          )}
+                        </div>
+                        
+                        {course.rating && (
+                          <div className="flex items-center gap-1">
+                            {renderStars(course.rating)}
+                            <span className="text-sm text-gray-600 ml-1">({course.total_reviews})</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="mt-auto">
+                        {isEnrolled(course.id) ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigateToCoursePlayer(course.id);
+                            }}
+                            className="w-full px-4 py-2 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                          >
+                            <IconWrapper icon={FaPlayCircle} size={16} />
+                            View Course
+                          </button>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEnrollment(course.id);
+                            }}
+                            className="w-full px-4 py-2 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+                          >
+                            Enroll Now
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  // List View Layout
+                  <>
+                    <div className="relative w-full lg:w-80 flex-shrink-0">
+                      <img
+                        src={course.thumbnail_image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400'}
+                        alt={course.title}
+                        className="w-full h-48 lg:h-full object-cover"
+                      />
+                      
+                      {course.featured && (
+                        <div className="absolute top-3 left-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                          Featured
+                        </div>
                       )}
                     </div>
-                    
-                    {course.rating && (
-                      <div className="flex items-center gap-1">
-                        {renderStars(course.rating)}
-                        <span className="text-sm text-gray-600 ml-1">({course.total_reviews})</span>
-                      </div>
-                    )}
-                  </div>
 
-                  <div className="flex gap-2 mt-auto">
-                    {isEnrolled(course.id) ? (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigateToCoursePlayer(course.id);
-                        }}
-                        className="flex-1 px-4 py-2 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-                      >
-                        <IconWrapper icon={FaPlayCircle} size={16} />
-                        View Course
-                      </button>
-                    ) : (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEnrollment(course.id);
-                        }}
-                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors"
-                      >
-                        Enroll Now
-                      </button>
-                    )}
-                    
-                    {!isEnrolled(course.id) && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleCart(course.id);
-                        }}
-                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
-                      >
-                        <IconWrapper icon={FaShoppingCart} size={14} />
-                      </button>
-                    )}
-                  </div>
-                </div>
+                    <div className="p-6 flex-1 flex flex-col">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-blue-600 font-semibold capitalize">{course.category}</span>
+                        <span className="text-sm text-gray-500 capitalize">{course.level}</span>
+                      </div>
+                      
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">{course.title}</h3>
+                      <p className="text-gray-600 mb-4 line-clamp-2 flex-1">{course.description}</p>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                          <div className="flex items-center gap-1">
+                            <IconWrapper icon={FaClock} size={12} />
+                            {course.duration}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <IconWrapper icon={FaUsers} size={12} />
+                            {course.total_students || 0}
+                          </div>
+                          {course.rating && (
+                            <div className="flex items-center gap-1">
+                              {renderStars(course.rating)}
+                              <span className="ml-1">({course.total_reviews})</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl font-bold text-gray-900">${course.price}</span>
+                            {course.original_price && course.original_price > course.price && (
+                              <span className="text-lg text-gray-400 line-through">${course.original_price}</span>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleWishlist(course.id);
+                              }}
+                              className={`p-2 rounded-lg transition-colors ${
+                                wishlist.includes(course.id) 
+                                  ? 'bg-red-100 text-red-600' 
+                                  : 'bg-gray-100 text-gray-600 hover:bg-red-100 hover:text-red-600'
+                              }`}
+                            >
+                              <IconWrapper icon={wishlist.includes(course.id) ? FaHeart : FaRegHeart} size={16} />
+                            </button>
+
+                            {isEnrolled(course.id) ? (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigateToCoursePlayer(course.id);
+                                }}
+                                className="px-4 py-2 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors flex items-center gap-2"
+                              >
+                                <IconWrapper icon={FaPlayCircle} size={16} />
+                                View Course
+                              </button>
+                            ) : (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEnrollment(course.id);
+                                }}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+                              >
+                                Enroll Now
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
               </motion.div>
             ))}
           </div>
         )}
       </div>
-      
-      <Footer />
+
+      {/* Mobile Filter Modal */}
+      <AnimatePresence>
+        {showFilters && (
+          <motion.div
+            className="fixed inset-0 bg-black bg-opacity-50 z-[10000] lg:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowFilters(false)}
+          >
+            <motion.div
+              className="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-xl"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="sticky top-0 bg-white border-b px-4 py-4 flex justify-between items-center z-10">
+                <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
+                <button
+                  onClick={() => setShowFilters(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors bg-gray-50 border border-gray-200"
+                >
+                  <IconComponent icon={FaTimes} className="h-5 w-5 text-gray-700" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="p-4 pb-20">
+                {/* Level */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Level</label>
+                  <select
+                    value={activeLevel}
+                    onChange={(e) => setActiveLevel(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">All Levels</option>
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                    <option value="all-levels">All Levels</option>
+                  </select>
+                </div>
+
+                {/* Sort By */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="newest">Newest</option>
+                    <option value="popular">Most Popular</option>
+                    <option value="rating">Highest Rated</option>
+                    <option value="price-low">Price: Low to High</option>
+                    <option value="price-high">Price: High to Low</option>
+                  </select>
+                </div>
+
+                {/* Price Range */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Price Range</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="number"
+                      placeholder="Min Price"
+                      value={priceRange[0]}
+                      onChange={(e) => setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])}
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Max Price"
+                      value={priceRange[1]}
+                      onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value) || 200])}
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Quick Filters */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Quick Filters</label>
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => {
+                        setActiveLevel('');
+                        setSortBy('featured');
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      ⭐ Featured Courses
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveLevel('beginner');
+                        setSortBy('popular');
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      🔥 Popular for Beginners
+                    </button>
+                    <button
+                      onClick={() => {
+                        setPriceRange([0, 0]);
+                        setSortBy('rating');
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      🆓 Free Courses
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="absolute bottom-0 left-0 right-0 bg-white border-t px-4 py-3 flex gap-3">
+                <button
+                  onClick={() => {
+                    setActiveLevel('');
+                    setActiveCategory('');
+                    setPriceRange([0, 200]);
+                    setSortBy('featured');
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Reset
+                </button>
+                <button
+                  onClick={() => {
+                    setShowFilters(false);
+                    fetchCourses();
+                  }}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Apply
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 

@@ -1190,6 +1190,210 @@ Please provide a helpful, educational response that helps the student understand
     }
   };
 
+  const renderSummarySidePanel = () => (
+    <AnimatePresence>
+      {showFullSummary && (
+        <motion.div
+          initial={{ x: 400, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: 400, opacity: 0 }}
+          transition={{ type: "spring", damping: 25, stiffness: 200 }}
+          className="fixed top-0 right-0 h-full w-96 bg-gradient-to-br from-gray-900/95 via-gray-800/95 to-gray-900/95 backdrop-blur-xl border-l border-gray-700/50 shadow-2xl z-50 overflow-hidden"
+        >
+          {/* Header */}
+          <div className="p-6 border-b border-gray-700/50 bg-gradient-to-r from-purple-600/20 via-pink-600/20 to-blue-600/20 backdrop-blur-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg">
+                  <IconWrapper icon={FaBrain} className="text-white" size={18} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                    Lecture Summary
+                  </h3>
+                  <p className="text-xs text-gray-400 truncate max-w-40">
+                    {currentLecture?.title || 'Current Lecture'}
+                  </p>
+                </div>
+              </div>
+              <motion.button
+                onClick={() => setShowFullSummary(false)}
+                whileHover={{ scale: 1.1, rotate: 90 }}
+                whileTap={{ scale: 0.9 }}
+                className="p-2 text-gray-400 hover:text-white hover:bg-red-500/20 rounded-xl transition-all duration-300 border border-gray-600/50"
+              >
+                <IconWrapper icon={FaTimes} size={16} />
+              </motion.button>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="p-4 overflow-y-auto h-[calc(100%-100px)]">
+            {formattedSummary ? (
+              <div className="space-y-4">
+                {/* Main Topic */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="bg-gradient-to-r from-blue-900/30 to-blue-800/30 rounded-xl p-4 border border-blue-500/20"
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                      <IconWrapper icon={FaLightbulb} className="text-white" size={12} />
+                    </div>
+                    <h4 className="text-sm font-bold text-blue-400">Main Topic</h4>
+                  </div>
+                  <p className="text-gray-200 text-sm leading-relaxed">{formattedSummary.mainTopic}</p>
+                </motion.div>
+
+                {/* Key Concepts */}
+                {formattedSummary.keyConcepts.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="bg-gradient-to-r from-green-900/30 to-green-800/30 rounded-xl p-4 border border-green-500/20"
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center">
+                        <IconWrapper icon={FaBrain} className="text-white" size={12} />
+                      </div>
+                      <h4 className="text-sm font-bold text-green-400">Key Concepts</h4>
+                    </div>
+                    <ul className="space-y-2">
+                      {formattedSummary.keyConcepts.map((concept, index) => (
+                        <motion.li
+                          key={index}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.3 + index * 0.05 }}
+                          className="flex items-start gap-2 text-gray-200 text-sm"
+                        >
+                          <div className="w-1.5 h-1.5 bg-green-400 rounded-full mt-2 flex-shrink-0"></div>
+                          <span className="leading-relaxed">{concept}</span>
+                        </motion.li>
+                      ))}
+                    </ul>
+                  </motion.div>
+                )}
+
+                {/* Learning Objectives */}
+                {formattedSummary.learningObjectives.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="bg-gradient-to-r from-yellow-900/30 to-yellow-800/30 rounded-xl p-4 border border-yellow-500/20"
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-6 h-6 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center">
+                        <IconWrapper icon={FaGraduationCap} className="text-white" size={12} />
+                      </div>
+                      <h4 className="text-sm font-bold text-yellow-400">Learning Objectives</h4>
+                    </div>
+                    <ul className="space-y-2">
+                      {formattedSummary.learningObjectives.map((objective, index) => (
+                        <motion.li
+                          key={index}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.5 + index * 0.05 }}
+                          className="flex items-start gap-2 text-gray-200 text-sm"
+                        >
+                          <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></div>
+                          <span className="leading-relaxed">{objective}</span>
+                        </motion.li>
+                      ))}
+                    </ul>
+                  </motion.div>
+                )}
+
+                {/* Important Details */}
+                {formattedSummary.importantDetails.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 }}
+                    className="bg-gradient-to-r from-pink-900/30 to-pink-800/30 rounded-xl p-4 border border-pink-500/20"
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-6 h-6 bg-gradient-to-r from-pink-500 to-pink-600 rounded-lg flex items-center justify-center">
+                        <IconWrapper icon={FaQuestionCircle} className="text-white" size={12} />
+                      </div>
+                      <h4 className="text-sm font-bold text-pink-400">Important Details</h4>
+                    </div>
+                    <ul className="space-y-2">
+                      {formattedSummary.importantDetails.map((detail, index) => (
+                        <motion.li
+                          key={index}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.7 + index * 0.05 }}
+                          className="flex items-start gap-2 text-gray-200 text-sm"
+                        >
+                          <div className="w-1.5 h-1.5 bg-pink-400 rounded-full mt-2 flex-shrink-0"></div>
+                          <span className="leading-relaxed">{detail}</span>
+                        </motion.li>
+                      ))}
+                    </ul>
+                  </motion.div>
+                )}
+
+                {/* Conclusion */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8 }}
+                  className="bg-gradient-to-r from-indigo-900/30 to-indigo-800/30 rounded-xl p-4 border border-indigo-500/20"
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-6 h-6 bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                      <IconWrapper icon={FaChartLine} className="text-white" size={12} />
+                    </div>
+                    <h4 className="text-sm font-bold text-indigo-400">Conclusion</h4>
+                  </div>
+                  <p className="text-gray-200 text-sm leading-relaxed">{formattedSummary.conclusion}</p>
+                </motion.div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="bg-gradient-to-r from-gray-800/50 to-gray-700/50 rounded-xl p-6 border border-gray-600/30"
+                >
+                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <IconWrapper icon={FaBrain} size={18} className="text-white" />
+                  </div>
+                  <h4 className="text-lg font-bold text-white mb-2">No Summary Available</h4>
+                  <p className="text-gray-400 mb-4 text-sm leading-relaxed">
+                    This lecture doesn't have a summary yet. Would you like to generate one using AI?
+                  </p>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      if (currentLecture?.summary) {
+                        formatAISummary(currentLecture.summary);
+                      }
+                    }}
+                    className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-300 font-medium shadow-lg text-sm"
+                  >
+                    <div className="flex items-center gap-2">
+                      <IconWrapper icon={FaRobot} size={14} />
+                      Generate AI Summary
+                    </div>
+                  </motion.button>
+                </motion.div>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+
   const renderVideoPlayer = () => {
     if (!currentLecture || currentLecture.lecture_type !== 'video') return null;
 
@@ -1516,211 +1720,7 @@ Please provide a helpful, educational response that helps the student understand
             )}
           </AnimatePresence>
 
-          {/* Summary Modal */}
-          <AnimatePresence>
-            {showFullSummary && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-                onClick={() => setShowFullSummary(false)}
-              >
-                <motion.div
-                  initial={{ scale: 0.8, opacity: 0, y: 50 }}
-                  animate={{ scale: 1, opacity: 1, y: 0 }}
-                  exit={{ scale: 0.8, opacity: 0, y: 50 }}
-                  transition={{ type: "spring", damping: 25 }}
-                  onClick={(e) => e.stopPropagation()}
-                  className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden border border-gray-700/50"
-                >
-                  {/* Modal Header */}
-                  <div className="p-6 border-b border-gray-700/50 bg-gradient-to-r from-purple-600/20 via-pink-600/20 to-blue-600/20 backdrop-blur-sm">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg">
-                          <IconWrapper icon={FaBrain} className="text-white" size={20} />
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-bold text-white bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                            Lecture Summary
-                          </h3>
-                          <p className="text-sm text-gray-400">
-                            {currentLecture?.title || 'Current Lecture'}
-                          </p>
-                        </div>
-                      </div>
-                      <motion.button
-                        onClick={() => setShowFullSummary(false)}
-                        whileHover={{ scale: 1.1, rotate: 90 }}
-                        whileTap={{ scale: 0.9 }}
-                        className="p-2 text-gray-400 hover:text-white hover:bg-red-500/20 rounded-xl transition-all duration-300 border border-gray-600/50"
-                      >
-                        <IconWrapper icon={FaTimes} size={18} />
-                      </motion.button>
-                    </div>
-                  </div>
-
-                  {/* Modal Content */}
-                  <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-                    {formattedSummary ? (
-                      <div className="space-y-6">
-                        {/* Main Topic */}
-                        <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.1 }}
-                          className="bg-gradient-to-r from-blue-900/30 to-blue-800/30 rounded-2xl p-6 border border-blue-500/20"
-                        >
-                          <div className="flex items-center gap-3 mb-4">
-                            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                              <IconWrapper icon={FaLightbulb} className="text-white" size={16} />
-                            </div>
-                            <h4 className="text-lg font-bold text-blue-400">Main Topic</h4>
-                          </div>
-                          <p className="text-gray-200 leading-relaxed">{formattedSummary.mainTopic}</p>
-                        </motion.div>
-
-                        {/* Key Concepts */}
-                        <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.2 }}
-                          className="bg-gradient-to-r from-green-900/30 to-green-800/30 rounded-2xl p-6 border border-green-500/20"
-                        >
-                          <div className="flex items-center gap-3 mb-4">
-                            <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-                              <IconWrapper icon={FaBrain} className="text-white" size={16} />
-                            </div>
-                            <h4 className="text-lg font-bold text-green-400">Key Concepts</h4>
-                          </div>
-                          <ul className="space-y-2">
-                            {formattedSummary.keyConcepts.map((concept, index) => (
-                              <motion.li
-                                key={index}
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.3 + index * 0.1 }}
-                                className="flex items-start gap-3 text-gray-200"
-                              >
-                                <div className="w-2 h-2 bg-green-400 rounded-full mt-2 flex-shrink-0"></div>
-                                <span className="leading-relaxed">{concept}</span>
-                              </motion.li>
-                            ))}
-                          </ul>
-                        </motion.div>
-
-                        {/* Learning Objectives */}
-                        <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.4 }}
-                          className="bg-gradient-to-r from-yellow-900/30 to-yellow-800/30 rounded-2xl p-6 border border-yellow-500/20"
-                        >
-                          <div className="flex items-center gap-3 mb-4">
-                            <div className="w-8 h-8 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center">
-                              <IconWrapper icon={FaGraduationCap} className="text-white" size={16} />
-                            </div>
-                            <h4 className="text-lg font-bold text-yellow-400">Learning Objectives</h4>
-                          </div>
-                          <ul className="space-y-2">
-                            {formattedSummary.learningObjectives.map((objective, index) => (
-                              <motion.li
-                                key={index}
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.5 + index * 0.1 }}
-                                className="flex items-start gap-3 text-gray-200"
-                              >
-                                <div className="w-2 h-2 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></div>
-                                <span className="leading-relaxed">{objective}</span>
-                              </motion.li>
-                            ))}
-                          </ul>
-                        </motion.div>
-
-                        {/* Important Details */}
-                        <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.6 }}
-                          className="bg-gradient-to-r from-pink-900/30 to-pink-800/30 rounded-2xl p-6 border border-pink-500/20"
-                        >
-                          <div className="flex items-center gap-3 mb-4">
-                            <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-pink-600 rounded-lg flex items-center justify-center">
-                              <IconWrapper icon={FaQuestionCircle} className="text-white" size={16} />
-                            </div>
-                            <h4 className="text-lg font-bold text-pink-400">Important Details</h4>
-                          </div>
-                          <ul className="space-y-2">
-                            {formattedSummary.importantDetails.map((detail, index) => (
-                              <motion.li
-                                key={index}
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.7 + index * 0.1 }}
-                                className="flex items-start gap-3 text-gray-200"
-                              >
-                                <div className="w-2 h-2 bg-pink-400 rounded-full mt-2 flex-shrink-0"></div>
-                                <span className="leading-relaxed">{detail}</span>
-                              </motion.li>
-                            ))}
-                          </ul>
-                        </motion.div>
-
-                        {/* Conclusion */}
-                        <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.8 }}
-                          className="bg-gradient-to-r from-indigo-900/30 to-indigo-800/30 rounded-2xl p-6 border border-indigo-500/20"
-                        >
-                          <div className="flex items-center gap-3 mb-4">
-                            <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                              <IconWrapper icon={FaChartLine} className="text-white" size={16} />
-                            </div>
-                            <h4 className="text-lg font-bold text-indigo-400">Conclusion</h4>
-                          </div>
-                          <p className="text-gray-200 leading-relaxed">{formattedSummary.conclusion}</p>
-                        </motion.div>
-                      </div>
-                    ) : (
-                      <div className="text-center py-12">
-                        <motion.div
-                          initial={{ scale: 0.8, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          className="bg-gradient-to-r from-gray-800/50 to-gray-700/50 rounded-2xl p-8 border border-gray-600/30"
-                        >
-                          <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <IconWrapper icon={FaBrain} size={24} className="text-white" />
-                          </div>
-                          <h4 className="text-xl font-bold text-white mb-2">No Summary Available</h4>
-                          <p className="text-gray-400 mb-6 leading-relaxed">
-                            This lecture doesn't have a summary yet. Would you like to generate one using AI?
-                          </p>
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => {
-                              if (currentLecture?.summary) {
-                                formatAISummary(currentLecture.summary);
-                              }
-                            }}
-                            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-300 font-medium shadow-lg"
-                          >
-                            <div className="flex items-center gap-2">
-                              <IconWrapper icon={FaRobot} size={16} />
-                              Generate AI Summary
-                            </div>
-                          </motion.button>
-                        </motion.div>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+        
         </div>
       </div>
     );
@@ -2327,7 +2327,7 @@ Please provide a helpful, educational response that helps the student understand
                 <div className="flex items-center gap-6">
                   {/* Back Button */}
                   <motion.button
-                    onClick={() => navigate('/courses')}
+                    onClick={() => navigate('/ai-courses')}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     className="p-3 text-gray-400 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-300 backdrop-blur-sm border border-gray-600/50"
@@ -2747,6 +2747,7 @@ Please provide a helpful, educational response that helps the student understand
           </motion.div>
         )}
       </AnimatePresence>
+      {renderSummarySidePanel()}
     </div>
   );
 };

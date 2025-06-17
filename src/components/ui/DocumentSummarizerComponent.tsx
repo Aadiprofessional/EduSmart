@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AiOutlineUpload, AiOutlineFileText, AiOutlineBulb, AiOutlineHistory, AiOutlineFullscreen, AiOutlineCamera } from 'react-icons/ai';
+import { AiOutlineUpload, AiOutlineFileText, AiOutlineBulb, AiOutlineHistory, AiOutlineFullscreen, AiOutlineCamera, AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { FiDownload, FiCopy, FiShare2, FiClock, FiTrash2, FiEye, FiZap, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import IconComponent from './IconComponent';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -118,9 +118,13 @@ const DocumentSummarizerComponent: React.FC<DocumentSummarizerComponentProps> = 
   const [overallProcessingComplete, setOverallProcessingComplete] = useState(false);
   const [showDownloadOptions, setShowDownloadOptions] = useState(false);
   
+  // Auto-scroll functionality
+  const [autoScroll, setAutoScroll] = useState(true);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mindmapRef = useRef<HTMLDivElement>(null);
   const mindmapChart = useRef<echarts.ECharts | null>(null);
+  const summaryContainerRef = useRef<HTMLDivElement>(null); // Add ref for auto-scroll
 
   // Load history from localStorage on component mount
   useEffect(() => {
@@ -143,9 +147,27 @@ const DocumentSummarizerComponent: React.FC<DocumentSummarizerComponentProps> = 
     localStorage.setItem('summaryHistory', JSON.stringify(summaryHistory));
   }, [summaryHistory]);
 
+  // Auto-scroll to bottom of summary container
+  const scrollToBottom = () => {
+    if (autoScroll && summaryContainerRef.current) {
+      summaryContainerRef.current.scrollTop = summaryContainerRef.current.scrollHeight;
+    }
+  };
+
+  // Auto-scroll effect for streaming content - Fixed to work properly
+  useEffect(() => {
+    if (autoScroll && (streamingText || summary)) {
+      const timeoutId = setTimeout(() => {
+        scrollToBottom();
+      }, 100); // Small delay to ensure DOM is updated
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [streamingText, summary, autoScroll]);
+
   // Initialize mindmap chart with improved styling
   useEffect(() => {
-    if (mindmapRef.current && mindmapData && showMindmap) {
+    if (mindmapRef.current && mindmapData && (showMindmap || fullScreenView === 'mindmap')) {
       // Clean up any existing chart instance first
       if (mindmapChart.current) {
         try {
@@ -159,7 +181,7 @@ const DocumentSummarizerComponent: React.FC<DocumentSummarizerComponentProps> = 
       
       // Add a small delay to ensure DOM is ready
       const timeoutId = setTimeout(() => {
-        if (mindmapRef.current && showMindmap) {
+        if (mindmapRef.current && (showMindmap || fullScreenView === 'mindmap')) {
           try {
             mindmapChart.current = echarts.init(mindmapRef.current);
             
@@ -167,6 +189,47 @@ const DocumentSummarizerComponent: React.FC<DocumentSummarizerComponentProps> = 
               backgroundColor: 'transparent',
               // Global configuration to prevent black lines
               color: ['#06b6d4', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#f97316', '#14b8a6'],
+              // Add interactive toolbox for pan/zoom controls
+              toolbox: {
+                show: true,
+                feature: {
+                  restore: {
+                    title: 'Reset View'
+                  },
+                  saveAsImage: {
+                    title: 'Save as Image',
+                    backgroundColor: '#1e293b'
+                  }
+                },
+                iconStyle: {
+                  borderColor: '#06b6d4'
+                },
+                emphasis: {
+                  iconStyle: {
+                    borderColor: '#0891b2'
+                  }
+                },
+                right: '10',
+                top: '10'
+              },
+              // Add zoom functionality
+              dataZoom: [
+                {
+                  type: 'inside',
+                  zoomOnMouseWheel: 'ctrl',
+                  moveOnMouseMove: 'shift',
+                  moveOnMouseWheel: true,
+                  preventDefaultMouseMove: false
+                }
+              ],
+              // Add brush for selection (optional)
+              brush: {
+                toolbox: ['clear'],
+                brushLink: 'all',
+                outOfBrush: {
+                  colorAlpha: 0.1
+                }
+              },
               tooltip: {
                 trigger: 'item',
                 triggerOn: 'mousemove',
@@ -181,7 +244,7 @@ const DocumentSummarizerComponent: React.FC<DocumentSummarizerComponentProps> = 
                 formatter: function(params: any) {
                   return `<div style="padding: 10px;">
                     <div style="color: #06b6d4; font-weight: bold; margin-bottom: 6px; font-size: 14px;">${params.name}</div>
-                    <div style="color: #cbd5e1; font-size: 12px;">Click to expand/collapse</div>
+                    <div style="color: #cbd5e1; font-size: 12px;">Click to expand/collapse • Ctrl+Scroll to zoom • Shift+Drag to move</div>
                   </div>`;
                 }
               },
@@ -194,6 +257,11 @@ const DocumentSummarizerComponent: React.FC<DocumentSummarizerComponentProps> = 
                   bottom: '5%',
                   right: '20%',
                   symbolSize: [16, 16],
+                  roam: true, // Enable pan and zoom
+                  scaleLimit: {
+                    min: 0.1,
+                    max: 10
+                  },
                   label: {
                     position: 'left',
                     verticalAlign: 'middle',
@@ -297,6 +365,31 @@ const DocumentSummarizerComponent: React.FC<DocumentSummarizerComponentProps> = 
             
             mindmapChart.current.setOption(option as any);
             
+            // Enable roaming (pan and zoom) functionality
+            mindmapChart.current.on('click', function(params: any) {
+              console.log('Mind map node clicked:', params);
+            });
+            
+            // Add double-click to reset view
+            mindmapChart.current.getZr().on('dblclick', function() {
+              mindmapChart.current?.dispatchAction({
+                type: 'restore'
+              });
+            });
+            
+            // Add mouse wheel zoom
+            mindmapChart.current.getZr().on('mousewheel', function(event: any) {
+              if (event.event.ctrlKey) {
+                event.event.preventDefault();
+                const delta = event.event.deltaY > 0 ? -0.1 : 0.1;
+                mindmapChart.current?.dispatchAction({
+                  type: 'dataZoom',
+                  start: 0,
+                  end: 100 + delta * 100
+                });
+              }
+            });
+            
             // Post-render fix for black lines
             setTimeout(() => {
               const chartContainer = mindmapRef.current;
@@ -358,7 +451,7 @@ const DocumentSummarizerComponent: React.FC<DocumentSummarizerComponentProps> = 
           }
         }
       };
-    } else if (!showMindmap && mindmapChart.current) {
+    } else if (!showMindmap && fullScreenView !== 'mindmap' && mindmapChart.current) {
       // Clean up chart when hiding mindmap
       try {
         if (!mindmapChart.current.isDisposed()) {
@@ -370,7 +463,25 @@ const DocumentSummarizerComponent: React.FC<DocumentSummarizerComponentProps> = 
         mindmapChart.current = null;
       }
     }
-  }, [mindmapData, showMindmap]);
+  }, [mindmapData, showMindmap, fullScreenView]);
+
+  // Handle mindmap reinitialization when switching to fullscreen
+  useEffect(() => {
+    if (fullScreenView === 'mindmap' && mindmapData && mindmapChart.current) {
+      // Small delay to ensure DOM is ready, then resize the chart
+      const timeoutId = setTimeout(() => {
+        if (mindmapChart.current && !mindmapChart.current.isDisposed()) {
+          try {
+            mindmapChart.current.resize();
+          } catch (error) {
+            console.warn('Error resizing chart for fullscreen:', error);
+          }
+        }
+      }, 200);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [fullScreenView]);
 
   // Auto-trigger mindmap generation when summary is complete
   useEffect(() => {
@@ -542,6 +653,11 @@ Please provide a well-structured, informative summary using proper markdown form
               if (content_chunk) {
                 fullContent += content_chunk;
                 setStreamingText(fullContent);
+                
+                // Auto-scroll to show latest content
+                if (autoScroll) {
+                  setTimeout(scrollToBottom, 50);
+                }
               }
             } catch (parseError) {
               continue;
@@ -1401,6 +1517,11 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
               if (content_chunk) {
                 fullContent += content_chunk;
                 setStreamingText(fullContent);
+                
+                // Auto-scroll to show latest content
+                if (autoScroll) {
+                  setTimeout(scrollToBottom, 50);
+                }
               }
             } catch (parseError) {
               continue;
@@ -1569,6 +1690,25 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
             <div>
               <h2 className="text-2xl font-bold text-cyan-400">Document Summarizer</h2>
               <p className="text-cyan-300 text-sm mt-1 font-medium">Comprehensive analysis and key insights</p>
+            </div>
+          </div>
+          
+          {/* Auto-scroll Toggle */}
+          <div className="mb-4">
+            <div className="flex items-center justify-center">
+              <div className="flex items-center space-x-2 bg-slate-600/20 backdrop-blur-sm rounded-lg p-3 border border-white/10">
+                <input
+                  type="checkbox"
+                  id="autoScrollSummary"
+                  checked={autoScroll}
+                  onChange={(e) => setAutoScroll(e.target.checked)}
+                  className="w-4 h-4 text-cyan-600 bg-slate-600 border-slate-400 rounded focus:ring-cyan-500 focus:ring-2"
+                />
+                <label htmlFor="autoScrollSummary" className="text-slate-300 text-sm font-medium cursor-pointer flex items-center">
+                  <IconComponent icon={AiOutlineLoading3Quarters} className="h-4 w-4 mr-1" />
+                  Auto Scroll
+                </label>
+              </div>
             </div>
           </div>
           
@@ -1831,6 +1971,7 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
           <motion.div
             className="bg-gradient-to-br from-slate-600/20 to-slate-700/20 backdrop-blur-sm border border-cyan-500/20 rounded-xl p-6 overflow-y-auto h-[660px] shadow-xl"
             variants={itemVariants}
+            ref={summaryContainerRef} // Move ref to the scrollable container
           >
             {loading && !streamingText && pageSummaries.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-slate-300">
@@ -1935,8 +2076,16 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
                 )}
               </div>
             ) : showMindmap && mindmapData ? (
-              <div className="h-full">
-                <div ref={mindmapRef} className="w-full h-full rounded-lg" />
+              <div className="h-full bg-slate-700/30 backdrop-blur-sm rounded-lg border border-white/10">
+                <div className="p-3 border-b border-white/10 bg-slate-600/30">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-medium text-cyan-400">Interactive Mind Map</h3>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs text-slate-400">🖱️ Click & drag to move • 🔍 Scroll to zoom • 📍 Double-click to reset</span>
+                    </div>
+                  </div>
+                </div>
+                <div ref={mindmapRef} className="w-full h-[calc(100%-60px)] rounded-b-lg" />
               </div>
             ) : (summary || streamingText) ? (
               <div className="relative">
@@ -2113,7 +2262,7 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
               </motion.button>
             </div>
             
-            <div className="space-y-4 max-h-96 overflow-y-auto custom-scrollbar">
+            <div className="space-y-4 max-h-96 overflow-y-auto custom-scrollbar" ref={summaryContainerRef}>
               {summaryHistory.length > 0 ? (
                 summaryHistory.map((item, index) => (
                   <motion.div
@@ -2190,25 +2339,27 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
         )}
       </AnimatePresence>
 
-      {/* Enhanced Fullscreen Modal */}
+      {/* Enhanced Fullscreen Modal - Fixed to cover whole component */}
       <AnimatePresence>
         {fullScreenView && (
           <motion.div 
-            className="fixed inset-0 bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 backdrop-blur-xl z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-gradient-to-br from-slate-900/98 via-slate-800/98 to-slate-900/98 backdrop-blur-xl z-[9999] flex items-center justify-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setFullScreenView(null)}
+            style={{ margin: 0, padding: 0 }}
           >
             <motion.div 
-              className="bg-gradient-to-br from-slate-700/95 via-slate-800/95 to-slate-900/95 backdrop-blur-xl border-2 border-cyan-500/40 rounded-3xl p-8 max-w-7xl w-full max-h-[95vh] overflow-hidden shadow-2xl"
-              initial={{ scale: 0.9, opacity: 0, y: 50 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 50 }}
+              className="bg-gradient-to-br from-slate-700/98 via-slate-800/98 to-slate-900/98 backdrop-blur-xl border-2 border-cyan-500/40 rounded-2xl w-full h-full flex flex-col shadow-2xl"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
               onClick={(e) => e.stopPropagation()}
+              style={{ margin: 0 }}
             >
-              <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center justify-between p-6 border-b border-cyan-500/20 flex-shrink-0">
                 <div className="flex items-center space-x-4">
                   <div className="p-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl shadow-lg">
                     <IconComponent 
@@ -2264,13 +2415,24 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
                 </div>
               </div>
               
-              <div className="overflow-y-auto max-h-[calc(95vh-12rem)] custom-scrollbar">
+              <div className="flex-1 p-6 overflow-hidden">
                 {fullScreenView === 'mindmap' && mindmapData ? (
-                  <div className="h-[75vh] bg-gradient-to-br from-slate-600/30 via-slate-700/30 to-slate-800/30 rounded-2xl border-2 border-cyan-500/30 shadow-inner">
-                    <div ref={mindmapRef} className="w-full h-full rounded-2xl" />
+                  <div className="h-full bg-gradient-to-br from-slate-600/30 via-slate-700/30 to-slate-800/30 rounded-2xl border-2 border-cyan-500/30 shadow-inner">
+                    <div className="p-3 border-b border-white/10 bg-slate-600/30 rounded-t-2xl">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-medium text-cyan-400">Interactive Mind Map</h3>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs text-slate-400">🖱️ Click & drag to move • 🔍 Scroll to zoom • 📍 Double-click to reset</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div 
+                      ref={fullScreenView === 'mindmap' ? mindmapRef : null}
+                      className="w-full h-[calc(100%-60px)] rounded-b-2xl" 
+                    />
                   </div>
                 ) : summary ? (
-                  <div className="bg-gradient-to-br from-slate-600/30 via-slate-700/30 to-slate-800/30 rounded-2xl p-8 border-2 border-cyan-500/30 shadow-inner">
+                  <div className="h-full bg-gradient-to-br from-slate-600/30 via-slate-700/30 to-slate-800/30 rounded-2xl p-8 border-2 border-cyan-500/30 shadow-inner overflow-y-auto custom-scrollbar">
                     <div
                       className="prose prose-xl max-w-none
                         prose-headings:text-cyan-400 prose-headings:font-bold

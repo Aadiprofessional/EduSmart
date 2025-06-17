@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { FaGraduationCap, FaUniversity, FaChartLine, FaStar, FaFilter, FaSearch, FaCheck, FaTimesCircle, FaEye, FaHeart, FaCalendarAlt, FaMapMarkerAlt, FaAward, FaSpinner, FaTimes } from 'react-icons/fa';
+import { FaGraduationCap, FaUniversity, FaChartLine, FaStar, FaFilter, FaSearch, FaCheck, FaTimesCircle, FaEye, FaHeart, FaCalendarAlt, FaMapMarkerAlt, FaAward, FaSpinner, FaTimes, FaTh, FaList, FaSort, FaUser, FaBookmark } from 'react-icons/fa';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import PageHeader from '../components/ui/PageHeader';
 import MobileFilterPanel from '../components/ui/MobileFilterPanel';
 import IconComponent from '../components/ui/IconComponent';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../utils/LanguageContext';
 import { caseStudyAPI } from '../utils/apiService';
 
@@ -64,6 +64,10 @@ const CaseStudies: React.FC = () => {
   const [outcomes, setOutcomes] = useState<string[]>([]);
   const [countries, setCountries] = useState<string[]>([]);
   const [fields, setFields] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [mobileViewMode, setMobileViewMode] = useState<'grid' | 'list'>('grid');
+  const [showFilters, setShowMobileFilters] = useState(false);
+  const [sortBy, setSortBy] = useState<'newest' | 'popular' | 'scholarship' | 'university'>('newest');
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -85,6 +89,24 @@ const CaseStudies: React.FC = () => {
       }
     }
   };
+
+  const fadeIn = (direction: string, delay: number) => ({
+    hidden: {
+      y: direction === "up" ? 40 : direction === "down" ? -40 : 0,
+      x: direction === "left" ? 40 : direction === "right" ? -40 : 0,
+      opacity: 0,
+    },
+    visible: {
+      y: 0,
+      x: 0,
+      opacity: 1,
+      transition: {
+        duration: 0.5,
+        delay: delay,
+        ease: "easeOut",
+      },
+    },
+  });
 
   const loadCaseStudies = async () => {
     try {
@@ -295,10 +317,10 @@ const CaseStudies: React.FC = () => {
         <PageHeader
           title="Success Stories"
           subtitle="Inspiring journeys of students who achieved their dreams"
-          height="lg"
+          height="sm"
         >
-          {/* Search Bar */}
-          <div className="max-w-2xl mx-auto">
+          {/* Search Bar - Desktop only */}
+          <div className="max-w-2xl mx-auto hidden lg:block">
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-2 shadow-2xl border border-white/20">
               <div className="flex gap-2">
                 <div className="flex-1 relative">
@@ -322,56 +344,106 @@ const CaseStudies: React.FC = () => {
 
         <section className="py-8 sm:py-12">
           <div className="container mx-auto px-4">
-            {/* Mobile Filter Panel - Show on mobile/tablet only */}
-            <div className="block lg:hidden mb-6">
-              <MobileFilterPanel
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
-                searchPlaceholder="Search success stories..."
-                filters={[
-                  {
-                    key: 'category',
-                    label: 'Category',
-                    value: activeFilters.category,
-                    options: Array.isArray(categories) ? categories.map(category => ({ value: category, label: category })) : [],
-                    onChange: (value) => toggleFilter('category', value)
-                  },
-                  {
-                    key: 'outcome',
-                    label: 'Outcome',
-                    value: activeFilters.outcome,
-                    options: Array.isArray(outcomes) ? outcomes.map(outcome => ({ value: outcome, label: outcome })) : [],
-                    onChange: (value) => toggleFilter('outcome', value)
-                  },
-                  {
-                    key: 'country',
-                    label: 'Country',
-                    value: activeFilters.country,
-                    options: Array.isArray(countries) ? countries.map(country => ({ value: country, label: country })) : [],
-                    onChange: (value) => toggleFilter('country', value)
-                  },
-                  {
-                    key: 'field',
-                    label: 'Field of Study',
-                    value: activeFilters.field,
-                    options: Array.isArray(fields) ? fields.map(field => ({ value: field, label: field })) : [],
-                    onChange: (value) => toggleFilter('field', value)
-                  }
-                ]}
-                onClearFilters={clearAllFilters}
-                activeFilterCount={
-                  (activeFilters.category ? 1 : 0) + 
-                  (activeFilters.outcome ? 1 : 0) + 
-                  (activeFilters.country ? 1 : 0) +
-                  (activeFilters.field ? 1 : 0) +
-                  (activeFilters.featured ? 1 : 0)
-                }
-              />
+            {/* Mobile Search and Action Bar - Show on mobile only */}
+            <div className="block lg:hidden mb-6 space-y-4">
+              {/* Mobile Search Bar */}
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search success stories..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <IconComponent icon={FaSearch} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <IconComponent icon={FaTimes} className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Mobile Filter and Action Buttons */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowMobileFilters(true)}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  <IconComponent icon={FaFilter} className="h-4 w-4" />
+                  <span>Filters</span>
+                  {((activeFilters.category ? 1 : 0) + (activeFilters.outcome ? 1 : 0) + (activeFilters.country ? 1 : 0) + (activeFilters.field ? 1 : 0) + (activeFilters.featured ? 1 : 0) + (searchQuery ? 1 : 0)) > 0 && (
+                    <span className="bg-purple-800 text-white text-xs px-2 py-1 rounded-full">
+                      {(activeFilters.category ? 1 : 0) + (activeFilters.outcome ? 1 : 0) + (activeFilters.country ? 1 : 0) + (activeFilters.field ? 1 : 0) + (activeFilters.featured ? 1 : 0) + (searchQuery ? 1 : 0)}
+                    </span>
+                  )}
+                </button>
+
+                {/* View Mode Toggle */}
+                <button
+                  onClick={() => setMobileViewMode(mobileViewMode === 'grid' ? 'list' : 'grid')}
+                  className="px-3 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all flex items-center justify-center"
+                >
+                  <IconComponent icon={mobileViewMode === 'grid' ? FaTh : FaList} className="h-4 w-4" />
+                </button>
+
+                {/* Sort Toggle */}
+                <button
+                  onClick={() => setSortBy(sortBy === 'newest' ? 'popular' : 'newest')}
+                  className="px-3 py-3 bg-gradient-to-r from-teal-500 to-green-500 text-white rounded-lg hover:from-teal-600 hover:to-green-600 transition-all flex items-center justify-center"
+                >
+                  <IconComponent icon={FaSort} className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
             {/* Desktop Search and Filters Section - Hidden on mobile */}
             <section className="hidden lg:block py-8 bg-white border-b border-gray-200 shadow-sm rounded-xl mb-6">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-4">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Success Stories</h2>
+                    <p className="text-gray-600">
+                      Showing {caseStudies.length} success stor{caseStudies.length !== 1 ? 'ies' : 'y'}
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center gap-4 mt-4 lg:mt-0">
+                    {/* View Mode Toggle - Desktop */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setViewMode('grid')}
+                        className={`p-2 rounded ${viewMode === 'grid' ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-500'}`}
+                      >
+                        <IconComponent icon={FaTh} />
+                      </button>
+                      <button
+                        onClick={() => setViewMode('list')}
+                        className={`p-2 rounded ${viewMode === 'list' ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-500'}`}
+                      >
+                        <IconComponent icon={FaList} />
+                      </button>
+                    </div>
+
+                    {/* Sort Dropdown */}
+                    <div className="flex items-center gap-2">
+                      <IconComponent icon={FaSort} className="text-gray-500" />
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as 'newest' | 'popular' | 'scholarship' | 'university')}
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                      >
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="popular">Most Popular</option>
+                        <option value="featured">Featured First</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
                 <motion.div 
                   className="flex flex-col lg:flex-row gap-6 items-center"
                   initial={{ opacity: 0, y: 20 }}
@@ -388,7 +460,7 @@ const CaseStudies: React.FC = () => {
                     <select
                       value={activeFilters.category}
                       onChange={(e) => toggleFilter('category', e.target.value)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all duration-200 hover:border-blue-300"
+                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white transition-all duration-200 hover:border-purple-300"
                     >
                       <option value="">All Categories</option>
                       {Array.isArray(categories) && categories.map(category => (
@@ -399,7 +471,7 @@ const CaseStudies: React.FC = () => {
                     <select
                       value={activeFilters.outcome}
                       onChange={(e) => toggleFilter('outcome', e.target.value)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all duration-200 hover:border-blue-300"
+                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white transition-all duration-200 hover:border-purple-300"
                     >
                       <option value="">All Outcomes</option>
                       {Array.isArray(outcomes) && outcomes.map(outcome => (
@@ -410,7 +482,7 @@ const CaseStudies: React.FC = () => {
                     <select
                       value={activeFilters.country}
                       onChange={(e) => toggleFilter('country', e.target.value)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all duration-200 hover:border-blue-300"
+                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white transition-all duration-200 hover:border-purple-300"
                     >
                       <option value="">All Countries</option>
                       {Array.isArray(countries) && countries.map(country => (
@@ -421,7 +493,7 @@ const CaseStudies: React.FC = () => {
                     <select
                       value={activeFilters.field}
                       onChange={(e) => toggleFilter('field', e.target.value)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all duration-200 hover:border-blue-300"
+                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white transition-all duration-200 hover:border-purple-300"
                     >
                       <option value="">All Fields</option>
                       {Array.isArray(fields) && fields.map(field => (
@@ -429,34 +501,27 @@ const CaseStudies: React.FC = () => {
                       ))}
                     </select>
 
-                    <motion.button
-                      onClick={() => toggleFilter('featured', true)}
-                      className={`px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 ${
-                        activeFilters.featured === true
-                          ? 'bg-blue-500 text-white shadow-lg'
-                          : 'bg-white text-gray-700 hover:bg-blue-50 border border-gray-300'
+                    <button
+                      onClick={() => toggleFilter('featured', !activeFilters.featured)}
+                      className={`px-4 py-2 rounded-lg transition-all duration-200 font-medium ${
+                        activeFilters.featured
+                          ? 'bg-purple-600 text-white shadow-lg'
+                          : 'bg-white border border-gray-300 text-gray-700 hover:border-purple-300 hover:text-purple-600'
                       }`}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
                     >
-                      <IconComponent icon={FaStar} className="inline" />
-                      Featured
-                    </motion.button>
+                      ⭐ Featured
+                    </button>
 
-                    {(searchQuery || Object.values(activeFilters).some(v => v !== null && v !== false && v !== '')) && (
-                      <motion.button
+                    {/* Clear Filters Button */}
+                    {((activeFilters.category || activeFilters.outcome || activeFilters.country || activeFilters.field || activeFilters.featured || searchQuery) && (
+                      <button
                         onClick={clearAllFilters}
-                        className="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all duration-200 border border-red-200"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
+                        className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-all duration-200 flex items-center gap-2"
                       >
-                        <IconComponent icon={FaTimesCircle} className="inline mr-2" />
+                        <IconComponent icon={FaTimesCircle} />
                         Clear All
-                      </motion.button>
-                    )}
+                      </button>
+                    ))}
                   </motion.div>
                 </motion.div>
               </div>
@@ -468,140 +533,202 @@ const CaseStudies: React.FC = () => {
                 {loading ? (
                   <div className="flex justify-center items-center py-12 sm:py-20">
                     <div className="text-center">
-                      <IconComponent icon={FaSpinner} className="animate-spin text-3xl sm:text-4xl text-blue-600 mb-4 mx-auto" />
+                      <IconComponent icon={FaSpinner} className="animate-spin text-3xl sm:text-4xl text-purple-600 mb-4 mx-auto" />
                       <p className="text-sm sm:text-base text-gray-600 mb-4">Please wait while we load the success stories.</p>
                     </div>
                   </div>
                 ) : caseStudies.length > 0 ? (
                   <motion.div 
-                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8"
+                    className={viewMode === 'grid' 
+                      ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8"
+                      : "space-y-6"
+                    }
                     variants={containerVariants}
                     initial="hidden"
                     animate="visible"
                   >
                     {caseStudies.map((caseStudy) => (
-                      <motion.div 
-                        key={caseStudy.id} 
-                        className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 cursor-pointer group"
+                      <motion.div
+                        key={caseStudy.id}
+                        className={viewMode === 'grid' 
+                          ? "bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 flex flex-col group cursor-pointer"
+                          : "bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 flex flex-col lg:flex-row group cursor-pointer"
+                        }
                         variants={itemVariants}
-                        whileHover={{ 
-                          y: -8,
-                          transition: { duration: 0.3 }
-                        }}
+                        whileHover={{ y: -4, scale: 1.01 }}
                         onClick={() => openModal(caseStudy)}
                       >
-                        <div className="relative">
-                          {/* Student Image or Placeholder */}
-                          <div className="h-48 bg-gradient-to-br from-blue-400 to-indigo-500 relative overflow-hidden">
-                            {caseStudy.student_image ? (
+                        {viewMode === 'grid' ? (
+                          // Grid View Layout - Database-style card
+                          <>
+                            <div className="relative overflow-hidden">
                               <img 
-                                src={caseStudy.student_image} 
+                                src={caseStudy.student_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(caseStudy.student_name)}&background=8B5CF6&color=fff`} 
                                 alt={caseStudy.student_name}
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
                               />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center">
-                                  <IconComponent icon={FaGraduationCap} className="text-3xl text-white" />
+                              {caseStudy.reading_time && (
+                                <div className="absolute top-3 right-3 bg-white px-3 py-1 rounded-full text-sm font-bold text-purple-600 shadow-md">
+                                  {caseStudy.reading_time} min
                                 </div>
-                              </div>
-                            )}
-                            
-                            {/* Featured Badge */}
-                            {caseStudy.featured && (
-                              <div className="absolute top-4 right-4">
-                                <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-medium flex items-center gap-1">
-                                  <IconComponent icon={FaStar} className="text-xs" />
+                              )}
+                              {caseStudy.featured && (
+                                <div className="absolute top-3 left-3 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
                                   Featured
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="p-6 flex-1 flex flex-col">
+                              <div className="flex items-center gap-2 mb-3">
+                                <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                                  {caseStudy.target_country || 'International'}
+                                </span>
+                                <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                                  {caseStudy.field_of_study || 'General'}
                                 </span>
                               </div>
-                            )}
-                            
-                            {/* Overlay Gradient */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                            
-                            {/* Student Name on Image */}
-                            <div className="absolute bottom-4 left-4 text-white">
-                              <h3 className="text-lg font-bold">{caseStudy.student_name}</h3>
-                              {caseStudy.student_background && (
-                                <p className="text-sm text-white/80">{caseStudy.student_background}</p>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Card Content */}
-                          <div className="p-6">
-                            <h4 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
-                              {caseStudy.title}
-                            </h4>
-                            
-                            <p className="text-gray-600 text-sm mb-4 line-clamp-3">
-                              {caseStudy.description}
-                            </p>
-
-                            {/* University and Country Info */}
-                            <div className="flex flex-wrap gap-2 mb-4 text-sm">
-                              {caseStudy.target_university && (
-                                <div className="flex items-center gap-1">
-                                  <IconComponent icon={FaUniversity} className="text-blue-500" />
-                                  <span className="truncate">{caseStudy.target_university}</span>
+                              
+                              <h3 className="text-lg font-bold text-gray-800 mb-2 line-clamp-2 flex-shrink-0 group-hover:text-purple-600 transition-colors">
+                                {caseStudy.title}
+                              </h3>
+                              <p className="text-gray-600 mb-4 text-sm line-clamp-3 flex-1">{caseStudy.description}</p>
+                              
+                              <div className="flex items-center mb-4">
+                                <img 
+                                  src={caseStudy.student_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(caseStudy.student_name)}&background=8B5CF6&color=fff`}
+                                  alt={caseStudy.student_name}
+                                  className="w-8 h-8 rounded-full mr-3"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-gray-800 truncate">{caseStudy.student_name}</p>
+                                  <p className="text-xs text-gray-600">{caseStudy.target_university || 'University'}</p>
                                 </div>
-                              )}
-                              {caseStudy.target_country && (
-                                <div className="flex items-center gap-1">
-                                  <IconComponent icon={FaMapMarkerAlt} className="text-blue-500" />
-                                  <span>{caseStudy.target_country}</span>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Outcome Badge */}
-                            {caseStudy.outcome && (
+                              </div>
+                              
+                              {/* Outcome Badge */}
                               <div className="mb-4">
-                                <span className="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">
+                                <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                                  caseStudy.outcome?.toLowerCase().includes('accepted') 
+                                    ? 'bg-green-100 text-green-800'
+                                    : caseStudy.outcome?.toLowerCase().includes('scholarship')
+                                      ? 'bg-yellow-100 text-yellow-800'
+                                      : 'bg-blue-100 text-blue-800'
+                                }`}>
                                   {caseStudy.outcome}
                                 </span>
                               </div>
-                            )}
-
-                            {/* Tags */}
-                            {caseStudy.tags && caseStudy.tags.length > 0 && (
-                              <div className="flex flex-wrap gap-2 mb-4">
-                                {caseStudy.tags.slice(0, 3).map((tag, index) => (
-                                  <span key={index} className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">
-                                    {tag}
-                                  </span>
-                                ))}
-                                {caseStudy.tags.length > 3 && (
-                                  <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">
-                                    +{caseStudy.tags.length - 3}
-                                  </span>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Footer */}
-                            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                              <div className="flex items-center gap-4 text-sm text-gray-500">
-                                {caseStudy.reading_time && (
-                                  <div className="flex items-center gap-1">
-                                    <IconComponent icon={FaCalendarAlt} />
-                                    <span>{caseStudy.reading_time} min read</span>
-                                  </div>
-                                )}
-                                {caseStudy.views && (
-                                  <div className="flex items-center gap-1">
-                                    <IconComponent icon={FaEye} />
-                                    <span>{caseStudy.views}</span>
-                                  </div>
-                                )}
-                              </div>
-                              <button className="text-blue-600 hover:text-blue-700 font-medium text-sm group-hover:translate-x-1 transition-transform">
-                                Read More →
-                              </button>
+                              
+                              {/* Database-style single button */}
+                              <motion.button
+                                className="w-full bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-700 hover:to-indigo-800 text-white py-3 px-4 rounded-lg font-medium transition-all text-sm shadow-lg"
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openModal(caseStudy);
+                                }}
+                              >
+                                Read Story
+                              </motion.button>
                             </div>
-                          </div>
-                        </div>
+                          </>
+                        ) : (
+                          // List View Layout - Database-style horizontal card
+                          <>
+                            <div className="relative overflow-hidden w-full lg:w-80 flex-shrink-0">
+                              <img 
+                                src={caseStudy.student_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(caseStudy.student_name)}&background=8B5CF6&color=fff`} 
+                                alt={caseStudy.student_name}
+                                className="w-full h-48 lg:h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                              />
+                              {caseStudy.featured && (
+                                <div className="absolute top-3 left-3 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+                                  Featured
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="p-6 flex-1 flex flex-col">
+                              <div className="flex items-center gap-2 mb-3">
+                                <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                                  {caseStudy.target_country || 'International'}
+                                </span>
+                                <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                                  {caseStudy.field_of_study || 'General'}
+                                </span>
+                                {caseStudy.reading_time && (
+                                  <span className="text-gray-500 text-xs">
+                                    {caseStudy.reading_time} min read
+                                  </span>
+                                )}
+                              </div>
+                              
+                              <h3 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-purple-600 transition-colors">
+                                {caseStudy.title}
+                              </h3>
+                              <p className="text-gray-600 mb-4 line-clamp-2 flex-1">{caseStudy.description}</p>
+                              
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center">
+                                  <img 
+                                    src={caseStudy.student_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(caseStudy.student_name)}&background=8B5CF6&color=fff`}
+                                    alt={caseStudy.student_name}
+                                    className="w-8 h-8 rounded-full mr-3"
+                                  />
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-800">{caseStudy.student_name}</p>
+                                    <p className="text-xs text-gray-600">{caseStudy.target_university || 'University'}</p>
+                                  </div>
+                                </div>
+                                
+                                {/* Database-style dual buttons */}
+                                <div className="flex items-center gap-2">
+                                  <motion.button
+                                    className="bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-700 hover:to-indigo-800 text-white py-2 px-4 rounded-lg font-medium transition-all text-sm shadow-lg"
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openModal(caseStudy);
+                                    }}
+                                  >
+                                    Read
+                                  </motion.button>
+                                  <motion.button
+                                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium transition-all text-sm"
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      // Handle bookmark functionality
+                                    }}
+                                  >
+                                    Save
+                                  </motion.button>
+                                </div>
+                              </div>
+                              
+                              {/* Outcome Badge */}
+                              <div className="flex items-center justify-between">
+                                <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                                  caseStudy.outcome?.toLowerCase().includes('accepted') 
+                                    ? 'bg-green-100 text-green-800'
+                                    : caseStudy.outcome?.toLowerCase().includes('scholarship')
+                                      ? 'bg-yellow-100 text-yellow-800'
+                                      : 'bg-blue-100 text-blue-800'
+                                }`}>
+                                  {caseStudy.outcome}
+                                </span>
+                                {caseStudy.scholarship_amount && (
+                                  <span className="text-sm font-bold text-green-600">
+                                    ${caseStudy.scholarship_amount.toLocaleString()} Scholarship
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </motion.div>
                     ))}
                   </motion.div>
@@ -613,7 +740,7 @@ const CaseStudies: React.FC = () => {
                       <p className="text-gray-600 mb-4">Try adjusting your search or filters to find relevant success stories.</p>
                       <button
                         onClick={clearAllFilters}
-                        className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                       >
                         Clear Filters
                       </button>
@@ -641,7 +768,7 @@ const CaseStudies: React.FC = () => {
                             onClick={() => setCurrentPage(page)}
                             className={`px-4 py-2 rounded-lg ${
                               currentPage === page
-                                ? 'bg-blue-600 text-white'
+                                ? 'bg-purple-600 text-white'
                                 : 'border border-gray-300 hover:bg-gray-50'
                             }`}
                           >
@@ -748,6 +875,149 @@ const CaseStudies: React.FC = () => {
           </motion.div>
         </motion.div>
       )}
+      
+      {/* Mobile Filter Modal */}
+      <AnimatePresence>
+        {showFilters && (
+          <motion.div
+            className="fixed inset-0 bg-black bg-opacity-50 z-[10000] lg:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowMobileFilters(false)}
+          >
+            <motion.div
+              className="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-xl"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="sticky top-0 bg-white border-b px-4 py-4 flex justify-between items-center z-10">
+                <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
+                <button
+                  onClick={() => setShowMobileFilters(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors bg-gray-50 border border-gray-200"
+                >
+                  <IconComponent icon={FaTimes} className="h-5 w-5 text-gray-700" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="p-4 pb-20">
+                {/* Category */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                  <select
+                    value={activeFilters.category}
+                    onChange={(e) => toggleFilter('category', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="">All Categories</option>
+                    {Array.isArray(categories) && categories.map(category => (
+                      <option key={category} value={category}>{category}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Outcome */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Outcome</label>
+                  <select
+                    value={activeFilters.outcome}
+                    onChange={(e) => toggleFilter('outcome', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="">All Outcomes</option>
+                    {Array.isArray(outcomes) && outcomes.map(outcome => (
+                      <option key={outcome} value={outcome}>{outcome}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Country */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+                  <select
+                    value={activeFilters.country}
+                    onChange={(e) => toggleFilter('country', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="">All Countries</option>
+                    {Array.isArray(countries) && countries.map(country => (
+                      <option key={country} value={country}>{country}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Field of Study */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Field of Study</label>
+                  <select
+                    value={activeFilters.field}
+                    onChange={(e) => toggleFilter('field', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="">All Fields</option>
+                    {Array.isArray(fields) && fields.map(field => (
+                      <option key={field} value={field}>{field}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Quick Filters */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Quick Filters</label>
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => {
+                        toggleFilter('featured', true);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      ⭐ Featured Stories
+                    </button>
+                    <button
+                      onClick={() => {
+                        toggleFilter('category', 'Medical School');
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      🏥 Medical School
+                    </button>
+                    <button
+                      onClick={() => {
+                        toggleFilter('category', 'Graduate School');
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      🎓 Graduate School
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="absolute bottom-0 left-0 right-0 bg-white border-t px-4 py-3 flex gap-3">
+                <button
+                  onClick={clearAllFilters}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Reset
+                </button>
+                <button
+                  onClick={() => setShowMobileFilters(false)}
+                  className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  Apply
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       <Footer />
     </div>
