@@ -122,17 +122,17 @@ const FeaturedCourses3D: React.FC = () => {
           className="text-center mb-16"
         >
           <div className="relative">
-            <h2 className="text-5xl md:text-6xl font-bold text-white mb-6 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+            <h2 className="text-3xl sm:text-5xl md:text-6xl font-bold text-white mb-4 sm:mb-6 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
               Featured Courses
             </h2>
           </div>
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+          <p className="text-sm sm:text-xl text-gray-300 max-w-3xl mx-auto">
             Discover our most popular AI-powered courses designed to accelerate your learning journey
           </p>
         </motion.div>
 
         {/* Course Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-8">
           {sampleCourses.map((course, index) => (
             <motion.div
               key={course.id}
@@ -152,14 +152,15 @@ const FeaturedCourses3D: React.FC = () => {
                 <img
                   src={course.image}
                   alt={course.title}
-                  className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500"
+                  className="w-full h-32 sm:h-40 lg:h-48 object-cover group-hover:scale-110 transition-transform duration-500"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
                 
                 {/* Featured Badge */}
                 {course.featured && (
-                  <div className="absolute top-4 left-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                    Featured
+                  <div className="absolute top-2 left-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                    <span className="hidden sm:inline">Featured</span>
+                    <span className="sm:hidden">★</span>
                   </div>
                 )}
 
@@ -169,55 +170,60 @@ const FeaturedCourses3D: React.FC = () => {
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                 >
-                  <div className="bg-white/20 backdrop-blur-sm rounded-full p-4 border border-white/30">
-                    <IconComponent icon={FaPlay} className="text-white text-2xl" />
+                  <div className="bg-white/20 backdrop-blur-sm rounded-full p-2 sm:p-3 border border-white/30">
+                    <IconComponent icon={FaPlay} className="text-white text-sm sm:text-lg lg:text-2xl" />
                   </div>
                 </motion.div>
               </div>
 
               {/* Course Content */}
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-white mb-2 group-hover:text-blue-300 transition-colors">
+              <div className="p-3 sm:p-4 lg:p-6">
+                <h3 className="text-sm sm:text-lg lg:text-xl font-bold text-white mb-2 group-hover:text-blue-300 transition-colors line-clamp-2">
                   {course.title}
                 </h3>
-                <p className="text-gray-300 text-sm mb-4 line-clamp-2">
+                <p className="text-gray-300 text-xs sm:text-sm mb-3 sm:mb-4 line-clamp-2">
                   {course.description}
                 </p>
 
                 {/* Course Stats */}
-                <div className="flex items-center gap-4 mb-4 text-sm text-gray-400">
+                <div className="flex items-center flex-wrap gap-1 sm:gap-2 lg:gap-4 mb-3 sm:mb-4 text-xs text-gray-400">
                   <div className="flex items-center gap-1">
                     <IconComponent icon={FaStar} className="text-yellow-400" />
                     <span>{course.rating}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <IconComponent icon={FaUsers} />
-                    <span>{course.students.toLocaleString()}</span>
+                    <span className="hidden sm:inline">{course.students.toLocaleString()}</span>
+                    <span className="sm:hidden">{(course.students / 1000).toFixed(1)}k</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <IconComponent icon={FaClock} />
-                    <span>{course.duration}</span>
+                    <span className="hidden sm:inline">{course.duration}</span>
+                    <span className="sm:hidden">{course.duration.split(' ')[0]}w</span>
                   </div>
                 </div>
 
-                {/* Instructor */}
-                <p className="text-gray-300 text-sm mb-4">
-                  by <span className="text-blue-300 font-medium">{course.instructor}</span>
-                </p>
-
-                {/* Price and CTA */}
-                <div className="flex items-center justify-between">
-                  <div className="text-2xl font-bold text-white">
-                    ${course.price}
+                {/* Instructor and Price */}
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-gray-400 hidden sm:block">Instructor</p>
+                    <p className="text-xs sm:text-sm text-white font-medium truncate">{course.instructor.split(' ')[0]}</p>
                   </div>
-                  <motion.button
-                    className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full text-white font-semibold hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-300"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    Enroll Now
-                  </motion.button>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-400 hidden sm:block">Price</p>
+                    <p className="text-sm sm:text-lg lg:text-xl font-bold text-green-400">${course.price}</p>
+                  </div>
                 </div>
+
+                {/* Enroll Button */}
+                <motion.button
+                  className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-2 sm:py-3 px-4 rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 text-xs sm:text-sm lg:text-base"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <span className="hidden sm:inline">Enroll Now</span>
+                  <span className="sm:hidden">Enroll</span>
+                </motion.button>
               </div>
 
               {/* Hover Glow Effect */}

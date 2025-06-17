@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaYoutube } from 'react-icons/fa';
+import { FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaYoutube, FaPhone, FaEnvelope, FaMapMarkerAlt } from 'react-icons/fa';
 import IconComponent from '../ui/IconComponent';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../../utils/LanguageContext';
@@ -55,9 +55,100 @@ const Footer: React.FC = () => {
       {/* Glassmorphism overlay */}
       <div className="absolute inset-0 bg-black/20 backdrop-blur-sm"></div>
       
-      <div className="container mx-auto px-4 py-16 relative z-10">
+      <div className="container mx-auto px-4 py-8 sm:py-12 lg:py-16 relative z-10">
+        {/* Mobile Layout */}
+        <div className="block lg:hidden">
+          <motion.div 
+            className="text-center mb-8"
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.1 }}
+          >
+            {/* Logo */}
+            <motion.div variants={itemVariants} className="mb-6">
+              <h3 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent mb-3">
+                MatrixEdu
+              </h3>
+              <p className="text-gray-300 text-sm leading-relaxed max-w-sm mx-auto">
+                AI-powered education for the future
+              </p>
+            </motion.div>
+            
+            {/* Social Media */}
+            <motion.div variants={itemVariants} className="flex justify-center space-x-4 mb-8">
+              {[
+                { icon: FaFacebook, href: "#", color: "text-blue-400" },
+                { icon: FaTwitter, href: "#", color: "text-sky-400" },
+                { icon: FaInstagram, href: "#", color: "text-pink-400" },
+                { icon: FaLinkedin, href: "#", color: "text-blue-500" },
+                { icon: FaYoutube, href: "#", color: "text-red-500" }
+              ].map((social, index) => (
+                <motion.a 
+                  key={index}
+                  href={social.href} 
+                  className={`p-2 bg-white/5 backdrop-blur-sm rounded-full border border-white/10 ${social.color} transition-all duration-300 hover:border-white/30 hover:bg-white/10`}
+                  variants={socialVariants} 
+                  whileHover="hover"
+                >
+                  <IconComponent icon={social.icon} className="text-sm" />
+                </motion.a>
+              ))}
+            </motion.div>
+
+            {/* Quick Actions */}
+            <motion.div variants={itemVariants} className="grid grid-cols-2 gap-4 mb-8">
+              <Link 
+                to="/courses" 
+                className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 hover:scale-105"
+              >
+                Browse Courses
+              </Link>
+              <Link 
+                to="/scholarships" 
+                className="bg-gradient-to-r from-purple-500 to-pink-600 text-white px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 hover:scale-105"
+              >
+                Find Scholarships
+              </Link>
+            </motion.div>
+
+            {/* Contact Info */}
+            <motion.div variants={itemVariants} className="space-y-3 mb-8">
+              <div className="flex items-center justify-center text-sm text-gray-300">
+                <IconComponent icon={FaPhone} className="mr-2 text-blue-400" />
+                <span>+852 66359879</span>
+              </div>
+              <div className="flex items-center justify-center text-sm text-gray-300">
+                <IconComponent icon={FaEnvelope} className="mr-2 text-purple-400" />
+                <a href="mailto:info@matrixedu.com" className="text-purple-400">
+                  info@matrixedu.com
+                </a>
+              </div>
+            </motion.div>
+
+            {/* Quick Links */}
+            <motion.div variants={itemVariants} className="grid grid-cols-2 gap-2 text-sm">
+              {[
+                { name: 'Home', href: '/' },
+                { name: 'About', href: '/about' },
+                { name: 'Privacy', href: '/privacy' },
+                { name: 'Terms', href: '/terms' }
+              ].map((link, index) => (
+                <Link 
+                  key={index}
+                  to={link.href} 
+                  className="text-gray-400 hover:text-white transition-colors duration-300 py-2"
+                >
+                  {link.name}
+                </Link>
+              ))}
+            </motion.div>
+          </motion.div>
+        </div>
+
+        {/* Desktop Layout */}
         <motion.div 
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
+          className="hidden lg:grid lg:grid-cols-4 gap-8"
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
@@ -194,46 +285,26 @@ const Footer: React.FC = () => {
         
         {/* Bottom Section */}
         <motion.div 
-          className="border-t border-white/10 mt-12 pt-8"
+          className="border-t border-white/10 mt-8 sm:mt-12 pt-6 sm:pt-8"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ delay: 0.6, duration: 0.5 }}
+          transition={{ duration: 0.6, delay: 0.8 }}
         >
-          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <div className="text-center md:text-left">
-              <p className="text-gray-400 text-sm">
-                © 2024 MatrixEdu. All rights reserved.
-              </p>
-              <p className="text-gray-500 text-xs mt-1">
-                Empowering the future of education through AI innovation.
-              </p>
-            </div>
-            
-            <div className="flex items-center space-x-6">
-              <motion.div
-                className="px-6 py-2 bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-sm rounded-full border border-white/10 text-sm text-gray-300"
-                whileHover={{ 
-                  scale: 1.05,
-                  borderColor: "rgba(255, 255, 255, 0.3)",
-                  backgroundColor: "rgba(255, 255, 255, 0.05)"
-                }}
-                data-magnetic
-              >
-                🤖 AI Powered Learning
-              </motion.div>
-              
-              <motion.div
-                className="px-6 py-2 bg-gradient-to-r from-green-500/10 to-blue-500/10 backdrop-blur-sm rounded-full border border-white/10 text-sm text-gray-300"
-                whileHover={{ 
-                  scale: 1.05,
-                  borderColor: "rgba(255, 255, 255, 0.3)",
-                  backgroundColor: "rgba(255, 255, 255, 0.05)"
-                }}
-                data-magnetic
-              >
-                🌟 24/7 Support
-              </motion.div>
+          <div className="flex flex-col sm:flex-row justify-between items-center text-center sm:text-left">
+            <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-0">
+              © 2024 MatrixEdu. All rights reserved.
+            </p>
+            <div className="flex flex-wrap justify-center sm:justify-end gap-4 sm:gap-6 text-xs sm:text-sm">
+              <Link to="/privacy" className="text-gray-400 hover:text-white transition-colors duration-300">
+                Privacy Policy
+              </Link>
+              <Link to="/terms" className="text-gray-400 hover:text-white transition-colors duration-300">
+                Terms of Service
+              </Link>
+              <Link to="/cookies" className="text-gray-400 hover:text-white transition-colors duration-300">
+                Cookie Policy
+              </Link>
             </div>
           </div>
         </motion.div>

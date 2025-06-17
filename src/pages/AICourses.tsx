@@ -3,6 +3,7 @@ import { FaGraduationCap, FaStar, FaUniversity, FaCertificate, FaRobot, FaLaptop
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import PageHeader from '../components/ui/PageHeader';
+import MobileFilterPanel from '../components/ui/MobileFilterPanel';
 import IconComponent from '../components/ui/IconComponent';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../utils/LanguageContext';
@@ -642,19 +643,50 @@ const AICourses: React.FC = () => {
           </div>
         </PageHeader>
 
-        <section className="py-12">
+        <section className="py-8 sm:py-12">
           <div className="container mx-auto px-4">
+            {/* Mobile Filter Panel - Show on mobile/tablet only */}
+            <div className="block lg:hidden mb-6">
+              <MobileFilterPanel
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                searchPlaceholder="Search courses and teachers..."
+                filters={[
+                  {
+                    key: 'category',
+                    label: 'Category',
+                    value: selectedSubject,
+                    options: categories.map(category => ({ value: category, label: category })),
+                    onChange: (value) => setSelectedSubject(value)
+                  },
+                  {
+                    key: 'level',
+                    label: 'Level',
+                    value: selectedLevel,
+                    options: levels.map(level => ({ value: level, label: level })),
+                    onChange: (value) => setSelectedLevel(value)
+                  }
+                ]}
+                onClearFilters={clearAllFilters}
+                activeFilterCount={
+                  (selectedSubject ? 1 : 0) + 
+                  (selectedLevel ? 1 : 0) + 
+                  (selectedType ? 1 : 0)
+                }
+              />
+            </div>
+
             {/* Featured Courses */}
             {viewMode === 'grid' && (
               <motion.div 
-                className="mb-12"
+                className="mb-8 sm:mb-12"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.3 }}
               >
-                <h2 className="text-2xl font-bold text-teal-800 mb-6">{t('aiCourses.featuredCourses')}</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-teal-800 mb-4 sm:mb-6">{t('aiCourses.featuredCourses')}</h2>
                 <motion.div 
-                  className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                  className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6"
                   variants={containerVariants}
                   initial="hidden"
                   animate="visible"

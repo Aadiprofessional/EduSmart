@@ -113,17 +113,17 @@ const FeaturedSuccessStories3D: React.FC = () => {
           className="text-center mb-16"
         >
           <div className="relative">
-            <h2 className="text-5xl md:text-6xl font-bold text-white mb-6 bg-gradient-to-r from-purple-400 via-pink-500 to-indigo-500 bg-clip-text text-transparent">
+            <h2 className="text-3xl sm:text-5xl md:text-6xl font-bold text-white mb-4 sm:mb-6 bg-gradient-to-r from-purple-400 via-pink-500 to-indigo-500 bg-clip-text text-transparent">
               Success Stories
             </h2>
           </div>
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+          <p className="text-sm sm:text-xl text-gray-300 max-w-3xl mx-auto">
             Hear from students who have transformed their academic journey with MatrixEdu
           </p>
         </motion.div>
 
         {/* Success Stories Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-8 mb-12">
           {sampleStories.map((story, index) => (
             <motion.div
               key={story.id}
@@ -135,45 +135,45 @@ const FeaturedSuccessStories3D: React.FC = () => {
                 y: -10,
                 scale: 1.02
               }}
-              className="group relative bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 hover:border-white/40 transition-all duration-500"
+              className="group relative bg-white/10 backdrop-blur-lg rounded-2xl p-3 sm:p-4 lg:p-6 border border-white/20 hover:border-white/40 transition-all duration-500"
             >
               {/* Quote Icon */}
-              <div className="absolute top-4 left-4 text-purple-400 opacity-20">
-                <IconComponent icon={FaQuoteLeft} className="text-3xl" />
+              <div className="absolute top-2 sm:top-3 lg:top-4 left-2 sm:left-3 lg:left-4 text-purple-400 opacity-20">
+                <IconComponent icon={FaQuoteLeft} className="text-lg sm:text-2xl lg:text-3xl" />
               </div>
 
               {/* Student Image */}
-              <div className="flex items-center mb-4">
+              <div className="flex items-center mb-3 sm:mb-4">
                 <img
                   src={story.image}
                   alt={story.name}
-                  className="w-16 h-16 rounded-full object-cover border-2 border-purple-400/50 mr-4"
+                  className="w-8 h-8 sm:w-12 sm:h-12 lg:w-16 lg:h-16 rounded-full object-cover border-2 border-purple-400/50 mr-2 sm:mr-3 lg:mr-4 flex-shrink-0"
                 />
-                <div>
-                  <h3 className="text-xl font-bold text-white group-hover:text-purple-300 transition-colors">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xs sm:text-base lg:text-xl font-bold text-white group-hover:text-purple-300 transition-colors truncate">
                     {story.name}
                   </h3>
-                  <p className="text-purple-300 font-medium">
+                  <p className="text-purple-300 font-medium text-xs sm:text-sm lg:text-base truncate">
                     {story.achievement}
                   </p>
                 </div>
               </div>
 
               {/* Story */}
-              <p className="text-gray-300 mb-4 line-clamp-3">
-                "{story.story}"
+              <p className="text-gray-300 mb-3 sm:mb-4 line-clamp-3 text-xs sm:text-sm lg:text-base leading-relaxed">
+                "{story.story.length > 60 ? story.story.substring(0, 60) + '...' : story.story}"
               </p>
 
               {/* Details */}
-              <div className="space-y-2 mb-4">
+              <div className="space-y-1 mb-3 sm:mb-4">
                 {story.university && (
-                  <div className="flex items-center text-sm text-gray-400">
-                    <IconComponent icon={FaGraduationCap} className="mr-2 text-purple-400" />
-                    <span>{story.university}</span>
+                  <div className="flex items-center text-xs text-gray-400">
+                    <IconComponent icon={FaGraduationCap} className="mr-1 sm:mr-2 text-purple-400 flex-shrink-0" />
+                    <span className="truncate">{story.university}</span>
                   </div>
                 )}
                 {story.course && (
-                  <div className="text-sm text-gray-400">
+                  <div className="text-xs text-gray-400 hidden sm:block">
                     Course: <span className="text-indigo-300">{story.course}</span>
                   </div>
                 )}
@@ -182,9 +182,9 @@ const FeaturedSuccessStories3D: React.FC = () => {
               {/* Rating */}
               <div className="flex items-center">
                 {[...Array(story.rating)].map((_, i) => (
-                  <IconComponent key={i} icon={FaStar} className="text-yellow-400 text-sm mr-1" />
+                  <IconComponent key={i} icon={FaStar} className="text-yellow-400 text-xs mr-1" />
                 ))}
-                <span className="text-gray-400 text-sm ml-2">({story.rating}/5)</span>
+                <span className="text-gray-400 text-xs ml-1 sm:ml-2">({story.rating}/5)</span>
               </div>
 
               {/* Hover Glow Effect */}

@@ -90,7 +90,7 @@ const OurImpactSection: React.FC = () => {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-8">
           {[
             { number: '50K+', label: 'Students Enrolled', color: 'from-blue-400 to-blue-600' },
             { number: '1000+', label: 'Courses Available', color: 'from-green-400 to-green-600' },
@@ -107,14 +107,14 @@ const OurImpactSection: React.FC = () => {
                 scale: 1.05,
                 rotateY: 10
               }}
-              className="group relative bg-white/5 backdrop-blur-lg rounded-2xl p-8 border border-white/10 hover:border-white/30 transition-all duration-500"
+              className="group relative bg-white/5 backdrop-blur-lg rounded-2xl p-4 sm:p-6 lg:p-8 border border-white/10 hover:border-white/30 transition-all duration-500"
               data-magnetic
             >
               <div className="text-center">
-                <div className={`text-4xl md:text-5xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent mb-2`}>
+                <div className={`text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent mb-1 sm:mb-2`}>
                   {stat.number}
                 </div>
-                <div className="text-gray-300 font-medium">
+                <div className="text-gray-300 font-medium text-xs sm:text-sm lg:text-base">
                   {stat.label}
                 </div>
               </div>
@@ -206,9 +206,9 @@ const ReadyToTransformSection: React.FC = () => {
             Join thousands of students who are already experiencing the future of education with MatrixEdu's AI-powered learning platform.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
+          <div className="flex flex-row gap-3 sm:gap-6 justify-center items-center">
             <motion.button
-              className="px-12 py-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full text-white font-bold text-xl shadow-2xl hover:shadow-blue-500/25 transition-all duration-300"
+              className="flex-1 sm:flex-none px-6 sm:px-12 py-4 sm:py-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full text-white font-bold text-sm sm:text-xl shadow-2xl hover:shadow-blue-500/25 transition-all duration-300"
               whileHover={{ 
                 scale: 1.05,
                 boxShadow: "0 25px 50px rgba(59, 130, 246, 0.4)"
@@ -216,11 +216,12 @@ const ReadyToTransformSection: React.FC = () => {
               whileTap={{ scale: 0.95 }}
               data-magnetic
             >
-              Start Your Journey
+              <span className="hidden sm:inline">Start Your Journey</span>
+              <span className="sm:hidden">Start</span>
             </motion.button>
             
             <motion.button
-              className="px-12 py-6 border-2 border-white/30 rounded-full text-white font-bold text-xl backdrop-blur-sm hover:bg-white/10 transition-all duration-300"
+              className="flex-1 sm:flex-none px-6 sm:px-12 py-4 sm:py-6 border-2 border-white/30 rounded-full text-white font-bold text-sm sm:text-xl backdrop-blur-sm hover:bg-white/10 transition-all duration-300"
               whileHover={{ 
                 scale: 1.05,
                 backgroundColor: "rgba(255, 255, 255, 0.1)"
@@ -228,7 +229,8 @@ const ReadyToTransformSection: React.FC = () => {
               whileTap={{ scale: 0.95 }}
               data-magnetic
             >
-              Explore Features
+              <span className="hidden sm:inline">Explore Features</span>
+              <span className="sm:hidden">Explore</span>
             </motion.button>
           </div>
         </motion.div>
@@ -258,7 +260,7 @@ const Home: React.FC = () => {
         {/* Header */}
         <Header />
         
-        {/* Main Content */}
+        {/* Main Content - Add top padding for fixed header */}
         <main className="relative z-20">
           {/* Hero Section */}
           <Hero3D />
@@ -285,7 +287,7 @@ const Home: React.FC = () => {
         {/* Scroll to top button */}
         <motion.button
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="fixed bottom-20 right-5 z-40 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white p-4 rounded-full shadow-2xl hover:shadow-blue-500/25 transition-all duration-300"
+          className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white p-3 sm:p-4 rounded-full shadow-2xl hover:shadow-blue-500/25 transition-all duration-300"
           whileHover={{ scale: 1.1, rotate: 360 }}
           whileTap={{ scale: 0.9 }}
           initial={{ opacity: 0, y: 100 }}
@@ -293,7 +295,7 @@ const Home: React.FC = () => {
           transition={{ delay: 2 }}
           data-magnetic
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
           </svg>
         </motion.button>

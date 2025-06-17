@@ -4,6 +4,7 @@ import { FaCalendarAlt, FaUser, FaTag, FaSearch, FaArrowLeft, FaClock, FaArrowRi
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import PageHeader from '../components/ui/PageHeader';
+import MobileFilterPanel from '../components/ui/MobileFilterPanel';
 import IconComponent from '../components/ui/IconComponent';
 import { motion, AnimatePresence } from 'framer-motion';
 import { blogAPI } from '../utils/apiService';
@@ -385,8 +386,44 @@ const Blog: React.FC = () => {
         </PageHeader>
 
         {/* Main Content */}
-        <section className="py-12">
+        <section className="py-8 sm:py-12">
           <div className="container mx-auto px-4">
+            {/* Mobile Filter Panel - Show on mobile/tablet only */}
+            <div className="block lg:hidden mb-6">
+              <MobileFilterPanel
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                searchPlaceholder="Search articles..."
+                filters={[
+                  {
+                    key: 'category',
+                    label: 'Category',
+                    value: activeCategory === 'all' ? '' : activeCategory,
+                    options: categories.filter(cat => cat !== 'all').map(category => ({ 
+                      value: category, 
+                      label: category,
+                      count: blogPosts.filter(p => p.category === category).length
+                    })),
+                    onChange: (value) => setActiveCategory(value || 'all')
+                  }
+                ]}
+                sortOptions={[
+                  { value: 'newest', label: 'Newest First' },
+                  { value: 'oldest', label: 'Oldest First' },
+                  { value: 'popular', label: 'Most Popular' },
+                  { value: 'title', label: 'Title' }
+                ]}
+                sortBy={sortBy}
+                onSortChange={setSortBy}
+                onClearFilters={clearAllFilters}
+                activeFilterCount={
+                  (activeCategory !== 'all' ? 1 : 0) + 
+                  (selectedTag ? 1 : 0) + 
+                  (searchQuery ? 1 : 0)
+                }
+              />
+            </div>
+
             {loading ? (
               <div className="flex justify-center items-center min-h-[400px]">
                 <div className="text-center">
@@ -396,9 +433,9 @@ const Blog: React.FC = () => {
               </div>
             ) : (
               <div className="flex flex-col lg:flex-row gap-8">
-                {/* Sidebar Filters */}
+                {/* Desktop Sidebar Filters - Hidden on mobile */}
                 <motion.div 
-                  className="lg:w-1/4"
+                  className="hidden lg:block lg:w-1/4"
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.5, delay: 0.2 }}

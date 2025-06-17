@@ -4,8 +4,24 @@ import { gsap } from 'gsap';
 const MagneticCursor: React.FC = () => {
   const cursorRef = useRef<HTMLDivElement>(null);
   const [isHovering, setIsHovering] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
+    // Check if device is mobile
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 1024 || 'ontouchstart' in window);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  useEffect(() => {
+    // Don't render cursor on mobile devices
+    if (isMobile) return;
+    
     const cursor = cursorRef.current;
     if (!cursor) return;
 
@@ -115,7 +131,12 @@ const MagneticCursor: React.FC = () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.body.style.cursor = 'auto';
     };
-  }, []);
+  }, [isMobile]);
+
+  // Don't render cursor on mobile devices
+  if (isMobile) {
+    return null;
+  }
 
   return (
     <div

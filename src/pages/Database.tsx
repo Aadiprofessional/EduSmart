@@ -1,17 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaSearch, FaFilter, FaMapMarkerAlt, FaDollarSign, FaGraduationCap, FaUsers, FaStar, FaHeart, FaEye, FaPlus, FaTimes, FaChevronDown, FaChevronUp, FaRobot, FaLightbulb, FaUser, FaSpinner, FaExternalLinkAlt, FaUniversity, FaGlobe, FaCalendarAlt, FaBookOpen, FaAward, FaChartLine, FaBuilding, FaPhone, FaEnvelope, FaInfoCircle, FaCheckCircle, FaExclamationTriangle, FaBookmark, FaSortAmountDown, FaTrophy, FaCheck } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
+import { 
+  FaUniversity, FaGraduationCap, FaMapMarkerAlt, FaDollarSign, 
+  FaGlobe, FaUsers, FaFilter, FaSort, FaTimes, FaEye, 
+  FaPlus, FaMinus, FaSpinner, FaRobot, FaSearch, 
+  FaTrophy, FaStar, FaUser, FaChevronDown, FaChevronUp,
+  FaChartLine, FaCalendarAlt, FaPhoneAlt, FaEnvelope, FaExternalLinkAlt,
+  FaThLarge, FaList, FaBuilding, FaFlag, FaBookmark, FaInfoCircle, FaCheckCircle,
+  FaPhone, FaBookOpen, FaAward, FaLightbulb, FaCheck, FaSortAmountDown
+} from 'react-icons/fa';
 import { HiOutlineAcademicCap, HiOutlineLocationMarker } from 'react-icons/hi';
 import { RiArrowDropDownLine, RiArrowDropUpLine } from 'react-icons/ri';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import PageHeader from '../components/ui/PageHeader';
 import IconComponent from '../components/ui/IconComponent';
+import MobileFilterPanel from '../components/ui/MobileFilterPanel';
 import { fadeIn, staggerContainer, slideIn } from '../utils/animations';
 import { useAuth } from '../utils/AuthContext';
 import { universityAPI } from '../utils/apiService';
 import { useLanguage } from '../utils/LanguageContext';
 import { userProfileAPI, UserProfile } from '../utils/userProfileAPI';
+import axios from 'axios';
 
 interface University {
   id: string;
@@ -943,6 +954,18 @@ const CompareUniversitiesModal: React.FC<CompareUniversitiesModalProps> = ({
   aiRecommendedId, 
   isAutoGenerating
 }) => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkIfMobile();
+    window.addEventListener('resize', checkIfMobile);
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
+
   // Sort universities to put AI recommended first
   const sortedUniversities = [...universities].sort((a, b) => {
     if (a.id === aiRecommendedId) return -1;
@@ -950,6 +973,170 @@ const CompareUniversitiesModal: React.FC<CompareUniversitiesModalProps> = ({
     return 0;
   });
 
+  // Mobile view - Card layout
+  if (isMobile) {
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <motion.div 
+          className="bg-white rounded-2xl shadow-2xl w-full max-w-md h-[90vh] overflow-hidden flex flex-col"
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 50 }}
+          transition={{ duration: 0.3 }}
+        >
+          {/* Header */}
+          <div className="flex justify-between items-center bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 text-white p-4 flex-shrink-0">
+            <h2 className="text-lg font-bold flex items-center">
+              <IconComponent icon={FaTrophy} className="mr-2" /> 
+              Compare ({universities.length})
+            </h2>
+            <button 
+              onClick={onClose}
+              className="p-2 hover:bg-white/20 rounded-full transition-colors"
+            >
+              <IconComponent icon={FaTimes} className="h-5 w-5" />
+            </button>
+          </div>
+          
+          {/* Loading state */}
+          {isAutoGenerating && (
+            <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-10 flex items-center justify-center">
+              <div className="text-center">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
+                <p className="text-lg font-semibold text-purple-800">Analyzing universities...</p>
+              </div>
+            </div>
+          )}
+          
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {sortedUniversities.map((university) => {
+              const isAIRecommended = university.id === aiRecommendedId;
+              
+              return (
+                <motion.div
+                  key={university.id}
+                  className={`p-4 rounded-xl border-2 ${
+                    isAIRecommended 
+                      ? 'bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-300 shadow-lg' 
+                      : 'bg-gray-50 border-gray-200'
+                  }`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  {/* University Header */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-3">
+                      <img 
+                        src={university.logo} 
+                        alt={`${university.name} logo`} 
+                        className="h-12 w-12 object-contain rounded-lg bg-white p-1"
+                      />
+                      <div>
+                        <h3 className={`font-bold text-sm ${isAIRecommended ? 'text-purple-800' : 'text-gray-800'}`}>
+                          {university.name}
+                        </h3>
+                        <p className="text-xs text-gray-600">{university.country}</p>
+                        {isAIRecommended && (
+                          <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-2 py-1 rounded-full font-bold mt-1 inline-block">
+                            ⭐ AI TOP PICK
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => onRemove(university)}
+                      className="p-2 hover:bg-red-100 rounded-full transition-colors text-red-500"
+                    >
+                      <IconComponent icon={FaTimes} className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  {/* University Details */}
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="bg-white/70 p-2 rounded-lg">
+                      <span className="text-gray-500 block">QS Ranking</span>
+                      <span className={`font-bold ${isAIRecommended ? 'text-purple-600' : 'text-gray-800'}`}>
+                        #{university.qsRanking}
+                      </span>
+                    </div>
+                    <div className="bg-white/70 p-2 rounded-lg">
+                      <span className="text-gray-500 block">Min GPA</span>
+                      <span className={`font-bold ${isAIRecommended ? 'text-purple-600' : 'text-gray-800'}`}>
+                        {university.admissionRequirements.minGPA}
+                      </span>
+                    </div>
+                    <div className="bg-white/70 p-2 rounded-lg">
+                      <span className="text-gray-500 block">Undergrad</span>
+                      <span className={`font-bold text-green-600 ${isAIRecommended ? 'text-green-700' : ''}`}>
+                        {university.tuitionFees.undergraduate}
+                      </span>
+                    </div>
+                    <div className="bg-white/70 p-2 rounded-lg">
+                      <span className="text-gray-500 block">Graduate</span>
+                      <span className={`font-bold text-green-600 ${isAIRecommended ? 'text-green-700' : ''}`}>
+                        {university.tuitionFees.graduate}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Language Requirements */}
+                  <div className="mt-3 bg-white/70 p-2 rounded-lg">
+                    <span className="text-gray-500 text-xs block mb-1">Language Requirements</span>
+                    <div className="flex flex-wrap gap-1">
+                      {university.admissionRequirements.languageRequirements.map((lang, i) => (
+                        <span key={i} className={`text-xs px-2 py-1 rounded-full ${
+                          isAIRecommended 
+                            ? 'bg-purple-200 text-purple-800' 
+                            : 'bg-gray-200 text-gray-700'
+                        }`}>
+                          {lang.test}: {lang.score}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Major Strengths */}
+                  <div className="mt-3 bg-white/70 p-2 rounded-lg">
+                    <span className="text-gray-500 text-xs block mb-1">Major Strengths</span>
+                    <div className="flex flex-wrap gap-1">
+                      {university.majorStrengths.slice(0, 3).map((major, i) => (
+                        <span key={i} className={`text-xs px-2 py-1 rounded-full ${
+                          isAIRecommended 
+                            ? 'bg-purple-200 text-purple-800' 
+                            : 'bg-blue-100 text-blue-700'
+                        }`}>
+                          {major}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Apply Button */}
+                  <div className="mt-4">
+                    <a
+                      href={university.applicationLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`w-full inline-block text-center text-white text-sm py-3 px-4 rounded-lg transition-all font-medium ${
+                        isAIRecommended 
+                          ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg' 
+                          : 'bg-blue-600 hover:bg-blue-700'
+                      }`}
+                    >
+                      {isAIRecommended ? '🚀 Apply Now' : 'Apply Now'}
+                    </a>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Desktop view - Table layout (existing implementation)
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <motion.div 
@@ -1283,6 +1470,10 @@ const Database: React.FC = () => {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [showMoreFiltersModal, setShowMoreFiltersModal] = useState(false);
   const [selectedRankingTypes, setSelectedRankingTypes] = useState<string[]>([]);
+  const [compareModalOpen, setCompareModalOpen] = useState(false);
+  const [profileCompletion, setProfileCompletion] = useState<number>(0);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [mobileViewMode, setMobileViewMode] = useState<'grid' | 'list'>('grid');
 
   const extractFilterOptions = (universitiesData: University[]) => {
     // Extract unique countries
@@ -2636,68 +2827,119 @@ Return format: <recommendation><university id="X"/></recommendation>`;
         <PageHeader
           title={t('database.title')}
           subtitle={t('database.subtitle')}
-          height="lg"
+          height="sm"
         >
-          {/* Enhanced Search Bar */}
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-2 shadow-2xl border border-white/20">
-              <div className="flex flex-col lg:flex-row gap-2">
-                {/* Search Input */}
-                <div className="flex-1 relative">
-                  <input
-                    type="text"
-                    placeholder={t('database.searchPlaceholder')}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-6 py-4 pl-12 bg-white/90 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white transition-all text-lg placeholder-gray-500"
-                  />
-                  <IconComponent icon={FaSearch} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
-                </div>
-                
-                {/* Quick Filters */}
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <select
-                    name="country"
-                    value={filters.country}
-                    onChange={handleFilterChange}
-                    className="px-4 py-4 bg-white/90 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-white/50 min-w-[150px]"
-                  >
-                    <option value="">{t('database.allCountries')}</option>
-                    {availableCountries.map((country) => (
-                      <option key={country} value={country}>{country}</option>
-                    ))}
-                  </select>
-                  
-                  <select
-                    name="major"
-                    value={filters.major}
-                    onChange={handleFilterChange}
-                    className="px-4 py-4 bg-white/90 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-white/50 min-w-[150px] max-w-[200px] w-[180px]"
-                  >
-                    <option value="">{t('database.allMajors')}</option>
-                    {availableMajors.slice(0, 10).map((major) => (
-                      <option key={major} value={major}>{major}</option>
-                    ))}
-                  </select>
-                  
-                  <button
-                    className="px-6 py-4 bg-white/20 hover:bg-white/30 text-white rounded-xl font-medium transition-colors flex items-center gap-2 border border-white/30"
-                  >
-                    <IconComponent icon={FaSearch} />
-                    <span className="hidden sm:inline">{t('common.search')}</span>
-                  </button>
-                </div>
-              </div>
+          {/* Mobile-optimized search in header - Only for desktop */}
+          <div className="hidden lg:block max-w-2xl mx-auto mt-6">
+            <div className="relative">
+              <IconComponent 
+                icon={FaSearch} 
+                className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/70 h-5 w-5" 
+              />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t('database.searchPlaceholder')}
+                className="w-full pl-12 pr-4 py-3 sm:py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all text-sm sm:text-base"
+              />
             </div>
           </div>
         </PageHeader>
 
-        <section className="py-12">
+        <section className="py-8 sm:py-12">
           <div className="container mx-auto px-4">
+            {/* Mobile Filter Panel - Show on mobile/tablet only */}
+            <div className="block lg:hidden mb-6">
+              {/* Mobile Search Bar */}
+              <div className="relative mb-4">
+                <IconComponent 
+                  icon={FaSearch} 
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" 
+                />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search universities..."
+                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 placeholder-gray-500"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <IconComponent icon={FaTimes} className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Mobile Filter Button */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowMobileFilters(true)}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  <IconComponent icon={FaFilter} className="h-4 w-4" />
+                  <span>Filters</span>
+                  {Object.values(filters).some(filter => 
+                    (Array.isArray(filter) && filter.length > 0) || 
+                    (typeof filter === 'string' && filter !== '' && filter !== 'all') ||
+                    (typeof filter === 'object' && filter !== null && 'min' in filter)
+                  ) && (
+                    <span className="bg-purple-800 text-white text-xs px-2 py-1 rounded-full">
+                      {Object.values(filters).filter(filter => 
+                        (Array.isArray(filter) && filter.length > 0) || 
+                        (typeof filter === 'string' && filter !== '' && filter !== 'all') ||
+                        (typeof filter === 'object' && filter !== null && 'min' in filter)
+                      ).length}
+                    </span>
+                  )}
+                </button>
+
+                {/* Mobile Action Buttons */}
+                <button
+                  onClick={handleAIAnalysis}
+                  disabled={isLoadingAI}
+                  className="px-3 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all disabled:opacity-50 flex items-center justify-center"
+                >
+                  {isLoadingAI ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  ) : (
+                    <IconComponent icon={FaRobot} className="h-4 w-4" />
+                  )}
+                </button>
+
+                <button
+                  onClick={handleGetRecommendations}
+                  disabled={isLoadingAI}
+                  className="px-3 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all disabled:opacity-50 flex items-center justify-center"
+                >
+                  {isLoadingAI ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  ) : (
+                    <IconComponent icon={FaLightbulb} className="h-4 w-4" />
+                  )}
+                </button>
+
+                {compareList.length > 0 && (
+                  <button
+                    onClick={handleOpenCompare}
+                    className="px-3 py-3 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-lg hover:from-teal-600 hover:to-teal-700 transition-all flex items-center justify-center relative"
+                  >
+                    <IconComponent icon={FaBookmark} className="h-4 w-4" />
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                      {compareList.length}
+                    </span>
+                  </button>
+                )}
+              </div>
+            </div>
+
             <div className="flex flex-col lg:flex-row gap-8">
-              {/* Sidebar Filters */}
-              <div className="lg:w-1/4">
-                <div className="bg-white rounded-xl shadow-lg p-6 sticky top-6">
+              {/* Desktop Sidebar Filters - Hidden on mobile */}
+              <div className="hidden lg:block lg:w-1/4">
+                <div className="bg-white rounded-xl shadow-lg p-6 sticky top-24">
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-lg font-bold text-gray-800 flex items-center">
                       <IconComponent icon={FaFilter} className="mr-2 text-blue-600" />
@@ -2711,7 +2953,6 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                     </button>
                   </div>
 
-           
                   {/* More Filters Button - Moved to top */}
                 
 
@@ -2945,49 +3186,76 @@ Return format: <recommendation><university id="X"/></recommendation>`;
               {/* Main Content */}
               <div className="lg:w-3/4">
                 {/* Results Header */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 bg-white rounded-xl shadow-lg p-6">
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                      University Database
-                      {searchQuery && (
-                        <span className="text-lg font-normal text-gray-600 ml-2">
-                          - Results for "{searchQuery}"
-                        </span>
-                      )}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                  <div className="hidden lg:flex flex-1 flex-col">
+                    {/* Hide "University Database" text on mobile */}
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
+                      {t('database.title')}
                     </h2>
-                    <p className="text-gray-600">
-                      Showing {filteredUniversities.length} universit{filteredUniversities.length !== 1 ? 'ies' : 'y'}
+                    <p className="text-sm sm:text-base text-gray-600">
+                      Showing {filteredUniversities.length} of {universities.length} universities
                     </p>
                   </div>
-                  
-                  <div className="flex items-center gap-4 mt-4 sm:mt-0">
-                    <div className="flex items-center gap-2">
-                      <IconComponent icon={FaSortAmountDown} className="text-gray-500" />
-                      <select
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value)}
-                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                      >
-                        <option value="ranking">Best Ranking</option>
-                        <option value="name">Name A-Z</option>
-                        <option value="tuition_low">Lowest Tuition</option>
-                        <option value="tuition_high">Highest Tuition</option>
-                        <option value="acceptance_rate">Acceptance Rate</option>
-                      </select>
-                    </div>
-                    
+
+                  {/* Mobile results count - simple and clean */}
+                  <div className="flex lg:hidden w-full justify-between items-center">
+                    <p className="text-sm text-gray-600">
+                      Showing {filteredUniversities.length} universities
+                    </p>
+                    {/* Mobile view mode switcher */}
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => setViewMode('grid')}
-                        className={`p-2 rounded-lg ${viewMode === 'grid' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}`}
+                        onClick={() => setMobileViewMode('grid')}
+                        className={`p-2 rounded-lg transition-colors ${
+                          mobileViewMode === 'grid'
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
                       >
-                        <IconComponent icon={FaUniversity} />
+                        <IconComponent icon={FaThLarge} className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => setMobileViewMode('list')}
+                        className={`p-2 rounded-lg transition-colors ${
+                          mobileViewMode === 'list'
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        <IconComponent icon={FaList} className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Desktop controls */}
+                  <div className="hidden lg:flex items-center gap-4">
+                    {/* Sort dropdown */}
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="featured">{t('database.sort.featured')}</option>
+                      <option value="qsRanking">{t('database.sort.ranking')}</option>
+                      <option value="tuition_asc">{t('database.sort.tuitionLowHigh')}</option>
+                      <option value="tuition_desc">{t('database.sort.tuitionHighLow')}</option>
+                      <option value="acceptance_rate">{t('database.sort.acceptanceRate')}</option>
+                      <option value="student_population">{t('database.sort.studentPopulation')}</option>
+                    </select>
+
+                    {/* View mode toggle */}
+                    <div className="flex bg-gray-100 p-1 rounded-lg">
+                      <button
+                        onClick={() => setViewMode('grid')}
+                        className={`p-2 rounded ${viewMode === 'grid' ? 'bg-white shadow-sm' : ''}`}
+                      >
+                        <IconComponent icon={FaThLarge} className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => setViewMode('list')}
-                        className={`p-2 rounded-lg ${viewMode === 'list' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}`}
+                        className={`p-2 rounded ${viewMode === 'list' ? 'bg-white shadow-sm' : ''}`}
                       >
-                        <IconComponent icon={FaGlobe} />
+                        <IconComponent icon={FaList} className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
@@ -3026,36 +3294,182 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                     variants={staggerContainer(0.05, 0)}
                     initial="hidden"
                     animate="show"
-                    className={viewMode === 'grid' ? 
-                      (isMobile ? 'grid grid-cols-2 gap-3' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4') : 
-                      'space-y-4'
-                    }
                   >
-                    {currentUniversities.map((university) => (
-                      viewMode === 'grid' ? (
-                        <UniversityCard 
-                          key={university.id}
-                          university={university}
-                          onSelect={() => {
-                            setSelectedUniversity(university);
-                            setShowDetailModal(true);
-                          }}
-                          inCompareList={compareList.some(u => u.id === university.id)}
-                          onToggleCompare={() => toggleCompare(university)}
-                        />
+                    {/* Mobile View */}
+                    <div className="lg:hidden">
+                      {mobileViewMode === 'grid' ? (
+                        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                          {currentUniversities.map((university) => (
+                            <motion.div
+                              key={university.id}
+                              variants={fadeIn("up", 0.1)}
+                              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                            >
+                              <div className="relative">
+                                <img
+                                  src={university.image || '/api/placeholder/300/200'}
+                                  alt={university.name}
+                                  className="w-full h-28 sm:h-32 object-cover"
+                                />
+                                <div className="absolute top-2 right-2">
+                                  <button
+                                    onClick={() => toggleCompare(university)}
+                                    className={`p-1.5 rounded-full transition-colors ${
+                                      compareList.some(u => u.id === university.id)
+                                        ? 'bg-purple-600 text-white'
+                                        : 'bg-white/90 text-gray-600 hover:bg-white'
+                                    }`}
+                                  >
+                                    <IconComponent icon={compareList.some(u => u.id === university.id) ? FaCheck : FaPlus} className="h-3 w-3" />
+                                  </button>
+                                </div>
+                                {university.featured && (
+                                  <div className="absolute top-2 left-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full">
+                                    Featured
+                                  </div>
+                                )}
+                              </div>
+                              <div className="p-3">
+                                <h3 className="font-semibold text-sm text-gray-900 mb-1 line-clamp-2 leading-tight">
+                                  {university.name}
+                                </h3>
+                                <p className="text-xs text-gray-600 mb-2 flex items-center">
+                                  <IconComponent icon={FaMapMarkerAlt} className="h-3 w-3 mr-1 flex-shrink-0" />
+                                  <span className="truncate">{university.city}, {university.country}</span>
+                                </p>
+                                <div className="space-y-1 text-xs mb-3">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-gray-500">Ranking:</span>
+                                    <span className="font-medium text-purple-600">#{university.ranking || 'N/A'}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-gray-500">Tuition:</span>
+                                    <span className="font-medium text-green-600">{formatTuitionFee(university.tuition_fee)}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-gray-500">Accept Rate:</span>
+                                    <span className="font-medium">{formatAcceptanceRate(university.acceptance_rate)}</span>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    setSelectedUniversity(university);
+                                    setShowDetailModal(true);
+                                  }}
+                                  className="w-full px-3 py-1.5 bg-purple-600 text-white text-xs font-medium rounded-md hover:bg-purple-700 transition-colors"
+                                >
+                                  View Details
+                                </button>
+                              </div>
+                            </motion.div>
+                          ))}
+                        </div>
                       ) : (
-                        <UniversityListItem 
-                          key={university.id}
-                          university={university}
-                          onSelect={() => {
-                            setSelectedUniversity(university);
-                            setShowDetailModal(true);
-                          }}
-                          inCompareList={compareList.some(u => u.id === university.id)}
-                          onToggleCompare={() => toggleCompare(university)}
-                        />
-                      )
-                    ))}
+                        /* Mobile List View */
+                        <div className="space-y-3">
+                          {currentUniversities.map((university) => (
+                            <motion.div
+                              key={university.id}
+                              variants={fadeIn("up", 0.1)}
+                              className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow"
+                            >
+                              <div className="flex gap-3">
+                                <div className="relative flex-shrink-0">
+                                  <img
+                                    src={university.logo || university.image || '/api/placeholder/60/60'}
+                                    alt={university.name}
+                                    className="w-14 h-14 object-cover rounded-md"
+                                  />
+                                  {university.featured && (
+                                    <div className="absolute -top-1 -right-1 bg-yellow-500 text-white text-xs px-1 py-0.5 rounded-full">
+                                      ★
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="font-semibold text-sm text-gray-900 mb-1 line-clamp-1">
+                                    {university.name}
+                                  </h3>
+                                  <p className="text-xs text-gray-600 mb-2 flex items-center">
+                                    <IconComponent icon={FaMapMarkerAlt} className="h-3 w-3 mr-1" />
+                                    {university.city}, {university.country}
+                                  </p>
+                                  <div className="grid grid-cols-2 gap-2 text-xs">
+                                    <div>
+                                      <span className="text-gray-500">Rank: </span>
+                                      <span className="font-medium text-purple-600">#{university.ranking || 'N/A'}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-gray-500">Type: </span>
+                                      <span className="font-medium">{university.type || 'N/A'}</span>
+                                    </div>
+                                    <div className="col-span-2">
+                                      <span className="text-gray-500">Tuition: </span>
+                                      <span className="font-medium text-green-600">{formatTuitionFee(university.tuition_fee)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                  <button
+                                    onClick={() => toggleCompare(university)}
+                                    className={`p-2 rounded transition-colors ${
+                                      compareList.some(u => u.id === university.id)
+                                        ? 'bg-purple-600 text-white'
+                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                    }`}
+                                  >
+                                    <IconComponent icon={compareList.some(u => u.id === university.id) ? FaCheck : FaPlus} className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedUniversity(university);
+                                      setShowDetailModal(true);
+                                    }}
+                                    className="p-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+                                  >
+                                    <IconComponent icon={FaEye} className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              </div>
+                            </motion.div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Desktop View */}
+                    <div className="hidden lg:block">
+                      <div className={viewMode === 'grid' ? 
+                        'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 
+                        'space-y-4'
+                      }>
+                        {currentUniversities.map((university) => (
+                          viewMode === 'grid' ? (
+                            <UniversityCard 
+                              key={university.id}
+                              university={university}
+                              onSelect={() => {
+                                setSelectedUniversity(university);
+                                setShowDetailModal(true);
+                              }}
+                              inCompareList={compareList.some(u => u.id === university.id)}
+                              onToggleCompare={() => toggleCompare(university)}
+                            />
+                          ) : (
+                            <UniversityListItem 
+                              key={university.id}
+                              university={university}
+                              onSelect={() => {
+                                setSelectedUniversity(university);
+                                setShowDetailModal(true);
+                              }}
+                              inCompareList={compareList.some(u => u.id === university.id)}
+                              onToggleCompare={() => toggleCompare(university)}
+                            />
+                          )
+                        ))}
+                      </div>
+                    </div>
                   </motion.div>
                 )}
 
@@ -3139,6 +3553,9 @@ Return format: <recommendation><university id="X"/></recommendation>`;
         </section>
       </main>
       <Footer />
+
+      {/* Mobile Floating Action Buttons */}
+    
       
       {/* University Detail Modal */}
       {showDetailModal && selectedUniversity && (
@@ -3165,39 +3582,37 @@ Return format: <recommendation><university id="X"/></recommendation>`;
       {showAIAnalysis && aiAnalysisData && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <motion.div 
-            className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-6">
+            <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-4 sm:p-6">
               <div className="flex justify-between items-center">
                 <div className="flex items-center">
-                  <IconComponent icon={FaRobot} className="mr-3 text-2xl" />
+                  <IconComponent icon={FaRobot} className="mr-2 sm:mr-3 text-xl sm:text-2xl" />
                   <div>
-                    <h2 className="text-2xl font-bold">AI Analysis Report</h2>
-                    <p className="text-purple-100">Personalized insights based on your profile</p>
+                    <h2 className="text-lg sm:text-2xl font-bold">AI Analysis Report</h2>
+                    <p className="text-purple-100 text-sm sm:text-base">Personalized insights based on your profile</p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setShowAIAnalysis(false)}
                   className="p-2 hover:bg-white/10 rounded-full transition-colors"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <IconComponent icon={FaTimes} className="h-5 w-5 sm:h-6 sm:w-6" />
                 </button>
               </div>
             </div>
             
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-8rem)]">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6">
-                  <h3 className="text-lg font-bold text-blue-800 mb-4 flex items-center">
+            <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-8rem)]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 sm:p-6">
+                  <h3 className="text-base sm:text-lg font-bold text-blue-800 mb-3 sm:mb-4 flex items-center">
                     <IconComponent icon={FaTrophy} className="mr-2" /> Academic Strength
                   </h3>
-                  <div className="text-3xl font-bold text-blue-600 mb-2">{aiAnalysisData.academicStrength}%</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-blue-600 mb-2">{aiAnalysisData.academicStrength}%</div>
                   <div className="w-full bg-blue-200 rounded-full h-3">
                     <div 
                       className="bg-blue-600 h-3 rounded-full transition-all duration-1000"
@@ -3209,19 +3624,19 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                   </p>
                 </div>
 
-                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6">
-                  <h3 className="text-lg font-bold text-green-800 mb-4 flex items-center">
+                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 sm:p-6">
+                  <h3 className="text-base sm:text-lg font-bold text-green-800 mb-3 sm:mb-4 flex items-center">
                     <IconComponent icon={FaDollarSign} className="mr-2" /> Budget Analysis
                   </h3>
-                  <div className="text-lg font-bold text-green-600 mb-2">{aiAnalysisData.budgetAnalysis.level}</div>
+                  <div className="text-base sm:text-lg font-bold text-green-600 mb-2">{aiAnalysisData.budgetAnalysis.level}</div>
                   <p className="text-green-700 text-sm mb-3">{aiAnalysisData.budgetAnalysis.recommendation}</p>
                   <div className="text-sm text-green-600">
                     <span className="font-semibold">{aiAnalysisData.budgetAnalysis.affordableOptions}</span> universities match your budget
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6">
-                  <h3 className="text-lg font-bold text-orange-800 mb-4 flex items-center">
+                <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 sm:p-6">
+                  <h3 className="text-base sm:text-lg font-bold text-orange-800 mb-3 sm:mb-4 flex items-center">
                     <IconComponent icon={FaGlobe} className="mr-2" /> Recommended Regions
                   </h3>
                   <div className="flex flex-wrap gap-2">
@@ -3233,8 +3648,8 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6">
-                  <h3 className="text-lg font-bold text-purple-800 mb-4 flex items-center">
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 sm:p-6">
+                  <h3 className="text-base sm:text-lg font-bold text-purple-800 mb-3 sm:mb-4 flex items-center">
                     <IconComponent icon={FaLightbulb} className="mr-2" /> Suggestions
                   </h3>
                   <ul className="space-y-2">
@@ -3256,35 +3671,33 @@ Return format: <recommendation><university id="X"/></recommendation>`;
       {showRecommendations && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <motion.div 
-            className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden"
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6">
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 sm:p-6">
               <div className="flex justify-between items-center">
                 <div className="flex items-center">
-                  <IconComponent icon={FaLightbulb} className="mr-3 text-2xl" />
+                  <IconComponent icon={FaLightbulb} className="mr-2 sm:mr-3 text-xl sm:text-2xl" />
                   <div>
-                    <h2 className="text-2xl font-bold">Personalized Recommendations</h2>
-                    <p className="text-blue-100">Top 5 universities matched to your profile</p>
+                    <h2 className="text-lg sm:text-2xl font-bold">Personalized Recommendations</h2>
+                    <p className="text-blue-100 text-sm sm:text-base">Top 5 universities matched to your profile</p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setShowRecommendations(false)}
                   className="p-2 hover:bg-white/10 rounded-full transition-colors"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <IconComponent icon={FaTimes} className="h-5 w-5 sm:h-6 sm:w-6" />
                 </button>
               </div>
             </div>
             
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-8rem)]">
+            <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-8rem)]">
               {recommendedUniversities.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   {recommendedUniversities.map((university, index) => (
                     <motion.div
                       key={university.id}
@@ -3815,6 +4228,179 @@ Return format: <recommendation><university id="X"/></recommendation>`;
           </motion.div>
         </div>
       )}
+
+      {/* Mobile Filter Modal */}
+      <AnimatePresence>
+        {showMobileFilters && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-[10000] lg:hidden"
+          >
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-xl overflow-y-auto"
+            >
+              {/* Header */}
+              <div className="top-20 bg-white border-b px-4 py-4 flex justify-between items-center  z-10 ">
+                <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
+                <button
+                  onClick={() => setShowMobileFilters(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors bg-gray-50 border border-gray-200 mb-2"
+                >
+                  <IconComponent icon={FaTimes} className="h-5 w-5 text-gray-700" />
+                </button>
+              </div>
+
+              {/* Filter Content */}
+              <div className="p-4 space-y-6 ">
+                {/* Basic Filters */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 mt-20">Country</label>
+                  <select
+                    value={filters.country}
+                    onChange={(e) => setFilters(prev => ({ ...prev, country: e.target.value }))}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="">All Countries</option>
+                    {availableCountries.map(country => (
+                      <option key={country} value={country}>{country}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">University Type</label>
+                  <select
+                    value={filters.type}
+                    onChange={(e) => setFilters(prev => ({ ...prev, type: e.target.value }))}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="">All Types</option>
+                    {availableUniversityTypes.map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Major/Field</label>
+                  <select
+                    value={filters.major}
+                    onChange={(e) => setFilters(prev => ({ ...prev, major: e.target.value }))}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="">All Majors</option>
+                    {availableMajors.slice(0, 20).map(major => (
+                      <option key={major} value={major}>{major}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Tuition Fee Range */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tuition Fee: ${filters.tuitionFees[0].toLocaleString()} - ${filters.tuitionFees[1].toLocaleString()}
+                  </label>
+                  <input
+                    type="range"
+                    min={tuitionFeeRange[0]}
+                    max={tuitionFeeRange[1]}
+                    step="1000"
+                    value={filters.tuitionFees[0]}
+                    onChange={(e) => setFilters(prev => ({ 
+                      ...prev, 
+                      tuitionFees: [parseInt(e.target.value), prev.tuitionFees[1]]
+                    }))}
+                    className="w-full mb-2"
+                  />
+                  <input
+                    type="range"
+                    min={tuitionFeeRange[0]}
+                    max={tuitionFeeRange[1]}
+                    step="1000"
+                    value={filters.tuitionFees[1]}
+                    onChange={(e) => setFilters(prev => ({ 
+                      ...prev, 
+                      tuitionFees: [prev.tuitionFees[0], parseInt(e.target.value)]
+                    }))}
+                    className="w-full"
+                  />
+                </div>
+
+                {/* Quick Filters */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">Quick Filters</label>
+                  <div className="space-y-2">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={filters.scholarshipAvailable}
+                        onChange={(e) => setFilters(prev => ({ ...prev, scholarshipAvailable: e.target.checked }))}
+                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Scholarships Available</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={filters.showOnlyOpenApplications}
+                        onChange={(e) => setFilters(prev => ({ ...prev, showOnlyOpenApplications: e.target.checked }))}
+                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Open Applications</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={filters.onlineProgramsAvailable}
+                        onChange={(e) => setFilters(prev => ({ ...prev, onlineProgramsAvailable: e.target.checked }))}
+                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Online Programs</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Sort By */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="featured">Featured</option>
+                    <option value="qsRanking">Best Ranking</option>
+                    <option value="tuition_asc">Lowest Tuition</option>
+                    <option value="tuition_desc">Highest Tuition</option>
+                    <option value="acceptance_rate">Acceptance Rate</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="sticky bottom-0 bg-white border-t p-4 flex gap-3">
+                <button
+                  onClick={resetFilters}
+                  className="flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                >
+                  Reset
+                </button>
+                <button
+                  onClick={() => setShowMobileFilters(false)}
+                  className="flex-1 px-4 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"
+                >
+                  Apply Filters
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

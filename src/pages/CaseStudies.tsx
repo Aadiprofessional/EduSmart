@@ -3,6 +3,7 @@ import { FaGraduationCap, FaUniversity, FaChartLine, FaStar, FaFilter, FaSearch,
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import PageHeader from '../components/ui/PageHeader';
+import MobileFilterPanel from '../components/ui/MobileFilterPanel';
 import IconComponent from '../components/ui/IconComponent';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../utils/LanguageContext';
@@ -319,10 +320,57 @@ const CaseStudies: React.FC = () => {
           </div>
         </PageHeader>
 
-        <section className="py-12">
+        <section className="py-8 sm:py-12">
           <div className="container mx-auto px-4">
-            {/* Search and Filters Section */}
-            <section className="py-8 bg-white border-b border-gray-200 shadow-sm">
+            {/* Mobile Filter Panel - Show on mobile/tablet only */}
+            <div className="block lg:hidden mb-6">
+              <MobileFilterPanel
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                searchPlaceholder="Search success stories..."
+                filters={[
+                  {
+                    key: 'category',
+                    label: 'Category',
+                    value: activeFilters.category,
+                    options: Array.isArray(categories) ? categories.map(category => ({ value: category, label: category })) : [],
+                    onChange: (value) => toggleFilter('category', value)
+                  },
+                  {
+                    key: 'outcome',
+                    label: 'Outcome',
+                    value: activeFilters.outcome,
+                    options: Array.isArray(outcomes) ? outcomes.map(outcome => ({ value: outcome, label: outcome })) : [],
+                    onChange: (value) => toggleFilter('outcome', value)
+                  },
+                  {
+                    key: 'country',
+                    label: 'Country',
+                    value: activeFilters.country,
+                    options: Array.isArray(countries) ? countries.map(country => ({ value: country, label: country })) : [],
+                    onChange: (value) => toggleFilter('country', value)
+                  },
+                  {
+                    key: 'field',
+                    label: 'Field of Study',
+                    value: activeFilters.field,
+                    options: Array.isArray(fields) ? fields.map(field => ({ value: field, label: field })) : [],
+                    onChange: (value) => toggleFilter('field', value)
+                  }
+                ]}
+                onClearFilters={clearAllFilters}
+                activeFilterCount={
+                  (activeFilters.category ? 1 : 0) + 
+                  (activeFilters.outcome ? 1 : 0) + 
+                  (activeFilters.country ? 1 : 0) +
+                  (activeFilters.field ? 1 : 0) +
+                  (activeFilters.featured ? 1 : 0)
+                }
+              />
+            </div>
+
+            {/* Desktop Search and Filters Section - Hidden on mobile */}
+            <section className="hidden lg:block py-8 bg-white border-b border-gray-200 shadow-sm rounded-xl mb-6">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <motion.div 
                   className="flex flex-col lg:flex-row gap-6 items-center"
@@ -415,18 +463,18 @@ const CaseStudies: React.FC = () => {
             </section>
 
             {/* Success Stories Grid */}
-            <section className="py-12">
+            <section className="py-6 sm:py-12">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 {loading ? (
-                  <div className="flex justify-center items-center py-20">
+                  <div className="flex justify-center items-center py-12 sm:py-20">
                     <div className="text-center">
-                      <IconComponent icon={FaSpinner} className="animate-spin text-4xl text-blue-600 mb-4 mx-auto" />
-                      <p className="text-gray-600 mb-4">Please wait while we load the success stories.</p>
+                      <IconComponent icon={FaSpinner} className="animate-spin text-3xl sm:text-4xl text-blue-600 mb-4 mx-auto" />
+                      <p className="text-sm sm:text-base text-gray-600 mb-4">Please wait while we load the success stories.</p>
                     </div>
                   </div>
                 ) : caseStudies.length > 0 ? (
                   <motion.div 
-                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8"
                     variants={containerVariants}
                     initial="hidden"
                     animate="visible"

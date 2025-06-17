@@ -144,17 +144,17 @@ const FeaturedResources3D: React.FC = () => {
           className="text-center mb-16"
         >
           <div className="relative">
-            <h2 className="text-5xl md:text-6xl font-bold text-white mb-6 bg-gradient-to-r from-green-400 via-yellow-500 to-red-500 bg-clip-text text-transparent">
+            <h2 className="text-3xl sm:text-5xl md:text-6xl font-bold text-white mb-4 sm:mb-6 bg-gradient-to-r from-green-400 via-yellow-500 to-red-500 bg-clip-text text-transparent">
               Featured Resources
             </h2>
           </div>
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+          <p className="text-sm sm:text-xl text-gray-300 max-w-3xl mx-auto">
             Access our comprehensive collection of guides, templates, and educational materials
           </p>
         </motion.div>
 
         {/* Resources Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
           {sampleResources.map((resource, index) => (
             <motion.div
               key={resource.id}
@@ -173,59 +173,62 @@ const FeaturedResources3D: React.FC = () => {
                 <img
                   src={resource.thumbnail}
                   alt={resource.title}
-                  className="w-full h-40 object-cover group-hover:scale-110 transition-transform duration-500"
+                  className="w-full h-24 sm:h-32 lg:h-40 object-cover group-hover:scale-110 transition-transform duration-500"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                 
                 {/* Type Badge */}
-                <div className={`absolute top-3 left-3 bg-gradient-to-r ${getTypeColor(resource.type)} text-white px-2 py-1 rounded-full text-xs font-semibold flex items-center gap-1`}>
+                <div className={`absolute top-1 sm:top-2 left-1 sm:left-2 bg-gradient-to-r ${getTypeColor(resource.type)} text-white px-1 sm:px-2 py-1 rounded-full text-xs font-semibold flex items-center gap-1`}>
                   <IconComponent icon={getTypeIcon(resource.type)} className="text-xs" />
-                  {resource.type.toUpperCase()}
+                  <span className="hidden lg:inline">{resource.type.toUpperCase()}</span>
                 </div>
 
                 {/* Featured Badge */}
                 {resource.featured && (
-                  <div className="absolute top-3 right-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                    Featured
+                  <div className="absolute top-1 sm:top-2 right-1 sm:right-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-1 sm:px-2 py-1 rounded-full text-xs font-semibold">
+                    <span className="hidden sm:inline">Featured</span>
+                    <span className="sm:hidden">★</span>
                   </div>
                 )}
               </div>
 
               {/* Resource Content */}
-              <div className="p-4">
-                <h3 className="text-lg font-bold text-white mb-2 group-hover:text-green-300 transition-colors line-clamp-2">
+              <div className="p-2 sm:p-3 lg:p-4">
+                <h3 className="text-xs sm:text-sm lg:text-base font-bold text-white mb-1 sm:mb-2 group-hover:text-blue-300 transition-colors line-clamp-2">
                   {resource.title}
                 </h3>
-                <p className="text-gray-300 text-sm mb-3 line-clamp-2">
+                <p className="text-gray-300 text-xs mb-2 sm:mb-3 line-clamp-2 hidden sm:block">
                   {resource.description}
                 </p>
 
-                {/* Stats */}
-                <div className="flex items-center gap-4 mb-3 text-xs text-gray-400">
-                  {resource.downloads > 0 && (
-                    <div className="flex items-center gap-1">
-                      <IconComponent icon={FaDownload} />
-                      <span>{resource.downloads.toLocaleString()}</span>
-                    </div>
-                  )}
+                {/* Resource Stats */}
+                <div className="flex items-center justify-between text-xs text-gray-400 mb-2 sm:mb-3">
                   <div className="flex items-center gap-1">
-                    <IconComponent icon={FaEye} />
-                    <span>{resource.views.toLocaleString()}</span>
+                    <IconComponent icon={getTypeIcon(resource.type)} />
+                    <span className="hidden lg:inline">{resource.type}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <IconComponent icon={FaDownload} />
+                    <span>{resource.downloads > 1000 ? `${(resource.downloads / 1000).toFixed(1)}k` : resource.downloads}</span>
                   </div>
                 </div>
 
-                {/* Action Button */}
+                {/* Download Button */}
                 <motion.button
-                  className={`w-full py-2 bg-gradient-to-r ${getTypeColor(resource.type)} rounded-lg text-white font-semibold text-sm hover:shadow-lg transition-all duration-300`}
+                  className="w-full bg-gradient-to-r from-green-500 to-teal-600 text-white font-medium py-1 sm:py-2 px-2 sm:px-3 rounded-lg hover:from-green-600 hover:to-teal-700 transition-all duration-300 text-xs"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  {resource.type === 'video' ? 'Watch Now' : 'Download'}
+                  <div className="flex items-center justify-center gap-1">
+                    <IconComponent icon={FaDownload} className="text-xs" />
+                    <span className="hidden sm:inline">Download</span>
+                    <span className="sm:hidden">Get</span>
+                  </div>
                 </motion.button>
               </div>
 
               {/* Hover Glow Effect */}
-              <div className={`absolute inset-0 bg-gradient-to-r ${getTypeColor(resource.type).replace('to-', 'to-').replace('from-', 'from-').replace('500', '500/10').replace('600', '600/10')} opacity-0 group-hover:opacity-100 transition-all duration-500 pointer-events-none rounded-2xl`}></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-teal-500/10 opacity-0 group-hover:opacity-100 transition-all duration-500 pointer-events-none rounded-2xl"></div>
             </motion.div>
           ))}
         </div>

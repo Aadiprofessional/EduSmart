@@ -3,6 +3,7 @@ import { FaGraduationCap, FaBook, FaFileAlt, FaBriefcase, FaSearch, FaRegFileAlt
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import PageHeader from '../components/ui/PageHeader';
+import MobileFilterPanel from '../components/ui/MobileFilterPanel';
 import IconComponent from '../components/ui/IconComponent';
 import { motion } from 'framer-motion';
 import { responseAPI } from '../utils/apiService';
@@ -368,8 +369,56 @@ const Resources: React.FC = () => {
           </div>
         </PageHeader>
 
-        <section className="py-12">
+        <section className="py-8 sm:py-12">
           <div className="container mx-auto px-4">
+            {/* Mobile Filter Panel - Show on mobile/tablet only */}
+            <div className="block lg:hidden mb-6">
+              <MobileFilterPanel
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                searchPlaceholder="Search resources..."
+                filters={[
+                  {
+                    key: 'category',
+                    label: 'Category',
+                    value: activeCategory === 'all' ? '' : activeCategory,
+                    options: categories.map(category => ({ 
+                      value: category, 
+                      label: getCategoryLabel(category),
+                      count: resources.filter(r => r.category === category).length
+                    })),
+                    onChange: (value) => setActiveCategory(value || 'all')
+                  },
+                  {
+                    key: 'type',
+                    label: 'Resource Type',
+                    value: activeType === 'all' ? '' : activeType,
+                    options: types.map(type => ({ 
+                      value: type, 
+                      label: getTypeLabel(type),
+                      count: resources.filter(r => r.type === type).length
+                    })),
+                    onChange: (value) => setActiveType(value || 'all')
+                  }
+                ]}
+                sortOptions={[
+                  { value: 'featured', label: 'Featured First' },
+                  { value: 'downloads', label: 'Most Downloaded' },
+                  { value: 'views', label: 'Most Viewed' },
+                  { value: 'newest', label: 'Newest First' },
+                  { value: 'oldest', label: 'Oldest First' }
+                ]}
+                sortBy={sortBy}
+                onSortChange={setSortBy}
+                onClearFilters={clearAllFilters}
+                activeFilterCount={
+                  (activeCategory !== 'all' ? 1 : 0) + 
+                  (activeType !== 'all' ? 1 : 0) + 
+                  (searchQuery ? 1 : 0)
+                }
+              />
+            </div>
+
             {loading ? (
               <div className="flex justify-center items-center min-h-[400px]">
                 <div className="text-center">
@@ -379,9 +428,9 @@ const Resources: React.FC = () => {
               </div>
             ) : (
               <div className="flex flex-col lg:flex-row gap-8">
-                {/* Sidebar Filters */}
+                {/* Desktop Sidebar Filters - Hidden on mobile */}
                 <motion.div 
-                  className="lg:w-1/4"
+                  className="hidden lg:block lg:w-1/4"
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.5, delay: 0.2 }}

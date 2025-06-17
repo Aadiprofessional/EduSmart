@@ -418,6 +418,25 @@ const Scene3D: React.FC = () => {
 };
 
 const ScrollingBalls3D: React.FC = () => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    // Check if device is mobile
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 1024 || 'ontouchstart' in window);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Don't render on mobile devices
+  if (isMobile) {
+    return null;
+  }
+
   return (
     <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 39 }}>
       <Canvas
