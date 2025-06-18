@@ -6,6 +6,7 @@ import IconComponent from './IconComponent';
 import * as pdfjsLib from 'pdfjs-dist';
 import { jsPDF } from 'jspdf';
 import { Document, Paragraph, TextRun, Packer } from 'docx';
+import { useResponseCheck, ResponseUpgradeModal } from '../../utils/responseChecker';
 
 // Import markdown and math libraries
 import ReactMarkdown from 'react-markdown';
@@ -104,6 +105,11 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
   const [overallProcessingComplete, setOverallProcessingComplete] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Response checking state
+  const { checkAndUseResponse } = useResponseCheck();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState('');
 
   // Load history from localStorage on component mount
   useEffect(() => {
@@ -807,6 +813,23 @@ Format your response with:
     console.log('🚀 Starting handleGetAnswer');
     console.log('📝 Question:', question);
     console.log('📄 Document pages:', documentPages.length);
+
+    // Check responses before proceeding
+    const responseResult = await checkAndUseResponse({
+      responseType: 'homework_solution',
+      queryData: { 
+        hasDocument: documentPages.length > 0, 
+        pageCount: documentPages.length,
+        questionLength: question.length 
+      },
+      responsesUsed: 1
+    });
+
+    if (!responseResult.canProceed) {
+      setUpgradeMessage(responseResult.message || 'Unable to process request');
+      setShowUpgradeModal(true);
+      return;
+    }
     
     setLoading(true);
     setProcessingStatus('Analyzing and solving...');
@@ -1211,6 +1234,22 @@ please give small bullet points of what knowlegde is needed to solve the problem
     
     console.log('🚀 Starting text question submission');
     console.log('📝 Question:', question);
+
+    // Check responses before proceeding
+    const responseResult = await checkAndUseResponse({
+      responseType: 'homework_solution',
+      queryData: { 
+        hasDocument: false, 
+        questionLength: question.length 
+      },
+      responsesUsed: 1
+    });
+
+    if (!responseResult.canProceed) {
+      setUpgradeMessage(responseResult.message || 'Unable to process request');
+      setShowUpgradeModal(true);
+      return;
+    }
     
     setLoading(true);
     setProcessingStatus('Solving homework problem...');
@@ -2151,6 +2190,13 @@ please give small bullet points of what knowlegde is needed to solve the problem
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Response Upgrade Modal */}
+      <ResponseUpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        message={upgradeMessage}
+      />
     </div>
   );
 };

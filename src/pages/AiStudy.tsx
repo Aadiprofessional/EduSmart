@@ -5,7 +5,7 @@ import { FiBookOpen, FiClock, FiCalendar, FiCheck, FiBookmark, FiEdit, FiMenu, F
 import { FaCrown, FaExclamationTriangle, FaCheck } from 'react-icons/fa';
 import IconComponent from '../components/ui/IconComponent';
 import { useAuth } from '../utils/AuthContext';
-import { useSubscription } from '../utils/SubscriptionContext';
+import { useProStatus, ProBadge, requiresProAccess } from '../utils/proStatusUtils';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import CitationGenerator from '../components/ui/CitationGenerator';
@@ -21,7 +21,7 @@ import { useLanguage } from '../utils/LanguageContext';
 const AiStudy: React.FC = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
-  const { isProUser, responsesRemaining, useResponse, subscriptionStatus } = useSubscription();
+  const { isProUser, responsesRemaining, loading: proLoading, forceRefresh } = useProStatus();
   const [activeTab, setActiveTab] = useState('upload');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   
@@ -47,13 +47,9 @@ const AiStudy: React.FC = () => {
   
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Check if user can use AI features
-  const canUseAI = isProUser && responsesRemaining > 0;
-
   // Function to handle AI feature usage
   const handleAIFeatureUse = React.useCallback(async (featureType: string, queryData: any, responsesUsed: number = 1) => {
     if (!user) {
-      // Redirect to login
       window.location.href = '/login';
       return false;
     }
@@ -68,17 +64,13 @@ const AiStudy: React.FC = () => {
       return false;
     }
 
-    // If we reach here, the user can use the feature
-    // The actual response usage will be handled by individual components
     return true;
   }, [user, isProUser, responsesRemaining]);
 
   // Function to handle tab switching with AI feature checks
   const handleTabSwitch = (tabId: string) => {
-    // AI-powered features that require subscription
-    const aiFeatures = ['ai-tutor', 'mistake-checker', 'content-writer', 'document-summarizer', 'flashcards'];
-    
-    if (aiFeatures.includes(tabId) && !canUseAI) {
+    // Check if feature requires PRO
+    if (requiresProAccess(tabId) && !isProUser) {
       if (!user) {
         window.location.href = '/login';
         return;
@@ -153,13 +145,13 @@ const AiStudy: React.FC = () => {
   };
 
   const tools = [
-    { id: 'upload', name: t('aiStudy.uploadHomework'), icon: AiOutlineUpload, requiresPro: false },
+    { id: 'upload', name: t('aiStudy.uploadHomework'), icon: AiOutlineUpload, requiresPro: true },
     { id: 'ai-tutor', name: t('aiStudy.aiTutor'), icon: FiMessageSquare, requiresPro: true },
     { id: 'mistake-checker', name: t('aiStudy.mistakeChecker'), icon: FiCheckCircle, requiresPro: true },
     { id: 'study-planner', name: t('aiStudy.studyPlanner'), icon: FiCalendar, requiresPro: false },
     { id: 'flashcards', name: t('aiStudy.flashcards'), icon: FiLayers, requiresPro: true },
     { id: 'content-writer', name: t('aiStudy.contentWriter'), icon: FiPenTool, requiresPro: true },
-    { id: 'citation-generator', name: t('aiStudy.citationGenerator'), icon: FiBookOpen, requiresPro: false },
+    { id: 'citation-generator', name: t('aiStudy.citationGenerator'), icon: FiBookOpen, requiresPro: true },
     { id: 'document-summarizer', name: 'Document Summarizer', icon: AiOutlineSearch, requiresPro: true },
   ];
 
@@ -411,27 +403,32 @@ const AiStudy: React.FC = () => {
             
             {/* Quick Stats */}
             <motion.div
-              className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center"
+              className="flex flex-wrap justify-center gap-4 lg:gap-6 text-center"
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.4, duration: 0.8 }}
             >
-              <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg p-4 border border-white/10">
-                <div className="text-2xl font-bold text-cyan-400">AI-Powered</div>
-                <div className="text-sm text-slate-300">Solutions</div>
+              <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg p-4 border border-white/10 flex-1 min-w-[140px] max-w-[200px]">
+                <div className="text-xl lg:text-2xl font-bold text-cyan-400 leading-tight">AI-Powered</div>
+                <div className="text-xs lg:text-sm text-slate-300 mt-1">Solutions</div>
               </div>
-              <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg p-4 border border-white/10">
-                <div className="text-2xl font-bold text-blue-400">Instant</div>
-                <div className="text-sm text-slate-300">Analysis</div>
+              <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg p-4 border border-white/10 flex-1 min-w-[140px] max-w-[200px]">
+                <div className="text-xl lg:text-2xl font-bold text-blue-400 leading-tight">Instant</div>
+                <div className="text-xs lg:text-sm text-slate-300 mt-1">Analysis</div>
               </div>
-              <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg p-4 border border-white/10">
-                <div className="text-2xl font-bold text-teal-400">Step-by-Step</div>
-                <div className="text-sm text-slate-300">Explanations</div>
+              <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg p-4 border border-white/10 flex-1 min-w-[140px] max-w-[200px]">
+                <div className="text-xl lg:text-2xl font-bold text-teal-400 leading-tight">Step-by-Step</div>
+                <div className="text-xs lg:text-sm text-slate-300 mt-1">Explanations</div>
               </div>
-              <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg p-4 border border-white/10">
-                <div className="text-2xl font-bold text-emerald-400">Personalized</div>
-                <div className="text-sm text-slate-300">Learning</div>
+              <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg p-4 border border-white/10 flex-1 min-w-[140px] max-w-[200px]">
+                <div className="text-xl lg:text-2xl font-bold text-emerald-400 leading-tight">Personalise</div>
+                <div className="text-xs lg:text-sm text-slate-300 mt-1">Learning</div>
               </div>
+              <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg p-4 border border-white/10 flex-1 min-w-[140px] max-w-[200px]">
+                <div className="text-xl lg:text-2xl font-bold text-purple-400 leading-tight">Mindmap</div>
+                <div className="text-xs lg:text-sm text-slate-300 mt-1">Summarizer</div>
+              </div>
+              
             </motion.div>
           </motion.div>
         </div>
@@ -457,6 +454,12 @@ const AiStudy: React.FC = () => {
                 <span className="font-medium flex items-center">
                   <IconComponent icon={tools.find(tool => tool.id === activeTab)?.icon || FiEdit} className="mr-2 h-5 w-5" />
                   {tools.find(tool => tool.id === activeTab)?.name}
+                  {/* Show PRO badge for active tab if it requires PRO and user is not PRO */}
+                  {tools.find(tool => tool.id === activeTab)?.requiresPro && !isProUser && (
+                    <div className="ml-2 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-1">
+                      <IconComponent icon={FaCrown} className="h-3 w-3 text-white" />
+                    </div>
+                  )}
                 </span>
                 <motion.button
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -482,22 +485,31 @@ const AiStudy: React.FC = () => {
                         handleTabSwitch(tool.id);
                         setMobileMenuOpen(false);
                       }}
-                      className={`w-full text-left p-4 rounded-lg transition-all duration-300 ${
+                      className={`w-full text-left p-4 transition-all duration-300 relative ${
                         activeTab === tool.id
                           ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30 shadow-lg'
                           : 'bg-slate-700/30 hover:bg-slate-600/40 border border-slate-600/50'
-                      }`}
+                      } ${tool.requiresPro && !isProUser ? 'opacity-70' : ''}`}
                       variants={buttonVariants}
                       whileHover="hover"
                       whileTap="tap"
                     >
                       <div className="flex items-center space-x-3">
-                        <div className={`p-2 rounded-full ${getToolColors(tool.id, activeTab === tool.id).icon}`}>
+                        <div className={`p-2 rounded-full relative ${getToolColors(tool.id, activeTab === tool.id).icon}`}>
                           <IconComponent icon={tool.icon} className="h-5 w-5" />
+                          {/* PRO Badge for mobile tabs */}
+                          {tool.requiresPro && !isProUser && (
+                            <ProBadge size="sm" position="top-right" className="scale-75" />
+                          )}
                         </div>
-                        <span className={`font-medium text-sm ${getToolColors(tool.id, activeTab === tool.id).text}`}>
-                          {tool.name}
-                        </span>
+                        <div className="flex-1">
+                          <span className={`font-medium text-sm ${getToolColors(tool.id, activeTab === tool.id).text}`}>
+                            {tool.name}
+                          </span>
+                          {tool.requiresPro && !isProUser && (
+                            <div className="text-xs text-yellow-400 mt-1">PRO Required</div>
+                          )}
+                        </div>
                       </div>
                     </motion.button>
                   ))}
@@ -510,7 +522,7 @@ const AiStudy: React.FC = () => {
               {tools.map((tool) => (
                 <motion.button
                   key={tool.id}
-                  className={`flex items-center py-4 px-6 flex-1 justify-center transition-all duration-300 group relative ${
+                  className={`flex items-center py-4 px-6 flex-1 justify-center transition-all duration-300 group relative overflow-visible ${
                     activeTab === tool.id
                       ? 'bg-gradient-to-r from-blue-500/30 to-purple-500/30 border-b-2 border-blue-400'
                       : 'hover:bg-white/10'
@@ -519,109 +531,118 @@ const AiStudy: React.FC = () => {
                   whileHover={{ backgroundColor: activeTab === tool.id ? "rgba(59, 130, 246, 0.2)" : "rgba(255, 255, 255, 0.1)" }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <div className={`p-1.5 rounded-full mr-2 ${getToolColors(tool.id, activeTab === tool.id).icon} ${
+                  <div className={`p-1.5 rounded-full mr-2 relative ${getToolColors(tool.id, activeTab === tool.id).icon} ${
                     activeTab !== tool.id ? getToolColors(tool.id, false).hoverIcon : ''
                   }`}>
                     <IconComponent icon={tool.icon} className="h-4 w-4" />
+                    {/* PRO Badge for desktop tabs - improved positioning */}
+                    {tool.requiresPro && !isProUser && (
+                      <div className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-1 border border-white/20 shadow-lg z-20">
+                        <IconComponent icon={FaCrown} className="h-3 w-3 text-white" />
+                      </div>
+                    )}
                   </div>
                   <span className={`font-medium text-sm ${getToolColors(tool.id, activeTab === tool.id).text} ${
                     activeTab !== tool.id ? getToolColors(tool.id, false).hoverText : ''
                   }`}>
                     {tool.name}
                   </span>
-                  {tool.requiresPro && !isProUser && (
-                    <div className="absolute -top-1 -right-1 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-1">
-                      <IconComponent icon={FaCrown} className="h-3 w-3 text-white" />
-                    </div>
-                  )}
                 </motion.button>
               ))}
             </div>
 
             {/* Tab Content */}
             <div className="p-8 bg-slate-900/20 backdrop-blur-sm">
-              {/* Pro Status Banner */}
-              {isProUser && (
+              {/* Pro Status Banner - Improved */}
+              {!proLoading && (
                 <motion.div
-                  className="mb-6 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 backdrop-blur-sm rounded-xl p-4 border border-yellow-400/30"
+                  className={`mb-6 backdrop-blur-sm rounded-xl p-4 border ${
+                    isProUser 
+                      ? 'bg-gradient-to-r from-green-500/20 to-blue-500/20 border-green-400/30'
+                      : 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-yellow-400/30'
+                  }`}
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <div className="bg-gradient-to-r from-yellow-400 to-orange-500 p-2 rounded-full">
+                      <div className={`p-2 rounded-full ${
+                        isProUser 
+                          ? 'bg-gradient-to-r from-green-400 to-blue-500'
+                          : 'bg-gradient-to-r from-yellow-400 to-orange-500'
+                      }`}>
                         <IconComponent icon={FaCrown} className="h-5 w-5 text-white" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-yellow-400">Pro User</h3>
+                        <h3 className={`text-lg font-semibold ${
+                          isProUser ? 'text-green-400' : 'text-yellow-400'
+                        }`}>
+                          {isProUser ? 'Pro User' : 'Free Plan'}
+                        </h3>
                         <p className="text-sm text-slate-300">
-                          {responsesRemaining} responses remaining this month
+                          {isProUser 
+                            ? `${responsesRemaining} responses remaining this month`
+                            : 'Upgrade to unlock all AI features'
+                          }
                         </p>
                       </div>
                     </div>
-                    {responsesRemaining < 50 && (
-                      <motion.div
-                        className="bg-orange-500/20 text-orange-400 px-3 py-1 rounded-full text-sm font-medium border border-orange-400/30"
-                        animate={{ scale: [1, 1.05, 1] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                      >
-                        Low responses
-                      </motion.div>
-                    )}
+                    <div className="flex items-center space-x-2">
+                      {isProUser && responsesRemaining < 50 && (
+                        <motion.div
+                          className="bg-orange-500/20 text-orange-400 px-3 py-1 rounded-full text-sm font-medium border border-orange-400/30"
+                          animate={{ scale: [1, 1.05, 1] }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                        >
+                          Low responses
+                        </motion.div>
+                      )}
+                      {!isProUser && (
+                        <motion.button
+                          onClick={() => setShowUpgradeModal(true)}
+                          className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-4 py-2 rounded-lg font-medium hover:from-yellow-600 hover:to-orange-600 transition-all"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          Upgrade Now
+                        </motion.button>
+                      )}
+                    </div>
                   </div>
                 </motion.div>
               )}
 
+              {/* Upload Homework */}
               <div className={activeTab === 'upload' ? 'block' : 'hidden'}>
-                {componentStates['upload'] && (
-                  <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-                    <UploadHomeworkComponent />
-                  </div>
-                )}
+                {componentStates['upload'] && <UploadHomeworkComponent />}
               </div>
 
+              {/* AI Tutor */}
               <div className={activeTab === 'ai-tutor' ? 'block' : 'hidden'}>
-                {componentStates['ai-tutor'] && (
-                  <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-                    <AiTutorChatComponent />
-                  </div>
-                )}
+                {componentStates['ai-tutor'] && <AiTutorChatComponent />}
               </div>
 
+              {/* Mistake Checker */}
               <div className={activeTab === 'mistake-checker' ? 'block' : 'hidden'}>
-                {componentStates['mistake-checker'] && (
-                  <motion.div variants={containerVariants} className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-                    <h2 className="text-2xl font-semibold text-cyan-400 mb-6">Check Mistakes</h2>
-                    <CheckMistakesComponent />
-                  </motion.div>
-                )}
+                {componentStates['mistake-checker'] && <CheckMistakesComponent />}
               </div>
 
+              {/* Content Writer */}
               <div className={activeTab === 'content-writer' ? 'block' : 'hidden'}>
-                {componentStates['content-writer'] && (
-                  <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-                    <ContentWriterComponent />
-                  </div>
-                )}
+                {componentStates['content-writer'] && <ContentWriterComponent />}
               </div>
 
+              {/* Citation Generator */}
               <div className={activeTab === 'citation-generator' ? 'block' : 'hidden'}>
-                {componentStates['citation-generator'] && (
-                  <motion.div variants={containerVariants} className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-                    <h2 className="text-2xl font-semibold text-cyan-400 mb-6">Citation Generator</h2>
-                    <CitationGenerator />
-                  </motion.div>
-                )}
+                {componentStates['citation-generator'] && <CitationGenerator />}
               </div>
 
+              {/* Study Planner */}
               <div className={activeTab === 'study-planner' ? 'block' : 'hidden'}>
-                {componentStates['study-planner'] && (
-                  <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-                    <StudyPlannerComponent />
-                  </div>
-                )}
+                {componentStates['study-planner'] && <StudyPlannerComponent />}
               </div>
 
+              {/* Flashcards */}
               <div className={activeTab === 'flashcards' ? 'block' : 'hidden'}>
                 {componentStates['flashcards'] && (
                   <FlashcardComponent 
@@ -631,10 +652,9 @@ const AiStudy: React.FC = () => {
                 )}
               </div>
 
+              {/* Document Summarizer */}
               <div className={activeTab === 'document-summarizer' ? 'block' : 'hidden'}>
-                {componentStates['document-summarizer'] && (
-                  <DocumentSummarizerComponent />
-                )}
+                {componentStates['document-summarizer'] && <DocumentSummarizerComponent />}
               </div>
               
             </div>
@@ -672,9 +692,9 @@ const AiStudy: React.FC = () => {
                     <div className="space-y-3 mb-6 text-left">
                       <div className="flex items-center space-x-3">
                         <div className="bg-green-500/20 p-1 rounded-full">
-                          <IconComponent icon={FaCheck} className="h-3 w-3 text-green-400" />
+                          <IconComponent icon={FaCheck} className="w-4 h-4 text-green-400" />
                         </div>
-                        <span className="text-slate-300">500+ AI responses per month</span>
+                        <span className="text-slate-300">Generous monthly AI response allowance</span>
                       </div>
                       <div className="flex items-center space-x-3">
                         <div className="bg-green-500/20 p-1 rounded-full">

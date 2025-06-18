@@ -7,6 +7,7 @@ import { FiEdit, FiDownload, FiShare2, FiSave, FiSettings, FiRotateCw, FiRefresh
 import { AiOutlineFontSize, AiOutlineHighlight, AiOutlineAlignLeft, AiOutlineAlignCenter, AiOutlineAlignRight, AiOutlineBold, AiOutlineItalic, AiOutlineUnderline, AiOutlineOrderedList, AiOutlineUnorderedList, AiOutlineLink, AiOutlineRobot, AiOutlineBulb, AiOutlineHistory, AiOutlineLoading3Quarters, AiOutlinePlus, AiOutlineMinus } from 'react-icons/ai';
 import { BsQuote } from 'react-icons/bs';
 import IconComponent from './IconComponent';
+import { useResponseCheck, ResponseUpgradeModal } from '../../utils/responseChecker';
 
 // Import markdown and math libraries
 import ReactMarkdown from 'react-markdown';
@@ -134,6 +135,11 @@ const ContentWriterComponent: React.FC = () => {
   const pageHeight = 650; // Approximate height of a standard A4 page with given font size
   const linesPerPage = Math.floor(pageHeight / (fontSize * 1.5)); // Estimate lines per page based on font size
   const itemsPerPage = linesPerPage;
+  
+  // Response checking state
+  const { checkAndUseResponse } = useResponseCheck();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState('');
   
   // Calculate total pages based on content length
   const calculateTotalPages = () => {
@@ -332,6 +338,17 @@ Create professional, academic-quality content that meets the request requirement
   const generateContent = async () => {
     if (!prompt.trim()) return;
     
+    // Check responses before generating content
+    const responseResult = await checkAndUseResponse({
+      responseType: 'content_generation',
+      responsesUsed: 1
+    });
+    if (!responseResult.canProceed) {
+      setShowUpgradeModal(true);
+      setUpgradeMessage(responseResult.message || 'Please upgrade to continue');
+      return;
+    }
+    
     setIsGenerating(true);
     setProgress(0);
     setCurrentStep('analyzing');
@@ -436,6 +453,17 @@ Create professional, academic-quality content that meets the request requirement
 
   const handleGenerateContent = async () => {
     if (!prompt.trim()) return;
+    
+    // Check responses before generating content
+    const responseResult = await checkAndUseResponse({
+      responseType: 'content_generation',
+      responsesUsed: 1
+    });
+    if (!responseResult.canProceed) {
+      setShowUpgradeModal(true);
+      setUpgradeMessage(responseResult.message || 'Please upgrade to continue');
+      return;
+    }
     
     setIsGenerating(true);
     setProgress(0);
@@ -1662,6 +1690,13 @@ ${prompt}`
             </motion.div>
           )}
         </AnimatePresence>
+        
+        {/* Response Upgrade Modal */}
+        <ResponseUpgradeModal 
+          isOpen={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+          message={upgradeMessage}
+        />
       </div>
     </motion.div>
   );

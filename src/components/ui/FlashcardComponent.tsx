@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AiOutlineBulb, AiOutlineLoading3Quarters, AiOutlineFolder, AiOutlinePlus } from 'react-icons/ai';
 import { FiLayers, FiBookmark, FiTrash2, FiUpload, FiImage, FiFile, FiEdit3, FiFolderPlus } from 'react-icons/fi';
 import IconComponent from './IconComponent';
+import { useResponseCheck, ResponseUpgradeModal } from '../../utils/responseChecker';
 
 interface Flashcard {
   id: string;
@@ -28,6 +29,11 @@ interface FlashcardComponentProps {
 }
 
 const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '', onGenerateFromNotes, onGenerateFromPDF }) => {
+  // Response checking state
+  const { checkAndUseResponse } = useResponseCheck();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState('');
+
   const [flashcardSets, setFlashcardSets] = useState<FlashcardSet[]>([
     {
       id: '1',
@@ -258,6 +264,17 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
       return;
     }
 
+    // Check responses before processing file
+    const responseResult = await checkAndUseResponse({
+      responseType: 'flashcard_file_upload',
+      responsesUsed: 1
+    });
+    if (!responseResult.canProceed) {
+      setShowUpgradeModal(true);
+      setUpgradeMessage(responseResult.message || 'Please upgrade to continue');
+      return;
+    }
+
     try {
       setIsUploading(true);
       setUploadedFile(file);
@@ -283,6 +300,17 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
 
   // Generate flashcards from general topics
   const generateFlashcardsFromTopics = async () => {
+    // Check responses before generating flashcards
+    const responseResult = await checkAndUseResponse({
+      responseType: 'flashcard_ai_generation',
+      responsesUsed: 1
+    });
+    if (!responseResult.canProceed) {
+      setShowUpgradeModal(true);
+      setUpgradeMessage(responseResult.message || 'Please upgrade to continue');
+      return;
+    }
+
     try {
       setIsGenerating(true);
 
@@ -848,6 +876,13 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
           </motion.div>
         )}
       </AnimatePresence>
+      
+      {/* Response Upgrade Modal */}
+      <ResponseUpgradeModal 
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        message={upgradeMessage}
+      />
     </div>
   );
 };

@@ -108,13 +108,34 @@ const Header: React.FC = () => {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
-      if (!target.closest('.user-menu-container') && !target.closest('.language-selector-container')) {
+      
+      // Check if click is inside user menu dropdown or its button
+      const userMenuDropdown = document.querySelector('.user-menu-dropdown');
+      const userMenuButton = document.querySelector('.user-menu-button');
+      const languageSelector = document.querySelector('.language-selector-container');
+      const languageDropdown = document.querySelector('.language-dropdown');
+      
+      // Don't close user menu if clicking inside user menu elements
+      const isInsideUserMenu = target.closest('.user-menu-dropdown') ||
+                               target.closest('.user-menu-button') ||
+                               userMenuDropdown?.contains(target) ||
+                               userMenuButton?.contains(target);
+      
+      // Don't close user menu if clicking inside language selector or its dropdown
+      const isInsideLanguageSelector = target.closest('.language-selector-container') ||
+                                       target.closest('.language-dropdown') ||
+                                       languageSelector?.contains(target) ||
+                                       languageDropdown?.contains(target);
+      
+      // Only close user menu if clicking outside both user menu and language selector
+      if (!isInsideUserMenu && !isInsideLanguageSelector) {
         setIsUserMenuOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    // Use capture phase to handle clicks before other handlers, but with lower priority for language selector
+    document.addEventListener('mousedown', handleClickOutside, false);
+    return () => document.removeEventListener('mousedown', handleClickOutside, false);
   }, []);
 
   // Update user menu position when opened
@@ -222,7 +243,7 @@ const Header: React.FC = () => {
   // User menu dropdown content
   const userMenuContent = isUserMenuOpen && typeof window !== 'undefined' ? (
     <motion.div
-      className="fixed w-48 bg-black/95 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-[1000001]"
+      className="user-menu-dropdown fixed w-48 bg-black/95 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-[1000001]"
       variants={userMenuVariants}
       initial="hidden"
       animate="visible"
@@ -231,12 +252,16 @@ const Header: React.FC = () => {
         top: `${userMenuPosition.top}px`,
         right: `${userMenuPosition.right}px`,
       }}
+      onClick={(e) => e.stopPropagation()} // Prevent click bubbling
     >
       <div className="p-2">
         <Link
           to="/profile"
           className="flex items-center px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200"
-          onClick={() => setIsUserMenuOpen(false)}
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent event bubbling
+            setIsUserMenuOpen(false);
+          }}
         >
           <IconComponent icon={AiOutlineUser} className="h-4 w-4 mr-3" />
           Profile
@@ -245,14 +270,20 @@ const Header: React.FC = () => {
           <Link
             to="/dashboard"
             className="flex items-center px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200"
-            onClick={() => setIsUserMenuOpen(false)}
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent event bubbling
+              setIsUserMenuOpen(false);
+            }}
           >
             <IconComponent icon={AiOutlineCrown} className="h-4 w-4 mr-3" />
             Dashboard
           </Link>
         )}
         <button
-          onClick={handleSignOut}
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent event bubbling
+            handleSignOut();
+          }}
           className="w-full flex items-center px-4 py-3 text-gray-300 hover:text-red-400 hover:bg-red-500/5 rounded-xl transition-all duration-200"
         >
           <IconComponent icon={AiOutlineEdit} className="h-4 w-4 mr-3" />
@@ -406,7 +437,10 @@ const Header: React.FC = () => {
                 
                 <div className="relative flex-shrink-0 user-menu-container">
                   <motion.button
-                    onClick={handleUserMenuToggle}
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent event bubbling
+                      handleUserMenuToggle();
+                    }}
                     className="user-menu-button flex items-center px-1 xl:px-1.5 py-0.5 xl:py-1 bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-sm rounded-full border border-white/10 text-white hover:border-white/30 transition-all duration-300 min-w-0"
                     variants={buttonVariants}
                     whileHover="hover"

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AiOutlineBook, AiOutlineGlobal, AiOutlineFileText, AiOutlineUser, AiOutlineCalendar, AiOutlineLink, AiOutlineCopy, AiOutlineRobot, AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { FiBookOpen, FiGlobe, FiFile, FiUser, FiCalendar, FiLink, FiCopy, FiPlus, FiTrash2, FiDownload, FiUpload, FiEdit3 } from 'react-icons/fi';
 import IconComponent from './IconComponent';
+import { useResponseCheck, ResponseUpgradeModal } from '../../utils/responseChecker';
 
 interface Citation {
   id: string;
@@ -60,6 +61,11 @@ const CitationGenerator: React.FC<CitationGeneratorProps> = ({ className = '' })
   const [activeTab, setActiveTab] = useState<'manual' | 'ai' | 'upload'>('manual');
   const [urlInput, setUrlInput] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Response checking state
+  const { checkAndUseResponse } = useResponseCheck();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState('');
 
   const citationTypes = [
     { value: 'book', label: 'Book', icon: FiBookOpen },
@@ -161,6 +167,17 @@ const CitationGenerator: React.FC<CitationGeneratorProps> = ({ className = '' })
   const generateCitationFromURL = async () => {
     if (!urlInput.trim()) {
       alert('Please enter a URL');
+      return;
+    }
+
+    // Check responses before generating citation
+    const responseResult = await checkAndUseResponse({
+      responseType: 'citation_generation',
+      responsesUsed: 1
+    });
+    if (!responseResult.canProceed) {
+      setShowUpgradeModal(true);
+      setUpgradeMessage(responseResult.message || 'Please upgrade to continue');
       return;
     }
 
@@ -816,6 +833,13 @@ const CitationGenerator: React.FC<CitationGeneratorProps> = ({ className = '' })
           </div>
         )}
       </motion.div>
+      
+      {/* Response Upgrade Modal */}
+      <ResponseUpgradeModal 
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        message={upgradeMessage}
+      />
     </div>
   );
 };

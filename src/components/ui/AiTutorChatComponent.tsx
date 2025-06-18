@@ -16,6 +16,7 @@ import {
 } from 'react-icons/ai';
 import { FiSend, FiThumbsUp, FiThumbsDown, FiRefreshCw, FiMaximize2, FiMinimize2, FiShare2, FiImage, FiTrash2, FiEdit3, FiCopy, FiDownload, FiPlus, FiMessageSquare } from 'react-icons/fi';
 import IconComponent from './IconComponent';
+import { useResponseCheck, ResponseUpgradeModal } from '../../utils/responseChecker';
 
 // Import markdown and math libraries
 import ReactMarkdown from 'react-markdown';
@@ -83,6 +84,11 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const editInputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Response checking state
+  const { checkAndUseResponse } = useResponseCheck();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState('');
 
   // Get current chat session
   const currentChat = chatSessions.find(session => session.id === currentChatId) || chatSessions[0];
@@ -429,6 +435,23 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
   const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if ((!chatInput.trim() && !uploadedImage) || isLoading) return;
+
+    // Check responses before proceeding
+    const responseResult = await checkAndUseResponse({
+      responseType: 'ai_tutor_chat',
+      queryData: { 
+        hasImage: !!uploadedImage,
+        messageLength: chatInput.length,
+        imageFileName: uploadedImage?.file.name
+      },
+      responsesUsed: 1
+    });
+
+    if (!responseResult.canProceed) {
+      setUpgradeMessage(responseResult.message || 'Unable to process request');
+      setShowUpgradeModal(true);
+      return;
+    }
 
     const messageContent = uploadedImage 
       ? `${chatInput}\n\n[Image: ${uploadedImage.file.name}]\n\nExtracted text from image:\n${uploadedImage.extractedText}`
@@ -1229,6 +1252,13 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
           </div>
         </div>
       </div>
+
+      {/* Response Upgrade Modal */}
+      <ResponseUpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        message={upgradeMessage}
+      />
     </div>
   );
 };

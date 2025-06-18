@@ -28,16 +28,25 @@ const LanguageSelector: React.FC = () => {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+      const target = event.target as Node;
+      // Only close if clicking outside and not on language dropdown items
+      if (containerRef.current && !containerRef.current.contains(target)) {
+        const languageDropdown = document.querySelector('.language-dropdown');
+        if (languageDropdown && !languageDropdown.contains(target)) {
+          setIsOpen(false);
+        }
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    // Add event listener immediately when dropdown is open
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen && buttonRef.current) {
@@ -50,21 +59,27 @@ const LanguageSelector: React.FC = () => {
   }, [isOpen]);
 
   const handleLanguageChange = (langCode: Language) => {
+    console.log('Language change clicked:', langCode);
     setLanguage(langCode);
     setIsOpen(false);
   };
 
-  const handleToggle = () => {
+  const handleToggle = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    console.log('Language toggle clicked, current state:', isOpen);
     setIsOpen(!isOpen);
   };
 
   const dropdownContent = isOpen ? (
     <div
-      className="fixed w-56 bg-gray-900 rounded-lg shadow-xl border border-gray-700 py-2 z-[1000001]"
+      className="language-dropdown fixed w-56 bg-gray-900 rounded-lg shadow-xl border border-gray-700 py-2 z-[1000002]"
       style={{
         top: `${dropdownPosition.top}px`,
         right: `${dropdownPosition.right}px`,
       }}
+      onMouseDown={(e) => e.stopPropagation()} // Prevent mousedown bubbling
+      onClick={(e) => e.stopPropagation()} // Prevent click bubbling
     >
       <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-700">
         {t('languageSelector.title')}
@@ -72,7 +87,17 @@ const LanguageSelector: React.FC = () => {
       {languageOptions.map((option) => (
         <button
           key={option.code}
-          onClick={() => handleLanguageChange(option.code)}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Language option mousedown:', option.code);
+          }}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Language option clicked:', option.code);
+            handleLanguageChange(option.code);
+          }}
           className={`w-full flex items-center justify-between px-3 py-2.5 text-sm hover:bg-gray-800 transition-colors duration-150 ${
             language === option.code
               ? 'text-orange-400 bg-gray-800'
@@ -95,10 +120,13 @@ const LanguageSelector: React.FC = () => {
   ) : null;
 
   return (
-    <div className="relative" ref={containerRef}>
+    <div className="relative language-selector-container" ref={containerRef}>
       <button
         ref={buttonRef}
         onClick={handleToggle}
+        onMouseDown={(e) => {
+          e.stopPropagation(); // Prevent header click handlers
+        }}
         className="flex items-center space-x-2 px-2 py-1.5 text-white hover:text-orange-400 transition-colors duration-200 rounded-lg hover:bg-white/10"
       >
         <IconComponent icon={AiOutlineGlobal} className="h-4 w-4" />

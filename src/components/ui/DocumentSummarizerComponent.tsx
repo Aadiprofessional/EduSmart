@@ -14,6 +14,7 @@ import 'katex/dist/katex.min.css';
 import * as echarts from 'echarts';
 import { jsPDF } from 'jspdf';
 import { Document, Paragraph, TextRun, Packer } from 'docx';
+import { useResponseCheck, ResponseUpgradeModal } from '../../utils/responseChecker';
 
 // Set up PDF.js worker with a more reliable approach
 if (typeof window !== 'undefined') {
@@ -96,6 +97,11 @@ const buttonVariants = {
 };
 
 const DocumentSummarizerComponent: React.FC<DocumentSummarizerComponentProps> = ({ className = '' }) => {
+  // Response checking state
+  const { checkAndUseResponse } = useResponseCheck();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState('');
+  
   const [file, setFile] = useState<File | null>(null);
   const [textInput, setTextInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -1440,6 +1446,17 @@ Please provide a well-structured summary using proper markdown formatting.`
   // Handle comprehensive document summarization with page-by-page processing
   const handleGetSummary = async () => {
     if ((!documentPages.length && !textInput.trim()) || loading) return;
+    
+    // Check responses before generating summary
+    const responseResult = await checkAndUseResponse({
+      responseType: 'document_summary',
+      responsesUsed: 1
+    });
+    if (!responseResult.canProceed) {
+      setShowUpgradeModal(true);
+      setUpgradeMessage(responseResult.message || 'Please upgrade to continue');
+      return;
+    }
     
     setLoading(true);
     setSummaryComplete(false);
