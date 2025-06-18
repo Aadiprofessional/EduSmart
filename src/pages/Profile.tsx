@@ -267,7 +267,20 @@ const Profile: React.FC = () => {
           fetchProfileCompletion();
         }, 500);
       } else {
-        setError(result.error || 'Failed to save profile');
+        // Handle error object properly - extract message if it's an object
+        let errorMessage = 'Failed to save profile';
+        
+        if (result.error) {
+          if (typeof result.error === 'string') {
+            errorMessage = result.error;
+          } else if (typeof result.error === 'object' && result.error !== null && 'message' in result.error) {
+            errorMessage = (result.error as any).message;
+          } else if (typeof result.error === 'object') {
+            errorMessage = JSON.stringify(result.error);
+          }
+        }
+        
+        setError(errorMessage);
       }
     } catch (error) {
       console.error('Error saving profile:', error);
@@ -374,7 +387,20 @@ const Profile: React.FC = () => {
         setProfile(defaultProfile);
         setIsEditing(false);
       } else {
-        setError(result.error || 'Failed to delete profile');
+        // Handle error object properly - extract message if it's an object
+        let errorMessage = 'Failed to delete profile';
+        
+        if (result.error) {
+          if (typeof result.error === 'string') {
+            errorMessage = result.error;
+          } else if (typeof result.error === 'object' && result.error !== null && 'message' in result.error) {
+            errorMessage = (result.error as any).message;
+          } else if (typeof result.error === 'object') {
+            errorMessage = JSON.stringify(result.error);
+          }
+        }
+        
+        setError(errorMessage);
       }
     } catch (error) {
       console.error('Error deleting profile:', error);

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
-import { AiOutlineHome, AiOutlineDatabase, AiOutlineTrophy, AiOutlineRobot, AiOutlineBook, AiOutlineRead, AiOutlineUser, AiOutlineBulb, AiOutlineMenu, AiOutlineClose, AiOutlineEdit } from 'react-icons/ai';
+import { AiOutlineHome, AiOutlineDatabase, AiOutlineTrophy, AiOutlineRobot, AiOutlineBook, AiOutlineRead, AiOutlineUser, AiOutlineBulb, AiOutlineMenu, AiOutlineClose, AiOutlineEdit, AiOutlineCrown } from 'react-icons/ai';
 import IconComponent from '../ui/IconComponent';
 import LanguageSelector from '../ui/LanguageSelector';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../utils/AuthContext';
+import { useSubscription } from '../../utils/SubscriptionContext';
 import { useLanguage } from '../../utils/LanguageContext';
 import eduLogo from '../../assets/edulogo.jpeg';
 
@@ -17,6 +18,7 @@ const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { isProUser, responsesRemaining } = useSubscription();
   const { t } = useLanguage();
   
   const navigation = [
@@ -40,6 +42,8 @@ const Header: React.FC = () => {
     '/resources',
     '/blog',
     '/profile',
+    '/subscription',
+    '/dashboard',
  
     
   
@@ -195,18 +199,18 @@ const Header: React.FC = () => {
         margin: 0,
         padding: 0,
         boxSizing: 'border-box',
-        backgroundColor: scrolled ? 'rgba(0, 0, 0, 0.8)' : 'transparent',
-        background: scrolled 
-          ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.95) 0%, rgba(147, 51, 234, 0.95) 25%, rgba(236, 72, 153, 0.95) 50%, rgba(249, 115, 22, 0.95) 75%, rgba(34, 197, 94, 0.95) 100%)' 
+        backgroundColor: (scrolled || isMobile) ? 'rgba(0, 0, 0, 0.95)' : 'transparent',
+        background: (scrolled || isMobile)
+          ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(30, 41, 59, 0.98) 25%, rgba(51, 65, 85, 0.98) 50%, rgba(71, 85, 105, 0.98) 75%, rgba(15, 23, 42, 0.98) 100%)' 
           : 'transparent',
-        backdropFilter: scrolled ? 'blur(20px) saturate(200%)' : 'none',
-        boxShadow: scrolled 
-          ? '0 8px 32px rgba(59, 130, 246, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1) inset' 
+        backdropFilter: (scrolled || isMobile) ? 'blur(20px) saturate(200%)' : 'none',
+        boxShadow: (scrolled || isMobile)
+          ? '0 8px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1) inset' 
           : 'none',
-        borderBottom: scrolled ? '1px solid rgba(255, 255, 255, 0.2)' : 'none',
-        WebkitBackdropFilter: scrolled ? 'blur(20px) saturate(200%)' : 'none',
-        backgroundSize: scrolled ? '300% 300%' : '100% 100%',
-        animation: scrolled ? 'header-gradient 12s ease infinite' : 'none',
+        borderBottom: (scrolled || isMobile) ? '1px solid rgba(255, 255, 255, 0.15)' : 'none',
+        WebkitBackdropFilter: (scrolled || isMobile) ? 'blur(20px) saturate(200%)' : 'none',
+        backgroundSize: (scrolled || isMobile) ? '300% 300%' : '100% 100%',
+        animation: (scrolled || isMobile) ? 'header-gradient 15s ease infinite' : 'none',
       }}
     >
       <div className="w-full max-w-none px-4 sm:px-6 lg:px-8">
@@ -214,15 +218,26 @@ const Header: React.FC = () => {
         <div className="flex justify-between items-center py-3 min-h-[70px] max-w-[1600px] mx-auto">
           {/* Logo section - increased left margin */}
           <motion.div 
-            className="flex items-center flex-shrink-0 mr-4 lg:mr-8"
+            className="flex items-center flex-shrink-0 mr-2 lg:mr-4"
             variants={logoVariants}
             whileHover="hover"
             data-magnetic
           >
             <Link to="/" className="flex items-center">
-              <span className={`font-bold ${isMobile ? 'text-xl' : 'text-2xl lg:text-3xl'} bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent whitespace-nowrap`}>
+              <span className={`font-bold ${isMobile ? 'text-xl' : 'text-2xl lg:text-3xl'} bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent whitespace-nowrap relative`}>
                 {isMobile ? 'ME' : 'MatrixEdu'}
               </span>
+              {isProUser && (
+                <motion.div
+                  className="ml-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold px-2 py-1 rounded-full flex items-center"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.5, type: "spring" }}
+                >
+                  <IconComponent icon={AiOutlineCrown} className="w-3 h-3 mr-1" />
+                  PRO
+                </motion.div>
+              )}
             </Link>
           </motion.div>
           
@@ -254,64 +269,120 @@ const Header: React.FC = () => {
           </nav>
           
           {/* Desktop auth buttons and language selector - improved spacing */}
-          <div className="hidden lg:flex items-center space-x-2 xl:space-x-3 flex-shrink-0 ml-2">
+          <div className="hidden lg:flex items-center space-x-1 xl:space-x-2 flex-shrink-0 ml-1">
             {/* Language Selector with better visibility */}
             <div className="px-2 xl:px-3 py-1.5 xl:py-2 bg-white backdrop-blur-sm rounded-full border border-white/10 hover:border-white/20 transition-all duration-300 flex-shrink-0">
               <LanguageSelector />
             </div>
             
             {user ? (
-              <div className="relative flex-shrink-0">
-                <motion.button
-                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center px-3 xl:px-4 py-1.5 xl:py-2 bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-sm rounded-full border border-white/10 text-white hover:border-white/30 transition-all duration-300"
-                  variants={buttonVariants}
-                  whileHover="hover"
-                  whileTap="tap"
-                  data-magnetic
-                >
-                  <IconComponent icon={AiOutlineUser} className="h-4 w-4 xl:h-5 xl:w-5 mr-1.5 xl:mr-2 flex-shrink-0" />
-                  <span className="max-w-[80px] xl:max-w-[120px] 2xl:max-w-[150px] truncate text-xs xl:text-sm font-medium">
-                    {user.user_metadata?.name || user.email?.split('@')[0] || 'User'}
-                  </span>
-                </motion.button>
-                
-                <AnimatePresence>
-                  {isUserMenuOpen && (
+              <>
+                {/* Pro User Status and Addon Button */}
+                {isProUser ? (
+                  <div className="flex items-center space-x-1">
+                    {/* Response Counter */}
                     <motion.div
-                      className="absolute right-0 mt-2 w-48 bg-black/90 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
-                      variants={userMenuVariants}
-                      initial="hidden"
-                      animate="visible"
-                      exit="hidden"
+                      className="flex items-center px-2 xl:px-3 py-1.5 xl:py-2 bg-gradient-to-r from-green-500/10 to-blue-500/10 backdrop-blur-sm rounded-full border border-green-500/30 text-green-400"
+                      variants={buttonVariants}
+                      whileHover="hover"
+                      data-magnetic
                     >
-                      <div className="p-2">
-                        <Link
-                          to="/profile"
-                          className="flex items-center px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200"
-                          onClick={() => setIsUserMenuOpen(false)}
-                        >
-                          <IconComponent icon={AiOutlineUser} className="h-4 w-4 mr-3" />
-                          Profile
-                        </Link>
-                        <button
-                          onClick={handleSignOut}
-                          className="w-full flex items-center px-4 py-3 text-gray-300 hover:text-red-400 hover:bg-red-500/5 rounded-xl transition-all duration-200"
-                        >
-                          <IconComponent icon={AiOutlineEdit} className="h-4 w-4 mr-3" />
-                          Sign Out
-                        </button>
-                      </div>
+                      <IconComponent icon={AiOutlineCrown} className="h-3 w-3 xl:h-4 xl:w-4 mr-1 flex-shrink-0" />
+                      <span className="text-xs xl:text-sm font-medium">
+                        {responsesRemaining}
+                      </span>
                     </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                    
+                    {/* Buy Addon Button for Low Responses */}
+                    {responsesRemaining < 50 && (
+                      <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap">
+                        <Link
+                          to="/subscription"
+                          className="flex items-center px-2 xl:px-3 py-1.5 xl:py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-full font-medium shadow-lg hover:shadow-orange-500/25 transition-all duration-300 text-xs xl:text-sm whitespace-nowrap"
+                          data-magnetic
+                        >
+                          <span className="hidden xl:inline">Buy More</span>
+                          <span className="xl:hidden">+</span>
+                        </Link>
+                      </motion.div>
+                    )}
+                  </div>
+                ) : (
+                  <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap">
+                    <Link
+                      to="/subscription"
+                      className="flex items-center px-2 xl:px-3 py-1.5 xl:py-2 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-full font-medium shadow-lg hover:shadow-orange-500/25 transition-all duration-300 text-xs xl:text-sm whitespace-nowrap"
+                      data-magnetic
+                    >
+                      <IconComponent icon={AiOutlineCrown} className="h-3 w-3 xl:h-4 xl:w-4 mr-1 xl:mr-2 flex-shrink-0" />
+                      <span className="hidden xl:inline">Upgrade</span>
+                      <span className="xl:hidden">Pro</span>
+                    </Link>
+                  </motion.div>
+                )}
+                
+                <div className="relative flex-shrink-0">
+                  <motion.button
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    className="flex items-center px-2 xl:px-3 py-1.5 xl:py-2 bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-sm rounded-full border border-white/10 text-white hover:border-white/30 transition-all duration-300"
+                    variants={buttonVariants}
+                    whileHover="hover"
+                    whileTap="tap"
+                    data-magnetic
+                  >
+                    <IconComponent icon={AiOutlineUser} className="h-3 w-3 xl:h-4 xl:w-4 mr-1 xl:mr-2 flex-shrink-0" />
+                    <span className="max-w-[60px] xl:max-w-[80px] 2xl:max-w-[100px] truncate text-xs xl:text-sm font-medium">
+                      {user.user_metadata?.name || user.email?.split('@')[0] || 'User'}
+                    </span>
+                  </motion.button>
+                  
+                  <AnimatePresence>
+                    {isUserMenuOpen && (
+                      <motion.div
+                        className="absolute right-0 mt-2 w-48 bg-black/90 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
+                        variants={userMenuVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="hidden"
+                      >
+                        <div className="p-2">
+                          <Link
+                            to="/profile"
+                            className="flex items-center px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <IconComponent icon={AiOutlineUser} className="h-4 w-4 mr-3" />
+                            Profile
+                          </Link>
+                          {isProUser && (
+                            <Link
+                              to="/dashboard"
+                              className="flex items-center px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200"
+                              onClick={() => setIsUserMenuOpen(false)}
+                            >
+                              <IconComponent icon={AiOutlineCrown} className="h-4 w-4 mr-3" />
+                              Dashboard
+                            </Link>
+                          )}
+                          <button
+                            onClick={handleSignOut}
+                            className="w-full flex items-center px-4 py-3 text-gray-300 hover:text-red-400 hover:bg-red-500/5 rounded-xl transition-all duration-200"
+                          >
+                            <IconComponent icon={AiOutlineEdit} className="h-4 w-4 mr-3" />
+                            Sign Out
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </>
             ) : (
               <div className="flex items-center space-x-1 xl:space-x-2 flex-shrink-0">
                 <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap">
                   <Link
                     to="/login"
-                    className="px-3 xl:px-4 py-1.5 xl:py-2 text-gray-300 hover:text-white transition-all duration-300 rounded-full hover:bg-white/5 text-xs xl:text-sm font-medium whitespace-nowrap"
+                    className="px-2 xl:px-3 py-1.5 xl:py-2 text-gray-300 hover:text-white transition-all duration-300 rounded-full hover:bg-white/5 text-xs xl:text-sm font-medium whitespace-nowrap"
                     data-magnetic
                   >
                     Login
@@ -320,7 +391,7 @@ const Header: React.FC = () => {
                 <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap">
                   <Link
                     to="/signup"
-                    className="px-3 xl:px-4 2xl:px-6 py-1.5 xl:py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full font-medium shadow-lg hover:shadow-blue-500/25 transition-all duration-300 text-xs xl:text-sm whitespace-nowrap"
+                    className="px-2 xl:px-3 2xl:px-4 py-1.5 xl:py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full font-medium shadow-lg hover:shadow-blue-500/25 transition-all duration-300 text-xs xl:text-sm whitespace-nowrap"
                     data-magnetic
                   >
                     Sign Up
@@ -386,6 +457,40 @@ const Header: React.FC = () => {
                   
                   {user ? (
                     <div className="space-y-2">
+                      {/* Pro Status or Upgrade Button for Mobile */}
+                      {isProUser ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-xl border border-green-500/30">
+                            <div className="flex items-center">
+                              <IconComponent icon={AiOutlineCrown} className="h-5 w-5 mr-3 text-green-400" />
+                              <span className="text-green-400 font-medium">Pro Member</span>
+                            </div>
+                            <span className="text-green-400 text-sm">{responsesRemaining} left</span>
+                          </div>
+                          
+                          {/* Buy Addon Button for Low Responses on Mobile */}
+                          {responsesRemaining < 50 && (
+                            <Link
+                              to="/subscription"
+                              className="flex items-center justify-center px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl font-medium transition-all duration-200"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                              <IconComponent icon={AiOutlineCrown} className="h-5 w-5 mr-3" />
+                              Buy More Responses
+                            </Link>
+                          )}
+                        </div>
+                      ) : (
+                        <Link
+                          to="/subscription"
+                          className="flex items-center justify-center px-4 py-3 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-xl font-medium transition-all duration-200"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          <IconComponent icon={AiOutlineCrown} className="h-5 w-5 mr-3" />
+                          Upgrade to Pro
+                        </Link>
+                      )}
+                      
                       <Link
                         to="/profile"
                         className="flex items-center px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200"
@@ -394,6 +499,18 @@ const Header: React.FC = () => {
                         <IconComponent icon={AiOutlineUser} className="h-5 w-5 mr-3" />
                         Profile
                       </Link>
+                      
+                      {isProUser && (
+                        <Link
+                          to="/dashboard"
+                          className="flex items-center px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          <IconComponent icon={AiOutlineCrown} className="h-5 w-5 mr-3" />
+                          Dashboard
+                        </Link>
+                      )}
+                      
                       <button
                         onClick={() => {
                           handleSignOut();

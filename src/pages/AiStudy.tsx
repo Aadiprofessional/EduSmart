@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { AiOutlineUpload, AiOutlineBulb, AiOutlineRobot, AiOutlineHistory, AiOutlineSearch, AiOutlineEdit } from 'react-icons/ai';
 import { FiBookOpen, FiClock, FiCalendar, FiCheck, FiBookmark, FiEdit, FiMenu, FiCheckCircle, FiMessageSquare, FiLayers, FiPenTool, FiTrendingUp } from 'react-icons/fi';
+import { FaCrown, FaExclamationTriangle, FaCheck } from 'react-icons/fa';
 import IconComponent from '../components/ui/IconComponent';
 import { useAuth } from '../utils/AuthContext';
+import { useSubscription } from '../utils/SubscriptionContext';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import CitationGenerator from '../components/ui/CitationGenerator';
@@ -19,7 +21,9 @@ import { useLanguage } from '../utils/LanguageContext';
 const AiStudy: React.FC = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const { isProUser, responsesRemaining, useResponse, subscriptionStatus } = useSubscription();
   const [activeTab, setActiveTab] = useState('upload');
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   
   // Component state preservation
   const [componentStates, setComponentStates] = useState<{[key: string]: boolean}>({
@@ -42,6 +46,53 @@ const AiStudy: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Check if user can use AI features
+  const canUseAI = isProUser && responsesRemaining > 0;
+
+  // Function to handle AI feature usage
+  const handleAIFeatureUse = React.useCallback(async (featureType: string, queryData: any, responsesUsed: number = 1) => {
+    if (!user) {
+      // Redirect to login
+      window.location.href = '/login';
+      return false;
+    }
+
+    if (!isProUser) {
+      setShowUpgradeModal(true);
+      return false;
+    }
+
+    if (responsesRemaining < responsesUsed) {
+      setShowUpgradeModal(true);
+      return false;
+    }
+
+    // If we reach here, the user can use the feature
+    // The actual response usage will be handled by individual components
+    return true;
+  }, [user, isProUser, responsesRemaining]);
+
+  // Function to handle tab switching with AI feature checks
+  const handleTabSwitch = (tabId: string) => {
+    // AI-powered features that require subscription
+    const aiFeatures = ['ai-tutor', 'mistake-checker', 'content-writer', 'document-summarizer', 'flashcards'];
+    
+    if (aiFeatures.includes(tabId) && !canUseAI) {
+      if (!user) {
+        window.location.href = '/login';
+        return;
+      }
+      setShowUpgradeModal(true);
+      return;
+    }
+
+    setActiveTab(tabId);
+    setComponentStates(prev => ({
+      ...prev,
+      [tabId]: true
+    }));
+  };
 
   useEffect(() => {
     // Add custom CSS for scrollbar hiding and 3D perspective
@@ -102,15 +153,14 @@ const AiStudy: React.FC = () => {
   };
 
   const tools = [
-    { id: 'upload', name: t('aiStudy.uploadHomework'), icon: AiOutlineUpload },
-    { id: 'ai-tutor', name: t('aiStudy.aiTutor'), icon: FiMessageSquare },
-    { id: 'mistake-checker', name: t('aiStudy.mistakeChecker'), icon: FiCheckCircle },
-    { id: 'study-planner', name: t('aiStudy.studyPlanner'), icon: FiCalendar },
-    { id: 'flashcards', name: t('aiStudy.flashcards'), icon: FiLayers },
-    { id: 'content-writer', name: t('aiStudy.contentWriter'), icon: FiPenTool },
-    { id: 'citation-generator', name: t('aiStudy.citationGenerator'), icon: FiBookOpen },
-  
-    { id: 'document-summarizer', name: 'Document Summarizer', icon: AiOutlineSearch },
+    { id: 'upload', name: t('aiStudy.uploadHomework'), icon: AiOutlineUpload, requiresPro: false },
+    { id: 'ai-tutor', name: t('aiStudy.aiTutor'), icon: FiMessageSquare, requiresPro: true },
+    { id: 'mistake-checker', name: t('aiStudy.mistakeChecker'), icon: FiCheckCircle, requiresPro: true },
+    { id: 'study-planner', name: t('aiStudy.studyPlanner'), icon: FiCalendar, requiresPro: false },
+    { id: 'flashcards', name: t('aiStudy.flashcards'), icon: FiLayers, requiresPro: true },
+    { id: 'content-writer', name: t('aiStudy.contentWriter'), icon: FiPenTool, requiresPro: true },
+    { id: 'citation-generator', name: t('aiStudy.citationGenerator'), icon: FiBookOpen, requiresPro: false },
+    { id: 'document-summarizer', name: 'Document Summarizer', icon: AiOutlineSearch, requiresPro: true },
   ];
 
   // Function to get unique colors for each tool
@@ -186,7 +236,6 @@ const AiStudy: React.FC = () => {
         hoverText: 'group-hover:from-indigo-300 group-hover:via-blue-300 group-hover:to-cyan-300',
         hoverIcon: 'group-hover:from-indigo-400/30 group-hover:to-blue-400/30'
       },
-     
       'document-summarizer': {
         text: isActive 
           ? 'bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent'
@@ -328,15 +377,6 @@ const AiStudy: React.FC = () => {
     window.scrollTo(0, 0);
   }, []);
 
-  // Function to handle tab switching with state preservation
-  const handleTabSwitch = (tabId: string) => {
-    setActiveTab(tabId);
-    setComponentStates(prev => ({
-      ...prev,
-      [tabId]: true
-    }));
-  };
-
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-teal-900">
       <Header />
@@ -470,11 +510,11 @@ const AiStudy: React.FC = () => {
               {tools.map((tool) => (
                 <motion.button
                   key={tool.id}
-                  className={`flex items-center py-4 px-6 flex-1 justify-center transition-all duration-300 group ${
+                  className={`flex items-center py-4 px-6 flex-1 justify-center transition-all duration-300 group relative ${
                     activeTab === tool.id
                       ? 'bg-gradient-to-r from-blue-500/30 to-purple-500/30 border-b-2 border-blue-400'
                       : 'hover:bg-white/10'
-                  }`}
+                  } ${tool.requiresPro && !isProUser ? 'opacity-70' : ''}`}
                   onClick={() => handleTabSwitch(tool.id)}
                   whileHover={{ backgroundColor: activeTab === tool.id ? "rgba(59, 130, 246, 0.2)" : "rgba(255, 255, 255, 0.1)" }}
                   whileTap={{ scale: 0.98 }}
@@ -489,12 +529,49 @@ const AiStudy: React.FC = () => {
                   }`}>
                     {tool.name}
                   </span>
+                  {tool.requiresPro && !isProUser && (
+                    <div className="absolute -top-1 -right-1 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-1">
+                      <IconComponent icon={FaCrown} className="h-3 w-3 text-white" />
+                    </div>
+                  )}
                 </motion.button>
               ))}
             </div>
 
             {/* Tab Content */}
             <div className="p-8 bg-slate-900/20 backdrop-blur-sm">
+              {/* Pro Status Banner */}
+              {isProUser && (
+                <motion.div
+                  className="mb-6 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 backdrop-blur-sm rounded-xl p-4 border border-yellow-400/30"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-gradient-to-r from-yellow-400 to-orange-500 p-2 rounded-full">
+                        <IconComponent icon={FaCrown} className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-yellow-400">Pro User</h3>
+                        <p className="text-sm text-slate-300">
+                          {responsesRemaining} responses remaining this month
+                        </p>
+                      </div>
+                    </div>
+                    {responsesRemaining < 50 && (
+                      <motion.div
+                        className="bg-orange-500/20 text-orange-400 px-3 py-1 rounded-full text-sm font-medium border border-orange-400/30"
+                        animate={{ scale: [1, 1.05, 1] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      >
+                        Low responses
+                      </motion.div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
               <div className={activeTab === 'upload' ? 'block' : 'hidden'}>
                 {componentStates['upload'] && (
                   <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
@@ -556,12 +633,95 @@ const AiStudy: React.FC = () => {
 
               <div className={activeTab === 'document-summarizer' ? 'block' : 'hidden'}>
                 {componentStates['document-summarizer'] && (
-                  <DocumentSummarizerComponent/>
+                  <DocumentSummarizerComponent />
                 )}
               </div>
               
             </div>
           </motion.div>
+
+          {/* Upgrade Modal */}
+          <AnimatePresence>
+            {showUpgradeModal && (
+              <motion.div
+                className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowUpgradeModal(false)}
+              >
+                <motion.div
+                  className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-8 max-w-md w-full border border-white/10 shadow-2xl"
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="text-center">
+                    <div className="bg-gradient-to-r from-yellow-400 to-orange-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <IconComponent icon={FaCrown} className="h-8 w-8 text-white" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-white mb-2">Upgrade to Pro</h3>
+                    <p className="text-slate-300 mb-6">
+                      {!isProUser 
+                        ? "Unlock unlimited AI-powered features and enhance your learning experience!"
+                        : "You've run out of responses for this month. Upgrade to get more!"
+                      }
+                    </p>
+                    
+                    <div className="space-y-3 mb-6 text-left">
+                      <div className="flex items-center space-x-3">
+                        <div className="bg-green-500/20 p-1 rounded-full">
+                          <IconComponent icon={FaCheck} className="h-3 w-3 text-green-400" />
+                        </div>
+                        <span className="text-slate-300">500+ AI responses per month</span>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <div className="bg-green-500/20 p-1 rounded-full">
+                          <IconComponent icon={FaCheck} className="h-3 w-3 text-green-400" />
+                        </div>
+                        <span className="text-slate-300">Advanced AI tutoring</span>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <div className="bg-green-500/20 p-1 rounded-full">
+                          <IconComponent icon={FaCheck} className="h-3 w-3 text-green-400" />
+                        </div>
+                        <span className="text-slate-300">Content generation & analysis</span>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <div className="bg-green-500/20 p-1 rounded-full">
+                          <IconComponent icon={FaCheck} className="h-3 w-3 text-green-400" />
+                        </div>
+                        <span className="text-slate-300">Priority support</span>
+                      </div>
+                    </div>
+
+                    <div className="flex space-x-3">
+                      <motion.button
+                        onClick={() => setShowUpgradeModal(false)}
+                        className="flex-1 bg-slate-700 text-white py-3 px-4 rounded-xl font-semibold hover:bg-slate-600 transition-colors"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        Maybe Later
+                      </motion.button>
+                      <motion.button
+                        onClick={() => {
+                          setShowUpgradeModal(false);
+                          window.location.href = '/subscription';
+                        }}
+                        className="flex-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-white py-3 px-4 rounded-xl font-semibold hover:from-yellow-400 hover:to-orange-400 transition-all"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        Upgrade Now
+                      </motion.button>
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Features Section */}
           <motion.div

@@ -8,6 +8,7 @@ import FeaturedResources3D from '../components/ui/FeaturedResources3D';
 import FeaturedSuccessStories3D from '../components/ui/FeaturedSuccessStories3D';
 import FeaturedScholarships3D from '../components/ui/FeaturedScholarships3D';
 import ScrollingBalls3D from '../components/ui/ScrollingBalls3D';
+import SubscriptionBanner from '../components/subscription/SubscriptionBanner';
 import { useLanguage } from '../utils/LanguageContext';
 import { ModelPositionProvider, useModelPosition } from '../utils/ModelPositionContext';
 
@@ -284,24 +285,11 @@ const Home: React.FC = () => {
           <ReadyToTransformSection />
         </main>
         
-        {/* Scroll to top button */}
-        <motion.button
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white p-3 sm:p-4 rounded-full shadow-2xl hover:shadow-blue-500/25 transition-all duration-300"
-          whileHover={{ scale: 1.1, rotate: 360 }}
-          whileTap={{ scale: 0.9 }}
-          initial={{ opacity: 0, y: 100 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 2 }}
-          data-magnetic
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-          </svg>
-        </motion.button>
-        
-        <Footer />
+        {/* Subscription Banner - moved to the end */}
+        <SubscriptionBanner />
       </div>
+
+      <Footer />
     </ModelPositionProvider>
   );
 };
