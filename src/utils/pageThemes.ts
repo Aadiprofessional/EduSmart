@@ -25,7 +25,7 @@ export const pageThemes: Record<string, PageTheme> = {
     animationClass: 'animate-gradient-xy'
   },
   '/case-studies': {
-    name: 'Success Stories',
+    name: 'Stories',
     gradient: 'bg-gradient-to-br from-blue-400 via-teal-500 to-cyan-600',
     footerBg: 'bg-gradient-to-br from-blue-900 via-teal-900 to-cyan-900',
     footerAccent: 'bg-blue-800',

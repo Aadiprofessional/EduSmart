@@ -8,7 +8,7 @@ type SubscriptionContextType = {
   addons: AddonPlan[];
   loading: boolean;
   refreshStatus: () => Promise<void>;
-  useResponse: (responseType: string, queryData: any, responsesUsed?: number) => Promise<boolean>;
+  consumeResponse: (responseType: string, queryData: any, responsesUsed?: number) => Promise<boolean>;
   isProUser: boolean;
   responsesRemaining: number;
 };
@@ -90,7 +90,7 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
   };
 
   // Use response function
-  const useResponse = async (responseType: string, queryData: any, responsesUsed: number = 1): Promise<boolean> => {
+  const consumeResponse = async (responseType: string, queryData: any, responsesUsed: number = 1): Promise<boolean> => {
     if (!user || !session || !subscriptionStatus?.hasActiveSubscription) {
       return false;
     }
@@ -131,7 +131,7 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
     addons,
     loading,
     refreshStatus,
-    useResponse,
+    consumeResponse,
     isProUser: subscriptionStatus?.isPro || false,
     responsesRemaining: subscriptionStatus?.responsesRemaining || 0,
   };

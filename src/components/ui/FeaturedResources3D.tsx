@@ -1,66 +1,14 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { FaBook, FaDownload, FaEye, FaFileAlt, FaVideo, FaGraduationCap } from 'react-icons/fa';
 import IconComponent from './IconComponent';
 import { useModelPosition } from '../../utils/ModelPositionContext';
-
-interface Resource {
-  id: string;
-  title: string;
-  type: 'guide' | 'template' | 'video' | 'ebook';
-  description: string;
-  downloads: number;
-  views: number;
-  thumbnail: string;
-  featured: boolean;
-}
-
-// Sample resources data
-const sampleResources: Resource[] = [
-  {
-    id: '1',
-    title: 'University Application Guide 2024',
-    type: 'guide',
-    description: 'Complete step-by-step guide for university applications including essays, recommendations, and deadlines.',
-    downloads: 2450,
-    views: 5200,
-    thumbnail: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400',
-    featured: true
-  },
-  {
-    id: '2',
-    title: 'Study Schedule Template',
-    type: 'template',
-    description: 'Customizable study schedule template to help you organize your academic workload effectively.',
-    downloads: 1890,
-    views: 3400,
-    thumbnail: 'https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=400',
-    featured: true
-  },
-  {
-    id: '3',
-    title: 'Career Planning Workshop',
-    type: 'video',
-    description: 'Interactive video workshop on career planning and professional development strategies.',
-    downloads: 0,
-    views: 2100,
-    thumbnail: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400',
-    featured: true
-  },
-  {
-    id: '4',
-    title: 'Scholarship Application E-book',
-    type: 'ebook',
-    description: 'Comprehensive e-book covering scholarship opportunities and application strategies.',
-    downloads: 1650,
-    views: 4200,
-    thumbnail: 'https://images.unsplash.com/photo-1532649538693-f3a2ec1bf8bd?w=400',
-    featured: true
-  }
-];
+import { featuredApiService, type Resource } from '../../utils/featuredApiService';
 
 const FeaturedResources3D: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
   const { registerComponent, unregisterComponent } = useModelPosition();
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -68,6 +16,44 @@ const FeaturedResources3D: React.FC = () => {
   });
 
   const y = useTransform(scrollYProgress, [0, 1], [50, -50]);
+
+  // State for API data
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Navigation handlers
+  const handleDownload = (resourceId: string) => {
+    // For now, navigate to resources page with the specific resource
+    navigate(`/resources?resource=${resourceId}`);
+  };
+
+  const handleViewAllResources = () => {
+    navigate('/resources');
+  };
+
+  // Fetch data from API
+  useEffect(() => {
+    const fetchResources = async () => {
+      try {
+        setLoading(true);
+        const response = await featuredApiService.getFeaturedData();
+        
+        if (response.success && response.data) {
+          setResources(response.data.resources || []);
+        } else {
+          setError(response.error || 'Failed to load resources');
+        }
+      } catch (err) {
+        setError('Failed to load resources');
+        console.error('Error fetching resources:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchResources();
+  }, []);
 
   // Register component for 3D models
   useEffect(() => {
@@ -123,6 +109,31 @@ const FeaturedResources3D: React.FC = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <section ref={containerRef} className="py-20 bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900 relative overflow-hidden">
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-500 mx-auto"></div>
+            <p className="text-white mt-4">Loading resources...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section ref={containerRef} className="py-20 bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900 relative overflow-hidden">
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="text-center text-red-400">
+            <p>Error loading resources: {error}</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section ref={containerRef} className="py-20 bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900 relative overflow-hidden">
       {/* Background Effects */}
@@ -155,7 +166,7 @@ const FeaturedResources3D: React.FC = () => {
 
         {/* Resources Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-          {sampleResources.map((resource, index) => (
+          {resources.map((resource, index) => (
             <motion.div
               key={resource.id}
               initial={{ opacity: 0, y: 50 }}
@@ -171,7 +182,7 @@ const FeaturedResources3D: React.FC = () => {
               {/* Resource Image */}
               <div className="relative overflow-hidden">
                 <img
-                  src={resource.thumbnail}
+                  src={resource.thumbnail || 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400'}
                   alt={resource.title}
                   className="w-full h-24 sm:h-32 lg:h-40 object-cover group-hover:scale-110 transition-transform duration-500"
                 />
@@ -209,7 +220,7 @@ const FeaturedResources3D: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-1">
                     <IconComponent icon={FaDownload} />
-                    <span>{resource.downloads > 1000 ? `${(resource.downloads / 1000).toFixed(1)}k` : resource.downloads}</span>
+                    <span>Free</span>
                   </div>
                 </div>
 
@@ -218,6 +229,7 @@ const FeaturedResources3D: React.FC = () => {
                   className="w-full bg-gradient-to-r from-green-500 to-teal-600 text-white font-medium py-1 sm:py-2 px-2 sm:px-3 rounded-lg hover:from-green-600 hover:to-teal-700 transition-all duration-300 text-xs"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
+                  onClick={() => handleDownload(resource.id)}
                 >
                   <div className="flex items-center justify-center gap-1">
                     <IconComponent icon={FaDownload} className="text-xs" />
@@ -248,6 +260,7 @@ const FeaturedResources3D: React.FC = () => {
               boxShadow: "0 20px 40px rgba(34, 197, 94, 0.3)"
             }}
             whileTap={{ scale: 0.95 }}
+            onClick={handleViewAllResources}
           >
             View All Resources
           </motion.button>

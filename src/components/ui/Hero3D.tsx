@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../utils/LanguageContext';
 import { useModelPosition } from '../../utils/ModelPositionContext';
 
 const Hero3D: React.FC = () => {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const sectionRef = useRef<HTMLElement>(null);
   const { registerComponent, unregisterComponent } = useModelPosition();
@@ -55,6 +57,20 @@ const Hero3D: React.FC = () => {
     };
   }, [registerComponent, unregisterComponent]);
 
+  // Navigation handlers
+  const handleStartLearning = () => {
+    navigate('/ai-courses');
+  };
+
+  const handleExploreFeatures = () => {
+    navigate('/about');
+  };
+
+  // Text content with responsive length
+  const fullText = t('hero.subtitle') || 'MatrixEdu leverages AI to provide personalized, expert-level tutoring, making quality education accessible for all students and fostering efficient learning and confident growth. We also offer comprehensive study abroad support, including AI-driven university matching, customized application strategies, essay optimization, and visa guidance to boost admission success.';
+  
+  const mobileText = fullText.length > 100 ? fullText.substring(0, 100) + '...' : fullText;
+
   return (
     <section 
       ref={sectionRef}
@@ -92,8 +108,11 @@ const Hero3D: React.FC = () => {
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent leading-tight">
             MatrixEdu
           </h1>
+          
+          {/* Responsive Text - Mobile shows truncated, Desktop shows full */}
           <p className="text-base sm:text-lg md:text-xl lg:text-2xl mb-8 text-gray-300 max-w-4xl mx-auto leading-relaxed px-4">
-            {t('hero.subtitle') || 'MatrixEdu leverages AI to provide personalized, expert-level tutoring, making quality education accessible for all students and fostering efficient learning and confident growth. We also offer comprehensive study abroad support, including AI-driven university matching, customized application strategies, essay optimization, and visa guidance to boost admission success.'}
+            <span className="block sm:hidden">{mobileText}</span>
+            <span className="hidden sm:block">{fullText}</span>
           </p>
         </motion.div>
 
@@ -104,6 +123,7 @@ const Hero3D: React.FC = () => {
           className="flex flex-row gap-3 sm:gap-6 justify-center items-center max-w-2xl mx-auto"
         >
           <motion.button
+            onClick={handleStartLearning}
             className="flex-1 sm:flex-none px-4 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full text-white font-semibold text-sm sm:text-base lg:text-lg shadow-2xl hover:shadow-blue-500/25 transition-all duration-300"
             whileHover={{ 
               scale: 1.05,
@@ -119,6 +139,7 @@ const Hero3D: React.FC = () => {
           </motion.button>
           
           <motion.button
+            onClick={handleExploreFeatures}
             className="flex-1 sm:flex-none px-4 sm:px-8 py-3 sm:py-4 border-2 border-white/30 rounded-full text-white font-semibold text-sm sm:text-base lg:text-lg backdrop-blur-sm hover:bg-white/10 transition-all duration-300"
             whileHover={{ 
               scale: 1.05,

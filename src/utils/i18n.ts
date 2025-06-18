@@ -782,7 +782,7 @@ export const translations: Record<Language, Translations> = {
     nav: {
       home: 'Home',
       database: 'Database',
-      successStories: 'Success Stories',
+      successStories: 'Stories',
       aiCourses: 'Courses',
       aiStudy: 'AI Study',
       resources: 'Resources',
@@ -1509,7 +1509,7 @@ export const translations: Record<Language, Translations> = {
     nav: {
       home: '首页',
       database: '数据库',
-      successStories: '成功案例',
+      successStories: '成功故事',
       aiCourses: 'AI课程',
       aiStudy: 'AI学习',
       resources: '资源',
@@ -2236,7 +2236,7 @@ export const translations: Record<Language, Translations> = {
     nav: {
       home: '首頁',
       database: '資料庫',
-      successStories: '成功案例',
+      successStories: '成功故事',
       aiCourses: 'AI課程',
       aiStudy: 'AI學習',
       resources: '資源',

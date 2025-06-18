@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import Hero3D from '../components/ui/Hero3D';
@@ -134,6 +135,7 @@ const OurImpactSection: React.FC = () => {
 const ReadyToTransformSection: React.FC = () => {
   const sectionRef = useRef<HTMLElement>(null);
   const { registerComponent, unregisterComponent } = useModelPosition();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (sectionRef.current) {
@@ -167,6 +169,15 @@ const ReadyToTransformSection: React.FC = () => {
       unregisterComponent('ready-to-transform');
     };
   }, [registerComponent, unregisterComponent]);
+
+  // Navigation handlers
+  const handleStartJourney = () => {
+    navigate('/signup');
+  };
+
+  const handleExploreFeatures = () => {
+    navigate('/about');
+  };
 
   return (
     <section ref={sectionRef} className="py-20 bg-gradient-to-br from-gray-900 via-black to-gray-900 relative overflow-hidden">
@@ -209,6 +220,7 @@ const ReadyToTransformSection: React.FC = () => {
           
           <div className="flex flex-row gap-3 sm:gap-6 justify-center items-center">
             <motion.button
+              onClick={handleStartJourney}
               className="flex-1 sm:flex-none px-6 sm:px-12 py-4 sm:py-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full text-white font-bold text-sm sm:text-xl shadow-2xl hover:shadow-blue-500/25 transition-all duration-300"
               whileHover={{ 
                 scale: 1.05,
@@ -222,6 +234,7 @@ const ReadyToTransformSection: React.FC = () => {
             </motion.button>
             
             <motion.button
+              onClick={handleExploreFeatures}
               className="flex-1 sm:flex-none px-6 sm:px-12 py-4 sm:py-6 border-2 border-white/30 rounded-full text-white font-bold text-sm sm:text-xl backdrop-blur-sm hover:bg-white/10 transition-all duration-300"
               whileHover={{ 
                 scale: 1.05,

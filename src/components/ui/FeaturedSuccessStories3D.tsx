@@ -1,8 +1,10 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { FaQuoteLeft, FaStar, FaGraduationCap, FaMapMarkerAlt, FaArrowRight } from 'react-icons/fa';
 import IconComponent from './IconComponent';
 import { useModelPosition } from '../../utils/ModelPositionContext';
+import { useFeaturedData, type CaseStudy } from '../../utils/featuredApiService';
 
 interface SuccessStory {
   id: string;
@@ -15,7 +17,7 @@ interface SuccessStory {
   course?: string;
 }
 
-// Sample success stories data
+// Sample success stories data - used as fallback when no case studies are available
 const sampleStories: SuccessStory[] = [
   {
     id: '1',
@@ -50,6 +52,7 @@ const sampleStories: SuccessStory[] = [
 
 const FeaturedSuccessStories3D: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
   const { registerComponent, unregisterComponent } = useModelPosition();
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -57,6 +60,35 @@ const FeaturedSuccessStories3D: React.FC = () => {
   });
 
   const y = useTransform(scrollYProgress, [0, 1], [50, -50]);
+
+  // Fetch data from API
+  const { data, loading, error } = useFeaturedData();
+  const [stories, setStories] = useState<SuccessStory[]>([]);
+
+  // Navigation handler
+  const handleViewAllStories = () => {
+    navigate('/case-studies');
+  };
+
+  // Convert case studies to success stories format or use sample data
+  useEffect(() => {
+    if (data?.case_studies && data.case_studies.length > 0) {
+      const convertedStories: SuccessStory[] = data.case_studies.map((caseStudy: CaseStudy) => ({
+        id: caseStudy.id,
+        name: caseStudy.student_name,
+        achievement: caseStudy.achievement,
+        story: caseStudy.description,
+        image: caseStudy.student_image || 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=400',
+        rating: caseStudy.rating || 5,
+        university: caseStudy.university,
+        course: caseStudy.course
+      }));
+      setStories(convertedStories);
+    } else {
+      // Use sample data when no case studies are available
+      setStories(sampleStories);
+    }
+  }, [data]);
 
   // Register component for 3D models
   useEffect(() => {
@@ -92,6 +124,31 @@ const FeaturedSuccessStories3D: React.FC = () => {
     };
   }, [registerComponent, unregisterComponent]);
 
+  if (loading) {
+    return (
+      <section ref={containerRef} className="py-20 bg-gradient-to-br from-purple-900 via-indigo-900 to-purple-900 relative overflow-hidden">
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-500 mx-auto"></div>
+            <p className="text-white mt-4">Loading success stories...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section ref={containerRef} className="py-20 bg-gradient-to-br from-purple-900 via-indigo-900 to-purple-900 relative overflow-hidden">
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="text-center text-red-400">
+            <p>Error loading success stories: {error}</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section ref={containerRef} className="py-20 bg-gradient-to-br from-purple-900 via-indigo-900 to-purple-900 relative overflow-hidden">
       {/* Background Effects */}
@@ -124,7 +181,7 @@ const FeaturedSuccessStories3D: React.FC = () => {
 
         {/* Success Stories Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-8 mb-12">
-          {sampleStories.map((story, index) => (
+          {stories.map((story, index) => (
             <motion.div
               key={story.id}
               initial={{ opacity: 0, y: 50 }}
@@ -208,6 +265,7 @@ const FeaturedSuccessStories3D: React.FC = () => {
               boxShadow: "0 20px 40px rgba(147, 51, 234, 0.3)"
             }}
             whileTap={{ scale: 0.95 }}
+            onClick={handleViewAllStories}
           >
             View All Stories
             <IconComponent icon={FaArrowRight} className="ml-2 group-hover:translate-x-1 transition-transform" />

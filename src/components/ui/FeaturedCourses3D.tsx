@@ -1,64 +1,14 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { FaStar, FaUsers, FaClock, FaPlay } from 'react-icons/fa';
 import IconComponent from './IconComponent';
 import { useModelPosition } from '../../utils/ModelPositionContext';
-
-interface Course {
-  id: string;
-  title: string;
-  description: string;
-  instructor: string;
-  rating: number;
-  students: number;
-  duration: string;
-  image: string;
-  price: number;
-  featured: boolean;
-}
-
-// Sample course data
-const sampleCourses: Course[] = [
-  {
-    id: '1',
-    title: 'AI & Machine Learning Fundamentals',
-    description: 'Master the basics of artificial intelligence and machine learning with hands-on projects.',
-    instructor: 'Dr. Sarah Johnson',
-    rating: 4.9,
-    students: 12500,
-    duration: '8 weeks',
-    image: 'https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=400',
-    price: 99,
-    featured: true
-  },
-  {
-    id: '2',
-    title: 'Data Science & Analytics',
-    description: 'Learn to analyze and visualize data to make informed business decisions.',
-    instructor: 'Prof. Michael Chen',
-    rating: 4.8,
-    students: 9800,
-    duration: '10 weeks',
-    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400',
-    price: 129,
-    featured: true
-  },
-  {
-    id: '3',
-    title: 'Web Development Bootcamp',
-    description: 'Full-stack web development from frontend to backend with modern technologies.',
-    instructor: 'Alex Rodriguez',
-    rating: 4.7,
-    students: 15200,
-    duration: '12 weeks',
-    image: 'https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=400',
-    price: 149,
-    featured: true
-  }
-];
+import { featuredApiService, type Course } from '../../utils/featuredApiService';
 
 const FeaturedCourses3D: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
   const { registerComponent, unregisterComponent } = useModelPosition();
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -66,6 +16,43 @@ const FeaturedCourses3D: React.FC = () => {
   });
 
   const y = useTransform(scrollYProgress, [0, 1], [50, -50]);
+
+  // State for API data
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Navigation handlers
+  const handleEnrollNow = (courseId: string) => {
+    navigate(`/course/${courseId}`);
+  };
+
+  const handleViewAllCourses = () => {
+    navigate('/ai-courses');
+  };
+
+  // Fetch data from API
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        setLoading(true);
+        const response = await featuredApiService.getFeaturedData();
+        
+        if (response.success && response.data) {
+          setCourses(response.data.courses || []);
+        } else {
+          setError(response.error || 'Failed to load courses');
+        }
+      } catch (err) {
+        setError('Failed to load courses');
+        console.error('Error fetching courses:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCourses();
+  }, []);
 
   // Register component for 3D models
   useEffect(() => {
@@ -101,6 +88,31 @@ const FeaturedCourses3D: React.FC = () => {
     };
   }, [registerComponent, unregisterComponent]);
 
+  if (loading) {
+    return (
+      <section ref={containerRef} className="py-20 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden">
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto"></div>
+            <p className="text-white mt-4">Loading courses...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section ref={containerRef} className="py-20 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden">
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="text-center text-red-400">
+            <p>Error loading courses: {error}</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section ref={containerRef} className="py-20 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden">
       {/* Background Effects */}
@@ -133,7 +145,7 @@ const FeaturedCourses3D: React.FC = () => {
 
         {/* Course Cards Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-8">
-          {sampleCourses.map((course, index) => (
+          {courses.map((course, index) => (
             <motion.div
               key={course.id}
               initial={{ opacity: 0, y: 50 }}
@@ -150,7 +162,7 @@ const FeaturedCourses3D: React.FC = () => {
               {/* Course Image */}
               <div className="relative overflow-hidden">
                 <img
-                  src={course.image}
+                  src={course.thumbnail_image || 'https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=400'}
                   alt={course.title}
                   className="w-full h-32 sm:h-40 lg:h-48 object-cover group-hover:scale-110 transition-transform duration-500"
                 />
@@ -189,17 +201,17 @@ const FeaturedCourses3D: React.FC = () => {
                 <div className="flex items-center flex-wrap gap-1 sm:gap-2 lg:gap-4 mb-3 sm:mb-4 text-xs text-gray-400">
                   <div className="flex items-center gap-1">
                     <IconComponent icon={FaStar} className="text-yellow-400" />
-                    <span>{course.rating}</span>
+                    <span>{course.rating || 0}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <IconComponent icon={FaUsers} />
-                    <span className="hidden sm:inline">{course.students.toLocaleString()}</span>
-                    <span className="sm:hidden">{(course.students / 1000).toFixed(1)}k</span>
+                    <span className="hidden sm:inline">Students</span>
+                    <span className="sm:hidden">👥</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <IconComponent icon={FaClock} />
-                    <span className="hidden sm:inline">{course.duration}</span>
-                    <span className="sm:hidden">{course.duration.split(' ')[0]}w</span>
+                    <span className="hidden sm:inline">{course.level}</span>
+                    <span className="sm:hidden">{course.level.slice(0, 3)}</span>
                   </div>
                 </div>
 
@@ -207,7 +219,7 @@ const FeaturedCourses3D: React.FC = () => {
                 <div className="flex items-center justify-between mb-3 sm:mb-4">
                   <div className="min-w-0 flex-1">
                     <p className="text-xs text-gray-400 hidden sm:block">Instructor</p>
-                    <p className="text-xs sm:text-sm text-white font-medium truncate">{course.instructor.split(' ')[0]}</p>
+                    <p className="text-xs sm:text-sm text-white font-medium truncate">{course.instructor_name}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-gray-400 hidden sm:block">Price</p>
@@ -220,6 +232,7 @@ const FeaturedCourses3D: React.FC = () => {
                   className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-2 sm:py-3 px-4 rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 text-xs sm:text-sm lg:text-base"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
+                  onClick={() => handleEnrollNow(course.id)}
                 >
                   <span className="hidden sm:inline">Enroll Now</span>
                   <span className="sm:hidden">Enroll</span>
@@ -247,6 +260,7 @@ const FeaturedCourses3D: React.FC = () => {
               boxShadow: "0 20px 40px rgba(59, 130, 246, 0.3)"
             }}
             whileTap={{ scale: 0.95 }}
+            onClick={handleViewAllCourses}
           >
             View All Courses
           </motion.button>

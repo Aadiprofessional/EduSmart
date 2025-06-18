@@ -16,7 +16,7 @@ export interface UseResponseCheckProps {
 
 // Hook for checking responses before AI operations
 export const useResponseCheck = () => {
-  const { useResponse, responsesRemaining, isProUser } = useSubscription();
+  const { consumeResponse, responsesRemaining, isProUser } = useSubscription();
   const { user } = useAuth();
 
   const checkAndUseResponse = async ({
@@ -53,7 +53,8 @@ export const useResponseCheck = () => {
 
     // Try to use the response
     try {
-      const success = await useResponse(responseType, queryData, responsesUsed);
+      // Call consumeResponse as a regular function
+      const success = await consumeResponse(responseType, queryData, responsesUsed);
       
       if (success) {
         return {

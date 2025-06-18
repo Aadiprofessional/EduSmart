@@ -1,15 +1,28 @@
-import React, { useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useRef, useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FaGraduationCap, FaGlobe, FaAward, FaDollarSign, FaUsers, FaCalendarAlt, FaRocket, FaExternalLinkAlt } from 'react-icons/fa';
+import { FaGraduationCap, FaGlobe, FaAward, FaDollarSign, FaUsers, FaCalendarAlt, FaRocket, FaExternalLinkAlt, FaSpinner } from 'react-icons/fa';
 import IconComponent from './IconComponent';
 import { useLanguage } from '../../utils/LanguageContext';
 import { useModelPosition } from '../../utils/ModelPositionContext';
+import { useFeaturedData, type Scholarship } from '../../utils/featuredApiService';
 
 const FeaturedScholarships3D: React.FC = () => {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const { registerComponent, unregisterComponent } = useModelPosition();
+  const { data, loading, error } = useFeaturedData();
+
+  // Navigation handlers
+  const handleApplyNow = (scholarshipId?: string) => {
+    // Navigate to scholarships page with specific scholarship or general application
+    if (scholarshipId) {
+      navigate(`/scholarships?apply=${scholarshipId}`);
+    } else {
+      navigate('/scholarships');
+    }
+  };
 
   // Register component for 3D models
   useEffect(() => {
@@ -45,8 +58,10 @@ const FeaturedScholarships3D: React.FC = () => {
     };
   }, [registerComponent, unregisterComponent]);
 
-  const scholarships = [
+  // Sample scholarships as fallback when API data is empty
+  const sampleScholarships = [
     {
+      id: 'sample-1',
       icon: FaGraduationCap,
       title: 'Merit-Based Excellence',
       description: 'Scholarships awarded based on outstanding academic achievements and leadership potential.',
@@ -58,6 +73,7 @@ const FeaturedScholarships3D: React.FC = () => {
       accentColor: 'blue-400'
     },
     {
+      id: 'sample-2',
       icon: FaGlobe,
       title: 'Global Opportunities',
       description: 'Special funding opportunities designed for international students pursuing excellence.',
@@ -69,6 +85,7 @@ const FeaturedScholarships3D: React.FC = () => {
       accentColor: 'green-400'
     },
     {
+      id: 'sample-3',
       icon: FaAward,
       title: 'Need-Based Support',
       description: 'Financial assistance based on demonstrated need and academic commitment.',
@@ -80,6 +97,50 @@ const FeaturedScholarships3D: React.FC = () => {
       accentColor: 'purple-400'
     }
   ];
+
+  // Transform API scholarships to display format
+  const transformApiScholarship = (scholarship: Scholarship, index: number) => {
+    const colorSchemes = [
+      {
+        icon: FaGraduationCap,
+        color: 'from-blue-400 to-blue-600',
+        bgGradient: 'from-blue-500/10 to-blue-600/5',
+        accentColor: 'blue-400'
+      },
+      {
+        icon: FaGlobe,
+        color: 'from-green-400 to-green-600',
+        bgGradient: 'from-green-500/10 to-green-600/5',
+        accentColor: 'green-400'
+      },
+      {
+        icon: FaAward,
+        color: 'from-purple-400 to-purple-600',
+        bgGradient: 'from-purple-500/10 to-purple-600/5',
+        accentColor: 'purple-400'
+      }
+    ];
+
+    const scheme = colorSchemes[index % colorSchemes.length];
+
+    return {
+      id: scholarship.id,
+      ...scheme,
+      title: scholarship.title,
+      description: scholarship.description,
+      amount: `$${scholarship.amount.toLocaleString()}`,
+      recipients: scholarship.university,
+      deadline: new Date(scholarship.deadline).toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long' 
+      })
+    };
+  };
+
+  // Determine which scholarships to show
+  const scholarshipsToShow = data?.scholarships && data.scholarships.length > 0 
+    ? data.scholarships.slice(0, 3).map(transformApiScholarship)
+    : sampleScholarships;
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -128,7 +189,30 @@ const FeaturedScholarships3D: React.FC = () => {
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-20">
+            <div className="flex flex-col items-center space-y-4">
+              <IconComponent icon={FaSpinner} className="text-4xl text-yellow-400 animate-spin" />
+              <p className="text-yellow-300 text-lg">Loading scholarship opportunities...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div className="flex justify-center items-center py-20">
+            <div className="text-center">
+              <div className="text-red-400 text-xl mb-4">⚠️ Unable to load scholarships</div>
+              <p className="text-gray-400">{error}</p>
+              <p className="text-gray-500 mt-2">Showing sample scholarships instead</p>
+            </div>
+          </div>
+        )}
+
         {/* Section Header - Enhanced to match homepage style */}
+        {!loading && (
+          <>
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -164,7 +248,7 @@ const FeaturedScholarships3D: React.FC = () => {
           whileInView="visible"
           viewport={{ once: true, amount: 0.2 }}
         >
-          {scholarships.map((scholarship, index) => (
+          {scholarshipsToShow.map((scholarship, index) => (
             <motion.div
               key={index}
               variants={itemVariants}
@@ -217,6 +301,7 @@ const FeaturedScholarships3D: React.FC = () => {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   className={`w-full bg-gradient-to-r ${scholarship.color} text-white font-semibold py-2 sm:py-3 px-3 sm:px-4 lg:px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-xs sm:text-sm lg:text-base`}
+                  onClick={() => handleApplyNow(scholarship.id)}
                 >
                   <span className="hidden sm:inline">Apply Now</span>
                   <span className="sm:hidden">Apply</span>
@@ -280,6 +365,8 @@ const FeaturedScholarships3D: React.FC = () => {
             </Link>
           </div>
         </motion.div>
+          </>
+        )}
       </div>
     </section>
   );
