@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { AiOutlineHome, AiOutlineDatabase, AiOutlineTrophy, AiOutlineRobot, AiOutlineBook, AiOutlineRead, AiOutlineUser, AiOutlineBulb, AiOutlineMenu, AiOutlineClose, AiOutlineEdit, AiOutlineCrown } from 'react-icons/ai';
@@ -13,6 +14,7 @@ import eduLogo from '../../assets/edulogo.jpeg';
 const Header: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [userMenuPosition, setUserMenuPosition] = useState({ top: 0, right: 0 });
   const [isMobile, setIsMobile] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
@@ -102,6 +104,37 @@ const Header: React.FC = () => {
     };
   }, []);
 
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.user-menu-container') && !target.closest('.language-selector-container')) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Update user menu position when opened
+  useEffect(() => {
+    if (isUserMenuOpen) {
+      const userButton = document.querySelector('.user-menu-button') as HTMLElement;
+      if (userButton) {
+        const rect = userButton.getBoundingClientRect();
+        const newPosition = {
+          top: rect.bottom + 8, // 8px gap below button
+          right: window.innerWidth - rect.right, // Align to right edge of button
+        };
+        console.log('User menu positioning:', newPosition, 'Button rect:', rect);
+        setUserMenuPosition(newPosition);
+      } else {
+        console.log('User button not found');
+      }
+    }
+  }, [isUserMenuOpen]);
+
   // Check if header should be visible on current page
   const shouldShowHeader = headerVisiblePages.some(page => 
     location.pathname === page || 
@@ -123,6 +156,11 @@ const Header: React.FC = () => {
     await signOut();
     navigate('/');
     setIsUserMenuOpen(false);
+  };
+
+  const handleUserMenuToggle = () => {
+    console.log('User menu toggle clicked, current state:', isUserMenuOpen);
+    setIsUserMenuOpen(!isUserMenuOpen);
   };
 
   const logoVariants = {
@@ -181,6 +219,51 @@ const Header: React.FC = () => {
     }
   };
 
+  // User menu dropdown content
+  const userMenuContent = isUserMenuOpen && typeof window !== 'undefined' ? (
+    <motion.div
+      className="fixed w-48 bg-black/95 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-[1000001]"
+      variants={userMenuVariants}
+      initial="hidden"
+      animate="visible"
+      exit="hidden"
+      style={{
+        top: `${userMenuPosition.top}px`,
+        right: `${userMenuPosition.right}px`,
+      }}
+    >
+      <div className="p-2">
+        <Link
+          to="/profile"
+          className="flex items-center px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200"
+          onClick={() => setIsUserMenuOpen(false)}
+        >
+          <IconComponent icon={AiOutlineUser} className="h-4 w-4 mr-3" />
+          Profile
+        </Link>
+        {isProUser && (
+          <Link
+            to="/dashboard"
+            className="flex items-center px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200"
+            onClick={() => setIsUserMenuOpen(false)}
+          >
+            <IconComponent icon={AiOutlineCrown} className="h-4 w-4 mr-3" />
+            Dashboard
+          </Link>
+        )}
+        <button
+          onClick={handleSignOut}
+          className="w-full flex items-center px-4 py-3 text-gray-300 hover:text-red-400 hover:bg-red-500/5 rounded-xl transition-all duration-200"
+        >
+          <IconComponent icon={AiOutlineEdit} className="h-4 w-4 mr-3" />
+          Sign Out
+        </button>
+      </div>
+    </motion.div>
+  ) : null;
+
+  console.log('User menu state:', { isUserMenuOpen, userMenuContent: !!userMenuContent, userMenuPosition });
+
   return (
     <header 
       className={`header-fixed fixed top-0 left-0 right-0 z-[999999] transition-all duration-500 ease-out`}
@@ -213,37 +296,37 @@ const Header: React.FC = () => {
         animation: (scrolled || isMobile) ? 'header-gradient 15s ease infinite' : 'none',
       }}
     >
-      <div className="w-full max-w-none px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-none px-3 sm:px-4 lg:px-6">
         {/* Header with logo and navigation - improved spacing and alignment */}
-        <div className="flex justify-between items-center py-3 min-h-[70px] max-w-[1600px] mx-auto">
-          {/* Logo section - increased left margin */}
+        <div className="flex justify-between items-center py-1 sm:py-2 min-h-[42px] sm:min-h-[49px] max-w-[1600px] mx-auto">
+          {/* Logo section - improved responsive sizing */}
           <motion.div 
-            className="flex items-center flex-shrink-0 mr-2 lg:mr-4"
+            className="flex items-center flex-shrink-0 min-w-0"
             variants={logoVariants}
             whileHover="hover"
             data-magnetic
           >
-            <Link to="/" className="flex items-center">
-              <span className={`font-bold ${isMobile ? 'text-xl' : 'text-2xl lg:text-3xl'} bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent whitespace-nowrap relative`}>
+            <Link to="/" className="flex items-center min-w-0">
+              <span className={`font-bold ${isMobile ? 'text-lg sm:text-xl' : 'text-xl lg:text-2xl xl:text-3xl'} bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent whitespace-nowrap relative`}>
                 {isMobile ? 'ME' : 'MatrixEdu'}
               </span>
               {isProUser && (
                 <motion.div
-                  className="ml-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold px-2 py-1 rounded-full flex items-center"
+                  className="ml-1 sm:ml-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full flex items-center flex-shrink-0"
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.5, type: "spring" }}
                 >
-                  <IconComponent icon={AiOutlineCrown} className="w-3 h-3 mr-1" />
-                  PRO
+                  <IconComponent icon={AiOutlineCrown} className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
+                  <span className="text-xs">PRO</span>
                 </motion.div>
               )}
             </Link>
           </motion.div>
           
-          {/* Desktop Navigation - improved spacing and responsive breakpoints */}
-          <nav className="hidden lg:flex items-center justify-center flex-1 px-2">
-            <div className="flex items-center space-x-0.5 xl:space-x-1 2xl:space-x-2">
+          {/* Desktop Navigation - improved responsive design to prevent overflow */}
+          <nav className="hidden lg:flex items-center justify-center flex-1 px-2 min-w-0">
+            <div className="flex items-center space-x-0.5 xl:space-x-1 2xl:space-x-2 overflow-hidden">
               {navigation.map((item) => (
                 <motion.div
                   key={item.name}
@@ -254,24 +337,24 @@ const Header: React.FC = () => {
                 >
                   <Link
                     to={item.href}
-                    className={`flex items-center space-x-1 px-2 lg:px-3 xl:px-4 py-2 rounded-xl text-xs lg:text-xs xl:text-sm font-medium transition-all duration-300 whitespace-nowrap ${
+                    className={`flex items-center space-x-1 px-1 lg:px-1.5 xl:px-2 py-1 lg:py-1.5 rounded-lg xl:rounded-xl text-xs lg:text-xs xl:text-sm font-medium transition-all duration-300 whitespace-nowrap ${
                       isActive(item.href)
                         ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border border-blue-500/40 shadow-lg shadow-blue-500/25 backdrop-blur-sm'
                         : 'text-gray-300 hover:text-white hover:bg-white/5 hover:backdrop-blur-sm'
                     }`}
                   >
-                    <IconComponent icon={item.icon} className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5 flex-shrink-0" />
-                    <span className="text-xs lg:text-xs xl:text-sm font-medium hidden sm:inline">{item.name}</span>
+                    <IconComponent icon={item.icon} className="h-3 w-3 lg:h-4 lg:w-4 xl:h-4 xl:w-4 flex-shrink-0" />
+                    <span className="text-xs lg:text-xs xl:text-sm font-medium hidden lg:inline truncate max-w-[80px] xl:max-w-none">{item.name}</span>
                   </Link>
                 </motion.div>
               ))}
             </div>
           </nav>
           
-          {/* Desktop auth buttons and language selector - improved spacing */}
-          <div className="hidden lg:flex items-center space-x-1 xl:space-x-2 flex-shrink-0 ml-1">
-            {/* Language Selector with better visibility */}
-            <div className="px-2 xl:px-3 py-1.5 xl:py-2 bg-white backdrop-blur-sm rounded-full border border-white/10 hover:border-white/20 transition-all duration-300 flex-shrink-0">
+          {/* Desktop auth buttons and language selector - improved spacing and overflow handling */}
+          <div className="hidden lg:flex items-center space-x-1 xl:space-x-2 flex-shrink-0 min-w-0">
+            {/* Language Selector without background */}
+            <div className="language-selector-container flex-shrink-0">
               <LanguageSelector />
             </div>
             
@@ -279,10 +362,10 @@ const Header: React.FC = () => {
               <>
                 {/* Pro User Status and Addon Button */}
                 {isProUser ? (
-                  <div className="flex items-center space-x-1">
+                  <div className="flex items-center space-x-1 flex-shrink-0">
                     {/* Response Counter */}
                     <motion.div
-                      className="flex items-center px-2 xl:px-3 py-1.5 xl:py-2 bg-gradient-to-r from-green-500/10 to-blue-500/10 backdrop-blur-sm rounded-full border border-green-500/30 text-green-400"
+                      className="flex items-center px-1 xl:px-1.5 py-0.5 xl:py-1 bg-gradient-to-r from-green-500/10 to-blue-500/10 backdrop-blur-sm rounded-full border border-green-500/30 text-green-400 flex-shrink-0"
                       variants={buttonVariants}
                       whileHover="hover"
                       data-magnetic
@@ -295,10 +378,10 @@ const Header: React.FC = () => {
                     
                     {/* Buy Addon Button for Low Responses */}
                     {responsesRemaining < 50 && (
-                      <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap">
+                      <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap" className="flex-shrink-0">
                         <Link
                           to="/subscription"
-                          className="flex items-center px-2 xl:px-3 py-1.5 xl:py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-full font-medium shadow-lg hover:shadow-orange-500/25 transition-all duration-300 text-xs xl:text-sm whitespace-nowrap"
+                          className="flex items-center px-1 xl:px-1.5 py-0.5 xl:py-1 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-full font-medium shadow-lg hover:shadow-orange-500/25 transition-all duration-300 text-xs xl:text-sm whitespace-nowrap"
                           data-magnetic
                         >
                           <span className="hidden xl:inline">Buy More</span>
@@ -308,73 +391,33 @@ const Header: React.FC = () => {
                     )}
                   </div>
                 ) : (
-                  <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap">
+                  <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap" className="flex-shrink-0">
                     <Link
                       to="/subscription"
-                      className="flex items-center px-2 xl:px-3 py-1.5 xl:py-2 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-full font-medium shadow-lg hover:shadow-orange-500/25 transition-all duration-300 text-xs xl:text-sm whitespace-nowrap"
+                      className="flex items-center px-1 xl:px-1.5 py-0.5 xl:py-1 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-full font-medium shadow-lg hover:shadow-orange-500/25 transition-all duration-300 text-xs xl:text-sm whitespace-nowrap"
                       data-magnetic
                     >
-                      <IconComponent icon={AiOutlineCrown} className="h-3 w-3 xl:h-4 xl:w-4 mr-1 xl:mr-2 flex-shrink-0" />
+                      <IconComponent icon={AiOutlineCrown} className="h-3 w-3 xl:h-4 xl:w-4 mr-1 xl:mr-1.5 flex-shrink-0" />
                       <span className="hidden xl:inline">Upgrade</span>
                       <span className="xl:hidden">Pro</span>
                     </Link>
                   </motion.div>
                 )}
                 
-                <div className="relative flex-shrink-0">
+                <div className="relative flex-shrink-0 user-menu-container">
                   <motion.button
-                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center px-2 xl:px-3 py-1.5 xl:py-2 bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-sm rounded-full border border-white/10 text-white hover:border-white/30 transition-all duration-300"
+                    onClick={handleUserMenuToggle}
+                    className="user-menu-button flex items-center px-1 xl:px-1.5 py-0.5 xl:py-1 bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-sm rounded-full border border-white/10 text-white hover:border-white/30 transition-all duration-300 min-w-0"
                     variants={buttonVariants}
                     whileHover="hover"
                     whileTap="tap"
                     data-magnetic
                   >
-                    <IconComponent icon={AiOutlineUser} className="h-3 w-3 xl:h-4 xl:w-4 mr-1 xl:mr-2 flex-shrink-0" />
-                    <span className="max-w-[60px] xl:max-w-[80px] 2xl:max-w-[100px] truncate text-xs xl:text-sm font-medium">
+                    <IconComponent icon={AiOutlineUser} className="h-3 w-3 xl:h-4 xl:w-4 mr-1 xl:mr-1.5 flex-shrink-0" />
+                    <span className="max-w-[50px] xl:max-w-[70px] 2xl:max-w-[90px] truncate text-xs xl:text-sm font-medium">
                       {user.user_metadata?.name || user.email?.split('@')[0] || 'User'}
                     </span>
                   </motion.button>
-                  
-                  <AnimatePresence>
-                    {isUserMenuOpen && (
-                      <motion.div
-                        className="absolute right-0 mt-2 w-48 bg-black/90 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
-                        variants={userMenuVariants}
-                        initial="hidden"
-                        animate="visible"
-                        exit="hidden"
-                      >
-                        <div className="p-2">
-                          <Link
-                            to="/profile"
-                            className="flex items-center px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200"
-                            onClick={() => setIsUserMenuOpen(false)}
-                          >
-                            <IconComponent icon={AiOutlineUser} className="h-4 w-4 mr-3" />
-                            Profile
-                          </Link>
-                          {isProUser && (
-                            <Link
-                              to="/dashboard"
-                              className="flex items-center px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200"
-                              onClick={() => setIsUserMenuOpen(false)}
-                            >
-                              <IconComponent icon={AiOutlineCrown} className="h-4 w-4 mr-3" />
-                              Dashboard
-                            </Link>
-                          )}
-                          <button
-                            onClick={handleSignOut}
-                            className="w-full flex items-center px-4 py-3 text-gray-300 hover:text-red-400 hover:bg-red-500/5 rounded-xl transition-all duration-200"
-                          >
-                            <IconComponent icon={AiOutlineEdit} className="h-4 w-4 mr-3" />
-                            Sign Out
-                          </button>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
                 </div>
               </>
             ) : (
@@ -382,7 +425,7 @@ const Header: React.FC = () => {
                 <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap">
                   <Link
                     to="/login"
-                    className="px-2 xl:px-3 py-1.5 xl:py-2 text-gray-300 hover:text-white transition-all duration-300 rounded-full hover:bg-white/5 text-xs xl:text-sm font-medium whitespace-nowrap"
+                    className="px-1 xl:px-1.5 py-0.5 xl:py-1 text-gray-300 hover:text-white transition-all duration-300 rounded-full hover:bg-white/5 text-xs xl:text-sm font-medium whitespace-nowrap"
                     data-magnetic
                   >
                     Login
@@ -391,7 +434,7 @@ const Header: React.FC = () => {
                 <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap">
                   <Link
                     to="/signup"
-                    className="px-2 xl:px-3 2xl:px-4 py-1.5 xl:py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full font-medium shadow-lg hover:shadow-blue-500/25 transition-all duration-300 text-xs xl:text-sm whitespace-nowrap"
+                    className="px-1 xl:px-1.5 2xl:px-2 py-0.5 xl:py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full font-medium shadow-lg hover:shadow-blue-500/25 transition-all duration-300 text-xs xl:text-sm whitespace-nowrap"
                     data-magnetic
                   >
                     Sign Up
@@ -404,7 +447,7 @@ const Header: React.FC = () => {
           {/* Mobile menu button */}
           <motion.button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-all duration-200 flex-shrink-0 ml-2"
+            className="lg:hidden p-1.5 text-white hover:bg-white/10 rounded-lg transition-all duration-200 flex-shrink-0 ml-1 sm:ml-2"
             variants={buttonVariants}
             whileHover="hover"
             whileTap="tap"
@@ -412,7 +455,7 @@ const Header: React.FC = () => {
           >
             <IconComponent 
               icon={isMobileMenuOpen ? AiOutlineClose : AiOutlineMenu} 
-              className="h-6 w-6" 
+              className="h-4 w-4 sm:h-5 sm:w-5" 
             />
           </motion.button>
         </div>
@@ -421,13 +464,13 @@ const Header: React.FC = () => {
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
-              className="lg:hidden bg-black/95 backdrop-blur-xl rounded-2xl border border-white/10 mt-4 overflow-hidden"
+              className="lg:hidden bg-black/95 backdrop-blur-xl rounded-2xl border border-white/10 mt-2 sm:mt-4 overflow-hidden z-[1000000]"
               variants={mobileMenuVariants}
               initial="hidden"
               animate="visible"
               exit="hidden"
             >
-              <div className="p-4 space-y-2">
+              <div className="p-3 sm:p-4 space-y-2">
                 {navigation.map((item, index) => (
                   <motion.div
                     key={item.name}
@@ -437,7 +480,7 @@ const Header: React.FC = () => {
                   >
                     <Link
                       to={item.href}
-                      className={`flex items-center px-4 py-3 rounded-xl transition-all duration-300 ${
+                      className={`flex items-center px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl transition-all duration-300 ${
                         isActive(item.href)
                           ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border border-blue-500/30'
                           : 'text-gray-300 hover:text-white hover:bg-white/5'
@@ -450,8 +493,8 @@ const Header: React.FC = () => {
                   </motion.div>
                 ))}
                 
-                <div className="border-t border-white/20 pt-4 mt-4">
-                  <div className="mb-4 p-3 bg-white rounded-xl">
+                <div className="border-t border-white/20 pt-3 sm:pt-4 mt-3 sm:mt-4">
+                  <div className="mb-3 sm:mb-4">
                     <LanguageSelector />
                   </div>
                   
@@ -460,7 +503,7 @@ const Header: React.FC = () => {
                       {/* Pro Status or Upgrade Button for Mobile */}
                       {isProUser ? (
                         <div className="space-y-2">
-                          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-xl border border-green-500/30">
+                          <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-xl border border-green-500/30">
                             <div className="flex items-center">
                               <IconComponent icon={AiOutlineCrown} className="h-5 w-5 mr-3 text-green-400" />
                               <span className="text-green-400 font-medium">Pro Member</span>
@@ -472,7 +515,7 @@ const Header: React.FC = () => {
                           {responsesRemaining < 50 && (
                             <Link
                               to="/subscription"
-                              className="flex items-center justify-center px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl font-medium transition-all duration-200"
+                              className="flex items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl font-medium transition-all duration-200"
                               onClick={() => setIsMobileMenuOpen(false)}
                             >
                               <IconComponent icon={AiOutlineCrown} className="h-5 w-5 mr-3" />
@@ -483,7 +526,7 @@ const Header: React.FC = () => {
                       ) : (
                         <Link
                           to="/subscription"
-                          className="flex items-center justify-center px-4 py-3 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-xl font-medium transition-all duration-200"
+                          className="flex items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-xl font-medium transition-all duration-200"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
                           <IconComponent icon={AiOutlineCrown} className="h-5 w-5 mr-3" />
@@ -493,7 +536,7 @@ const Header: React.FC = () => {
                       
                       <Link
                         to="/profile"
-                        className="flex items-center px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200"
+                        className="flex items-center px-3 sm:px-4 py-2.5 sm:py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <IconComponent icon={AiOutlineUser} className="h-5 w-5 mr-3" />
@@ -503,7 +546,7 @@ const Header: React.FC = () => {
                       {isProUser && (
                         <Link
                           to="/dashboard"
-                          className="flex items-center px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200"
+                          className="flex items-center px-3 sm:px-4 py-2.5 sm:py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
                           <IconComponent icon={AiOutlineCrown} className="h-5 w-5 mr-3" />
@@ -516,7 +559,7 @@ const Header: React.FC = () => {
                           handleSignOut();
                           setIsMobileMenuOpen(false);
                         }}
-                        className="w-full flex items-center px-4 py-3 text-gray-300 hover:text-red-400 hover:bg-red-500/5 rounded-xl transition-all duration-200"
+                        className="w-full flex items-center px-3 sm:px-4 py-2.5 sm:py-3 text-gray-300 hover:text-red-400 hover:bg-red-500/5 rounded-xl transition-all duration-200"
                       >
                         <IconComponent icon={AiOutlineEdit} className="h-5 w-5 mr-3" />
                         Sign Out
@@ -526,14 +569,14 @@ const Header: React.FC = () => {
                     <div className="space-y-2">
                       <Link
                         to="/login"
-                        className="block px-4 py-3 text-center text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200"
+                        className="block px-3 sm:px-4 py-2.5 sm:py-3 text-center text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         Login
                       </Link>
                       <Link
                         to="/signup"
-                        className="block px-4 py-3 text-center bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-medium transition-all duration-200"
+                        className="block px-3 sm:px-4 py-2.5 sm:py-3 text-center bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-medium transition-all duration-200"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         Sign Up
@@ -546,6 +589,9 @@ const Header: React.FC = () => {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Render user menu dropdown using portal to avoid affecting header layout */}
+      {userMenuContent && createPortal(userMenuContent, document.body)}
     </header>
   );
 };

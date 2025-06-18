@@ -254,9 +254,9 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
   
   // Add new state variables for the requested features
   const [autoScroll, setAutoScroll] = useState(true);
-  const [textExtractionEnabled, setTextExtractionEnabled] = useState(false);
+  const [textExtractionEnabled, setTextExtractionEnabled] = useState(true); // Changed from false to true
   const [extractedTexts, setExtractedTexts] = useState<ExtractedText[]>([]);
-  const [documentView, setDocumentView] = useState<DocumentView>('image');
+  const [documentView, setDocumentView] = useState<DocumentView>('text'); // Changed from 'image' to 'text'
   const [selectedMistakeId, setSelectedMistakeId] = useState<number | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1348,10 +1348,6 @@ Be thorough and fair in your assessment.`
       Promise.allSettled(textExtractionPromises).then(() => {
         console.log('✅ Text extraction after toggle completed');
       });
-    } else if (!textExtractionEnabled) {
-      // Clear extracted texts when disabled
-      setExtractedTexts([]);
-      setDocumentView('image');
     }
   }, [textExtractionEnabled, documentPages.length]);
 
@@ -1668,22 +1664,6 @@ Be thorough and fair in your assessment.`
                       Auto Scroll
                     </label>
                   </div>
-
-                  {/* Text Extraction Toggle (only in mistakes mode) */}
-                  {viewMode === 'mistakes' && (
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="textExtract"
-                        checked={textExtractionEnabled}
-                        onChange={(e) => setTextExtractionEnabled(e.target.checked)}
-                        className="w-4 h-4 text-green-600 bg-slate-600 border-slate-400 rounded focus:ring-green-500 focus:ring-2"
-                      />
-                      <label htmlFor="textExtract" className="text-slate-300 text-sm font-medium cursor-pointer">
-                        Text Extract
-                      </label>
-                    </div>
-                  )}
                 </div>
               </div>
 
