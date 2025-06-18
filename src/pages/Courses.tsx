@@ -5,6 +5,7 @@ import Footer from '../components/layout/Footer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../utils/LanguageContext';
 import { useAuth } from '../utils/AuthContext';
+import NotificationModal from '../components/ui/NotificationModal';
 import { 
   FaGraduationCap, 
   FaSearch, 
@@ -144,6 +145,31 @@ const Courses: React.FC = () => {
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [cart, setCart] = useState<string[]>([]);
+
+  // Notification modal state
+  const [notification, setNotification] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error' | 'warning' | 'info';
+    title?: string;
+    message: string;
+  }>({
+    isOpen: false,
+    type: 'info',
+    message: ''
+  });
+
+  const showNotification = (type: 'success' | 'error' | 'warning' | 'info', message: string, title?: string) => {
+    setNotification({
+      isOpen: true,
+      type,
+      message,
+      title
+    });
+  };
+
+  const closeNotification = () => {
+    setNotification(prev => ({ ...prev, isOpen: false }));
+  };
 
   useEffect(() => {
     if (id) {
@@ -309,9 +335,9 @@ const Courses: React.FC = () => {
       
       if (data.success) {
         if (data.data.alreadyEnrolled) {
-          alert('You are already enrolled in this course!');
+          showNotification('info', 'You are already enrolled in this course!', 'Already Enrolled');
         } else {
-          alert('Successfully enrolled in course!');
+          showNotification('success', 'Successfully enrolled in course!', 'Enrollment Successful');
         }
         
         // Update enrolled courses list
@@ -338,14 +364,14 @@ const Courses: React.FC = () => {
           navigateToCoursePlayer(courseId);
         } else {
           console.log('❌ Enrollment verification failed');
-          alert('Enrollment successful, but there was an issue accessing the course. Please try again in a moment.');
+          showNotification('warning', 'Enrollment successful, but there was an issue accessing the course. Please try again in a moment.', 'Access Issue');
         }
       } else {
         throw new Error(data.error || 'Enrollment failed');
       }
     } catch (error: any) {
       console.error('Error enrolling in course:', error);
-      alert(error.message || 'Failed to enroll in course');
+      showNotification('error', error.message || 'Failed to enroll in course', 'Enrollment Failed');
     }
   };
 
@@ -383,7 +409,7 @@ const Courses: React.FC = () => {
             await new Promise(resolve => setTimeout(resolve, 1000));
             return navigateToCoursePlayer(courseId, retryCount + 1);
           } else {
-            alert('You need to be enrolled to access this course. Please try enrolling again.');
+            showNotification('warning', 'You need to be enrolled to access this course. Please try enrolling again.', 'Access Denied');
             return;
           }
         }
@@ -414,7 +440,7 @@ const Courses: React.FC = () => {
         return navigateToCoursePlayer(courseId, retryCount + 1);
       }
       
-      alert(`Failed to access course: ${error.message}`);
+      showNotification('error', `Failed to access course: ${error.message}`, 'Navigation Error');
       navigate(`/course/${courseId}`);
     }
   };
@@ -841,9 +867,8 @@ const Courses: React.FC = () => {
                                   e.stopPropagation();
                                   navigateToCoursePlayer(course.id);
                                 }}
-                                className="px-4 py-2 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors flex items-center gap-2"
+                                className="px-4 py-2 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors"
                               >
-                                <IconWrapper icon={FaPlayCircle} size={16} />
                                 View Course
                               </button>
                             ) : (
@@ -1405,7 +1430,20 @@ const Courses: React.FC = () => {
     return renderCourseDetails();
   }
 
-  return renderCourseBrowse();
+  return (
+    <>
+      {renderCourseBrowse()}
+      
+      {/* Notification Modal */}
+      <NotificationModal
+        isOpen={notification.isOpen}
+        onClose={closeNotification}
+        type={notification.type}
+        title={notification.title}
+        message={notification.message}
+      />
+    </>
+  );
 };
 
 export default Courses; 

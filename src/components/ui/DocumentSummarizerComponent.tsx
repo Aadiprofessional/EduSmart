@@ -189,48 +189,43 @@ const DocumentSummarizerComponent: React.FC<DocumentSummarizerComponentProps> = 
       const timeoutId = setTimeout(() => {
         if (mindmapRef.current && (showMindmap || fullScreenView === 'mindmap')) {
           try {
-            // Define branch colors for the mindmap
-            const branchColors = [
-              '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
-              '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
-              '#F8C471', '#82E0AA', '#F1948A', '#85C1E9', '#D7BDE2'
-            ];
+            // Define vibrant colors for the mindmap branches
+            const chartColors = ['#5470C6', '#91CC75', '#EE6666', '#FAC858', '#73C0DE', '#3BA272', '#FC8452', '#9A60B4', '#EA7CCC'];
+            
+            // Function to assign colors to tree nodes recursively
+            const assignColors = (node: any, index = 0): any => {
+              const coloredNode = {
+                ...node,
+                lineStyle: { 
+                  color: chartColors[index % chartColors.length],
+                  width: 3,
+                  curveness: 0.5
+                },
+                itemStyle: {
+                  color: chartColors[index % chartColors.length],
+                  borderWidth: 2,
+                  shadowBlur: 5,
+                  shadowColor: 'rgba(0, 0, 0, 0.3)'
+                }
+              };
+              
+              if (node.children) {
+                coloredNode.children = node.children.map((child: any, idx: number) => 
+                  assignColors(child, idx)
+                );
+              }
+              
+              return coloredNode;
+            };
+
+            // Apply colors to the mindmap data
+            const coloredGraphData = assignColors(mindmapData);
             
             // ECharts configuration
             const option: any = {
               backgroundColor: 'transparent',
-              // Enhanced color configuration
-              color: branchColors,
-              // Interactive toolbox for better UX
-              toolbox: {
-                show: true,
-                feature: {
-                  restore: {
-                    title: 'Reset View',
-                    icon: 'path://M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z'
-                  },
-                  saveAsImage: {
-                    title: 'Save as Image',
-                    backgroundColor: '#1e293b',
-                    pixelRatio: 2
-                  }
-                },
-                iconStyle: {
-                  borderColor: '#06b6d4',
-                  color: '#06b6d4'
-                },
-                emphasis: {
-                  iconStyle: {
-                    borderColor: '#0891b2',
-                    color: '#0891b2'
-                  }
-                },
-                right: '20',
-                top: '20'
-              },
-              // Enhanced tooltip
-              tooltip: {
-                trigger: 'item' as const,
+              tooltip: { 
+                trigger: 'item', 
                 triggerOn: 'mousemove',
                 backgroundColor: 'rgba(30, 41, 59, 0.95)',
                 borderColor: 'rgba(6, 182, 212, 0.8)',
@@ -241,281 +236,68 @@ const DocumentSummarizerComponent: React.FC<DocumentSummarizerComponentProps> = 
                   fontSize: 14,
                   fontWeight: 'bold',
                   fontFamily: 'Inter, system-ui, sans-serif'
-                },
-                formatter: function(params: any) {
-                  return `<div style="padding: 12px; max-width: 300px;">
-                    <div style="color: #06b6d4; font-weight: bold; margin-bottom: 8px; font-size: 16px;">${params.name}</div>
-                    <div style="color: #cbd5e1; font-size: 12px; line-height: 1.4;">
-                      🖱️ Click to focus • 🔍 Scroll to zoom<br/>
-                      ⌨️ Shift+Drag to pan • 📍 Double-click to reset
-                    </div>
-                  </div>`;
                 }
               },
-              series: [
-                {
-                  type: 'tree',
-                  data: [mindmapData],
-                  top: '5%',
-                  left: '5%',
-                  bottom: '5%',
-                  right: '5%',
-                  
-                  // Node styling - make nodes more prominent
-                  symbolSize: function(value: any, params: any) {
-                    // Vary node size based on hierarchy level
-                    const level = params.treeAncestors ? params.treeAncestors.length : 0;
-                    return level === 0 ? 20 : level === 1 ? 16 : 12;
-                  },
-                  
-                  // Enable roaming (pan and zoom)
-                  roam: true,
-                  scaleLimit: {
-                    min: 0.2,
-                    max: 5
-                  },
-                  
-                  // IMPORTANT: Make all nodes expanded by default
-                  initialTreeDepth: -1, // Show all levels
-                  expandAndCollapse: false, // Disable collapse to keep everything visible
-                  
-                  // Enhanced layout for better visibility
-                  layout: 'orthogonal',
-                  orient: 'horizontal', // Horizontal layout like in the image
-                  
-                  // Main label styling - FIXED for readability
+              series: [{
+                type: 'tree',
+                data: [coloredGraphData],
+                top: '5%',
+                left: '10%',
+                bottom: '5%',
+                right: '25%',
+                symbolSize: 8,
+                orient: 'LR',
+                roam: true,
+                initialTreeDepth: 3,
+                label: {
+                  position: 'left',
+                  verticalAlign: 'middle',
+                  align: 'right',
+                  fontSize: 14,
+                  color: '#1f2937',
+                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                  borderRadius: 6,
+                  padding: [6, 10],
+                  shadowBlur: 6,
+                  shadowColor: 'rgba(0, 0, 0, 0.15)'
+                },
+                leaves: {
                   label: {
-                    show: true,
                     position: 'right',
                     verticalAlign: 'middle',
                     align: 'left',
-                    fontSize: function(params: any) {
-                      const level = params.treeAncestors ? params.treeAncestors.length : 0;
-                      return level === 0 ? 16 : level === 1 ? 14 : 12;
-                    },
-                    fontWeight: 'bold',
-                    color: '#1f2937', // Dark text for readability on light backgrounds
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)', // White background for readability
-                    borderColor: function(params: any) {
-                      const level = params.treeAncestors ? params.treeAncestors.length : 0;
-                      return branchColors[level % branchColors.length];
-                    },
-                    borderWidth: 2,
-                    borderRadius: 8,
-                    padding: [8, 12],
-                    shadowBlur: 10,
-                    shadowColor: 'rgba(0, 0, 0, 0.2)'
-                  },
-                  
-                  // Leaf nodes styling (end nodes) - FIXED for readability
-                  leaves: {
-                    label: {
-                      show: true,
-                      position: 'right',
-                      verticalAlign: 'middle',
-                      align: 'left',
-                      fontSize: 11,
-                      fontWeight: 'normal',
-                      color: '#1f2937', // Dark text for readability
-                      backgroundColor: 'rgba(255, 255, 255, 0.9)', // Light background
-                      borderColor: function(params: any) {
-                        const level = params.treeAncestors ? params.treeAncestors.length : 0;
-                        return branchColors[level % branchColors.length];
-                      },
-                      borderWidth: 1,
-                      borderRadius: 6,
-                      padding: [6, 10],
-                      shadowBlur: 6,
-                      shadowColor: 'rgba(0, 0, 0, 0.15)'
-                    }
-                  },
-                  
-                  // Enhanced hover effects
-                  emphasis: {
-                    focus: 'descendant',
-                    scale: 1.1,
-                    itemStyle: {
-                      borderWidth: 4,
-                      shadowBlur: 20,
-                      shadowColor: function(params: any) {
-                        const level = params.treeAncestors ? params.treeAncestors.length : 0;
-                        return branchColors[level % branchColors.length] + '80';
-                      }
-                    },
-                    label: {
-                      fontSize: function(params: any) {
-                        const level = params.treeAncestors ? params.treeAncestors.length : 0;
-                        return level === 0 ? 18 : level === 1 ? 16 : 14;
-                      },
-                      fontWeight: 'bold',
-                      color: '#1f2937', // Keep text dark for readability
-                      backgroundColor: 'rgba(255, 255, 255, 0.98)',
-                      shadowBlur: 8,
-                      shadowColor: 'rgba(0, 0, 0, 0.3)'
-                    },
-                    lineStyle: {
-                      width: 8,
-                      shadowBlur: 12,
-                      shadowColor: function(params: any) {
-                        const level = params.treeAncestors ? params.treeAncestors.length : 0;
-                        return branchColors[level % branchColors.length] + '60';
-                      }
-                    }
-                  },
-                  
-                  // Animation settings
-                  animationDuration: 1000,
-                  animationDurationUpdate: 800,
-                  animationEasing: 'cubicOut',
-                  
-                  // Node item styling with different colors per branch
-                  itemStyle: {
-                    color: function(params: any) {
-                      const level = params.treeAncestors ? params.treeAncestors.length : 0;
-                      return branchColors[level % branchColors.length];
-                    },
-                    borderColor: function(params: any) {
-                      const level = params.treeAncestors ? params.treeAncestors.length : 0;
-                      const darkerColors = [
-                        '#E55555', '#3CB5AC', '#3A9BC1', '#7FB69A', '#E6D285',
-                        '#C588C5', '#7FC0B0', '#E0C55F', '#A67FB5', '#6FA9D1'
-                      ];
-                      return darkerColors[level % darkerColors.length];
-                    },
-                    borderWidth: 3,
-                    shadowBlur: 12,
-                    shadowColor: function(params: any) {
-                      const level = params.treeAncestors ? params.treeAncestors.length : 0;
-                      return branchColors[level % branchColors.length] + '50';
-                    }
-                  },
-                  
-                  // MOST IMPORTANT: Colorful connecting lines - SUPER ENFORCED
-                  lineStyle: {
-                    color: function(params: any) {
-                      // Force specific colors for each connection - NEVER BLACK
-                      const level = params.treeAncestors ? params.treeAncestors.length : 0;
-                      const selectedColor = branchColors[level % branchColors.length];
-                      console.log('ECharts lineStyle setting color:', selectedColor);
-                      return selectedColor;
-                    },
-                    width: 8, // Very thick for visibility
-                    curveness: 0.3,
-                    shadowBlur: 10,
-                    shadowColor: function(params: any) {
-                      const level = params.treeAncestors ? params.treeAncestors.length : 0;
-                      return branchColors[level % branchColors.length] + '60';
-                    },
-                    opacity: 1, // Full opacity
-                    type: 'solid'
+                    color: '#1f2937',
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    borderRadius: 6,
+                    padding: [6, 10],
+                    distance: 15
                   }
+                },
+                emphasis: { 
+                  focus: 'descendant',
+                  itemStyle: {
+                    shadowBlur: 10,
+                    shadowColor: 'rgba(0, 0, 0, 0.3)'
+                  }
+                },
+                expandAndCollapse: true,
+                animationDuration: 550,
+                animationEasing: 'cubicOut',
+                lineStyle: {
+                  width: 3,
+                  curveness: 0.5
                 }
-              ],
-              // Global text styling
-              textStyle: {
-                color: '#1f2937', // Dark text globally
-                fontFamily: 'Inter, system-ui, sans-serif'
-              }
+              }]
             };
             
             // Initialize the chart
             mindmapChart.current = echarts.init(mindmapRef.current);
-            (mindmapChart.current as any).setOption(option);
-            
-            // SUPER AGGRESSIVE COLOR ENFORCEMENT
-            const forceColorfulLines = () => {
-              const chartContainer = mindmapRef.current;
-              if (!chartContainer) return;
-              
-              console.log('Forcing colorful lines...'); // Debug log
-              
-              // Get all SVG elements that could be lines
-              const svgElements = chartContainer.querySelectorAll('svg path, svg line, svg polyline');
-              console.log('Found SVG elements:', svgElements.length); // Debug log
-              
-              svgElements.forEach((element: any, index: number) => {
-                const currentStroke = element.getAttribute('stroke');
-                const colorIndex = index % branchColors.length;
-                const newColor = branchColors[colorIndex];
-                
-                // Log current and new colors for debugging
-                console.log(`Element ${index}: current stroke: ${currentStroke}, setting to: ${newColor}`);
-                
-                // Set attributes
-                element.setAttribute('stroke', newColor);
-                element.setAttribute('stroke-width', '8');
-                element.setAttribute('opacity', '1');
-                element.setAttribute('fill', 'none');
-                
-                // Also set via style for extra enforcement
-                element.style.stroke = newColor;
-                element.style.strokeWidth = '8px';
-                element.style.opacity = '1';
-                element.style.fill = 'none';
-                
-                // Remove any classes that might override colors
-                element.removeAttribute('class');
-              });
-              
-              // Additional targeting for any remaining black elements
-              const potentialBlackElements = chartContainer.querySelectorAll(
-                'svg [stroke="#000000"], svg [stroke="black"], svg [stroke="#000"], ' +
-                'svg [stroke="rgba(0,0,0,0.45)"], svg path:not([stroke]), svg line:not([stroke])'
-              );
-              
-              console.log('Found potential black elements:', potentialBlackElements.length); // Debug log
-              
-              potentialBlackElements.forEach((element: any, index: number) => {
-                const colorIndex = index % branchColors.length;
-                const newColor = branchColors[colorIndex];
-                
-                element.setAttribute('stroke', newColor);
-                element.setAttribute('stroke-width', '8');
-                element.setAttribute('opacity', '1');
-                element.style.stroke = newColor;
-                element.style.strokeWidth = '8px';
-                element.style.opacity = '1';
-              });
-            };
-            
-            // Apply colors immediately and repeatedly
-            setTimeout(() => forceColorfulLines(), 0);
-            setTimeout(() => forceColorfulLines(), 50);
-            setTimeout(() => forceColorfulLines(), 100);
-            setTimeout(() => forceColorfulLines(), 200);
-            setTimeout(() => forceColorfulLines(), 500);
-            setTimeout(() => forceColorfulLines(), 1000);
-            setTimeout(() => forceColorfulLines(), 2000);
-            
-            // Set up continuous monitoring
-            const colorInterval = setInterval(() => {
-              if (!mindmapRef.current || !mindmapChart.current) {
-                clearInterval(colorInterval);
-                return;
-              }
-              forceColorfulLines();
-            }, 1000);
-            
-            // Set up MutationObserver for real-time changes
-            const observer = new MutationObserver(() => {
-              setTimeout(forceColorfulLines, 10);
-            });
-            
-            if (mindmapRef.current) {
-              observer.observe(mindmapRef.current, {
-                childList: true,
-                subtree: true,
-                attributes: true,
-                attributeFilter: ['stroke', 'style', 'class']
-              });
-            }
+            mindmapChart.current.setOption(option);
             
             // Handle resize
             const handleResize = () => {
               if (mindmapChart.current && !mindmapChart.current.isDisposed()) {
                 mindmapChart.current.resize();
-                // Reapply colors after resize
-                setTimeout(forceColorfulLines, 100);
               }
             };
             
@@ -523,8 +305,6 @@ const DocumentSummarizerComponent: React.FC<DocumentSummarizerComponentProps> = 
             
             // Store cleanup function
             return () => {
-              clearInterval(colorInterval);
-              observer.disconnect();
               window.removeEventListener('resize', handleResize);
               if (mindmapChart.current && !mindmapChart.current.isDisposed()) {
                 try {
@@ -2665,109 +2445,10 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
             color: #c084fc !important;
           }
           
-          /* Enhanced Mindmap Styling - Force colorful lines and nodes */
-          .echarts-for-react svg path,
-          [class*="echarts"] svg path {
-            stroke-width: 4 !important;
-            stroke-linecap: round !important;
-            stroke-linejoin: round !important;
-            opacity: 0.9 !important;
-          }
-          
-          /* Force colorful strokes for mindmap connections */
-          .echarts-for-react svg path[stroke="#000000"],
-          .echarts-for-react svg path[stroke="black"],
-          .echarts-for-react svg path[stroke="#000"],
-          .echarts-for-react svg path[stroke="rgba(0,0,0,0.45)"],
-          .echarts-for-react svg line[stroke="#000000"],
-          .echarts-for-react svg line[stroke="black"],
-          .echarts-for-react svg line[stroke="#000"],
-          [class*="echarts"] svg path[stroke="#000000"],
-          [class*="echarts"] svg path[stroke="black"],
-          [class*="echarts"] svg path[stroke="#000"],
-          [class*="echarts"] svg line[stroke="#000000"],
-          [class*="echarts"] svg line[stroke="black"],
-          [class*="echarts"] svg line[stroke="#000"] {
-            stroke: #FF6B6B !important;
-            stroke-width: 4 !important;
-            opacity: 0.9 !important;
-          }
-          
-          /* Mindmap node styling enhancements */
-          .echarts-for-react svg circle,
-          [class*="echarts"] svg circle {
-            stroke-width: 3 !important;
-            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3)) !important;
-          }
-          
-          /* Mindmap text styling */
-          .echarts-for-react svg text,
-          [class*="echarts"] svg text {
-            font-family: 'Inter', system-ui, sans-serif !important;
-            font-weight: 600 !important;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
-          }
-          
-          /* Mindmap container styling */
+          /* Enhanced Mindmap Styling - Basic styling only */
           .echarts-for-react,
           [class*="echarts"] {
             background: transparent !important;
-          }
-          
-          /* Override any ECharts default black lines with colorful alternatives */
-          .echarts-for-react svg path:not([stroke]),
-          .echarts-for-react svg line:not([stroke]),
-          [class*="echarts"] svg path:not([stroke]),
-          [class*="echarts"] svg line:not([stroke]) {
-            stroke: #4ECDC4 !important;
-            stroke-width: 4 !important;
-            opacity: 0.9 !important;
-          }
-          
-          /* Additional color variations for different path elements */
-          .echarts-for-react svg path:nth-child(2n),
-          [class*="echarts"] svg path:nth-child(2n) {
-            stroke: #45B7D1 !important;
-          }
-          
-          .echarts-for-react svg path:nth-child(3n),
-          [class*="echarts"] svg path:nth-child(3n) {
-            stroke: #96CEB4 !important;
-          }
-          
-          .echarts-for-react svg path:nth-child(4n),
-          [class*="echarts"] svg path:nth-child(4n) {
-            stroke: #FFEAA7 !important;
-          }
-          
-          .echarts-for-react svg path:nth-child(5n),
-          [class*="echarts"] svg path:nth-child(5n) {
-            stroke: #DDA0DD !important;
-          }
-          
-          /* Mindmap animation enhancements */
-          .echarts-for-react svg path,
-          .echarts-for-react svg circle,
-          .echarts-for-react svg text,
-          [class*="echarts"] svg path,
-          [class*="echarts"] svg circle,
-          [class*="echarts"] svg text {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-          }
-          
-          /* Hover effects for mindmap elements */
-          .echarts-for-react svg path:hover,
-          [class*="echarts"] svg path:hover {
-            stroke-width: 6 !important;
-            opacity: 1 !important;
-            filter: drop-shadow(0 0 8px currentColor) !important;
-          }
-          
-          .echarts-for-react svg circle:hover,
-          [class*="echarts"] svg circle:hover {
-            stroke-width: 4 !important;
-            filter: drop-shadow(0 0 12px currentColor) !important;
-            transform: scale(1.1) !important;
           }
           
           /* Ensure mindmap takes full container space */
@@ -2777,25 +2458,22 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
             height: 100% !important;
           }
           
-          /* Force specific color cycling for paths */
-          .echarts-for-react svg g:nth-child(1) path { stroke: #FF6B6B !important; }
-          .echarts-for-react svg g:nth-child(2) path { stroke: #4ECDC4 !important; }
-          .echarts-for-react svg g:nth-child(3) path { stroke: #45B7D1 !important; }
-          .echarts-for-react svg g:nth-child(4) path { stroke: #96CEB4 !important; }
-          .echarts-for-react svg g:nth-child(5) path { stroke: #FFEAA7 !important; }
-          .echarts-for-react svg g:nth-child(6) path { stroke: #DDA0DD !important; }
-          .echarts-for-react svg g:nth-child(7) path { stroke: #98D8C8 !important; }
-          .echarts-for-react svg g:nth-child(8) path { stroke: #F7DC6F !important; }
+          /* Mindmap text styling */
+          .echarts-for-react svg text,
+          [class*="echarts"] svg text {
+            font-family: 'Inter', system-ui, sans-serif !important;
+            font-weight: 600 !important;
+          }
           
-          /* Apply same colors to any echarts container */
-          [class*="echarts"] svg g:nth-child(1) path { stroke: #FF6B6B !important; }
-          [class*="echarts"] svg g:nth-child(2) path { stroke: #4ECDC4 !important; }
-          [class*="echarts"] svg g:nth-child(3) path { stroke: #45B7D1 !important; }
-          [class*="echarts"] svg g:nth-child(4) path { stroke: #96CEB4 !important; }
-          [class*="echarts"] svg g:nth-child(5) path { stroke: #FFEAA7 !important; }
-          [class*="echarts"] svg g:nth-child(6) path { stroke: #DDA0DD !important; }
-          [class*="echarts"] svg g:nth-child(7) path { stroke: #98D8C8 !important; }
-          [class*="echarts"] svg g:nth-child(8) path { stroke: #F7DC6F !important; }
+          /* Smooth transitions for mindmap elements */
+          .echarts-for-react svg path,
+          .echarts-for-react svg circle,
+          .echarts-for-react svg text,
+          [class*="echarts"] svg path,
+          [class*="echarts"] svg circle,
+          [class*="echarts"] svg text {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          }
         `
       }} />
     </div>

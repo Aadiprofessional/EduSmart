@@ -47,6 +47,8 @@ import {
   FaClosedCaptioning
 } from 'react-icons/fa';
 import IconWrapper from '../components/IconWrapper';
+import NotificationModal from '../components/ui/NotificationModal';
+import DraggableModal from '../components/ui/DraggableModal';
 
 const API_BASE = 'https://edusmart-server.pages.dev/api';
 
@@ -128,6 +130,14 @@ interface FormattedSummary {
   conclusion: string;
 }
 
+// Notification interface
+interface NotificationState {
+  isOpen: boolean;
+  type: 'success' | 'error' | 'warning' | 'info';
+  title?: string;
+  message: string;
+}
+
 const CoursePlayer: React.FC = (): JSX.Element => {
   const { courseId, lectureId } = useParams();
   const navigate = useNavigate();
@@ -158,6 +168,13 @@ const CoursePlayer: React.FC = (): JSX.Element => {
   const [streamingText, setStreamingText] = useState('');
   const [showTranscript, setShowTranscript] = useState(false);
   
+  // Notification state
+  const [notification, setNotification] = useState<NotificationState>({
+    isOpen: false,
+    type: 'info',
+    message: ''
+  });
+  
   // Video player state
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -173,10 +190,20 @@ const CoursePlayer: React.FC = (): JSX.Element => {
   
   // AI and summary state
   const [formattedSummary, setFormattedSummary] = useState<FormattedSummary | null>(null);
-  const [showFullSummary, setShowFullSummary] = useState(false);
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
   const [aiInsights, setAiInsights] = useState<AIInsight[]>([]);
   const [quickQuestions, setQuickQuestions] = useState<QuickQuestion[]>([]);
-  
+
+  // Show notification helper function
+  const showNotification = (type: 'success' | 'error' | 'warning' | 'info', message: string, title?: string) => {
+    setNotification({
+      isOpen: true,
+      type,
+      message,
+      title
+    });
+  };
+
   // Auto-play functionality
   useEffect(() => {
     if (currentLecture?.lecture_type === 'video' && videoRef.current) {
@@ -1192,204 +1219,139 @@ Please provide a helpful, educational response that helps the student understand
 
   const renderSummarySidePanel = () => (
     <AnimatePresence>
-      {showFullSummary && (
-        <motion.div
-          initial={{ x: 400, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: 400, opacity: 0 }}
-          transition={{ type: "spring", damping: 25, stiffness: 200 }}
-          className="fixed top-0 right-0 h-full w-96 bg-gradient-to-br from-gray-900/95 via-gray-800/95 to-gray-900/95 backdrop-blur-xl border-l border-gray-700/50 shadow-2xl z-50 overflow-hidden"
+      {showSummaryModal && (
+        <DraggableModal
+          isOpen={showSummaryModal}
+          onClose={() => setShowSummaryModal(false)}
+          title="Lecture Summary"
+          initialWidth={500}
+          initialHeight={600}
+          initialX={window.innerWidth - 600}
+          initialY={100}
+          className="z-[60]"
         >
-          {/* Header */}
-          <div className="p-6 border-b border-gray-700/50 bg-gradient-to-r from-purple-600/20 via-pink-600/20 to-blue-600/20 backdrop-blur-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg">
-                  <IconWrapper icon={FaBrain} className="text-white" size={18} />
+          {formattedSummary ? (
+            <div className="p-4 space-y-4">
+              {/* Main Topic */}
+              <div className="bg-gradient-to-r from-blue-900/30 to-blue-800/30 rounded-xl p-4 border border-blue-500/20">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                    <IconWrapper icon={FaLightbulb} className="text-white" size={12} />
+                  </div>
+                  <h4 className="text-sm font-bold text-blue-400">Main Topic</h4>
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                    Lecture Summary
-                  </h3>
-                  <p className="text-xs text-gray-400 truncate max-w-40">
-                    {currentLecture?.title || 'Current Lecture'}
-                  </p>
-                </div>
+                <p className="text-gray-200 text-sm leading-relaxed">{formattedSummary.mainTopic}</p>
               </div>
-              <motion.button
-                onClick={() => setShowFullSummary(false)}
-                whileHover={{ scale: 1.1, rotate: 90 }}
-                whileTap={{ scale: 0.9 }}
-                className="p-2 text-gray-400 hover:text-white hover:bg-red-500/20 rounded-xl transition-all duration-300 border border-gray-600/50"
-              >
-                <IconWrapper icon={FaTimes} size={16} />
-              </motion.button>
+
+              {/* Key Concepts */}
+              {formattedSummary.keyConcepts && formattedSummary.keyConcepts.length > 0 && (
+                <div className="bg-gradient-to-r from-green-900/30 to-green-800/30 rounded-xl p-4 border border-green-500/20">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center">
+                      <IconWrapper icon={FaBrain} className="text-white" size={12} />
+                    </div>
+                    <h4 className="text-sm font-bold text-green-400">Key Concepts</h4>
+                  </div>
+                  <ul className="space-y-2">
+                    {formattedSummary.keyConcepts.map((concept, index) => (
+                      <li
+                        key={index}
+                        className="flex items-start gap-2 text-gray-200 text-sm"
+                      >
+                        <div className="w-1.5 h-1.5 bg-green-400 rounded-full mt-2 flex-shrink-0"></div>
+                        <span className="leading-relaxed">{concept}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Learning Objectives */}
+              {formattedSummary.learningObjectives && formattedSummary.learningObjectives.length > 0 && (
+                <div className="bg-gradient-to-r from-yellow-900/30 to-yellow-800/30 rounded-xl p-4 border border-yellow-500/20">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-6 h-6 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center">
+                      <IconWrapper icon={FaGraduationCap} className="text-white" size={12} />
+                    </div>
+                    <h4 className="text-sm font-bold text-yellow-400">Learning Objectives</h4>
+                  </div>
+                  <ul className="space-y-2">
+                    {formattedSummary.learningObjectives.map((objective, index) => (
+                      <li
+                        key={index}
+                        className="flex items-start gap-2 text-gray-200 text-sm"
+                      >
+                        <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></div>
+                        <span className="leading-relaxed">{objective}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Important Details */}
+              {formattedSummary.importantDetails && formattedSummary.importantDetails.length > 0 && (
+                <div className="bg-gradient-to-r from-pink-900/30 to-pink-800/30 rounded-xl p-4 border border-pink-500/20">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-6 h-6 bg-gradient-to-r from-pink-500 to-pink-600 rounded-lg flex items-center justify-center">
+                      <IconWrapper icon={FaQuestionCircle} className="text-white" size={12} />
+                    </div>
+                    <h4 className="text-sm font-bold text-pink-400">Important Details</h4>
+                  </div>
+                  <ul className="space-y-2">
+                    {formattedSummary.importantDetails.map((detail, index) => (
+                      <li
+                        key={index}
+                        className="flex items-start gap-2 text-gray-200 text-sm"
+                      >
+                        <div className="w-1.5 h-1.5 bg-pink-400 rounded-full mt-2 flex-shrink-0"></div>
+                        <span className="leading-relaxed">{detail}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Conclusion */}
+              <div className="bg-gradient-to-r from-indigo-900/30 to-indigo-800/30 rounded-xl p-4 border border-indigo-500/20">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-6 h-6 bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                    <IconWrapper icon={FaChartLine} className="text-white" size={12} />
+                  </div>
+                  <h4 className="text-sm font-bold text-indigo-400">Conclusion</h4>
+                </div>
+                <p className="text-gray-200 text-sm leading-relaxed">{formattedSummary.conclusion}</p>
+              </div>
             </div>
-          </div>
-
-          {/* Content */}
-          <div className="p-4 overflow-y-auto h-[calc(100%-100px)]">
-            {formattedSummary ? (
-              <div className="space-y-4">
-                {/* Main Topic */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                  className="bg-gradient-to-r from-blue-900/30 to-blue-800/30 rounded-xl p-4 border border-blue-500/20"
+          ) : (
+            <div className="p-4 text-center py-8">
+              <div className="bg-gradient-to-r from-gray-800/50 to-gray-700/50 rounded-xl p-6 border border-gray-600/30">
+                <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <IconWrapper icon={FaBrain} size={18} className="text-white" />
+                </div>
+                <h4 className="text-lg font-bold text-white mb-2">No Summary Available</h4>
+                <p className="text-gray-400 mb-4 text-sm leading-relaxed">
+                  This lecture doesn't have a summary yet. Would you like to generate one using AI?
+                </p>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    if (currentLecture?.summary) {
+                      formatAISummary(currentLecture.summary);
+                    }
+                  }}
+                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-300 font-medium shadow-lg text-sm"
                 >
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                      <IconWrapper icon={FaLightbulb} className="text-white" size={12} />
-                    </div>
-                    <h4 className="text-sm font-bold text-blue-400">Main Topic</h4>
+                  <div className="flex items-center gap-2">
+                    <IconWrapper icon={FaRobot} size={14} />
+                    Generate AI Summary
                   </div>
-                  <p className="text-gray-200 text-sm leading-relaxed">{formattedSummary.mainTopic}</p>
-                </motion.div>
-
-                {/* Key Concepts */}
-                {formattedSummary.keyConcepts.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="bg-gradient-to-r from-green-900/30 to-green-800/30 rounded-xl p-4 border border-green-500/20"
-                  >
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-                        <IconWrapper icon={FaBrain} className="text-white" size={12} />
-                      </div>
-                      <h4 className="text-sm font-bold text-green-400">Key Concepts</h4>
-                    </div>
-                    <ul className="space-y-2">
-                      {formattedSummary.keyConcepts.map((concept, index) => (
-                        <motion.li
-                          key={index}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.3 + index * 0.05 }}
-                          className="flex items-start gap-2 text-gray-200 text-sm"
-                        >
-                          <div className="w-1.5 h-1.5 bg-green-400 rounded-full mt-2 flex-shrink-0"></div>
-                          <span className="leading-relaxed">{concept}</span>
-                        </motion.li>
-                      ))}
-                    </ul>
-                  </motion.div>
-                )}
-
-                {/* Learning Objectives */}
-                {formattedSummary.learningObjectives.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                    className="bg-gradient-to-r from-yellow-900/30 to-yellow-800/30 rounded-xl p-4 border border-yellow-500/20"
-                  >
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-6 h-6 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center">
-                        <IconWrapper icon={FaGraduationCap} className="text-white" size={12} />
-                      </div>
-                      <h4 className="text-sm font-bold text-yellow-400">Learning Objectives</h4>
-                    </div>
-                    <ul className="space-y-2">
-                      {formattedSummary.learningObjectives.map((objective, index) => (
-                        <motion.li
-                          key={index}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.5 + index * 0.05 }}
-                          className="flex items-start gap-2 text-gray-200 text-sm"
-                        >
-                          <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></div>
-                          <span className="leading-relaxed">{objective}</span>
-                        </motion.li>
-                      ))}
-                    </ul>
-                  </motion.div>
-                )}
-
-                {/* Important Details */}
-                {formattedSummary.importantDetails.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.6 }}
-                    className="bg-gradient-to-r from-pink-900/30 to-pink-800/30 rounded-xl p-4 border border-pink-500/20"
-                  >
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-6 h-6 bg-gradient-to-r from-pink-500 to-pink-600 rounded-lg flex items-center justify-center">
-                        <IconWrapper icon={FaQuestionCircle} className="text-white" size={12} />
-                      </div>
-                      <h4 className="text-sm font-bold text-pink-400">Important Details</h4>
-                    </div>
-                    <ul className="space-y-2">
-                      {formattedSummary.importantDetails.map((detail, index) => (
-                        <motion.li
-                          key={index}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.7 + index * 0.05 }}
-                          className="flex items-start gap-2 text-gray-200 text-sm"
-                        >
-                          <div className="w-1.5 h-1.5 bg-pink-400 rounded-full mt-2 flex-shrink-0"></div>
-                          <span className="leading-relaxed">{detail}</span>
-                        </motion.li>
-                      ))}
-                    </ul>
-                  </motion.div>
-                )}
-
-                {/* Conclusion */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.8 }}
-                  className="bg-gradient-to-r from-indigo-900/30 to-indigo-800/30 rounded-xl p-4 border border-indigo-500/20"
-                >
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-6 h-6 bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                      <IconWrapper icon={FaChartLine} className="text-white" size={12} />
-                    </div>
-                    <h4 className="text-sm font-bold text-indigo-400">Conclusion</h4>
-                  </div>
-                  <p className="text-gray-200 text-sm leading-relaxed">{formattedSummary.conclusion}</p>
-                </motion.div>
+                </motion.button>
               </div>
-            ) : (
-              <div className="text-center py-8">
-                <motion.div
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className="bg-gradient-to-r from-gray-800/50 to-gray-700/50 rounded-xl p-6 border border-gray-600/30"
-                >
-                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <IconWrapper icon={FaBrain} size={18} className="text-white" />
-                  </div>
-                  <h4 className="text-lg font-bold text-white mb-2">No Summary Available</h4>
-                  <p className="text-gray-400 mb-4 text-sm leading-relaxed">
-                    This lecture doesn't have a summary yet. Would you like to generate one using AI?
-                  </p>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                      if (currentLecture?.summary) {
-                        formatAISummary(currentLecture.summary);
-                      }
-                    }}
-                    className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-300 font-medium shadow-lg text-sm"
-                  >
-                    <div className="flex items-center gap-2">
-                      <IconWrapper icon={FaRobot} size={14} />
-                      Generate AI Summary
-                    </div>
-                  </motion.button>
-                </motion.div>
-              </div>
-            )}
-          </div>
-        </motion.div>
+            </div>
+          )}
+        </DraggableModal>
       )}
     </AnimatePresence>
   );
@@ -1588,7 +1550,7 @@ Please provide a helpful, educational response that helps the student understand
                       </button>
 
                       <button
-                        onClick={() => setShowFullSummary(!showFullSummary)}
+                        onClick={() => setShowSummaryModal(true)}
                         className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all duration-200 backdrop-blur-sm font-medium text-sm flex items-center gap-2"
                       >
                         <IconWrapper icon={FaBrain} size={14} />
@@ -2017,10 +1979,11 @@ Please provide a helpful, educational response that helps the student understand
                       animate={{ opacity: 1, x: 0 }}
                       className="p-2 bg-gray-800/30 rounded-lg border border-gray-700/30 hover:border-yellow-500/30 transition-all duration-300 cursor-pointer group"
                       onClick={() => jumpToNoteTime(note.timestamp)}
+                      title={note.content} // Tooltip for full content
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs text-gray-300 truncate group-hover:text-white transition-colors">
+                          <p className="text-xs text-gray-300 group-hover:text-white transition-colors leading-relaxed line-clamp-2">
                             {note.content}
                           </p>
                           <div className="flex items-center gap-2 mt-1">
@@ -2287,117 +2250,87 @@ Please provide a helpful, educational response that helps the student understand
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="text-center bg-red-500/10 backdrop-blur-lg rounded-2xl p-8 border border-red-500/20"
+            className="bg-red-500/10 backdrop-blur-lg rounded-2xl p-8 border border-red-500/20 text-center max-w-md"
           >
-            <div className="text-red-400 text-6xl mb-4">⚠️</div>
-            <h2 className="text-2xl font-bold text-white mb-2">Error Loading Course</h2>
-            <p className="text-gray-400 mb-6">{error}</p>
-            <button
+            <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <IconWrapper icon={FaTimes} size={24} className="text-red-400" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">Error Loading Course</h3>
+            <p className="text-gray-400 mb-4">{error}</p>
+            <motion.button
               onClick={() => window.location.reload()}
-              className="px-6 py-3 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl hover:from-red-600 hover:to-pink-700 transition-all duration-300 font-medium shadow-lg"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-6 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors"
             >
-              Try Again
-            </button>
+              Retry
+            </motion.button>
           </motion.div>
         </div>
       ) : (
-        <div className="flex h-screen relative z-10 overflow-hidden">
+        <div className="flex h-screen relative z-10">
           {/* Sidebar */}
-          {showSidebar && (
-            <motion.div
-              initial={{ x: -400, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: -400, opacity: 0 }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="flex-shrink-0"
-            >
-              {renderCourseSidebar()}
-            </motion.div>
-          )}
+          {showSidebar && renderCourseSidebar()}
 
           {/* Main Content */}
           <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Enhanced Content Header */}
-            <motion.div 
-              initial={{ y: -50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              className="bg-gradient-to-r from-gray-800/80 via-gray-700/80 to-gray-800/80 backdrop-blur-xl border-b border-gray-600/50 p-6 shadow-2xl flex-shrink-0"
+            {/* Top Navigation Bar */}
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex-shrink-0 p-6 bg-gradient-to-r from-gray-900/90 via-gray-800/90 to-gray-900/90 backdrop-blur-xl border-b border-gray-700/50 shadow-lg"
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-6">
-                  {/* Back Button */}
-                  <motion.button
-                    onClick={() => navigate('/ai-courses')}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="p-3 text-gray-400 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-300 backdrop-blur-sm border border-gray-600/50"
-                  >
-                    <IconWrapper icon={FaChevronLeft} size={20} />
-                  </motion.button>
-
-                  {/* Sidebar Toggle */}
-                  <motion.button
-                    onClick={() => setShowSidebar(!showSidebar)}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="p-3 text-gray-400 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-300 backdrop-blur-sm border border-gray-600/50"
-                  >
-                    <IconWrapper icon={FaListUl} size={20} />
-                  </motion.button>
-                  
-                  {/* Course Navigation Breadcrumb */}
-                  <div className="flex items-center gap-3">
+                {/* Course Info */}
+                <div className="flex items-center gap-4">
+                  {!showSidebar && (
                     <motion.button
-                      onClick={() => navigate('/dashboard')}
+                      onClick={() => setShowSidebar(true)}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      className="flex items-center gap-2 px-4 py-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-300"
+                      className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-300"
                     >
-                      <IconWrapper icon={FaGraduationCap} size={16} />
-                      <span className="text-sm font-medium">Dashboard</span>
+                      <IconWrapper icon={FaChevronRight} size={16} />
                     </motion.button>
-                    <span className="text-gray-500">/</span>
+                  )}
+                  
+                  <div className="flex items-center gap-3">
+                    <motion.button
+                      onClick={() => navigate('/ai-courses')}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-300"
+                    >
+                      <IconWrapper icon={FaChevronLeft} size={16} />
+                    </motion.button>
+                    
                     {course && (
-                      <>
-                        <span className="text-sm text-blue-400 font-medium truncate max-w-48">
+                      <div>
+                        <h2 className="text-lg font-bold text-white">
                           {course.title}
-                        </span>
-                        <span className="text-gray-500">/</span>
-                      </>
-                    )}
-                    {currentLecture && (
-                      <span className="text-sm text-white font-medium truncate max-w-64">
-                        {currentLecture.title}
-                      </span>
+                        </h2>
+                        <p className="text-sm text-gray-400">
+                          {course.instructor_name} • {course.total_lectures} lectures
+                        </p>
+                      </div>
                     )}
                   </div>
-                </div>
-                
-                {/* Course Progress and Actions */}
-                <div className="flex items-center gap-4">
-                  {/* Overall Course Progress */}
+                  
+                  {/* Progress Bar */}
                   {course && sections.length > 0 && (
-                    <div className="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-xl border border-gray-600/30">
+                    <div className="hidden lg:flex items-center gap-3 ml-6">
                       <div className="flex items-center gap-2">
-                        <IconWrapper icon={FaChartLine} className="text-blue-400" size={16} />
-                        <span className="text-sm text-gray-300">Progress:</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-24 h-2 bg-gray-700 rounded-full overflow-hidden">
-                          {(() => {
-                            const totalLectures = sections.reduce((acc, section) => acc + section.course_lectures.length, 0);
-                            const completedLectures = lectureProgress.filter(p => p.completed).length;
-                            const progressPercentage = totalLectures > 0 ? Math.round((completedLectures / totalLectures) * 100) : 0;
-                            
-                            return (
-                              <>
-                                <div 
-                                  className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500"
-                                  style={{ width: `${progressPercentage}%` }}
-                                />
-                              </>
-                            );
-                          })()}
+                        <div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-500"
+                            style={{
+                              width: `${(() => {
+                                const totalLectures = sections.reduce((acc, section) => acc + section.course_lectures.length, 0);
+                                const completedLectures = lectureProgress.filter(p => p.completed).length;
+                                return totalLectures > 0 ? (completedLectures / totalLectures) * 100 : 0;
+                              })()}%`
+                            }}
+                          />
                         </div>
                         <span className="text-sm font-bold text-blue-400">
                           {(() => {
@@ -2532,12 +2465,12 @@ Please provide a helpful, educational response that helps the student understand
         </div>
       )}
 
-      {/* AI Assistant Floating Button */}
+      {/* AI Assistant Floating Button - Repositioned to bottom-right */}
       <motion.div
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 1, type: "spring", damping: 15 }}
-        className="fixed bottom-8 right-8 z-40"
+        className="fixed bottom-6 right-6 z-[80]"
       >
         <motion.button
           onClick={() => setShowAIChat(true)}
@@ -2555,40 +2488,40 @@ Please provide a helpful, educational response that helps the student understand
         </motion.button>
       </motion.div>
 
-      {/* AI Chat Modal */}
+      {/* AI Chat Modal - Reduced width and positioned bottom-right */}
       <AnimatePresence>
         {showAIChat && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] flex items-end justify-end p-6"
             onClick={() => setShowAIChat(false)}
           >
             <motion.div
-              initial={{ scale: 0.8, opacity: 0, y: 50 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.8, opacity: 0, y: 50 }}
+              initial={{ scale: 0.8, opacity: 0, x: 100, y: 100 }}
+              animate={{ scale: 1, opacity: 1, x: 0, y: 0 }}
+              exit={{ scale: 0.8, opacity: 0, x: 100, y: 100 }}
               transition={{ type: "spring", damping: 25 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-3xl shadow-2xl w-full max-w-2xl h-[700px] flex flex-col border border-gray-700/50 overflow-hidden"
+              className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-3xl shadow-2xl w-full max-w-md h-[600px] flex flex-col border border-gray-700/50 overflow-hidden"
             >
               {/* Enhanced Header */}
-              <div className="p-6 border-b border-gray-700/50 bg-gradient-to-r from-purple-600/20 via-pink-600/20 to-blue-600/20 backdrop-blur-sm">
+              <div className="p-4 border-b border-gray-700/50 bg-gradient-to-r from-purple-600/20 via-pink-600/20 to-blue-600/20 backdrop-blur-sm">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     <div className="relative">
-                      <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg">
-                        <IconWrapper icon={FaRobot} className="text-white" size={20} />
+                      <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg">
+                        <IconWrapper icon={FaRobot} className="text-white" size={16} />
                       </div>
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-gray-900 animate-pulse"></div>
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-gray-900 animate-pulse"></div>
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-white bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                        AI Learning Assistant
+                      <h3 className="text-lg font-bold text-white bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                        AI Assistant
                       </h3>
-                      <p className="text-sm text-gray-400">
-                        {currentLecture?.title ? `Discussing: ${currentLecture.title}` : 'Ask me anything about this course'}
+                      <p className="text-xs text-gray-400">
+                        {currentLecture?.title ? `Learning: ${currentLecture.title.substring(0, 20)}...` : 'Ask me anything'}
                       </p>
                     </div>
                   </div>
@@ -2598,37 +2531,35 @@ Please provide a helpful, educational response that helps the student understand
                     whileTap={{ scale: 0.9 }}
                     className="p-2 text-gray-400 hover:text-white hover:bg-red-500/20 rounded-xl transition-all duration-300 border border-gray-600/50"
                   >
-                    <IconWrapper icon={FaTimes} size={18} />
+                    <IconWrapper icon={FaTimes} size={16} />
                   </motion.button>
                 </div>
               </div>
               
               {/* Chat Content */}
-              <div className="flex-1 p-6 overflow-y-auto">
-                <div className="space-y-4">
+              <div className="flex-1 p-4 overflow-y-auto">
+                <div className="space-y-3">
                   {aiMessages.length === 0 ? (
-                    <div className="text-center py-8">
+                    <div className="text-center py-4">
                       <motion.div
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-2xl p-6 mb-6 border border-purple-500/20"
+                        className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-2xl p-4 mb-4 border border-purple-500/20"
                       >
-                        <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <IconWrapper icon={FaRobot} size={24} className="text-white" />
+                        <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                          <IconWrapper icon={FaRobot} size={18} className="text-white" />
                         </div>
-                        <h4 className="text-xl font-bold text-white mb-2">Welcome to AI Learning Assistant!</h4>
-                        <p className="text-gray-300 text-sm leading-relaxed">
-                          I'm here to help you understand concepts, answer questions, and provide insights about this course.
-                          {currentLecture && " I have access to the current lecture content to provide contextual answers."}
+                        <h4 className="text-lg font-bold text-white mb-2">AI Learning Assistant!</h4>
+                        <p className="text-gray-300 text-xs leading-relaxed">
+                          I'm here to help you understand this course better.
                         </p>
                       </motion.div>
                       
                       {/* Quick Action Buttons */}
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 gap-2">
                         {[
-                          { text: "Explain the main topic", icon: FaLightbulb },
-                          { text: "What are the key concepts?", icon: FaBrain },
-                          { text: "Give me examples", icon: FaQuestionCircle },
+                          { text: "Explain main topic", icon: FaLightbulb },
+                          { text: "Key concepts?", icon: FaBrain },
                           { text: "Quick summary", icon: FaListUl }
                         ].map((suggestion, index) => (
                           <motion.button
@@ -2642,7 +2573,7 @@ Please provide a helpful, educational response that helps the student understand
                             }}
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            className="p-4 bg-gradient-to-r from-gray-800/50 to-gray-700/50 text-gray-300 rounded-xl text-sm hover:from-gray-700/50 hover:to-gray-600/50 transition-all duration-300 border border-gray-600/30 hover:border-purple-500/30 backdrop-blur-sm"
+                            className="p-3 bg-gradient-to-r from-gray-800/50 to-gray-700/50 text-gray-300 rounded-xl text-sm hover:from-gray-700/50 hover:to-gray-600/50 transition-all duration-300 border border-gray-600/30 hover:border-purple-500/30 backdrop-blur-sm"
                           >
                             <div className="flex items-center gap-2">
                               <IconWrapper icon={suggestion.icon} size={14} className="text-purple-400" />
@@ -2659,14 +2590,14 @@ Please provide a helpful, educational response that helps the student understand
                           key={message.id}
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className={`flex gap-4 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                          className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
                         >
                           {message.type === 'assistant' && (
-                            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
-                              <IconWrapper icon={FaRobot} size={16} className="text-white" />
+                            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
+                              <IconWrapper icon={FaRobot} size={12} className="text-white" />
                             </div>
                           )}
-                          <div className={`max-w-[75%] p-4 rounded-2xl backdrop-blur-sm border ${
+                          <div className={`max-w-[75%] p-3 rounded-2xl backdrop-blur-sm border text-sm ${
                             message.type === 'user' 
                               ? 'bg-gradient-to-r from-blue-600/80 to-purple-600/80 text-white border-blue-500/30' 
                               : 'bg-gradient-to-r from-gray-800/80 to-gray-700/80 text-gray-200 border-gray-600/30'
@@ -2684,13 +2615,13 @@ Please provide a helpful, educational response that helps the student understand
                                 message.content
                               )}
                             </div>
-                            <p className="text-xs opacity-70 mt-2">
+                            <p className="text-xs opacity-70 mt-1">
                               {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
                           {message.type === 'user' && (
-                            <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                              <IconWrapper icon={FaUser} size={16} className="text-white" />
+                            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                              <IconWrapper icon={FaUser} size={12} className="text-white" />
                             </div>
                           )}
                         </motion.div>
@@ -2700,12 +2631,12 @@ Please provide a helpful, educational response that helps the student understand
                         <motion.div
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className="flex gap-4 justify-start"
+                          className="flex gap-3 justify-start"
                         >
-                          <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
-                            <IconWrapper icon={FaRobot} size={16} className="text-white" />
+                          <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
+                            <IconWrapper icon={FaRobot} size={12} className="text-white" />
                           </div>
-                          <div className="bg-gradient-to-r from-gray-800/80 to-gray-700/80 p-4 rounded-2xl backdrop-blur-sm border border-gray-600/30">
+                          <div className="bg-gradient-to-r from-gray-800/80 to-gray-700/80 p-3 rounded-2xl backdrop-blur-sm border border-gray-600/30">
                             <div className="flex items-center gap-2">
                               <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
                               <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
@@ -2721,15 +2652,15 @@ Please provide a helpful, educational response that helps the student understand
               </div>
               
               {/* Enhanced Input Area */}
-              <div className="p-6 border-t border-gray-700/50 bg-gradient-to-r from-gray-800/50 to-gray-700/50 backdrop-blur-sm">
-                <div className="flex gap-3">
+              <div className="p-4 border-t border-gray-700/50 bg-gradient-to-r from-gray-800/50 to-gray-700/50 backdrop-blur-sm">
+                <div className="flex gap-2">
                   <input
                     type="text"
-                    placeholder="Ask me anything about this lecture..."
+                    placeholder="Ask me anything..."
                     value={aiQuestion}
                     onChange={(e) => setAiQuestion(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && !isAiTyping && sendAIMessage(aiQuestion)}
-                    className="flex-1 px-4 py-3 bg-gray-900/50 border border-gray-600/50 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-300 backdrop-blur-sm"
+                    className="flex-1 px-3 py-2 bg-gray-900/50 border border-gray-600/50 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-300 backdrop-blur-sm text-sm"
                     disabled={isAiTyping}
                   />
                   <motion.button 
@@ -2737,9 +2668,9 @@ Please provide a helpful, educational response that helps the student understand
                     disabled={!aiQuestion.trim() || isAiTyping}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 font-medium shadow-lg disabled:hover:scale-100"
+                    className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 font-medium shadow-lg disabled:hover:scale-100"
                   >
-                    <IconWrapper icon={FaRocket} size={16} />
+                    <IconWrapper icon={FaRocket} size={14} />
                   </motion.button>
                 </div>
               </div>
@@ -2747,7 +2678,18 @@ Please provide a helpful, educational response that helps the student understand
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Summary Modal */}
       {renderSummarySidePanel()}
+
+      {/* NotificationModal */}
+      <NotificationModal
+        isOpen={notification.isOpen}
+        onClose={() => setNotification(prev => ({ ...prev, isOpen: false }))}
+        type={notification.type}
+        title={notification.title}
+        message={notification.message}
+      />
     </div>
   );
 };
