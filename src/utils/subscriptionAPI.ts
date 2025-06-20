@@ -1,18 +1,10 @@
 import { Session } from '@supabase/supabase-js';
-
-const BASE_URL = 'https://edusmart-server.pages.dev';
+import { API_BASE_URL, getDefaultHeaders } from '../config/api';
 
 // Helper function to make API calls with authentication
 const apiCall = async (method: string, endpoint: string, data: any = null, session?: Session | null) => {
   try {
-    const headers: any = {
-      'Content-Type': 'application/json'
-    };
-
-    // Add authorization header if session is provided
-    if (session?.access_token) {
-      headers['Authorization'] = `Bearer ${session.access_token}`;
-    }
+    const headers = getDefaultHeaders(!!session, session);
 
     // Debug logging for session
     console.log('Session debug info:', {
@@ -26,12 +18,12 @@ const apiCall = async (method: string, endpoint: string, data: any = null, sessi
 
     const config = {
       method,
-      url: `${BASE_URL}${endpoint}`,
+      url: `${API_BASE_URL}${endpoint}`,
       headers,
       ...(data && { data })
     };
 
-    console.log(`Making ${method} request to ${BASE_URL}${endpoint}`);
+    console.log(`Making ${method} request to ${API_BASE_URL}${endpoint}`);
     console.log('Request headers:', headers);
     console.log('Request data:', data);
     
@@ -55,7 +47,7 @@ const apiCall = async (method: string, endpoint: string, data: any = null, sessi
     console.error('Subscription API Call Error:', {
       method,
       endpoint,
-      url: `${BASE_URL}${endpoint}`,
+      url: `${API_BASE_URL}${endpoint}`,
       error: error.message,
       status: error.response?.status,
       data: error.response?.data

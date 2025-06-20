@@ -1,21 +1,19 @@
 import axios from 'axios';
-
-// Environment-aware base URL configuration
-const BASE_URL = 'https://edusmart-server.pages.dev'; // Force production URL for now
+import { API_BASE_URL } from '../config/api';
 
 // Helper function to make API calls
 const apiCall = async (method: string, endpoint: string, data: any = null) => {
   try {
     const config = {
       method,
-      url: `${BASE_URL}${endpoint}`,
+      url: `${API_BASE_URL}${endpoint}`,
       headers: {
         'Content-Type': 'application/json'
       },
       ...(data && { data })
     };
 
-    console.log(`Making ${method} request to ${BASE_URL}${endpoint}`);
+    console.log(`Making ${method} request to ${API_BASE_URL}${endpoint}`);
     
     const response = await axios(config);
     return { success: true, data: response.data };
@@ -23,7 +21,7 @@ const apiCall = async (method: string, endpoint: string, data: any = null) => {
     console.error('API Call Error:', {
       method,
       endpoint,
-      url: `${BASE_URL}${endpoint}`,
+      url: `${API_BASE_URL}${endpoint}`,
       error: error.message,
       status: error.response?.status,
       data: error.response?.data

@@ -9,6 +9,7 @@ import Footer from '../components/layout/Footer';
 import { FiEdit, FiDownload, FiShare2, FiSave, FiSettings, FiRotateCw, FiRefreshCw, FiCopy, FiTrash, FiBook, FiFileText, FiMail, FiClipboard } from 'react-icons/fi';
 import { AiOutlineFontSize, AiOutlineHighlight, AiOutlineAlignLeft, AiOutlineAlignCenter, AiOutlineAlignRight, AiOutlineBold, AiOutlineItalic, AiOutlineUnderline, AiOutlineOrderedList, AiOutlineUnorderedList, AiOutlineLink, AiOutlineRobot, AiOutlineBulb, AiOutlineHistory } from 'react-icons/ai';
 import IconComponent from '../components/ui/IconComponent';
+import { useNotification } from '../utils/NotificationContext';
 
 const ContentWriter: React.FC = () => {
   const navigate = useNavigate();
@@ -50,6 +51,7 @@ const ContentWriter: React.FC = () => {
   const [highlightedSections, setHighlightedSections] = useState<{start: number, end: number, original: string, updated: string}[]>([]);
   const [editStep, setEditStep] = useState<'analyzing' | 'searching' | 'updating'>('analyzing');
   const [showDownloadOptions, setShowDownloadOptions] = useState(false);
+  const { showSuccess, showError } = useNotification();
 
   // Animation variants
   const containerVariants = {
@@ -266,16 +268,11 @@ const ContentWriter: React.FC = () => {
 
   const handleShareContent = () => {
     let content = editedContent;
-    // Convert markdown to formatted text
+    // Convert markdown to formatted text for sharing
     content = content
       .replace(/\*\*(.*?)\*\*/g, '$1')
       .replace(/\*(.*?)\*/g, '$1')
-      .replace(/_(.*?)_/g, '$1')
-      .replace(/==(.*?)==/g, '$1')
-      .replace(/\n- (.*)/g, '• $1')
-      .replace(/\n\d+\. (.*)/g, '$1')
-      .replace(/#{1,6} (.*)/g, '$1')
-      .replace(/\n/g, '\n');
+      .replace(/_(.*?)_/g, '$1');
 
     if (navigator.share) {
       navigator.share({
@@ -285,7 +282,7 @@ const ContentWriter: React.FC = () => {
     } else {
       // Fallback for browsers that don't support Web Share API
       navigator.clipboard.writeText(content);
-      alert('Content copied to clipboard!');
+      showSuccess('Content copied to clipboard!');
     }
   };
 
@@ -441,7 +438,7 @@ Return the final, polished content.`
     } catch (error) {
       console.error('Error during AI editing:', error);
       // Show error message to user
-      alert('An error occurred while editing. Please try again in a few moments.');
+      showError('An error occurred while editing. Please try again in a few moments.');
     } finally {
       setIsEditing(false);
       setHighlightedSections([]);

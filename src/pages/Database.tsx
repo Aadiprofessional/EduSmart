@@ -8,7 +8,7 @@ import {
   FaTrophy, FaStar, FaUser, FaChevronDown, FaChevronUp,
   FaChartLine, FaCalendarAlt, FaPhoneAlt, FaEnvelope, FaExternalLinkAlt,
   FaThLarge, FaList, FaBuilding, FaFlag, FaBookmark, FaInfoCircle, FaCheckCircle,
-  FaPhone, FaBookOpen, FaAward, FaLightbulb, FaCheck, FaSortAmountDown
+  FaPhone, FaBookOpen, FaAward, FaLightbulb, FaCheck, FaSortAmountDown, FaCalculator
 } from 'react-icons/fa';
 import { HiOutlineAcademicCap, HiOutlineLocationMarker } from 'react-icons/hi';
 import { RiArrowDropDownLine, RiArrowDropUpLine } from 'react-icons/ri';
@@ -19,10 +19,53 @@ import IconComponent from '../components/ui/IconComponent';
 import MobileFilterPanel from '../components/ui/MobileFilterPanel';
 import { fadeIn, staggerContainer, slideIn } from '../utils/animations';
 import { useAuth } from '../utils/AuthContext';
+import { useResponseCheck, ResponseUpgradeModal } from '../utils/responseChecker';
 import { universityAPI } from '../utils/apiService';
 import { useLanguage } from '../utils/LanguageContext';
 import { userProfileAPI, UserProfile } from '../utils/userProfileAPI';
+import { useNotification } from '../utils/NotificationContext';
 import axios from 'axios';
+
+// Cost Estimation Interface
+interface CostEstimation {
+  universityName: string;
+  universityInfo: {
+    name: string;
+    country: string;
+    city: string;
+    logo: string;
+    ranking: number;
+    type: string;
+  };
+  tuitionFees: {
+    undergraduate: number;
+    graduate: number;
+  };
+  livingExpenses: {
+    housing: number;
+    food: number;
+    transportation: number;
+    personalExpenses: number;
+    healthInsurance: number;
+    booksSupplies: number;
+  };
+  visaFees: {
+    f1VisaFee: number;
+    sevisFee: number;
+  };
+  travelCosts: {
+    roundTripAirfare: number;
+  };
+  totalAnnualCost: number;
+  financialAidInfo: {
+    available: boolean;
+    scholarshipAvailable: boolean;
+    workStudyOptions: boolean;
+  };
+  budgetTips: string[];
+  visaRequirements: string[];
+  additionalNotes: string[];
+}
 
 interface University {
   id: string;
@@ -159,9 +202,12 @@ interface UniversityCardProps {
   onSelect: () => void;
   inCompareList: boolean;
   onToggleCompare: () => void;
+  onCostEstimation: (university: University) => void;
+  isLoadingCostEstimation?: boolean;
+  loadingCostEstimationId?: string;
 }
 
-const UniversityCard: React.FC<UniversityCardProps> = ({ university, onSelect, inCompareList, onToggleCompare }) => {
+const UniversityCard: React.FC<UniversityCardProps> = ({ university, onSelect, inCompareList, onToggleCompare, onCostEstimation, isLoadingCostEstimation, loadingCostEstimationId }) => {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -260,14 +306,34 @@ const UniversityCard: React.FC<UniversityCardProps> = ({ university, onSelect, i
           )}
         </div>
         
-        <motion.button
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
-          onClick={onSelect}
-          className={`w-full bg-primary hover:bg-primary-dark text-white ${isMobile ? 'py-1.5 text-xs' : 'py-2 text-sm'} rounded-lg transition-colors font-medium flex items-center justify-center`}
-        >
-          View Details
-        </motion.button>
+        <div className="space-y-2">
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={onSelect}
+            className={`w-full bg-primary hover:bg-primary-dark text-white ${isMobile ? 'py-1.5 text-xs' : 'py-2 text-sm'} rounded-lg transition-colors font-medium flex items-center justify-center`}
+          >
+            View Details
+          </motion.button>
+          
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onCostEstimation(university);
+            }}
+            disabled={isLoadingCostEstimation && loadingCostEstimationId === university.id}
+            className={`w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white ${isMobile ? 'py-1.5 text-xs' : 'py-2 text-sm'} rounded-lg transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+          >
+            {isLoadingCostEstimation && loadingCostEstimationId === university.id ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+            ) : (
+              <IconComponent icon={FaCalculator} className={`${isMobile ? 'text-xs' : 'text-sm'}`} />
+            )}
+            {isLoadingCostEstimation && loadingCostEstimationId === university.id ? 'Loading...' : 'Cost Calculator'}
+          </motion.button>
+        </div>
       </div>
     </motion.div>
   );
@@ -279,9 +345,12 @@ interface UniversityListItemProps {
   onSelect: () => void;
   inCompareList: boolean;
   onToggleCompare: () => void;
+  onCostEstimation: (university: University) => void;
+  isLoadingCostEstimation?: boolean;
+  loadingCostEstimationId?: string;
 }
 
-const UniversityListItem: React.FC<UniversityListItemProps> = ({ university, onSelect, inCompareList, onToggleCompare }) => {
+const UniversityListItem: React.FC<UniversityListItemProps> = ({ university, onSelect, inCompareList, onToggleCompare, onCostEstimation, isLoadingCostEstimation, loadingCostEstimationId }) => {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -337,7 +406,7 @@ const UniversityListItem: React.FC<UniversityListItemProps> = ({ university, onS
               </div>
             </div>
             
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -359,6 +428,24 @@ const UniversityListItem: React.FC<UniversityListItemProps> = ({ university, onS
                 }`}
               >
                 {inCompareList ? 'Saved' : 'Compare'}
+              </motion.button>
+              
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCostEstimation(university);
+                }}
+                disabled={isLoadingCostEstimation && loadingCostEstimationId === university.id}
+                className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white py-1 px-2 rounded text-xs font-medium flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoadingCostEstimation && loadingCostEstimationId === university.id ? (
+                  <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
+                ) : (
+                  <IconComponent icon={FaCalculator} className="text-xs" />
+                )}
+                {isLoadingCostEstimation && loadingCostEstimationId === university.id ? 'Loading' : 'Cost'}
               </motion.button>
             </div>
           </div>
@@ -452,6 +539,24 @@ const UniversityListItem: React.FC<UniversityListItemProps> = ({ university, onS
                   <IconComponent icon={FaBookmark} className="mr-1" /> Add to Compare
                 </>
               )}
+            </motion.button>
+            
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onCostEstimation(university);
+              }}
+              disabled={isLoadingCostEstimation && loadingCostEstimationId === university.id}
+              className={`w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white ${isMobile ? 'py-1.5 text-xs' : 'py-2 text-sm'} rounded-lg transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              {isLoadingCostEstimation && loadingCostEstimationId === university.id ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+              ) : (
+                <IconComponent icon={FaCalculator} className={`${isMobile ? 'text-xs' : 'text-sm'}`} />
+              )}
+              {isLoadingCostEstimation && loadingCostEstimationId === university.id ? 'Loading...' : 'Cost Calculator'}
             </motion.button>
             
             <motion.a
@@ -1367,9 +1472,22 @@ const CompareUniversitiesModal: React.FC<CompareUniversitiesModalProps> = ({
 const Database: React.FC = () => {
   const { t } = useLanguage();
   const { user, session } = useAuth();
+  const { showError, showWarning, showInfo } = useNotification();
+  const { checkAndUseResponse } = useResponseCheck();
   const [searchQuery, setSearchQuery] = useState('');
   const [universities, setUniversities] = useState<University[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Response checking and upgrade modal state
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState('');
+  
+  // Cost estimation state
+  const [showCostEstimationModal, setShowCostEstimationModal] = useState(false);
+  const [costEstimationData, setCostEstimationData] = useState<CostEstimation | null>(null);
+  const [isLoadingCostEstimation, setIsLoadingCostEstimation] = useState(false);
+  const [selectedUniversityForCost, setSelectedUniversityForCost] = useState<University | null>(null);
+
   const [filters, setFilters] = useState({
     search: '',
     country: '',
@@ -1548,7 +1666,7 @@ const Database: React.FC = () => {
         
         // Simplify the API call - get all universities first, then filter on frontend
         console.log('Fetching universities...');
-        const response = await universityAPI.getAll(1, 100);
+        const response = await universityAPI.getAll(1, 300); // Changed from 100 to 300 to fetch all universities
         
         console.log('API Response:', response);
         
@@ -1920,11 +2038,11 @@ const Database: React.FC = () => {
   // AI Analysis function
   const handleAIAnalysis = async () => {
     if (!user) {
-      alert('Please log in to get AI analysis');
+      showWarning('Please log in to get AI analysis');
       return;
     }
 
-    // Check profile completion first
+    // Check profile completion first (before checking responses)
     if (userProfileCompletion < 50) {
       setShowProfileModal(true);
       return;
@@ -2114,9 +2232,26 @@ Analyze their academic strength, competitiveness, budget considerations, recomme
 
       setAiAnalysisData(analysis);
       setShowAIAnalysis(true);
+
+      // Only deduct response after successful completion
+      const responseResult = await checkAndUseResponse({
+        responseType: 'university_ai_analysis',
+        queryData: { 
+          analysisType: 'profile_analysis',
+          userProfileCompletion: userProfileCompletion
+        },
+        responsesUsed: 1
+      });
+
+      if (!responseResult.canProceed) {
+        // If response deduction fails, show upgrade modal but keep the results
+        setUpgradeMessage(responseResult.message || 'Unable to process AI analysis request');
+        setShowUpgradeModal(true);
+      }
+
     } catch (error) {
       console.error('Error in AI Analysis:', error);
-      alert('Error performing AI Analysis. Please try again.');
+      showError('Error performing AI Analysis. Please try again.');
     } finally {
       setIsLoadingAI(false);
     }
@@ -2125,11 +2260,11 @@ Analyze their academic strength, competitiveness, budget considerations, recomme
   // Get Recommendations function
   const handleGetRecommendations = async () => {
     if (!user) {
-      alert('Please log in to get recommendations');
+      showWarning('Please log in to get recommendations');
       return;
     }
 
-    // Check profile completion first
+    // Check profile completion first (before checking responses)
     if (userProfileCompletion < 50) {
       setShowProfileModal(true);
       return;
@@ -2355,6 +2490,24 @@ Consider factors like academic fit, budget compatibility, location preferences, 
       }
 
       setShowRecommendations(true);
+
+      // Only deduct response after successful completion
+      const responseResult = await checkAndUseResponse({
+        responseType: 'university_recommendations',
+        queryData: { 
+          recommendationType: 'ai_recommendations',
+          userProfileCompletion: userProfileCompletion,
+          universityCount: universities.length
+        },
+        responsesUsed: 1
+      });
+
+      if (!responseResult.canProceed) {
+        // If response deduction fails, show upgrade modal but keep the results
+        setUpgradeMessage(responseResult.message || 'Unable to process recommendations request');
+        setShowUpgradeModal(true);
+      }
+
     } catch (error) {
       console.error('Error getting recommendations:', error);
       // Fall back to algorithm-based recommendations
@@ -2381,7 +2534,7 @@ Consider factors like academic fit, budget compatibility, location preferences, 
         }
       } catch (fallbackError) {
         console.error('Fallback recommendation error:', fallbackError);
-        alert('Unable to generate recommendations. Please try again later.');
+        showError('Unable to generate recommendations. Please try again later.');
       }
     } finally {
       setIsLoadingAI(false);
@@ -2816,6 +2969,264 @@ Return format: <recommendation><university id="X"/></recommendation>`;
     // Auto-generate recommendation if none exists and compare list is empty or has no AI recommendation
     if (compareList.length === 0 || !compareList.some(uni => uni.id === (recommendedUniversities.length > 0 ? recommendedUniversities[0].id : undefined))) {
       await autoGenerateRecommendation();
+    }
+  };
+
+  // Cost Estimation function
+  const handleCostEstimation = async (university: University) => {
+    if (!user) {
+      showWarning('Please log in to access Cost Calculator');
+      return;
+    }
+
+    // Check Pro access before opening modal (without deducting responses)
+    const responseResult = await checkAndUseResponse({
+      responseType: 'university_cost_estimation',
+      queryData: { 
+        universityId: university.id,
+        universityName: university.name,
+        country: university.country,
+        tuitionFee: university.tuition_fee
+      },
+      responsesUsed: 0 // Don't deduct yet, just check access
+    });
+
+    if (!responseResult.canProceed) {
+      setUpgradeMessage(responseResult.message || 'Upgrade to Pro to access Cost Calculator');
+      setShowUpgradeModal(true);
+      return;
+    }
+
+    // Open modal immediately with loading state
+    setSelectedUniversityForCost(university);
+    setIsLoadingCostEstimation(true);
+    setShowCostEstimationModal(true);
+
+    try {
+      // Prepare data for AI cost estimation
+      const costPrompt = `Please provide a detailed cost estimation for studying at ${university.name} in ${university.city}, ${university.country}. 
+
+University Information:
+- Name: ${university.name}
+- Location: ${university.city}, ${university.country}
+- Type: ${university.type}
+- Tuition Fee: ${university.tuition_fee ? `$${university.tuition_fee}` : 'Contact for details'}
+
+Please provide a comprehensive cost breakdown in XML format:
+
+<cost_estimation>
+  <university_info>
+    <name>${university.name}</name>
+    <country>${university.country}</country>
+    <city>${university.city}</city>
+    <ranking>${university.ranking || 'N/A'}</ranking>
+    <type>${university.type || 'University'}</type>
+  </university_info>
+  
+  <tuition_fees>
+    <undergraduate>57986</undergraduate>
+    <graduate>62000</graduate>
+  </tuition_fees>
+  
+  <living_expenses>
+    <housing>30000</housing>
+    <food>9000</food>
+    <transportation>1200</transportation>
+    <personal_expenses>5000</personal_expenses>
+    <health_insurance>3200</health_insurance>
+    <books_supplies>2000</books_supplies>
+  </living_expenses>
+  
+  <visa_fees>
+    <f1_visa_fee>185</f1_visa_fee>
+    <sevis_fee>350</sevis_fee>
+  </visa_fees>
+  
+  <travel_costs>
+    <round_trip_airfare>2000</round_trip_airfare>
+  </travel_costs>
+  
+  <total_annual_cost>110000</total_annual_cost>
+  
+  <financial_aid>
+    <available>true</available>
+    <scholarship_available>true</scholarship_available>
+    <work_study_options>true</work_study_options>
+  </financial_aid>
+  
+  <budget_tips>
+    <tip>Opt for shared housing or on-campus dorms</tip>
+    <tip>Cook meals instead of buying full meal plans</tip>
+    <tip>Use public transit or bike-sharing</tip>
+    <tip>Buy used textbooks or rent them</tip>
+    <tip>Look for student discounts on software and services</tip>
+  </budget_tips>
+  
+  <visa_requirements>
+    <requirement>Provide proof of funds covering at least the first year</requirement>
+    <requirement>Bank statements showing sufficient balance</requirement>
+    <requirement>Sponsor affidavit if applicable</requirement>
+  </visa_requirements>
+  
+  <additional_notes>
+    <note>Costs may vary based on lifestyle choices and program requirements</note>
+    <note>Financial aid options are available for international students</note>
+    <note>Work-study programs can help offset living expenses</note>
+    <note>All figures are estimates and subject to change</note>
+  </additional_notes>
+</cost_estimation>
+
+Please provide realistic cost estimates based on the university's location and typical expenses for international students. Include all major cost categories and helpful tips for budget management.`;
+
+      // Call the AI API for cost estimation
+      const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer sk-80beadf6603b4832981d0d65896b1ae0',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: "qvq-max",
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: costPrompt
+                }
+              ]
+            }
+          ],
+          stream: true
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`AI API error: ${response.status}`);
+      }
+
+      // Handle streaming response
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body reader available');
+      }
+
+      let aiContent = '';
+      let isAnswering = false;
+      
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = new TextDecoder().decode(value);
+          const lines = chunk.split('\n').filter(line => line.trim() !== '');
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+              
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta) {
+                  const delta = parsed.choices[0].delta;
+                  
+                  // Skip reasoning content, only collect the final answer
+                  if (delta.reasoning_content) {
+                    continue;
+                  } else if (delta.content) {
+                    if (!isAnswering && delta.content.trim() !== '') {
+                      isAnswering = true;
+                    }
+                    if (isAnswering) {
+                      aiContent += delta.content;
+                    }
+                  }
+                }
+              } catch (parseError) {
+                continue;
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+
+      // Parse XML response
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(aiContent, 'text/xml');
+      
+      // Extract cost data from XML
+      const costEstimation: CostEstimation = {
+        universityName: university.name,
+        universityInfo: {
+          name: university.name,
+          country: university.country,
+          city: university.city,
+          logo: university.logo || getDefaultLogo(),
+          ranking: university.ranking || 0,
+          type: university.type || 'University'
+        },
+        tuitionFees: {
+          undergraduate: parseInt(xmlDoc.querySelector('tuition_fees undergraduate')?.textContent || university.tuition_fee?.toString() || '50000'),
+          graduate: parseInt(xmlDoc.querySelector('tuition_fees graduate')?.textContent || (university.tuition_fee_graduate || university.tuition_fee * 1.1)?.toString() || '55000')
+        },
+        livingExpenses: {
+          housing: parseInt(xmlDoc.querySelector('living_expenses housing')?.textContent || '25000'),
+          food: parseInt(xmlDoc.querySelector('living_expenses food')?.textContent || '8000'),
+          transportation: parseInt(xmlDoc.querySelector('living_expenses transportation')?.textContent || '1200'),
+          personalExpenses: parseInt(xmlDoc.querySelector('living_expenses personal_expenses')?.textContent || '4000'),
+          healthInsurance: parseInt(xmlDoc.querySelector('living_expenses health_insurance')?.textContent || '3000'),
+          booksSupplies: parseInt(xmlDoc.querySelector('living_expenses books_supplies')?.textContent || '2000')
+        },
+        visaFees: {
+          f1VisaFee: parseInt(xmlDoc.querySelector('visa_fees f1_visa_fee')?.textContent || '185'),
+          sevisFee: parseInt(xmlDoc.querySelector('visa_fees sevis_fee')?.textContent || '350')
+        },
+        travelCosts: {
+          roundTripAirfare: parseInt(xmlDoc.querySelector('travel_costs round_trip_airfare')?.textContent || '2000')
+        },
+        totalAnnualCost: parseInt(xmlDoc.querySelector('total_annual_cost')?.textContent || '95000'),
+        financialAidInfo: {
+          available: xmlDoc.querySelector('financial_aid available')?.textContent === 'true',
+          scholarshipAvailable: xmlDoc.querySelector('financial_aid scholarship_available')?.textContent === 'true',
+          workStudyOptions: xmlDoc.querySelector('financial_aid work_study_options')?.textContent === 'true'
+        },
+        budgetTips: Array.from(xmlDoc.querySelectorAll('budget_tips tip')).map(el => el.textContent || ''),
+        visaRequirements: Array.from(xmlDoc.querySelectorAll('visa_requirements requirement')).map(el => el.textContent || ''),
+        additionalNotes: Array.from(xmlDoc.querySelectorAll('additional_notes note')).map(el => el.textContent || '')
+      };
+
+      setCostEstimationData(costEstimation);
+
+      // Only deduct response after successful completion
+      const responseResult = await checkAndUseResponse({
+        responseType: 'university_cost_estimation',
+        queryData: { 
+          universityId: university.id,
+          universityName: university.name,
+          country: university.country,
+          tuitionFee: university.tuition_fee
+        },
+        responsesUsed: 1
+      });
+
+      if (!responseResult.canProceed) {
+        // If response deduction fails, show upgrade modal but keep the results
+        setUpgradeMessage(responseResult.message || 'Upgrade to Pro to access Cost Calculator');
+        setShowUpgradeModal(true);
+      }
+
+    } catch (error) {
+      console.error('Error in Cost Estimation:', error);
+      showError('Error performing cost estimation. Please try again.');
+      setShowCostEstimationModal(false);
+    } finally {
+      setIsLoadingCostEstimation(false);
+      setSelectedUniversityForCost(null);
     }
   };
 
@@ -3454,6 +3865,9 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                               }}
                               inCompareList={compareList.some(u => u.id === university.id)}
                               onToggleCompare={() => toggleCompare(university)}
+                              onCostEstimation={handleCostEstimation}
+                              isLoadingCostEstimation={isLoadingCostEstimation}
+                              loadingCostEstimationId={selectedUniversityForCost?.id}
                             />
                           ) : (
                             <UniversityListItem 
@@ -3465,6 +3879,9 @@ Return format: <recommendation><university id="X"/></recommendation>`;
                               }}
                               inCompareList={compareList.some(u => u.id === university.id)}
                               onToggleCompare={() => toggleCompare(university)}
+                              onCostEstimation={handleCostEstimation}
+                              isLoadingCostEstimation={isLoadingCostEstimation}
+                              loadingCostEstimationId={selectedUniversityForCost?.id}
                             />
                           )
                         ))}
@@ -4401,6 +4818,254 @@ Return format: <recommendation><university id="X"/></recommendation>`;
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Response Upgrade Modal */}
+      <ResponseUpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        message={upgradeMessage}
+      />
+
+      {/* Cost Estimation Modal */}
+      {showCostEstimationModal && costEstimationData && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div 
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden"
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            transition={{ duration: 0.3 }}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-emerald-500 to-green-600 text-white p-4 sm:p-6">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center">
+                  <IconComponent icon={FaCalculator} className="mr-2 sm:mr-3 text-xl sm:text-2xl" />
+                  <div>
+                    <h2 className="text-lg sm:text-2xl font-bold">Cost Calculator</h2>
+                    <p className="text-emerald-100 text-sm sm:text-base">
+                      Detailed cost estimation for {costEstimationData.universityName}
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowCostEstimationModal(false)}
+                  className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                >
+                  <IconComponent icon={FaTimes} className="h-5 w-5 sm:h-6 sm:w-6" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-8rem)]">
+              {isLoadingCostEstimation ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <IconComponent icon={FaSpinner} className="animate-spin text-4xl text-emerald-500 mb-4" />
+                    <p className="text-gray-600">Calculating detailed cost estimation...</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* University Info Header */}
+                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 sm:p-6">
+                    <div className="flex items-center">
+                      <img 
+                        src={costEstimationData.universityInfo.logo} 
+                        alt={`${costEstimationData.universityInfo.name} logo`}
+                        className="h-16 w-16 object-contain mr-4"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = getDefaultLogo();
+                        }}
+                      />
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-800">{costEstimationData.universityInfo.name}</h3>
+                        <p className="text-gray-600">{costEstimationData.universityInfo.city}, {costEstimationData.universityInfo.country}</p>
+                        <div className="flex items-center mt-1">
+                          <span className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full font-medium mr-2">
+                            Rank #{costEstimationData.universityInfo.ranking}
+                          </span>
+                          <span className="text-gray-500 text-sm">{costEstimationData.universityInfo.type}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cost Breakdown Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                    {/* Tuition Fees */}
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 sm:p-6">
+                      <h4 className="text-lg font-bold text-blue-800 mb-4 flex items-center">
+                        <IconComponent icon={FaGraduationCap} className="mr-2" /> Tuition Fees
+                      </h4>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-blue-700">Undergraduate:</span>
+                          <span className="font-semibold text-blue-800">${costEstimationData.tuitionFees.undergraduate.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-blue-700">Graduate:</span>
+                          <span className="font-semibold text-blue-800">${costEstimationData.tuitionFees.graduate.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Living Expenses */}
+                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 sm:p-6">
+                      <h4 className="text-lg font-bold text-purple-800 mb-4 flex items-center">
+                        <IconComponent icon={FaBuilding} className="mr-2" /> Living Expenses
+                      </h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-purple-700">Housing:</span>
+                          <span className="font-semibold text-purple-800">${costEstimationData.livingExpenses.housing.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-purple-700">Food:</span>
+                          <span className="font-semibold text-purple-800">${costEstimationData.livingExpenses.food.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-purple-700">Transportation:</span>
+                          <span className="font-semibold text-purple-800">${costEstimationData.livingExpenses.transportation.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-purple-700">Personal:</span>
+                          <span className="font-semibold text-purple-800">${costEstimationData.livingExpenses.personalExpenses.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-purple-700">Health Insurance:</span>
+                          <span className="font-semibold text-purple-800">${costEstimationData.livingExpenses.healthInsurance.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-purple-700">Books & Supplies:</span>
+                          <span className="font-semibold text-purple-800">${costEstimationData.livingExpenses.booksSupplies.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Visa & Travel Costs */}
+                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 sm:p-6">
+                      <h4 className="text-lg font-bold text-orange-800 mb-4 flex items-center">
+                        <IconComponent icon={FaGlobe} className="mr-2" /> Visa & Travel
+                      </h4>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-orange-700">F-1 Visa Fee:</span>
+                          <span className="font-semibold text-orange-800">${costEstimationData.visaFees.f1VisaFee}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-orange-700">SEVIS Fee:</span>
+                          <span className="font-semibold text-orange-800">${costEstimationData.visaFees.sevisFee}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-orange-700">Round Trip Airfare:</span>
+                          <span className="font-semibold text-orange-800">${costEstimationData.travelCosts.roundTripAirfare.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Total Annual Cost */}
+                  <div className="bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl p-6">
+                    <div className="text-center">
+                      <h3 className="text-2xl font-bold mb-2">Total Estimated Annual Cost</h3>
+                      <div className="text-4xl font-bold mb-2">${costEstimationData.totalAnnualCost.toLocaleString()}</div>
+                      <p className="text-emerald-100">*Costs may vary based on lifestyle and program requirements</p>
+                    </div>
+                  </div>
+
+                  {/* Financial Aid Info */}
+                  <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl p-4 sm:p-6">
+                    <h4 className="text-lg font-bold text-indigo-800 mb-4 flex items-center">
+                      <IconComponent icon={FaDollarSign} className="mr-2" /> Financial Aid Information
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="text-center">
+                        <div className={`text-2xl mb-2 ${costEstimationData.financialAidInfo.available ? 'text-green-600' : 'text-red-500'}`}>
+                          <IconComponent icon={costEstimationData.financialAidInfo.available ? FaCheckCircle : FaTimes} />
+                        </div>
+                        <p className="text-sm text-indigo-700">Financial Aid Available</p>
+                      </div>
+                      <div className="text-center">
+                        <div className={`text-2xl mb-2 ${costEstimationData.financialAidInfo.scholarshipAvailable ? 'text-green-600' : 'text-red-500'}`}>
+                          <IconComponent icon={costEstimationData.financialAidInfo.scholarshipAvailable ? FaCheckCircle : FaTimes} />
+                        </div>
+                        <p className="text-sm text-indigo-700">Scholarships Available</p>
+                      </div>
+                      <div className="text-center">
+                        <div className={`text-2xl mb-2 ${costEstimationData.financialAidInfo.workStudyOptions ? 'text-green-600' : 'text-red-500'}`}>
+                          <IconComponent icon={costEstimationData.financialAidInfo.workStudyOptions ? FaCheckCircle : FaTimes} />
+                        </div>
+                        <p className="text-sm text-indigo-700">Work-Study Options</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Budget Tips */}
+                  {costEstimationData.budgetTips.length > 0 && (
+                    <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-4 sm:p-6">
+                      <h4 className="text-lg font-bold text-yellow-800 mb-4 flex items-center">
+                        <IconComponent icon={FaLightbulb} className="mr-2" /> Budget Tips
+                      </h4>
+                      <ul className="space-y-2">
+                        {costEstimationData.budgetTips.map((tip, index) => (
+                          <li key={index} className="flex items-start">
+                            <IconComponent icon={FaCheck} className="text-yellow-600 mr-2 mt-1 flex-shrink-0" />
+                            <span className="text-yellow-800">{tip}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Visa Requirements */}
+                  {costEstimationData.visaRequirements.length > 0 && (
+                    <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-4 sm:p-6">
+                      <h4 className="text-lg font-bold text-red-800 mb-4 flex items-center">
+                        <IconComponent icon={FaFlag} className="mr-2" /> Visa Requirements
+                      </h4>
+                      <ul className="space-y-2">
+                        {costEstimationData.visaRequirements.map((requirement, index) => (
+                          <li key={index} className="flex items-start">
+                            <IconComponent icon={FaInfoCircle} className="text-red-600 mr-2 mt-1 flex-shrink-0" />
+                            <span className="text-red-800">{requirement}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Additional Notes */}
+                  {costEstimationData.additionalNotes.length > 0 && (
+                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 sm:p-6">
+                      <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <IconComponent icon={FaInfoCircle} className="mr-2" /> Important Notes
+                      </h4>
+                      <ul className="space-y-2">
+                        {costEstimationData.additionalNotes.map((note, index) => (
+                          <li key={index} className="flex items-start">
+                            <span className="text-gray-600 mr-2">•</span>
+                            <span className="text-gray-700">{note}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Disclaimer */}
+                  <div className="bg-gradient-to-r from-gray-100 to-gray-200 rounded-xl p-4 text-center">
+                    <p className="text-gray-600 text-sm">
+                      <strong>Disclaimer:</strong> All cost estimates are AI-generated and may vary based on individual circumstances, 
+                      program requirements, lifestyle choices, and current exchange rates. Please verify with the university for the most accurate information.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };

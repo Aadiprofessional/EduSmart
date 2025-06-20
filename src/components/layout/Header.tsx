@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { AiOutlineHome, AiOutlineDatabase, AiOutlineTrophy, AiOutlineRobot, AiOutlineBook, AiOutlineRead, AiOutlineUser, AiOutlineBulb, AiOutlineMenu, AiOutlineClose, AiOutlineEdit, AiOutlineCrown } from 'react-icons/ai';
+import { FaClipboardList } from 'react-icons/fa';
 import IconComponent from '../ui/IconComponent';
 import LanguageSelector from '../ui/LanguageSelector';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -46,6 +47,7 @@ const Header: React.FC = () => {
     '/profile',
     '/subscription',
     '/dashboard',
+    '/application-tracker',
  
     
   
@@ -265,6 +267,17 @@ const Header: React.FC = () => {
         >
           <IconComponent icon={AiOutlineUser} className="h-4 w-4 mr-3" />
           Profile
+        </Link>
+        <Link
+          to="/application-tracker"
+          className="flex items-center px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200"
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent event bubbling
+            setIsUserMenuOpen(false);
+          }}
+        >
+          <IconComponent icon={FaClipboardList} className="h-4 w-4 mr-3" />
+          Application Tracker
         </Link>
         {isProUser && (
           <Link
@@ -575,6 +588,15 @@ const Header: React.FC = () => {
                       >
                         <IconComponent icon={AiOutlineUser} className="h-5 w-5 mr-3" />
                         Profile
+                      </Link>
+                      
+                      <Link
+                        to="/application-tracker"
+                        className="flex items-center px-3 sm:px-4 py-2.5 sm:py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <IconComponent icon={FaClipboardList} className="h-5 w-5 mr-3" />
+                        Application Tracker
                       </Link>
                       
                       {isProUser && (

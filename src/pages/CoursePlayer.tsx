@@ -49,8 +49,15 @@ import {
 import IconWrapper from '../components/IconWrapper';
 import NotificationModal from '../components/ui/NotificationModal';
 import DraggableModal from '../components/ui/DraggableModal';
+import AIAssistantModal from '../components/ui/AIAssistantModal';
+import { API_BASE_URL } from '../config/api';
+import { API_BASE, API_V2_BASE } from '../config/api';
 
-const API_BASE = 'https://edusmart-server.pages.dev/api';
+// Use API_V2_BASE for enhanced course functionality
+const API_COURSE_BASE = API_V2_BASE;
+
+// Remove the local API_BASE declaration
+// const API_BASE = `${API_BASE_URL}/api`;
 
 // Simple ID generator
 const generateId = () => Date.now().toString() + Math.random().toString(36).substr(2, 9);
@@ -460,6 +467,77 @@ Lecture content: ${lectureContent.substring(0, 1000)}...`
       if (currentLecture.summary) {
         context += `\nLecture Summary: ${currentLecture.summary}`;
       }
+      if (currentLecture.article_content) {
+        context += `\nLecture Content: ${currentLecture.article_content.substring(0, 1000)}...`;
+      }
+
+      // Determine response format based on question type
+      let systemPrompt = `You are an expert educational AI assistant helping students understand lecture content. 
+
+Format your responses using markdown with clear structure:
+- Use **bold** for key concepts
+- Use *italics* for emphasis  
+- Use bullet points for lists
+- Use numbered lists for steps/procedures
+- Use > blockquotes for important notes
+- Use ### for section headings
+
+Provide clear, helpful, and educational responses that encourage learning.`;
+
+      // Customize prompt based on question keywords
+      if (message.toLowerCase().includes('summarize') || message.toLowerCase().includes('summary')) {
+        systemPrompt += `\n\nFor summaries, structure your response as:
+### 📚 Lecture Summary
+**Main Topic:** [brief description]
+
+**Key Concepts:**
+- Concept 1: explanation
+- Concept 2: explanation
+
+**Important Points:**
+- Point 1
+- Point 2
+
+**Learning Objectives:**
+- What students should understand
+- What students should be able to do
+
+> **Quick Tip:** [helpful study tip or real-world application]`;
+      } else if (message.toLowerCase().includes('concept') || message.toLowerCase().includes('explain')) {
+        systemPrompt += `\n\nFor concept explanations, structure your response as:
+### 🧠 Concept Explanation
+**Definition:** [clear definition]
+
+**Key Points:**
+- Important aspect 1
+- Important aspect 2
+
+**Example:** [practical example or analogy]
+
+**Why It Matters:** [relevance and applications]
+
+> **Study Tip:** [how to remember or apply this concept]`;
+      } else if (message.toLowerCase().includes('question') || message.toLowerCase().includes('quiz') || message.toLowerCase().includes('practice')) {
+        systemPrompt += `\n\nFor practice questions, structure your response as:
+### 📝 Practice Questions
+
+**Multiple Choice:**
+1. Question text
+   - A) Option A
+   - B) Option B
+   - C) Option C ✓
+   - D) Option D
+
+**Short Answer:**
+1. Question text
+   *Answer: Brief explanation*
+
+**Discussion Questions:**
+- Thought-provoking question 1
+- Thought-provoking question 2
+
+> **Study Strategy:** [tips for using these questions effectively]`;
+      }
 
       const requestPayload = {
         model: "qwen-vl-max",
@@ -469,7 +547,7 @@ Lecture content: ${lectureContent.substring(0, 1000)}...`
             content: [
               {
                 type: "text", 
-                text: "You are an expert educational AI assistant helping students understand lecture content. Provide clear, helpful, and educational responses. Use markdown formatting when appropriate and be encouraging and supportive."
+                text: systemPrompt
               }
             ]
           },
@@ -482,7 +560,7 @@ Lecture content: ${lectureContent.substring(0, 1000)}...`
 
 Student Question: ${message}
 
-Please provide a helpful, educational response that helps the student understand the concept better. Use examples when appropriate and encourage further learning.`
+Please provide a helpful, well-structured educational response using the markdown formatting guidelines. Make it engaging and supportive for the student's learning journey.`
               }
             ]
           }
@@ -560,7 +638,7 @@ Please provide a helpful, educational response that helps the student understand
       // Update with error message
       setAiMessages(prev => prev.map(msg => 
         msg.id === assistantMessage.id 
-          ? { ...msg, content: 'Sorry, I encountered an error. Please try again.', isStreaming: false }
+          ? { ...msg, content: `### ❌ Error\n\nSorry, I encountered an error while processing your request. Please try again.\n\n> **Tip:** Make sure your question is clear and specific for the best results!`, isStreaming: false }
           : msg
       ));
     } finally {
@@ -635,7 +713,7 @@ Please provide a helpful, educational response that helps the student understand
       console.log('Retry count:', retryCount);
       
       // Fetch course details and sections
-      const sectionsUrl = `${API_BASE}/courses/${courseId}/sections?uid=${user?.id}`;
+      const sectionsUrl = `${API_COURSE_BASE}/courses/${courseId}/sections?uid=${user?.id}`;
       console.log('Fetching from:', sectionsUrl);
       
       const response = await fetch(sectionsUrl);
@@ -651,7 +729,7 @@ Please provide a helpful, educational response that helps the student understand
         if (response.status === 403 && retryCount < 2) {
           console.log('403 error, checking enrollment status...');
           
-          const enrollmentCheckUrl = `${API_BASE}/courses/${courseId}/enrollment/${user?.id}`;
+          const enrollmentCheckUrl = `${API_COURSE_BASE}/courses/${courseId}/enrollment/${user?.id}`;
           const enrollmentResponse = await fetch(enrollmentCheckUrl);
           const enrollmentData = await enrollmentResponse.json();
           
@@ -736,7 +814,7 @@ Please provide a helpful, educational response that helps the student understand
     if (!user?.id) return;
 
     try {
-      const response = await fetch(`${API_BASE}/courses/${courseId}/progress`, {
+      const response = await fetch(`${API_COURSE_BASE}/courses/${courseId}/progress`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -2488,196 +2566,19 @@ Please provide a helpful, educational response that helps the student understand
         </motion.button>
       </motion.div>
 
-      {/* AI Chat Modal - Reduced width and positioned bottom-right */}
-      <AnimatePresence>
-        {showAIChat && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] flex items-end justify-end p-6"
-            onClick={() => setShowAIChat(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0, x: 100, y: 100 }}
-              animate={{ scale: 1, opacity: 1, x: 0, y: 0 }}
-              exit={{ scale: 0.8, opacity: 0, x: 100, y: 100 }}
-              transition={{ type: "spring", damping: 25 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-3xl shadow-2xl w-full max-w-md h-[600px] flex flex-col border border-gray-700/50 overflow-hidden"
-            >
-              {/* Enhanced Header */}
-              <div className="p-4 border-b border-gray-700/50 bg-gradient-to-r from-purple-600/20 via-pink-600/20 to-blue-600/20 backdrop-blur-sm">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="relative">
-                      <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg">
-                        <IconWrapper icon={FaRobot} className="text-white" size={16} />
-                      </div>
-                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-gray-900 animate-pulse"></div>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-white bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                        AI Assistant
-                      </h3>
-                      <p className="text-xs text-gray-400">
-                        {currentLecture?.title ? `Learning: ${currentLecture.title.substring(0, 20)}...` : 'Ask me anything'}
-                      </p>
-                    </div>
-                  </div>
-                  <motion.button
-                    onClick={() => setShowAIChat(false)}
-                    whileHover={{ scale: 1.1, rotate: 90 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="p-2 text-gray-400 hover:text-white hover:bg-red-500/20 rounded-xl transition-all duration-300 border border-gray-600/50"
-                  >
-                    <IconWrapper icon={FaTimes} size={16} />
-                  </motion.button>
-                </div>
-              </div>
-              
-              {/* Chat Content */}
-              <div className="flex-1 p-4 overflow-y-auto">
-                <div className="space-y-3">
-                  {aiMessages.length === 0 ? (
-                    <div className="text-center py-4">
-                      <motion.div
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-2xl p-4 mb-4 border border-purple-500/20"
-                      >
-                        <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                          <IconWrapper icon={FaRobot} size={18} className="text-white" />
-                        </div>
-                        <h4 className="text-lg font-bold text-white mb-2">AI Learning Assistant!</h4>
-                        <p className="text-gray-300 text-xs leading-relaxed">
-                          I'm here to help you understand this course better.
-                        </p>
-                      </motion.div>
-                      
-                      {/* Quick Action Buttons */}
-                      <div className="grid grid-cols-1 gap-2">
-                        {[
-                          { text: "Explain main topic", icon: FaLightbulb },
-                          { text: "Key concepts?", icon: FaBrain },
-                          { text: "Quick summary", icon: FaListUl }
-                        ].map((suggestion, index) => (
-                          <motion.button
-                            key={index}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.1 }}
-                            onClick={() => {
-                              setAiQuestion(suggestion.text);
-                              sendAIMessage(suggestion.text);
-                            }}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            className="p-3 bg-gradient-to-r from-gray-800/50 to-gray-700/50 text-gray-300 rounded-xl text-sm hover:from-gray-700/50 hover:to-gray-600/50 transition-all duration-300 border border-gray-600/30 hover:border-purple-500/30 backdrop-blur-sm"
-                          >
-                            <div className="flex items-center gap-2">
-                              <IconWrapper icon={suggestion.icon} size={14} className="text-purple-400" />
-                              <span>{suggestion.text}</span>
-                            </div>
-                          </motion.button>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      {aiMessages.map((message) => (
-                        <motion.div
-                          key={message.id}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                        >
-                          {message.type === 'assistant' && (
-                            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
-                              <IconWrapper icon={FaRobot} size={12} className="text-white" />
-                            </div>
-                          )}
-                          <div className={`max-w-[75%] p-3 rounded-2xl backdrop-blur-sm border text-sm ${
-                            message.type === 'user' 
-                              ? 'bg-gradient-to-r from-blue-600/80 to-purple-600/80 text-white border-blue-500/30' 
-                              : 'bg-gradient-to-r from-gray-800/80 to-gray-700/80 text-gray-200 border-gray-600/30'
-                          }`}>
-                            <div className="text-sm whitespace-pre-wrap leading-relaxed">
-                              {message.type === 'assistant' ? (
-                                <ReactMarkdown
-                                  components={markdownComponents}
-                                  remarkPlugins={[remarkMath, remarkGfm]}
-                                  rehypePlugins={[rehypeKatex]}
-                                >
-                                  {message.content}
-                                </ReactMarkdown>
-                              ) : (
-                                message.content
-                              )}
-                            </div>
-                            <p className="text-xs opacity-70 mt-1">
-                              {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </p>
-                          </div>
-                          {message.type === 'user' && (
-                            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                              <IconWrapper icon={FaUser} size={12} className="text-white" />
-                            </div>
-                          )}
-                        </motion.div>
-                      ))}
-                      
-                      {isAiTyping && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="flex gap-3 justify-start"
-                        >
-                          <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
-                            <IconWrapper icon={FaRobot} size={12} className="text-white" />
-                          </div>
-                          <div className="bg-gradient-to-r from-gray-800/80 to-gray-700/80 p-3 rounded-2xl backdrop-blur-sm border border-gray-600/30">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
-                              <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                              <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                              <span className="text-gray-400 text-sm ml-2">AI is thinking...</span>
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-              
-              {/* Enhanced Input Area */}
-              <div className="p-4 border-t border-gray-700/50 bg-gradient-to-r from-gray-800/50 to-gray-700/50 backdrop-blur-sm">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Ask me anything..."
-                    value={aiQuestion}
-                    onChange={(e) => setAiQuestion(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && !isAiTyping && sendAIMessage(aiQuestion)}
-                    className="flex-1 px-3 py-2 bg-gray-900/50 border border-gray-600/50 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-300 backdrop-blur-sm text-sm"
-                    disabled={isAiTyping}
-                  />
-                  <motion.button 
-                    onClick={() => sendAIMessage(aiQuestion)}
-                    disabled={!aiQuestion.trim() || isAiTyping}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 font-medium shadow-lg disabled:hover:scale-100"
-                  >
-                    <IconWrapper icon={FaRocket} size={14} />
-                  </motion.button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* AI Assistant Modal - Draggable */}
+      <AIAssistantModal
+        isOpen={showAIChat}
+        onClose={() => setShowAIChat(false)}
+        currentLecture={currentLecture}
+        messages={aiMessages}
+        onSendMessage={sendAIMessage}
+        isTyping={isAiTyping}
+        question={aiQuestion}
+        onQuestionChange={setAiQuestion}
+        initialX={window.innerWidth - 450}
+        initialY={100}
+      />
 
       {/* Summary Modal */}
       {renderSummarySidePanel()}

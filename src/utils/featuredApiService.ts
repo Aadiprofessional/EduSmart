@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-
-const API_BASE_URL = 'http://edusmart-server.pages.dev/api';
+import { API_BASE_URL } from '../config/api';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -72,7 +71,7 @@ interface Scholarship {
 export const featuredApiService = {
   async getFeaturedData(): Promise<ApiResponse<FeaturedData>> {
     try {
-      const response = await fetch(`${API_BASE_URL}/featured`);
+      const response = await fetch(`${API_BASE_URL}/api/featured`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

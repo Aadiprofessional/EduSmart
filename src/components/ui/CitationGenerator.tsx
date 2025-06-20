@@ -4,6 +4,7 @@ import { AiOutlineBook, AiOutlineGlobal, AiOutlineFileText, AiOutlineUser, AiOut
 import { FiBookOpen, FiGlobe, FiFile, FiUser, FiCalendar, FiLink, FiCopy, FiPlus, FiTrash2, FiDownload, FiUpload, FiEdit3 } from 'react-icons/fi';
 import IconComponent from './IconComponent';
 import { useResponseCheck, ResponseUpgradeModal } from '../../utils/responseChecker';
+import { useNotification } from '../../utils/NotificationContext';
 
 interface Citation {
   id: string;
@@ -66,6 +67,7 @@ const CitationGenerator: React.FC<CitationGeneratorProps> = ({ className = '' })
   const { checkAndUseResponse } = useResponseCheck();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState('');
+  const { showError, showWarning, showSuccess } = useNotification();
 
   const citationTypes = [
     { value: 'book', label: 'Book', icon: FiBookOpen },
@@ -166,7 +168,7 @@ const CitationGenerator: React.FC<CitationGeneratorProps> = ({ className = '' })
   // Generate citation from URL using AI
   const generateCitationFromURL = async () => {
     if (!urlInput.trim()) {
-      alert('Please enter a URL');
+      showWarning('Please enter a URL');
       return;
     }
 
@@ -232,58 +234,53 @@ const CitationGenerator: React.FC<CitationGeneratorProps> = ({ className = '' })
         } else {
           citationData = JSON.parse(content);
         }
+
+        // Update current citation with extracted data
+        setCurrentCitation(prev => ({
+          ...prev,
+          title: citationData.title || '',
+          author: citationData.author || '',
+          year: citationData.year || new Date().getFullYear().toString(),
+          publisher: citationData.publisher || '',
+          type: (citationData.type as Citation['type']) || 'website',
+          url: urlInput,
+          accessDate: new Date().toLocaleDateString()
+        }));
+
+        setUrlInput('');
+        showSuccess('Citation information extracted successfully!');
       } catch (parseError) {
-        console.error('Failed to parse JSON:', parseError);
-        throw new Error('Failed to parse citation data');
+        console.error('Error parsing citation data:', parseError);
+        showError('Failed to extract citation information. Please try again or enter manually.');
       }
-
-      // Update current citation with extracted data
-      setCurrentCitation(prev => ({
-        ...prev,
-        title: citationData.title || '',
-        author: citationData.author || '',
-        year: citationData.year || new Date().getFullYear().toString(),
-        publisher: citationData.publisher || '',
-        type: citationData.type as Citation['type'] || 'website',
-        url: urlInput,
-        accessDate: new Date().toLocaleDateString()
-      }));
-
-      setUrlInput('');
-      alert('Citation information extracted successfully!');
     } catch (error) {
       console.error('Error generating citation from URL:', error);
-      alert('Failed to extract citation information. Please try again or enter manually.');
+      showError('Failed to extract citation information. Please try again or enter manually.');
     } finally {
       setIsGenerating(false);
     }
   };
 
-  // Handle file upload for citation generation
+  // Handle file upload for citation extraction
   const handleFileUpload = async (file: File) => {
     try {
       setIsUploading(true);
       
-      // For demonstration, we'll generate a citation based on the file name and type
+      // Simple file processing - in a real app, you'd extract metadata
       const fileName = file.name;
       const fileType = file.type;
       
-      let citationType: Citation['type'] = 'book';
-      if (fileType.includes('pdf')) citationType = 'journal';
-      if (fileType.includes('image')) citationType = 'website';
-      
+      // Set basic citation info from file
       setCurrentCitation(prev => ({
         ...prev,
-        title: fileName.replace(/\.[^/.]+$/, ''), // Remove file extension
-        type: citationType,
-        year: new Date().getFullYear().toString(),
-        accessDate: new Date().toLocaleDateString()
+        title: fileName.replace(/\.[^/.]+$/, ""), // Remove file extension
+        type: fileType.includes('pdf') ? 'journal' : 'book'
       }));
-
-      alert('File uploaded successfully! Please complete the citation details.');
+      
+      showSuccess('File uploaded successfully! Please complete the citation details.');
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert('Failed to upload file. Please try again.');
+      showError('Failed to upload file. Please try again.');
     } finally {
       setIsUploading(false);
       setUploadedFile(null);
@@ -303,7 +300,7 @@ const CitationGenerator: React.FC<CitationGeneratorProps> = ({ className = '' })
 
   const addCitation = () => {
     if (!currentCitation.title || !currentCitation.author) {
-      alert('Please fill in at least the title and author fields');
+      showWarning('Please fill in at least the title and author fields');
       return;
     }
 
@@ -353,13 +350,13 @@ const CitationGenerator: React.FC<CitationGeneratorProps> = ({ className = '' })
 
   const copyCitation = (citation: string) => {
     navigator.clipboard.writeText(citation);
-    alert('Citation copied to clipboard!');
+    showSuccess('Citation copied to clipboard!');
   };
 
   const copyAllCitations = () => {
     const allCitations = citations.map(c => c.formattedCitation).join('\n\n');
     navigator.clipboard.writeText(allCitations);
-    alert('All citations copied to clipboard!');
+    showSuccess('All citations copied to clipboard!');
   };
 
   const exportCitations = () => {

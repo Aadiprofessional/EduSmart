@@ -150,8 +150,8 @@ const Hero3D: React.FC = () => {
               transform: `translate(${-mousePosition.x * 5}px, ${-mousePosition.y * 5}px)`
             }}
           >
-            <span className="hidden sm:inline">Explore Features</span>
-            <span className="sm:hidden">Explore</span>
+            <span className="hidden sm:inline">About Us</span>
+            <span className="sm:hidden">About</span>
           </motion.button>
         </motion.div>
 

@@ -8,6 +8,7 @@ import { AiOutlineFontSize, AiOutlineHighlight, AiOutlineAlignLeft, AiOutlineAli
 import { BsQuote } from 'react-icons/bs';
 import IconComponent from './IconComponent';
 import { useResponseCheck, ResponseUpgradeModal } from '../../utils/responseChecker';
+import { useNotification } from '../../utils/NotificationContext';
 
 // Import markdown and math libraries
 import ReactMarkdown from 'react-markdown';
@@ -140,6 +141,7 @@ const ContentWriterComponent: React.FC = () => {
   const { checkAndUseResponse } = useResponseCheck();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState('');
+  const { showSuccess } = useNotification();
   
   // Calculate total pages based on content length
   const calculateTotalPages = () => {
@@ -723,7 +725,7 @@ Create professional, academic-quality content that meets the request requirement
     } else {
       // Fallback for browsers that don't support Web Share API
       navigator.clipboard.writeText(content);
-      alert('Content copied to clipboard!');
+      showSuccess('Content copied to clipboard!');
     }
   };
 

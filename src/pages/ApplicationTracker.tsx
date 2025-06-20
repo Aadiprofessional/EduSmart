@@ -1,32 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaEdit, FaTrash, FaEye, FaCalendarAlt, FaUniversity, FaGraduationCap, FaCheckCircle, FaClock, FaExclamationTriangle, FaSpinner, FaSearch, FaFilter, FaTimes, FaSort, FaSortAmountUp, FaSortAmountDown, FaCheck } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaEye, FaCalendarAlt, FaUniversity, FaGraduationCap, FaCheckCircle, FaClock, FaExclamationTriangle, FaSpinner, FaSearch, FaFilter, FaTimes, FaSort, FaSortAmountUp, FaSortAmountDown, FaCheck, FaBell, FaBellSlash, FaClipboardList } from 'react-icons/fa';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import PageHeader from '../components/ui/PageHeader';
 import IconComponent from '../components/ui/IconComponent';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../utils/LanguageContext';
-
-interface Application {
-  id: number;
-  university: string;
-  program: string;
-  country: string;
-  deadline: string;
-  status: 'planning' | 'in-progress' | 'submitted' | 'interview' | 'accepted' | 'rejected' | 'waitlisted';
-  notes?: string;
-  tasks: ApplicationTask[];
-}
-
-interface ApplicationTask {
-  id: number;
-  task: string;
-  completed: boolean;
-}
+import { useNotification } from '../utils/NotificationContext';
+import { useAppData, Application, ApplicationTask } from '../utils/AppDataContext';
 
 const ApplicationTracker: React.FC = () => {
   const { t } = useLanguage();
-  const [applications, setApplications] = useState<Application[]>([]);
+  const { showWarning, showConfirmation } = useNotification();
+  const { 
+    applications, 
+    addApplication, 
+    updateApplication, 
+    deleteApplication,
+    toggleTaskReminder,
+    setReminder
+  } = useAppData();
+
   const [isAddingApplication, setIsAddingApplication] = useState(false);
   const [isEditingApplication, setIsEditingApplication] = useState<number | null>(null);
   const [newApplication, setNewApplication] = useState<Partial<Application>>({
@@ -42,62 +36,24 @@ const ApplicationTracker: React.FC = () => {
   const [sortBy, setSortBy] = useState<string>('deadline');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [newTask, setNewTask] = useState('');
-
-  // Sample applications for demo
-  useEffect(() => {
-    const sampleApplications: Application[] = [
-      {
-        id: 1,
-        university: 'Stanford University',
-        program: 'MS in Computer Science',
-        country: 'USA',
-        deadline: '2025-12-01',
-        status: 'in-progress',
-        notes: 'Need to complete Statement of Purpose and get recommendation letters',
-        tasks: [
-          { id: 1, task: 'Request transcript', completed: true },
-          { id: 2, task: 'Ask for recommendation letters', completed: true },
-          { id: 3, task: 'Write Statement of Purpose', completed: false },
-          { id: 4, task: 'Prepare resume', completed: false }
-        ]
-      },
-      {
-        id: 2,
-        university: 'MIT',
-        program: 'PhD in Artificial Intelligence',
-        country: 'USA',
-        deadline: '2025-12-15',
-        status: 'planning',
-        notes: 'Need to contact potential advisors',
-        tasks: [
-          { id: 1, task: 'Research faculty members', completed: false },
-          { id: 2, task: 'Email potential advisors', completed: false },
-          { id: 3, task: 'Prepare research proposal', completed: false }
-        ]
-      },
-      {
-        id: 3,
-        university: 'University of Cambridge',
-        program: 'MPhil in Machine Learning',
-        country: 'UK',
-        deadline: '2025-11-15',
-        status: 'submitted',
-        notes: 'Application submitted on October 20th. Waiting for response.',
-        tasks: [
-          { id: 1, task: 'Submit application', completed: true },
-          { id: 2, task: 'Pay application fee', completed: true },
-          { id: 3, task: 'Send supporting documents', completed: true }
-        ]
-      }
-    ];
-    
-    setApplications(sampleApplications);
-  }, []);
+  const [reminderModal, setReminderModal] = useState<{
+    isOpen: boolean;
+    taskId: string | number;
+    isApplication: boolean;
+    type: 'application' | 'task';
+  }>({
+    isOpen: false,
+    taskId: '',
+    isApplication: false,
+    type: 'application'
+  });
+  const [reminderDate, setReminderDate] = useState('');
+  const [reminderTime, setReminderTime] = useState('');
 
   // Add new application
   const handleAddApplication = () => {
     if (!newApplication.university || !newApplication.program || !newApplication.deadline) {
-      alert(t('applicationTracker.requiredFields'));
+      showWarning(t('applicationTracker.requiredFields') || 'Please fill in all required fields');
       return;
     }
     
@@ -112,7 +68,7 @@ const ApplicationTracker: React.FC = () => {
       tasks: newApplication.tasks || []
     };
     
-    setApplications([...applications, application]);
+    addApplication(application);
     setNewApplication({
       university: '',
       program: '',
@@ -130,27 +86,11 @@ const ApplicationTracker: React.FC = () => {
     if (isEditingApplication === null) return;
     
     if (!newApplication.university || !newApplication.program || !newApplication.deadline) {
-      alert(t('applicationTracker.requiredFields'));
+      showWarning(t('applicationTracker.requiredFields') || 'Please fill in all required fields');
       return;
     }
     
-    const updatedApplications = applications.map(app => {
-      if (app.id === isEditingApplication) {
-        return {
-          ...app,
-          university: newApplication.university || app.university,
-          program: newApplication.program || app.program,
-          country: newApplication.country || app.country,
-          deadline: newApplication.deadline || app.deadline,
-          status: newApplication.status as 'planning' | 'in-progress' | 'submitted' | 'interview' | 'accepted' | 'rejected' | 'waitlisted' || app.status,
-          notes: newApplication.notes || app.notes,
-          tasks: newApplication.tasks || app.tasks
-        };
-      }
-      return app;
-    });
-    
-    setApplications(updatedApplications);
+    updateApplication(isEditingApplication, newApplication);
     setIsEditingApplication(null);
     setNewApplication({
       university: '',
@@ -179,56 +119,83 @@ const ApplicationTracker: React.FC = () => {
 
   // Delete application
   const handleDeleteApplication = (id: number) => {
-    if (window.confirm(t('applicationTracker.confirmDelete'))) {
-      setApplications(applications.filter(app => app.id !== id));
-    }
+    showConfirmation({
+      message: t('applicationTracker.confirmDelete') || 'Are you sure you want to delete this application?',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      type: 'danger',
+      onConfirm: () => {
+        deleteApplication(id);
+      }
+    });
   };
 
   // Toggle task completion
   const toggleTaskCompletion = (appId: number, taskId: number) => {
-    const updatedApplications = applications.map(app => {
-      if (app.id === appId) {
-        const updatedTasks = app.tasks.map(task => {
-          if (task.id === taskId) {
-            return { ...task, completed: !task.completed };
-          }
-          return task;
-        });
-        return { ...app, tasks: updatedTasks };
+    const app = applications.find(a => a.id === appId);
+    if (!app) return;
+
+    const updatedTasks = app.tasks.map(task => {
+      if (task.id === taskId) {
+        return { ...task, completed: !task.completed };
       }
-      return app;
+      return task;
     });
-    
-    setApplications(updatedApplications);
+
+    updateApplication(appId, { tasks: updatedTasks });
   };
 
   // Add task to application
   const addTask = (appId: number) => {
     if (!newTask.trim()) return;
     
-    const updatedApplications = applications.map(app => {
-      if (app.id === appId) {
-        const newTaskId = app.tasks.length > 0 ? Math.max(...app.tasks.map(t => t.id)) + 1 : 1;
-        const updatedTasks = [...app.tasks, { id: newTaskId, task: newTask, completed: false }];
-        return { ...app, tasks: updatedTasks };
-      }
-      return app;
-    });
+    const app = applications.find(a => a.id === appId);
+    if (!app) return;
+
+    const newTaskId = app.tasks.length > 0 ? Math.max(...app.tasks.map(t => t.id)) + 1 : 1;
+    const updatedTasks = [...app.tasks, { id: newTaskId, task: newTask, completed: false }];
     
-    setApplications(updatedApplications);
+    updateApplication(appId, { tasks: updatedTasks });
     setNewTask('');
   };
 
   // Update application status
   const updateApplicationStatus = (appId: number, newStatus: Application['status']) => {
-    const updatedApplications = applications.map(app => {
-      if (app.id === appId) {
-        return { ...app, status: newStatus };
-      }
-      return app;
+    updateApplication(appId, { status: newStatus });
+  };
+
+  // Handle reminder modal
+  const openReminderModal = (taskId: string | number, isApplication: boolean, type: 'application' | 'task') => {
+    setReminderModal({
+      isOpen: true,
+      taskId,
+      isApplication,
+      type
     });
-    
-    setApplications(updatedApplications);
+    setReminderDate('');
+    setReminderTime('');
+  };
+
+  const closeReminderModal = () => {
+    setReminderModal({
+      isOpen: false,
+      taskId: '',
+      isApplication: false,
+      type: 'application'
+    });
+    setReminderDate('');
+    setReminderTime('');
+  };
+
+  const handleSetReminder = () => {
+    if (!reminderDate || !reminderTime) {
+      showWarning('Please select both date and time for the reminder');
+      return;
+    }
+
+    const reminderDateTime = `${reminderDate}T${reminderTime}`;
+    setReminder(reminderModal.taskId, reminderDateTime, reminderModal.isApplication);
+    closeReminderModal();
   };
 
   // Filter applications by status
@@ -258,26 +225,26 @@ const ApplicationTracker: React.FC = () => {
   // Status colors and labels
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'planning': return 'bg-gray-200 text-gray-800';
-      case 'in-progress': return 'bg-blue-200 text-blue-800';
-      case 'submitted': return 'bg-purple-200 text-purple-800';
-      case 'interview': return 'bg-indigo-200 text-indigo-800';
-      case 'accepted': return 'bg-green-200 text-green-800';
-      case 'rejected': return 'bg-red-200 text-red-800';
-      case 'waitlisted': return 'bg-yellow-200 text-yellow-800';
-      default: return 'bg-gray-200 text-gray-800';
+      case 'planning': return 'bg-slate-500/20 text-slate-300 border-slate-500/30';
+      case 'in-progress': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+      case 'submitted': return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
+      case 'interview': return 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30';
+      case 'accepted': return 'bg-green-500/20 text-green-400 border-green-500/30';
+      case 'rejected': return 'bg-red-500/20 text-red-400 border-red-500/30';
+      case 'waitlisted': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+      default: return 'bg-slate-500/20 text-slate-300 border-slate-500/30';
     }
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'planning': return t('applicationTracker.planning');
-      case 'in-progress': return t('applicationTracker.inProgress');
-      case 'submitted': return t('applicationTracker.submitted');
-      case 'interview': return t('applicationTracker.interview');
-      case 'accepted': return t('applicationTracker.accepted');
-      case 'rejected': return t('applicationTracker.rejected');
-      case 'waitlisted': return t('applicationTracker.waitlisted');
+      case 'planning': return t('applicationTracker.planning') || 'Planning';
+      case 'in-progress': return t('applicationTracker.inProgress') || 'In Progress';
+      case 'submitted': return t('applicationTracker.submitted') || 'Submitted';
+      case 'interview': return t('applicationTracker.interview') || 'Interview';
+      case 'accepted': return t('applicationTracker.accepted') || 'Accepted';
+      case 'rejected': return t('applicationTracker.rejected') || 'Rejected';
+      case 'waitlisted': return t('applicationTracker.waitlisted') || 'Waitlisted';
       default: return status;
     }
   };
@@ -288,342 +255,605 @@ const ApplicationTracker: React.FC = () => {
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: { 
+        when: "beforeChildren",
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { y: 0, opacity: 1 }
+  };
+
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <Header />
       <main className="flex-grow">
-        <PageHeader
-          title={t('applicationTracker.title') || 'Application Tracker'}
-          subtitle={t('applicationTracker.subtitle') || 'Track and manage your university applications'}
-          height="md"
-        >
-          {/* Add Application Button */}
-          <div className="flex justify-center">
-            <button
-              onClick={() => setIsAddingApplication(true)}
-              className="bg-white/20 hover:bg-white/30 text-white px-6 py-3 rounded-xl font-medium transition-colors flex items-center gap-2 border border-white/30"
-            >
-              <IconComponent icon={FaPlus} />
-              {t('applicationTracker.addApplication') || 'Add Application'}
-            </button>
+        {/* Futuristic Header */}
+        <div className="relative overflow-hidden bg-gradient-to-r from-cyan-900/20 via-blue-900/20 to-purple-900/20 backdrop-blur-sm border-b border-cyan-500/20">
+          <div className="absolute inset-0 opacity-20">
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-blue-500/5"></div>
+            <div className="absolute inset-0" style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+              backgroundSize: '60px 60px'
+            }}></div>
           </div>
-        </PageHeader>
+          <div className="relative container mx-auto px-4 py-16">
+            <motion.div
+              className="text-center"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              <div className="flex justify-center mb-6">
+                <div className="p-4 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-2xl border border-cyan-500/30 backdrop-blur-sm">
+                  <IconComponent icon={FaClipboardList} className="text-4xl text-cyan-400" />
+                </div>
+              </div>
+              <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent mb-4">
+                {t('applicationTracker.title') || 'Application Tracker'}
+              </h1>
+              <p className="text-xl text-slate-300 max-w-3xl mx-auto mb-8">
+                {t('applicationTracker.subtitle') || 'Track and manage your university applications with intelligent reminders and calendar integration'}
+              </p>
+              
+              {/* Add Application Button */}
+              <motion.button
+                onClick={() => setIsAddingApplication(true)}
+                className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-cyan-500/25 transition-all duration-300 transform hover:scale-105"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <IconComponent icon={FaPlus} className="mr-2" />
+                {t('applicationTracker.addApplication') || 'Add Application'}
+              </motion.button>
+            </motion.div>
+          </div>
+        </div>
         
         <div className="container mx-auto px-4 py-8">
-          {/* Statistics */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-white rounded-lg shadow-md p-4">
-              <h3 className="text-gray-600 text-sm mb-1">{t('applicationTracker.totalApplications')}</h3>
-              <p className="text-2xl font-bold text-teal-800">{applications.length}</p>
-            </div>
-            <div className="bg-white rounded-lg shadow-md p-4">
-              <h3 className="text-gray-600 text-sm mb-1">{t('applicationTracker.submittedCount')}</h3>
-              <p className="text-2xl font-bold text-purple-700">
-                {applications.filter(app => app.status === 'submitted' || app.status === 'interview' || app.status === 'accepted' || app.status === 'rejected' || app.status === 'waitlisted').length}
-              </p>
-            </div>
-            <div className="bg-white rounded-lg shadow-md p-4">
-              <h3 className="text-gray-600 text-sm mb-1">{t('applicationTracker.acceptedCount')}</h3>
-              <p className="text-2xl font-bold text-green-700">{applications.filter(app => app.status === 'accepted').length}</p>
-            </div>
-            <div className="bg-white rounded-lg shadow-md p-4">
-              <h3 className="text-gray-600 text-sm mb-1">{t('applicationTracker.pending')}</h3>
-              <p className="text-2xl font-bold text-blue-700">{applications.filter(app => app.status === 'planning' || app.status === 'in-progress').length}</p>
-            </div>
-          </div>
-          
-          {/* Filter and Sort */}
-          <div className="flex flex-col md:flex-row justify-between bg-white p-4 rounded-lg shadow-md mb-6">
-            <div className="flex items-center gap-4 mb-4 md:mb-0">
-              <div className="flex items-center">
-                <IconComponent icon={FaFilter} className="text-gray-500 mr-2" />
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="bg-gray-100 border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                >
-                  <option value="all">{t('applicationTracker.allStatuses')}</option>
-                  <option value="planning">{t('applicationTracker.planning')}</option>
-                  <option value="in-progress">{t('applicationTracker.inProgress')}</option>
-                  <option value="submitted">{t('applicationTracker.submitted')}</option>
-                  <option value="interview">{t('applicationTracker.interview')}</option>
-                  <option value="accepted">{t('applicationTracker.accepted')}</option>
-                  <option value="rejected">{t('applicationTracker.rejected')}</option>
-                  <option value="waitlisted">{t('applicationTracker.waitlisted')}</option>
-                </select>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center">
-                <IconComponent icon={FaSort} className="text-gray-500 mr-2" />
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="bg-gray-100 border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                >
-                  <option value="deadline">{t('applicationTracker.sortBy')} {t('applicationTracker.deadline')}</option>
-                  <option value="university">{t('applicationTracker.sortBy')} {t('applicationTracker.university')}</option>
-                  <option value="status">{t('applicationTracker.sortBy')} {t('applicationTracker.status')}</option>
-                </select>
-              </div>
-              <button
-                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                className="text-gray-500 hover:text-teal-600 transition-colors"
+          {/* Statistics Dashboard */}
+          <motion.div
+            className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            {[
+              {
+                label: t('applicationTracker.totalApplications') || 'Total Applications',
+                value: applications.length,
+                icon: FaUniversity,
+                color: 'from-cyan-500 to-blue-500'
+              },
+              {
+                label: t('applicationTracker.submittedCount') || 'Submitted',
+                value: applications.filter(app => ['submitted', 'interview', 'accepted', 'rejected', 'waitlisted'].includes(app.status)).length,
+                icon: FaCheckCircle,
+                color: 'from-purple-500 to-indigo-500'
+              },
+              {
+                label: t('applicationTracker.acceptedCount') || 'Accepted',
+                value: applications.filter(app => app.status === 'accepted').length,
+                icon: FaGraduationCap,
+                color: 'from-green-500 to-emerald-500'
+              },
+              {
+                label: t('applicationTracker.pending') || 'Pending',
+                value: applications.filter(app => ['planning', 'in-progress'].includes(app.status)).length,
+                icon: FaClock,
+                color: 'from-yellow-500 to-orange-500'
+              }
+            ].map((stat, index) => (
+              <motion.div
+                key={stat.label}
+                className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-white/10 p-6 hover:border-cyan-500/30 transition-all duration-300"
+                variants={itemVariants}
+                whileHover={{ scale: 1.02, y: -5 }}
               >
-                {sortOrder === 'asc' ? <IconComponent icon={FaSortAmountUp} /> : <IconComponent icon={FaSortAmountDown} />}
-              </button>
-            </div>
-          </div>
+                <div className={`w-12 h-12 bg-gradient-to-r ${stat.color} rounded-lg flex items-center justify-center mb-4`}>
+                  <IconComponent icon={stat.icon} className="text-xl text-white" />
+                </div>
+                <h3 className="text-slate-400 text-sm mb-1">{stat.label}</h3>
+                <p className="text-3xl font-bold text-white">{stat.value}</p>
+              </motion.div>
+            ))}
+          </motion.div>
           
-          {/* Applications List */}
+          {/* Filter and Sort Controls */}
+          <motion.div
+            className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-white/10 p-6 mb-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center">
+                  <IconComponent icon={FaFilter} className="text-cyan-400 mr-2" />
+                  <select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                    className="bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-slate-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  >
+                    <option value="all">{t('applicationTracker.allStatuses') || 'All Statuses'}</option>
+                    <option value="planning">{t('applicationTracker.planning') || 'Planning'}</option>
+                    <option value="in-progress">{t('applicationTracker.inProgress') || 'In Progress'}</option>
+                    <option value="submitted">{t('applicationTracker.submitted') || 'Submitted'}</option>
+                    <option value="interview">{t('applicationTracker.interview') || 'Interview'}</option>
+                    <option value="accepted">{t('applicationTracker.accepted') || 'Accepted'}</option>
+                    <option value="rejected">{t('applicationTracker.rejected') || 'Rejected'}</option>
+                    <option value="waitlisted">{t('applicationTracker.waitlisted') || 'Waitlisted'}</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center">
+                  <IconComponent icon={FaSort} className="text-cyan-400 mr-2" />
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-slate-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  >
+                    <option value="deadline">{t('applicationTracker.sortBy') || 'Sort by'} {t('applicationTracker.deadline') || 'Deadline'}</option>
+                    <option value="university">{t('applicationTracker.sortBy') || 'Sort by'} {t('applicationTracker.university') || 'University'}</option>
+                    <option value="status">{t('applicationTracker.sortBy') || 'Sort by'} {t('applicationTracker.status') || 'Status'}</option>
+                  </select>
+                </div>
+                <motion.button
+                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                  className="text-slate-400 hover:text-cyan-400 transition-colors p-2 rounded-lg hover:bg-slate-700/50"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  {sortOrder === 'asc' ? <IconComponent icon={FaSortAmountUp} /> : <IconComponent icon={FaSortAmountDown} />}
+                </motion.button>
+              </div>
+            </div>
+          </motion.div>
+          
+          {/* Applications Grid */}
           {sortedApplications.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {sortedApplications.map(app => (
-                <div key={app.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                  <div className="p-4 border-b border-gray-100">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="text-lg font-bold text-teal-800">{app.university}</h3>
-                        <p className="text-sm text-gray-600">{app.program}</p>
+            <motion.div
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              {sortedApplications.map((app, index) => (
+                <motion.div
+                  key={app.id}
+                  className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden hover:border-cyan-500/30 transition-all duration-300"
+                  variants={itemVariants}
+                  transition={{ delay: index * 0.1 }}
+                  whileHover={{ y: -5, scale: 1.02 }}
+                >
+                  {/* Card Header */}
+                  <div className="p-6 border-b border-white/10">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-cyan-400 mb-1">{app.university}</h3>
+                        <p className="text-slate-300">{app.program}</p>
                       </div>
                       <div className="flex gap-2">
-                        <button
+                        <motion.button
+                          onClick={() => openReminderModal(app.id, true, 'application')}
+                          className={`p-2 rounded-lg transition-colors ${
+                            app.reminder 
+                              ? 'text-yellow-400 bg-yellow-500/20 hover:bg-yellow-500/30' 
+                              : 'text-slate-400 hover:text-yellow-400 hover:bg-slate-700/50'
+                          }`}
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          title="Set Reminder"
+                        >
+                          <IconComponent icon={app.reminder ? FaBell : FaBellSlash} className="text-sm" />
+                        </motion.button>
+                        <motion.button
                           onClick={() => handleEditApplication(app)}
-                          className="text-blue-600 hover:text-blue-800 transition-colors"
-                          aria-label="Edit application"
+                          className="text-blue-400 hover:text-blue-300 hover:bg-slate-700/50 p-2 rounded-lg transition-colors"
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
                         >
-                          <IconComponent icon={FaEdit} />
-                        </button>
-                        <button
+                          <IconComponent icon={FaEdit} className="text-sm" />
+                        </motion.button>
+                        <motion.button
                           onClick={() => handleDeleteApplication(app.id)}
-                          className="text-red-600 hover:text-red-800 transition-colors"
-                          aria-label="Delete application"
+                          className="text-red-400 hover:text-red-300 hover:bg-slate-700/50 p-2 rounded-lg transition-colors"
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
                         >
-                          <IconComponent icon={FaTrash} />
-                        </button>
+                          <IconComponent icon={FaTrash} className="text-sm" />
+                        </motion.button>
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(app.status)}`}>
+                    
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(app.status)}`}>
                         {getStatusLabel(app.status)}
                       </span>
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                      <span className="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-full text-xs font-medium">
                         {app.country}
                       </span>
                     </div>
-                    <div className="flex items-center text-sm text-gray-600 mt-2">
-                      <IconComponent icon={FaCalendarAlt} className="mr-1 text-orange-500" /> {t('applicationTracker.deadline')}: {formatDate(app.deadline)}
+                    
+                    <div className="flex items-center text-sm text-slate-400">
+                      <IconComponent icon={FaCalendarAlt} className="mr-2 text-orange-400" />
+                      Deadline: {formatDate(app.deadline)}
                     </div>
                   </div>
                   
-                  {/* Tasks */}
-                  <div className="p-4">
-                    <h4 className="font-medium text-gray-700 mb-2">{t('applicationTracker.tasks')}</h4>
+                  {/* Tasks Section */}
+                  <div className="p-6">
+                    <h4 className="font-semibold text-slate-300 mb-3 flex items-center">
+                      <IconComponent icon={FaCheckCircle} className="mr-2 text-cyan-400" />
+                      {t('applicationTracker.tasks') || 'Tasks'}
+                    </h4>
+                    
                     {app.tasks.length > 0 ? (
-                      <ul className="space-y-2">
+                      <ul className="space-y-3 mb-4">
                         {app.tasks.map(task => (
-                          <li key={task.id} className="flex items-start">
-                            <button
+                          <li key={task.id} className="flex items-start group">
+                            <motion.button
                               onClick={() => toggleTaskCompletion(app.id, task.id)}
-                              className={`flex-shrink-0 w-5 h-5 rounded-full border flex items-center justify-center mt-0.5 mr-2 ${
-                                task.completed ? 'bg-teal-500 border-teal-500 text-white' : 'border-gray-300'
+                              className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 mr-3 transition-all ${
+                                task.completed 
+                                  ? 'bg-green-500 border-green-500 text-white' 
+                                  : 'border-slate-400 hover:border-cyan-400'
                               }`}
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
                             >
                               {task.completed && <IconComponent icon={FaCheck} className="text-xs" />}
-                            </button>
-                            <span className={`text-sm ${task.completed ? 'line-through text-gray-400' : 'text-gray-700'}`}>
-                              {task.task}
-                            </span>
+                            </motion.button>
+                            <div className="flex-1">
+                              <span className={`text-sm ${task.completed ? 'line-through text-slate-500' : 'text-slate-300'}`}>
+                                {task.task}
+                              </span>
+                              {task.dueDate && (
+                                <div className="text-xs text-slate-500 mt-1">
+                                  Due: {formatDate(task.dueDate)}
+                                </div>
+                              )}
+                            </div>
+                            <motion.button
+                              onClick={() => openReminderModal(task.id, true, 'task')}
+                              className={`opacity-0 group-hover:opacity-100 p-1 rounded transition-all ${
+                                task.reminder 
+                                  ? 'text-yellow-400 bg-yellow-500/20' 
+                                  : 'text-slate-400 hover:text-yellow-400'
+                              }`}
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              title="Set Reminder"
+                            >
+                              <IconComponent icon={task.reminder ? FaBell : FaBellSlash} className="text-xs" />
+                            </motion.button>
                           </li>
                         ))}
                       </ul>
                     ) : (
-                      <p className="text-sm text-gray-500 italic">{t('applicationTracker.newTask')}</p>
+                      <p className="text-sm text-slate-500 italic mb-4">{t('applicationTracker.noTasks') || 'No tasks yet'}</p>
                     )}
                     
-                    {/* Add task form */}
-                    <div className="mt-3 flex gap-2">
+                    {/* Add Task Form */}
+                    <div className="flex gap-2">
                       <input
                         type="text"
-                        placeholder={t('applicationTracker.taskPlaceholder')}
+                        placeholder={t('applicationTracker.taskPlaceholder') || 'Add a new task...'}
                         value={newTask}
                         onChange={(e) => setNewTask(e.target.value)}
-                        className="flex-grow bg-gray-100 border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        className="flex-1 bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-300 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                         onKeyDown={(e) => e.key === 'Enter' && addTask(app.id)}
                       />
-                      <button
+                      <motion.button
                         onClick={() => addTask(app.id)}
-                        className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md text-sm transition-colors"
+                        className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                       >
-                        {t('applicationTracker.addTask')}
-                      </button>
+                        <IconComponent icon={FaPlus} className="text-xs" />
+                      </motion.button>
                     </div>
                   </div>
                   
-                  {/* Notes and Update Status */}
-                  <div className="p-4 bg-gray-50 border-t border-gray-100">
+                  {/* Notes and Status Update */}
+                  <div className="p-6 bg-slate-900/30 border-t border-white/10">
                     {app.notes && (
-                      <div className="mb-3">
-                        <h4 className="font-medium text-gray-700 mb-1">{t('applicationTracker.notes')}</h4>
-                        <p className="text-sm text-gray-600">{app.notes}</p>
+                      <div className="mb-4">
+                        <h4 className="font-medium text-slate-300 mb-2">{t('applicationTracker.notes') || 'Notes'}</h4>
+                        <p className="text-sm text-slate-400 bg-slate-800/50 rounded-lg p-3">{app.notes}</p>
                       </div>
                     )}
                     
                     <div>
-                      <h4 className="font-medium text-gray-700 mb-1">{t('applicationTracker.status')}</h4>
-                      <div className="flex flex-wrap gap-2">
-                        <select
-                          value={app.status}
-                          onChange={(e) => updateApplicationStatus(app.id, e.target.value as Application['status'])}
-                          className="bg-white border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        >
-                          <option value="planning">{t('applicationTracker.planning')}</option>
-                          <option value="in-progress">{t('applicationTracker.inProgress')}</option>
-                          <option value="submitted">{t('applicationTracker.submitted')}</option>
-                          <option value="interview">{t('applicationTracker.interview')}</option>
-                          <option value="accepted">{t('applicationTracker.accepted')}</option>
-                          <option value="rejected">{t('applicationTracker.rejected')}</option>
-                          <option value="waitlisted">{t('applicationTracker.waitlisted')}</option>
-                        </select>
-                      </div>
+                      <h4 className="font-medium text-slate-300 mb-2">{t('applicationTracker.updateStatus') || 'Update Status'}</h4>
+                      <select
+                        value={app.status}
+                        onChange={(e) => updateApplicationStatus(app.id, e.target.value as Application['status'])}
+                        className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                      >
+                        <option value="planning">{t('applicationTracker.planning') || 'Planning'}</option>
+                        <option value="in-progress">{t('applicationTracker.inProgress') || 'In Progress'}</option>
+                        <option value="submitted">{t('applicationTracker.submitted') || 'Submitted'}</option>
+                        <option value="interview">{t('applicationTracker.interview') || 'Interview'}</option>
+                        <option value="accepted">{t('applicationTracker.accepted') || 'Accepted'}</option>
+                        <option value="rejected">{t('applicationTracker.rejected') || 'Rejected'}</option>
+                        <option value="waitlisted">{t('applicationTracker.waitlisted') || 'Waitlisted'}</option>
+                      </select>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           ) : (
-            <div className="bg-white rounded-lg shadow-md p-8 text-center">
-              <IconComponent icon={FaUniversity} className="text-5xl text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">{t('applicationTracker.noApplicationsFound')}</h3>
-              <p className="text-gray-600 mb-4">
+            <motion.div
+              className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-white/10 p-12 text-center"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <div className="w-20 h-20 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <IconComponent icon={FaUniversity} className="text-4xl text-cyan-400" />
+              </div>
+              <h3 className="text-2xl font-bold text-slate-300 mb-3">
+                {t('applicationTracker.noApplicationsFound') || 'No Applications Found'}
+              </h3>
+              <p className="text-slate-400 mb-6 max-w-md mx-auto">
                 {filterStatus === 'all' 
-                  ? t('applicationTracker.noApplicationsYet')
-                  : t('applicationTracker.noMatchingFilter')}
+                  ? t('applicationTracker.noApplicationsYet') || 'Start tracking your university applications by adding your first application.'
+                  : t('applicationTracker.noMatchingFilter') || 'No applications match your current filter. Try adjusting your search criteria.'}
               </p>
-              {filterStatus !== 'all' && (
-                <button
+              {filterStatus !== 'all' ? (
+                <motion.button
                   onClick={() => setFilterStatus('all')}
-                  className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg transition-colors"
+                  className="bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 px-6 py-3 rounded-lg transition-colors"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  {t('applicationTracker.showAllApplications')}
-                </button>
+                  {t('applicationTracker.showAllApplications') || 'Show All Applications'}
+                </motion.button>
+              ) : (
+                <motion.button
+                  onClick={() => setIsAddingApplication(true)}
+                  className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-all"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <IconComponent icon={FaPlus} className="mr-2" />
+                  Add Your First Application
+                </motion.button>
               )}
-            </div>
+            </motion.div>
           )}
         </div>
         
         {/* Add/Edit Application Modal */}
-        {(isAddingApplication || isEditingApplication !== null) && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-              <div className="p-4 border-b border-gray-200">
-                <h2 className="text-lg font-bold text-gray-800">
-                  {isEditingApplication !== null ? t('applicationTracker.editApplication') : t('applicationTracker.addNewApplication')}
-                </h2>
-              </div>
-              <div className="p-4">
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('applicationTracker.university')} *</label>
-                    <input
-                      type="text"
-                      value={newApplication.university}
-                      onChange={(e) => setNewApplication({...newApplication, university: e.target.value})}
-                      className="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder={t('applicationTracker.universityPlaceholder')}
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('applicationTracker.program')} *</label>
-                    <input
-                      type="text"
-                      value={newApplication.program}
-                      onChange={(e) => setNewApplication({...newApplication, program: e.target.value})}
-                      className="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder={t('applicationTracker.programPlaceholder')}
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('applicationTracker.country')}</label>
-                    <input
-                      type="text"
-                      value={newApplication.country}
-                      onChange={(e) => setNewApplication({...newApplication, country: e.target.value})}
-                      className="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder={t('applicationTracker.countryPlaceholder')}
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('applicationTracker.deadline')} *</label>
-                    <input
-                      type="date"
-                      value={newApplication.deadline}
-                      onChange={(e) => setNewApplication({...newApplication, deadline: e.target.value})}
-                      className="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('applicationTracker.status')}</label>
-                    <select
-                      value={newApplication.status}
-                      onChange={(e) => setNewApplication({...newApplication, status: e.target.value as Application['status']})}
-                      className="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    >
-                      <option value="planning">{t('applicationTracker.planning')}</option>
-                      <option value="in-progress">{t('applicationTracker.inProgress')}</option>
-                      <option value="submitted">{t('applicationTracker.submitted')}</option>
-                      <option value="interview">{t('applicationTracker.interview')}</option>
-                      <option value="accepted">{t('applicationTracker.accepted')}</option>
-                      <option value="rejected">{t('applicationTracker.rejected')}</option>
-                      <option value="waitlisted">{t('applicationTracker.waitlisted')}</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('applicationTracker.notes')}</label>
-                    <textarea
-                      value={newApplication.notes}
-                      onChange={(e) => setNewApplication({...newApplication, notes: e.target.value})}
-                      className="w-full bg-gray-100 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      rows={3}
-                      placeholder={t('applicationTracker.notesPlaceholder')}
-                    />
+        <AnimatePresence>
+          {(isAddingApplication || isEditingApplication !== null) && (
+            <motion.div
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <motion.div
+                className="bg-slate-800 rounded-2xl border border-white/10 shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              >
+                <div className="p-6 border-b border-white/10">
+                  <h2 className="text-2xl font-bold text-cyan-400">
+                    {isEditingApplication !== null 
+                      ? t('applicationTracker.editApplication') || 'Edit Application'
+                      : t('applicationTracker.addNewApplication') || 'Add New Application'}
+                  </h2>
+                </div>
+                
+                <div className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">
+                        {t('applicationTracker.university') || 'University'} *
+                      </label>
+                      <input
+                        type="text"
+                        value={newApplication.university}
+                        onChange={(e) => setNewApplication({...newApplication, university: e.target.value})}
+                        className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                        placeholder="Enter university name"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">
+                        {t('applicationTracker.program') || 'Program'} *
+                      </label>
+                      <input
+                        type="text"
+                        value={newApplication.program}
+                        onChange={(e) => setNewApplication({...newApplication, program: e.target.value})}
+                        className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                        placeholder="Enter program name"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">
+                        {t('applicationTracker.country') || 'Country'}
+                      </label>
+                      <input
+                        type="text"
+                        value={newApplication.country}
+                        onChange={(e) => setNewApplication({...newApplication, country: e.target.value})}
+                        className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                        placeholder="Enter country"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">
+                        {t('applicationTracker.deadline') || 'Deadline'} *
+                      </label>
+                      <input
+                        type="date"
+                        value={newApplication.deadline}
+                        onChange={(e) => setNewApplication({...newApplication, deadline: e.target.value})}
+                        className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-slate-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                      />
+                    </div>
+                    
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-slate-300 mb-2">
+                        {t('applicationTracker.status') || 'Status'}
+                      </label>
+                      <select
+                        value={newApplication.status}
+                        onChange={(e) => setNewApplication({...newApplication, status: e.target.value as Application['status']})}
+                        className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-slate-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                      >
+                        <option value="planning">{t('applicationTracker.planning') || 'Planning'}</option>
+                        <option value="in-progress">{t('applicationTracker.inProgress') || 'In Progress'}</option>
+                        <option value="submitted">{t('applicationTracker.submitted') || 'Submitted'}</option>
+                        <option value="interview">{t('applicationTracker.interview') || 'Interview'}</option>
+                        <option value="accepted">{t('applicationTracker.accepted') || 'Accepted'}</option>
+                        <option value="rejected">{t('applicationTracker.rejected') || 'Rejected'}</option>
+                        <option value="waitlisted">{t('applicationTracker.waitlisted') || 'Waitlisted'}</option>
+                      </select>
+                    </div>
+                    
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-slate-300 mb-2">
+                        {t('applicationTracker.notes') || 'Notes'}
+                      </label>
+                      <textarea
+                        value={newApplication.notes}
+                        onChange={(e) => setNewApplication({...newApplication, notes: e.target.value})}
+                        className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                        rows={4}
+                        placeholder="Add any additional notes..."
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="p-4 border-t border-gray-200 flex justify-end gap-3">
-                <button
-                  onClick={() => {
-                    setIsAddingApplication(false);
-                    setIsEditingApplication(null);
-                    setNewApplication({
-                      university: '',
-                      program: '',
-                      country: '',
-                      deadline: '',
-                      status: 'planning',
-                      notes: '',
-                      tasks: []
-                    });
-                  }}
-                  className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg transition-colors"
-                >
-                  {t('common.cancel')}
-                </button>
-                <button
-                  onClick={isEditingApplication !== null ? handleUpdateApplication : handleAddApplication}
-                  className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors"
-                >
-                  {isEditingApplication !== null ? t('applicationTracker.saveChanges') : t('applicationTracker.addApplication')}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+                
+                <div className="p-6 border-t border-white/10 flex justify-end gap-4">
+                  <motion.button
+                    onClick={() => {
+                      setIsAddingApplication(false);
+                      setIsEditingApplication(null);
+                      setNewApplication({
+                        university: '',
+                        program: '',
+                        country: '',
+                        deadline: '',
+                        status: 'planning',
+                        notes: '',
+                        tasks: []
+                      });
+                    }}
+                    className="bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 px-6 py-3 rounded-lg transition-colors"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    {t('common.cancel') || 'Cancel'}
+                  </motion.button>
+                  <motion.button
+                    onClick={isEditingApplication !== null ? handleUpdateApplication : handleAddApplication}
+                    className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-all"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    {isEditingApplication !== null 
+                      ? t('applicationTracker.saveChanges') || 'Save Changes'
+                      : t('applicationTracker.addApplication') || 'Add Application'}
+                  </motion.button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Reminder Modal */}
+        <AnimatePresence>
+          {reminderModal.isOpen && (
+            <motion.div
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <motion.div
+                className="bg-slate-800 rounded-2xl border border-white/10 shadow-2xl w-full max-w-md"
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              >
+                <div className="p-6 border-b border-white/10">
+                  <h2 className="text-xl font-bold text-cyan-400 flex items-center">
+                    <IconComponent icon={FaBell} className="mr-2" />
+                    Set Reminder
+                  </h2>
+                </div>
+                
+                <div className="p-6">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">
+                        Reminder Date
+                      </label>
+                      <input
+                        type="date"
+                        value={reminderDate}
+                        onChange={(e) => setReminderDate(e.target.value)}
+                        className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-slate-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">
+                        Reminder Time
+                      </label>
+                      <input
+                        type="time"
+                        value={reminderTime}
+                        onChange={(e) => setReminderTime(e.target.value)}
+                        className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-slate-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-6 border-t border-white/10 flex justify-end gap-4">
+                  <motion.button
+                    onClick={closeReminderModal}
+                    className="bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 px-6 py-3 rounded-lg transition-colors"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Cancel
+                  </motion.button>
+                  <motion.button
+                    onClick={handleSetReminder}
+                    className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white px-6 py-3 rounded-lg font-medium transition-all"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Set Reminder
+                  </motion.button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
       <Footer />
     </div>

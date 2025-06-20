@@ -1,28 +1,19 @@
 import { Session } from '@supabase/supabase-js';
-
-// Use the same base URL and apiCall function as other APIs
-const BASE_URL = 'https://edusmart-server.pages.dev';
+import { API_BASE_URL, getDefaultHeaders } from '../config/api';
 
 // Helper function to make API calls (same as in apiService.ts)
 const apiCall = async (method: string, endpoint: string, data: any = null, session?: Session | null) => {
   try {
-    const headers: any = {
-      'Content-Type': 'application/json'
-    };
-
-    // Add authorization header if session is provided
-    if (session?.access_token) {
-      headers['Authorization'] = `Bearer ${session.access_token}`;
-    }
+    const headers = getDefaultHeaders(!!session, session);
 
     const config = {
       method,
-      url: `${BASE_URL}${endpoint}`,
+      url: `${API_BASE_URL}${endpoint}`,
       headers,
       ...(data && { data })
     };
 
-    console.log(`Making ${method} request to ${BASE_URL}${endpoint}`);
+    console.log(`Making ${method} request to ${API_BASE_URL}${endpoint}`);
     
     // Use dynamic import to avoid circular dependency
     const axios = (await import('axios')).default;
@@ -32,7 +23,7 @@ const apiCall = async (method: string, endpoint: string, data: any = null, sessi
     console.error('API Call Error:', {
       method,
       endpoint,
-      url: `${BASE_URL}${endpoint}`,
+      url: `${API_BASE_URL}${endpoint}`,
       error: error.message,
       status: error.response?.status,
       data: error.response?.data

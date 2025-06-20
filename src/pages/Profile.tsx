@@ -10,10 +10,12 @@ import { fadeIn, staggerContainer } from '../utils/animations';
 import { useAuth } from '../utils/AuthContext';
 import { userProfileAPI, UserProfile } from '../utils/userProfileAPI';
 import { useLanguage } from '../utils/LanguageContext';
+import { useNotification } from '../utils/NotificationContext';
 
 const Profile: React.FC = () => {
   const { user, session } = useAuth();
   const { t } = useLanguage();
+  const { showConfirmation } = useNotification();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -342,70 +344,76 @@ const Profile: React.FC = () => {
   const deleteProfile = async () => {
     if (!user) return;
     
-    const confirmed = window.confirm('Are you sure you want to delete your profile? This action cannot be undone.');
-    if (!confirmed) return;
-    
-    setError(null);
-    setSuccessMessage(null);
-    
-    try {
-      const result = await userProfileAPI.deleteProfile(session);
-      
-      if (result.success) {
-        setSuccessMessage('Profile deleted successfully!');
-        // Reset to default profile
-        const defaultProfile = {
-          user_id: user.id,
-          full_name: user.user_metadata?.name || '',
-          email: user.email || '',
-          phone: '',
-          date_of_birth: '',
-          nationality: '',
-          current_location: '',
-          preferred_study_location: '',
-          current_education_level: '',
-          current_institution: '',
-          current_gpa: '0',
-          gpa_scale: '4.0',
-          graduation_year: '',
-          field_of_study: '',
-          preferred_field: '',
-          preferred_degree_level: '',
-          budget_range: '',
-          preferred_university_size: '',
-          preferred_campus_type: '',
-          preferred_program_type: '',
-          career_goals: '',
-          work_experience: '',
-          research_experience: '',
-          publications: '',
-          awards: '',
-          extracurricular_activities: [],
-          languages: [],
-          profile_completion_percentage: 5,
-        };
-        setProfile(defaultProfile);
-        setIsEditing(false);
-      } else {
-        // Handle error object properly - extract message if it's an object
-        let errorMessage = 'Failed to delete profile';
+    showConfirmation({
+      message: 'Are you sure you want to delete your profile? This action cannot be undone.',
+      onConfirm: async () => {
+        setError(null);
+        setSuccessMessage(null);
         
-        if (result.error) {
-          if (typeof result.error === 'string') {
-            errorMessage = result.error;
-          } else if (typeof result.error === 'object' && result.error !== null && 'message' in result.error) {
-            errorMessage = (result.error as any).message;
-          } else if (typeof result.error === 'object') {
-            errorMessage = JSON.stringify(result.error);
+        try {
+          const result = await userProfileAPI.deleteProfile(session);
+          
+          if (result.success) {
+            setSuccessMessage('Profile deleted successfully!');
+            // Reset to default profile
+            const defaultProfile = {
+              user_id: user.id,
+              full_name: user.user_metadata?.name || '',
+              email: user.email || '',
+              phone: '',
+              date_of_birth: '',
+              nationality: '',
+              current_location: '',
+              preferred_study_location: '',
+              current_education_level: '',
+              current_institution: '',
+              current_gpa: '0',
+              gpa_scale: '4.0',
+              graduation_year: '',
+              field_of_study: '',
+              preferred_field: '',
+              preferred_degree_level: '',
+              budget_range: '',
+              preferred_university_size: '',
+              preferred_campus_type: '',
+              preferred_program_type: '',
+              career_goals: '',
+              work_experience: '',
+              research_experience: '',
+              publications: '',
+              awards: '',
+              extracurricular_activities: [],
+              languages: [],
+              profile_completion_percentage: 5,
+            };
+            setProfile(defaultProfile);
+            setIsEditing(false);
+          } else {
+            // Handle error object properly - extract message if it's an object
+            let errorMessage = 'Failed to delete profile';
+            
+            if (result.error) {
+              if (typeof result.error === 'string') {
+                errorMessage = result.error;
+              } else if (typeof result.error === 'object' && result.error !== null && 'message' in result.error) {
+                errorMessage = (result.error as any).message;
+              } else if (typeof result.error === 'object') {
+                errorMessage = JSON.stringify(result.error);
+              }
+            }
+            
+            setError(errorMessage);
           }
+        } catch (error) {
+          console.error('Error deleting profile:', error);
+          setError('Network error while deleting profile');
         }
-        
-        setError(errorMessage);
-      }
-    } catch (error) {
-      console.error('Error deleting profile:', error);
-      setError('Network error while deleting profile');
-    }
+      },
+      type: 'danger',
+      title: 'Delete Profile',
+      confirmText: 'Delete Profile',
+      cancelText: 'Cancel'
+    });
   };
 
   if (loading) {

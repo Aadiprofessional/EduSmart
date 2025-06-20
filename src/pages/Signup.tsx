@@ -5,6 +5,7 @@ import IconComponent from '../components/ui/IconComponent';
 import { useAuth } from '../utils/AuthContext';
 import { useLanguage } from '../utils/LanguageContext';
 import { motion } from 'framer-motion';
+import { useNotification } from '../utils/NotificationContext';
 
 const Signup: React.FC = () => {
   const navigate = useNavigate();
@@ -22,6 +23,7 @@ const Signup: React.FC = () => {
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const { showSuccess } = useNotification();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -93,7 +95,7 @@ const Signup: React.FC = () => {
         
         if (success) {
           // Show success message and redirect to login
-          alert(t('auth.signup.accountCreated'));
+          showSuccess(t('auth.signup.accountCreated'));
           navigate('/login');
         } else {
           setAuthError(error || t('auth.signup.signUpError'));

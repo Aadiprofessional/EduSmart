@@ -4,6 +4,7 @@ import { AiOutlineBulb, AiOutlineLoading3Quarters, AiOutlineFolder, AiOutlinePlu
 import { FiLayers, FiBookmark, FiTrash2, FiUpload, FiImage, FiFile, FiEdit3, FiFolderPlus } from 'react-icons/fi';
 import IconComponent from './IconComponent';
 import { useResponseCheck, ResponseUpgradeModal } from '../../utils/responseChecker';
+import { useNotification } from '../../utils/NotificationContext';
 
 interface Flashcard {
   id: string;
@@ -33,6 +34,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
   const { checkAndUseResponse } = useResponseCheck();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState('');
+  const { showError, showWarning } = useNotification();
 
   const [flashcardSets, setFlashcardSets] = useState<FlashcardSet[]>([
     {
@@ -255,43 +257,27 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
 
   // Handle file selection
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
 
-    // Check file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      alert('File size must be less than 10MB');
+    // Check file size
+    if (selectedFile.size > 10 * 1024 * 1024) { // 10MB limit
+      showError('File size must be less than 10MB');
       return;
     }
 
-    // Check responses before processing file
-    const responseResult = await checkAndUseResponse({
-      responseType: 'flashcard_file_upload',
-      responsesUsed: 1
-    });
-    if (!responseResult.canProceed) {
-      setShowUpgradeModal(true);
-      setUpgradeMessage(responseResult.message || 'Please upgrade to continue');
-      return;
-    }
-
+    setUploadedFile(selectedFile);
+    
     try {
       setIsUploading(true);
-      setUploadedFile(file);
-      
-      // Extract text from file
-      const extractedText = await handleFileUpload(file);
-      
-      // Generate flashcards from extracted text
-      await generateFlashcardsFromContent(extractedText, file.name);
-      
+      const extractedText = await handleFileUpload(selectedFile);
+      await generateFlashcardsFromContent(extractedText, selectedFile.name);
     } catch (error) {
       console.error('Error processing file:', error);
-      alert('Failed to process file. Please try again.');
+      showError('Failed to process file. Please try again.');
     } finally {
       setIsUploading(false);
       setUploadedFile(null);
-      // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -396,7 +382,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
       console.log('Generated flashcards:', newFlashcards);
     } catch (error) {
       console.error('Error generating flashcards:', error);
-      alert('Failed to generate flashcards. Please try again.');
+      showError('Failed to generate flashcards. Please try again.');
     } finally {
       setIsGenerating(false);
     }

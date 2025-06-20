@@ -50,9 +50,20 @@ import {
 import IconWrapper from '../components/IconWrapper';
 import PageHeader from '../components/ui/PageHeader';
 import IconComponent from '../components/ui/IconComponent';
+import { API_BASE_URL } from '../config/api';
+import { API_BASE, API_V2_BASE } from '../config/api';
 
 // Enhanced API service
-const API_BASE = 'https://edusmart-server.pages.dev/api';
+const API_ENDPOINTS = {
+  COURSES: '/api/courses',
+  COURSE_DETAILS: (id: string) => `/api/courses/${id}`,
+  COURSE_CATEGORIES: '/api/course-categories',
+  ENROLL: (courseId: string) => `/api/courses/${courseId}/enroll`,
+  CHECK_ENROLLMENT: (courseId: string, userId: string) => `/api/courses/${courseId}/enrollment/${userId}`,
+  USER_ENROLLMENTS: (userId: string) => `/api/users/${userId}/enrollments`,
+  COURSE_PROGRESS: (courseId: string, userId: string) => `/api/courses/${courseId}/progress/${userId}`,
+  UPDATE_PROGRESS: (courseId: string) => `/api/courses/${courseId}/progress`,
+};
 
 interface Course {
   id: string;
@@ -62,7 +73,7 @@ interface Course {
   category: string;
   level: string;
   language: string;
-  duration: string;
+  duration_hours?: number;
   price: number;
   original_price?: number;
   thumbnail_image?: string;
@@ -196,10 +207,28 @@ const Courses: React.FC = () => {
     if (!user?.id) return;
     
     try {
-      const response = await fetch(`${API_BASE}/courses/${courseId}/enrollment/${user.id}`);
+      const response = await fetch(`${API_V2_BASE}/courses/${courseId}/enrollment/${user.id}`);
+      
+      if (!response.ok) {
+        // If endpoint doesn't exist or returns 404, assume not enrolled
+        if (response.status === 404) {
+          return;
+        }
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
       
-      if (data.success && data.data.enrolled) {
+      // Handle different possible response formats
+      if (data.success && data.data && data.data.enrolled) {
+        setEnrolledCourses(prev => {
+          if (!prev.includes(courseId)) {
+            return [...prev, courseId];
+          }
+          return prev;
+        });
+      } else if (data.enrolled) {
+        // Direct enrolled field
         setEnrolledCourses(prev => {
           if (!prev.includes(courseId)) {
             return [...prev, courseId];
@@ -209,6 +238,7 @@ const Courses: React.FC = () => {
       }
     } catch (error) {
       console.error('Error checking course enrollment:', error);
+      // Don't show error to user as this is a background check
     }
   };
 
@@ -228,12 +258,18 @@ const Courses: React.FC = () => {
       if (priceRange[1] < 200) params.append('price_max', priceRange[1].toString());
       
       const response = await fetch(`${API_BASE}/courses?${params}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
       
-      if (response.ok && data.success && data.data) {
-        setCourses(data.data.courses || []);
+      // Handle the actual API response format: {"courses": [...], "pagination": {...}}
+      if (data.courses && Array.isArray(data.courses)) {
+        setCourses(data.courses);
       } else {
-        throw new Error(data.error || 'Failed to fetch courses');
+        throw new Error('Invalid response format: courses not found');
       }
     } catch (error: any) {
       console.error('Error fetching courses:', error);
@@ -246,12 +282,12 @@ const Courses: React.FC = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch(`${API_BASE}/courses/categories`);
+      const response = await fetch(`${API_BASE}/course-categories`);
       const data = await response.json();
       
-      if (response.ok && data.success && data.data) {
+      if (response.ok && data.categories) {
         // Convert categories array to the expected format
-        const formattedCategories = data.data.categories.map((cat: string, index: number) => ({
+        const formattedCategories = data.categories.map((cat: string, index: number) => ({
           id: index.toString(),
           name: cat,
           slug: cat.toLowerCase().replace(/\s+/g, '-')
@@ -267,15 +303,30 @@ const Courses: React.FC = () => {
     if (!user?.id) return;
     
     try {
-      const response = await fetch(`${API_BASE}/users/${user.id}/enrollments`);
+      const response = await fetch(`${API_V2_BASE}/users/${user.id}/enrollments`);
+      
+      if (!response.ok) {
+        // If endpoint doesn't exist or returns 404, assume no enrollments
+        if (response.status === 404) {
+          return;
+        }
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
       
-      if (data.success && data.data) {
+      // Handle different possible response formats
+      if (data.success && data.data && data.data.enrollments) {
         const enrolledCourseIds = data.data.enrollments.map((e: any) => e.course_id);
+        setEnrolledCourses(enrolledCourseIds);
+      } else if (data.enrollments && Array.isArray(data.enrollments)) {
+        // Direct enrollments array
+        const enrolledCourseIds = data.enrollments.map((e: any) => e.course_id);
         setEnrolledCourses(enrolledCourseIds);
       }
     } catch (error) {
       console.error('Error fetching user enrollments:', error);
+      // Don't show error to user as this is a background check
     }
   };
 
@@ -285,14 +336,20 @@ const Courses: React.FC = () => {
       setError(null);
       
       const response = await fetch(`${API_BASE}/courses/${courseId}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
       
-      if (response.ok && data.success && data.data) {
-        setSelectedCourse(data.data.course);
+      // Handle the actual API response format: {"course": {...}}
+      if (data.course) {
+        setSelectedCourse(data.course);
         // Note: Course sections would need to be fetched separately if needed
         // as our tested API doesn't include sections in the course details
       } else {
-        throw new Error(data.error || 'Course not found');
+        throw new Error('Course not found in response');
       }
     } catch (error: any) {
       console.error('Error fetching course details:', error);
@@ -322,7 +379,7 @@ const Courses: React.FC = () => {
 
       console.log('Enrollment data:', enrollmentData);
 
-      const response = await fetch(`${API_BASE}/courses/${courseId}/enroll`, {
+      const response = await fetch(`${API_V2_BASE}/courses/${courseId}/enroll`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -330,11 +387,29 @@ const Courses: React.FC = () => {
         body: JSON.stringify(enrollmentData),
       });
 
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
       const data = await response.json();
       console.log('Enrollment response:', data);
       
+      // Handle different possible response formats
+      let enrollmentSuccessful = false;
+      let alreadyEnrolled = false;
+      
       if (data.success) {
-        if (data.data.alreadyEnrolled) {
+        enrollmentSuccessful = true;
+        alreadyEnrolled = data.data?.alreadyEnrolled || false;
+      } else if (data.enrolled || data.message === 'User already enrolled') {
+        enrollmentSuccessful = true;
+        alreadyEnrolled = true;
+      } else if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      if (enrollmentSuccessful) {
+        if (alreadyEnrolled) {
           showNotification('info', 'You are already enrolled in this course!', 'Already Enrolled');
         } else {
           showNotification('success', 'Successfully enrolled in course!', 'Enrollment Successful');
@@ -346,28 +421,10 @@ const Courses: React.FC = () => {
         // Refresh user enrollments to ensure persistence
         await fetchUserEnrollments();
         
-        // Wait longer for the enrollment to be fully processed in the database
-        console.log('Waiting for enrollment to be processed...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // Verify enrollment before navigating
-        console.log('Verifying enrollment...');
-        const enrollmentCheckUrl = `${API_BASE}/courses/${courseId}/enrollment/${user.id}`;
-        const enrollmentResponse = await fetch(enrollmentCheckUrl);
-        const enrollmentCheckData = await enrollmentResponse.json();
-        
-        console.log('Enrollment verification:', enrollmentCheckData);
-        
-        if (enrollmentCheckData.success && enrollmentCheckData.data.enrolled) {
-          console.log('✅ Enrollment verified, navigating to course...');
-          // Navigate to course player
-          navigateToCoursePlayer(courseId);
-        } else {
-          console.log('❌ Enrollment verification failed');
-          showNotification('warning', 'Enrollment successful, but there was an issue accessing the course. Please try again in a moment.', 'Access Issue');
-        }
+        // Navigate to course player (simplified - just go to course page)
+        navigate(`/course/${courseId}`);
       } else {
-        throw new Error(data.error || 'Enrollment failed');
+        throw new Error('Enrollment failed - unknown response format');
       }
     } catch (error: any) {
       console.error('Error enrolling in course:', error);
@@ -383,7 +440,7 @@ const Courses: React.FC = () => {
       console.log('Retry count:', retryCount);
       
       // Get course sections to find the first lecture
-      const sectionsUrl = `${API_BASE}/courses/${courseId}/sections?uid=${user?.id}`;
+      const sectionsUrl = `${API_V2_BASE}/courses/${courseId}/sections?uid=${user?.id}`;
       console.log('Fetching sections from:', sectionsUrl);
       
       const response = await fetch(sectionsUrl);
@@ -398,7 +455,7 @@ const Courses: React.FC = () => {
         if (response.status === 403 && retryCount < 2) {
           console.log('403 error, checking enrollment status...');
           
-          const enrollmentCheckUrl = `${API_BASE}/courses/${courseId}/enrollment/${user?.id}`;
+          const enrollmentCheckUrl = `${API_V2_BASE}/courses/${courseId}/enrollment/${user?.id}`;
           const enrollmentResponse = await fetch(enrollmentCheckUrl);
           const enrollmentData = await enrollmentResponse.json();
           
@@ -744,7 +801,7 @@ const Courses: React.FC = () => {
                       <div className="flex items-center gap-4 mb-4 text-sm text-gray-500">
                         <div className="flex items-center gap-1">
                           <IconWrapper icon={FaClock} size={12} />
-                          {course.duration}
+                          {course.duration_hours ? `${course.duration_hours} hours` : 'N/A'}
                         </div>
                         <div className="flex items-center gap-1">
                           <IconWrapper icon={FaUsers} size={12} />
@@ -824,7 +881,7 @@ const Courses: React.FC = () => {
                         <div className="flex items-center gap-4 text-sm text-gray-500">
                           <div className="flex items-center gap-1">
                             <IconWrapper icon={FaClock} size={12} />
-                            {course.duration}
+                            {course.duration_hours ? `${course.duration_hours} hours` : 'N/A'}
                           </div>
                           <div className="flex items-center gap-1">
                             <IconWrapper icon={FaUsers} size={12} />
@@ -1088,7 +1145,7 @@ const Courses: React.FC = () => {
                   
                   <div className="flex items-center gap-2">
                     <IconWrapper icon={FaClock} />
-                    <span>{selectedCourse.duration}</span>
+                    <span>{selectedCourse.duration_hours ? `${selectedCourse.duration_hours} hours` : 'N/A'}</span>
                   </div>
                   
                   <div className="flex items-center gap-2">
@@ -1202,7 +1259,7 @@ const Courses: React.FC = () => {
                       <div className="space-y-2 text-sm">
                         <div className="flex items-center gap-3">
                           <IconWrapper icon={FaVideo} className="text-gray-600" size={14} />
-                          <span>{selectedCourse.duration} on-demand video</span>
+                          <span>{selectedCourse.duration_hours ? `${selectedCourse.duration_hours} hours` : 'N/A'} on-demand video</span>
                         </div>
                         <div className="flex items-center gap-3">
                           <IconWrapper icon={FaFileAlt} className="text-gray-600" size={14} />

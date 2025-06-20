@@ -17,6 +17,7 @@ import {
 import { FiSend, FiThumbsUp, FiThumbsDown, FiRefreshCw, FiMaximize2, FiMinimize2, FiShare2, FiImage, FiTrash2, FiEdit3, FiCopy, FiDownload, FiPlus, FiMessageSquare } from 'react-icons/fi';
 import IconComponent from './IconComponent';
 import { useResponseCheck, ResponseUpgradeModal } from '../../utils/responseChecker';
+import { useNotification } from '../../utils/NotificationContext';
 
 // Import markdown and math libraries
 import ReactMarkdown from 'react-markdown';
@@ -89,6 +90,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
   const { checkAndUseResponse } = useResponseCheck();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState('');
+  const { showError, showWarning } = useNotification();
 
   // Get current chat session
   const currentChat = chatSessions.find(session => session.id === currentChatId) || chatSessions[0];
@@ -380,48 +382,42 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check if file is an image
+    // Check if it's an image file
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file (PNG, JPG, JPEG, etc.)');
+      showError('Please select an image file (PNG, JPG, JPEG, etc.)');
       return;
     }
 
-    // Check file size (max 10MB)
+    // Check file size (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
-      alert('File size must be less than 10MB');
+      showError('File size must be less than 10MB');
       return;
     }
 
     try {
       setIsUploading(true);
+      const extractedText = await handleImageUpload(file);
       
-      // Convert image to base64
-      const base64Image = await new Promise<string>((resolve, reject) => {
+      // Create base64 string for display
+      const base64 = await new Promise<string>((resolve) => {
         const reader = new FileReader();
-        reader.onload = () => {
-          const result = reader.result as string;
-          resolve(result);
-        };
-        reader.onerror = reject;
+        reader.onload = () => resolve(reader.result as string);
         reader.readAsDataURL(file);
       });
 
-      // Extract text from image
-      const extractedText = await handleImageUpload(file);
-      
-      // Set uploaded image data
       setUploadedImage({
         file,
-        base64: base64Image,
+        base64,
         extractedText
       });
-      
+
+      // Set the extracted text as the chat input
+      setChatInput(extractedText);
     } catch (error) {
       console.error('Error processing image:', error);
-      alert('Failed to process image. Please try again.');
+      showError('Failed to process image. Please try again.');
     } finally {
       setIsUploading(false);
-      // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }

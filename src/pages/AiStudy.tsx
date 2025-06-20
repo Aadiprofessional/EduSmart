@@ -403,29 +403,29 @@ const AiStudy: React.FC = () => {
             
             {/* Quick Stats */}
             <motion.div
-              className="flex flex-wrap justify-center gap-4 lg:gap-6 text-center"
+              className="flex justify-center gap-2 lg:gap-4 text-center w-full"
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.4, duration: 0.8 }}
             >
-              <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg p-4 border border-white/10 flex-1 min-w-[140px] max-w-[200px]">
-                <div className="text-xl lg:text-2xl font-bold text-cyan-400 leading-tight">AI-Powered</div>
+              <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-4 px-6 border border-white/10 flex-1">
+                <div className="text-lg lg:text-xl font-bold text-cyan-400 whitespace-nowrap">AI-Powered</div>
                 <div className="text-xs lg:text-sm text-slate-300 mt-1">Solutions</div>
               </div>
-              <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg p-4 border border-white/10 flex-1 min-w-[140px] max-w-[200px]">
-                <div className="text-xl lg:text-2xl font-bold text-blue-400 leading-tight">Instant</div>
+              <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-4 px-6 border border-white/10 flex-1">
+                <div className="text-lg lg:text-xl font-bold text-blue-400 whitespace-nowrap">Instant</div>
                 <div className="text-xs lg:text-sm text-slate-300 mt-1">Analysis</div>
               </div>
-              <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg p-4 border border-white/10 flex-1 min-w-[140px] max-w-[200px]">
-                <div className="text-xl lg:text-2xl font-bold text-teal-400 leading-tight">Step-by-Step</div>
+              <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-4 px-6 border border-white/10 flex-1">
+                <div className="text-lg lg:text-xl font-bold text-teal-400 whitespace-nowrap">Step-by-Step</div>
                 <div className="text-xs lg:text-sm text-slate-300 mt-1">Explanations</div>
               </div>
-              <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg p-4 border border-white/10 flex-1 min-w-[140px] max-w-[200px]">
-                <div className="text-xl lg:text-2xl font-bold text-emerald-400 leading-tight">Personalise</div>
+              <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-4 px-6 border border-white/10 flex-1">
+                <div className="text-lg lg:text-xl font-bold text-emerald-400 whitespace-nowrap">Personalised</div>
                 <div className="text-xs lg:text-sm text-slate-300 mt-1">Learning</div>
               </div>
-              <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg p-4 border border-white/10 flex-1 min-w-[140px] max-w-[200px]">
-                <div className="text-xl lg:text-2xl font-bold text-purple-400 leading-tight">Mindmap</div>
+              <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-4 px-6 border border-white/10 flex-1">
+                <div className="text-lg lg:text-xl font-bold text-purple-400 whitespace-nowrap">Mindmap</div>
                 <div className="text-xs lg:text-sm text-slate-300 mt-1">Summarizer</div>
               </div>
               

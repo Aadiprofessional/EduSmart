@@ -7,6 +7,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 import { jsPDF } from 'jspdf';
 import { Document, Paragraph, TextRun, Packer } from 'docx';
 import { useResponseCheck, ResponseUpgradeModal } from '../../utils/responseChecker';
+import { useNotification } from '../../utils/NotificationContext';
 
 // Import markdown and math libraries
 import ReactMarkdown from 'react-markdown';
@@ -110,6 +111,7 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
   const { checkAndUseResponse } = useResponseCheck();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState('');
+  const { showSuccess } = useNotification();
 
   // Load history from localStorage on component mount
   useEffect(() => {
@@ -397,7 +399,7 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
     } else {
       // Fallback for browsers that don't support Web Share API
       navigator.clipboard.writeText(content);
-      alert('Content copied to clipboard!');
+      showSuccess('Content copied to clipboard!');
     }
   };
 
@@ -1939,7 +1941,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
                     }).catch(console.error);
                   } else {
                     navigator.clipboard.writeText(cleanContent);
-                    alert('Content copied to clipboard!');
+                    showSuccess('Content copied to clipboard!');
                   }
                 }}
                 className="flex items-center text-sm px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-700"
