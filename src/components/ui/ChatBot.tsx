@@ -23,6 +23,7 @@ import { useAuth } from '../../utils/AuthContext';
 import { useSubscription } from '../../utils/SubscriptionContext';
 import { useResponseCheck, ResponseUpgradeModal } from '../../utils/responseChecker';
 import IconComponent from './IconComponent';
+import { quickQuestionsData, getInitialQuestions, type QuickQuestion } from '../../data/quickQuestions';
 
 interface Message {
   id: number;
@@ -32,6 +33,7 @@ interface Message {
   isTyping?: boolean;
   actionButtons?: ActionButton[];
   isAIResponse?: boolean;
+  quickQuestions?: QuickQuestion[];
 }
 
 interface ActionButton {
@@ -40,205 +42,6 @@ interface ActionButton {
   icon?: React.ReactNode;
   color?: string;
 }
-
-interface QuickQuestion {
-  text: string;
-  category: string;
-  requiresAuth?: boolean;
-  requiresPro?: boolean;
-}
-
-// Quick questions for guided interaction
-const quickQuestions: QuickQuestion[] = [
-  // General questions
-  { text: "What is MatrixEdu?", category: "about" },
-  { text: "How do I get started?", category: "help" },
-  { text: "What features are available?", category: "features" },
-  { text: "How much does it cost?", category: "pricing" },
-  
-  // Learning questions
-  { text: "Help me with homework", category: "aitutor", requiresAuth: true, requiresPro: true },
-  { text: "Find me courses to study", category: "courses", requiresAuth: true },
-  { text: "Create flashcards for studying", category: "flashcards", requiresAuth: true, requiresPro: true },
-  { text: "Write an essay for me", category: "contentwriter", requiresAuth: true, requiresPro: true },
-  
-  // University questions
-  { text: "Find universities for me", category: "universities", requiresAuth: true },
-  { text: "Track my applications", category: "applications", requiresAuth: true },
-  { text: "Check admission requirements", category: "requirements", requiresAuth: true },
-  
-  // Account questions
-  { text: "How do I sign up?", category: "signup" },
-  { text: "I need to log in", category: "login" },
-  { text: "Upgrade to Pro features", category: "upgrade" },
-  { text: "Manage my profile", category: "profile", requiresAuth: true }
-];
-
-// Comprehensive default responses for different types of questions
-const defaultResponses = {
-  // Authentication & Account related
-  login: {
-    keywords: ['login', 'sign in', 'log in', 'account access', 'signin'],
-    response: "Welcome back! I'll help you sign in to your MatrixEdu account to access all features.",
-    actionButtons: [
-      { text: 'Sign In', path: '/login', icon: <IconComponent icon={FaSignInAlt} />, color: 'from-blue-500 to-purple-500' }
-    ]
-  },
-  signup: {
-    keywords: ['signup', 'sign up', 'register', 'create account', 'join'],
-    response: "Ready to join MatrixEdu? Create your account and start your AI-powered learning journey today!",
-    actionButtons: [
-      { text: 'Create Account', path: '/signup', icon: <IconComponent icon={FaUser} />, color: 'from-green-500 to-blue-500' }
-    ]
-  },
-  profile: {
-    keywords: ['profile', 'account settings', 'my account', 'personal info'],
-    response: "Manage your profile - Update your personal information, preferences, and account settings.",
-    actionButtons: [
-      { text: 'View Profile', path: '/profile', icon: <IconComponent icon={FaUser} />, color: 'from-purple-500 to-pink-500' }
-    ]
-  },
-
-  // Subscription & Pro Features
-  upgrade: {
-    keywords: ['upgrade', 'pro', 'premium', 'subscription', 'unlock features', 'paid plan'],
-    response: "Unlock Premium Features! Get unlimited AI responses, advanced tools, and priority support with MatrixEdu Pro.",
-    actionButtons: [
-      { text: 'Upgrade to Pro', path: '/subscription', icon: <IconComponent icon={FaCrown} />, color: 'from-yellow-500 to-orange-500' }
-    ]
-  },
-  pricing: {
-    keywords: ['price', 'cost', 'how much', 'pricing', 'plans', 'subscription cost'],
-    response: "Flexible Pricing Plans - Choose the perfect plan for your educational needs. Start with our free tier or unlock everything with Pro!",
-    actionButtons: [
-      { text: 'View Pricing', path: '/subscription', icon: <IconComponent icon={FaShoppingCart} />, color: 'from-green-500 to-teal-500' }
-    ]
-  },
-
-  // Courses & Learning
-  courses: {
-    keywords: ['courses', 'learn', 'classes', 'training', 'education', 'study materials'],
-    response: "Explore Our Course Library - Discover AI-powered courses, interactive learning materials, and expert-led content across various subjects.",
-    actionButtons: [
-      { text: 'Browse Courses', path: '/courses', icon: <IconComponent icon={FaGraduationCap} />, color: 'from-blue-500 to-indigo-500' }
-    ]
-  },
-  aitutor: {
-    keywords: ['ai tutor', 'homework help', 'tutoring', 'study help', 'learn with ai'],
-    response: "AI Tutor Assistant - Get personalized help with homework, explanations, and interactive learning support powered by advanced AI.",
-    actionButtons: [
-      { text: 'Start AI Tutoring', path: '/ai-study', icon: <IconComponent icon={FaLightbulb} />, color: 'from-cyan-500 to-blue-500' }
-    ]
-  },
-  flashcards: {
-    keywords: ['flashcards', 'memorize', 'review', 'study cards', 'memory'],
-    response: "Smart Flashcards - Create AI-generated flashcards for effective studying and memory retention.",
-    actionButtons: [
-      { text: 'Create Flashcards', path: '/ai-study', icon: <IconComponent icon={FaBookOpen} />, color: 'from-pink-500 to-red-500' }
-    ]
-  },
-
-  // University & Applications
-  universities: {
-    keywords: ['university', 'college', 'universities', 'higher education', 'uni search'],
-    response: "University Database - Explore thousands of universities worldwide with AI-powered matching based on your preferences and profile.",
-    actionButtons: [
-      { text: 'Search Universities', path: '/database', icon: <IconComponent icon={FaUniversity} />, color: 'from-purple-500 to-indigo-500' }
-    ]
-  },
-  applications: {
-    keywords: ['application', 'apply', 'admission', 'application tracker', 'track applications'],
-    response: "Application Tracker - Manage your university applications, track deadlines, and stay organized throughout your admission journey.",
-    actionButtons: [
-      { text: 'Track Applications', path: '/database', icon: <IconComponent icon={FaChartLine} />, color: 'from-teal-500 to-green-500' }
-    ]
-  },
-  requirements: {
-    keywords: ['requirements', 'admission requirements', 'prerequisites', 'eligibility'],
-    response: "Admission Requirements - Check detailed admission requirements, prerequisites, and eligibility criteria for universities.",
-    actionButtons: [
-      { text: 'View Requirements', path: '/database', icon: <IconComponent icon={FaFileAlt} />, color: 'from-orange-500 to-red-500' }
-    ]
-  },
-
-  // Content Creation & Tools
-  contentwriter: {
-    keywords: ['content writer', 'essay', 'writing', 'generate content', 'write essay'],
-    response: "AI Content Writer - Generate high-quality essays, personal statements, and academic content with AI assistance.",
-    actionButtons: [
-      { text: 'Start Writing', path: '/ai-study', icon: <IconComponent icon={FaFileAlt} />, color: 'from-green-500 to-blue-500' }
-    ]
-  },
-  citations: {
-    keywords: ['citation', 'references', 'bibliography', 'cite sources', 'apa', 'mla'],
-    response: "Citation Generator - Automatically generate proper citations in APA, MLA, Chicago, and other formats for your academic work.",
-    actionButtons: [
-      { text: 'Generate Citations', path: '/ai-study', icon: <IconComponent icon={FaBookOpen} />, color: 'from-blue-500 to-purple-500' }
-    ]
-  },
-  homework: {
-    keywords: ['homework', 'assignment', 'upload homework', 'check homework', 'document analysis'],
-    response: "Homework Assistant - Upload your homework for AI-powered analysis, error checking, and detailed feedback.",
-    actionButtons: [
-      { text: 'Upload Homework', path: '/ai-study', icon: <IconComponent icon={FaFileAlt} />, color: 'from-indigo-500 to-purple-500' }
-    ]
-  },
-
-  // General Help & Information
-  help: {
-    keywords: ['help', 'support', 'assistance', 'how to', 'guide'],
-    response: "Help Center - I'm here to help! You can ask me about courses, universities, AI tools, subscriptions, or any other MatrixEdu features.",
-    actionButtons: [
-      { text: 'Browse Features', path: '/about', icon: <IconComponent icon={FaQuestionCircle} />, color: 'from-gray-500 to-blue-500' }
-    ]
-  },
-  about: {
-    keywords: ['about', 'what is matrixedu', 'platform info', 'company'],
-    response: "About MatrixEdu - We're an AI-powered education platform revolutionizing how students learn, discover universities, and achieve academic success.",
-    actionButtons: [
-      { text: 'Learn More', path: '/about', icon: <IconComponent icon={FaRocket} />, color: 'from-cyan-500 to-purple-500' }
-    ]
-  },
-  features: {
-    keywords: ['features', 'what can you do', 'tools', 'capabilities'],
-    response: "Platform Features - AI Tutoring, University Database, Application Tracking, Content Writing, Document Analysis, Citation Generation, and more!",
-    actionButtons: [
-      { text: 'Explore Features', path: '/about', icon: <IconComponent icon={FaCogs} />, color: 'from-purple-500 to-pink-500' }
-    ]
-  },
-  dashboard: {
-    keywords: ['dashboard', 'home', 'main page', 'overview'],
-    response: "Your Dashboard - Access all your learning tools, track progress, and manage your educational journey from one central location.",
-    actionButtons: [
-      { text: 'Go to Dashboard', path: '/dashboard', icon: <IconComponent icon={FaChartLine} />, color: 'from-blue-500 to-green-500' }
-    ]
-  },
-
-  // Specific Questions
-  howto: {
-    keywords: ['how to', 'how do i', 'tutorial', 'guide me'],
-    response: "Step-by-Step Guides - I can help you navigate any feature! Tell me what you'd like to do and I'll guide you through it.",
-    actionButtons: [
-      { text: 'Get Started', path: '/dashboard', icon: <IconComponent icon={FaLightbulb} />, color: 'from-yellow-500 to-orange-500' }
-    ]
-  },
-  free: {
-    keywords: ['free', 'free features', 'no cost', 'without paying'],
-    response: "Free Features Available! - Access basic tools, limited AI responses, and explore the platform. Upgrade for unlimited access!",
-    actionButtons: [
-      { text: 'View Free Features', path: '/dashboard', icon: <IconComponent icon={FaRocket} />, color: 'from-green-500 to-blue-500' }
-    ]
-  },
-  
-  // Default fallback
-  default: {
-    keywords: [],
-    response: "I'm your MatrixEdu AI Assistant! I can help you with courses, universities, AI tutoring, content creation, and more. What would you like to explore?",
-    actionButtons: [
-      { text: 'Explore Platform', path: '/dashboard', icon: <IconComponent icon={FaRocket} />, color: 'from-cyan-500 to-purple-500' }
-    ]
-  }
-};
 
 const ChatBot: React.FC = () => {
   const location = useLocation();
@@ -251,15 +54,18 @@ const ChatBot: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
     { 
       id: 1, 
-      text: 'Welcome to MatrixEdu! I\'m your AI-powered educational assistant. How can I help you today?', 
+      text: 'Welcome to MatrixEdu! I\'m your AI-powered website guide and assistant. I can help you navigate our platform, discover features, and get started with your learning journey. Choose from the quick questions below or ask me anything!', 
       sender: 'bot',
-      timestamp: new Date()
+      timestamp: new Date(),
+      quickQuestions: getInitialQuestions()
     },
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState('');
+  const [currentQuestions, setCurrentQuestions] = useState<QuickQuestion[]>(getInitialQuestions());
+  const [questionHistory, setQuestionHistory] = useState<QuickQuestion[][]>([getInitialQuestions()]);
   const [showQuickQuestions, setShowQuickQuestions] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -280,6 +86,12 @@ const ChatBot: React.FC = () => {
 
   const toggleChat = () => {
     setIsOpen(!isOpen);
+    if (!isOpen) {
+      // Reset to initial state when opening
+      setCurrentQuestions(getInitialQuestions());
+      setQuestionHistory([getInitialQuestions()]);
+      setShowQuickQuestions(true);
+    }
   };
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -354,26 +166,6 @@ const ChatBot: React.FC = () => {
     return buttons;
   };
 
-  // Find the best matching response based on keywords
-  const findBestResponse = (userInput: string) => {
-    const input = userInput.toLowerCase();
-    
-    // Check each response category for keyword matches
-    for (const [key, response] of Object.entries(defaultResponses)) {
-      if (key === 'default') continue;
-      
-      const matchCount = response.keywords.filter(keyword => 
-        input.includes(keyword.toLowerCase())
-      ).length;
-      
-      if (matchCount > 0) {
-        return response;
-      }
-    }
-    
-    return defaultResponses.default;
-  };
-
   // Handle AI API call for pro users
   const handleAIResponse = async (userMessage: string): Promise<string> => {
     try {
@@ -421,17 +213,17 @@ const ChatBot: React.FC = () => {
     }
   };
 
-  // Handle quick question clicks
-  const handleQuickQuestion = (question: QuickQuestion) => {
+  // Handle quick question click
+  const handleQuickQuestion = (questionData: QuickQuestion) => {
     // Check authentication requirements
-    if (question.requiresAuth && !user) {
+    if (questionData.requiresAuth && !user) {
       setUpgradeMessage('Please sign in to access this feature');
       setShowUpgradeModal(true);
       return;
     }
 
     // Check pro requirements
-    if (question.requiresPro && !isProUser) {
+    if (questionData.requiresPro && !isProUser) {
       setUpgradeMessage('This feature requires a Pro subscription. Upgrade now to unlock unlimited AI assistance!');
       setShowUpgradeModal(true);
       return;
@@ -440,38 +232,71 @@ const ChatBot: React.FC = () => {
     // Add user message
     const userMessage: Message = {
       id: messages.length + 1,
-      text: question.text,
+      text: questionData.text,
       sender: 'user',
       timestamp: new Date()
     };
     
     setMessages(prev => [...prev, userMessage]);
-    setShowQuickQuestions(false);
     setIsTyping(true);
 
     // Process the question
     setTimeout(() => {
-      const matchedResponse = findBestResponse(question.text);
+      const actionButtons: ActionButton[] = [];
       
-      const actionButtons: ActionButton[] = matchedResponse.actionButtons?.map(button => ({
-        text: button.text,
-        action: () => navigate(button.path),
-        icon: button.icon,
-        color: button.color
-      })) || [];
+      // Add navigation button if action path exists
+      if (questionData.actionPath) {
+        actionButtons.push({
+          text: 'Go to ' + questionData.actionPath.replace('/', '').replace('-', ' '),
+          action: () => navigate(questionData.actionPath!),
+          icon: <IconComponent icon={FaRocket} />,
+          color: 'from-purple-500 to-pink-500'
+        });
+      }
 
       const botResponse: Message = {
         id: messages.length + 2,
-        text: matchedResponse.response,
+        text: questionData.response || 'I can help you with that! Let me know if you need more specific information.',
         sender: 'bot',
         timestamp: new Date(),
-        isAIResponse: true,
-        actionButtons
+        isAIResponse: false,
+        actionButtons,
+        quickQuestions: questionData.followUpQuestions && questionData.followUpQuestions.length > 0 
+          ? questionData.followUpQuestions 
+          : undefined
       };
       
       setMessages(prev => [...prev, botResponse]);
+      
+      // Update current questions
+      if (questionData.followUpQuestions && questionData.followUpQuestions.length > 0) {
+        setCurrentQuestions(questionData.followUpQuestions);
+        setQuestionHistory(prev => [...prev, questionData.followUpQuestions!]);
+      } else {
+        setShowQuickQuestions(false);
+      }
+      
       setIsTyping(false);
+
+      // Navigate if action path is provided (with delay)
+      if (questionData.actionPath) {
+        setTimeout(() => {
+          navigate(questionData.actionPath!);
+        }, 2000);
+      }
     }, 1000);
+  };
+
+  // Handle back navigation in questions
+  const handleBackQuestions = () => {
+    if (questionHistory.length > 1) {
+      const newHistory = questionHistory.slice(0, -1);
+      setQuestionHistory(newHistory);
+      setCurrentQuestions(newHistory[newHistory.length - 1]);
+    } else {
+      setCurrentQuestions(getInitialQuestions());
+      setQuestionHistory([getInitialQuestions()]);
+    }
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -500,7 +325,7 @@ const ChatBot: React.FC = () => {
     const needsAI = aiTriggers.some(trigger => currentInput.toLowerCase().includes(trigger));
 
     if (needsAI && user && isProUser) {
-      // Try to use AI response for pro users
+      // Try to use AI response for pro users (this WILL deduct from response quota)
       try {
         const responseCheck = await checkAndUseResponse({
           responseType: 'chatbot',
@@ -509,7 +334,7 @@ const ChatBot: React.FC = () => {
         });
 
         if (responseCheck.canProceed) {
-          // Call AI API
+          // Call AI API - this deducts responses for ChatBot AI features
           try {
             const aiResponse = await handleAIResponse(currentInput);
             const cleanedResponse = cleanAIResponseText(aiResponse);
@@ -540,16 +365,41 @@ const ChatBot: React.FC = () => {
       }
     }
 
-    // Fall back to default responses
+    // Fall back to finding matching question from our database
+    const matchingQuestion = quickQuestionsData.find(q => 
+      q.text.toLowerCase().includes(currentInput.toLowerCase()) ||
+      currentInput.toLowerCase().includes(q.category.toLowerCase()) ||
+      (q.response && currentInput.toLowerCase().split(' ').some(word => 
+        q.response!.toLowerCase().includes(word)
+      ))
+    );
+
     setTimeout(() => {
-      const matchedResponse = findBestResponse(currentInput);
-      
-      const actionButtons: ActionButton[] = matchedResponse.actionButtons?.map(button => ({
-        text: button.text,
-        action: () => navigate(button.path),
-        icon: button.icon,
-        color: button.color
-      })) || [];
+      let responseText = "I'm your MatrixEdu AI Assistant! I can help you with courses, universities, AI tutoring, content creation, and more. What would you like to explore?";
+      let actionButtons: ActionButton[] = [];
+      let followUpQuestions: QuickQuestion[] | undefined;
+
+      if (matchingQuestion) {
+        responseText = matchingQuestion.response || responseText;
+        followUpQuestions = matchingQuestion.followUpQuestions;
+        
+        if (matchingQuestion.actionPath) {
+          actionButtons.push({
+            text: 'Go to ' + matchingQuestion.actionPath.replace('/', '').replace('-', ' '),
+            action: () => navigate(matchingQuestion.actionPath!),
+            icon: <IconComponent icon={FaRocket} />,
+            color: 'from-purple-500 to-pink-500'
+          });
+        }
+      } else {
+        // Add default navigation buttons
+        actionButtons.push({
+          text: 'Explore Platform',
+          action: () => navigate('/dashboard'),
+          icon: <IconComponent icon={FaRocket} />,
+          color: 'from-cyan-500 to-purple-500'
+        });
+      }
 
       // Add authentication check for certain actions
       if (!user && ['courses', 'aitutor', 'applications', 'profile'].some(keyword => 
@@ -564,13 +414,22 @@ const ChatBot: React.FC = () => {
 
       const botResponse: Message = {
         id: messages.length + 2,
-        text: matchedResponse.response,
+        text: responseText,
         sender: 'bot',
         timestamp: new Date(),
-        actionButtons
+        actionButtons,
+        quickQuestions: followUpQuestions
       };
       
       setMessages(prev => [...prev, botResponse]);
+      
+      // Update current questions if follow-ups exist
+      if (followUpQuestions && followUpQuestions.length > 0) {
+        setCurrentQuestions(followUpQuestions);
+        setQuestionHistory(prev => [...prev, followUpQuestions!]);
+        setShowQuickQuestions(true);
+      }
+      
       setIsTyping(false);
     }, 1000);
   };
@@ -595,12 +454,20 @@ const ChatBot: React.FC = () => {
       whileTap={{ scale: 0.98 }}
     >
       <div className="flex items-center justify-between">
-        <span>{question.text}</span>
-        {(question.requiresAuth && !user) || (question.requiresPro && !isProUser) ? (
-          <span className="text-orange-400 text-xs">
-            {question.requiresPro ? '⭐ Pro' : '🔒 Login'}
-          </span>
-        ) : null}
+        <div className="flex items-center gap-2">
+          <span className="text-lg">{question.icon}</span>
+          <span>{question.text}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {(question.requiresAuth && !user) || (question.requiresPro && !isProUser) ? (
+            <span className="text-xs px-2 py-1 bg-orange-500/20 text-orange-300 rounded-full">
+              {question.requiresPro ? 'Pro' : 'Login'}
+            </span>
+          ) : null}
+          {question.followUpQuestions && question.followUpQuestions.length > 0 ? (
+            <span className="text-purple-400">→</span>
+          ) : null}
+        </div>
       </div>
     </motion.button>
   );
@@ -697,150 +564,174 @@ const ChatBot: React.FC = () => {
                 <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent" />
               </div>
 
-              {/* Quick Questions Section */}
-              {showQuickQuestions && (
-                <div className="p-4 border-b border-cyan-400/20 bg-gray-900/30">
-                  <h4 className="text-cyan-400 text-sm font-semibold mb-3">Quick Questions:</h4>
-                  <div className="space-y-2 max-h-32 overflow-y-auto">
-                    {quickQuestions.slice(0, 6).map((question, index) => (
-                      <QuickQuestionButton key={index} question={question} />
-                    ))}
-                  </div>
-                  <button
-                    onClick={() => setShowQuickQuestions(false)}
-                    className="text-gray-400 text-xs mt-2 hover:text-cyan-400 transition-colors"
-                  >
-                    Hide suggestions
-                  </button>
-                </div>
-              )}
-
               {/* Chat messages with cyberpunk styling */}
-              <div className={`p-4 overflow-y-auto scrollbar-thin scrollbar-track-gray-800 scrollbar-thumb-cyan-500 ${showQuickQuestions ? 'h-64' : 'h-80'}`}>
-                <AnimatePresence>
-                  {messages.map((message) => (
-                    <motion.div
-                      key={message.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      className={`mb-4 ${message.sender === 'user' ? 'text-right' : 'text-left'}`}
-                    >
-                      <div className={`inline-block max-w-[80%] ${message.sender === 'user' ? 'ml-auto' : 'mr-auto'}`}>
-                        <div
-                          className={`p-3 rounded-2xl relative overflow-hidden ${
-                            message.sender === 'user'
-                              ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white'
-                              : message.isAIResponse
-                              ? 'bg-gradient-to-r from-purple-800/50 to-blue-800/50 border border-purple-400/30 text-gray-100'
-                              : 'bg-gray-800/80 border border-cyan-400/20 text-gray-100'
-                          }`}
-                        >
-                          {message.sender === 'bot' && !message.isAIResponse && (
-                            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-purple-500/5" />
-                          )}
-                          
-                          {message.isAIResponse && (
-                            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-500/10" />
-                          )}
-                          
-                          <div className="relative z-10">
-                            {message.isAIResponse && (
-                              <div className="text-xs text-purple-300 mb-2 font-semibold">🤖 AI Response:</div>
+              <div className="flex flex-col" style={{ height: 'calc(100% - 80px)' }}>
+                <div className="flex-1 p-4 overflow-y-auto ai-scrollbar" style={{ minHeight: 0 }}>
+                  <AnimatePresence>
+                    {messages.map((message) => (
+                      <motion.div
+                        key={message.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className={`mb-4 ${message.sender === 'user' ? 'text-right' : 'text-left'}`}
+                      >
+                        <div className={`inline-block max-w-[80%] ${message.sender === 'user' ? 'ml-auto' : 'mr-auto'}`}>
+                          <div
+                            className={`p-3 rounded-2xl relative overflow-hidden ${
+                              message.sender === 'user'
+                                ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white'
+                                : message.isAIResponse
+                                ? 'bg-gradient-to-r from-purple-800/50 to-blue-800/50 border border-purple-400/30 text-gray-100'
+                                : 'bg-gray-800/80 border border-cyan-400/20 text-gray-100'
+                            }`}
+                          >
+                            {message.sender === 'bot' && !message.isAIResponse && (
+                              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-purple-500/5" />
                             )}
-                            <div className="text-sm leading-relaxed whitespace-pre-wrap">
-                              {message.text}
-                            </div>
                             
-                            {/* Action buttons */}
-                            {message.actionButtons && message.actionButtons.length > 0 && (
-                              <div className="mt-3 flex flex-wrap gap-2">
-                                {message.actionButtons.map((button, index) => (
-                                  <QuickActionButton key={index} button={button} />
-                                ))}
-                              </div>
+                            {message.isAIResponse && (
+                              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-500/10" />
                             )}
+                            
+                            <div className="relative z-10">
+                              {message.isAIResponse && (
+                                <div className="text-xs text-purple-300 mb-2 font-semibold">🤖 AI Response:</div>
+                              )}
+                              <div className="text-sm leading-relaxed whitespace-pre-wrap">
+                                {message.text}
+                              </div>
+                              
+                              {/* Action buttons */}
+                              {message.actionButtons && message.actionButtons.length > 0 && (
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                  {message.actionButtons.map((button, index) => (
+                                    <QuickActionButton key={index} button={button} />
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Quick Questions for this message */}
+                              {message.quickQuestions && message.quickQuestions.length > 0 && (
+                                <div className="mt-3">
+                                  <div className="text-xs text-cyan-300 mb-2 font-semibold">Quick follow-ups:</div>
+                                  <div className="space-y-2">
+                                    {message.quickQuestions.slice(0, 3).map((question, index) => (
+                                      <QuickQuestionButton key={question.id} question={question} />
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className={`text-xs text-gray-400 mt-1 ${message.sender === 'user' ? 'text-right' : 'text-left'}`}>
+                            {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </div>
                         </div>
-                        
-                        <div className={`text-xs text-gray-400 mt-1 ${message.sender === 'user' ? 'text-right' : 'text-left'}`}>
-                          {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+
+                  {/* Typing indicator */}
+                  {isTyping && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mb-4"
+                    >
+                      <div className="inline-block bg-gray-800/80 border border-cyan-400/20 p-3 rounded-2xl">
+                        <div className="flex space-x-1">
+                          {[0, 1, 2].map((i) => (
+                            <motion.div
+                              key={i}
+                              className="w-2 h-2 bg-cyan-400 rounded-full"
+                              animate={{ scale: [1, 1.2, 1] }}
+                              transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.2 }}
+                            />
+                          ))}
                         </div>
                       </div>
                     </motion.div>
-                  ))}
-                </AnimatePresence>
+                  )}
+                  
+                  <div ref={messagesEndRef} />
+                </div>
 
-                {/* Typing indicator */}
-                {isTyping && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mb-4"
-                  >
-                    <div className="inline-block bg-gray-800/80 border border-cyan-400/20 p-3 rounded-2xl">
-                      <div className="flex space-x-1">
-                        {[0, 1, 2].map((i) => (
-                          <motion.div
-                            key={i}
-                            className="w-2 h-2 bg-cyan-400 rounded-full"
-                            animate={{ scale: [1, 1.2, 1] }}
-                            transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.2 }}
-                          />
-                        ))}
+                {/* Quick Questions Section */}
+                {showQuickQuestions && (
+                  <div className="border-t border-cyan-400/20 bg-gray-900/30 p-4 max-h-40 overflow-y-auto ai-scrollbar flex-shrink-0">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-cyan-400 text-sm font-semibold">Quick Questions:</h4>
+                      <div className="flex gap-2">
+                        {questionHistory.length > 1 && (
+                          <button
+                            onClick={handleBackQuestions}
+                            className="text-xs text-gray-400 hover:text-cyan-400 transition-colors"
+                          >
+                            ← Back
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setShowQuickQuestions(false)}
+                          className="text-xs text-gray-400 hover:text-red-400 transition-colors"
+                        >
+                          Hide
+                        </button>
                       </div>
                     </div>
-                  </motion.div>
-                )}
-                
-                <div ref={messagesEndRef} />
-              </div>
-
-              {/* Show quick questions button */}
-              {!showQuickQuestions && (
-                <div className="px-4 pb-2">
-                  <button
-                    onClick={() => setShowQuickQuestions(true)}
-                    className="text-cyan-400 text-xs hover:text-cyan-300 transition-colors"
-                  >
-                    Show quick questions
-                  </button>
-                </div>
-              )}
-
-              {/* Futuristic input field */}
-              <div className="p-4 border-t border-cyan-400/20 bg-gray-900/50">
-                <form onSubmit={handleSubmit} className="relative">
-                  <div className="flex items-center space-x-2">
-                    <div className="flex-1 relative">
-                      <input
-                        type="text"
-                        value={inputValue}
-                        onChange={handleInputChange}
-                        placeholder="Ask me anything about MatrixEdu..."
-                        className="w-full p-3 bg-gray-800/80 border border-cyan-400/30 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all"
-                      />
+                    <div className="space-y-2">
+                      {currentQuestions.slice(0, 4).map((question) => (
+                        <QuickQuestionButton key={question.id} question={question} />
+                      ))}
                     </div>
-                    
-                    <motion.button
-                      type="submit"
-                      className="p-3 bg-gradient-to-r from-cyan-500 to-purple-500 text-white rounded-xl hover:from-cyan-600 hover:to-purple-600 transition-all shadow-lg"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      disabled={!inputValue.trim() || isTyping}
-                    >
-                      <IconComponent icon={FaPaperPlane} size={16} />
-                    </motion.button>
                   </div>
-                </form>
-                
-                {/* Status indicator */}
-                <div className="mt-2 text-xs text-gray-400 flex items-center justify-between">
-                  <span>
-                    {user ? (
-                      isProUser ? '⭐ Pro features enabled' : '🆓 Basic features'
-                    ) : '👋 Sign in for full features'}
-                  </span>
+                )}
+
+                {/* Futuristic input field */}
+                <div className="p-4 border-t border-cyan-400/20 bg-gray-900/50 flex-shrink-0">
+                  {!showQuickQuestions && (
+                    <div className="mb-2">
+                      <button
+                        onClick={() => setShowQuickQuestions(true)}
+                        className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
+                      >
+                        Show quick questions
+                      </button>
+                    </div>
+                  )}
+                  <form onSubmit={handleSubmit} className="relative">
+                    <div className="flex items-center space-x-2">
+                      <div className="flex-1 relative">
+                        <input
+                          type="text"
+                          value={inputValue}
+                          onChange={handleInputChange}
+                          placeholder="Ask me anything about MatrixEdu..."
+                          className="w-full p-3 bg-gray-800/80 border border-cyan-400/30 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all ai-scrollbar"
+                        />
+                      </div>
+                      
+                      <motion.button
+                        type="submit"
+                        className="p-3 bg-gradient-to-r from-cyan-500 to-purple-500 text-white rounded-xl hover:from-cyan-600 hover:to-purple-600 transition-all shadow-lg"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        disabled={!inputValue.trim() || isTyping}
+                      >
+                        <IconComponent icon={FaPaperPlane} size={16} />
+                      </motion.button>
+                    </div>
+                  </form>
+                  
+                  {/* Status indicator */}
+                  <div className="mt-2 text-xs text-gray-400 flex items-center justify-between">
+                    <span>
+                      {user ? (
+                        isProUser ? '⭐ Pro features enabled' : '🆓 Basic features'
+                      ) : '👋 Sign in for full features'}
+                    </span>
+                  </div>
                 </div>
               </div>
             </motion.div>

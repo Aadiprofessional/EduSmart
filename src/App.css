@@ -62,26 +62,7 @@
   --lavender-600: #9333ea;
 }
 
-/* Modern scrollbar */
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--primary-light);
-  border-radius: 10px;
-  transition: background 0.3s ease;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--primary-color);
-}
+/* AI-themed scrollbars are now handled in index.css for consistency across the website */
 
 /* Global animation styles */
 .fade-in {

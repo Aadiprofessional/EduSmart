@@ -141,7 +141,7 @@ const MagneticCursor: React.FC = () => {
   return (
     <div
       ref={cursorRef}
-      className="fixed w-10 h-10 pointer-events-none z-[9999]"
+      className="fixed w-10 h-10 pointer-events-none z-[2147483647]"
       style={{
         background: 'transparent',
         borderRadius: '50%',

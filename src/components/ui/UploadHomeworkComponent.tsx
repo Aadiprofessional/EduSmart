@@ -67,6 +67,12 @@ interface HomeworkHistoryItem {
   fileType: string;
   documentPages?: string[];
   file?: File;
+  // Add page solutions to properly store all page-specific solutions
+  pageSolutions?: PageSolution[];
+  // Add current page to restore navigation state
+  currentPage?: number;
+  // Add processing completion state
+  overallProcessingComplete?: boolean;
 }
 
 // Add new interface for page solutions
@@ -134,8 +140,8 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
     localStorage.setItem('homeworkHistory', JSON.stringify(homeworkHistory));
   }, [homeworkHistory]);
 
-  // Function to add item to history - updated to include document pages
-  const addToHistory = (fileName: string, question: string, answer: string, fileType: string, documentPages?: string[], originalFile?: File) => {
+  // Function to add item to history - updated to include complete page solutions and state
+  const addToHistory = (fileName: string, question: string, answer: string, fileType: string, documentPages?: string[], originalFile?: File, pageSolutions?: PageSolution[], currentPageIndex?: number, processingComplete?: boolean) => {
     const newItem: HomeworkHistoryItem = {
       id: Date.now().toString(),
       fileName,
@@ -144,13 +150,24 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
       timestamp: new Date(),
       fileType,
       documentPages,
-      file: originalFile
+      file: originalFile,
+      pageSolutions,
+      currentPage: currentPageIndex,
+      overallProcessingComplete: processingComplete
     };
     setHomeworkHistory(prev => [newItem, ...prev.slice(0, 19)]); // Keep only last 20 items
   };
 
-  // Function to load from history - updated to restore file and document pages
+  // Function to load from history - updated to restore complete state including all page solutions
   const loadFromHistory = (item: HomeworkHistoryItem) => {
+    console.log('🔄 Loading from history:', {
+      fileName: item.fileName,
+      hasDocumentPages: !!item.documentPages?.length,
+      hasPageSolutions: !!item.pageSolutions?.length,
+      currentPage: item.currentPage,
+      overallComplete: item.overallProcessingComplete
+    });
+    
     setQuestion(item.question);
     setAnswer(item.answer);
     setShowHistory(false);
@@ -158,24 +175,34 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
     // Restore document pages if available
     if (item.documentPages && item.documentPages.length > 0) {
       setDocumentPages(item.documentPages);
-      setCurrentPage(0);
+      setCurrentPage(item.currentPage || 0);
       
-      // If we have document pages, show the get answer button
-      setShowGetAnswerButton(true);
-      
-      // Initialize page solutions for historical data
-      const initialPageSolutions: PageSolution[] = item.documentPages.map((_, index) => ({
-        pageNumber: index + 1,
-        solution: index === 0 ? item.answer : '', // Only first page has the answer for now
-        isLoading: false,
-        isComplete: true
-      }));
-      setPageSolutions(initialPageSolutions);
+      // Restore complete page solutions if available
+      if (item.pageSolutions && item.pageSolutions.length > 0) {
+        console.log('✅ Restoring complete page solutions:', item.pageSolutions.length, 'pages');
+        setPageSolutions(item.pageSolutions);
+        setShowGetAnswerButton(false); // Hide button since solutions are already loaded
+        setOverallProcessingComplete(item.overallProcessingComplete || true);
+      } else {
+        console.log('⚠️ No page solutions found, creating legacy fallback');
+        // Fallback: Initialize page solutions with the combined answer (legacy support)
+        const initialPageSolutions: PageSolution[] = item.documentPages.map((_, index) => ({
+          pageNumber: index + 1,
+          solution: index === 0 ? item.answer : '', // Only first page has the answer for legacy items
+          isLoading: false,
+          isComplete: true
+        }));
+        setPageSolutions(initialPageSolutions);
+        setShowGetAnswerButton(true); // Show button for legacy items
+        setOverallProcessingComplete(false);
+      }
     } else {
+      console.log('📝 Loading text question from history');
       // Clear document-related state for text questions
       setDocumentPages([]);
       setPageSolutions([]);
       setShowGetAnswerButton(false);
+      setOverallProcessingComplete(false);
     }
     
     // Clear file state since we're loading from history
@@ -183,6 +210,12 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+    
+    // Clear any processing status
+    setProcessingStatus('');
+    setLoading(false);
+    
+    console.log('✅ History loaded successfully');
   };
 
   // Function to delete history item
@@ -903,8 +936,19 @@ Format your response with:
         
         console.log('✅ All pages processing completed');
         
-        // Create combined solution for history
-        const completedSolutions = pageSolutions.filter(ps => ps.isComplete && !ps.error);
+        // Get the final page solutions state after all processing
+        const finalPageSolutions = await new Promise<PageSolution[]>((resolve) => {
+          // Use a small timeout to ensure state is updated
+          setTimeout(() => {
+            setPageSolutions(currentSolutions => {
+              resolve(currentSolutions);
+              return currentSolutions;
+            });
+          }, 100);
+        });
+        
+        // Create combined solution for history using final solutions
+        const completedSolutions = finalPageSolutions.filter(ps => ps.isComplete && !ps.error);
         let combinedSolution = '';
         if (completedSolutions.length > 0) {
           if (documentPages.length > 1) {
@@ -916,10 +960,10 @@ Format your response with:
           }
         }
         
-        // Add to history with document pages
+        // Add to history with final page solutions and complete state
         if (combinedSolution && file) {
-          addToHistory(file.name, question || 'Document Analysis', combinedSolution, file.type, documentPages, file);
-          console.log('💾 Added to history with document pages');
+          addToHistory(file.name, question || 'Document Analysis', combinedSolution, file.type, documentPages, file, finalPageSolutions, currentPage, true);
+          console.log('💾 Added to history with complete page solutions');
         }
         
         setOverallProcessingComplete(true);
@@ -932,7 +976,7 @@ Format your response with:
         setAnswer(solution);
         
         // Add to history
-        addToHistory('Text Question', question, solution, 'text');
+        addToHistory('Text Question', question, solution, 'text', undefined, undefined, undefined, undefined, undefined);
         console.log('✅ Text question processed successfully');
       } else {
         throw new Error('Please provide a question or upload a document');
@@ -1264,7 +1308,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
       setAnswer(solution);
       
       // Add to history
-      addToHistory('Text Question', question, solution, 'text');
+      addToHistory('Text Question', question, solution, 'text', undefined, undefined, undefined, undefined, undefined);
       console.log('✅ Text question processed successfully');
     } catch (error) {
       console.error('💥 Text submission error:', error);
@@ -2001,90 +2045,170 @@ please give small bullet points of what knowlegde is needed to solve the problem
       <AnimatePresence>
         {showHistory && (
           <motion.div 
-            className="mt-8 bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl p-6 shadow-sm"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowHistory(false)}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-cyan-400">Homework History</h3>
-              <div className="flex items-center space-x-2">
-                {homeworkHistory.length > 0 && (
-                  <motion.button
-                    variants={buttonVariants}
-                    whileHover="hover"
-                    whileTap="tap"
-                    onClick={clearAllHistory}
-                    className="px-3 py-1 bg-red-500/20 text-red-400 rounded-lg text-sm font-medium hover:bg-red-500/30 transition-colors border border-red-500/30"
+            <motion.div 
+              className="bg-slate-800/90 backdrop-blur-sm border border-white/10 rounded-xl p-6 max-w-4xl w-full max-h-[80vh] overflow-hidden shadow-2xl"
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-semibold text-cyan-400 flex items-center">
+                  <IconComponent icon={AiOutlineHistory} className="h-7 w-7 mr-3" />
+                  Homework History
+                  <span className="ml-3 text-sm bg-cyan-500/20 text-cyan-400 px-3 py-1 rounded-full">
+                    {homeworkHistory.length} item{homeworkHistory.length !== 1 ? 's' : ''}
+                  </span>
+                </h3>
+                <div className="flex items-center space-x-3">
+                  {homeworkHistory.length > 0 && (
+                    <motion.button
+                      variants={buttonVariants}
+                      whileHover="hover"
+                      whileTap="tap"
+                      onClick={clearAllHistory}
+                      className="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg text-sm font-medium hover:bg-red-500/30 transition-colors border border-red-500/30"
+                    >
+                      <IconComponent icon={FiTrash2} className="h-4 w-4 mr-2" />
+                      Clear All
+                    </motion.button>
+                  )}
+                  <button
+                    onClick={() => setShowHistory(false)}
+                    className="text-slate-400 hover:text-slate-300 p-2 rounded-lg hover:bg-slate-700/50 transition-colors"
                   >
-                    Clear All
-                  </motion.button>
-                )}
-                <button
-                  onClick={() => setShowHistory(false)}
-                  className="text-sm text-slate-400 hover:text-slate-300"
-                >
-                  Hide
-                </button>
-              </div>
-            </div>
-            
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {homeworkHistory.length > 0 ? (
-                homeworkHistory.map((item) => (
-                  <motion.div
-                    key={item.id}
-                    className="p-4 bg-slate-600/40 backdrop-blur-sm rounded-lg cursor-pointer hover:bg-slate-500/40 transition-colors group border border-white/10"
-                    onClick={() => loadFromHistory(item)}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <IconComponent 
-                            icon={item.fileType === 'text' ? AiOutlineFileText : AiOutlineUpload} 
-                            className="h-4 w-4 text-cyan-400" 
-                          />
-                          <p className="text-sm font-medium text-slate-300 truncate">
-                            {item.fileName}
-                          </p>
-                          <span className="text-xs text-slate-400">
-                            <IconComponent icon={FiClock} className="h-3 w-3 inline mr-1" />
-                            {formatRelativeTime(item.timestamp)}
-                          </span>
-                        </div>
-                        <p className="text-sm text-slate-400 truncate mb-2">
-                          {item.question.length > 100 ? `${item.question.substring(0, 100)}...` : item.question}
-                        </p>
-                        <p className="text-xs text-slate-500 truncate">
-                          Solution: {item.answer.length > 80 ? `${item.answer.substring(0, 80)}...` : item.answer}
-                        </p>
-                      </div>
-                      
-                      <motion.button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteHistoryItem(item.id);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-400 transition-all"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        <IconComponent icon={FiTrash2} className="h-4 w-4" />
-                      </motion.button>
-                    </div>
-                  </motion.div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-slate-400">
-                  <IconComponent icon={AiOutlineHistory} className="mx-auto text-4xl mb-2" />
-                  <p>No homework history yet</p>
-                  <p className="text-sm mt-1">Your solved homework will appear here</p>
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 </div>
-              )}
-            </div>
+              </div>
+              
+              <div className="overflow-y-auto max-h-[calc(80vh-120px)]">
+                {homeworkHistory.length > 0 ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {homeworkHistory.map((item) => (
+                      <motion.div
+                        key={item.id}
+                        className="p-5 bg-slate-700/40 backdrop-blur-sm rounded-xl cursor-pointer hover:bg-slate-600/50 transition-all duration-300 group border border-white/10 hover:border-cyan-500/30"
+                        onClick={() => loadFromHistory(item)}
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center space-x-3">
+                            <div className="p-2 bg-cyan-500/20 rounded-lg">
+                              <IconComponent 
+                                icon={item.fileType === 'text' ? AiOutlineFileText : AiOutlineUpload} 
+                                className="h-5 w-5 text-cyan-400" 
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-slate-200 truncate">
+                                {item.fileName}
+                              </p>
+                              <div className="flex items-center space-x-2 mt-1">
+                                {/* Show page count for documents */}
+                                {item.documentPages && item.documentPages.length > 0 && (
+                                  <span className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded-full font-medium">
+                                    {item.documentPages.length} page{item.documentPages.length > 1 ? 's' : ''}
+                                  </span>
+                                )}
+                                {/* Show completion status for page solutions */}
+                                {item.pageSolutions && item.pageSolutions.length > 0 && (
+                                  <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full font-medium">
+                                    {item.pageSolutions.filter(ps => ps.isComplete && !ps.error).length}/{item.pageSolutions.length} solved
+                                  </span>
+                                )}
+                                <span className="text-xs text-slate-400 flex items-center">
+                                  <IconComponent icon={FiClock} className="h-3 w-3 mr-1" />
+                                  {formatRelativeTime(item.timestamp)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <motion.button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteHistoryItem(item.id);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 p-2 text-slate-400 hover:text-red-400 transition-all rounded-lg hover:bg-red-500/10"
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                          >
+                            <IconComponent icon={FiTrash2} className="h-4 w-4" />
+                          </motion.button>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <p className="text-sm text-slate-300 line-clamp-2">
+                            <span className="font-medium text-cyan-400">Q:</span> {item.question.length > 120 ? `${item.question.substring(0, 120)}...` : item.question}
+                          </p>
+                          <p className="text-xs text-slate-400 line-clamp-2">
+                            <span className="font-medium text-green-400">A:</span> {item.answer.length > 150 ? `${item.answer.substring(0, 150)}...` : item.answer}
+                          </p>
+                        </div>
+                        
+                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-600/50">
+                          <div className="flex items-center space-x-2">
+                            {/* Show indicators for different types of saved content */}
+                            {item.overallProcessingComplete && (
+                              <span className="text-xs text-emerald-400 font-medium bg-emerald-500/10 px-2 py-1 rounded-full" title="Complete processing">
+                                ✓ Complete
+                              </span>
+                            )}
+                            {item.pageSolutions && item.pageSolutions.length > 0 && (
+                              <span className="text-xs text-blue-400 font-medium" title="Has page-by-page solutions">
+                                📄
+                              </span>
+                            )}
+                            {item.documentPages && item.documentPages.length > 0 && (
+                              <span className="text-xs text-purple-400 font-medium" title="Has document images">
+                                🖼️
+                              </span>
+                            )}
+                          </div>
+                          
+                          <motion.div 
+                            className="text-xs text-cyan-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center"
+                            initial={{ x: 10 }}
+                            animate={{ x: 0 }}
+                          >
+                            Click to restore
+                            <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </motion.div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-16 text-slate-400">
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <IconComponent icon={AiOutlineHistory} className="mx-auto text-6xl mb-4 opacity-50" />
+                      <p className="text-xl font-medium mb-2">No homework history yet</p>
+                      <p className="text-sm">Your solved homework problems will appear here</p>
+                      <p className="text-xs mt-2 text-slate-500">Upload documents or ask questions to get started</p>
+                    </motion.div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

@@ -51,7 +51,7 @@ import IconWrapper from '../components/IconWrapper';
 import PageHeader from '../components/ui/PageHeader';
 import IconComponent from '../components/ui/IconComponent';
 import { API_BASE_URL } from '../config/api';
-import { API_BASE, API_V2_BASE } from '../config/api';
+import { API_BASE, API_V2_BASE, getAuthHeaders } from '../config/api';
 
 // Enhanced API service
 const API_ENDPOINTS = {
@@ -128,7 +128,7 @@ interface Category {
 
 const Courses: React.FC = () => {
   const { t } = useLanguage();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
   
@@ -207,11 +207,20 @@ const Courses: React.FC = () => {
     if (!user?.id) return;
     
     try {
-      const response = await fetch(`${API_V2_BASE}/courses/${courseId}/enrollment/${user.id}`);
+      // Add authentication headers for V2 API
+      const headers = getAuthHeaders(user, session);
+      const response = await fetch(`${API_V2_BASE}/courses/${courseId}/enrollment/${user.id}`, {
+        headers
+      });
       
       if (!response.ok) {
         // If endpoint doesn't exist or returns 404, assume not enrolled
         if (response.status === 404) {
+          return;
+        }
+        // If 401, user needs to authenticate - don't show error
+        if (response.status === 401) {
+          console.warn('User not authenticated for enrollment check');
           return;
         }
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -265,10 +274,14 @@ const Courses: React.FC = () => {
       
       const data = await response.json();
       
-      // Handle the actual API response format: {"courses": [...], "pagination": {...}}
-      if (data.courses && Array.isArray(data.courses)) {
+      // Handle the actual production API response format: {"success": true, "data": {"courses": [...], "pagination": {...}}}
+      if (data.success && data.data && data.data.courses && Array.isArray(data.data.courses)) {
+        setCourses(data.data.courses);
+      } else if (data.courses && Array.isArray(data.courses)) {
+        // Fallback for direct courses array format
         setCourses(data.courses);
       } else {
+        console.error('Unexpected API response format:', data);
         throw new Error('Invalid response format: courses not found');
       }
     } catch (error: any) {
@@ -282,20 +295,84 @@ const Courses: React.FC = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch(`${API_BASE}/course-categories`);
-      const data = await response.json();
+      // First try the dedicated categories endpoint
+      let response = await fetch(`${API_BASE_URL}/course-categories`);
       
-      if (response.ok && data.categories) {
-        // Convert categories array to the expected format
-        const formattedCategories = data.categories.map((cat: string, index: number) => ({
-          id: index.toString(),
-          name: cat,
-          slug: cat.toLowerCase().replace(/\s+/g, '-')
-        }));
-        setCategories(formattedCategories);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.categories) {
+          // Convert categories array to the expected format
+          const formattedCategories = data.categories.map((cat: string, index: number) => ({
+            id: index.toString(),
+            name: cat,
+            slug: cat.toLowerCase().replace(/\s+/g, '-')
+          }));
+          setCategories(formattedCategories);
+          return;
+        }
       }
+      
+      // Fallback: Extract categories from courses data
+      console.log('Categories endpoint not available, extracting from courses data');
+      const coursesResponse = await fetch(`${API_BASE}/courses?limit=100`);
+      
+      if (coursesResponse.ok) {
+        const coursesData = await coursesResponse.json();
+        
+        let coursesArray = [];
+        
+        // Handle production API format: {"success": true, "data": {"courses": [...]}}
+        if (coursesData.success && coursesData.data && coursesData.data.courses) {
+          coursesArray = coursesData.data.courses;
+        } else if (coursesData.courses && Array.isArray(coursesData.courses)) {
+          // Fallback for direct courses array format
+          coursesArray = coursesData.courses;
+        }
+        
+        if (coursesArray.length > 0) {
+          // Extract unique categories from courses
+          const categorySet = new Set<string>();
+          coursesArray.forEach((course: any) => {
+            if (course.category && course.category.trim() !== '') {
+              categorySet.add(course.category);
+            }
+          });
+          
+          const uniqueCategories = Array.from(categorySet);
+          
+          const formattedCategories = uniqueCategories.map((cat: string, index: number) => ({
+            id: index.toString(),
+            name: cat.charAt(0).toUpperCase() + cat.slice(1).replace(/-/g, ' '),
+            slug: cat.toLowerCase().replace(/\s+/g, '-')
+          }));
+          
+          setCategories(formattedCategories);
+          console.log('Extracted categories:', formattedCategories);
+          return;
+        }
+      }
+      
+      // Final fallback: Set some default categories
+      const defaultCategories = [
+        { id: '0', name: 'Programming', slug: 'programming' },
+        { id: '1', name: 'Data Science', slug: 'data-science' },
+        { id: '2', name: 'Technology', slug: 'technology' },
+        { id: '3', name: 'Business', slug: 'business' },
+        { id: '4', name: 'Design', slug: 'design' }
+      ];
+      setCategories(defaultCategories);
+      console.log('Using default categories');
     } catch (error) {
       console.error('Error fetching categories:', error);
+      // Set some default categories as fallback
+      const defaultCategories = [
+        { id: '0', name: 'Programming', slug: 'programming' },
+        { id: '1', name: 'Data Science', slug: 'data-science' },
+        { id: '2', name: 'Technology', slug: 'technology' },
+        { id: '3', name: 'Business', slug: 'business' },
+        { id: '4', name: 'Design', slug: 'design' }
+      ];
+      setCategories(defaultCategories);
     }
   };
 
@@ -303,11 +380,20 @@ const Courses: React.FC = () => {
     if (!user?.id) return;
     
     try {
-      const response = await fetch(`${API_V2_BASE}/users/${user.id}/enrollments`);
+      // Add authentication headers for V2 API
+      const headers = getAuthHeaders(user, session);
+      const response = await fetch(`${API_V2_BASE}/users/${user.id}/enrollments`, {
+        headers
+      });
       
       if (!response.ok) {
         // If endpoint doesn't exist or returns 404, assume no enrollments
         if (response.status === 404) {
+          return;
+        }
+        // If 401, user needs to authenticate - don't show error
+        if (response.status === 401) {
+          console.warn('User not authenticated for enrollments check');
           return;
         }
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -343,12 +429,14 @@ const Courses: React.FC = () => {
       
       const data = await response.json();
       
-      // Handle the actual API response format: {"course": {...}}
-      if (data.course) {
+      // Handle the production API response format: {"success": true, "data": {"course": {...}}}
+      if (data.success && data.data && data.data.course) {
+        setSelectedCourse(data.data.course);
+      } else if (data.course) {
+        // Fallback for direct course object format
         setSelectedCourse(data.course);
-        // Note: Course sections would need to be fetched separately if needed
-        // as our tested API doesn't include sections in the course details
       } else {
+        console.error('Unexpected course details response format:', data);
         throw new Error('Course not found in response');
       }
     } catch (error: any) {
@@ -379,11 +467,11 @@ const Courses: React.FC = () => {
 
       console.log('Enrollment data:', enrollmentData);
 
+      // Add authentication headers for V2 API
+      const headers = getAuthHeaders(user, session);
       const response = await fetch(`${API_V2_BASE}/courses/${courseId}/enroll`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(enrollmentData),
       });
 
@@ -443,7 +531,9 @@ const Courses: React.FC = () => {
       const sectionsUrl = `${API_V2_BASE}/courses/${courseId}/sections?uid=${user?.id}`;
       console.log('Fetching sections from:', sectionsUrl);
       
-      const response = await fetch(sectionsUrl);
+      // Add authentication headers for V2 API
+      const headers = getAuthHeaders(user, session);
+      const response = await fetch(sectionsUrl, { headers });
       const data = await response.json();
       
       console.log('Sections response:', data);
@@ -456,7 +546,7 @@ const Courses: React.FC = () => {
           console.log('403 error, checking enrollment status...');
           
           const enrollmentCheckUrl = `${API_V2_BASE}/courses/${courseId}/enrollment/${user?.id}`;
-          const enrollmentResponse = await fetch(enrollmentCheckUrl);
+          const enrollmentResponse = await fetch(enrollmentCheckUrl, { headers });
           const enrollmentData = await enrollmentResponse.json();
           
           console.log('Enrollment check:', enrollmentData);

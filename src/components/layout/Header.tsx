@@ -65,7 +65,7 @@ const Header: React.FC = () => {
       setScrolled(scrollPosition > 10);
     };
     
-    // Force header positioning
+    // Force header positioning with lower z-index than magnetic cursor
     const enforceHeaderPosition = () => {
       const header = document.querySelector('header');
       if (header) {
@@ -75,6 +75,7 @@ const Header: React.FC = () => {
         header.style.right = '0px';
         header.style.width = '100vw';
         header.style.maxWidth = '100vw';
+        // Lower z-index - below magnetic cursor but above content
         header.style.zIndex = '999999';
         header.style.transform = 'translate3d(0, 0, 0)';
         header.style.margin = '0';
@@ -242,10 +243,10 @@ const Header: React.FC = () => {
     }
   };
 
-  // User menu dropdown content
+  // User menu dropdown content with higher z-index
   const userMenuContent = isUserMenuOpen && typeof window !== 'undefined' ? (
     <motion.div
-      className="user-menu-dropdown fixed w-48 bg-black/95 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-[1000001]"
+      className="user-menu-dropdown fixed w-52 bg-black/95 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
       variants={userMenuVariants}
       initial="hidden"
       animate="visible"
@@ -253,6 +254,7 @@ const Header: React.FC = () => {
       style={{
         top: `${userMenuPosition.top}px`,
         right: `${userMenuPosition.right}px`,
+        zIndex: 1000000, // Higher than header but lower than magnetic cursor
       }}
       onClick={(e) => e.stopPropagation()} // Prevent click bubbling
     >
@@ -265,8 +267,8 @@ const Header: React.FC = () => {
             setIsUserMenuOpen(false);
           }}
         >
-          <IconComponent icon={AiOutlineUser} className="h-4 w-4 mr-3" />
-          Profile
+          <IconComponent icon={AiOutlineUser} className="h-4 w-4 mr-3 flex-shrink-0" />
+          <span className="whitespace-nowrap">Profile</span>
         </Link>
         <Link
           to="/application-tracker"
@@ -276,8 +278,8 @@ const Header: React.FC = () => {
             setIsUserMenuOpen(false);
           }}
         >
-          <IconComponent icon={FaClipboardList} className="h-4 w-4 mr-3" />
-          Application Tracker
+          <IconComponent icon={FaClipboardList} className="h-4 w-4 mr-3 flex-shrink-0" />
+          <span className="whitespace-nowrap">Application Tracker</span>
         </Link>
         {isProUser && (
           <Link
@@ -288,8 +290,8 @@ const Header: React.FC = () => {
               setIsUserMenuOpen(false);
             }}
           >
-            <IconComponent icon={AiOutlineCrown} className="h-4 w-4 mr-3" />
-            Dashboard
+            <IconComponent icon={AiOutlineCrown} className="h-4 w-4 mr-3 flex-shrink-0" />
+            <span className="whitespace-nowrap">Dashboard</span>
           </Link>
         )}
         <button
@@ -299,8 +301,8 @@ const Header: React.FC = () => {
           }}
           className="w-full flex items-center px-4 py-3 text-gray-300 hover:text-red-400 hover:bg-red-500/5 rounded-xl transition-all duration-200"
         >
-          <IconComponent icon={AiOutlineEdit} className="h-4 w-4 mr-3" />
-          Sign Out
+          <IconComponent icon={AiOutlineEdit} className="h-4 w-4 mr-3 flex-shrink-0" />
+          <span className="whitespace-nowrap">Sign Out</span>
         </button>
       </div>
     </motion.div>
@@ -310,7 +312,7 @@ const Header: React.FC = () => {
 
   return (
     <header 
-      className={`header-fixed fixed top-0 left-0 right-0 z-[999999] transition-all duration-500 ease-out`}
+      className={`header-fixed fixed top-0 left-0 right-0 transition-all duration-500 ease-out`}
       style={{
         position: 'fixed',
         top: 0,
@@ -318,7 +320,7 @@ const Header: React.FC = () => {
         right: 0,
         width: '100vw',
         maxWidth: '100vw',
-        zIndex: 999999,
+        zIndex: 999999, // Consistent z-index - below magnetic cursor but above content
         transform: 'translate3d(0, 0, 0)',
         WebkitTransform: 'translate3d(0, 0, 0)',
         backfaceVisibility: 'hidden',
@@ -494,7 +496,7 @@ const Header: React.FC = () => {
           {/* Mobile menu button */}
           <motion.button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden p-1.5 text-white hover:bg-white/10 rounded-lg transition-all duration-200 flex-shrink-0 ml-1 sm:ml-2"
+            className="lg:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-all duration-200 flex-shrink-0 ml-2"
             variants={buttonVariants}
             whileHover="hover"
             whileTap="tap"
@@ -502,111 +504,123 @@ const Header: React.FC = () => {
           >
             <IconComponent 
               icon={isMobileMenuOpen ? AiOutlineClose : AiOutlineMenu} 
-              className="h-4 w-4 sm:h-5 sm:w-5" 
+              className="h-5 w-5" 
             />
           </motion.button>
         </div>
         
-        {/* Mobile Navigation */}
+        {/* Mobile Navigation - Improved with better spacing and visibility */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
-              className="lg:hidden bg-black/95 backdrop-blur-xl rounded-2xl border border-white/10 mt-2 sm:mt-4 overflow-hidden z-[1000000]"
+              className="lg:hidden bg-black/98 backdrop-blur-xl rounded-2xl border border-white/20 mt-3 overflow-hidden shadow-2xl"
               variants={mobileMenuVariants}
               initial="hidden"
               animate="visible"
               exit="hidden"
+              style={{ zIndex: 1000000 }}
             >
-              <div className="p-3 sm:p-4 space-y-2">
-                {navigation.map((item, index) => (
-                  <motion.div
-                    key={item.name}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                  >
-                    <Link
-                      to={item.href}
-                      className={`flex items-center px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl transition-all duration-300 ${
-                        isActive(item.href)
-                          ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border border-blue-500/30'
-                          : 'text-gray-300 hover:text-white hover:bg-white/5'
-                      }`}
-                      onClick={() => setIsMobileMenuOpen(false)}
+              <div className="p-4 space-y-3 max-h-[80vh] overflow-y-auto">
+                {/* Navigation Links */}
+                <div className="space-y-2">
+                  {navigation.map((item, index) => (
+                    <motion.div
+                      key={item.name}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
                     >
-                      <IconComponent icon={item.icon} className="h-5 w-5 mr-3" />
-                      {item.name}
-                    </Link>
-                  </motion.div>
-                ))}
-                
-                <div className="border-t border-white/20 pt-3 sm:pt-4 mt-3 sm:mt-4">
-                  <div className="mb-3 sm:mb-4">
-                    <LanguageSelector />
-                  </div>
-                  
-                  {user ? (
-                    <div className="space-y-2">
-                      {/* Pro Status or Upgrade Button for Mobile */}
-                      {isProUser ? (
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-xl border border-green-500/30">
-                            <div className="flex items-center">
-                              <IconComponent icon={AiOutlineCrown} className="h-5 w-5 mr-3 text-green-400" />
-                              <span className="text-green-400 font-medium">Pro Member</span>
-                            </div>
-                            <span className="text-green-400 text-sm">{responsesRemaining} left</span>
-                          </div>
-                          
-                          {/* Buy Addon Button for Low Responses on Mobile */}
-                          {responsesRemaining < 50 && (
-                            <Link
-                              to="/subscription"
-                              className="flex items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl font-medium transition-all duration-200"
-                              onClick={() => setIsMobileMenuOpen(false)}
-                            >
-                              <IconComponent icon={AiOutlineCrown} className="h-5 w-5 mr-3" />
-                              Buy More Responses
-                            </Link>
-                          )}
-                        </div>
-                      ) : (
-                        <Link
-                          to="/subscription"
-                          className="flex items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-xl font-medium transition-all duration-200"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                          <IconComponent icon={AiOutlineCrown} className="h-5 w-5 mr-3" />
-                          Upgrade to Pro
-                        </Link>
-                      )}
-                      
                       <Link
-                        to="/profile"
-                        className="flex items-center px-3 sm:px-4 py-2.5 sm:py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200"
+                        to={item.href}
+                        className={`flex items-center px-4 py-3 rounded-xl transition-all duration-300 ${
+                          isActive(item.href)
+                            ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border border-blue-500/30'
+                            : 'text-gray-300 hover:text-white hover:bg-white/5'
+                        }`}
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
-                        <IconComponent icon={AiOutlineUser} className="h-5 w-5 mr-3" />
-                        Profile
+                        <IconComponent icon={item.icon} className="h-5 w-5 mr-3 flex-shrink-0" />
+                        <span className="font-medium">{item.name}</span>
+                      </Link>
+                    </motion.div>
+                  ))}
+                </div>
+                
+                {/* Divider */}
+                <div className="border-t border-white/20 my-4"></div>
+                
+                {/* Language Selector */}
+                <div className="mb-4">
+                  <div className="px-2">
+                    <LanguageSelector />
+                  </div>
+                </div>
+                
+                {/* User Section */}
+                {user ? (
+                  <div className="space-y-3">
+                    {/* Pro Status or Upgrade Button for Mobile */}
+                    {isProUser ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-xl border border-green-500/30">
+                          <div className="flex items-center">
+                            <IconComponent icon={AiOutlineCrown} className="h-5 w-5 mr-3 text-green-400 flex-shrink-0" />
+                            <span className="text-green-400 font-medium">Pro Member</span>
+                          </div>
+                          <span className="text-green-400 text-sm font-medium">{responsesRemaining} left</span>
+                        </div>
+                        
+                        {/* Buy Addon Button for Low Responses on Mobile */}
+                        {responsesRemaining < 50 && (
+                          <Link
+                            to="/subscription"
+                            className="flex items-center justify-center px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl font-medium transition-all duration-200 hover:shadow-lg"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                          >
+                            <IconComponent icon={AiOutlineCrown} className="h-5 w-5 mr-3 flex-shrink-0" />
+                            <span>Buy More Responses</span>
+                          </Link>
+                        )}
+                      </div>
+                    ) : (
+                      <Link
+                        to="/subscription"
+                        className="flex items-center justify-center px-4 py-3 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-xl font-medium transition-all duration-200 hover:shadow-lg"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <IconComponent icon={AiOutlineCrown} className="h-5 w-5 mr-3 flex-shrink-0" />
+                        <span>Upgrade to Pro</span>
+                      </Link>
+                    )}
+                    
+                    {/* User Menu Items */}
+                    <div className="space-y-2">
+                      <Link
+                        to="/profile"
+                        className="flex items-center px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <IconComponent icon={AiOutlineUser} className="h-5 w-5 mr-3 flex-shrink-0" />
+                        <span className="font-medium">Profile</span>
                       </Link>
                       
                       <Link
                         to="/application-tracker"
-                        className="flex items-center px-3 sm:px-4 py-2.5 sm:py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200"
+                        className="flex items-center px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
-                        <IconComponent icon={FaClipboardList} className="h-5 w-5 mr-3" />
-                        Application Tracker
+                        <IconComponent icon={FaClipboardList} className="h-5 w-5 mr-3 flex-shrink-0" />
+                        <span className="font-medium whitespace-nowrap">Application Tracker</span>
                       </Link>
                       
                       {isProUser && (
                         <Link
                           to="/dashboard"
-                          className="flex items-center px-3 sm:px-4 py-2.5 sm:py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200"
+                          className="flex items-center px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
-                          <IconComponent icon={AiOutlineCrown} className="h-5 w-5 mr-3" />
-                          Dashboard
+                          <IconComponent icon={AiOutlineCrown} className="h-5 w-5 mr-3 flex-shrink-0" />
+                          <span className="font-medium">Dashboard</span>
                         </Link>
                       )}
                       
@@ -615,31 +629,31 @@ const Header: React.FC = () => {
                           handleSignOut();
                           setIsMobileMenuOpen(false);
                         }}
-                        className="w-full flex items-center px-3 sm:px-4 py-2.5 sm:py-3 text-gray-300 hover:text-red-400 hover:bg-red-500/5 rounded-xl transition-all duration-200"
+                        className="w-full flex items-center px-4 py-3 text-gray-300 hover:text-red-400 hover:bg-red-500/5 rounded-xl transition-all duration-200"
                       >
-                        <IconComponent icon={AiOutlineEdit} className="h-5 w-5 mr-3" />
-                        Sign Out
+                        <IconComponent icon={AiOutlineEdit} className="h-5 w-5 mr-3 flex-shrink-0" />
+                        <span className="font-medium">Sign Out</span>
                       </button>
                     </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <Link
-                        to="/login"
-                        className="block px-3 sm:px-4 py-2.5 sm:py-3 text-center text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        Login
-                      </Link>
-                      <Link
-                        to="/signup"
-                        className="block px-3 sm:px-4 py-2.5 sm:py-3 text-center bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-medium transition-all duration-200"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        Sign Up
-                      </Link>
-                    </div>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <Link
+                      to="/login"
+                      className="block px-4 py-3 text-center text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200 font-medium"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Login
+                    </Link>
+                    <Link
+                      to="/signup"
+                      className="block px-4 py-3 text-center bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-medium transition-all duration-200 hover:shadow-lg"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Sign Up
+                    </Link>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}

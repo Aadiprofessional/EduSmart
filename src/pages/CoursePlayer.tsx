@@ -51,7 +51,7 @@ import NotificationModal from '../components/ui/NotificationModal';
 import DraggableModal from '../components/ui/DraggableModal';
 import AIAssistantModal from '../components/ui/AIAssistantModal';
 import { API_BASE_URL } from '../config/api';
-import { API_BASE, API_V2_BASE } from '../config/api';
+import { API_BASE, API_V2_BASE, getAuthHeaders } from '../config/api';
 
 // Use API_V2_BASE for enhanced course functionality
 const API_COURSE_BASE = API_V2_BASE;
@@ -148,7 +148,7 @@ interface NotificationState {
 const CoursePlayer: React.FC = (): JSX.Element => {
   const { courseId, lectureId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const videoRef = useRef<HTMLVideoElement>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
   const aiChatRef = useRef<HTMLDivElement>(null);
@@ -232,6 +232,19 @@ const CoursePlayer: React.FC = (): JSX.Element => {
       return () => clearTimeout(timer);
     }
   }, [currentLecture]);
+
+  // Send welcome message when AI chat is opened for the first time
+  useEffect(() => {
+    if (showAIChat && aiMessages.length === 0) {
+      const welcomeMessage: AIMessage = {
+        id: generateId(),
+        type: 'assistant',
+        content: "Welcome to MatrixEdu! I'm your AI-powered educational assistant. How can I help you today?",
+        timestamp: new Date()
+      };
+      setAiMessages([welcomeMessage]);
+    }
+  }, [showAIChat, aiMessages.length]);
 
   // Load bookmark and completion status from localStorage
   useEffect(() => {
@@ -716,7 +729,9 @@ Please provide a helpful, well-structured educational response using the markdow
       const sectionsUrl = `${API_COURSE_BASE}/courses/${courseId}/sections?uid=${user?.id}`;
       console.log('Fetching from:', sectionsUrl);
       
-      const response = await fetch(sectionsUrl);
+      // Add authentication headers for V2 API
+      const headers = getAuthHeaders(user, session);
+      const response = await fetch(sectionsUrl, { headers });
       const data = await response.json();
       
       console.log('API Response:', data);
@@ -730,7 +745,7 @@ Please provide a helpful, well-structured educational response using the markdow
           console.log('403 error, checking enrollment status...');
           
           const enrollmentCheckUrl = `${API_COURSE_BASE}/courses/${courseId}/enrollment/${user?.id}`;
-          const enrollmentResponse = await fetch(enrollmentCheckUrl);
+          const enrollmentResponse = await fetch(enrollmentCheckUrl, { headers });
           const enrollmentData = await enrollmentResponse.json();
           
           console.log('Enrollment check:', enrollmentData);
@@ -814,11 +829,11 @@ Please provide a helpful, well-structured educational response using the markdow
     if (!user?.id) return;
 
     try {
+      // Add authentication headers for V2 API
+      const headers = getAuthHeaders(user, session);
       const response = await fetch(`${API_COURSE_BASE}/courses/${courseId}/progress`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           userId: user.id,
           lectureId,

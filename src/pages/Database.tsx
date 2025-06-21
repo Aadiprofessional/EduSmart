@@ -585,7 +585,7 @@ interface UniversityDetailModalProps {
 
 const UniversityDetailModal: React.FC<UniversityDetailModalProps> = ({ university, onClose, inCompareList, onToggleCompare }) => {
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 pt-16">
       <motion.div 
         className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden"
         initial={{ opacity: 0, y: 50 }}
@@ -1593,6 +1593,14 @@ const Database: React.FC = () => {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [mobileViewMode, setMobileViewMode] = useState<'grid' | 'list'>('grid');
 
+  // Add streaming states for real-time updates
+  const [streamingAnalysisContent, setStreamingAnalysisContent] = useState('');
+  const [streamingRecommendationsContent, setStreamingRecommendationsContent] = useState('');
+  const [streamingCostContent, setStreamingCostContent] = useState('');
+  const [isStreamingAnalysis, setIsStreamingAnalysis] = useState(false);
+  const [isStreamingRecommendations, setIsStreamingRecommendations] = useState(false);
+  const [isStreamingCost, setIsStreamingCost] = useState(false);
+
   const extractFilterOptions = (universitiesData: University[]) => {
     // Extract unique countries
     const countries = Array.from(new Set(universitiesData.map(uni => uni.country).filter(Boolean)));
@@ -2048,7 +2056,13 @@ const Database: React.FC = () => {
       return;
     }
 
+    // Open modal immediately with streaming state
+    setShowAIAnalysis(true);
+    setIsStreamingAnalysis(true);
+    setStreamingAnalysisContent('');
+    setAiAnalysisData(null);
     setIsLoadingAI(true);
+
     try {
       // Fetch user profile data using the userProfileAPI
       const profileResult = await userProfileAPI.getUserProfile(session);
@@ -2057,6 +2071,7 @@ const Database: React.FC = () => {
         console.error('Error fetching profile:', profileResult.error);
         setShowProfileModal(true);
         setIsLoadingAI(false);
+        setIsStreamingAnalysis(false);
         return;
       }
 
@@ -2114,16 +2129,25 @@ Please provide your analysis in this exact XML format:
 
 Analyze their academic strength, competitiveness, budget considerations, recommended study regions, and provide actionable suggestions for improvement.`;
 
-      // Call the AI API with streaming
-      const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      // Call the AI API with streaming using the same API as AI tutor
+      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer sk-80beadf6603b4832981d0d65896b1ae0',
+          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: "qvq-max",
+          model: "qwen-vl-max",
           messages: [
+            {
+              role: "system",
+              content: [
+                {
+                  type: "text", 
+                  text: "You are an AI academic advisor helping students analyze their profiles for university applications. Provide detailed analysis in the exact XML format requested."
+                }
+              ]
+            },
             {
               role: "user",
               content: [
@@ -2149,7 +2173,6 @@ Analyze their academic strength, competitiveness, budget considerations, recomme
       }
 
       let aiContent = '';
-      let isAnswering = false;
       
       try {
         while (true) {
@@ -2157,7 +2180,7 @@ Analyze their academic strength, competitiveness, budget considerations, recomme
           if (done) break;
           
           const chunk = new TextDecoder().decode(value);
-          const lines = chunk.split('\n').filter(line => line.trim() !== '');
+          const lines = chunk.split('\n');
           
           for (const line of lines) {
             if (line.startsWith('data: ')) {
@@ -2166,27 +2189,15 @@ Analyze their academic strength, competitiveness, budget considerations, recomme
               
               try {
                 const parsed = JSON.parse(data);
-                if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta) {
-                  const delta = parsed.choices[0].delta;
-                  
-                  // Skip reasoning content, only collect the final answer
-                  if (delta.reasoning_content) {
-                    // This is the thinking process, we can skip it for analysis
-                    continue;
-                  } else if (delta.content) {
-                    // This is the actual answer content
-                    if (!isAnswering && delta.content.trim() !== '') {
-                      isAnswering = true;
-                    }
-                    if (isAnswering) {
-                      aiContent += delta.content;
-                      // Update UI in real-time
-                      setAiAnalysisData(aiContent);
-                    }
-                  }
+                const content_chunk = parsed.choices?.[0]?.delta?.content;
+                
+                if (content_chunk) {
+                  aiContent += content_chunk;
+                  // Update streaming content in real-time
+                  setStreamingAnalysisContent(aiContent);
                 }
               } catch (parseError) {
-                // Skip invalid JSON chunks
+                // Skip invalid JSON lines
                 continue;
               }
             }
@@ -2231,7 +2242,6 @@ Analyze their academic strength, competitiveness, budget considerations, recomme
       };
 
       setAiAnalysisData(analysis);
-      setShowAIAnalysis(true);
 
       // Only deduct response after successful completion
       const responseResult = await checkAndUseResponse({
@@ -2254,6 +2264,7 @@ Analyze their academic strength, competitiveness, budget considerations, recomme
       showError('Error performing AI Analysis. Please try again.');
     } finally {
       setIsLoadingAI(false);
+      setIsStreamingAnalysis(false);
     }
   };
 
@@ -2270,7 +2281,13 @@ Analyze their academic strength, competitiveness, budget considerations, recomme
       return;
     }
 
+    // Open modal immediately with streaming state
+    setShowRecommendations(true);
+    setIsStreamingRecommendations(true);
+    setStreamingRecommendationsContent('');
+    setRecommendedUniversities([]);
     setIsLoadingAI(true);
+
     try {
       // Fetch user profile data using the userProfileAPI
       const profileResult = await userProfileAPI.getUserProfile(session);
@@ -2279,6 +2296,7 @@ Analyze their academic strength, competitiveness, budget considerations, recomme
         console.error('Error fetching profile:', profileResult.error);
         setShowProfileModal(true);
         setIsLoadingAI(false);
+        setIsStreamingRecommendations(false);
         return;
       }
 
@@ -2355,16 +2373,25 @@ Please analyze the student's academic profile, test scores, field preferences, b
 
 Consider factors like academic fit, budget compatibility, location preferences, admission requirements, and career alignment.`;
 
-      // Call the AI API with streaming
-      const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      // Call the AI API with streaming using the same API as AI tutor
+      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer sk-80beadf6603b4832981d0d65896b1ae0',
+          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: "qvq-max",
+          model: "qwen-vl-max",
           messages: [
+            {
+              role: "system",
+              content: [
+                {
+                  type: "text", 
+                  text: "You are an AI university counselor helping students find the best university matches. Analyze the student profile and university data to provide the top 5 recommendations in the exact XML format requested."
+                }
+              ]
+            },
             {
               role: "user",
               content: [
@@ -2390,7 +2417,6 @@ Consider factors like academic fit, budget compatibility, location preferences, 
       }
 
       let aiContent = '';
-      let isAnswering = false;
       
       try {
         while (true) {
@@ -2398,7 +2424,7 @@ Consider factors like academic fit, budget compatibility, location preferences, 
           if (done) break;
           
           const chunk = new TextDecoder().decode(value);
-          const lines = chunk.split('\n').filter(line => line.trim() !== '');
+          const lines = chunk.split('\n');
           
           for (const line of lines) {
             if (line.startsWith('data: ')) {
@@ -2407,25 +2433,15 @@ Consider factors like academic fit, budget compatibility, location preferences, 
               
               try {
                 const parsed = JSON.parse(data);
-                if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta) {
-                  const delta = parsed.choices[0].delta;
-                  
-                  // Skip reasoning content, only collect the final answer
-                  if (delta.reasoning_content) {
-                    // This is the thinking process, we can skip it for recommendations
-                    continue;
-                  } else if (delta.content) {
-                    // This is the actual answer content
-                    if (!isAnswering && delta.content.trim() !== '') {
-                      isAnswering = true;
-                    }
-                    if (isAnswering) {
-                      aiContent += delta.content;
-                    }
-                  }
+                const content_chunk = parsed.choices?.[0]?.delta?.content;
+                
+                if (content_chunk) {
+                  aiContent += content_chunk;
+                  // Update streaming content in real-time
+                  setStreamingRecommendationsContent(aiContent);
                 }
               } catch (parseError) {
-                // Skip invalid JSON chunks
+                // Skip invalid JSON lines
                 continue;
               }
             }
@@ -2489,8 +2505,6 @@ Consider factors like academic fit, budget compatibility, location preferences, 
         }
       }
 
-      setShowRecommendations(true);
-
       // Only deduct response after successful completion
       const responseResult = await checkAndUseResponse({
         responseType: 'university_recommendations',
@@ -2509,35 +2523,11 @@ Consider factors like academic fit, budget compatibility, location preferences, 
       }
 
     } catch (error) {
-      console.error('Error getting recommendations:', error);
-      // Fall back to algorithm-based recommendations
-      try {
-        const profileResult = await userProfileAPI.getUserProfile(session);
-        
-        if (profileResult.success && profileResult.profile) {
-          const fallbackRecommendations = generateUniversityRecommendations(profileResult.profile, universities);
-          setRecommendedUniversities(fallbackRecommendations);
-          
-          // Add only the first recommended university to compare list
-          if (fallbackRecommendations.length > 0) {
-            const topRecommendation = fallbackRecommendations[0];
-            setCompareList(prev => {
-              const exists = prev.some(existing => existing.id === topRecommendation.id);
-              if (!exists) {
-                return [topRecommendation, ...prev];
-              }
-              return prev;
-            });
-          }
-          
-          setShowRecommendations(true);
-        }
-      } catch (fallbackError) {
-        console.error('Fallback recommendation error:', fallbackError);
-        showError('Unable to generate recommendations. Please try again later.');
-      }
+      console.error('Error in Get Recommendations:', error);
+      showError('Error getting recommendations. Please try again.');
     } finally {
       setIsLoadingAI(false);
+      setIsStreamingRecommendations(false);
     }
   };
 
@@ -2975,7 +2965,7 @@ Return format: <recommendation><university id="X"/></recommendation>`;
   // Cost Estimation function
   const handleCostEstimation = async (university: University) => {
     if (!user) {
-      showWarning('Please log in to access Cost Calculator');
+      showWarning('Please log in to get cost estimation');
       return;
     }
 
@@ -2997,9 +2987,12 @@ Return format: <recommendation><university id="X"/></recommendation>`;
       return;
     }
 
-    // Open modal immediately with loading state
+    // Open modal immediately with streaming state
     setSelectedUniversityForCost(university);
     setIsLoadingCostEstimation(true);
+    setIsStreamingCost(true);
+    setStreamingCostContent('');
+    setCostEstimationData(null);
     setShowCostEstimationModal(true);
 
     try {
@@ -3078,16 +3071,25 @@ Please provide a comprehensive cost breakdown in XML format:
 
 Please provide realistic cost estimates based on the university's location and typical expenses for international students. Include all major cost categories and helpful tips for budget management.`;
 
-      // Call the AI API for cost estimation
-      const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      // Call the AI API for cost estimation using the same API as AI tutor
+      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer sk-80beadf6603b4832981d0d65896b1ae0',
+          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: "qvq-max",
+          model: "qwen-vl-max",
           messages: [
+            {
+              role: "system",
+              content: [
+                {
+                  type: "text", 
+                  text: "You are an AI financial advisor specializing in international student costs. Provide detailed and accurate cost estimations for studying abroad in the exact XML format requested."
+                }
+              ]
+            },
             {
               role: "user",
               content: [
@@ -3113,7 +3115,6 @@ Please provide realistic cost estimates based on the university's location and t
       }
 
       let aiContent = '';
-      let isAnswering = false;
       
       try {
         while (true) {
@@ -3121,7 +3122,7 @@ Please provide realistic cost estimates based on the university's location and t
           if (done) break;
           
           const chunk = new TextDecoder().decode(value);
-          const lines = chunk.split('\n').filter(line => line.trim() !== '');
+          const lines = chunk.split('\n');
           
           for (const line of lines) {
             if (line.startsWith('data: ')) {
@@ -3133,16 +3134,10 @@ Please provide realistic cost estimates based on the university's location and t
                 if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta) {
                   const delta = parsed.choices[0].delta;
                   
-                  // Skip reasoning content, only collect the final answer
-                  if (delta.reasoning_content) {
-                    continue;
-                  } else if (delta.content) {
-                    if (!isAnswering && delta.content.trim() !== '') {
-                      isAnswering = true;
-                    }
-                    if (isAnswering) {
-                      aiContent += delta.content;
-                    }
+                  if (delta.content) {
+                    aiContent += delta.content;
+                    // Update streaming content in real-time
+                    setStreamingCostContent(aiContent);
                   }
                 }
               } catch (parseError) {
@@ -3226,7 +3221,7 @@ Please provide realistic cost estimates based on the university's location and t
       setShowCostEstimationModal(false);
     } finally {
       setIsLoadingCostEstimation(false);
-      setSelectedUniversityForCost(null);
+      setIsStreamingCost(false);
     }
   };
 
@@ -3996,10 +3991,10 @@ Please provide realistic cost estimates based on the university's location and t
       )}
 
       {/* AI Analysis Modal */}
-      {showAIAnalysis && aiAnalysisData && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      {showAIAnalysis && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center p-4 pt-16">
           <motion.div 
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[65vh] overflow-hidden mt-4"
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
@@ -4023,62 +4018,79 @@ Please provide realistic cost estimates based on the university's location and t
               </div>
             </div>
             
-            <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-8rem)]">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 sm:p-6">
-                  <h3 className="text-base sm:text-lg font-bold text-blue-800 mb-3 sm:mb-4 flex items-center">
-                    <IconComponent icon={FaTrophy} className="mr-2" /> Academic Strength
-                  </h3>
-                  <div className="text-2xl sm:text-3xl font-bold text-blue-600 mb-2">{aiAnalysisData.academicStrength}%</div>
-                  <div className="w-full bg-blue-200 rounded-full h-3">
-                    <div 
-                      className="bg-blue-600 h-3 rounded-full transition-all duration-1000"
-                      style={{ width: `${aiAnalysisData.academicStrength}%` }}
-                    ></div>
+            <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(85vh-8rem)]">
+              {isStreamingAnalysis ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-center">
+                      <IconComponent icon={FaSpinner} className="animate-spin text-4xl text-purple-500 mb-4" />
+                      <p className="text-gray-600">Analyzing your profile...</p>
+                    </div>
                   </div>
-                  <p className="text-blue-700 mt-2 text-sm">
-                    Competitive Level: <span className="font-semibold">{aiAnalysisData.competitiveLevel}</span>
-                  </p>
+                  {streamingAnalysisContent && (
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h3 className="font-semibold text-gray-800 mb-2">Real-time Analysis:</h3>
+                      <div className="text-gray-700 whitespace-pre-wrap">{streamingAnalysisContent}</div>
+                    </div>
+                  )}
                 </div>
+              ) : aiAnalysisData ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-bold text-blue-800 mb-3 sm:mb-4 flex items-center">
+                      <IconComponent icon={FaTrophy} className="mr-2" /> Academic Strength
+                    </h3>
+                    <div className="text-2xl sm:text-3xl font-bold text-blue-600 mb-2">{aiAnalysisData.academicStrength}%</div>
+                    <div className="w-full bg-blue-200 rounded-full h-3">
+                      <div 
+                        className="bg-blue-600 h-3 rounded-full transition-all duration-1000"
+                        style={{ width: `${aiAnalysisData.academicStrength}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-blue-700 mt-2 text-sm">
+                      Competitive Level: <span className="font-semibold">{aiAnalysisData.competitiveLevel}</span>
+                    </p>
+                  </div>
 
-                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 sm:p-6">
-                  <h3 className="text-base sm:text-lg font-bold text-green-800 mb-3 sm:mb-4 flex items-center">
-                    <IconComponent icon={FaDollarSign} className="mr-2" /> Budget Analysis
-                  </h3>
-                  <div className="text-base sm:text-lg font-bold text-green-600 mb-2">{aiAnalysisData.budgetAnalysis.level}</div>
-                  <p className="text-green-700 text-sm mb-3">{aiAnalysisData.budgetAnalysis.recommendation}</p>
-                  <div className="text-sm text-green-600">
-                    <span className="font-semibold">{aiAnalysisData.budgetAnalysis.affordableOptions}</span> universities match your budget
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-bold text-green-800 mb-3 sm:mb-4 flex items-center">
+                      <IconComponent icon={FaDollarSign} className="mr-2" /> Budget Analysis
+                    </h3>
+                    <div className="text-base sm:text-lg font-bold text-green-600 mb-2">{aiAnalysisData.budgetAnalysis.level}</div>
+                    <p className="text-green-700 text-sm mb-3">{aiAnalysisData.budgetAnalysis.recommendation}</p>
+                    <div className="text-sm text-green-600">
+                      <span className="font-semibold">{aiAnalysisData.budgetAnalysis.affordableOptions}</span> universities match your budget
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-bold text-orange-800 mb-3 sm:mb-4 flex items-center">
+                      <IconComponent icon={FaGlobe} className="mr-2" /> Recommended Regions
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {aiAnalysisData.recommendedRegions.map((region: string, index: number) => (
+                        <span key={index} className="bg-orange-200 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
+                          {region}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-bold text-purple-800 mb-3 sm:mb-4 flex items-center">
+                      <IconComponent icon={FaLightbulb} className="mr-2" /> Suggestions
+                    </h3>
+                    <ul className="space-y-2">
+                      {aiAnalysisData.suggestions.map((suggestion: string, index: number) => (
+                        <li key={index} className="text-purple-700 text-sm flex items-start">
+                          <span className="text-purple-500 mr-2">•</span>
+                          {suggestion}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 </div>
-
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 sm:p-6">
-                  <h3 className="text-base sm:text-lg font-bold text-orange-800 mb-3 sm:mb-4 flex items-center">
-                    <IconComponent icon={FaGlobe} className="mr-2" /> Recommended Regions
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {aiAnalysisData.recommendedRegions.map((region: string, index: number) => (
-                      <span key={index} className="bg-orange-200 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
-                        {region}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 sm:p-6">
-                  <h3 className="text-base sm:text-lg font-bold text-purple-800 mb-3 sm:mb-4 flex items-center">
-                    <IconComponent icon={FaLightbulb} className="mr-2" /> Suggestions
-                  </h3>
-                  <ul className="space-y-2">
-                    {aiAnalysisData.suggestions.map((suggestion: string, index: number) => (
-                      <li key={index} className="text-purple-700 text-sm flex items-start">
-                        <span className="text-purple-500 mr-2">•</span>
-                        {suggestion}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
+              ) : null}
             </div>
           </motion.div>
         </div>
@@ -4086,9 +4098,9 @@ Please provide realistic cost estimates based on the university's location and t
 
       {/* Recommendations Modal */}
       {showRecommendations && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center p-4 pt-16">
           <motion.div 
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[65vh] overflow-hidden mt-4"
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
@@ -4112,8 +4124,23 @@ Please provide realistic cost estimates based on the university's location and t
               </div>
             </div>
             
-            <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-8rem)]">
-              {recommendedUniversities.length > 0 ? (
+            <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(85vh-8rem)]">
+              {isStreamingRecommendations ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-center">
+                      <IconComponent icon={FaSpinner} className="animate-spin text-4xl text-blue-500 mb-4" />
+                      <p className="text-gray-600">Finding your perfect matches...</p>
+                    </div>
+                  </div>
+                  {streamingRecommendationsContent && (
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h3 className="font-semibold text-gray-800 mb-2">AI Analysis in Progress:</h3>
+                      <div className="text-gray-700 whitespace-pre-wrap">{streamingRecommendationsContent}</div>
+                    </div>
+                  )}
+                </div>
+              ) : recommendedUniversities.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   {recommendedUniversities.map((university, index) => (
                     <motion.div
@@ -4186,7 +4213,7 @@ Please provide realistic cost estimates based on the university's location and t
                               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                           }`}
                         >
-                          {compareList.some(u => u.id === university.id) ? 'Added' : 'Compare'}
+                          {compareList.some(u => u.id === university.id) ? 'Remove' : 'Compare'}
                         </motion.button>
                       </div>
                     </motion.div>
@@ -4194,23 +4221,7 @@ Please provide realistic cost estimates based on the university's location and t
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <IconComponent icon={FaUniversity} className="text-6xl text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-xl font-bold text-gray-700 mb-2">No Recommendations Found</h3>
-                  <p className="text-gray-600 mb-4">
-                    Please complete your profile with academic scores and preferences to get personalized recommendations.
-                  </p>
-                  <motion.button
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={() => {
-                      setShowRecommendations(false);
-                      // Navigate to profile page
-                      window.location.href = '/profile';
-                    }}
-                    className="bg-primary hover:bg-primary-dark text-white py-2 px-6 rounded-lg font-medium"
-                  >
-                    Complete Profile
-                  </motion.button>
+                  <p className="text-gray-500">No recommendations available. Please try again.</p>
                 </div>
               )}
             </div>
@@ -4827,10 +4838,10 @@ Please provide realistic cost estimates based on the university's location and t
       />
 
       {/* Cost Estimation Modal */}
-      {showCostEstimationModal && costEstimationData && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      {showCostEstimationModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center p-4 pt-16">
           <motion.div 
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[120vh] overflow-hidden mt-4"
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
@@ -4844,7 +4855,7 @@ Please provide realistic cost estimates based on the university's location and t
                   <div>
                     <h2 className="text-lg sm:text-2xl font-bold">Cost Calculator</h2>
                     <p className="text-emerald-100 text-sm sm:text-base">
-                      Detailed cost estimation for {costEstimationData.universityName}
+                      Detailed cost estimation for {selectedUniversityForCost?.name || 'University'}
                     </p>
                   </div>
                 </div>
@@ -4858,14 +4869,17 @@ Please provide realistic cost estimates based on the university's location and t
             </div>
             
             <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-8rem)]">
-              {isLoadingCostEstimation ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-center">
-                    <IconComponent icon={FaSpinner} className="animate-spin text-4xl text-emerald-500 mb-4" />
-                    <p className="text-gray-600">Calculating detailed cost estimation...</p>
+              {isStreamingCost ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-center">
+                      <IconComponent icon={FaSpinner} className="animate-spin text-4xl text-emerald-500 mb-4" />
+                      <p className="text-gray-600">Calculating detailed cost estimation...</p>
+                    </div>
                   </div>
+                
                 </div>
-              ) : (
+              ) : costEstimationData ? (
                 <div className="space-y-6">
                   {/* University Info Header */}
                   <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 sm:p-6">
@@ -5061,7 +5075,7 @@ Please provide realistic cost estimates based on the university's location and t
                     </p>
                   </div>
                 </div>
-              )}
+              ) : null}
             </div>
           </motion.div>
         </div>

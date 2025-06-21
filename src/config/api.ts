@@ -22,6 +22,7 @@ export const getApiBaseUrl = (): string => {
 // Export the base URL
 export const API_BASE_URL = getApiBaseUrl();
 
+// Updated API base configurations to match actual production endpoints
 export const API_BASE = `${getApiBaseUrl()}/api`;
 export const API_V2_BASE = `${getApiBaseUrl()}/api/v2`;
 
@@ -40,11 +41,11 @@ export const API_ENDPOINTS = {
     USAGE_LOGS: '/api/subscriptions/usage-logs',
   },
   
-  // Course endpoints
+  // Course endpoints - Updated to match production API
   COURSES: {
     GET_ALL: '/api/courses',
     GET_BY_ID: '/api/courses',
-    CATEGORIES: '/api/course-categories',
+    CATEGORIES: '/course-categories', // Fixed: Remove /api prefix
     LEVELS: '/api/course-levels',
     ENROLL: '/api/courses/enroll',
     PROGRESS: '/api/courses/progress',
@@ -58,18 +59,19 @@ export const API_ENDPOINTS = {
   BLOG: '/api/blog',
   PROFILE: '/api/profile',
 
-  // V1 endpoints
-  courses: '/courses',
-  courseDetails: (id: string) => `/courses/${id}`,
-  courseCategories: '/course-categories',
+  // V1 endpoints - Updated paths
+  courses: '/api/courses', // Fixed: Add /api prefix
+  courseDetails: (id: string) => `/api/courses/${id}`, // Fixed: Add /api prefix
+  courseCategories: '/course-categories', // Fixed: Remove /api prefix
   
-  // V2 endpoints (for enhanced functionality)
+  // V2 endpoints (for enhanced functionality) - These require authentication
   v2: {
-    enrollCourse: (courseId: string) => `/courses/${courseId}/enroll`,
-    checkEnrollment: (courseId: string, userId: string) => `/courses/${courseId}/enrollment/${userId}`,
-    userEnrollments: (userId: string) => `/users/${userId}/enrollments`,
-    courseProgress: (courseId: string, userId: string) => `/courses/${courseId}/progress/${userId}`,
-    updateProgress: (courseId: string) => `/courses/${courseId}/progress`,
+    enrollCourse: (courseId: string) => `/api/v2/courses/${courseId}/enroll`,
+    checkEnrollment: (courseId: string, userId: string) => `/api/v2/courses/${courseId}/enrollment/${userId}`,
+    userEnrollments: (userId: string) => `/api/v2/users/${userId}/enrollments`,
+    courseProgress: (courseId: string, userId: string) => `/api/v2/courses/${courseId}/progress/${userId}`,
+    updateProgress: (courseId: string) => `/api/v2/courses/${courseId}/progress`,
+    courseSections: (courseId: string) => `/api/v2/courses/${courseId}/sections`,
   }
 };
 
@@ -86,6 +88,26 @@ export const getDefaultHeaders = (includeAuth: boolean = false, session?: any) =
 
   if (includeAuth && session?.access_token) {
     headers['Authorization'] = `Bearer ${session.access_token}`;
+  }
+
+  return headers;
+};
+
+// Helper function to get auth headers from user context
+export const getAuthHeaders = (user?: any, session?: any) => {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  // Add authentication if session has access_token (Supabase format)
+  if (session?.access_token) {
+    headers['Authorization'] = `Bearer ${session.access_token}`;
+  } else if (user?.access_token) {
+    // Fallback for direct user token
+    headers['Authorization'] = `Bearer ${user.access_token}`;
+  } else if (user?.token) {
+    // Another fallback
+    headers['Authorization'] = `Bearer ${user.token}`;
   }
 
   return headers;

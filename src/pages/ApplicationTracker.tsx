@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaEdit, FaTrash, FaEye, FaCalendarAlt, FaUniversity, FaGraduationCap, FaCheckCircle, FaClock, FaExclamationTriangle, FaSpinner, FaSearch, FaFilter, FaTimes, FaSort, FaSortAmountUp, FaSortAmountDown, FaCheck, FaBell, FaBellSlash, FaClipboardList } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaEye, FaCalendarAlt, FaUniversity, FaGraduationCap, FaCheckCircle, FaClock, FaExclamationTriangle, FaSpinner, FaSearch, FaFilter, FaTimes, FaSort, FaSortAmountUp, FaSortAmountDown, FaCheck, FaBell, FaBellSlash, FaClipboardList, FaSave } from 'react-icons/fa';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import PageHeader from '../components/ui/PageHeader';
@@ -35,7 +35,7 @@ const ApplicationTracker: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('deadline');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [newTask, setNewTask] = useState('');
+  const [newTaskInputs, setNewTaskInputs] = useState<{[key: number]: string}>({});
   const [reminderModal, setReminderModal] = useState<{
     isOpen: boolean;
     taskId: string | number;
@@ -49,6 +49,8 @@ const ApplicationTracker: React.FC = () => {
   });
   const [reminderDate, setReminderDate] = useState('');
   const [reminderTime, setReminderTime] = useState('');
+  const [editingTask, setEditingTask] = useState<{appId: number, taskId: number} | null>(null);
+  const [editTaskText, setEditTaskText] = useState('');
 
   // Add new application
   const handleAddApplication = () => {
@@ -147,16 +149,55 @@ const ApplicationTracker: React.FC = () => {
 
   // Add task to application
   const addTask = (appId: number) => {
-    if (!newTask.trim()) return;
+    const taskText = newTaskInputs[appId] || '';
+    if (!taskText.trim()) return;
     
     const app = applications.find(a => a.id === appId);
     if (!app) return;
 
     const newTaskId = app.tasks.length > 0 ? Math.max(...app.tasks.map(t => t.id)) + 1 : 1;
-    const updatedTasks = [...app.tasks, { id: newTaskId, task: newTask, completed: false }];
+    const updatedTasks = [...app.tasks, { id: newTaskId, task: taskText, completed: false }];
     
     updateApplication(appId, { tasks: updatedTasks });
-    setNewTask('');
+    setNewTaskInputs(prev => ({ ...prev, [appId]: '' }));
+  };
+
+  // Edit task
+  const startEditingTask = (appId: number, taskId: number, currentText: string) => {
+    setEditingTask({ appId, taskId });
+    setEditTaskText(currentText);
+  };
+
+  const saveTaskEdit = () => {
+    if (!editingTask || !editTaskText.trim()) return;
+    
+    const app = applications.find(a => a.id === editingTask.appId);
+    if (!app) return;
+
+    const updatedTasks = app.tasks.map(task => {
+      if (task.id === editingTask.taskId) {
+        return { ...task, task: editTaskText };
+      }
+      return task;
+    });
+
+    updateApplication(editingTask.appId, { tasks: updatedTasks });
+    setEditingTask(null);
+    setEditTaskText('');
+  };
+
+  const cancelTaskEdit = () => {
+    setEditingTask(null);
+    setEditTaskText('');
+  };
+
+  // Delete task
+  const deleteTask = (appId: number, taskId: number) => {
+    const app = applications.find(a => a.id === appId);
+    if (!app) return;
+
+    const updatedTasks = app.tasks.filter(task => task.id !== taskId);
+    updateApplication(appId, { tasks: updatedTasks });
   };
 
   // Update application status
@@ -297,22 +338,21 @@ const ApplicationTracker: React.FC = () => {
                   <IconComponent icon={FaClipboardList} className="text-4xl text-cyan-400" />
                 </div>
               </div>
-              <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent mb-4">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent mb-4 whitespace-nowrap overflow-hidden text-ellipsis">
                 {t('applicationTracker.title') || 'Application Tracker'}
               </h1>
               <p className="text-xl text-slate-300 max-w-3xl mx-auto mb-8">
                 {t('applicationTracker.subtitle') || 'Track and manage your university applications with intelligent reminders and calendar integration'}
               </p>
               
-              {/* Add Application Button */}
               <motion.button
                 onClick={() => setIsAddingApplication(true)}
-                className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-cyan-500/25 transition-all duration-300 transform hover:scale-105"
+                className="inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-cyan-500/25 transition-all duration-300 transform hover:scale-105 whitespace-nowrap"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <IconComponent icon={FaPlus} className="mr-2" />
-                {t('applicationTracker.addApplication') || 'Add Application'}
+                <IconComponent icon={FaPlus} className="mr-2 flex-shrink-0" />
+                <span className="truncate">{t('applicationTracker.addApplication') || 'Add Application'}</span>
               </motion.button>
             </motion.div>
           </div>
@@ -514,28 +554,82 @@ const ApplicationTracker: React.FC = () => {
                               {task.completed && <IconComponent icon={FaCheck} className="text-xs" />}
                             </motion.button>
                             <div className="flex-1">
-                              <span className={`text-sm ${task.completed ? 'line-through text-slate-500' : 'text-slate-300'}`}>
-                                {task.task}
-                              </span>
-                              {task.dueDate && (
-                                <div className="text-xs text-slate-500 mt-1">
-                                  Due: {formatDate(task.dueDate)}
+                              {editingTask?.appId === app.id && editingTask?.taskId === task.id ? (
+                                <div className="flex gap-2">
+                                  <input
+                                    type="text"
+                                    value={editTaskText}
+                                    onChange={(e) => setEditTaskText(e.target.value)}
+                                    className="flex-1 bg-slate-700/50 border border-slate-600 rounded px-2 py-1 text-sm text-slate-300"
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') saveTaskEdit();
+                                      if (e.key === 'Escape') cancelTaskEdit();
+                                    }}
+                                    autoFocus
+                                  />
+                                  <motion.button
+                                    onClick={saveTaskEdit}
+                                    className="text-green-400 hover:text-green-300 p-1"
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.9 }}
+                                  >
+                                    <IconComponent icon={FaSave} className="text-xs" />
+                                  </motion.button>
+                                  <motion.button
+                                    onClick={cancelTaskEdit}
+                                    className="text-red-400 hover:text-red-300 p-1"
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.9 }}
+                                  >
+                                    <IconComponent icon={FaTimes} className="text-xs" />
+                                  </motion.button>
                                 </div>
+                              ) : (
+                                <>
+                                  <span className={`text-sm ${task.completed ? 'line-through text-slate-500' : 'text-slate-300'}`}>
+                                    {task.task}
+                                  </span>
+                                  {task.dueDate && (
+                                    <div className="text-xs text-slate-500 mt-1">
+                                      Due: {formatDate(task.dueDate)}
+                                    </div>
+                                  )}
+                                </>
                               )}
                             </div>
-                            <motion.button
-                              onClick={() => openReminderModal(task.id, true, 'task')}
-                              className={`opacity-0 group-hover:opacity-100 p-1 rounded transition-all ${
-                                task.reminder 
-                                  ? 'text-yellow-400 bg-yellow-500/20' 
-                                  : 'text-slate-400 hover:text-yellow-400'
-                              }`}
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              title="Set Reminder"
-                            >
-                              <IconComponent icon={task.reminder ? FaBell : FaBellSlash} className="text-xs" />
-                            </motion.button>
+                            <div className="flex gap-1 ml-2">
+                              <motion.button
+                                onClick={() => openReminderModal(task.id, true, 'task')}
+                                className={`p-1 rounded transition-all ${
+                                  task.reminder 
+                                    ? 'text-yellow-400 bg-yellow-500/20' 
+                                    : 'text-slate-400 hover:text-yellow-400'
+                                }`}
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                title="Set Reminder"
+                              >
+                                <IconComponent icon={task.reminder ? FaBell : FaBellSlash} className="text-xs" />
+                              </motion.button>
+                              <motion.button
+                                onClick={() => startEditingTask(app.id, task.id, task.task)}
+                                className="text-blue-400 hover:text-blue-300 p-1 rounded transition-colors"
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                title="Edit Task"
+                              >
+                                <IconComponent icon={FaEdit} className="text-xs" />
+                              </motion.button>
+                              <motion.button
+                                onClick={() => deleteTask(app.id, task.id)}
+                                className="text-red-400 hover:text-red-300 p-1 rounded transition-colors"
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                title="Delete Task"
+                              >
+                                <IconComponent icon={FaTrash} className="text-xs" />
+                              </motion.button>
+                            </div>
                           </li>
                         ))}
                       </ul>
@@ -543,13 +637,12 @@ const ApplicationTracker: React.FC = () => {
                       <p className="text-sm text-slate-500 italic mb-4">{t('applicationTracker.noTasks') || 'No tasks yet'}</p>
                     )}
                     
-                    {/* Add Task Form */}
                     <div className="flex gap-2">
                       <input
                         type="text"
                         placeholder={t('applicationTracker.taskPlaceholder') || 'Add a new task...'}
-                        value={newTask}
-                        onChange={(e) => setNewTask(e.target.value)}
+                        value={newTaskInputs[app.id] || ''}
+                        onChange={(e) => setNewTaskInputs(prev => ({ ...prev, [app.id]: e.target.value }))}
                         className="flex-1 bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-300 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                         onKeyDown={(e) => e.key === 'Enter' && addTask(app.id)}
                       />
