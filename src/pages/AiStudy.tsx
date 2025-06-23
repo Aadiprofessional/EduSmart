@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AiOutlineUpload, AiOutlineBulb, AiOutlineRobot, AiOutlineHistory, AiOutlineSearch, AiOutlineEdit } from 'react-icons/ai';
-import { FiBookOpen, FiClock, FiCalendar, FiCheck, FiBookmark, FiEdit, FiMenu, FiCheckCircle, FiMessageSquare, FiLayers, FiPenTool, FiTrendingUp } from 'react-icons/fi';
+import { FiBookOpen, FiClock, FiCalendar, FiCheck, FiBookmark, FiEdit, FiMenu, FiCheckCircle, FiMessageSquare, FiLayers, FiPenTool, FiTrendingUp, FiArrowRight } from 'react-icons/fi';
 import { FaCrown, FaExclamationTriangle, FaCheck } from 'react-icons/fa';
 import IconComponent from '../components/ui/IconComponent';
 import { useAuth } from '../utils/AuthContext';
@@ -21,6 +22,8 @@ import { useLanguage } from '../utils/LanguageContext';
 const AiStudy: React.FC = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { isProUser, responsesRemaining, loading: proLoading, forceRefresh } = useProStatus();
   const [activeTab, setActiveTab] = useState('upload');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -85,6 +88,31 @@ const AiStudy: React.FC = () => {
       [tabId]: true
     }));
   };
+
+  // Handle URL parameters for direct tab navigation
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const tabParam = searchParams.get('tab');
+    
+    if (tabParam) {
+      // Map tab parameters to actual tab IDs
+      const tabMapping: { [key: string]: string } = {
+        'document-summarizer': 'document-summarizer',
+        'study-planner': 'study-planner',
+        'content-writer': 'content-writer',
+        'ai-tutor': 'ai-tutor'
+      };
+      
+      const targetTab = tabMapping[tabParam] || tabParam;
+      
+      // Check if the tab exists in our tools
+      const tabExists = tools.some(tool => tool.id === targetTab);
+      
+      if (tabExists) {
+        handleTabSwitch(targetTab);
+      }
+    }
+  }, [location.search]);
 
   useEffect(() => {
     // Add custom CSS for scrollbar hiding and 3D perspective
@@ -553,65 +581,7 @@ const AiStudy: React.FC = () => {
 
             {/* Tab Content */}
             <div className="p-8 bg-slate-900/20 backdrop-blur-sm">
-              {/* Pro Status Banner - Improved */}
-              {!proLoading && (
-                <motion.div
-                  className={`mb-6 backdrop-blur-sm rounded-xl p-4 border ${
-                    isProUser 
-                      ? 'bg-gradient-to-r from-green-500/20 to-blue-500/20 border-green-400/30'
-                      : 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-yellow-400/30'
-                  }`}
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className={`p-2 rounded-full ${
-                        isProUser 
-                          ? 'bg-gradient-to-r from-green-400 to-blue-500'
-                          : 'bg-gradient-to-r from-yellow-400 to-orange-500'
-                      }`}>
-                        <IconComponent icon={FaCrown} className="h-5 w-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className={`text-lg font-semibold ${
-                          isProUser ? 'text-green-400' : 'text-yellow-400'
-                        }`}>
-                          {isProUser ? 'Pro User' : 'Free Plan'}
-                        </h3>
-                        <p className="text-sm text-slate-300">
-                          {isProUser 
-                            ? `${responsesRemaining} responses remaining this month`
-                            : 'Upgrade to unlock all AI features'
-                          }
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      {isProUser && responsesRemaining < 50 && (
-                        <motion.div
-                          className="bg-orange-500/20 text-orange-400 px-3 py-1 rounded-full text-sm font-medium border border-orange-400/30"
-                          animate={{ scale: [1, 1.05, 1] }}
-                          transition={{ duration: 2, repeat: Infinity }}
-                        >
-                          Low responses
-                        </motion.div>
-                      )}
-                      {!isProUser && (
-                        <motion.button
-                          onClick={() => setShowUpgradeModal(true)}
-                          className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-4 py-2 rounded-lg font-medium hover:from-yellow-600 hover:to-orange-600 transition-all"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          Upgrade Now
-                        </motion.button>
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-
+              
               {/* Upload Homework */}
               <div className={activeTab === 'upload' ? 'block' : 'hidden'}>
                 {componentStates['upload'] && <UploadHomeworkComponent />}
@@ -828,18 +798,29 @@ const AiStudy: React.FC = () => {
                 <IconComponent icon={FiCalendar} className="h-7 w-7 text-purple-400" />
               </div>
               <h3 className="text-xl font-semibold text-purple-400 mb-2">Smart Study Planner</h3>
-              <p className="text-slate-300">AI-powered study scheduling with personalized recommendations and progress tracking</p>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => handleTabSwitch('study-planner')}
-                className="mt-4 text-purple-400 font-medium flex items-center text-sm hover:text-purple-300 transition-colors"
-              >
-                Plan Your Studies
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </motion.button>
+              <p className="text-slate-300 mb-4">AI-powered study scheduling with personalized recommendations and progress tracking</p>
+              <div className="flex gap-2">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => handleTabSwitch('study-planner')}
+                  className="flex-1 text-purple-400 font-medium flex items-center justify-center text-sm hover:text-purple-300 transition-colors bg-purple-500/10 hover:bg-purple-500/20 px-4 py-2 rounded-lg border border-purple-500/30"
+                >
+                  Use Here
+                  <IconComponent icon={FiArrowRight} className="h-4 w-4 ml-1" />
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => navigate('/dashboard?tab=study-planner')}
+                  className="flex-1 text-purple-400 font-medium flex items-center justify-center text-sm hover:text-purple-300 transition-colors px-4 py-2 rounded-lg border border-purple-500/30 hover:bg-purple-500/10"
+                >
+                  Go to Planner
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </motion.button>
+              </div>
             </motion.div>
             
             <motion.div 

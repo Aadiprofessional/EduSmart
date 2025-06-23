@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AiOutlineBulb, AiOutlineLoading3Quarters, AiOutlineFolder, AiOutlinePlus } from 'react-icons/ai';
 import { FiLayers, FiBookmark, FiTrash2, FiUpload, FiImage, FiFile, FiEdit3, FiFolderPlus } from 'react-icons/fi';
@@ -28,6 +29,72 @@ interface FlashcardComponentProps {
   onGenerateFromNotes?: () => Promise<any>;
   onGenerateFromPDF?: (file: File) => Promise<any>;
 }
+
+// Portal Modal Component - renders at document.body level
+interface PortalModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+  className?: string;
+}
+
+const PortalModal: React.FC<PortalModalProps> = ({ isOpen, onClose, children, className = '' }) => {
+  React.useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return ReactDOM.createPortal(
+    <AnimatePresence>
+      <motion.div 
+        className="bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          zIndex: 9999
+        }}
+      >
+        <motion.div 
+          className={className}
+          initial={{ scale: 0.9, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.9, opacity: 0, y: 20 }}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: 'relative',
+            maxWidth: '90vw',
+            maxHeight: '90vh'
+          }}
+        >
+          {children}
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>,
+    document.body
+  );
+};
 
 const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '', onGenerateFromNotes, onGenerateFromPDF }) => {
   // Response checking state
@@ -793,75 +860,61 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
       </div>
 
       {/* Create New Set Modal */}
-      <AnimatePresence>
-        {showCreateSet && (
-          <motion.div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowCreateSet(false)}
-          >
-            <motion.div
-              className="bg-slate-800 rounded-xl p-6 max-w-md w-full mx-4 border border-white/10"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
+      <PortalModal 
+        isOpen={showCreateSet}
+        onClose={() => setShowCreateSet(false)}
+        className="bg-slate-800 rounded-xl p-6 max-w-md w-full mx-4 border border-white/10"
+      >
+        <h3 className="text-xl font-semibold text-cyan-400 mb-4">Create New Flashcard Set</h3>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-slate-300 mb-1 text-sm font-medium">
+              Set Name
+            </label>
+            <input
+              type="text"
+              value={newSetName}
+              onChange={(e) => setNewSetName(e.target.value)}
+              className="w-full p-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-slate-200 placeholder-slate-400"
+              placeholder="Enter set name"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-slate-300 mb-1 text-sm font-medium">
+              Description (optional)
+            </label>
+            <textarea
+              value={newSetDescription}
+              onChange={(e) => setNewSetDescription(e.target.value)}
+              className="w-full p-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none h-20 text-slate-200 placeholder-slate-400"
+              placeholder="Enter description"
+            />
+          </div>
+          
+          <div className="flex space-x-3">
+            <motion.button
+              onClick={createNewSet}
+              disabled={!newSetName.trim()}
+              className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 text-white py-2 rounded-lg font-medium disabled:opacity-50"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <h3 className="text-xl font-semibold text-cyan-400 mb-4">Create New Flashcard Set</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-slate-300 mb-1 text-sm font-medium">
-                    Set Name
-                  </label>
-                  <input
-                    type="text"
-                    value={newSetName}
-                    onChange={(e) => setNewSetName(e.target.value)}
-                    className="w-full p-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-slate-200 placeholder-slate-400"
-                    placeholder="Enter set name"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-slate-300 mb-1 text-sm font-medium">
-                    Description (optional)
-                  </label>
-                  <textarea
-                    value={newSetDescription}
-                    onChange={(e) => setNewSetDescription(e.target.value)}
-                    className="w-full p-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none h-20 text-slate-200 placeholder-slate-400"
-                    placeholder="Enter description"
-                  />
-                </div>
-                
-                <div className="flex space-x-3">
-                  <motion.button
-                    onClick={createNewSet}
-                    disabled={!newSetName.trim()}
-                    className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 text-white py-2 rounded-lg font-medium disabled:opacity-50"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    Create Set
-                  </motion.button>
-                  
-                  <motion.button
-                    onClick={() => setShowCreateSet(false)}
-                    className="flex-1 bg-slate-600/50 text-slate-300 py-2 rounded-lg font-medium border border-white/10"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    Cancel
-                  </motion.button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              Create Set
+            </motion.button>
+            
+            <motion.button
+              onClick={() => setShowCreateSet(false)}
+              className="flex-1 bg-slate-600/50 text-slate-300 py-2 rounded-lg font-medium border border-white/10"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              Cancel
+            </motion.button>
+          </div>
+        </div>
+      </PortalModal>
       
       {/* Response Upgrade Modal */}
       <ResponseUpgradeModal 

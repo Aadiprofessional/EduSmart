@@ -5,28 +5,42 @@ import { API_BASE_URL, getDefaultHeaders } from '../config/api';
 const apiCall = async (method: string, endpoint: string, data: any = null, session?: Session | null) => {
   try {
     const headers = getDefaultHeaders(!!session, session);
+    const fullUrl = `${API_BASE_URL}${endpoint}`;
 
     const config = {
       method,
-      url: `${API_BASE_URL}${endpoint}`,
+      url: fullUrl,
       headers,
       ...(data && { data })
     };
 
-    console.log(`Making ${method} request to ${API_BASE_URL}${endpoint}`);
+    console.log(`Making ${method} request to ${fullUrl}`);
+    console.log('Headers:', headers);
+    console.log('Session info:', {
+      hasSession: !!session,
+      hasAccessToken: !!session?.access_token,
+      tokenStart: session?.access_token?.substring(0, 20) + '...'
+    });
+    console.log('API_BASE_URL:', API_BASE_URL);
+    console.log('Environment:', process.env.NODE_ENV);
+    console.log('Custom API URL:', process.env.REACT_APP_API_BASE_URL);
     
     // Use dynamic import to avoid circular dependency
     const axios = (await import('axios')).default;
     const response = await axios(config);
+    console.log(`✅ ${method} ${fullUrl} - Success:`, response.status);
     return { success: true, data: response.data };
   } catch (error: any) {
-    console.error('API Call Error:', {
+    console.error(`❌ ${method} ${endpoint} - API Call Error:`, {
       method,
       endpoint,
-      url: `${API_BASE_URL}${endpoint}`,
+      fullUrl: `${API_BASE_URL}${endpoint}`,
       error: error.message,
       status: error.response?.status,
-      data: error.response?.data
+      statusText: error.response?.statusText,
+      responseData: error.response?.data,
+      hasSession: !!session,
+      hasAccessToken: !!session?.access_token
     });
     
     return { 
@@ -47,7 +61,7 @@ export interface UserProfile {
   phone: string;
   
   // Personal Information
-  date_of_birth: string;
+  date_of_birth?: string;
   nationality: string;
   current_location: string;
   preferred_study_location: string;
@@ -55,20 +69,20 @@ export interface UserProfile {
   // Academic Information
   current_education_level: string;
   current_institution: string;
-  current_gpa: string;
+  current_gpa: string | number;  // Handle both string and number types
   gpa_scale: string;
   graduation_year: string;
   field_of_study: string;
   preferred_field: string;
   
-  // Test Scores
-  sat_score?: number;
-  act_score?: number;
-  gre_score?: number;
-  gmat_score?: number;
-  toefl_score?: number;
-  ielts_score?: number;
-  duolingo_score?: number;
+  // Test Scores - make them all optional and handle number/string types
+  sat_score?: number | null;
+  act_score?: number | null;
+  gre_score?: number | null;
+  gmat_score?: number | null;
+  toefl_score?: number | null;
+  ielts_score?: number | null;
+  duolingo_score?: number | null;
   
   // Preferences
   preferred_degree_level: string;

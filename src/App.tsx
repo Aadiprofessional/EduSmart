@@ -25,7 +25,8 @@ import ThankYou from './pages/ThankYou';
 
 // Components
 import ChatBot from './components/ui/ChatBot';
-import MagneticCursor from './components/ui/MagneticCursor';
+
+import ScrollToTop from './components/ui/ScrollToTop';
 import ProtectedRoute from './utils/ProtectedRoute';
 
 // Utils
@@ -36,6 +37,7 @@ import { SubscriptionProvider } from './utils/SubscriptionContext';
 import { ProStatusProvider } from './utils/proStatusUtils';
 import { NotificationProvider } from './utils/NotificationContext';
 import { AppDataProvider } from './utils/AppDataContext';
+import CursorTrail from './components/ui/CursorTrail';
 
 function App() {
   // Enable smooth scrolling across the app
@@ -50,7 +52,10 @@ function App() {
               <AppDataProvider>
                 <Router>
                   {/* Global Magnetic Cursor */}
-                  <MagneticCursor />
+                  <CursorTrail/>
+                  
+                  {/* Scroll to top on route change */}
+                  <ScrollToTop />
                   
                   <Routes>
                     <Route path="/" element={<Home />} />

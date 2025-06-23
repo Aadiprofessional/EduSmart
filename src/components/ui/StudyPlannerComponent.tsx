@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AiOutlineBulb, AiOutlineRobot } from 'react-icons/ai';
-import { FiCalendar, FiClock, FiCheck, FiPlus, FiEdit, FiTrash2, FiFilter, FiChevronLeft, FiChevronRight, FiUpload } from 'react-icons/fi';
+import { FiCalendar, FiClock, FiCheck, FiPlus, FiEdit, FiTrash2, FiFilter, FiChevronLeft, FiChevronRight, FiUpload, FiBook, FiChevronUp, FiChevronDown } from 'react-icons/fi';
 import { FaCalendarAlt, FaSort, FaSortAmountDown, FaTimes, FaBell, FaBrain } from 'react-icons/fa';
 import IconComponent from './IconComponent';
 import { useLanguage } from '../../utils/LanguageContext';
@@ -11,6 +12,72 @@ import { useNotification } from '../../utils/NotificationContext';
 interface StudyPlannerComponentProps {
   className?: string;
 }
+
+// Portal Modal Component - renders at document.body level
+interface PortalModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+  className?: string;
+}
+
+const PortalModal: React.FC<PortalModalProps> = ({ isOpen, onClose, children, className = '' }) => {
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return ReactDOM.createPortal(
+    <AnimatePresence>
+      <motion.div 
+        className="bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          zIndex: 9999
+        }}
+      >
+        <motion.div 
+          className={className}
+          initial={{ scale: 0.9, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.9, opacity: 0, y: 20 }}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: 'relative',
+            maxWidth: '90vw',
+            maxHeight: '90vh'
+          }}
+        >
+          {children}
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>,
+    document.body
+  );
+};
 
 const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className = '' }) => {
   const { t } = useLanguage();
@@ -22,7 +89,8 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
     updateStudyTask, 
     deleteStudyTask,
     setReminder,
-    toggleTaskReminder
+    toggleTaskReminder,
+    unsetReminder
   } = useAppData();
   
   const [newTask, setNewTask] = useState({
@@ -76,7 +144,64 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
     riskMitigation?: Array<{risk: string; impact: string; mitigation: string[]}>;
     progressTracking?: Array<{milestone: string; deadline: string; criteria: string[]}>;
     rawText?: string;
+    reminderManagement?: Array<{
+      date: string;
+      type: string;
+      priority: string;
+      task: string;
+      university?: string;
+      actions?: string[];
+      followUps?: Array<{
+        date: string;
+        description: string;
+      }>;
+    }>;
   }>({});
+
+  // Expanded sections state for roadmap modal
+  const [expandedSections, setExpandedSections] = useState<{
+    [key: string]: boolean;
+  }>({
+    priorityMatrix: true,
+    timeline: true,
+    applicationStrategy: false,
+    studyOptimization: false,
+    deadlineManagement: false,
+    workloadDistribution: false,
+    riskMitigation: false,
+    progressTracking: false,
+    comprehensiveAnalysis: true // Change to true to expand by default
+  });
+
+  // Toggle section expansion
+  const toggleSection = (sectionKey: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [sectionKey]: !prev[sectionKey]
+    }));
+  };
+
+  // Expand all sections
+  const expandAllSections = () => {
+    setExpandedSections(prev => {
+      const allExpanded = Object.keys(prev).reduce((acc, key) => {
+        acc[key] = true;
+        return acc;
+      }, {} as { [key: string]: boolean });
+      return allExpanded;
+    });
+  };
+
+  // Collapse all sections
+  const collapseAllSections = () => {
+    setExpandedSections(prev => {
+      const allCollapsed = Object.keys(prev).reduce((acc, key) => {
+        acc[key] = false;
+        return acc;
+      }, {} as { [key: string]: boolean });
+      return allCollapsed;
+    });
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -285,6 +410,15 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
     deleteStudyTask(id);
   };
 
+  const handlePriorityUpdate = (taskId: string, currentPriority: 'low' | 'medium' | 'high') => {
+    const priorityOrder: ('low' | 'medium' | 'high')[] = ['low', 'medium', 'high'];
+    const currentIndex = priorityOrder.indexOf(currentPriority);
+    const nextIndex = (currentIndex + 1) % priorityOrder.length;
+    const newPriority = priorityOrder[nextIndex];
+    
+    updateStudyTask(taskId, { priority: newPriority });
+  };
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high': return 'bg-red-500/20 text-red-400 border-red-500/30';
@@ -390,6 +524,11 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
 
     const reminderDateTime = `${reminderDate}T${reminderTime}`;
     setReminder(reminderModal.taskId, reminderDateTime, false);
+    closeReminderModal();
+  };
+
+  const handleUnsetReminder = () => {
+    unsetReminder(reminderModal.taskId, false);
     closeReminderModal();
   };
 
@@ -747,64 +886,106 @@ IMPORTANT: Return your response in the following XML format ONLY. Do not include
 <roadmap>
   <priorityMatrix>
     <category name="High Urgency, High Importance">
-      <task name="Task Name" urgency="high" importance="high"/>
+      <task name="Task Name" urgency="high" importance="high" hasReminder="true" daysUntilDue="3"/>
     </category>
     <category name="High Urgency, Low Importance">
-      <task name="Task Name" urgency="high" importance="low"/>
+      <task name="Task Name" urgency="high" importance="low" hasReminder="false" daysUntilDue="7"/>
+    </category>
+    <category name="Low Urgency, High Importance">
+      <task name="Task Name" urgency="low" importance="high" hasReminder="true" daysUntilDue="14"/>
+    </category>
+    <category name="Low Urgency, Low Importance">
+      <task name="Task Name" urgency="low" importance="low" hasReminder="false" daysUntilDue="21"/>
     </category>
   </priorityMatrix>
   
   <timeline>
     <phase name="Phase Name" duration="2 weeks">
       <tasks>
-        <task>Task description</task>
+        <task priority="high" hasReminder="true" source="application">Task description</task>
       </tasks>
       <milestones>
-        <milestone>Milestone description</milestone>
+        <milestone date="2025-01-15" type="deadline">Milestone description</milestone>
       </milestones>
+      <reminders>
+        <reminder date="2025-01-10" task="Task Name" type="study">Reminder description</reminder>
+      </reminders>
     </phase>
   </timeline>
   
   <applicationStrategy>
     <status name="planning">
-      <action>Action item</action>
+      <action priority="high" deadline="2025-01-15">Action item</action>
       <timeline>Timeline info</timeline>
+      <reminders>
+        <reminder date="2025-01-12">Reminder for this status</reminder>
+      </reminders>
     </status>
   </applicationStrategy>
   
   <studyOptimization>
-    <subject name="Subject Name" timeAllocation="4 hours/week">
+    <subject name="Subject Name" timeAllocation="4 hours/week" totalTasks="5" completedTasks="2">
       <strategy>Study strategy</strategy>
       <resource>Resource recommendation</resource>
+      <upcomingDeadlines>
+        <deadline date="2025-01-20" task="Assignment Name" priority="high"/>
+      </upcomingDeadlines>
     </subject>
   </studyOptimization>
   
   <deadlineManagement>
-    <deadline date="2025-01-15" type="application" priority="high">
+    <deadline date="2025-01-15" type="application" priority="high" university="University Name" daysUntil="5">
       <action>Action required</action>
+      <reminder date="2025-01-12">Set reminder for this deadline</reminder>
+    </deadline>
+    <deadline date="2025-01-18" type="study" priority="medium" subject="Mathematics" daysUntil="8">
+      <action>Action required</action>
+      <reminder date="2025-01-15">Set reminder for this deadline</reminder>
     </deadline>
   </deadlineManagement>
   
+  <reminderManagement>
+    <reminder date="2025-01-10" type="study" priority="high" task="Complete Math Assignment">
+      <action>Review and complete assignment</action>
+      <followUp date="2025-01-12">Check progress</followUp>
+    </reminder>
+    <reminder date="2025-01-11" type="application" priority="high" university="Harvard University">
+      <action>Submit application documents</action>
+      <followUp date="2025-01-13">Confirm submission</followUp>
+    </reminder>
+  </reminderManagement>
+  
   <workloadDistribution>
-    <week number="1" studyHours="20" applicationHours="10">
+    <week number="1" studyHours="20" applicationHours="10" totalTasks="8" highPriorityTasks="3">
       <focus>Focus area</focus>
+      <criticalDeadlines>
+        <deadline date="2025-01-15" type="application">University Application</deadline>
+      </criticalDeadlines>
+      <reminders>
+        <reminder date="2025-01-12">Weekly reminder</reminder>
+      </reminders>
     </week>
   </workloadDistribution>
   
   <riskMitigation>
-    <risk name="Risk description" impact="high">
+    <risk name="Risk description" impact="high" likelihood="medium">
       <mitigation>Mitigation strategy</mitigation>
+      <monitoringReminder date="2025-01-14">Check risk status</monitoringReminder>
     </risk>
   </riskMitigation>
   
   <progressTracking>
-    <milestone name="Milestone name" deadline="2025-01-15">
+    <milestone name="Milestone name" deadline="2025-01-15" status="pending" relatedTasks="3">
       <criteria>Success criteria</criteria>
+      <reminder date="2025-01-12">Progress check reminder</reminder>
+      <dependencies>
+        <dependency task="Prerequisite Task" status="completed"/>
+      </dependencies>
     </milestone>
   </progressTracking>
 </roadmap>
 
-Focus on creating a realistic, actionable plan that maximizes success in both academic performance and university admissions.`;
+Focus on creating a realistic, actionable plan that maximizes success in both academic performance and university admissions. Include specific reminder dates, task relationships, and comprehensive deadline management.`;
 
       const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
@@ -916,7 +1097,9 @@ Remember: Return ONLY the XML structure. No additional text.`
           tasks: Array.from(category.getElementsByTagName('task')).map(task => ({
             name: task.getAttribute('name') || '',
             urgency: task.getAttribute('urgency') || '',
-            importance: task.getAttribute('importance') || ''
+            importance: task.getAttribute('importance') || '',
+            hasReminder: task.getAttribute('hasReminder') === 'true',
+            daysUntilDue: parseInt(task.getAttribute('daysUntilDue') || '0')
           }))
         }));
       }
@@ -927,8 +1110,23 @@ Remember: Return ONLY the XML structure. No additional text.`
         result.timeline = Array.from(timeline.getElementsByTagName('phase')).map(phase => ({
           phase: phase.getAttribute('name') || '',
           duration: phase.getAttribute('duration') || '',
-          tasks: Array.from(phase.getElementsByTagName('task')).map(task => task.textContent || ''),
-          milestones: Array.from(phase.getElementsByTagName('milestone')).map(milestone => milestone.textContent || '')
+          tasks: Array.from(phase.getElementsByTagName('task')).map(task => ({
+            description: task.textContent || '',
+            priority: task.getAttribute('priority') || '',
+            hasReminder: task.getAttribute('hasReminder') === 'true',
+            source: task.getAttribute('source') || ''
+          })),
+          milestones: Array.from(phase.getElementsByTagName('milestone')).map(milestone => ({
+            description: milestone.textContent || '',
+            date: milestone.getAttribute('date') || '',
+            type: milestone.getAttribute('type') || ''
+          })),
+          reminders: Array.from(phase.getElementsByTagName('reminder')).map(reminder => ({
+            date: reminder.getAttribute('date') || '',
+            task: reminder.getAttribute('task') || '',
+            type: reminder.getAttribute('type') || '',
+            description: reminder.textContent || ''
+          }))
         }));
       }
       
@@ -937,8 +1135,16 @@ Remember: Return ONLY the XML structure. No additional text.`
       if (applicationStrategy) {
         result.applicationStrategy = Array.from(applicationStrategy.getElementsByTagName('status')).map(status => ({
           status: status.getAttribute('name') || '',
-          actions: Array.from(status.getElementsByTagName('action')).map(action => action.textContent || ''),
-          timeline: status.getElementsByTagName('timeline')[0]?.textContent || ''
+          actions: Array.from(status.getElementsByTagName('action')).map(action => ({
+            description: action.textContent || '',
+            priority: action.getAttribute('priority') || '',
+            deadline: action.getAttribute('deadline') || ''
+          })),
+          timeline: status.getElementsByTagName('timeline')[0]?.textContent || '',
+          reminders: Array.from(status.getElementsByTagName('reminder')).map(reminder => ({
+            date: reminder.getAttribute('date') || '',
+            description: reminder.textContent || ''
+          }))
         }));
       }
       
@@ -948,8 +1154,15 @@ Remember: Return ONLY the XML structure. No additional text.`
         result.studyOptimization = Array.from(studyOptimization.getElementsByTagName('subject')).map(subject => ({
           subject: subject.getAttribute('name') || '',
           timeAllocation: subject.getAttribute('timeAllocation') || '',
+          totalTasks: parseInt(subject.getAttribute('totalTasks') || '0'),
+          completedTasks: parseInt(subject.getAttribute('completedTasks') || '0'),
           strategy: subject.getElementsByTagName('strategy')[0]?.textContent || '',
-          resources: Array.from(subject.getElementsByTagName('resource')).map(resource => resource.textContent || '')
+          resources: Array.from(subject.getElementsByTagName('resource')).map(resource => resource.textContent || ''),
+          upcomingDeadlines: Array.from(subject.getElementsByTagName('deadline')).map(deadline => ({
+            date: deadline.getAttribute('date') || '',
+            task: deadline.getAttribute('task') || '',
+            priority: deadline.getAttribute('priority') || ''
+          }))
         }));
       }
       
@@ -960,7 +1173,31 @@ Remember: Return ONLY the XML structure. No additional text.`
           deadline: deadline.getAttribute('date') || '',
           type: deadline.getAttribute('type') || '',
           priority: deadline.getAttribute('priority') || '',
-          actions: Array.from(deadline.getElementsByTagName('action')).map(action => action.textContent || '')
+          university: deadline.getAttribute('university') || '',
+          subject: deadline.getAttribute('subject') || '',
+          daysUntil: parseInt(deadline.getAttribute('daysUntil') || '0'),
+          actions: Array.from(deadline.getElementsByTagName('action')).map(action => action.textContent || ''),
+          reminders: Array.from(deadline.getElementsByTagName('reminder')).map(reminder => ({
+            date: reminder.getAttribute('date') || '',
+            description: reminder.textContent || ''
+          }))
+        }));
+      }
+      
+      // Parse Reminder Management (NEW)
+      const reminderManagement = xmlDoc.getElementsByTagName('reminderManagement')[0];
+      if (reminderManagement) {
+        result.reminderManagement = Array.from(reminderManagement.getElementsByTagName('reminder')).map(reminder => ({
+          date: reminder.getAttribute('date') || '',
+          type: reminder.getAttribute('type') || '',
+          priority: reminder.getAttribute('priority') || '',
+          task: reminder.getAttribute('task') || '',
+          university: reminder.getAttribute('university') || '',
+          actions: Array.from(reminder.getElementsByTagName('action')).map(action => action.textContent || ''),
+          followUps: Array.from(reminder.getElementsByTagName('followUp')).map(followUp => ({
+            date: followUp.getAttribute('date') || '',
+            description: followUp.textContent || ''
+          }))
         }));
       }
       
@@ -971,7 +1208,18 @@ Remember: Return ONLY the XML structure. No additional text.`
           week: week.getAttribute('number') || '',
           studyHours: week.getAttribute('studyHours') || '',
           applicationHours: week.getAttribute('applicationHours') || '',
-          focus: Array.from(week.getElementsByTagName('focus')).map(focus => focus.textContent || '')
+          totalTasks: parseInt(week.getAttribute('totalTasks') || '0'),
+          highPriorityTasks: parseInt(week.getAttribute('highPriorityTasks') || '0'),
+          focus: Array.from(week.getElementsByTagName('focus')).map(focus => focus.textContent || ''),
+          criticalDeadlines: Array.from(week.getElementsByTagName('deadline')).map(deadline => ({
+            date: deadline.getAttribute('date') || '',
+            type: deadline.getAttribute('type') || '',
+            description: deadline.textContent || ''
+          })),
+          reminders: Array.from(week.getElementsByTagName('reminder')).map(reminder => ({
+            date: reminder.getAttribute('date') || '',
+            description: reminder.textContent || ''
+          }))
         }));
       }
       
@@ -981,7 +1229,12 @@ Remember: Return ONLY the XML structure. No additional text.`
         result.riskMitigation = Array.from(riskMitigation.getElementsByTagName('risk')).map(risk => ({
           risk: risk.getAttribute('name') || '',
           impact: risk.getAttribute('impact') || '',
-          mitigation: Array.from(risk.getElementsByTagName('mitigation')).map(mitigation => mitigation.textContent || '')
+          likelihood: risk.getAttribute('likelihood') || '',
+          mitigation: Array.from(risk.getElementsByTagName('mitigation')).map(mitigation => mitigation.textContent || ''),
+          monitoringReminders: Array.from(risk.getElementsByTagName('monitoringReminder')).map(reminder => ({
+            date: reminder.getAttribute('date') || '',
+            description: reminder.textContent || ''
+          }))
         }));
       }
       
@@ -991,7 +1244,17 @@ Remember: Return ONLY the XML structure. No additional text.`
         result.progressTracking = Array.from(progressTracking.getElementsByTagName('milestone')).map(milestone => ({
           milestone: milestone.getAttribute('name') || '',
           deadline: milestone.getAttribute('deadline') || '',
-          criteria: Array.from(milestone.getElementsByTagName('criteria')).map(criteria => criteria.textContent || '')
+          status: milestone.getAttribute('status') || '',
+          relatedTasks: parseInt(milestone.getAttribute('relatedTasks') || '0'),
+          criteria: Array.from(milestone.getElementsByTagName('criteria')).map(criteria => criteria.textContent || ''),
+          reminders: Array.from(milestone.getElementsByTagName('reminder')).map(reminder => ({
+            date: reminder.getAttribute('date') || '',
+            description: reminder.textContent || ''
+          })),
+          dependencies: Array.from(milestone.getElementsByTagName('dependency')).map(dependency => ({
+            task: dependency.getAttribute('task') || '',
+            status: dependency.getAttribute('status') || ''
+          }))
         }));
       }
       
@@ -1021,6 +1284,50 @@ Remember: Return ONLY the XML structure. No additional text.`
       endDate: nextWeek.toISOString().split('T')[0]
     });
   };
+
+  // Calculate analysis data using useMemo
+  const analysisData = useMemo(() => {
+    // Get all study tasks (including those synced from applications)
+    let allStudyTasks = studyTasks;
+    let relevantApplications = applications;
+    
+    if (suggestionDateRange.startDate && suggestionDateRange.endDate) {
+      allStudyTasks = studyTasks.filter(task => {
+        const taskDate = new Date(task.date);
+        const startDate = new Date(suggestionDateRange.startDate);
+        const endDate = new Date(suggestionDateRange.endDate);
+        return taskDate >= startDate && taskDate <= endDate;
+      });
+      
+      relevantApplications = applications.filter(app => {
+        const appDeadline = new Date(app.deadline);
+        const startDate = new Date(suggestionDateRange.startDate);
+        const endDate = new Date(suggestionDateRange.endDate);
+        return appDeadline >= startDate && appDeadline <= endDate;
+      });
+    }
+    
+    const completedTasks = allStudyTasks.filter(task => task.completed).length;
+    const pendingTasks = allStudyTasks.length - completedTasks;
+    const totalHours = allStudyTasks.reduce((sum, task) => sum + task.estimatedHours, 0);
+    const highPriorityTasks = allStudyTasks.filter(task => task.priority === 'high').length;
+    const overdueTasks = allStudyTasks.filter(task => new Date(task.date) < new Date() && !task.completed).length;
+    const upcomingDeadlines = relevantApplications.filter(app => {
+      const daysUntil = Math.ceil((new Date(app.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+      return daysUntil <= 30 && daysUntil > 0;
+    }).length;
+
+    return {
+      allStudyTasks,
+      relevantApplications,
+      completedTasks,
+      pendingTasks,
+      totalHours,
+      highPriorityTasks,
+      overdueTasks,
+      upcomingDeadlines
+    };
+  }, [studyTasks, applications, suggestionDateRange.startDate, suggestionDateRange.endDate]);
 
   const filteredTasks = getFilteredAndSortedTasks();
 
@@ -1335,11 +1642,23 @@ Remember: Return ONLY the XML structure. No additional text.`
                               {task.estimatedHours}h
                             </span>
                           </div>
+                          {task.reminder && task.reminderDate && (
+                            <div className="text-xs text-yellow-400 mt-1 flex items-center">
+                              <IconComponent icon={FaBell} className="h-3 w-3 mr-1" />
+                              Reminder: {new Date(task.reminderDate).toLocaleDateString()} at {new Date(task.reminderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          )}
                         </div>
 
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(task.priority)}`}>
+                        <motion.button
+                          onClick={() => handlePriorityUpdate(task.id, task.priority)}
+                          className={`px-2 py-1 rounded-full text-xs font-medium border transition-all hover:scale-105 ${getPriorityColor(task.priority)}`}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          title="Click to change priority"
+                        >
                           {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                        </span>
+                        </motion.button>
                       </div>
 
                       <div className="flex items-center space-x-2">
@@ -1378,11 +1697,10 @@ Remember: Return ONLY the XML structure. No additional text.`
       {/* AI Timetable Import Modal */}
       <AnimatePresence>
         {showAIModal && (
-          <motion.div
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <PortalModal
+            isOpen={showAIModal}
+            onClose={closeAIModal}
+            className="flex items-center justify-center z-50 p-4"
           >
             <motion.div
               className="bg-slate-800 rounded-2xl border border-white/10 shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
@@ -1574,18 +1892,17 @@ Remember: Return ONLY the XML structure. No additional text.`
                 )}
               </div>
             </motion.div>
-          </motion.div>
+          </PortalModal>
         )}
       </AnimatePresence>
 
       {/* AI Suggestion Modal */}
       <AnimatePresence>
         {showAISuggestionModal && (
-          <motion.div
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <PortalModal
+            isOpen={showAISuggestionModal}
+            onClose={closeAISuggestionModal}
+            className="flex items-center justify-center z-50 p-4"
           >
             <motion.div
               className="bg-slate-800 rounded-2xl border border-white/10 shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col"
@@ -1661,164 +1978,262 @@ Remember: Return ONLY the XML structure. No additional text.`
 
                   {/* Task Analysis Summary */}
                   <div className="bg-slate-700/30 rounded-xl p-4 border border-white/10">
-                    <h3 className="text-sm font-medium text-slate-300 mb-3 flex items-center">
-                      <IconComponent icon={FiClock} className="mr-2 text-emerald-400" />
-                      Comprehensive Analysis
-                    </h3>
-                    <div className="text-slate-400 text-sm">
-                      {(() => {
-                        // Get all study tasks (including those synced from applications)
-                        let allStudyTasks = studyTasks;
-                        let relevantApplications = applications;
-                        
-                        if (suggestionDateRange.startDate && suggestionDateRange.endDate) {
-                          allStudyTasks = studyTasks.filter(task => {
-                            const taskDate = new Date(task.date);
-                            const startDate = new Date(suggestionDateRange.startDate);
-                            const endDate = new Date(suggestionDateRange.endDate);
-                            return taskDate >= startDate && taskDate <= endDate;
-                          });
-                          
-                          relevantApplications = applications.filter(app => {
-                            const appDeadline = new Date(app.deadline);
-                            const startDate = new Date(suggestionDateRange.startDate);
-                            const endDate = new Date(suggestionDateRange.endDate);
-                            return appDeadline >= startDate && appDeadline <= endDate;
-                          });
-                        }
-                        
-                        const completedTasks = allStudyTasks.filter(task => task.completed).length;
-                        const pendingTasks = allStudyTasks.length - completedTasks;
-                        const totalHours = allStudyTasks.reduce((sum, task) => sum + task.estimatedHours, 0);
-                        const highPriority = allStudyTasks.filter(task => task.priority === 'high').length;
-                        const mediumPriority = allStudyTasks.filter(task => task.priority === 'medium').length;
-                        const lowPriority = allStudyTasks.filter(task => task.priority === 'low').length;
-                        const overdueTasks = allStudyTasks.filter(task => new Date(task.date) < new Date() && !task.completed).length;
-                        const applicationTasks = allStudyTasks.filter(task => task.source === 'application').length;
-                        const studyOnlyTasks = allStudyTasks.filter(task => task.source === 'study').length;
-                        
-                        return (
-                          <div className="space-y-4">
-                            {/* Study Tasks Stats */}
-                            <div>
-                              <h4 className="text-xs font-medium text-slate-300 mb-2">Study Tasks</h4>
-                              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                                <div className="text-center">
-                                  <div className="text-lg font-bold text-emerald-400">{allStudyTasks.length}</div>
-                                  <div className="text-xs">Total</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-lg font-bold text-green-400">{completedTasks}</div>
-                                  <div className="text-xs">Done</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-lg font-bold text-yellow-400">{pendingTasks}</div>
-                                  <div className="text-xs">Pending</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-lg font-bold text-cyan-400">{totalHours}h</div>
-                                  <div className="text-xs">Hours</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-lg font-bold text-red-400">{highPriority}</div>
-                                  <div className="text-xs">High</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-lg font-bold text-purple-400">{overdueTasks}</div>
-                                  <div className="text-xs">Overdue</div>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {/* Task Sources */}
-                            <div>
-                              <h4 className="text-xs font-medium text-slate-300 mb-2">Task Sources</h4>
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="text-center">
-                                  <div className="text-lg font-bold text-blue-400">{studyOnlyTasks}</div>
-                                  <div className="text-xs">Study Tasks</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-lg font-bold text-orange-400">{applicationTasks}</div>
-                                  <div className="text-xs">Application Tasks</div>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {/* Applications Stats */}
-                            <div>
-                              <h4 className="text-xs font-medium text-slate-300 mb-2">University Applications</h4>
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                <div className="text-center">
-                                  <div className="text-lg font-bold text-indigo-400">{relevantApplications.length}</div>
-                                  <div className="text-xs">Total Apps</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-lg font-bold text-yellow-400">{relevantApplications.filter(a => a.status === 'planning').length}</div>
-                                  <div className="text-xs">Planning</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-lg font-bold text-blue-400">{relevantApplications.filter(a => a.status === 'in-progress').length}</div>
-                                  <div className="text-xs">In Progress</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-lg font-bold text-green-400">{relevantApplications.filter(a => a.status === 'submitted').length}</div>
-                                  <div className="text-xs">Submitted</div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })()}
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-medium text-slate-300 flex items-center">
+                        <IconComponent icon={FiClock} className="mr-2 text-emerald-400" />
+                        Comprehensive Analysis
+                      </h3>
+                      <div className="flex items-center space-x-2">
+                        <motion.button
+                          onClick={() => toggleSection('comprehensiveAnalysis')}
+                          className="p-1 rounded-lg hover:bg-slate-600/50 transition-colors"
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                        >
+                          <IconComponent 
+                            icon={expandedSections.comprehensiveAnalysis ? FiChevronUp : FiChevronDown} 
+                            className="h-4 w-4 text-slate-400" 
+                          />
+                        </motion.button>
+                      </div>
                     </div>
+                    
+                    <AnimatePresence>
+                      {expandedSections.comprehensiveAnalysis && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="text-slate-400 text-sm space-y-4">
+                            {(() => {
+                              // Get all study tasks (including those synced from applications)
+                              let allStudyTasks = studyTasks;
+                              let relevantApplications = applications;
+                              
+                              if (suggestionDateRange.startDate && suggestionDateRange.endDate) {
+                                allStudyTasks = studyTasks.filter(task => {
+                                  const taskDate = new Date(task.date);
+                                  const startDate = new Date(suggestionDateRange.startDate);
+                                  const endDate = new Date(suggestionDateRange.endDate);
+                                  return taskDate >= startDate && taskDate <= endDate;
+                                });
+                                
+                                relevantApplications = applications.filter(app => {
+                                  const appDeadline = new Date(app.deadline);
+                                  const startDate = new Date(suggestionDateRange.startDate);
+                                  const endDate = new Date(suggestionDateRange.endDate);
+                                  return appDeadline >= startDate && appDeadline <= endDate;
+                                });
+                              }
+                              
+                              const completedTasks = allStudyTasks.filter(task => task.completed).length;
+                              const pendingTasks = allStudyTasks.length - completedTasks;
+                              const totalHours = allStudyTasks.reduce((sum, task) => sum + task.estimatedHours, 0);
+                              const highPriorityTasks = allStudyTasks.filter(task => task.priority === 'high').length;
+                              const overdueTasks = allStudyTasks.filter(task => new Date(task.date) < new Date() && !task.completed).length;
+                              const upcomingDeadlines = relevantApplications.filter(app => {
+                                const daysUntil = Math.ceil((new Date(app.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                                return daysUntil <= 30 && daysUntil > 0;
+                              }).length;
+
+                              return (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                  {/* Study Tasks Overview */}
+                                  <div className="bg-slate-600/30 rounded-lg p-4 border border-white/5">
+                                    <h4 className="text-xs font-semibold text-emerald-400 mb-3 flex items-center">
+                                      <IconComponent icon={FiBook} className="mr-2" />
+                                      Study Tasks Overview
+                                    </h4>
+                                    <div className="space-y-2">
+                                      <div className="flex justify-between">
+                                        <span className="text-xs text-slate-400">Total Tasks:</span>
+                                        <span className="text-xs font-medium text-slate-300">{allStudyTasks.length}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-xs text-slate-400">Completed:</span>
+                                        <span className="text-xs font-medium text-green-400">{completedTasks}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-xs text-slate-400">Pending:</span>
+                                        <span className="text-xs font-medium text-yellow-400">{pendingTasks}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-xs text-slate-400">High Priority:</span>
+                                        <span className="text-xs font-medium text-red-400">{highPriorityTasks}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-xs text-slate-400">Overdue:</span>
+                                        <span className="text-xs font-medium text-red-500">{overdueTasks}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-xs text-slate-400">Total Hours:</span>
+                                        <span className="text-xs font-medium text-blue-400">{totalHours}h</span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Application Status */}
+                                  <div className="bg-slate-600/30 rounded-lg p-4 border border-white/5">
+                                    <h4 className="text-xs font-semibold text-purple-400 mb-3 flex items-center">
+                                      <IconComponent icon={FiEdit} className="mr-2" />
+                                      Application Status
+                                    </h4>
+                                    <div className="space-y-2">
+                                      <div className="flex justify-between">
+                                        <span className="text-xs text-slate-400">Total Apps:</span>
+                                        <span className="text-xs font-medium text-slate-300">{relevantApplications.length}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-xs text-slate-400">Planning:</span>
+                                        <span className="text-xs font-medium text-gray-400">{relevantApplications.filter(a => a.status === 'planning').length}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-xs text-slate-400">In Progress:</span>
+                                        <span className="text-xs font-medium text-blue-400">{relevantApplications.filter(a => a.status === 'in-progress').length}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-xs text-slate-400">Submitted:</span>
+                                        <span className="text-xs font-medium text-green-400">{relevantApplications.filter(a => a.status === 'submitted').length}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-xs text-slate-400">Upcoming Deadlines:</span>
+                                        <span className="text-xs font-medium text-orange-400">{upcomingDeadlines}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Time Management */}
+                                  <div className="bg-slate-600/30 rounded-lg p-4 border border-white/5">
+                                    <h4 className="text-xs font-semibold text-cyan-400 mb-3 flex items-center">
+                                      <IconComponent icon={FiClock} className="mr-2" />
+                                      Time Management
+                                    </h4>
+                                    <div className="space-y-2">
+                                      <div className="flex justify-between">
+                                        <span className="text-xs text-slate-400">Avg Hours/Task:</span>
+                                        <span className="text-xs font-medium text-slate-300">
+                                          {allStudyTasks.length > 0 ? (totalHours / allStudyTasks.length).toFixed(1) : '0'}h
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-xs text-slate-400">Tasks w/ Reminders:</span>
+                                        <span className="text-xs font-medium text-blue-400">
+                                          {allStudyTasks.filter(t => t.reminder).length}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-xs text-slate-400">Study vs App Tasks:</span>
+                                        <span className="text-xs font-medium text-purple-400">
+                                          {allStudyTasks.filter(t => t.source === 'study').length}:{allStudyTasks.filter(t => t.source === 'application').length}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-xs text-slate-400">Completion Rate:</span>
+                                        <span className="text-xs font-medium text-green-400">
+                                          {allStudyTasks.length > 0 ? Math.round((completedTasks / allStudyTasks.length) * 100) : 0}%
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
                   {/* AI Suggestion Result */}
                   {Object.keys(aiSuggestionResult).length > 0 && (
                     <div className="bg-slate-700/30 rounded-xl p-4 border border-white/10">
-                      <h3 className="text-sm font-medium text-slate-300 mb-3 flex items-center">
-                        <IconComponent icon={AiOutlineRobot} className="mr-2 text-emerald-400" />
-                        AI Study Roadmap
-                      </h3>
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-sm font-medium text-slate-300 flex items-center">
+                          <IconComponent icon={AiOutlineRobot} className="mr-2 text-emerald-400" />
+                          AI Study Roadmap
+                        </h3>
+                        <div className="flex items-center space-x-2">
+                          <motion.button
+                            onClick={expandAllSections}
+                            className="px-3 py-1 text-xs bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-lg transition-colors"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            Expand All
+                          </motion.button>
+                          <motion.button
+                            onClick={collapseAllSections}
+                            className="px-3 py-1 text-xs bg-slate-500/20 hover:bg-slate-500/30 text-slate-400 rounded-lg transition-colors"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            Collapse All
+                          </motion.button>
+                        </div>
+                      </div>
                       
                       <div className="space-y-4 max-h-80 overflow-y-auto">
                         {/* Priority Matrix */}
                         {aiSuggestionResult.priorityMatrix && (
-                          <div className="bg-slate-600/30 rounded-lg p-4 border border-white/5">
-                            <h4 className="text-sm font-semibold text-emerald-400 mb-3 flex items-center">
-                              <IconComponent icon={FiFilter} className="mr-2" />
-                              Priority Matrix
-                            </h4>
-                            <div className="space-y-3">
-                              {aiSuggestionResult.priorityMatrix.map((category, idx) => (
-                                <div key={idx} className="bg-slate-700/50 rounded-lg p-3">
-                                  <h5 className="text-xs font-medium text-slate-300 mb-2">{category.category}</h5>
-                                  <div className="space-y-1">
-                                    {category.tasks.map((task, taskIdx) => (
-                                      <div key={taskIdx} className="flex items-center justify-between text-xs">
-                                        <span className="text-slate-400">{task.name}</span>
-                                        <div className="flex space-x-1">
-                                          <span className={`px-2 py-1 rounded text-xs ${
-                                            task.urgency === 'high' ? 'bg-red-500/20 text-red-400' : 
-                                            task.urgency === 'medium' ? 'bg-yellow-500/20 text-yellow-400' : 
-                                            'bg-green-500/20 text-green-400'
-                                          }`}>
-                                            {task.urgency}
-                                          </span>
-                                          <span className={`px-2 py-1 rounded text-xs ${
-                                            task.importance === 'high' ? 'bg-purple-500/20 text-purple-400' : 
-                                            task.importance === 'medium' ? 'bg-blue-500/20 text-blue-400' : 
-                                            'bg-gray-500/20 text-gray-400'
-                                          }`}>
-                                            {task.importance}
-                                          </span>
+                          <div className="bg-slate-600/30 rounded-lg border border-white/5">
+                            <div 
+                              className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-600/20 transition-colors"
+                              onClick={() => toggleSection('priorityMatrix')}
+                            >
+                              <h4 className="text-sm font-semibold text-emerald-400 flex items-center">
+                                <IconComponent icon={FiFilter} className="mr-2" />
+                                Priority Matrix
+                              </h4>
+                              <IconComponent 
+                                icon={expandedSections.priorityMatrix ? FiChevronUp : FiChevronDown} 
+                                className="h-4 w-4 text-slate-400" 
+                              />
+                            </div>
+                            <AnimatePresence>
+                              {expandedSections.priorityMatrix && (
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: 'auto', opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  transition={{ duration: 0.3 }}
+                                  className="overflow-hidden px-4 pb-4"
+                                >
+                                  <div className="space-y-3">
+                                    {aiSuggestionResult.priorityMatrix.map((category, idx) => (
+                                      <div key={idx} className="bg-slate-700/50 rounded-lg p-3">
+                                        <h5 className="text-xs font-medium text-slate-300 mb-2">{category.category}</h5>
+                                        <div className="space-y-1">
+                                          {category.tasks.map((task, taskIdx) => (
+                                            <div key={taskIdx} className="flex items-center justify-between text-xs">
+                                              <span className="text-slate-400">{task.name}</span>
+                                              <div className="flex space-x-1">
+                                                <span className={`px-2 py-1 rounded text-xs ${
+                                                  task.urgency === 'high' ? 'bg-red-500/20 text-red-400' : 
+                                                  task.urgency === 'medium' ? 'bg-yellow-500/20 text-yellow-400' : 
+                                                  'bg-green-500/20 text-green-400'
+                                                }`}>
+                                                  {task.urgency}
+                                                </span>
+                                                <span className={`px-2 py-1 rounded text-xs ${
+                                                  task.importance === 'high' ? 'bg-purple-500/20 text-purple-400' : 
+                                                  task.importance === 'medium' ? 'bg-blue-500/20 text-blue-400' : 
+                                                  'bg-gray-500/20 text-gray-400'
+                                                }`}>
+                                                  {task.importance}
+                                                </span>
+                                              </div>
+                                            </div>
+                                          ))}
                                         </div>
                                       </div>
                                     ))}
                                   </div>
-                                </div>
-                              ))}
-                            </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                           </div>
                         )}
 
@@ -2028,6 +2443,74 @@ Remember: Return ONLY the XML structure. No additional text.`
                           </div>
                         )}
 
+                        {/* Reminder Management */}
+                        {aiSuggestionResult.reminderManagement && (
+                          <div className="bg-slate-600/30 rounded-lg p-4 border border-white/5">
+                            <h4 className="text-sm font-semibold text-yellow-400 mb-3 flex items-center">
+                              <IconComponent icon={FaBell} className="mr-2" />
+                              Reminder Management
+                            </h4>
+                            <div className="space-y-3">
+                              {aiSuggestionResult.reminderManagement.map((reminder, idx) => (
+                                <div key={idx} className="bg-slate-700/50 rounded-lg p-3">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center space-x-2">
+                                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                        reminder.priority === 'high' ? 'bg-red-500/20 text-red-400' :
+                                        reminder.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                                        'bg-green-500/20 text-green-400'
+                                      }`}>
+                                        {reminder.priority}
+                                      </span>
+                                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                        reminder.type === 'deadline' ? 'bg-red-500/10 text-red-300' :
+                                        reminder.type === 'application' ? 'bg-blue-500/10 text-blue-300' :
+                                        reminder.type === 'study' ? 'bg-purple-500/10 text-purple-300' :
+                                        'bg-gray-500/10 text-gray-300'
+                                      }`}>
+                                        {reminder.type}
+                                      </span>
+                                    </div>
+                                    <span className="text-xs text-cyan-400">{reminder.date}</span>
+                                  </div>
+                                  <div className="mb-2">
+                                    <h5 className="text-xs font-medium text-slate-300 mb-1">{reminder.task}</h5>
+                                    {reminder.university && (
+                                      <p className="text-xs text-slate-400">University: {reminder.university}</p>
+                                    )}
+                                  </div>
+                                  {reminder.actions && reminder.actions.length > 0 && (
+                                    <div className="mb-2">
+                                      <p className="text-xs font-medium text-slate-400 mb-1">Actions:</p>
+                                      <ul className="text-xs text-slate-500 space-y-1">
+                                        {reminder.actions.map((action, actionIdx) => (
+                                          <li key={actionIdx} className="flex items-start">
+                                            <span className="text-yellow-400 mr-2">•</span>
+                                            {action}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                  {reminder.followUps && reminder.followUps.length > 0 && (
+                                    <div>
+                                      <p className="text-xs font-medium text-slate-400 mb-1">Follow-ups:</p>
+                                      <div className="space-y-1">
+                                        {reminder.followUps.map((followUp, followUpIdx) => (
+                                          <div key={followUpIdx} className="flex items-center justify-between bg-slate-800/50 rounded px-2 py-1">
+                                            <span className="text-xs text-slate-400">{followUp.description}</span>
+                                            <span className="text-xs text-cyan-400">{followUp.date}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         {/* Progress Tracking */}
                         {aiSuggestionResult.progressTracking && (
                           <div className="bg-slate-600/30 rounded-lg p-4 border border-white/5">
@@ -2053,20 +2536,6 @@ Remember: Return ONLY the XML structure. No additional text.`
                                 </div>
                               ))}
                             </div>
-                          </div>
-                        )}
-
-                        {/* Raw XML (for debugging) */}
-                        {aiSuggestionResult.rawText && (
-                          <div className="bg-slate-600/30 rounded-lg p-4 border border-white/5">
-                            <details>
-                              <summary className="text-xs font-medium text-slate-400 cursor-pointer hover:text-slate-300">
-                                View Raw XML Response
-                              </summary>
-                              <pre className="text-xs text-slate-500 mt-2 whitespace-pre-wrap overflow-x-auto">
-                                {aiSuggestionResult.rawText}
-                              </pre>
-                            </details>
                           </div>
                         )}
                       </div>
@@ -2118,18 +2587,17 @@ Remember: Return ONLY the XML structure. No additional text.`
                 </div>
               </div>
             </motion.div>
-          </motion.div>
+          </PortalModal>
         )}
       </AnimatePresence>
 
       {/* Reminder Modal */}
       <AnimatePresence>
         {reminderModal.isOpen && (
-          <motion.div
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <PortalModal
+            isOpen={reminderModal.isOpen}
+            onClose={closeReminderModal}
+            className="flex items-center justify-center z-50 p-4"
           >
             <motion.div
               className="bg-slate-800 rounded-2xl border border-white/10 shadow-2xl w-full max-w-md"
@@ -2140,8 +2608,23 @@ Remember: Return ONLY the XML structure. No additional text.`
               <div className="p-6 border-b border-white/10">
                 <h2 className="text-xl font-bold text-cyan-400 flex items-center">
                   <IconComponent icon={FaBell} className="mr-2" />
-                  Set Reminder
+                  {(() => {
+                    const task = studyTasks.find(t => t.id === reminderModal.taskId);
+                    return task?.reminder ? 'Update Reminder' : 'Set Reminder';
+                  })()}
                 </h2>
+                {(() => {
+                  const task = studyTasks.find(t => t.id === reminderModal.taskId);
+                  if (task?.reminder && task?.reminderDate) {
+                    const reminderDateTime = new Date(task.reminderDate);
+                    return (
+                      <p className="text-sm text-slate-400 mt-2">
+                        Current reminder: {reminderDateTime.toLocaleDateString()} at {reminderDateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
               
               <div className="p-6">
@@ -2172,18 +2655,37 @@ Remember: Return ONLY the XML structure. No additional text.`
                 </div>
               </div>
               
-              <div className="p-6 border-t border-white/10 flex justify-end gap-4">
-                <motion.button
-                  onClick={closeReminderModal}
-                  className="bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 px-6 py-3 rounded-lg transition-colors"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  Cancel
-                </motion.button>
+              <div className="p-6 border-t border-white/10 flex justify-between">
+                <div className="flex gap-2">
+                  <motion.button
+                    onClick={closeReminderModal}
+                    className="bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 px-6 py-3 rounded-lg transition-colors"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Cancel
+                  </motion.button>
+                  {(() => {
+                    const task = studyTasks.find(t => t.id === reminderModal.taskId);
+                    if (task?.reminder) {
+                      return (
+                        <motion.button
+                          onClick={handleUnsetReminder}
+                          className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-6 py-3 rounded-lg font-medium transition-all"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          Remove Reminder
+                        </motion.button>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+                
                 <motion.button
                   onClick={handleSetReminder}
-                  className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white px-6 py-3 rounded-lg font-medium transition-all"
+                  className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-all"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -2191,7 +2693,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                 </motion.button>
               </div>
             </motion.div>
-          </motion.div>
+          </PortalModal>
         )}
       </AnimatePresence>
     </motion.div>

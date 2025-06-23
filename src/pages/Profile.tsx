@@ -133,15 +133,22 @@ const Profile: React.FC = () => {
     
     // Handle date fields - convert empty strings to null for database
     if (sanitized.date_of_birth === '') {
-      sanitized.date_of_birth = undefined; // Remove empty date
+      delete sanitized.date_of_birth; // Remove empty date
     }
     
-    // Handle numeric fields - convert empty strings to null
-    const numericFields: (keyof UserProfile)[] = ['current_gpa', 'sat_score', 'act_score', 'gre_score', 'gmat_score', 'toefl_score', 'ielts_score', 'duolingo_score'];
+    // Handle numeric fields - convert string to number for GPA and test scores
+    if (sanitized.current_gpa && sanitized.current_gpa !== '0') {
+      sanitized.current_gpa = parseFloat(sanitized.current_gpa as string).toString();
+    } else {
+      delete sanitized.current_gpa; // Remove zero GPA
+    }
+    
+    // Handle test scores - convert to numbers or remove if empty/zero
+    const numericFields: (keyof UserProfile)[] = ['sat_score', 'act_score', 'gre_score', 'gmat_score', 'toefl_score', 'ielts_score', 'duolingo_score'];
     numericFields.forEach(field => {
       const value = sanitized[field];
-      if (value === '' || value === '0' || value === 0) {
-        sanitized[field] = undefined; // Remove empty numeric fields
+      if (value === '' || value === '0' || value === 0 || !value) {
+        delete sanitized[field]; // Remove empty numeric fields
       }
     });
     
@@ -153,10 +160,10 @@ const Profile: React.FC = () => {
       sanitized.languages = [];
     }
     
-    // Remove undefined fields
+    // Remove undefined and null fields
     const cleanedData: Partial<UserProfile> = {};
     Object.entries(sanitized).forEach(([key, value]) => {
-      if (value !== undefined) {
+      if (value !== undefined && value !== null && value !== '') {
         (cleanedData as any)[key] = value;
       }
     });
@@ -173,14 +180,33 @@ const Profile: React.FC = () => {
       const result = await userProfileAPI.getUserProfile(session);
       
       if (result.success && result.profile) {
-        // Profile exists, use it
+        // Profile exists, use it and handle the API response structure
+        const apiProfile = result.profile;
+        
         const processedProfile = {
           ...profile,
-          ...result.profile,
+          ...apiProfile,
           user_id: user.id,
-          email: user.email || result.profile.email || '',
-          extracurricular_activities: result.profile.extracurricular_activities || [],
-          languages: result.profile.languages || [],
+          email: user.email || apiProfile.email || '',
+          // Ensure GPA is handled as string for the UI
+          current_gpa: apiProfile.current_gpa ? apiProfile.current_gpa.toString() : '0',
+          // Handle arrays properly
+          extracurricular_activities: Array.isArray(apiProfile.extracurricular_activities) 
+            ? apiProfile.extracurricular_activities 
+            : [],
+          languages: Array.isArray(apiProfile.languages) 
+            ? apiProfile.languages 
+            : [],
+          // Handle test scores as numbers or empty strings
+          sat_score: apiProfile.sat_score || undefined,
+          act_score: apiProfile.act_score || undefined,
+          gre_score: apiProfile.gre_score || undefined,
+          gmat_score: apiProfile.gmat_score || undefined,
+          toefl_score: apiProfile.toefl_score || undefined,
+          ielts_score: apiProfile.ielts_score || undefined,
+          duolingo_score: apiProfile.duolingo_score || undefined,
+          // Handle completion percentage
+          profile_completion_percentage: apiProfile.profile_completion_percentage || 0,
         };
         
         setProfile(processedProfile);
@@ -263,21 +289,39 @@ const Profile: React.FC = () => {
       if (result.success) {
         setSuccessMessage('Profile saved successfully!');
         setIsEditing(false);
-        // Refresh the profile to get the latest data including completion percentage
+        
+        // Update the local profile with the response data
+        if (result.profile) {
+          const updatedProfile = {
+            ...profile,
+            ...result.profile,
+            current_gpa: result.profile.current_gpa ? result.profile.current_gpa.toString() : profile.current_gpa,
+            extracurricular_activities: Array.isArray(result.profile.extracurricular_activities) 
+              ? result.profile.extracurricular_activities 
+              : profile.extracurricular_activities,
+            languages: Array.isArray(result.profile.languages) 
+              ? result.profile.languages 
+              : profile.languages,
+          };
+          setProfile(updatedProfile);
+        }
+        
+        // Refresh the profile completion
         setTimeout(() => {
-          fetchProfile();
           fetchProfileCompletion();
         }, 500);
       } else {
-        // Handle error object properly - extract message if it's an object
+        // Handle error response - the API returns different error formats
         let errorMessage = 'Failed to save profile';
         
         if (result.error) {
           if (typeof result.error === 'string') {
             errorMessage = result.error;
-          } else if (typeof result.error === 'object' && result.error !== null && 'message' in result.error) {
+          } else if (typeof result.error === 'object' && result.error && 'message' in result.error) {
             errorMessage = (result.error as any).message;
-          } else if (typeof result.error === 'object') {
+          } else if (typeof result.error === 'object' && result.error && 'error' in result.error) {
+            errorMessage = (result.error as any).error;
+          } else {
             errorMessage = JSON.stringify(result.error);
           }
         }
@@ -330,7 +374,17 @@ const Profile: React.FC = () => {
       if (result.success) {
         // Update local state with the response
         if (result.profile) {
-          setProfile(prev => ({ ...prev, ...result.profile }));
+          setProfile(prev => ({
+            ...prev,
+            ...result.profile!,
+            current_gpa: result.profile!.current_gpa ? result.profile!.current_gpa.toString() : prev.current_gpa,
+            extracurricular_activities: Array.isArray(result.profile!.extracurricular_activities) 
+              ? result.profile!.extracurricular_activities 
+              : prev.extracurricular_activities,
+            languages: Array.isArray(result.profile!.languages) 
+              ? result.profile!.languages 
+              : prev.languages,
+          }));
         }
         // Don't show success message for auto-save to avoid spam
       } else {
@@ -389,15 +443,17 @@ const Profile: React.FC = () => {
             setProfile(defaultProfile);
             setIsEditing(false);
           } else {
-            // Handle error object properly - extract message if it's an object
+            // Handle error response properly
             let errorMessage = 'Failed to delete profile';
             
             if (result.error) {
               if (typeof result.error === 'string') {
                 errorMessage = result.error;
-              } else if (typeof result.error === 'object' && result.error !== null && 'message' in result.error) {
+              } else if (typeof result.error === 'object' && result.error && 'message' in result.error) {
                 errorMessage = (result.error as any).message;
-              } else if (typeof result.error === 'object') {
+              } else if (typeof result.error === 'object' && result.error && 'error' in result.error) {
+                errorMessage = (result.error as any).error;
+              } else {
                 errorMessage = JSON.stringify(result.error);
               }
             }
@@ -705,8 +761,8 @@ const Profile: React.FC = () => {
                             step="0.01"
                             min="0"
                             max="4"
-                            value={profile.current_gpa || ''}
-                            onChange={(e) => handleInputChange('current_gpa', parseFloat(e.target.value) || 0)}
+                            value={profile.current_gpa === '0' ? '' : profile.current_gpa}
+                            onChange={(e) => handleInputChange('current_gpa', e.target.value || '0')}
                             disabled={!isEditing}
                             className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100"
                             placeholder="3.75"
@@ -782,7 +838,7 @@ const Profile: React.FC = () => {
                           min="400"
                           max="1600"
                           value={profile.sat_score || ''}
-                          onChange={(e) => handleInputChange('sat_score', parseInt(e.target.value) || 0)}
+                          onChange={(e) => handleInputChange('sat_score', e.target.value ? parseInt(e.target.value) : undefined)}
                           disabled={!isEditing}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100"
                           placeholder="1500"
@@ -795,7 +851,7 @@ const Profile: React.FC = () => {
                           min="1"
                           max="36"
                           value={profile.act_score || ''}
-                          onChange={(e) => handleInputChange('act_score', parseInt(e.target.value) || 0)}
+                          onChange={(e) => handleInputChange('act_score', e.target.value ? parseInt(e.target.value) : undefined)}
                           disabled={!isEditing}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100"
                           placeholder="34"
@@ -808,7 +864,7 @@ const Profile: React.FC = () => {
                           min="260"
                           max="340"
                           value={profile.gre_score || ''}
-                          onChange={(e) => handleInputChange('gre_score', parseInt(e.target.value) || 0)}
+                          onChange={(e) => handleInputChange('gre_score', e.target.value ? parseInt(e.target.value) : undefined)}
                           disabled={!isEditing}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100"
                           placeholder="320"
@@ -821,7 +877,7 @@ const Profile: React.FC = () => {
                           min="200"
                           max="800"
                           value={profile.gmat_score || ''}
-                          onChange={(e) => handleInputChange('gmat_score', parseInt(e.target.value) || 0)}
+                          onChange={(e) => handleInputChange('gmat_score', e.target.value ? parseInt(e.target.value) : undefined)}
                           disabled={!isEditing}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100"
                           placeholder="720"
@@ -834,7 +890,7 @@ const Profile: React.FC = () => {
                           min="0"
                           max="120"
                           value={profile.toefl_score || ''}
-                          onChange={(e) => handleInputChange('toefl_score', parseInt(e.target.value) || 0)}
+                          onChange={(e) => handleInputChange('toefl_score', e.target.value ? parseInt(e.target.value) : undefined)}
                           disabled={!isEditing}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100"
                           placeholder="100"
@@ -848,7 +904,7 @@ const Profile: React.FC = () => {
                           min="0"
                           max="9"
                           value={profile.ielts_score || ''}
-                          onChange={(e) => handleInputChange('ielts_score', parseFloat(e.target.value) || 0)}
+                          onChange={(e) => handleInputChange('ielts_score', e.target.value ? parseFloat(e.target.value) : undefined)}
                           disabled={!isEditing}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100"
                           placeholder="7.5"

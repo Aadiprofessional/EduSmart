@@ -1,21 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
-import { AiOutlineHome, AiOutlineDatabase, AiOutlineTrophy, AiOutlineRobot, AiOutlineBook, AiOutlineRead, AiOutlineUser, AiOutlineBulb, AiOutlineMenu, AiOutlineClose, AiOutlineEdit, AiOutlineCrown } from 'react-icons/ai';
-import { FaClipboardList } from 'react-icons/fa';
+import { AiOutlineHome, AiOutlineDatabase, AiOutlineTrophy, AiOutlineRobot, AiOutlineBook, AiOutlineRead, AiOutlineUser, AiOutlineBulb, AiOutlineMenu, AiOutlineClose, AiOutlineEdit, AiOutlineCrown, AiOutlineBell } from 'react-icons/ai';
+import { FaClipboardList, FaBell, FaExclamationTriangle, FaClock } from 'react-icons/fa';
 import IconComponent from '../ui/IconComponent';
 import LanguageSelector from '../ui/LanguageSelector';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../utils/AuthContext';
 import { useSubscription } from '../../utils/SubscriptionContext';
 import { useLanguage } from '../../utils/LanguageContext';
+import { useAppData } from '../../utils/AppDataContext';
 import eduLogo from '../../assets/edulogo.jpeg';
 
 const Header: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isNotificationMenuOpen, setIsNotificationMenuOpen] = useState(false);
   const [userMenuPosition, setUserMenuPosition] = useState({ top: 0, right: 0 });
+  const [notificationMenuPosition, setNotificationMenuPosition] = useState({ top: 0, right: 0 });
   const [isMobile, setIsMobile] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
@@ -23,13 +26,184 @@ const Header: React.FC = () => {
   const { user, signOut } = useAuth();
   const { isProUser, responsesRemaining } = useSubscription();
   const { t } = useLanguage();
+  const { studyTasks, applications } = useAppData();
   
+  // Refs for menu elements
+  const userMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileUserMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const notificationButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Calculate notifications from study planner data
+  const notifications = useMemo(() => {
+    const now = new Date();
+    const alerts: Array<{
+      id: string;
+      type: 'overdue' | 'due_soon' | 'reminder' | 'application_deadline' | 'essay_deadline' | 'interview_reminder';
+      title: string;
+      message: string;
+      date: string;
+      priority: 'high' | 'medium' | 'low';
+      icon: any;
+    }> = [];
+
+    // Study task overdue alerts
+    studyTasks.forEach(task => {
+      if (!task.completed && new Date(task.date) < now) {
+        const daysOverdue = Math.floor((now.getTime() - new Date(task.date).getTime()) / (1000 * 60 * 60 * 24));
+        alerts.push({
+          id: `overdue-${task.id}`,
+          type: 'overdue',
+          title: 'Overdue Task',
+          message: `${task.task} (${task.subject}) - ${daysOverdue} day${daysOverdue > 1 ? 's' : ''} overdue`,
+          date: task.date,
+          priority: 'high',
+          icon: FaExclamationTriangle
+        });
+      }
+    });
+
+    // Study task due soon alerts (next 3 days)
+    studyTasks.forEach(task => {
+      if (!task.completed) {
+        const taskDate = new Date(task.date);
+        const daysUntil = Math.ceil((taskDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        if (daysUntil >= 0 && daysUntil <= 3) {
+          alerts.push({
+            id: `due-soon-${task.id}`,
+            type: 'due_soon',
+            title: daysUntil === 0 ? 'Due Today' : `Due in ${daysUntil} day${daysUntil > 1 ? 's' : ''}`,
+            message: `${task.task} (${task.subject})`,
+            date: task.date,
+            priority: daysUntil === 0 ? 'high' : task.priority === 'high' ? 'high' : 'medium',
+            icon: FaClock
+          });
+        }
+      }
+    });
+
+    // Study task reminders
+    studyTasks.forEach(task => {
+      if (task.reminder && task.reminderDate && !task.completed) {
+        const reminderDate = new Date(task.reminderDate);
+        const timeDiff = reminderDate.getTime() - now.getTime();
+        const minutesUntil = Math.floor(timeDiff / (1000 * 60));
+        
+        // Show reminders that are due within the next 24 hours or overdue
+        if (minutesUntil <= 1440 && minutesUntil >= -60) {
+          let timeText = '';
+          if (minutesUntil < 0) {
+            timeText = `${Math.abs(minutesUntil)} minutes ago`;
+          } else if (minutesUntil < 60) {
+            timeText = `in ${minutesUntil} minutes`;
+          } else {
+            const hours = Math.floor(minutesUntil / 60);
+            timeText = `in ${hours} hour${hours > 1 ? 's' : ''}`;
+          }
+          
+          alerts.push({
+            id: `reminder-${task.id}`,
+            type: 'reminder',
+            title: 'Task Reminder',
+            message: `${task.task} (${task.subject}) - ${timeText}`,
+            date: task.reminderDate,
+            priority: minutesUntil < 0 ? 'high' : 'medium',
+            icon: FaBell
+          });
+        }
+      }
+    });
+
+    // Application deadline alerts (next 30 days)
+    applications.forEach(app => {
+      const appDeadline = new Date(app.deadline);
+      const daysUntil = Math.ceil((appDeadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysUntil >= 0 && daysUntil <= 30) {
+        alerts.push({
+          id: `app-deadline-${app.id}`,
+          type: 'application_deadline',
+          title: daysUntil === 0 ? 'Application Due Today' : `Application Due in ${daysUntil} day${daysUntil > 1 ? 's' : ''}`,
+          message: `${app.university} - ${app.program}`,
+          date: app.deadline,
+          priority: daysUntil <= 7 ? 'high' : daysUntil <= 14 ? 'medium' : 'low',
+          icon: FaClipboardList
+        });
+      }
+    });
+
+    // Application task alerts (from application tasks)
+    applications.forEach(app => {
+      if (app.tasks && app.tasks.length > 0) {
+        app.tasks.forEach(task => {
+          if (task.dueDate && !task.completed) {
+            const taskDeadline = new Date(task.dueDate);
+            const daysUntil = Math.ceil((taskDeadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+            
+            if (daysUntil >= 0 && daysUntil <= 14) {
+              alerts.push({
+                id: `app-task-${app.id}-${task.id}`,
+                type: 'due_soon',
+                title: daysUntil === 0 ? 'Application Task Due Today' : `Application Task Due in ${daysUntil} day${daysUntil > 1 ? 's' : ''}`,
+                message: `${task.task} (${app.university})`,
+                date: task.dueDate,
+                priority: daysUntil <= 3 ? 'high' : daysUntil <= 7 ? 'medium' : 'low',
+                icon: FaClipboardList
+              });
+            }
+          }
+        });
+      }
+    });
+
+    // Application reminder alerts
+    applications.forEach(app => {
+      if (app.reminder && app.reminderDate) {
+        const reminderDate = new Date(app.reminderDate);
+        const timeDiff = reminderDate.getTime() - now.getTime();
+        const minutesUntil = Math.floor(timeDiff / (1000 * 60));
+        
+        // Show reminders that are due within the next 24 hours or overdue
+        if (minutesUntil <= 1440 && minutesUntil >= -60) {
+          let timeText = '';
+          if (minutesUntil < 0) {
+            timeText = `${Math.abs(minutesUntil)} minutes ago`;
+          } else if (minutesUntil < 60) {
+            timeText = `in ${minutesUntil} minutes`;
+          } else {
+            const hours = Math.floor(minutesUntil / 60);
+            timeText = `in ${hours} hour${hours > 1 ? 's' : ''}`;
+          }
+          
+          alerts.push({
+            id: `app-reminder-${app.id}`,
+            type: 'reminder',
+            title: 'Application Reminder',
+            message: `${app.university} - ${app.program} - ${timeText}`,
+            date: app.reminderDate,
+            priority: minutesUntil < 0 ? 'high' : 'medium',
+            icon: FaBell
+          });
+        }
+      }
+    });
+
+    // Sort by priority and date
+    return alerts.sort((a, b) => {
+      const priorityOrder = { high: 3, medium: 2, low: 1 };
+      const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority];
+      if (priorityDiff !== 0) return priorityDiff;
+      return new Date(a.date).getTime() - new Date(b.date).getTime();
+    });
+  }, [studyTasks, applications]);
+
+  const hasNotifications = notifications.length > 0;
+
   const navigation = [
     { name: t('nav.home'), href: '/', icon: AiOutlineHome },
+    { name: t('nav.aiStudy'), href: '/ai-study', icon: AiOutlineBulb },
+    { name: t('nav.aiCourses'), href: '/ai-courses', icon: AiOutlineRobot },
     { name: t('nav.database'), href: '/database', icon: AiOutlineDatabase },
     { name: t('nav.successStories'), href: '/case-studies', icon: AiOutlineTrophy },
-    { name: t('nav.aiCourses'), href: '/ai-courses', icon: AiOutlineRobot },
-    { name: t('nav.aiStudy'), href: '/ai-study', icon: AiOutlineBulb },
     { name: t('nav.resources'), href: '/resources', icon: AiOutlineBook },
     { name: t('nav.blog'), href: '/blog', icon: AiOutlineRead },
   ];
@@ -109,55 +283,118 @@ const Header: React.FC = () => {
 
   // Close dropdowns when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    if (!isUserMenuOpen && !isNotificationMenuOpen) {
+      return; // Don't add listener if menus are closed
+    }
+
+    const handleClickOutside = (event: Event) => {
       const target = event.target as Element;
       
-      // Check if click is inside user menu dropdown or its button
-      const userMenuDropdown = document.querySelector('.user-menu-dropdown');
-      const userMenuButton = document.querySelector('.user-menu-button');
-      const languageSelector = document.querySelector('.language-selector-container');
-      const languageDropdown = document.querySelector('.language-dropdown');
-      
-      // Don't close user menu if clicking inside user menu elements
-      const isInsideUserMenu = target.closest('.user-menu-dropdown') ||
-                               target.closest('.user-menu-button') ||
-                               userMenuDropdown?.contains(target) ||
-                               userMenuButton?.contains(target);
-      
-      // Don't close user menu if clicking inside language selector or its dropdown
-      const isInsideLanguageSelector = target.closest('.language-selector-container') ||
-                                       target.closest('.language-dropdown') ||
-                                       languageSelector?.contains(target) ||
-                                       languageDropdown?.contains(target);
-      
-      // Only close user menu if clicking outside both user menu and language selector
-      if (!isInsideUserMenu && !isInsideLanguageSelector) {
-        setIsUserMenuOpen(false);
+      // Don't close if clicking on any menu related element
+      if (target.closest('.user-menu-button') || 
+          target.closest('.user-menu-dropdown') ||
+          target.closest('.user-menu-container') ||
+          target.closest('.notification-menu-button') ||
+          target.closest('.notification-menu-dropdown') ||
+          target.closest('.language-selector-container') || 
+          target.closest('.language-dropdown')) {
+        return;
       }
+      
+      // Close the menus
+      setIsUserMenuOpen(false);
+      setIsNotificationMenuOpen(false);
     };
 
-    // Use capture phase to handle clicks before other handlers, but with lower priority for language selector
-    document.addEventListener('mousedown', handleClickOutside, false);
-    return () => document.removeEventListener('mousedown', handleClickOutside, false);
-  }, []);
+    // Add a simple delay to ensure dropdown is rendered
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('click', handleClickOutside, true);
+      document.addEventListener('touchend', handleClickOutside, true);
+    }, 200);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('click', handleClickOutside, true);
+      document.removeEventListener('touchend', handleClickOutside, true);
+    };
+  }, [isUserMenuOpen, isNotificationMenuOpen]);
 
   // Update user menu position when opened
   useEffect(() => {
     if (isUserMenuOpen) {
-      const userButton = document.querySelector('.user-menu-button') as HTMLElement;
+      // Try desktop button first, then mobile button
+      const userButton = userMenuButtonRef.current || mobileUserMenuButtonRef.current;
       if (userButton) {
         const rect = userButton.getBoundingClientRect();
+        
+        // Calculate position below the button with explicit positioning
+        const buttonBottom = rect.bottom;
+        const gapBelowButton = 12; // 12px gap below button
+        const topPosition = buttonBottom + gapBelowButton;
+        
+        // For right positioning, align dropdown's right edge with button's right edge
+        const buttonRight = rect.right;
+        const dropdownWidth = 208; // w-52 = 208px
+        const rightPosition = window.innerWidth - buttonRight;
+        
+        // Ensure dropdown doesn't go off-screen on the right
+        const minRightMargin = 16;
+        const adjustedRightPosition = Math.max(minRightMargin, rightPosition);
+        
         const newPosition = {
-          top: rect.bottom + 8, // 8px gap below button
-          right: window.innerWidth - rect.right, // Align to right edge of button
+          top: topPosition,
+          right: adjustedRightPosition,
         };
-        console.log('User menu positioning:', newPosition, 'Button rect:', rect);
+        
+        console.log('User menu positioning:', {
+          newPosition,
+          buttonRect: rect,
+          calculations: {
+            buttonBottom,
+            gapBelowButton,
+            topPosition,
+            buttonRight,
+            dropdownWidth,
+            rightPosition,
+            adjustedRightPosition
+          }
+        });
+        
         setUserMenuPosition(newPosition);
       } else {
         console.log('User button not found');
       }
     }
   }, [isUserMenuOpen]);
+
+  // Update notification menu position when opened
+  useEffect(() => {
+    if (isNotificationMenuOpen) {
+      const notificationButton = notificationButtonRef.current;
+      if (notificationButton) {
+        const rect = notificationButton.getBoundingClientRect();
+        
+        // Calculate position below the button
+        const buttonBottom = rect.bottom;
+        const gapBelowButton = 12;
+        const topPosition = buttonBottom + gapBelowButton;
+        
+        // For right positioning, align dropdown's right edge with button's right edge
+        const buttonRight = rect.right;
+        const dropdownWidth = 320; // w-80 = 320px
+        const rightPosition = window.innerWidth - buttonRight;
+        
+        // Ensure dropdown doesn't go off-screen
+        const minRightMargin = 16;
+        const adjustedRightPosition = Math.max(minRightMargin, rightPosition);
+        
+        setNotificationMenuPosition({
+          top: topPosition,
+          right: adjustedRightPosition,
+        });
+      }
+    }
+  }, [isNotificationMenuOpen]);
 
   // Check if header should be visible on current page
   const shouldShowHeader = headerVisiblePages.some(page => 
@@ -183,8 +420,11 @@ const Header: React.FC = () => {
   };
 
   const handleUserMenuToggle = () => {
-    console.log('User menu toggle clicked, current state:', isUserMenuOpen);
-    setIsUserMenuOpen(!isUserMenuOpen);
+    setIsUserMenuOpen(prev => !prev);
+  };
+
+  const handleNotificationMenuToggle = () => {
+    setIsNotificationMenuOpen(prev => !prev);
   };
 
   const logoVariants = {
@@ -215,12 +455,12 @@ const Header: React.FC = () => {
   const userMenuVariants = {
     hidden: { 
       opacity: 0,
-      y: -10,
+      y: -5, // Small upward offset when hidden
       scale: 0.95
     },
     visible: { 
       opacity: 1,
-      y: 0,
+      y: 0, // Natural position when visible
       scale: 1,
       transition: { duration: 0.2 }
     }
@@ -255,8 +495,11 @@ const Header: React.FC = () => {
         top: `${userMenuPosition.top}px`,
         right: `${userMenuPosition.right}px`,
         zIndex: 1000000, // Higher than header but lower than magnetic cursor
+        transformOrigin: 'top right', // Animate from top-right corner
       }}
+      onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()} // Prevent click bubbling
+      onTouchStart={(e) => e.stopPropagation()}
     >
       <div className="p-2">
         <Link
@@ -308,8 +551,6 @@ const Header: React.FC = () => {
     </motion.div>
   ) : null;
 
-  console.log('User menu state:', { isUserMenuOpen, userMenuContent: !!userMenuContent, userMenuPosition });
-
   return (
     <header 
       className={`header-fixed fixed top-0 left-0 right-0 transition-all duration-500 ease-out`}
@@ -344,32 +585,109 @@ const Header: React.FC = () => {
     >
       <div className="w-full max-w-none px-3 sm:px-4 lg:px-6">
         {/* Header with logo and navigation - improved spacing and alignment */}
-        <div className="flex justify-between items-center py-1 sm:py-2 min-h-[42px] sm:min-h-[49px] max-w-[1600px] mx-auto">
-          {/* Logo section - improved responsive sizing */}
+        <div className="relative flex justify-between items-center py-1 sm:py-2 min-h-[42px] sm:min-h-[49px] max-w-[1600px] mx-auto">
+          
+          {/* Mobile: Menu button on left */}
+          <motion.button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="lg:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-all duration-200 flex-shrink-0"
+            variants={buttonVariants}
+            whileHover="hover"
+            whileTap="tap"
+            data-magnetic
+          >
+            <IconComponent 
+              icon={isMobileMenuOpen ? AiOutlineClose : AiOutlineMenu} 
+              className="h-5 w-5" 
+            />
+          </motion.button>
+
+          {/* Desktop: Logo section on left */}
           <motion.div 
-            className="flex items-center flex-shrink-0 min-w-0"
+            className="hidden lg:flex items-center flex-shrink-0 min-w-0"
             variants={logoVariants}
             whileHover="hover"
             data-magnetic
           >
             <Link to="/" className="flex items-center min-w-0">
-              <span className={`font-bold ${isMobile ? 'text-lg sm:text-xl' : 'text-xl lg:text-2xl xl:text-3xl'} bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent whitespace-nowrap relative`}>
-                {isMobile ? 'ME' : 'MatrixEdu'}
+              <span className="font-bold text-xl lg:text-2xl xl:text-3xl bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent whitespace-nowrap relative">
+                MatrixEdu
               </span>
               {isProUser && (
                 <motion.div
-                  className="ml-1 sm:ml-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full flex items-center flex-shrink-0"
+                  className="ml-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold px-2 py-1 rounded-full flex items-center flex-shrink-0"
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.5, type: "spring" }}
                 >
-                  <IconComponent icon={AiOutlineCrown} className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
+                  <IconComponent icon={AiOutlineCrown} className="w-3 h-3 mr-1" />
                   <span className="text-xs">PRO</span>
                 </motion.div>
               )}
             </Link>
           </motion.div>
+
+          {/* Mobile: Logo in center with fixed width containers */}
+          <div className="lg:hidden flex-1 flex justify-center items-center relative">
+            <motion.div 
+              className="flex items-center"
+              variants={logoVariants}
+              whileHover="hover"
+              data-magnetic
+            >
+              <Link to="/" className="flex items-center min-w-0">
+                <span className="font-bold text-lg sm:text-xl bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent whitespace-nowrap relative">
+                  ME
+                </span>
+                {isProUser && (
+                  <motion.div
+                    className="ml-1 sm:ml-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full flex items-center flex-shrink-0"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.5, type: "spring" }}
+                  >
+                    <IconComponent icon={AiOutlineCrown} className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
+                    <span className="text-xs">PRO</span>
+                  </motion.div>
+                )}
+              </Link>
+            </motion.div>
+          </div>
           
+          {/* Mobile: User profile/actions on right - fixed width */}
+          <div className="lg:hidden flex items-center space-x-1 flex-shrink-0 w-[80px] justify-end">
+            {user ? (
+              <div className="relative flex-shrink-0 user-menu-container">
+                <motion.button
+                  ref={mobileUserMenuButtonRef}
+                  onClick={handleUserMenuToggle}
+                  className="user-menu-button flex items-center px-2 py-1 bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-sm rounded-full border border-white/10 text-white hover:border-white/30 transition-all duration-300 min-w-0"
+                  variants={buttonVariants}
+                  whileHover="hover"
+                  whileTap="tap"
+                  data-magnetic
+                >
+                  <IconComponent icon={AiOutlineUser} className="h-4 w-4 mr-1 flex-shrink-0" />
+                  <span className="max-w-[60px] truncate text-sm font-medium">
+                    {user.user_metadata?.name || user.email?.split('@')[0] || 'User'}
+                  </span>
+                </motion.button>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-1 flex-shrink-0">
+                <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap">
+                  <Link
+                    to="/login"
+                    className="px-2 py-1 text-gray-300 hover:text-white transition-all duration-300 rounded-full hover:bg-white/5 text-sm font-medium whitespace-nowrap"
+                    data-magnetic
+                  >
+                    Login
+                  </Link>
+                </motion.div>
+              </div>
+            )}
+          </div>
+
           {/* Desktop Navigation - improved responsive design to prevent overflow */}
           <nav className="hidden lg:flex items-center justify-center flex-1 px-2 min-w-0">
             <div className="flex items-center space-x-0.5 xl:space-x-1 2xl:space-x-2 overflow-hidden">
@@ -399,7 +717,7 @@ const Header: React.FC = () => {
           
           {/* Desktop auth buttons and language selector - improved spacing and overflow handling */}
           <div className="hidden lg:flex items-center space-x-1 xl:space-x-2 flex-shrink-0 min-w-0">
-            {/* Language Selector without background */}
+            {/* Language Selector */}
             <div className="language-selector-container flex-shrink-0">
               <LanguageSelector />
             </div>
@@ -450,12 +768,36 @@ const Header: React.FC = () => {
                   </motion.div>
                 )}
                 
+                {/* Notification Button */}
+                <div className="relative flex-shrink-0">
+                  <motion.button
+                    ref={notificationButtonRef}
+                    onClick={handleNotificationMenuToggle}
+                    className={`notification-menu-button relative flex items-center px-1 xl:px-1.5 py-0.5 xl:py-1 backdrop-blur-sm rounded-full border transition-all duration-300 ${
+                      hasNotifications 
+                        ? 'bg-gradient-to-r from-red-500/20 to-orange-500/20 border-red-500/30 text-red-400 hover:border-red-500/50' 
+                        : 'bg-gradient-to-r from-slate-500/10 to-gray-500/10 border-white/10 text-gray-400 hover:border-white/30 hover:text-white'
+                    }`}
+                    variants={buttonVariants}
+                    whileHover="hover"
+                    whileTap="tap"
+                    data-magnetic
+                  >
+                    <IconComponent icon={AiOutlineBell} className="h-3 w-3 xl:h-4 xl:w-4 flex-shrink-0" />
+                    {hasNotifications && (
+                      <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full flex items-center justify-center">
+                        <span className="text-[8px] text-white font-bold">
+                          {notifications.length > 9 ? '9+' : notifications.length}
+                        </span>
+                      </div>
+                    )}
+                  </motion.button>
+                </div>
+                
                 <div className="relative flex-shrink-0 user-menu-container">
                   <motion.button
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent event bubbling
-                      handleUserMenuToggle();
-                    }}
+                    ref={userMenuButtonRef}
+                    onClick={handleUserMenuToggle}
                     className="user-menu-button flex items-center px-1 xl:px-1.5 py-0.5 xl:py-1 bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-sm rounded-full border border-white/10 text-white hover:border-white/30 transition-all duration-300 min-w-0"
                     variants={buttonVariants}
                     whileHover="hover"
@@ -492,21 +834,6 @@ const Header: React.FC = () => {
               </div>
             )}
           </div>
-          
-          {/* Mobile menu button */}
-          <motion.button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-all duration-200 flex-shrink-0 ml-2"
-            variants={buttonVariants}
-            whileHover="hover"
-            whileTap="tap"
-            data-magnetic
-          >
-            <IconComponent 
-              icon={isMobileMenuOpen ? AiOutlineClose : AiOutlineMenu} 
-              className="h-5 w-5" 
-            />
-          </motion.button>
         </div>
         
         {/* Mobile Navigation - Improved with better spacing and visibility */}
@@ -662,6 +989,129 @@ const Header: React.FC = () => {
 
       {/* Render user menu dropdown using portal to avoid affecting header layout */}
       {userMenuContent && createPortal(userMenuContent, document.body)}
+
+      {/* Notification dropdown content with higher z-index */}
+      {isNotificationMenuOpen && typeof window !== 'undefined' && createPortal(
+        <motion.div
+          className="notification-menu-dropdown fixed w-80 bg-black/95 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
+          variants={userMenuVariants}
+          initial="hidden"
+          animate="visible"
+          exit="hidden"
+          style={{
+            top: `${notificationMenuPosition.top}px`,
+            right: `${notificationMenuPosition.right}px`,
+            zIndex: 1000000,
+            transformOrigin: 'top right',
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+        >
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white flex items-center">
+                <IconComponent icon={FaBell} className="h-5 w-5 mr-2 text-blue-400" />
+                Notifications
+              </h3>
+              {hasNotifications && (
+                <span className="text-xs text-gray-400">
+                  {notifications.length} {notifications.length === 1 ? 'item' : 'items'}
+                </span>
+              )}
+            </div>
+
+            <div className="max-h-96 overflow-y-auto space-y-3">
+              {notifications.length === 0 ? (
+                <div className="text-center py-8">
+                  <IconComponent icon={FaBell} className="h-12 w-12 text-gray-600 mx-auto mb-3" />
+                  <p className="text-gray-400 text-sm">No notifications</p>
+                  <p className="text-gray-500 text-xs mt-1">You're all caught up!</p>
+                </div>
+              ) : (
+                notifications.map((notification) => {
+                  const getNotificationIcon = (type: string) => {
+                    switch (type) {
+                      case 'overdue': return FaExclamationTriangle;
+                      case 'deadline': return FaClock;
+                      case 'reminder': return FaBell;
+                      default: return FaBell;
+                    }
+                  };
+
+                  const getNotificationColor = (type: string, priority: string) => {
+                    switch (type) {
+                      case 'overdue': return 'text-red-400 bg-red-500/10 border-red-500/20';
+                      case 'deadline': 
+                        return priority === 'high' ? 'text-orange-400 bg-orange-500/10 border-orange-500/20' : 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20';
+                      case 'reminder': return 'text-blue-400 bg-blue-500/10 border-blue-500/20';
+                      default: return 'text-gray-400 bg-gray-500/10 border-gray-500/20';
+                    }
+                  };
+
+                  const formatDate = (dateStr: string) => {
+                    const date = new Date(dateStr);
+                    const today = new Date();
+                    const diffTime = date.getTime() - today.getTime();
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                    if (diffDays === 0) return 'Today';
+                    if (diffDays === -1) return 'Yesterday';
+                    if (diffDays < -1) return `${Math.abs(diffDays)} days ago`;
+                    if (diffDays === 1) return 'Tomorrow';
+                    if (diffDays <= 7) return `In ${diffDays} days`;
+                    return date.toLocaleDateString();
+                  };
+
+                  return (
+                    <div
+                      key={notification.id}
+                      className={`p-3 rounded-xl border transition-all duration-200 hover:bg-white/5 ${getNotificationColor(notification.type, notification.priority)}`}
+                    >
+                      <div className="flex items-start space-x-3">
+                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                          notification.priority === 'high' ? 'bg-red-500/20 text-red-400' :
+                          notification.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                          'bg-green-500/20 text-green-400'
+                        }`}>
+                          <IconComponent icon={notification.icon} className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <h4 className="text-sm font-medium text-white truncate">{notification.title}</h4>
+                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                              notification.priority === 'high' ? 'bg-red-500/20 text-red-400' :
+                              notification.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                              'bg-green-500/20 text-green-400'
+                            }`}>
+                              {notification.priority}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-300 mb-1">{notification.message}</p>
+                          <p className="text-xs text-gray-500">{formatDate(notification.date)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {hasNotifications && (
+              <div className="mt-4 pt-3 border-t border-white/10">
+                <Link
+                  to="/ai-study"
+                  className="block w-full text-center px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium transition-all duration-200 hover:shadow-lg text-sm"
+                  onClick={() => setIsNotificationMenuOpen(false)}
+                >
+                  View Study Planner
+                </Link>
+              </div>
+            )}
+          </div>
+        </motion.div>,
+        document.body
+      )}
     </header>
   );
 };

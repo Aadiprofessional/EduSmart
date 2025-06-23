@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AiOutlineUpload, AiOutlineFileText, AiOutlineBulb, AiOutlineHistory, AiOutlineFullscreen, AiOutlineCamera, AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { FiDownload, FiCopy, FiShare2, FiClock, FiTrash2, FiEye, FiZap, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
@@ -94,6 +95,74 @@ const itemVariants = {
 const buttonVariants = {
   hover: { scale: 1.05, transition: { duration: 0.2 } },
   tap: { scale: 0.95, transition: { duration: 0.1 } }
+};
+
+// Portal Modal Component - renders at document.body level
+interface PortalModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+}
+
+const PortalModal: React.FC<PortalModalProps> = ({ isOpen, onClose, children, className = '', style = {} }) => {
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return ReactDOM.createPortal(
+    <AnimatePresence>
+      <motion.div 
+        className="bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          zIndex: 9999
+        }}
+      >
+        <motion.div 
+          className={className}
+          initial={{ scale: 0.9, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.9, opacity: 0, y: 20 }}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: 'relative',
+            maxWidth: '90vw',
+            maxHeight: '90vh',
+            ...style
+          }}
+        >
+          {children}
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>,
+    document.body
+  );
 };
 
 const DocumentSummarizerComponent: React.FC<DocumentSummarizerComponentProps> = ({ className = '' }) => {
@@ -2234,123 +2303,107 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
       </AnimatePresence>
 
       {/* Enhanced Fullscreen Modal - Fixed to cover whole component */}
-      <AnimatePresence>
-        {fullScreenView && (
-          <motion.div 
-            className="fixed inset-0 bg-gradient-to-br from-slate-900/98 via-slate-800/98 to-slate-900/98 backdrop-blur-xl z-[9999] flex items-center justify-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setFullScreenView(null)}
-            style={{ margin: 0, padding: 0 }}
-          >
-            <motion.div 
-              className="bg-gradient-to-br from-slate-700/98 via-slate-800/98 to-slate-900/98 backdrop-blur-xl border-2 border-cyan-500/40 rounded-2xl w-full h-full flex flex-col shadow-2xl"
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              onClick={(e) => e.stopPropagation()}
-              style={{ margin: 0 }}
+      <PortalModal 
+        isOpen={!!fullScreenView}
+        onClose={() => setFullScreenView(null)}
+        className="bg-gradient-to-br from-slate-700/98 via-slate-800/98 to-slate-900/98 backdrop-blur-xl border-2 border-cyan-500/40 rounded-2xl w-full h-full flex flex-col shadow-2xl"
+        style={{ margin: 0 }}
+      >
+        <div className="flex items-center justify-between p-6 border-b border-cyan-500/20 flex-shrink-0">
+          <div className="flex items-center space-x-4">
+            <div className="p-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl shadow-lg">
+              <IconComponent 
+                icon={fullScreenView === 'mindmap' ? FiEye : AiOutlineBulb} 
+                className="h-7 w-7 text-white" 
+              />
+            </div>
+            <div>
+              <h3 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                {fullScreenView === 'mindmap' ? '🧠 Interactive Mindmap' : '📄 Document Summary'}
+              </h3>
+              <p className="text-slate-300 text-base mt-2 font-medium">
+                {fullScreenView === 'mindmap' 
+                  ? 'Explore the hierarchical structure of your document' 
+                  : 'Comprehensive analysis and key insights'
+                }
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-3">
+            {fullScreenView === 'summary' && summaryComplete && mindmapData && (
+              <motion.button
+                onClick={() => setFullScreenView('mindmap')}
+                className="flex items-center px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <IconComponent icon={FiEye} className="h-5 w-5 mr-2" />
+                View Mindmap
+              </motion.button>
+            )}
+            {fullScreenView === 'mindmap' && (
+              <motion.button
+                onClick={() => setFullScreenView('summary')}
+                className="flex items-center px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <IconComponent icon={AiOutlineBulb} className="h-5 w-5 mr-2" />
+                View Summary
+              </motion.button>
+            )}
+            <motion.button
+              onClick={() => setFullScreenView(null)}
+              className="text-slate-300 hover:text-white p-3 rounded-xl bg-slate-600/50 hover:bg-slate-500/50 transition-all duration-300 border border-slate-500/30"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              <div className="flex items-center justify-between p-6 border-b border-cyan-500/20 flex-shrink-0">
-                <div className="flex items-center space-x-4">
-                  <div className="p-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl shadow-lg">
-                    <IconComponent 
-                      icon={fullScreenView === 'mindmap' ? FiEye : AiOutlineBulb} 
-                      className="h-7 w-7 text-white" 
-                    />
-                  </div>
-                  <div>
-                    <h3 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-                      {fullScreenView === 'mindmap' ? '🧠 Interactive Mindmap' : '📄 Document Summary'}
-                    </h3>
-                    <p className="text-slate-300 text-base mt-2 font-medium">
-                      {fullScreenView === 'mindmap' 
-                        ? 'Explore the hierarchical structure of your document' 
-                        : 'Comprehensive analysis and key insights'
-                      }
-                    </p>
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </motion.button>
+          </div>
+        </div>
+        
+        <div className="flex-1 p-6 overflow-hidden">
+          {fullScreenView === 'mindmap' && mindmapData ? (
+            <div className="h-full bg-gradient-to-br from-slate-600/30 via-slate-700/30 to-slate-800/30 rounded-2xl border-2 border-cyan-500/30 shadow-inner">
+              <div className="p-3 border-b border-white/10 bg-slate-600/30 rounded-t-2xl">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-medium text-cyan-400">Interactive Mind Map</h3>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs text-slate-400">🖱️ Click & drag to move • 🔍 Scroll to zoom • 📍 Double-click to reset</span>
                   </div>
                 </div>
-                <div className="flex items-center space-x-3">
-                  {fullScreenView === 'summary' && summaryComplete && mindmapData && (
-                    <motion.button
-                      onClick={() => setFullScreenView('mindmap')}
-                      className="flex items-center px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <IconComponent icon={FiEye} className="h-5 w-5 mr-2" />
-                      View Mindmap
-                    </motion.button>
-                  )}
-                  {fullScreenView === 'mindmap' && (
-                    <motion.button
-                      onClick={() => setFullScreenView('summary')}
-                      className="flex items-center px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <IconComponent icon={AiOutlineBulb} className="h-5 w-5 mr-2" />
-                      View Summary
-                    </motion.button>
-                  )}
-                  <motion.button
-                    onClick={() => setFullScreenView(null)}
-                    className="text-slate-300 hover:text-white p-3 rounded-xl bg-slate-600/50 hover:bg-slate-500/50 transition-all duration-300 border border-slate-500/30"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </motion.button>
-                </div>
               </div>
-              
-              <div className="flex-1 p-6 overflow-hidden">
-                {fullScreenView === 'mindmap' && mindmapData ? (
-                  <div className="h-full bg-gradient-to-br from-slate-600/30 via-slate-700/30 to-slate-800/30 rounded-2xl border-2 border-cyan-500/30 shadow-inner">
-                    <div className="p-3 border-b border-white/10 bg-slate-600/30 rounded-t-2xl">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-sm font-medium text-cyan-400">Interactive Mind Map</h3>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-xs text-slate-400">🖱️ Click & drag to move • 🔍 Scroll to zoom • 📍 Double-click to reset</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div 
-                      ref={fullScreenView === 'mindmap' ? mindmapRef : null}
-                      className="w-full h-[calc(100%-60px)] rounded-b-2xl" 
-                    />
-                  </div>
-                ) : summary ? (
-                  <div className="h-full bg-gradient-to-br from-slate-600/30 via-slate-700/30 to-slate-800/30 rounded-2xl p-8 border-2 border-cyan-500/30 shadow-inner overflow-y-auto custom-scrollbar">
-                    <div
-                      className="prose prose-xl max-w-none
-                        prose-headings:text-cyan-400 prose-headings:font-bold
-                        prose-p:text-slate-200 prose-p:leading-relaxed prose-p:text-lg
-                        prose-strong:text-slate-100 prose-strong:font-bold
-                        prose-ul:space-y-2 prose-ol:space-y-2
-                        prose-li:marker:text-cyan-400 prose-li:text-slate-200 prose-li:text-lg
-                        prose-code:bg-slate-600/50 prose-code:text-cyan-300 prose-code:px-2 prose-code:py-1 prose-code:rounded"
-                    >
-                      <ReactMarkdown
-                        remarkPlugins={[remarkMath, remarkGfm]}
-                        rehypePlugins={[rehypeKatex]}
-                        components={markdownComponents}
-                      >
-                        {preprocessLaTeX(summary)}
-                      </ReactMarkdown>
-                    </div>
-                  </div>
-                ) : null}
+              <div 
+                ref={fullScreenView === 'mindmap' ? mindmapRef : null}
+                className="w-full h-[calc(100%-60px)] rounded-b-2xl" 
+              />
+            </div>
+          ) : summary ? (
+            <div className="h-full bg-gradient-to-br from-slate-600/30 via-slate-700/30 to-slate-800/30 rounded-2xl p-8 border-2 border-cyan-500/30 shadow-inner overflow-y-auto custom-scrollbar">
+              <div
+                className="prose prose-xl max-w-none
+                  prose-headings:text-cyan-400 prose-headings:font-bold
+                  prose-p:text-slate-200 prose-p:leading-relaxed prose-p:text-lg
+                  prose-strong:text-slate-100 prose-strong:font-bold
+                  prose-ul:space-y-2 prose-ol:space-y-2
+                  prose-li:marker:text-cyan-400 prose-li:text-slate-200 prose-li:text-lg
+                  prose-code:bg-slate-600/50 prose-code:text-cyan-300 prose-code:px-2 prose-code:py-1 prose-code:rounded"
+              >
+                <ReactMarkdown
+                  remarkPlugins={[remarkMath, remarkGfm]}
+                  rehypePlugins={[rehypeKatex]}
+                  components={markdownComponents}
+                >
+                  {preprocessLaTeX(summary)}
+                </ReactMarkdown>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </div>
+          ) : null}
+        </div>
+      </PortalModal>
 
       {/* Custom Scrollbar Styles */}
       <style dangerouslySetInnerHTML={{

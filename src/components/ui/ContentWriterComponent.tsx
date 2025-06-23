@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { jsPDF } from 'jspdf';
@@ -18,6 +19,72 @@ import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import 'katex/dist/katex.min.css';
+
+// Portal Modal Component - renders at document.body level
+interface PortalModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+  className?: string;
+}
+
+const PortalModal: React.FC<PortalModalProps> = ({ isOpen, onClose, children, className = '' }) => {
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return ReactDOM.createPortal(
+    <AnimatePresence>
+      <motion.div 
+        className="bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          zIndex: 9999
+        }}
+      >
+        <motion.div 
+          className={className}
+          initial={{ scale: 0.9, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.9, opacity: 0, y: 20 }}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: 'relative',
+            maxWidth: '90vw',
+            maxHeight: '90vh'
+          }}
+        >
+          {children}
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>,
+    document.body
+  );
+};
 
 const ContentWriterComponent: React.FC = () => {
   // Preprocess LaTeX for react-markdown
@@ -1487,145 +1554,121 @@ ${prompt}`
         </div>
 
         {/* History Panel */}
-        <AnimatePresence>
-          {showHistory && (
-            <motion.div
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+        <PortalModal 
+          isOpen={showHistory}
+          onClose={() => setShowHistory(false)}
+          className="bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl shadow-lg max-w-4xl w-full max-h-[80vh] overflow-hidden"
+        >
+          <div className="bg-slate-700/50 backdrop-blur-sm px-6 py-4 border-b border-white/10 flex items-center justify-between">
+            <h3 className="text-xl font-bold text-cyan-400">Content History</h3>
+            <motion.button
+              onClick={() => setShowHistory(false)}
+              className="p-2 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              <motion.div
-                className="bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl shadow-lg max-w-4xl w-full max-h-[80vh] overflow-hidden"
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-              >
-                <div className="bg-slate-700/50 backdrop-blur-sm px-6 py-4 border-b border-white/10 flex items-center justify-between">
-                  <h3 className="text-xl font-bold text-cyan-400">Content History</h3>
-                  <motion.button
-                    onClick={() => setShowHistory(false)}
-                    className="p-2 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+              <IconComponent icon={FiX} className="h-5 w-5" />
+            </motion.button>
+          </div>
+          
+          <div className="p-6 overflow-y-auto max-h-[60vh]">
+            {contentHistory.length === 0 ? (
+              <div className="text-center py-12">
+                <IconComponent icon={AiOutlineHistory} className="h-12 w-12 mx-auto mb-4 text-slate-400" />
+                <h3 className="text-lg font-medium text-slate-300 mb-2">No history yet</h3>
+                <p className="text-slate-400">Generated content will appear here for easy access.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {contentHistory.map((item, index) => (
+                  <motion.div
+                    key={index}
+                    className="bg-slate-700/30 backdrop-blur-sm border border-white/10 rounded-lg p-4 hover:bg-slate-600/30 transition-colors cursor-pointer"
+                    onClick={() => loadFromHistory(item)}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                   >
-                    <IconComponent icon={FiX} className="h-5 w-5" />
-                  </motion.button>
-                </div>
-                
-                <div className="p-6 overflow-y-auto max-h-[60vh]">
-                  {contentHistory.length === 0 ? (
-                    <div className="text-center py-12">
-                      <IconComponent icon={AiOutlineHistory} className="h-12 w-12 mx-auto mb-4 text-slate-400" />
-                      <h3 className="text-lg font-medium text-slate-300 mb-2">No history yet</h3>
-                      <p className="text-slate-400">Generated content will appear here for easy access.</p>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-cyan-400 mb-1">{item.title}</h4>
+                        <p className="text-sm text-slate-400 mb-2">{item.date}</p>
+                        <p className="text-sm text-slate-300 line-clamp-2">{item.content.substring(0, 150)}...</p>
+                      </div>
+                      <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded border border-blue-500/30">
+                        {item.template}
+                      </span>
                     </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {contentHistory.map((item, index) => (
-                        <motion.div
-                          key={index}
-                          className="bg-slate-700/30 backdrop-blur-sm border border-white/10 rounded-lg p-4 hover:bg-slate-600/30 transition-colors cursor-pointer"
-                          onClick={() => loadFromHistory(item)}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <h4 className="font-medium text-cyan-400 mb-1">{item.title}</h4>
-                              <p className="text-sm text-slate-400 mb-2">{item.date}</p>
-                              <p className="text-sm text-slate-300 line-clamp-2">{item.content.substring(0, 150)}...</p>
-                            </div>
-                            <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded border border-blue-500/30">
-                              {item.template}
-                            </span>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </div>
+        </PortalModal>
 
         {/* Ask AI Modal */}
-        <AnimatePresence>
-          {showAskAIModal && (
-            <motion.div
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+        <PortalModal 
+          isOpen={showAskAIModal}
+          onClose={() => setShowAskAIModal(false)}
+          className="bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl shadow-lg max-w-2xl w-full"
+        >
+          <div className="bg-slate-700/50 backdrop-blur-sm px-6 py-4 border-b border-white/10 flex items-center justify-between">
+            <h3 className="text-xl font-bold text-cyan-400">Ask AI about Selection</h3>
+            <motion.button
+              onClick={() => setShowAskAIModal(false)}
+              className="p-2 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              <motion.div
-                className="bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl shadow-lg max-w-2xl w-full"
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
+              <IconComponent icon={FiX} className="h-5 w-5" />
+            </motion.button>
+          </div>
+          
+          <div className="p-6">
+            {selectionData && (
+              <div className="mb-4 p-3 bg-slate-700/30 backdrop-blur-sm rounded-lg border border-white/10">
+                <p className="text-sm text-slate-400 mb-1">Selected text:</p>
+                <p className="text-slate-300 italic">"{selectionData.text}"</p>
+              </div>
+            )}
+            
+            <textarea
+              value={askAIInstruction}
+              onChange={(e) => setAskAIInstruction(e.target.value)}
+              placeholder="What would you like to know about this text? (e.g., 'Improve this paragraph', 'Make it more formal', 'Explain this concept')"
+              className="w-full h-32 p-4 bg-slate-700/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 placeholder-slate-400 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none"
+            />
+            
+            <div className="flex items-center justify-end space-x-3 mt-4">
+              <motion.button
+                onClick={() => setShowAskAIModal(false)}
+                className="px-4 py-2 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                <div className="bg-slate-700/50 backdrop-blur-sm px-6 py-4 border-b border-white/10 flex items-center justify-between">
-                  <h3 className="text-xl font-bold text-cyan-400">Ask AI about Selection</h3>
-                  <motion.button
-                    onClick={() => setShowAskAIModal(false)}
-                    className="p-2 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <IconComponent icon={FiX} className="h-5 w-5" />
-                  </motion.button>
-                </div>
-                
-                <div className="p-6">
-                  {selectionData && (
-                    <div className="mb-4 p-3 bg-slate-700/30 backdrop-blur-sm rounded-lg border border-white/10">
-                      <p className="text-sm text-slate-400 mb-1">Selected text:</p>
-                      <p className="text-slate-300 italic">"{selectionData.text}"</p>
-                    </div>
-                  )}
-                  
-                  <textarea
-                    value={askAIInstruction}
-                    onChange={(e) => setAskAIInstruction(e.target.value)}
-                    placeholder="What would you like to know about this text? (e.g., 'Improve this paragraph', 'Make it more formal', 'Explain this concept')"
-                    className="w-full h-32 p-4 bg-slate-700/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 placeholder-slate-400 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none"
-                  />
-                  
-                  <div className="flex items-center justify-end space-x-3 mt-4">
-                    <motion.button
-                      onClick={() => setShowAskAIModal(false)}
-                      className="px-4 py-2 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      Cancel
-                    </motion.button>
-                    <motion.button
-                      onClick={processAskAIRequest}
-                      disabled={!askAIInstruction.trim() || isProcessingSelection}
-                      className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:shadow-lg rounded-lg text-white font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      {isProcessingSelection ? (
-                        <>
-                          <IconComponent icon={AiOutlineLoading3Quarters} className="animate-spin mr-2" />
-                          Processing...
-                        </>
-                      ) : (
-                        <>
-                          <IconComponent icon={AiOutlineRobot} className="mr-2" />
-                          Ask AI
-                        </>
-                      )}
-                    </motion.button>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                Cancel
+              </motion.button>
+              <motion.button
+                onClick={processAskAIRequest}
+                disabled={!askAIInstruction.trim() || isProcessingSelection}
+                className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:shadow-lg rounded-lg text-white font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                {isProcessingSelection ? (
+                  <>
+                    <IconComponent icon={AiOutlineLoading3Quarters} className="animate-spin mr-2" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <IconComponent icon={AiOutlineRobot} className="mr-2" />
+                    Ask AI
+                  </>
+                )}
+              </motion.button>
+            </div>
+          </div>
+        </PortalModal>
 
         {/* AI Response Modal */}
         <AnimatePresence>

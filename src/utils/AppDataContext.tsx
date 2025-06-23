@@ -50,6 +50,7 @@ export interface AppDataContextType {
   syncApplicationToStudy: (application: Application) => void;
   toggleTaskReminder: (taskId: string | number, isApplication?: boolean) => void;
   setReminder: (taskId: string | number, reminderDate: string, isApplication?: boolean) => void;
+  unsetReminder: (taskId: string | number, isApplication?: boolean) => void;
 }
 
 const AppDataContext = createContext<AppDataContextType | undefined>(undefined);
@@ -219,7 +220,7 @@ export const AppDataProvider: React.FC<AppDataProviderProps> = ({ children }) =>
       id: `app-deadline-${application.id}`,
       task: `${application.university} - ${application.program} Application Deadline`,
       subject: 'Applications',
-      date: application.deadline,
+      date: application.reminder && application.reminderDate ? application.reminderDate.split('T')[0] : application.deadline,
       completed: application.status === 'submitted' || application.status === 'accepted' || application.status === 'rejected',
       priority: 'high',
       estimatedHours: 1,
@@ -234,7 +235,7 @@ export const AppDataProvider: React.FC<AppDataProviderProps> = ({ children }) =>
       id: `app-task-${application.id}-${task.id}`,
       task: `${task.task} (${application.university})`,
       subject: 'Applications',
-      date: task.dueDate || application.deadline,
+      date: task.reminder && task.reminderDate ? task.reminderDate.split('T')[0] : (task.dueDate || application.deadline),
       completed: task.completed,
       priority: 'medium',
       estimatedHours: 2,
@@ -258,15 +259,23 @@ export const AppDataProvider: React.FC<AppDataProviderProps> = ({ children }) =>
           if (app.id === taskId) {
             return { ...app, reminder: !app.reminder };
           }
-          // Check if it's a task within an application
-          const updatedTasks = app.tasks.map(task => 
-            task.id === taskId ? { ...task, reminder: !task.reminder } : task
-          );
-          if (updatedTasks !== app.tasks) {
-            const updatedApp = { ...app, tasks: updatedTasks };
-            syncApplicationToStudy(updatedApp);
-            return updatedApp;
+          
+          // Check if it's a composite task ID (appId-taskId format)
+          if (typeof taskId === 'string' && taskId.includes('-')) {
+            const [appIdStr, taskIdStr] = taskId.split('-');
+            const appId = parseInt(appIdStr);
+            const actualTaskId = parseInt(taskIdStr);
+            
+            if (app.id === appId) {
+              const updatedTasks = app.tasks.map(task => 
+                task.id === actualTaskId ? { ...task, reminder: !task.reminder } : task
+              );
+              const updatedApp = { ...app, tasks: updatedTasks };
+              syncApplicationToStudy(updatedApp);
+              return updatedApp;
+            }
           }
+          
           return app;
         })
       );
@@ -284,25 +293,131 @@ export const AppDataProvider: React.FC<AppDataProviderProps> = ({ children }) =>
       setApplicationsState(prev =>
         prev.map(app => {
           if (app.id === taskId) {
-            return { ...app, reminder: true, reminderDate };
-          }
-          // Check if it's a task within an application
-          const updatedTasks = app.tasks.map(task => 
-            task.id === taskId ? { ...task, reminder: true, reminderDate } : task
-          );
-          if (updatedTasks !== app.tasks) {
-            const updatedApp = { ...app, tasks: updatedTasks };
+            const updatedApp = { ...app, reminder: true, reminderDate };
             syncApplicationToStudy(updatedApp);
             return updatedApp;
           }
+          
+          // Check if it's a composite task ID (appId-taskId format)
+          if (typeof taskId === 'string' && taskId.includes('-')) {
+            const [appIdStr, taskIdStr] = taskId.split('-');
+            const appId = parseInt(appIdStr);
+            const actualTaskId = parseInt(taskIdStr);
+            
+            if (app.id === appId) {
+              const updatedTasks = app.tasks.map(task => 
+                task.id === actualTaskId ? { ...task, reminder: true, reminderDate } : task
+              );
+              const updatedApp = { ...app, tasks: updatedTasks };
+              syncApplicationToStudy(updatedApp);
+              return updatedApp;
+            }
+          }
+          
           return app;
         })
       );
     } else {
       setStudyTasksState(prev =>
-        prev.map(task => 
-          task.id === taskId ? { ...task, reminder: true, reminderDate } : task
-        )
+        prev.map(task => {
+          if (task.id === taskId) {
+            const updatedTask = { ...task, reminder: true, reminderDate };
+            // If this is a synced task from application, update the original application too
+            if (task.source === 'application' && task.applicationId) {
+              const appId = task.applicationId;
+              if (task.id.startsWith(`app-deadline-${appId}`)) {
+                // This is an application deadline task
+                setApplicationsState(prevApps =>
+                  prevApps.map(app => 
+                    app.id === appId ? { ...app, reminder: true, reminderDate } : app
+                  )
+                );
+              } else if (task.id.startsWith(`app-task-${appId}-`)) {
+                // This is an application task
+                const originalTaskId = parseInt(task.id.split('-').pop() || '0');
+                setApplicationsState(prevApps =>
+                  prevApps.map(app => 
+                    app.id === appId ? {
+                      ...app,
+                      tasks: app.tasks.map(appTask => 
+                        appTask.id === originalTaskId ? { ...appTask, reminder: true, reminderDate } : appTask
+                      )
+                    } : app
+                  )
+                );
+              }
+            }
+            return updatedTask;
+          }
+          return task;
+        })
+      );
+    }
+  };
+
+  const unsetReminder = (taskId: string | number, isApplication = false) => {
+    if (isApplication) {
+      setApplicationsState(prev =>
+        prev.map(app => {
+          if (app.id === taskId) {
+            const updatedApp = { ...app, reminder: false, reminderDate: undefined };
+            syncApplicationToStudy(updatedApp);
+            return updatedApp;
+          }
+          
+          // Check if it's a composite task ID (appId-taskId format)
+          if (typeof taskId === 'string' && taskId.includes('-')) {
+            const [appIdStr, taskIdStr] = taskId.split('-');
+            const appId = parseInt(appIdStr);
+            const actualTaskId = parseInt(taskIdStr);
+            
+            if (app.id === appId) {
+              const updatedTasks = app.tasks.map(task => 
+                task.id === actualTaskId ? { ...task, reminder: false, reminderDate: undefined } : task
+              );
+              const updatedApp = { ...app, tasks: updatedTasks };
+              syncApplicationToStudy(updatedApp);
+              return updatedApp;
+            }
+          }
+          
+          return app;
+        })
+      );
+    } else {
+      setStudyTasksState(prev =>
+        prev.map(task => {
+          if (task.id === taskId) {
+            const updatedTask = { ...task, reminder: false, reminderDate: undefined };
+            // If this is a synced task from application, update the original application too
+            if (task.source === 'application' && task.applicationId) {
+              const appId = task.applicationId;
+              if (task.id.startsWith(`app-deadline-${appId}`)) {
+                // This is an application deadline task
+                setApplicationsState(prevApps =>
+                  prevApps.map(app => 
+                    app.id === appId ? { ...app, reminder: false, reminderDate: undefined } : app
+                  )
+                );
+              } else if (task.id.startsWith(`app-task-${appId}-`)) {
+                // This is an application task
+                const originalTaskId = parseInt(task.id.split('-').pop() || '0');
+                setApplicationsState(prevApps =>
+                  prevApps.map(app => 
+                    app.id === appId ? {
+                      ...app,
+                      tasks: app.tasks.map(appTask => 
+                        appTask.id === originalTaskId ? { ...appTask, reminder: false, reminderDate: undefined } : appTask
+                      )
+                    } : app
+                  )
+                );
+              }
+            }
+            return updatedTask;
+          }
+          return task;
+        })
       );
     }
   };
@@ -320,7 +435,8 @@ export const AppDataProvider: React.FC<AppDataProviderProps> = ({ children }) =>
     deleteStudyTask,
     syncApplicationToStudy,
     toggleTaskReminder,
-    setReminder
+    setReminder,
+    unsetReminder
   };
 
   return (

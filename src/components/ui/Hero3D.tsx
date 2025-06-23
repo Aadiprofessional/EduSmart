@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../utils/LanguageContext';
 import { useModelPosition } from '../../utils/ModelPositionContext';
-import DocumentSummarizerComponent from './DocumentSummarizerComponent';
 import IconComponent from './IconComponent';
 import { 
   AiOutlineRobot, 
@@ -16,7 +15,9 @@ import {
   AiOutlineCloud,
   AiOutlineEye,
   AiOutlineBook,
-  AiOutlineTeam
+  AiOutlineTeam,
+  AiOutlineSearch,
+  AiOutlineUpload
 } from 'react-icons/ai';
 import { 
   FiZap, 
@@ -29,7 +30,11 @@ import {
   FiCheck,
   FiBookOpen,
   FiTarget,
-  FiAward
+  FiAward,
+  FiCalendar,
+  FiLayers,
+  FiPenTool,
+  FiDatabase
 } from 'react-icons/fi';
 import { FaGraduationCap } from 'react-icons/fa';
 
@@ -38,6 +43,7 @@ const Hero3D: React.FC = () => {
   const navigate = useNavigate();
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [currentFeature, setCurrentFeature] = useState(0);
+  const [currentSlide, setCurrentSlide] = useState(0);
   const sectionRef = useRef<HTMLElement>(null);
   const { registerComponent, unregisterComponent } = useModelPosition();
 
@@ -61,13 +67,21 @@ const Hero3D: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Auto-cycle through slider
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % 5);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Register component for 3D models
   useEffect(() => {
     if (sectionRef.current) {
       registerComponent('hero', sectionRef.current, {
         pencil: {
           x: 750,
-          y: -200,
+          y: -50,
           z: 1,
           scale: 3.2,
           rotation: { x: 0.0, y: 0.0, z: 0.1 },
@@ -122,12 +136,99 @@ const Hero3D: React.FC = () => {
     }
   ];
 
+  // 5 Key Features for the slider
+  const sliderFeatures = [
+    {
+      id: 'document-summarizer',
+      title: 'AI Document Summarizer',
+      description: 'Upload and analyze documents with AI-powered summarization and insights',
+      icon: AiOutlineSearch,
+      color: 'from-cyan-500 to-blue-500',
+      path: '/ai-study',
+      buttonText: 'Try Document Analyzer',
+      preview: 'Upload PDFs, images, or text files for instant AI analysis'
+    },
+    {
+      id: 'database-analysis',
+      title: 'AI Database Analysis',
+      description: 'Comprehensive student profile analysis for university matching',
+      icon: FiDatabase,
+      color: 'from-purple-500 to-pink-500',
+      path: '/database',
+      buttonText: 'Analyze Profile',
+      preview: 'AI-powered insights on academic strength and university recommendations'
+    },
+    {
+      id: 'study-planner',
+      title: 'Smart Study Planner',
+      description: 'AI-powered study scheduling with personalized recommendations',
+      icon: FiCalendar,
+      color: 'from-green-500 to-emerald-500',
+      path: '/ai-study',
+      buttonText: 'Plan Your Studies',
+      preview: 'Create intelligent study schedules with AI roadmap generation'
+    },
+    {
+      id: 'content-writer',
+      title: 'AI Content Writer',
+      description: 'Generate essays, research papers, and academic content with AI',
+      icon: FiPenTool,
+      color: 'from-orange-500 to-red-500',
+      path: '/ai-study',
+      buttonText: 'Start Writing',
+      preview: 'Professional academic writing assistance with multiple templates'
+    },
+    {
+      id: 'ai-tutor',
+      title: 'AI Tutor Chat',
+      description: 'Get instant help with homework and academic questions',
+      icon: FiMessageSquare,
+      color: 'from-indigo-500 to-purple-500',
+      path: '/ai-study',
+      buttonText: 'Chat with AI Tutor',
+      preview: '24/7 AI tutoring support across all subjects and topics'
+    }
+  ];
+
   const stats = [
     { number: "10K+", label: "Students Helped" },
     { number: "95%", label: "Success Rate" },
     { number: "50+", label: "Universities" },
     { number: "24/7", label: "AI Support" }
   ];
+
+  const handleFeatureClick = (feature: typeof sliderFeatures[0]) => {
+    if (feature.id === 'document-summarizer') {
+      navigate('/ai-study?tab=document-summarizer');
+    } else if (feature.id === 'study-planner') {
+      navigate('/ai-study?tab=study-planner');
+    } else if (feature.id === 'content-writer') {
+      navigate('/ai-study?tab=content-writer');
+    } else if (feature.id === 'ai-tutor') {
+      navigate('/ai-study?tab=ai-tutor');
+    } else if (feature.id === 'database-analysis') {
+      navigate('/database');
+    }
+  };
+
+  const handleQuickFeatureClick = (featureType: string) => {
+    switch (featureType) {
+      case 'ai-learning':
+        navigate('/ai-study?tab=ai-tutor');
+        break;
+      case 'study-abroad':
+        navigate('/database');
+        break;
+      case 'document-analysis':
+        navigate('/ai-study?tab=document-summarizer');
+        break;
+      case 'expert-mentorship':
+        navigate('/about');
+        break;
+      default:
+        navigate('/ai-study');
+    }
+  };
 
   return (
     <section 
@@ -247,9 +348,6 @@ const Hero3D: React.FC = () => {
             transition={{ duration: 0.8 }}
             className="space-y-10"
           >
-            {/* Enhanced Header Badge */}
-          
-
             {/* Enhanced Main Title */}
             <div className="space-y-8 ">
               <motion.h1
@@ -258,12 +356,8 @@ const Hero3D: React.FC = () => {
                 transition={{ delay: 0.3 }}
                 className="text-6xl lg:text-8xl font-bold leading-tight"
               >
-                <span style={{ marginTop: '100px' }} className="bg-gradient-to-r from-white via-cyan-200 to-white bg-clip-text text-transparent pt-10">
-                  MatrixEdu
-                </span>
-                <br />
                 <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 bg-clip-text text-transparent mt-100">
-                  Education
+                MatrixEdu
                 </span>
               </motion.h1>
 
@@ -285,7 +379,7 @@ const Hero3D: React.FC = () => {
               className="flex flex-col sm:flex-row gap-6"
             >
               <motion.button
-                onClick={() => navigate('/ai-courses')}
+                onClick={() => navigate('/ai-study')}
                 className="group flex items-center justify-center px-10 py-5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl text-white font-bold text-xl shadow-2xl hover:shadow-cyan-500/30 transition-all duration-300"
                 whileHover={{ scale: 1.05, y: -3 }}
                 whileTap={{ scale: 0.95 }}
@@ -306,48 +400,18 @@ const Hero3D: React.FC = () => {
               </motion.button>
             </motion.div>
 
-            {/* Enhanced Trust Indicators */}
-           
-
-            {/* Enhanced Stats Section */}
-         
-
             {/* Enhanced Feature Showcase */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8 }}
-              className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-8"
-            >
-              {features.map((feature, index) => (
-                <motion.div
-                  key={index}
-                  className={`p-6 rounded-2xl border transition-all duration-500 ${
-                    currentFeature === index
-                      ? 'bg-gradient-to-br from-cyan-500/15 to-blue-500/15 border-cyan-500/40 shadow-lg shadow-cyan-500/20'
-                      : 'bg-gradient-to-br from-slate-800/40 to-slate-900/40 border-slate-700/40 hover:border-slate-600/60'
-                  }`}
-                  whileHover={{ scale: 1.03, y: -5 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <div className={`inline-flex p-3 rounded-xl bg-gradient-to-r ${feature.color} mb-4 shadow-lg`}>
-                    <IconComponent icon={feature.icon} className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="text-white font-bold text-lg mb-2">{feature.title}</h3>
-                  <p className="text-slate-400 text-base leading-relaxed">{feature.description}</p>
-                </motion.div>
-              ))}
-            </motion.div>
+        
           </motion.div>
 
-          {/* Right Side - Document Summarizer Container */}
+          {/* Right Side - Feature Slider */}
           <motion.div
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.3 }}
             className="relative"
           >
-            {/* Enhanced Document Summarizer Container */}
+            {/* Enhanced Feature Slider Container */}
             <div className="bg-gradient-to-br from-slate-800/95 to-slate-900/95 backdrop-blur-2xl border-2 border-cyan-500/30 rounded-3xl shadow-2xl overflow-hidden relative">
               {/* Enhanced Header */}
               <div className="flex items-center justify-between p-8 border-b border-slate-700/50 bg-gradient-to-r from-slate-800/80 to-slate-900/80">
@@ -358,11 +422,11 @@ const Hero3D: React.FC = () => {
                     <div className="w-4 h-4 bg-green-500 rounded-full shadow-lg"></div>
                   </div>
                   <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg">
-                      <IconComponent icon={AiOutlineFileText} className="w-6 h-6 text-white" />
+                    <div className={`p-2 bg-gradient-to-r ${sliderFeatures[currentSlide].color} rounded-lg`}>
+                      <IconComponent icon={sliderFeatures[currentSlide].icon} className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-white font-bold text-xl">AI Document Analyzer</h3>
+                      <h3 className="text-white font-bold text-xl">{sliderFeatures[currentSlide].title}</h3>
                       <p className="text-slate-400 text-sm">Powered by MatrixEdu AI</p>
                     </div>
                   </div>
@@ -373,9 +437,56 @@ const Hero3D: React.FC = () => {
                 </div>
               </div>
 
-              {/* Document Summarizer Integration */}
-              <div className="p-6">
-                <DocumentSummarizerComponent className="bg-transparent border-0 shadow-none" />
+              {/* Feature Slider Content */}
+              <div className="p-8 min-h-[400px] flex flex-col justify-between">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={currentSlide}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.5 }}
+                    className="space-y-6"
+                  >
+                    {/* Feature Description */}
+                    <div className="space-y-4">
+                      <p className="text-slate-300 text-lg leading-relaxed">
+                        {sliderFeatures[currentSlide].description}
+                      </p>
+                      <div className="bg-slate-700/30 rounded-xl p-4 border border-slate-600/30">
+                        <p className="text-cyan-400 text-sm font-medium">
+                          {sliderFeatures[currentSlide].preview}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Action Button */}
+                    <motion.button
+                      onClick={() => handleFeatureClick(sliderFeatures[currentSlide])}
+                      className={`w-full flex items-center justify-center px-8 py-4 bg-gradient-to-r ${sliderFeatures[currentSlide].color} rounded-xl text-white font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300`}
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <span>{sliderFeatures[currentSlide].buttonText}</span>
+                      <IconComponent icon={FiArrowRight} className="ml-3 w-5 h-5" />
+                    </motion.button>
+                  </motion.div>
+                </AnimatePresence>
+
+                {/* Slider Indicators */}
+                <div className="flex justify-center space-x-3 mt-8">
+                  {sliderFeatures.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentSlide(index)}
+                      className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                        index === currentSlide
+                          ? 'bg-cyan-400 shadow-lg shadow-cyan-400/50'
+                          : 'bg-slate-600 hover:bg-slate-500'
+                      }`}
+                    />
+                  ))}
+                </div>
               </div>
 
               {/* Decorative Elements */}
@@ -414,10 +525,69 @@ const Hero3D: React.FC = () => {
             </motion.div>
           </motion.div>
         </div>
-      </div>
 
-      {/* Enhanced Floating Action Button */}
-    
+        {/* Enhanced Feature Showcase - Modified to single row */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8 }}
+          className="container mx-auto px-6 mt-1 mb-10"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <motion.button
+              onClick={() => handleQuickFeatureClick('ai-learning')}
+              className="group flex flex-col items-center p-6 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-xl hover:border-blue-400/40 hover:bg-blue-500/15 transition-all duration-300"
+              whileHover={{ scale: 1.02, y: -5 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <div className="p-3 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl mb-4 shadow-lg">
+                <IconComponent icon={FaGraduationCap} className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-white font-bold text-lg mb-2">AI-Powered Learning</h3>
+              <p className="text-slate-400 text-sm text-center leading-relaxed">Personalized tutoring with advanced machine learning algorithms</p>
+            </motion.button>
+
+            <motion.button
+              onClick={() => handleQuickFeatureClick('study-abroad')}
+              className="group flex flex-col items-center p-6 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-xl hover:border-purple-400/40 hover:bg-purple-500/15 transition-all duration-300"
+              whileHover={{ scale: 1.02, y: -5 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl mb-4 shadow-lg">
+                <IconComponent icon={AiOutlineGlobal} className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-white font-bold text-lg mb-2">Study Abroad Support</h3>
+              <p className="text-slate-400 text-sm text-center leading-relaxed">University matching and application guidance worldwide</p>
+            </motion.button>
+
+            <motion.button
+              onClick={() => handleQuickFeatureClick('document-analysis')}
+              className="group flex flex-col items-center p-6 bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-xl hover:border-green-400/40 hover:bg-green-500/15 transition-all duration-300"
+              whileHover={{ scale: 1.02, y: -5 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl mb-4 shadow-lg">
+                <IconComponent icon={AiOutlineFileText} className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-white font-bold text-lg mb-2">Document Analysis</h3>
+              <p className="text-slate-400 text-sm text-center leading-relaxed">AI-powered document summarization and analysis tools</p>
+            </motion.button>
+
+            <motion.button
+              onClick={() => handleQuickFeatureClick('expert-mentorship')}
+              className="group flex flex-col items-center p-6 bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-xl hover:border-orange-400/40 hover:bg-orange-500/15 transition-all duration-300"
+              whileHover={{ scale: 1.02, y: -5 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <div className="p-3 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl mb-4 shadow-lg">
+                <IconComponent icon={AiOutlineTeam} className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-white font-bold text-lg mb-2">Expert Mentorship</h3>
+              <p className="text-slate-400 text-sm text-center leading-relaxed">Connect with experienced educators and career advisors</p>
+            </motion.button>
+          </div>
+        </motion.div>
+      </div>
 
       {/* Enhanced Scroll Indicator */}
       <motion.div

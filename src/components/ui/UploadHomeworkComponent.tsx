@@ -111,6 +111,9 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
   const [pageSolutions, setPageSolutions] = useState<PageSolution[]>([]);
   const [overallProcessingComplete, setOverallProcessingComplete] = useState(false);
   
+  // Add state to track if processing has been started to prevent double clicks
+  const [isProcessingStarted, setIsProcessingStarted] = useState(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Response checking state
@@ -836,6 +839,7 @@ Format your response with:
     setPageSolutions([]);
     setShowGetAnswerButton(false);
     setOverallProcessingComplete(false);
+    setIsProcessingStarted(false); // Reset processing state
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -843,7 +847,8 @@ Format your response with:
 
   // New function to handle getting the answer (combines document + text question)
   const handleGetAnswer = async () => {
-    if (loading) return;
+    // Prevent multiple clicks
+    if (loading || isProcessingStarted) return;
     
     console.log('🚀 Starting handleGetAnswer');
     console.log('📝 Question:', question);
@@ -866,6 +871,8 @@ Format your response with:
       return;
     }
     
+    // Mark processing as started to prevent double clicks
+    setIsProcessingStarted(true);
     setLoading(true);
     setProcessingStatus('Analyzing and solving...');
     setAnswer(''); // Clear previous answer
@@ -986,6 +993,7 @@ Format your response with:
       console.error('💥 Get answer error:', error);
       setAnswer(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setShowGetAnswerButton(true); // Show button again on error
+      setIsProcessingStarted(false); // Reset processing state on error
     } finally {
       setLoading(false);
       setProcessingStatus('');
@@ -1276,7 +1284,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
     }
     
     // Only handle pure text questions here
-    if (!question.trim() || loading) return;
+    if (!question.trim() || loading || isProcessingStarted) return;
     
     console.log('🚀 Starting text question submission');
     console.log('📝 Question:', question);
@@ -1297,6 +1305,8 @@ please give small bullet points of what knowlegde is needed to solve the problem
       return;
     }
     
+    // Mark processing as started
+    setIsProcessingStarted(true);
     setLoading(true);
     setProcessingStatus('Solving homework problem...');
     setAnswer(''); // Clear previous answer
@@ -1313,6 +1323,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
     } catch (error) {
       console.error('💥 Text submission error:', error);
       setAnswer(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setIsProcessingStarted(false); // Reset on error
     } finally {
       setLoading(false);
       setProcessingStatus('');
@@ -1426,12 +1437,12 @@ please give small bullet points of what knowlegde is needed to solve the problem
               {showGetAnswerButton || (question.trim() && !documentPages.length) ? (
                 <motion.button
                   type="button"
-                  className="flex items-center justify-center px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg text-white font-medium shadow-md hover:shadow-lg"
+                  className="flex items-center justify-center px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg text-white font-medium shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   variants={buttonVariants}
-                  whileHover="hover"
-                  whileTap="tap"
+                  whileHover={!loading && !isProcessingStarted ? "hover" : {}}
+                  whileTap={!loading && !isProcessingStarted ? "tap" : {}}
                   onClick={handleGetAnswer}
-                  disabled={loading}
+                  disabled={loading || isProcessingStarted}
                 >
                   {loading ? 'Processing...' : 'Get Answer'}
                   <IconComponent icon={AiOutlineBulb} className="h-5 w-5 ml-2" />
@@ -1439,11 +1450,11 @@ please give small bullet points of what knowlegde is needed to solve the problem
               ) : (
                 <motion.button
                   type="submit"
-                  className="flex items-center justify-center px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg text-white font-medium shadow-md hover:shadow-lg"
+                  className="flex items-center justify-center px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg text-white font-medium shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   variants={buttonVariants}
-                  whileHover="hover"
-                  whileTap="tap"
-                  disabled={loading || (!question.trim() && documentPages.length === 0)}
+                  whileHover={!loading && !isProcessingStarted ? "hover" : {}}
+                  whileTap={!loading && !isProcessingStarted ? "tap" : {}}
+                  disabled={loading || isProcessingStarted || (!question.trim() && documentPages.length === 0)}
                 >
                   {loading ? 'Processing...' : 'Get Solution'}
                   <IconComponent icon={AiOutlineBulb} className="h-5 w-5 ml-2" />
@@ -2073,7 +2084,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
                       whileHover="hover"
                       whileTap="tap"
                       onClick={clearAllHistory}
-                      className="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg text-sm font-medium hover:bg-red-500/30 transition-colors border border-red-500/30"
+                      className="flex items-center px-4 py-2 bg-red-500/20 text-red-400 rounded-lg text-sm font-medium hover:bg-red-500/30 transition-colors border border-red-500/30"
                     >
                       <IconComponent icon={FiTrash2} className="h-4 w-4 mr-2" />
                       Clear All

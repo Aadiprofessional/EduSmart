@@ -22,7 +22,14 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../utils/AuthContext';
 import { useSubscription } from '../../utils/SubscriptionContext';
 import { useResponseCheck, ResponseUpgradeModal } from '../../utils/responseChecker';
-import IconComponent from './IconComponent';
+import IconWrapper from '../IconWrapper';
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import 'katex/dist/katex.min.css';
 import { quickQuestionsData, getInitialQuestions, type QuickQuestion } from '../../data/quickQuestions';
 
 interface Message {
@@ -68,6 +75,42 @@ const ChatBot: React.FC = () => {
   const [questionHistory, setQuestionHistory] = useState<QuickQuestion[][]>([getInitialQuestions()]);
   const [showQuickQuestions, setShowQuickQuestions] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Markdown components for formatted responses
+  const markdownComponents = {
+    code({ node, inline, className, children, ...props }: any) {
+      const match = /language-(\w+)/.exec(className || '');
+      return !inline && match ? (
+        <SyntaxHighlighter
+          style={vscDarkPlus}
+          language={match[1]}
+          PreTag="div"
+          className="rounded-lg my-2"
+          {...props}
+        >
+          {String(children).replace(/\n$/, '')}
+        </SyntaxHighlighter>
+      ) : (
+        <code className="bg-gray-800 px-1.5 py-0.5 rounded text-sm font-mono text-purple-300" {...props}>
+          {children}
+        </code>
+      );
+    },
+    h1: ({ children }: any) => <h1 className="text-xl font-bold text-purple-400 mb-3 border-b border-purple-500/30 pb-2">{children}</h1>,
+    h2: ({ children }: any) => <h2 className="text-lg font-bold text-blue-400 mb-2 mt-4">{children}</h2>,
+    h3: ({ children }: any) => <h3 className="text-md font-semibold text-pink-400 mb-2 mt-3">{children}</h3>,
+    ul: ({ children }: any) => <ul className="list-disc list-inside space-y-1 ml-2 text-gray-300">{children}</ul>,
+    ol: ({ children }: any) => <ol className="list-decimal list-inside space-y-1 ml-2 text-gray-300">{children}</ol>,
+    li: ({ children }: any) => <li className="text-gray-300 leading-relaxed">{children}</li>,
+    p: ({ children }: any) => <p className="text-gray-300 leading-relaxed mb-2">{children}</p>,
+    strong: ({ children }: any) => <strong className="text-white font-semibold">{children}</strong>,
+    em: ({ children }: any) => <em className="text-purple-300 italic">{children}</em>,
+    blockquote: ({ children }: any) => (
+      <blockquote className="border-l-4 border-purple-500/50 pl-4 my-3 bg-purple-900/20 py-2 rounded-r-lg">
+        <div className="text-purple-200">{children}</div>
+      </blockquote>
+    ),
+  };
 
   // Scroll to bottom of chat window when new messages appear
   useEffect(() => {
@@ -123,7 +166,7 @@ const ChatBot: React.FC = () => {
       buttons.push({
         text: 'Browse Courses',
         action: () => navigate('/courses'),
-        icon: <IconComponent icon={FaGraduationCap} />,
+        icon: <IconWrapper icon={FaGraduationCap} size={14} />,
         color: 'from-blue-500 to-indigo-500'
       });
     }
@@ -132,7 +175,7 @@ const ChatBot: React.FC = () => {
       buttons.push({
         text: 'Search Universities',
         action: () => navigate('/database'),
-        icon: <IconComponent icon={FaUniversity} />,
+        icon: <IconWrapper icon={FaUniversity} size={14} />,
         color: 'from-purple-500 to-indigo-500'
       });
     }
@@ -141,7 +184,7 @@ const ChatBot: React.FC = () => {
       buttons.push({
         text: 'AI Study Tools',
         action: () => navigate('/ai-study'),
-        icon: <IconComponent icon={FaLightbulb} />,
+        icon: <IconWrapper icon={FaLightbulb} size={14} />,
         color: 'from-cyan-500 to-blue-500'
       });
     }
@@ -150,7 +193,7 @@ const ChatBot: React.FC = () => {
       buttons.push({
         text: 'Upgrade to Pro',
         action: () => navigate('/subscription'),
-        icon: <IconComponent icon={FaCrown} />,
+        icon: <IconWrapper icon={FaCrown} size={14} />,
         color: 'from-yellow-500 to-orange-500'
       });
     }
@@ -159,7 +202,7 @@ const ChatBot: React.FC = () => {
     buttons.push({
       text: 'Dashboard',
       action: () => navigate('/dashboard'),
-      icon: <IconComponent icon={FaChartLine} />,
+      icon: <IconWrapper icon={FaChartLine} size={14} />,
       color: 'from-gray-500 to-blue-500'
     });
 
@@ -183,7 +226,7 @@ const ChatBot: React.FC = () => {
               content: [
                 {
                   type: "text", 
-                  text: "You are MatrixEdu's AI assistant. Help users with educational questions, platform navigation, and provide helpful guidance. Keep responses concise, friendly, and informative. Avoid using markdown formatting symbols like **, ***, ##, etc. Write in plain text with clear, natural language."
+                  text: "You are MatrixEdu's AI assistant. Help users with educational questions, platform navigation, and provide helpful guidance. Keep responses concise, friendly, and informative. Use markdown formatting for better readability when appropriate."
                 }
               ]
             },
@@ -249,7 +292,7 @@ const ChatBot: React.FC = () => {
         actionButtons.push({
           text: 'Go to ' + questionData.actionPath.replace('/', '').replace('-', ' '),
           action: () => navigate(questionData.actionPath!),
-          icon: <IconComponent icon={FaRocket} />,
+          icon: <IconWrapper icon={FaRocket} size={14} />,
           color: 'from-purple-500 to-pink-500'
         });
       }
@@ -337,13 +380,12 @@ const ChatBot: React.FC = () => {
           // Call AI API - this deducts responses for ChatBot AI features
           try {
             const aiResponse = await handleAIResponse(currentInput);
-            const cleanedResponse = cleanAIResponseText(aiResponse);
-            const navigationButtons = generateAINavigationButtons(cleanedResponse);
+            const navigationButtons = generateAINavigationButtons(aiResponse);
             
             setTimeout(() => {
               const botResponse: Message = {
                 id: messages.length + 2,
-                text: cleanedResponse,
+                text: aiResponse,
                 sender: 'bot',
                 timestamp: new Date(),
                 isAIResponse: true,
@@ -387,7 +429,7 @@ const ChatBot: React.FC = () => {
           actionButtons.push({
             text: 'Go to ' + matchingQuestion.actionPath.replace('/', '').replace('-', ' '),
             action: () => navigate(matchingQuestion.actionPath!),
-            icon: <IconComponent icon={FaRocket} />,
+            icon: <IconWrapper icon={FaRocket} size={14} />,
             color: 'from-purple-500 to-pink-500'
           });
         }
@@ -396,7 +438,7 @@ const ChatBot: React.FC = () => {
         actionButtons.push({
           text: 'Explore Platform',
           action: () => navigate('/dashboard'),
-          icon: <IconComponent icon={FaRocket} />,
+          icon: <IconWrapper icon={FaRocket} size={14} />,
           color: 'from-cyan-500 to-purple-500'
         });
       }
@@ -407,7 +449,7 @@ const ChatBot: React.FC = () => {
         actionButtons.unshift({
           text: 'Sign In First',
           action: () => navigate('/login'),
-          icon: <IconComponent icon={FaSignInAlt} />,
+          icon: <IconWrapper icon={FaSignInAlt} size={14} />,
           color: 'from-blue-500 to-purple-500'
         });
       }
@@ -437,7 +479,7 @@ const ChatBot: React.FC = () => {
   const QuickActionButton = ({ button }: { button: ActionButton }) => (
     <motion.button
       onClick={button.action}
-      className={`inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-gradient-to-r ${button.color || 'from-cyan-500 to-blue-500'} text-white text-sm font-medium hover:scale-105 transition-all duration-200 shadow-lg`}
+      className={`inline-flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-gradient-to-r ${button.color || 'from-cyan-500 to-blue-500'} text-white text-xs font-medium hover:scale-105 transition-all duration-200 shadow-lg`}
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
     >
@@ -449,7 +491,7 @@ const ChatBot: React.FC = () => {
   const QuickQuestionButton = ({ question }: { question: QuickQuestion }) => (
     <motion.button
       onClick={() => handleQuickQuestion(question)}
-      className="w-full p-3 text-left rounded-lg bg-gray-800/60 hover:bg-gray-700/60 border border-cyan-400/20 hover:border-cyan-400/40 text-gray-300 hover:text-white transition-all duration-200 text-sm"
+      className="w-full p-3 text-left rounded-xl bg-gradient-to-r from-gray-800/50 to-gray-700/50 hover:from-gray-700/50 hover:to-gray-600/50 border border-gray-600/30 hover:border-purple-500/30 text-gray-300 hover:text-white transition-all duration-300 text-sm backdrop-blur-sm"
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
     >
@@ -475,15 +517,15 @@ const ChatBot: React.FC = () => {
   return (
     <>
       <div className="fixed bottom-5 right-5 z-50">
-        {/* Futuristic Bot toggle button */}
+        {/* Modern Bot toggle button */}
         <motion.button
           onClick={toggleChat}
-          className="relative bg-gradient-to-r from-cyan-500 to-purple-500 text-white p-4 rounded-full shadow-2xl overflow-hidden group"
+          className="relative p-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full shadow-2xl overflow-hidden group"
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           animate={{
             boxShadow: isOpen 
-              ? '0 0 30px rgba(6, 182, 212, 0.5)' 
+              ? '0 0 30px rgba(147, 51, 234, 0.5)' 
               : '0 0 20px rgba(147, 51, 234, 0.3)'
           }}
         >
@@ -496,55 +538,53 @@ const ChatBot: React.FC = () => {
           
           {/* Pulsing ring */}
           <motion.div
-            className="absolute inset-0 rounded-full border-2 border-cyan-400 opacity-50"
+            className="absolute inset-0 rounded-full border-2 border-purple-400 opacity-50"
             animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0, 0.5] }}
             transition={{ duration: 2, repeat: Infinity }}
           />
           
           <div className="relative z-10">
             {isOpen ? (
-              <IconComponent icon={FaTimes} size={20} />
+              <IconWrapper icon={FaTimes} size={20} />
             ) : (
               <motion.div
                 animate={{ rotate: [0, 360] }}
                 transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
               >
-                <IconComponent icon={FaRobot} size={20} />
+                <IconWrapper icon={FaRobot} size={20} />
               </motion.div>
             )}
           </div>
+          
+          {/* Online indicator */}
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-gray-900 animate-pulse"></div>
         </motion.button>
 
-        {/* Futuristic Chat window */}
+        {/* Modern Chat window */}
         <AnimatePresence>
           {isOpen && (
             <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.8 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.8 }}
-              transition={{ type: 'spring', damping: 25 }}
-              className="absolute bottom-16 right-0 w-96 h-[600px] bg-gray-900/95 backdrop-blur-xl border border-cyan-400/30 rounded-2xl shadow-2xl overflow-hidden"
+              initial={{ opacity: 0, scale: 0.8, x: 50, y: 50 }}
+              animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8, x: 50, y: 50 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="absolute bottom-16 right-0 w-96 h-[600px] bg-gradient-to-br from-gray-900/95 via-gray-800/95 to-gray-900/95 backdrop-blur-xl border border-gray-700/50 rounded-2xl shadow-2xl overflow-hidden"
             >
-              {/* Futuristic header */}
-              <div className="bg-gradient-to-r from-cyan-600 to-purple-600 p-4 relative overflow-hidden">
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-0"
-                  animate={{ opacity: [0, 0.3, 0] }}
-                  transition={{ duration: 3, repeat: Infinity }}
-                />
-                
-                <div className="relative z-10 flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-                      className="w-8 h-8 bg-gradient-to-r from-cyan-400 to-blue-400 rounded-full flex items-center justify-center"
-                    >
-                      <IconComponent icon={FaRobot} className="text-white text-sm" />
-                    </motion.div>
+              {/* Modern header */}
+              <div className="p-4 border-b border-gray-700/50 bg-gradient-to-r from-purple-600/20 via-pink-600/20 to-blue-600/20 backdrop-blur-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg">
+                        <IconWrapper icon={FaRobot} className="text-white" size={16} />
+                      </div>
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-gray-900 animate-pulse"></div>
+                    </div>
                     <div>
-                      <h3 className="font-bold text-white">MatrixEdu AI</h3>
-                      <p className="text-xs text-cyan-200">
+                      <h3 className="text-lg font-bold text-white bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                        MatrixEdu AI
+                      </h3>
+                      <p className="text-xs text-gray-400">
                         {user ? (isProUser ? '⭐ Pro Assistant' : '🆓 Basic Assistant') : '👋 Guest Mode'}
                       </p>
                     </div>
@@ -552,54 +592,71 @@ const ChatBot: React.FC = () => {
                   
                   <motion.button
                     onClick={toggleChat}
-                    className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-                    whileHover={{ scale: 1.1 }}
+                    className="p-2 text-gray-400 hover:text-white hover:bg-red-500/20 rounded-lg transition-all duration-300"
+                    whileHover={{ scale: 1.1, rotate: 90 }}
                     whileTap={{ scale: 0.9 }}
                   >
-                    <IconComponent icon={FaTimes} className="text-white text-sm" />
+                    <IconWrapper icon={FaTimes} size={14} />
                   </motion.button>
                 </div>
-
-                {/* Animated lines */}
-                <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent" />
               </div>
 
-              {/* Chat messages with cyberpunk styling */}
+              {/* Chat messages */}
               <div className="flex flex-col" style={{ height: 'calc(100% - 80px)' }}>
                 <div className="flex-1 p-4 overflow-y-auto ai-scrollbar" style={{ minHeight: 0 }}>
-                  <AnimatePresence>
-                    {messages.map((message) => (
-                      <motion.div
-                        key={message.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className={`mb-4 ${message.sender === 'user' ? 'text-right' : 'text-left'}`}
-                      >
-                        <div className={`inline-block max-w-[80%] ${message.sender === 'user' ? 'ml-auto' : 'mr-auto'}`}>
-                          <div
-                            className={`p-3 rounded-2xl relative overflow-hidden ${
-                              message.sender === 'user'
-                                ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white'
+                  <div className="space-y-3">
+                    {messages.length === 0 ? (
+                      <div className="text-center py-4">
+                        <motion.div
+                          initial={{ scale: 0.8, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-2xl p-4 mb-4 border border-purple-500/20"
+                        >
+                          <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <IconWrapper icon={FaRobot} size={20} className="text-white" />
+                          </div>
+                          <h4 className="text-lg font-bold text-white mb-2">MatrixEdu AI Ready!</h4>
+                          <p className="text-gray-300 text-sm leading-relaxed mb-3">
+                            I'm your AI-powered website guide and assistant. I can help you navigate our platform, discover features, and get started with your learning journey.
+                          </p>
+                        </motion.div>
+                      </div>
+                    ) : (
+                      <>
+                        {messages.map((message) => (
+                          <motion.div
+                            key={message.id}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className={`flex gap-3 ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                          >
+                            {message.sender === 'bot' && (
+                              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                                <IconWrapper icon={FaRobot} size={12} className="text-white" />
+                              </div>
+                            )}
+                            <div className={`max-w-[85%] p-3 rounded-2xl backdrop-blur-sm border text-sm ${
+                              message.sender === 'user' 
+                                ? 'bg-gradient-to-r from-blue-600/80 to-purple-600/80 text-white border-blue-500/30' 
                                 : message.isAIResponse
                                 ? 'bg-gradient-to-r from-purple-800/50 to-blue-800/50 border border-purple-400/30 text-gray-100'
-                                : 'bg-gray-800/80 border border-cyan-400/20 text-gray-100'
-                            }`}
-                          >
-                            {message.sender === 'bot' && !message.isAIResponse && (
-                              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-purple-500/5" />
-                            )}
-                            
-                            {message.isAIResponse && (
-                              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-500/10" />
-                            )}
-                            
-                            <div className="relative z-10">
+                                : 'bg-gradient-to-r from-gray-800/80 to-gray-700/80 text-gray-200 border-gray-600/30'
+                            }`}>
                               {message.isAIResponse && (
                                 <div className="text-xs text-purple-300 mb-2 font-semibold">🤖 AI Response:</div>
                               )}
-                              <div className="text-sm leading-relaxed whitespace-pre-wrap">
-                                {message.text}
+                              <div className="text-sm whitespace-pre-wrap leading-relaxed">
+                                {message.isAIResponse ? (
+                                  <ReactMarkdown
+                                    components={markdownComponents}
+                                    remarkPlugins={[remarkMath, remarkGfm]}
+                                    rehypePlugins={[rehypeKatex]}
+                                  >
+                                    {message.text}
+                                  </ReactMarkdown>
+                                ) : (
+                                  message.text
+                                )}
                               </div>
                               
                               {/* Action buttons */}
@@ -622,45 +679,49 @@ const ChatBot: React.FC = () => {
                                   </div>
                                 </div>
                               )}
+                              
+                              <p className="text-xs opacity-70 mt-2">
+                                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </p>
                             </div>
-                          </div>
-                          
-                          <div className={`text-xs text-gray-400 mt-1 ${message.sender === 'user' ? 'text-right' : 'text-left'}`}>
-                            {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {message.sender === 'user' && (
+                              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                                <IconWrapper icon={FaUser} size={12} className="text-white" />
+                              </div>
+                            )}
+                          </motion.div>
+                        ))}
+                      </>
+                    )}
+
+                    {/* Typing indicator */}
+                    {isTyping && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex gap-3 justify-start"
+                      >
+                        <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                          <IconWrapper icon={FaRobot} size={12} className="text-white" />
+                        </div>
+                        <div className="bg-gradient-to-r from-gray-800/80 to-gray-700/80 p-3 rounded-2xl backdrop-blur-sm border border-gray-600/30">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
+                            <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                            <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                            <span className="text-gray-400 text-sm ml-2">AI is thinking...</span>
                           </div>
                         </div>
                       </motion.div>
-                    ))}
-                  </AnimatePresence>
-
-                  {/* Typing indicator */}
-                  {isTyping && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="mb-4"
-                    >
-                      <div className="inline-block bg-gray-800/80 border border-cyan-400/20 p-3 rounded-2xl">
-                        <div className="flex space-x-1">
-                          {[0, 1, 2].map((i) => (
-                            <motion.div
-                              key={i}
-                              className="w-2 h-2 bg-cyan-400 rounded-full"
-                              animate={{ scale: [1, 1.2, 1] }}
-                              transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.2 }}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                  
-                  <div ref={messagesEndRef} />
+                    )}
+                    
+                    <div ref={messagesEndRef} />
+                  </div>
                 </div>
 
                 {/* Quick Questions Section */}
                 {showQuickQuestions && (
-                  <div className="border-t border-cyan-400/20 bg-gray-900/30 p-4 max-h-40 overflow-y-auto ai-scrollbar flex-shrink-0">
+                  <div className="border-t border-gray-700/50 bg-gradient-to-r from-gray-800/30 to-gray-700/30 p-4 max-h-40 overflow-y-auto ai-scrollbar flex-shrink-0">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-cyan-400 text-sm font-semibold">Quick Questions:</h4>
                       <div className="flex gap-2">
@@ -688,8 +749,8 @@ const ChatBot: React.FC = () => {
                   </div>
                 )}
 
-                {/* Futuristic input field */}
-                <div className="p-4 border-t border-cyan-400/20 bg-gray-900/50 flex-shrink-0">
+                {/* Modern input field */}
+                <div className="p-4 border-t border-gray-700/50 bg-gradient-to-r from-gray-800/50 to-gray-700/50 backdrop-blur-sm flex-shrink-0">
                   {!showQuickQuestions && (
                     <div className="mb-2">
                       <button
@@ -708,18 +769,18 @@ const ChatBot: React.FC = () => {
                           value={inputValue}
                           onChange={handleInputChange}
                           placeholder="Ask me anything about MatrixEdu..."
-                          className="w-full p-3 bg-gray-800/80 border border-cyan-400/30 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all ai-scrollbar"
+                          className="w-full p-3 bg-gray-900/50 border border-gray-600/50 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-300 backdrop-blur-sm text-sm ai-scrollbar"
                         />
                       </div>
                       
                       <motion.button
                         type="submit"
-                        className="p-3 bg-gradient-to-r from-cyan-500 to-purple-500 text-white rounded-xl hover:from-cyan-600 hover:to-purple-600 transition-all shadow-lg"
+                        className="p-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-purple-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         disabled={!inputValue.trim() || isTyping}
                       >
-                        <IconComponent icon={FaPaperPlane} size={16} />
+                        <IconWrapper icon={FaPaperPlane} size={16} />
                       </motion.button>
                     </div>
                   </form>

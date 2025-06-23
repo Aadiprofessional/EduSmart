@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaEdit, FaTrash, FaEye, FaCalendarAlt, FaUniversity, FaGraduationCap, FaCheckCircle, FaClock, FaExclamationTriangle, FaSpinner, FaSearch, FaFilter, FaTimes, FaSort, FaSortAmountUp, FaSortAmountDown, FaCheck, FaBell, FaBellSlash, FaClipboardList, FaSave } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaEye, FaCalendarAlt, FaUniversity, FaGraduationCap, FaCheckCircle, FaClock, FaExclamationTriangle, FaSpinner, FaSearch, FaFilter, FaTimes, FaSort, FaSortAmountUp, FaSortAmountDown, FaCheck, FaBell, FaBellSlash, FaClipboardList, FaSave, FaChartLine } from 'react-icons/fa';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import PageHeader from '../components/ui/PageHeader';
@@ -8,17 +8,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../utils/LanguageContext';
 import { useNotification } from '../utils/NotificationContext';
 import { useAppData, Application, ApplicationTask } from '../utils/AppDataContext';
+import { useNavigate } from 'react-router-dom';
 
 const ApplicationTracker: React.FC = () => {
   const { t } = useLanguage();
   const { showWarning, showConfirmation } = useNotification();
+  const navigate = useNavigate();
   const { 
     applications, 
     addApplication, 
     updateApplication, 
     deleteApplication,
     toggleTaskReminder,
-    setReminder
+    setReminder,
+    unsetReminder
   } = useAppData();
 
   const [isAddingApplication, setIsAddingApplication] = useState(false);
@@ -239,6 +242,11 @@ const ApplicationTracker: React.FC = () => {
     closeReminderModal();
   };
 
+  const handleUnsetReminder = () => {
+    unsetReminder(reminderModal.taskId, reminderModal.isApplication);
+    closeReminderModal();
+  };
+
   // Filter applications by status
   const filteredApplications = applications.filter(app => {
     if (filterStatus === 'all') return true;
@@ -347,12 +355,22 @@ const ApplicationTracker: React.FC = () => {
               
               <motion.button
                 onClick={() => setIsAddingApplication(true)}
-                className="inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-cyan-500/25 transition-all duration-300 transform hover:scale-105 whitespace-nowrap"
+                className="inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-cyan-500/25 transition-all duration-300 transform hover:scale-105 whitespace-nowrap mr-4"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
                 <IconComponent icon={FaPlus} className="mr-2 flex-shrink-0" />
                 <span className="truncate">{t('applicationTracker.addApplication') || 'Add Application'}</span>
+              </motion.button>
+              
+              <motion.button
+                onClick={() => navigate('/ai-study?tab=study-planner')}
+                className="inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-purple-500/25 transition-all duration-300 transform hover:scale-105 whitespace-nowrap"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <IconComponent icon={FaChartLine} className="mr-2 flex-shrink-0" />
+                <span className="truncate">Go to Study Planner</span>
               </motion.button>
             </motion.div>
           </div>
@@ -528,6 +546,13 @@ const ApplicationTracker: React.FC = () => {
                       <IconComponent icon={FaCalendarAlt} className="mr-2 text-orange-400" />
                       Deadline: {formatDate(app.deadline)}
                     </div>
+                    
+                    {app.reminder && app.reminderDate && (
+                      <div className="flex items-center text-sm text-yellow-400 mt-2">
+                        <IconComponent icon={FaBell} className="mr-2" />
+                        Reminder: {new Date(app.reminderDate).toLocaleDateString()} at {new Date(app.reminderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    )}
                   </div>
                   
                   {/* Tasks Section */}
@@ -594,12 +619,18 @@ const ApplicationTracker: React.FC = () => {
                                       Due: {formatDate(task.dueDate)}
                                     </div>
                                   )}
+                                  {task.reminder && task.reminderDate && (
+                                    <div className="text-xs text-yellow-400 mt-1 flex items-center">
+                                      <IconComponent icon={FaBell} className="mr-1" />
+                                      Reminder: {new Date(task.reminderDate).toLocaleDateString()} at {new Date(task.reminderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </div>
+                                  )}
                                 </>
                               )}
                             </div>
                             <div className="flex gap-1 ml-2">
                               <motion.button
-                                onClick={() => openReminderModal(task.id, true, 'task')}
+                                onClick={() => openReminderModal(`${app.id}-${task.id}`, true, 'task')}
                                 className={`p-1 rounded transition-all ${
                                   task.reminder 
                                     ? 'text-yellow-400 bg-yellow-500/20' 
@@ -893,8 +924,73 @@ const ApplicationTracker: React.FC = () => {
                 <div className="p-6 border-b border-white/10">
                   <h2 className="text-xl font-bold text-cyan-400 flex items-center">
                     <IconComponent icon={FaBell} className="mr-2" />
-                    Set Reminder
+                    {(() => {
+                      // Check if reminder already exists
+                      let hasReminder = false;
+                      let currentReminderDate = '';
+                      
+                      if (reminderModal.isApplication && reminderModal.type === 'application') {
+                        const app = applications.find(a => a.id === reminderModal.taskId);
+                        hasReminder = !!app?.reminder;
+                        currentReminderDate = app?.reminderDate || '';
+                      } else if (reminderModal.isApplication && reminderModal.type === 'task') {
+                        // Handle composite task ID (appId-taskId format)
+                        if (typeof reminderModal.taskId === 'string' && reminderModal.taskId.includes('-')) {
+                          const [appIdStr, taskIdStr] = reminderModal.taskId.split('-');
+                          const appId = parseInt(appIdStr);
+                          const actualTaskId = parseInt(taskIdStr);
+                          
+                          const app = applications.find(a => a.id === appId);
+                          if (app) {
+                            const task = app.tasks.find(t => t.id === actualTaskId);
+                            if (task) {
+                              hasReminder = !!task.reminder;
+                              currentReminderDate = task.reminderDate || '';
+                            }
+                          }
+                        }
+                      }
+                      
+                      return hasReminder ? 'Update Reminder' : 'Set Reminder';
+                    })()}
                   </h2>
+                  {(() => {
+                    // Show current reminder info if exists
+                    let hasReminder = false;
+                    let currentReminderDate = '';
+                    
+                    if (reminderModal.isApplication && reminderModal.type === 'application') {
+                      const app = applications.find(a => a.id === reminderModal.taskId);
+                      hasReminder = !!app?.reminder;
+                      currentReminderDate = app?.reminderDate || '';
+                    } else if (reminderModal.isApplication && reminderModal.type === 'task') {
+                      // Handle composite task ID (appId-taskId format)
+                      if (typeof reminderModal.taskId === 'string' && reminderModal.taskId.includes('-')) {
+                        const [appIdStr, taskIdStr] = reminderModal.taskId.split('-');
+                        const appId = parseInt(appIdStr);
+                        const actualTaskId = parseInt(taskIdStr);
+                        
+                        const app = applications.find(a => a.id === appId);
+                        if (app) {
+                          const task = app.tasks.find(t => t.id === actualTaskId);
+                          if (task) {
+                            hasReminder = !!task.reminder;
+                            currentReminderDate = task.reminderDate || '';
+                          }
+                        }
+                      }
+                    }
+                    
+                    if (hasReminder && currentReminderDate) {
+                      const reminderDateTime = new Date(currentReminderDate);
+                      return (
+                        <p className="text-sm text-slate-400 mt-2">
+                          Current reminder: {reminderDateTime.toLocaleDateString()} at {reminderDateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
                 
                 <div className="p-6">
@@ -925,15 +1021,56 @@ const ApplicationTracker: React.FC = () => {
                   </div>
                 </div>
                 
-                <div className="p-6 border-t border-white/10 flex justify-end gap-4">
-                  <motion.button
-                    onClick={closeReminderModal}
-                    className="bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 px-6 py-3 rounded-lg transition-colors"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    Cancel
-                  </motion.button>
+                <div className="p-6 border-t border-white/10 flex justify-between">
+                  <div className="flex gap-2">
+                    <motion.button
+                      onClick={closeReminderModal}
+                      className="bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 px-6 py-3 rounded-lg transition-colors"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      Cancel
+                    </motion.button>
+                    {(() => {
+                      // Show unset button if reminder exists
+                      let hasReminder = false;
+                      
+                      if (reminderModal.isApplication && reminderModal.type === 'application') {
+                        const app = applications.find(a => a.id === reminderModal.taskId);
+                        hasReminder = !!app?.reminder;
+                      } else if (reminderModal.isApplication && reminderModal.type === 'task') {
+                        // Handle composite task ID (appId-taskId format)
+                        if (typeof reminderModal.taskId === 'string' && reminderModal.taskId.includes('-')) {
+                          const [appIdStr, taskIdStr] = reminderModal.taskId.split('-');
+                          const appId = parseInt(appIdStr);
+                          const actualTaskId = parseInt(taskIdStr);
+                          
+                          const app = applications.find(a => a.id === appId);
+                          if (app) {
+                            const task = app.tasks.find(t => t.id === actualTaskId);
+                            if (task) {
+                              hasReminder = !!task.reminder;
+                            }
+                          }
+                        }
+                      }
+                      
+                      if (hasReminder) {
+                        return (
+                          <motion.button
+                            onClick={handleUnsetReminder}
+                            className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-6 py-3 rounded-lg font-medium transition-all"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            Remove Reminder
+                          </motion.button>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
+                  
                   <motion.button
                     onClick={handleSetReminder}
                     className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white px-6 py-3 rounded-lg font-medium transition-all"

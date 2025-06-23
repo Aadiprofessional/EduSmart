@@ -44,7 +44,9 @@ import {
   FaChartLine,
   FaClock,
   FaShare,
-  FaClosedCaptioning
+  FaClosedCaptioning,
+  FaEdit,
+  FaEye
 } from 'react-icons/fa';
 import IconWrapper from '../components/IconWrapper';
 import NotificationModal from '../components/ui/NotificationModal';
@@ -145,6 +147,14 @@ interface NotificationState {
   message: string;
 }
 
+// Note editing interface
+interface NoteEditState {
+  isOpen: boolean;
+  noteId: string | null;
+  content: string;
+  mode: 'view' | 'edit';
+}
+
 const CoursePlayer: React.FC = (): JSX.Element => {
   const { courseId, lectureId } = useParams();
   const navigate = useNavigate();
@@ -174,6 +184,14 @@ const CoursePlayer: React.FC = (): JSX.Element => {
   const [activeTab, setActiveTab] = useState<'content' | 'notes' | 'insights'>('content');
   const [streamingText, setStreamingText] = useState('');
   const [showTranscript, setShowTranscript] = useState(false);
+  
+  // Note editing state
+  const [noteEditState, setNoteEditState] = useState<NoteEditState>({
+    isOpen: false,
+    noteId: null,
+    content: '',
+    mode: 'view'
+  });
   
   // Notification state
   const [notification, setNotification] = useState<NotificationState>({
@@ -1089,6 +1107,53 @@ Please provide a helpful, well-structured educational response using the markdow
     }
   };
 
+  // Note editing handlers
+  const openNoteModal = (note: Note, mode: 'view' | 'edit' = 'view') => {
+    setNoteEditState({
+      isOpen: true,
+      noteId: note.id,
+      content: note.content,
+      mode
+    });
+  };
+
+  const closeNoteModal = () => {
+    setNoteEditState({
+      isOpen: false,
+      noteId: null,
+      content: '',
+      mode: 'view'
+    });
+  };
+
+  const saveNoteEdit = () => {
+    if (!noteEditState.noteId || !currentLecture) return;
+    
+    const updatedContent = noteEditState.content.trim();
+    if (!updatedContent) return;
+    
+    // Update notes state
+    setNotes(prev => prev.map(note => 
+      note.id === noteEditState.noteId 
+        ? { ...note, content: updatedContent }
+        : note
+    ));
+    
+    // Update localStorage
+    const savedNotes = JSON.parse(localStorage.getItem('lectureNotes') || '{}');
+    if (savedNotes[currentLecture.id]) {
+      savedNotes[currentLecture.id] = savedNotes[currentLecture.id].map((note: Note) =>
+        note.id === noteEditState.noteId
+          ? { ...note, content: updatedContent }
+          : note
+      );
+      localStorage.setItem('lectureNotes', JSON.stringify(savedNotes));
+    }
+    
+    closeNoteModal();
+    showNotification('success', 'Note updated successfully!');
+  };
+
   const jumpToNoteTime = (timestamp: number) => {
     if (videoRef.current) {
       videoRef.current.currentTime = timestamp;
@@ -1155,6 +1220,30 @@ Please provide a helpful, well-structured educational response using the markdow
       setNotes(lectureNotes);
     }
   }, [currentLecture]);
+
+  // Add custom CSS for line-clamp and other utilities
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .line-clamp-3 {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   // Custom markdown components for AI responses
   const markdownComponents = {
@@ -1896,89 +1985,7 @@ Please provide a helpful, well-structured educational response using the markdow
     );
   };
 
-  const renderNotesSection = () => (
-              <div className="h-96 flex flex-col">
-                {/* Add Note */}
-      <div className="p-4 border-b border-gray-700 bg-gradient-to-r from-gray-800 to-gray-700">
-                  <div className="space-y-3">
-          <div className="flex items-center gap-2 mb-2">
-            <IconWrapper icon={FaStickyNote} className="text-yellow-400" size={16} />
-            <h4 className="font-semibold text-white">Add Note</h4>
-            {currentLecture?.lecture_type === 'video' && (
-              <span className="text-xs text-gray-400 bg-gray-800 px-2 py-1 rounded">
-                at {formatTime(currentTime)}
-              </span>
-            )}
-          </div>
-                    <textarea
-                      value={newNote}
-                      onChange={(e) => setNewNote(e.target.value)}
-                      placeholder="Add a note at current timestamp..."
-            className="w-full h-20 p-3 bg-gray-900 border border-gray-600 rounded-xl text-white placeholder-gray-400 resize-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
-                    />
-                    <button
-                      onClick={addNote}
-                      disabled={!newNote.trim()}
-            className="w-full px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-xl hover:from-yellow-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-lg"
-                    >
-                      Add Note
-                    </button>
-                  </div>
-                </div>
 
-                {/* Notes List */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                  {notes.length === 0 ? (
-                    <div className="text-center py-8 text-gray-400">
-            <IconWrapper icon={FaStickyNote} size={32} className="mx-auto mb-3 opacity-50" />
-            <p className="font-medium">No notes yet</p>
-                      <p className="text-sm">Add notes to remember key points</p>
-                    </div>
-                  ) : (
-                    notes.map((note) => (
-                        <motion.div
-              key={note.id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-              className="bg-gradient-to-r from-gray-800 to-gray-700 rounded-xl p-4 border border-gray-600 hover:border-yellow-500 transition-all duration-200"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <button
-                  onClick={() => jumpToNoteTime(note.timestamp)}
-                  className="flex items-center gap-2 text-yellow-400 hover:text-yellow-300 transition-colors"
-                >
-                  <IconWrapper icon={FaClock} size={12} />
-                  <span className="text-sm font-medium">
-                    {formatTime(note.timestamp)}
-                  </span>
-                </button>
-                            <div className="flex items-center gap-1">
-                    <button 
-                    onClick={() => deleteNote(note.id)}
-                    className="p-1 text-gray-400 hover:text-red-400 hover:bg-red-500/20 rounded transition-colors"
-                    >
-                    <IconWrapper icon={FaTrash} size={12} />
-                    </button>
-                  </div>
-                </div>
-              <p className="text-gray-200 text-sm leading-relaxed">{note.content}</p>
-              <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-600">
-                <span className="text-xs text-gray-500">
-                  {new Date(note.created_at).toLocaleDateString()}
-                </span>
-            <button
-                  onClick={() => navigator.clipboard.writeText(note.content)}
-                  className="p-1 text-gray-400 hover:text-white hover:bg-gray-600 rounded transition-colors"
-                >
-                  <IconWrapper icon={FaCopy} size={10} />
-            </button>
-          </div>
-        </motion.div>
-          ))
-        )}
-      </div>
-      </div>
-    );
 
   const renderCourseSidebar = () => (
     <div className={`${
@@ -2071,7 +2078,7 @@ Please provide a helpful, well-structured educational response using the markdow
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       className="p-2 bg-gray-800/30 rounded-lg border border-gray-700/30 hover:border-yellow-500/30 transition-all duration-300 cursor-pointer group"
-                      onClick={() => jumpToNoteTime(note.timestamp)}
+                      onClick={() => openNoteModal(note, 'view')}
                       title={note.content} // Tooltip for full content
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -2086,17 +2093,44 @@ Please provide a helpful, well-structured educational response using the markdow
                             </span>
                           </div>
                         </div>
-                        <motion.button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteNote(note.id);
-                          }}
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          className="p-1 text-gray-500 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
-                        >
-                          <IconWrapper icon={FaTrash} size={10} />
-                        </motion.button>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <motion.button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openNoteModal(note, 'view');
+                            }}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            className="p-1 text-gray-500 hover:text-blue-400 transition-colors"
+                            title="View note"
+                          >
+                            <IconWrapper icon={FaEye} size={8} />
+                          </motion.button>
+                          <motion.button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openNoteModal(note, 'edit');
+                            }}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            className="p-1 text-gray-500 hover:text-green-400 transition-colors"
+                            title="Edit note"
+                          >
+                            <IconWrapper icon={FaEdit} size={8} />
+                          </motion.button>
+                          <motion.button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteNote(note.id);
+                            }}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            className="p-1 text-gray-500 hover:text-red-400 transition-colors"
+                            title="Delete note"
+                          >
+                            <IconWrapper icon={FaTrash} size={8} />
+                          </motion.button>
+                        </div>
                       </div>
                     </motion.div>
                   ))}
@@ -2295,6 +2329,142 @@ Please provide a helpful, well-structured educational response using the markdow
         </>
       )}
     </div>
+  );
+
+  // Note Modal Component
+  const renderNoteModal = () => (
+    <AnimatePresence>
+      {noteEditState.isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
+          onClick={closeNoteModal}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl border border-gray-600/50 max-w-2xl w-full max-h-[80vh] overflow-hidden"
+          >
+            {/* Modal Header */}
+            <div className="p-6 border-b border-gray-700/50 bg-gradient-to-r from-gray-800/60 to-gray-700/60">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center">
+                    <IconWrapper icon={FaStickyNote} className="text-white" size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">
+                      {noteEditState.mode === 'edit' ? 'Edit Note' : 'View Note'}
+                    </h3>
+                    <p className="text-sm text-gray-400">
+                      {currentLecture?.title} • {notes.find(n => n.id === noteEditState.noteId) && formatTime(notes.find(n => n.id === noteEditState.noteId)!.timestamp)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {noteEditState.mode === 'view' && (
+                    <motion.button
+                      onClick={() => setNoteEditState(prev => ({ ...prev, mode: 'edit' }))}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="p-2 text-gray-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all duration-200"
+                    >
+                      <IconWrapper icon={FaEdit} size={16} />
+                    </motion.button>
+                  )}
+                  <motion.button
+                    onClick={closeNoteModal}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-all duration-200"
+                  >
+                    <IconWrapper icon={FaTimes} size={16} />
+                  </motion.button>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 max-h-96 overflow-y-auto">
+              {noteEditState.mode === 'edit' ? (
+                <textarea
+                  value={noteEditState.content}
+                  onChange={(e) => setNoteEditState(prev => ({ ...prev, content: e.target.value }))}
+                  className="w-full h-48 p-4 bg-gray-900/50 border border-gray-600/50 rounded-xl text-white placeholder-gray-400 resize-none focus:ring-2 focus:ring-yellow-500/50 focus:border-yellow-500/50 transition-all duration-300"
+                  placeholder="Edit your note..."
+                  autoFocus
+                />
+              ) : (
+                <div className="bg-gray-900/30 rounded-xl p-4 border border-gray-600/30">
+                  <p className="text-gray-200 leading-relaxed whitespace-pre-wrap">
+                    {noteEditState.content}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-gray-700/50 bg-gradient-to-r from-gray-800/30 to-gray-700/30">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <IconWrapper icon={FaClock} size={12} />
+                  <span>
+                    Created: {notes.find(n => n.id === noteEditState.noteId) && 
+                      new Date(notes.find(n => n.id === noteEditState.noteId)!.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  {noteEditState.mode === 'edit' && (
+                    <>
+                      <motion.button
+                        onClick={() => setNoteEditState(prev => ({ ...prev, mode: 'view', content: notes.find(n => n.id === noteEditState.noteId)?.content || '' }))}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="px-4 py-2 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all duration-200 border border-gray-600/50"
+                      >
+                        Cancel
+                      </motion.button>
+                      <motion.button
+                        onClick={saveNoteEdit}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        disabled={!noteEditState.content.trim()}
+                        className="px-6 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg font-medium hover:from-yellow-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
+                      >
+                        Save Changes
+                      </motion.button>
+                    </>
+                  )}
+                  {noteEditState.mode === 'view' && (
+                    <motion.button
+                      onClick={() => {
+                        const note = notes.find(n => n.id === noteEditState.noteId);
+                        if (note && currentLecture?.lecture_type === 'video') {
+                          jumpToNoteTime(note.timestamp);
+                          closeNoteModal();
+                        }
+                      }}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg font-medium hover:from-blue-600 hover:to-purple-600 transition-all duration-200 shadow-lg"
+                    >
+                      <div className="flex items-center gap-2">
+                        <IconWrapper icon={FaPlayCircle} size={14} />
+                        Jump to Time
+                      </div>
+                    </motion.button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 
   return (
@@ -2606,6 +2776,9 @@ Please provide a helpful, well-structured educational response using the markdow
         title={notification.title}
         message={notification.message}
       />
+
+      {/* Note Modal */}
+      {renderNoteModal()}
     </div>
   );
 };
