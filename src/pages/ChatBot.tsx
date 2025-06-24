@@ -34,27 +34,27 @@ const ChatBotPage: React.FC = () => {
     setInputValue(event.target.value);
   };
 
-  const generateBotResponse = (userMessage: string): string => {
-    const lowerMsg = userMessage.toLowerCase();
+  const generateResponse = (message: string): string => {
+    const lowerMsg = message.toLowerCase();
     
     if (lowerMsg.includes('course') || lowerMsg.includes('class') || lowerMsg.includes('learn')) {
-      return 'We offer various courses including AI Development, Data Science, Web Development, and more. Visit our Courses page for details.';
+      return t('chatBotResponses.courseResponse');
     } else if (lowerMsg.includes('scholarship') || lowerMsg.includes('financial') || lowerMsg.includes('aid')) {
-      return 'MatrixEdu provides information on various scholarships and financial aid options. Check our Scholarships page for the latest opportunities.';
+      return t('chatBotResponses.scholarshipResponse');
     } else if (lowerMsg.includes('application') || lowerMsg.includes('apply') || lowerMsg.includes('track')) {
-      return 'You can track your applications using our Application Tracker. It helps you organize deadlines and requirements for educational opportunities.';
+      return t('chatBotResponses.applicationResponse');
     } else if (lowerMsg.includes('ai') || lowerMsg.includes('artificial intelligence')) {
-      return 'We have specialized courses and resources. Our Courses section provides cutting-edge content in machine learning, deep learning, and AI ethics.';
+      return t('chatBotResponses.aiResponse');
     } else if (lowerMsg.includes('resource') || lowerMsg.includes('material') || lowerMsg.includes('tool')) {
-      return 'MatrixEdu offers various educational resources including e-books, tutorials, and interactive tools. Check our Resources page.';
+      return t('chatBotResponses.resourceResponse');
     } else if (lowerMsg.includes('blog') || lowerMsg.includes('article') || lowerMsg.includes('news')) {
-      return 'Our blog features articles on education trends, learning tips, and technology insights. Visit the Blog section for the latest posts.';
+      return t('chatBotResponses.blogResponse');
     } else if (lowerMsg.includes('hello') || lowerMsg.includes('hi') || lowerMsg.includes('hey')) {
-      return 'Hello! How can I assist you with your educational journey today?';
+      return t('chatBotResponses.greetingResponse');
     } else if (lowerMsg.includes('thank')) {
-      return "You're welcome! Feel free to ask if you need any other assistance.";
+      return t('chatBotResponses.thankYouResponse');
     } else {
-      return "I'm not sure I understand. Could you rephrase your question? I can help with courses, scholarships, applications, resources, and more.";
+      return t('chatBotResponses.fallbackResponse');
     }
   };
 
@@ -76,7 +76,7 @@ const ChatBotPage: React.FC = () => {
     setTimeout(() => {
       const botResponse: Message = {
         id: messages.length + 2,
-        text: generateBotResponse(inputValue),
+        text: generateResponse(inputValue),
         sender: 'bot',
       };
       

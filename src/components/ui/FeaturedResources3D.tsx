@@ -4,12 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import { FaBook, FaDownload, FaEye, FaFileAlt, FaVideo, FaGraduationCap } from 'react-icons/fa';
 import IconComponent from './IconComponent';
 import { useModelPosition } from '../../utils/ModelPositionContext';
+import { useLanguage } from '../../utils/LanguageContext';
 import { featuredApiService, type Resource } from '../../utils/featuredApiService';
 
 const FeaturedResources3D: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { registerComponent, unregisterComponent } = useModelPosition();
+  const { t } = useLanguage();
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start end", "end start"]
@@ -115,7 +117,7 @@ const FeaturedResources3D: React.FC = () => {
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center">
             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-500 mx-auto"></div>
-            <p className="text-white mt-4">Loading resources...</p>
+            <p className="text-white mt-4">{t('home.featuredResources.loadingResources')}</p>
           </div>
         </div>
       </section>
@@ -127,7 +129,8 @@ const FeaturedResources3D: React.FC = () => {
       <section ref={containerRef} className="py-20 bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900 relative overflow-hidden">
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center text-red-400">
-            <p>Error loading resources: {error}</p>
+            <p>{t('home.featuredResources.errorLoading')}: {error}</p>
+            <p className="text-gray-500 mt-2">{t('home.featuredResources.showingSampleText')}</p>
           </div>
         </div>
       </section>
@@ -156,11 +159,11 @@ const FeaturedResources3D: React.FC = () => {
         >
           <div className="relative">
             <h2 className="text-3xl sm:text-5xl md:text-6xl font-bold text-white mb-4 sm:mb-6 bg-gradient-to-r from-green-400 via-yellow-500 to-red-500 bg-clip-text text-transparent">
-              Featured Resources
+              {t('home.featuredResources.title')}
             </h2>
           </div>
           <p className="text-sm sm:text-xl text-gray-300 max-w-3xl mx-auto">
-            Access our comprehensive collection of guides, templates, and educational materials
+            {t('home.featuredResources.subtitle')}
           </p>
         </motion.div>
 
@@ -177,7 +180,7 @@ const FeaturedResources3D: React.FC = () => {
                 y: -10,
                 scale: 1.02
               }}
-              className="group relative bg-white/10 backdrop-blur-lg rounded-2xl overflow-hidden border border-white/20 hover:border-white/40 transition-all duration-500"
+              className="group relative bg-white/10 backdrop-blur-lg rounded-2xl overflow-hidden border border-white/20 hover:border-white/40 transition-all duration-500 h-full flex flex-col"
             >
               {/* Resource Image */}
               <div className="relative overflow-hidden">
@@ -191,24 +194,24 @@ const FeaturedResources3D: React.FC = () => {
                 {/* Type Badge */}
                 <div className={`absolute top-1 sm:top-2 left-1 sm:left-2 bg-gradient-to-r ${getTypeColor(resource.type)} text-white px-1 sm:px-2 py-1 rounded-full text-xs font-semibold flex items-center gap-1`}>
                   <IconComponent icon={getTypeIcon(resource.type)} className="text-xs" />
-                  <span className="hidden lg:inline">{resource.type.toUpperCase()}</span>
+                  <span className="hidden lg:inline">{t(`home.featuredResources.types.${resource.type}`)}</span>
                 </div>
 
                 {/* Featured Badge */}
                 {resource.featured && (
                   <div className="absolute top-1 sm:top-2 right-1 sm:right-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-1 sm:px-2 py-1 rounded-full text-xs font-semibold">
-                    <span className="hidden sm:inline">Featured</span>
+                    <span className="hidden sm:inline">{t('home.featuredResources.featured')}</span>
                     <span className="sm:hidden">★</span>
                   </div>
                 )}
               </div>
 
               {/* Resource Content */}
-              <div className="p-2 sm:p-3 lg:p-4">
+              <div className="p-2 sm:p-3 lg:p-4 flex flex-col flex-grow">
                 <h3 className="text-xs sm:text-sm lg:text-base font-bold text-white mb-1 sm:mb-2 group-hover:text-blue-300 transition-colors line-clamp-2">
                   {resource.title}
                 </h3>
-                <p className="text-gray-300 text-xs mb-2 sm:mb-3 line-clamp-2 hidden sm:block">
+                <p className="text-gray-300 text-xs mb-2 sm:mb-3 line-clamp-2 hidden sm:block flex-grow">
                   {resource.description}
                 </p>
 
@@ -216,25 +219,25 @@ const FeaturedResources3D: React.FC = () => {
                 <div className="flex items-center justify-between text-xs text-gray-400 mb-2 sm:mb-3">
                   <div className="flex items-center gap-1">
                     <IconComponent icon={getTypeIcon(resource.type)} />
-                    <span className="hidden lg:inline">{resource.type}</span>
+                    <span className="hidden lg:inline">{t(`home.featuredResources.types.${resource.type}`)}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <IconComponent icon={FaDownload} />
-                    <span>Free</span>
+                    <span>{t('home.featuredResources.free')}</span>
                   </div>
                 </div>
 
-                {/* Download Button */}
+                {/* Download Button - Fixed at bottom */}
                 <motion.button
-                  className="w-full bg-gradient-to-r from-green-500 to-teal-600 text-white font-medium py-1 sm:py-2 px-2 sm:px-3 rounded-lg hover:from-green-600 hover:to-teal-700 transition-all duration-300 text-xs"
+                  className="w-full bg-gradient-to-r from-green-500 to-teal-600 text-white font-medium py-1 sm:py-2 px-2 sm:px-3 rounded-lg hover:from-green-600 hover:to-teal-700 transition-all duration-300 text-xs mt-auto"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleDownload(resource.id)}
                 >
                   <div className="flex items-center justify-center gap-1">
                     <IconComponent icon={FaDownload} className="text-xs" />
-                    <span className="hidden sm:inline">Download</span>
-                    <span className="sm:hidden">Get</span>
+                    <span className="hidden sm:inline">{t('home.featuredResources.download')}</span>
+                    <span className="sm:hidden">{t('home.featuredResources.get')}</span>
                   </div>
                 </motion.button>
               </div>
@@ -262,7 +265,7 @@ const FeaturedResources3D: React.FC = () => {
             whileTap={{ scale: 0.95 }}
             onClick={handleViewAllResources}
           >
-            View All Resources
+            {t('home.featuredResources.viewAllResources')}
           </motion.button>
         </motion.div>
       </motion.div>

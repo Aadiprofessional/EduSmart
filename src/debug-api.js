@@ -24,7 +24,7 @@ const testAPI = async () => {
     // Test login
     console.log('Testing login...');
     const loginResponse = await axios.post(`${API_BASE_URL}/api/auth/login`, {
-      email: 'matrixai.global@gmail.com',
+      email: 'info@matrixaiglobal.com',
       password: '12345678'
     });
     console.log('✅ Login successful:', loginResponse.status);

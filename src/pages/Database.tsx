@@ -225,7 +225,7 @@ const UniversityCard: React.FC<UniversityCardProps> = ({ university, onSelect, i
 
   return (
     <motion.div 
-      className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 hover:shadow-xl transition-shadow duration-300"
+      className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 hover:shadow-xl transition-shadow duration-300 h-full flex flex-col"
       variants={fadeIn("up", 0)}
       whileHover={{ y: -5, transition: { duration: 0.2 } }}
     >
@@ -261,7 +261,7 @@ const UniversityCard: React.FC<UniversityCardProps> = ({ university, onSelect, i
         )}
       </div>
       
-      <div className={`${isMobile ? 'p-3' : 'p-4'}`}>
+      <div className={`${isMobile ? 'p-3' : 'p-4'} flex flex-col flex-grow`}>
         <div className="flex justify-between items-start mb-2">
           <h3 className={`${isMobile ? 'text-sm' : 'text-lg'} font-bold text-gray-800 line-clamp-2`}>
             {isMobile ? university.name.split(' ').slice(0, 3).join(' ') + (university.name.split(' ').length > 3 ? '...' : '') : university.name}
@@ -273,18 +273,18 @@ const UniversityCard: React.FC<UniversityCardProps> = ({ university, onSelect, i
         </div>
         
         {!isMobile && (
-        <div className="flex flex-wrap gap-1 mb-3">
-          {university.programs_offered && university.programs_offered.slice(0, 3).map((program, index) => (
-            <span key={index} className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full">
-              {program}
-            </span>
-          ))}
-          {university.programs_offered && university.programs_offered.length > 3 && (
-            <span className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full">
-              +{university.programs_offered.length - 3}
-            </span>
-          )}
-        </div>
+          <div className="flex flex-wrap gap-1 mb-3">
+            {university.programs_offered && university.programs_offered.slice(0, 3).map((program, index) => (
+              <span key={index} className="inline-flex items-center border border-gray-300 text-gray-700 text-xs px-2 py-0.5 rounded font-medium">
+                {program}
+              </span>
+            ))}
+            {university.programs_offered && university.programs_offered.length > 3 && (
+              <span className="inline-flex items-center border border-gray-300 text-gray-700 text-xs px-2 py-0.5 rounded font-medium">
+                +{university.programs_offered.length - 3}
+              </span>
+            )}
+          </div>
         )}
         
         <div className={`${isMobile ? 'text-xs' : 'text-xs'} text-gray-500 mb-4`}>
@@ -306,7 +306,7 @@ const UniversityCard: React.FC<UniversityCardProps> = ({ university, onSelect, i
           )}
         </div>
         
-        <div className="space-y-2">
+        <div className="space-y-2 mt-auto">
           <motion.button
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
@@ -1568,7 +1568,7 @@ const Database: React.FC = () => {
   const [showCompare, setShowCompare] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(12);
   const [showAIAnalysis, setShowAIAnalysis] = useState(false);
   const [showRecommendations, setShowRecommendations] = useState(false);
   const [aiAnalysisData, setAiAnalysisData] = useState<any>(null);
@@ -3739,10 +3739,9 @@ Please provide realistic cost estimates based on the university's location and t
                                 <h3 className="font-semibold text-sm text-gray-900 mb-1 line-clamp-2 leading-tight">
                                   {university.name}
                                 </h3>
-                                <p className="text-xs text-gray-600 mb-2 flex items-center">
-                                  <IconComponent icon={FaMapMarkerAlt} className="h-3 w-3 mr-1 flex-shrink-0" />
-                                  <span className="truncate">{university.city}, {university.country}</span>
-                                </p>
+                                <div className={`${isMobile ? 'text-xs' : 'text-sm'} text-gray-600 flex items-center mb-2`}>
+                                  <IconComponent icon={HiOutlineLocationMarker} className="mr-1" /> {university.city}, {university.country}
+                                </div>
                                 <div className="space-y-1 text-xs mb-3">
                                   <div className="flex justify-between items-center">
                                     <span className="text-gray-500">Ranking:</span>
@@ -3796,10 +3795,9 @@ Please provide realistic cost estimates based on the university's location and t
                                   <h3 className="font-semibold text-sm text-gray-900 mb-1 line-clamp-1">
                                     {university.name}
                                   </h3>
-                                  <p className="text-xs text-gray-600 mb-2 flex items-center">
-                                    <IconComponent icon={FaMapMarkerAlt} className="h-3 w-3 mr-1" />
-                                    {university.city}, {university.country}
-                                  </p>
+                                  <div className={`${isMobile ? 'text-xs' : 'text-sm'} text-gray-600 flex items-center mb-2`}>
+                                    <IconComponent icon={HiOutlineLocationMarker} className="mr-1" /> {university.city}, {university.country}
+                                  </div>
                                   <div className="grid grid-cols-2 gap-2 text-xs">
                                     <div>
                                       <span className="text-gray-500">Rank: </span>
@@ -3846,7 +3844,7 @@ Please provide realistic cost estimates based on the university's location and t
                     {/* Desktop View */}
                     <div className="hidden lg:block">
                       <div className={viewMode === 'grid' ? 
-                        'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 
+                        'grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6' : 
                         'space-y-4'
                       }>
                         {currentUniversities.map((university) => (

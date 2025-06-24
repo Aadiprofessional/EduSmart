@@ -540,7 +540,7 @@ const CaseStudies: React.FC = () => {
                 ) : caseStudies.length > 0 ? (
                   <motion.div 
                     className={viewMode === 'grid' 
-                      ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8"
+                      ? "grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4 lg:gap-8"
                       : "space-y-6"
                     }
                     variants={containerVariants}
@@ -565,72 +565,70 @@ const CaseStudies: React.FC = () => {
                               <img 
                                 src={caseStudy.student_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(caseStudy.student_name)}&background=8B5CF6&color=fff`} 
                                 alt={caseStudy.student_name}
-                                className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
+                                className="w-full h-32 sm:h-48 object-cover group-hover:scale-110 transition-transform duration-300"
                               />
                               {caseStudy.reading_time && (
-                                <div className="absolute top-3 right-3 bg-white px-3 py-1 rounded-full text-sm font-bold text-purple-600 shadow-md">
-                                  {caseStudy.reading_time} min
+                                <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded-full text-xs font-bold text-purple-600 shadow-md">
+                                  {caseStudy.reading_time}m
                                 </div>
                               )}
                               {caseStudy.featured && (
-                                <div className="absolute top-3 left-3 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+                                <div className="absolute top-2 left-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-2 py-1 rounded-full text-xs font-medium">
                                   Featured
                                 </div>
                               )}
                             </div>
                             
-                            <div className="p-6 flex-1 flex flex-col">
-                              <div className="flex items-center gap-2 mb-3">
-                                <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                                  {caseStudy.target_country || 'International'}
+                            <div className="p-3 sm:p-6 flex-1 flex flex-col">
+                              <div className="flex items-center gap-1 sm:gap-2 mb-2 sm:mb-3 flex-wrap">
+                                <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2 py-0.5 rounded-full">
+                                  {(caseStudy.target_country || 'International').length > 6 ? 
+                                    (caseStudy.target_country || 'International').substring(0, 6) + '...' : 
+                                    (caseStudy.target_country || 'International')
+                                  }
                                 </span>
-                                <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                                  {caseStudy.field_of_study || 'General'}
-                                </span>
+                                {window.innerWidth >= 640 && (
+                                  <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded-full">
+                                    {(caseStudy.field_of_study || 'General').length > 8 ? 
+                                      (caseStudy.field_of_study || 'General').substring(0, 8) + '...' : 
+                                      (caseStudy.field_of_study || 'General')
+                                    }
+                                  </span>
+                                )}
                               </div>
                               
-                              <h3 className="text-lg font-bold text-gray-800 mb-2 line-clamp-2 flex-shrink-0 group-hover:text-purple-600 transition-colors">
+                              <h3 className="text-xs sm:text-lg font-bold text-gray-800 mb-1 sm:mb-2 line-clamp-2 flex-shrink-0 group-hover:text-purple-600 transition-colors">
                                 {caseStudy.title}
                               </h3>
-                              <p className="text-gray-600 mb-4 text-sm line-clamp-3 flex-1">{caseStudy.description}</p>
                               
-                              <div className="flex items-center mb-4">
-                                <img 
-                                  src={caseStudy.student_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(caseStudy.student_name)}&background=8B5CF6&color=fff`}
-                                  alt={caseStudy.student_name}
-                                  className="w-8 h-8 rounded-full mr-3"
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium text-gray-800 truncate">{caseStudy.student_name}</p>
-                                  <p className="text-xs text-gray-600">{caseStudy.target_university || 'University'}</p>
+                              <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-4 line-clamp-2 sm:line-clamp-3 flex-grow">
+                                {caseStudy.description}
+                              </p>
+                              
+                              <div className="flex items-center justify-between mt-auto">
+                                <div className="flex items-center gap-1 sm:gap-2">
+                                  <img 
+                                    src={caseStudy.student_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(caseStudy.student_name)}&background=8B5CF6&color=fff`} 
+                                    alt={caseStudy.student_name}
+                                    className="w-4 h-4 sm:w-6 sm:h-6 rounded-full object-cover"
+                                  />
+                                  <span className="text-xs sm:text-sm font-medium text-gray-700 truncate">
+                                    {caseStudy.student_name.length > 12 ? 
+                                      caseStudy.student_name.substring(0, 12) + '...' : 
+                                      caseStudy.student_name
+                                    }
+                                  </span>
                                 </div>
+                                
+                                {caseStudy.scholarship_amount && (
+                                  <div className="text-right">
+                                    <span className="text-xs sm:text-sm font-bold text-green-600">
+                                      ${(caseStudy.scholarship_amount / 1000).toFixed(0)}k
+                                    </span>
+                                    <p className="text-xs text-gray-500 hidden sm:block">Scholarship</p>
+                                  </div>
+                                )}
                               </div>
-                              
-                              {/* Outcome Badge */}
-                              <div className="mb-4">
-                                <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                                  caseStudy.outcome?.toLowerCase().includes('accepted') 
-                                    ? 'bg-green-100 text-green-800'
-                                    : caseStudy.outcome?.toLowerCase().includes('scholarship')
-                                      ? 'bg-yellow-100 text-yellow-800'
-                                      : 'bg-blue-100 text-blue-800'
-                                }`}>
-                                  {caseStudy.outcome}
-                                </span>
-                              </div>
-                              
-                              {/* Database-style single button */}
-                              <motion.button
-                                className="w-full bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-700 hover:to-indigo-800 text-white py-3 px-4 rounded-lg font-medium transition-all text-sm shadow-lg"
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openModal(caseStudy);
-                                }}
-                              >
-                                Read Story
-                              </motion.button>
                             </div>
                           </>
                         ) : (
@@ -640,52 +638,52 @@ const CaseStudies: React.FC = () => {
                               <img 
                                 src={caseStudy.student_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(caseStudy.student_name)}&background=8B5CF6&color=fff`} 
                                 alt={caseStudy.student_name}
-                                className="w-full h-48 lg:h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                className="w-full h-32 sm:h-48 lg:h-full object-cover group-hover:scale-110 transition-transform duration-300"
                               />
                               {caseStudy.featured && (
-                                <div className="absolute top-3 left-3 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+                                <div className="absolute top-2 sm:top-3 left-2 sm:left-3 bg-gradient-to-r from-orange-500 to-red-500 text-white px-2 sm:px-3 py-1 rounded-full text-xs font-medium">
                                   Featured
                                 </div>
                               )}
                             </div>
                             
-                            <div className="p-6 flex-1 flex flex-col">
-                              <div className="flex items-center gap-2 mb-3">
-                                <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                            <div className="p-3 sm:p-6 flex-1 flex flex-col">
+                              <div className="flex items-center gap-1 sm:gap-2 mb-2 sm:mb-3 flex-wrap">
+                                <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2 py-0.5 rounded-full">
                                   {caseStudy.target_country || 'International'}
                                 </span>
-                                <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                                <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded-full">
                                   {caseStudy.field_of_study || 'General'}
                                 </span>
                                 {caseStudy.reading_time && (
-                                  <span className="text-gray-500 text-xs">
+                                  <span className="text-gray-500 text-xs hidden sm:inline">
                                     {caseStudy.reading_time} min read
                                   </span>
                                 )}
                               </div>
                               
-                              <h3 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-purple-600 transition-colors">
+                              <h3 className="text-base sm:text-xl font-bold text-gray-800 mb-2 group-hover:text-purple-600 transition-colors line-clamp-2">
                                 {caseStudy.title}
                               </h3>
-                              <p className="text-gray-600 mb-4 line-clamp-2 flex-1">{caseStudy.description}</p>
+                              <p className="text-gray-600 mb-3 sm:mb-4 line-clamp-2 flex-1 text-sm sm:text-base">{caseStudy.description}</p>
                               
-                              <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center justify-between mb-3 sm:mb-4 flex-wrap gap-2">
                                 <div className="flex items-center">
                                   <img 
                                     src={caseStudy.student_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(caseStudy.student_name)}&background=8B5CF6&color=fff`}
                                     alt={caseStudy.student_name}
-                                    className="w-8 h-8 rounded-full mr-3"
+                                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-full mr-2 sm:mr-3"
                                   />
-                                  <div>
-                                    <p className="text-sm font-medium text-gray-800">{caseStudy.student_name}</p>
-                                    <p className="text-xs text-gray-600">{caseStudy.target_university || 'University'}</p>
+                                  <div className="min-w-0">
+                                    <p className="text-xs sm:text-sm font-medium text-gray-800 truncate">{caseStudy.student_name}</p>
+                                    <p className="text-xs text-gray-600 truncate">{caseStudy.target_university || 'University'}</p>
                                   </div>
                                 </div>
                                 
                                 {/* Database-style dual buttons */}
                                 <div className="flex items-center gap-2">
                                   <motion.button
-                                    className="bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-700 hover:to-indigo-800 text-white py-2 px-4 rounded-lg font-medium transition-all text-sm shadow-lg"
+                                    className="bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-700 hover:to-indigo-800 text-white py-1.5 sm:py-2 px-3 sm:px-4 rounded-lg font-medium transition-all text-xs sm:text-sm shadow-lg"
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
                                     onClick={(e) => {
@@ -696,7 +694,7 @@ const CaseStudies: React.FC = () => {
                                     Read
                                   </motion.button>
                                   <motion.button
-                                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium transition-all text-sm"
+                                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 py-1.5 sm:py-2 px-3 sm:px-4 rounded-lg font-medium transition-all text-xs sm:text-sm"
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
                                     onClick={(e) => {
@@ -710,8 +708,8 @@ const CaseStudies: React.FC = () => {
                               </div>
                               
                               {/* Outcome Badge */}
-                              <div className="flex items-center justify-between">
-                                <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                              <div className="flex items-center justify-between flex-wrap gap-2">
+                                <span className={`inline-block px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${
                                   caseStudy.outcome?.toLowerCase().includes('accepted') 
                                     ? 'bg-green-100 text-green-800'
                                     : caseStudy.outcome?.toLowerCase().includes('scholarship')
@@ -721,7 +719,7 @@ const CaseStudies: React.FC = () => {
                                   {caseStudy.outcome}
                                 </span>
                                 {caseStudy.scholarship_amount && (
-                                  <span className="text-sm font-bold text-green-600">
+                                  <span className="text-xs sm:text-sm font-bold text-green-600">
                                     ${caseStudy.scholarship_amount.toLocaleString()} Scholarship
                                   </span>
                                 )}

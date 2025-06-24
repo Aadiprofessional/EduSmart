@@ -5,6 +5,7 @@ import { FaQuoteLeft, FaStar, FaGraduationCap, FaMapMarkerAlt, FaArrowRight } fr
 import IconComponent from './IconComponent';
 import { useModelPosition } from '../../utils/ModelPositionContext';
 import { useFeaturedData, type CaseStudy } from '../../utils/featuredApiService';
+import { useLanguage } from '../../utils/LanguageContext';
 
 interface SuccessStory {
   id: string;
@@ -50,10 +51,29 @@ const sampleStories: SuccessStory[] = [
   }
 ];
 
+// Animation variants for story cards
+const itemVariants = {
+  hidden: { 
+    opacity: 0, 
+    y: 50,
+    rotateX: -10
+  },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    rotateX: 0,
+    transition: {
+      duration: 0.6,
+      ease: "easeOut"
+    }
+  }
+};
+
 const FeaturedSuccessStories3D: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { registerComponent, unregisterComponent } = useModelPosition();
+  const { t } = useLanguage();
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start end", "end start"]
@@ -130,7 +150,7 @@ const FeaturedSuccessStories3D: React.FC = () => {
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center">
             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-500 mx-auto"></div>
-            <p className="text-white mt-4">Loading success stories...</p>
+            <p className="text-white mt-4">{t('home.featuredSuccessStories.loadingStories')}</p>
           </div>
         </div>
       </section>
@@ -142,7 +162,7 @@ const FeaturedSuccessStories3D: React.FC = () => {
       <section ref={containerRef} className="py-20 bg-gradient-to-br from-purple-900 via-indigo-900 to-purple-900 relative overflow-hidden">
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center text-red-400">
-            <p>Error loading success stories: {error}</p>
+            <p>{t('home.featuredSuccessStories.errorLoading')}: {error}</p>
           </div>
         </div>
       </section>
@@ -171,81 +191,82 @@ const FeaturedSuccessStories3D: React.FC = () => {
         >
           <div className="relative">
             <h2 className="text-3xl sm:text-5xl md:text-6xl font-bold text-white mb-4 sm:mb-6 bg-gradient-to-r from-purple-400 via-pink-500 to-indigo-500 bg-clip-text text-transparent">
-              Success Stories
+              {t('home.featuredSuccessStories.title')}
             </h2>
           </div>
           <p className="text-sm sm:text-xl text-gray-300 max-w-3xl mx-auto">
-            Hear from students who have transformed their academic journey with MatrixEdu
+            {t('home.featuredSuccessStories.subtitle')}
           </p>
         </motion.div>
 
         {/* Success Stories Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-8 mb-12">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-12">
           {stories.map((story, index) => (
             <motion.div
               key={story.id}
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.2 }}
-              viewport={{ once: true, amount: 0.1 }}
+              variants={itemVariants}
               whileHover={{ 
                 y: -10,
+                rotateY: 5,
                 scale: 1.02
               }}
-              className="group relative bg-white/10 backdrop-blur-lg rounded-2xl p-3 sm:p-4 lg:p-6 border border-white/20 hover:border-white/40 transition-all duration-500"
+              className="group relative bg-white/10 backdrop-blur-lg rounded-2xl overflow-hidden border border-white/20 hover:border-white/40 transition-all duration-500 h-full flex flex-col"
             >
-              {/* Quote Icon */}
-              <div className="absolute top-2 sm:top-3 lg:top-4 left-2 sm:left-3 lg:left-4 text-purple-400 opacity-20">
-                <IconComponent icon={FaQuoteLeft} className="text-lg sm:text-2xl lg:text-3xl" />
-              </div>
-
-              {/* Student Image */}
-              <div className="flex items-center mb-3 sm:mb-4">
+              {/* Story Image */}
+              <div className="relative overflow-hidden">
                 <img
                   src={story.image}
                   alt={story.name}
-                  className="w-8 h-8 sm:w-12 sm:h-12 lg:w-16 lg:h-16 rounded-full object-cover border-2 border-purple-400/50 mr-2 sm:mr-3 lg:mr-4 flex-shrink-0"
+                  className="w-full h-32 sm:h-36 lg:h-40 object-cover group-hover:scale-110 transition-transform duration-500"
                 />
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-xs sm:text-base lg:text-xl font-bold text-white group-hover:text-purple-300 transition-colors truncate">
-                    {story.name}
-                  </h3>
-                  <p className="text-purple-300 font-medium text-xs sm:text-sm lg:text-base truncate">
-                    {story.achievement}
-                  </p>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                
+                {/* Quote Icon */}
+                <div className="absolute top-2 left-2 bg-white/20 backdrop-blur-sm rounded-full p-2">
+                  <IconComponent icon={FaQuoteLeft} className="text-white text-xs sm:text-sm" />
                 </div>
               </div>
 
-              {/* Story */}
-              <p className="text-gray-300 mb-3 sm:mb-4 line-clamp-3 text-xs sm:text-sm lg:text-base leading-relaxed">
-                "{story.story.length > 60 ? story.story.substring(0, 60) + '...' : story.story}"
-              </p>
+              {/* Story Content */}
+              <div className="p-3 sm:p-4 lg:p-6 flex flex-col flex-grow">
+                <h3 className="text-sm sm:text-lg lg:text-xl font-bold text-white mb-2 group-hover:text-purple-300 transition-colors line-clamp-2">
+                  {story.name}
+                </h3>
+                
+                <div className="bg-gradient-to-r from-purple-500/20 to-indigo-500/20 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4">
+                  <p className="text-purple-200 font-semibold text-xs sm:text-sm lg:text-base">{story.achievement}</p>
+                </div>
 
-              {/* Details */}
-              <div className="space-y-1 mb-3 sm:mb-4">
-                {story.university && (
-                  <div className="flex items-center text-xs text-gray-400">
-                    <IconComponent icon={FaGraduationCap} className="mr-1 sm:mr-2 text-purple-400 flex-shrink-0" />
-                    <span className="truncate">{story.university}</span>
-                  </div>
-                )}
-                {story.course && (
-                  <div className="text-xs text-gray-400 hidden sm:block">
-                    Course: <span className="text-indigo-300">{story.course}</span>
-                  </div>
-                )}
+                <p className="text-gray-300 mb-3 sm:mb-4 line-clamp-3 text-xs sm:text-sm lg:text-base leading-relaxed flex-grow">
+                  "{story.story.length > 60 ? story.story.substring(0, 60) + '...' : story.story}"
+                </p>
+
+                {/* Details */}
+                <div className="space-y-1 mb-3 sm:mb-4">
+                  {story.university && (
+                    <div className="flex items-center text-xs text-gray-400">
+                      <IconComponent icon={FaGraduationCap} className="mr-1 sm:mr-2 text-purple-400 flex-shrink-0" />
+                      <span className="truncate">{story.university}</span>
+                    </div>
+                  )}
+                  {story.course && (
+                    <div className="text-xs text-gray-400 hidden sm:block">
+                      {t('home.featuredSuccessStories.course')}: <span className="text-indigo-300">{story.course}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Rating - Fixed at bottom */}
+                <div className="flex items-center mt-auto">
+                  {[...Array(story.rating)].map((_, i) => (
+                    <IconComponent key={i} icon={FaStar} className="text-yellow-400 text-xs mr-1" />
+                  ))}
+                  <span className="text-gray-400 text-xs ml-1 sm:ml-2">({story.rating}/5)</span>
+                </div>
+
+                {/* Hover Glow Effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-all duration-500 pointer-events-none rounded-2xl"></div>
               </div>
-
-              {/* Rating */}
-              <div className="flex items-center">
-                {[...Array(story.rating)].map((_, i) => (
-                  <IconComponent key={i} icon={FaStar} className="text-yellow-400 text-xs mr-1" />
-                ))}
-                <span className="text-gray-400 text-xs ml-1 sm:ml-2">({story.rating}/5)</span>
-              </div>
-
-              {/* Hover Glow Effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-all duration-500 pointer-events-none rounded-2xl"></div>
             </motion.div>
           ))}
         </div>
@@ -267,7 +288,7 @@ const FeaturedSuccessStories3D: React.FC = () => {
             whileTap={{ scale: 0.95 }}
             onClick={handleViewAllStories}
           >
-            View All Stories
+            {t('home.featuredSuccessStories.viewAllStories')}
             <IconComponent icon={FaArrowRight} className="ml-2 group-hover:translate-x-1 transition-transform" />
           </motion.button>
         </motion.div>

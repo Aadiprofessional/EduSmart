@@ -9,6 +9,7 @@ import { AiOutlineGift } from 'react-icons/ai';
 import IconComponent from '../components/ui/IconComponent';
 import { useAuth } from '../utils/AuthContext';
 import { useSubscription } from '../utils/SubscriptionContext';
+import { useLanguage } from '../utils/LanguageContext';
 
 interface ThankYouState {
   planName?: string;
@@ -22,6 +23,7 @@ const ThankYou: React.FC = () => {
   const location = useLocation();
   const { user } = useAuth();
   const { subscriptionStatus, refreshStatus } = useSubscription();
+  const { t } = useLanguage();
   
   const state = location.state as ThankYouState;
 
@@ -165,15 +167,15 @@ const ThankYou: React.FC = () => {
           {/* Thank You Message */}
           <motion.div variants={itemVariants}>
             <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 bg-clip-text text-transparent mb-6">
-              Thank You!
+              {t('thankYou.title')}
             </h1>
             <p className="text-2xl md:text-3xl text-white mb-4 font-semibold">
-              {state.isAddon ? 'Addon Purchase Successful!' : 'Welcome to Pro!'}
+              {state.isAddon ? t('thankYou.addonPurchaseSuccessful') : t('thankYou.welcomeToPro')}
             </p>
             <p className="text-lg text-gray-300 mb-8 max-w-xl mx-auto">
               {state.isAddon 
-                ? `You've successfully added more responses to your plan. Your extra responses are now available!`
-                : `You've successfully upgraded to our Pro plan. Get ready to unlock unlimited learning potential!`
+                ? t('thankYou.addonMessage')
+                : t('thankYou.proMessage')
               }
             </p>
           </motion.div>
@@ -199,7 +201,7 @@ const ThankYou: React.FC = () => {
             
             {state.transactionId && (
               <div className="text-center">
-                <p className="text-gray-400 text-sm mb-1">Transaction ID</p>
+                <p className="text-gray-400 text-sm mb-1">{t('thankYou.transactionId')}</p>
                 <p className="text-white font-mono text-sm bg-gray-800/50 px-3 py-1 rounded-lg inline-block">
                   {state.transactionId}
                 </p>
@@ -219,8 +221,8 @@ const ThankYou: React.FC = () => {
                   whileHover={{ scale: 1.05, y: -5 }}
                 >
                   <IconComponent icon={FaRocket} className="w-8 h-8 text-blue-400 mx-auto mb-3" />
-                  <h4 className="text-white font-semibold mb-2">Unlimited AI</h4>
-                  <p className="text-gray-300 text-sm">500+ responses per month</p>
+                  <h4 className="text-white font-semibold mb-2">{t('thankYou.unlimitedAi')}</h4>
+                  <p className="text-gray-300 text-sm">{t('thankYou.responsesPerMonth')}</p>
                 </motion.div>
                 
                 <motion.div
@@ -228,8 +230,8 @@ const ThankYou: React.FC = () => {
                   whileHover={{ scale: 1.05, y: -5 }}
                 >
                   <IconComponent icon={FaStar} className="w-8 h-8 text-yellow-400 mx-auto mb-3" />
-                  <h4 className="text-white font-semibold mb-2">Premium Features</h4>
-                  <p className="text-gray-300 text-sm">Advanced AI tools</p>
+                  <h4 className="text-white font-semibold mb-2">{t('thankYou.premiumFeatures')}</h4>
+                  <p className="text-gray-300 text-sm">{t('thankYou.advancedAiTools')}</p>
                 </motion.div>
                 
                 <motion.div
@@ -237,8 +239,8 @@ const ThankYou: React.FC = () => {
                   whileHover={{ scale: 1.05, y: -5 }}
                 >
                   <IconComponent icon={FaHeart} className="w-8 h-8 text-pink-400 mx-auto mb-3" />
-                  <h4 className="text-white font-semibold mb-2">Priority Support</h4>
-                  <p className="text-gray-300 text-sm">24/7 assistance</p>
+                  <h4 className="text-white font-semibold mb-2">{t('thankYou.prioritySupport')}</h4>
+                  <p className="text-gray-300 text-sm">{t('thankYou.twentyFourSevenAssistance')}</p>
                 </motion.div>
               </>
             )}
@@ -249,8 +251,8 @@ const ThankYou: React.FC = () => {
                 whileHover={{ scale: 1.05, y: -5 }}
               >
                 <IconComponent icon={AiOutlineGift} className="w-12 h-12 text-green-400 mx-auto mb-4" />
-                <h4 className="text-white font-semibold mb-2 text-xl">Extra Responses Added!</h4>
-                <p className="text-gray-300">Your additional responses are now available and ready to use.</p>
+                <h4 className="text-white font-semibold mb-2 text-xl">{t('thankYou.extraResponsesAdded')}</h4>
+                <p className="text-gray-300">{t('thankYou.extraResponsesMessage')}</p>
               </motion.div>
             )}
           </motion.div>
@@ -263,10 +265,10 @@ const ThankYou: React.FC = () => {
             >
               <div className="flex items-center justify-center mb-4">
                 <IconComponent icon={FaCrown} className="w-6 h-6 text-yellow-400 mr-2" />
-                <span className="text-white font-semibold">Pro Member</span>
+                <span className="text-white font-semibold">{t('thankYou.proMember')}</span>
               </div>
               <p className="text-green-300 text-lg font-semibold">
-                {subscriptionStatus.responsesRemaining} responses remaining
+                {subscriptionStatus.responsesRemaining} {t('thankYou.responsesRemaining')}
               </p>
             </motion.div>
           )}
@@ -280,11 +282,11 @@ const ThankYou: React.FC = () => {
               whileTap={{ scale: 0.95 }}
             >
               <IconComponent icon={FaHome} className="w-5 h-5 mr-2 inline" />
-              Start Learning Now
+              {t('thankYou.startLearningNow')}
             </motion.button>
             
             <p className="text-gray-400 text-sm mt-4">
-              Redirecting to home in <span className="text-white font-semibold">10 seconds</span>
+              {t('thankYou.redirectingMessage')}
             </p>
           </motion.div>
 
@@ -308,7 +310,7 @@ const ThankYou: React.FC = () => {
               <span className="text-4xl">🎉</span>
             </motion.div>
             <p className="text-gray-300 mt-2">
-              Welcome to the EduSmart Pro family!
+              {t('thankYou.welcomeToFamily')}
             </p>
           </motion.div>
         </motion.div>

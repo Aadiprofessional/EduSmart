@@ -431,32 +431,60 @@ const AiStudy: React.FC = () => {
             
             {/* Quick Stats */}
             <motion.div
-              className="flex justify-center gap-2 lg:gap-4 text-center w-full"
+              className="w-full max-w-6xl mx-auto"
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.4, duration: 0.8 }}
             >
-              <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-4 px-6 border border-white/10 flex-1">
-                <div className="text-lg lg:text-xl font-bold text-cyan-400 whitespace-nowrap">AI-Powered</div>
-                <div className="text-xs lg:text-sm text-slate-300 mt-1">Solutions</div>
+              {/* Mobile Layout: 3 items in first row, 2 items in second row */}
+              <div className="grid grid-cols-3 gap-2 mb-2 md:hidden">
+                <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-3 px-2 border border-white/10">
+                  <div className="text-sm font-bold text-cyan-400">AI-Powered</div>
+                  <div className="text-xs text-slate-300 mt-1">Solutions</div>
+                </div>
+                <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-3 px-2 border border-white/10">
+                  <div className="text-sm font-bold text-blue-400">Instant</div>
+                  <div className="text-xs text-slate-300 mt-1">Analysis</div>
+                </div>
+                <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-3 px-2 border border-white/10">
+                  <div className="text-sm font-bold text-teal-400">Step-by-Step</div>
+                  <div className="text-xs text-slate-300 mt-1">Explanations</div>
+                </div>
               </div>
-              <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-4 px-6 border border-white/10 flex-1">
-                <div className="text-lg lg:text-xl font-bold text-blue-400 whitespace-nowrap">Instant</div>
-                <div className="text-xs lg:text-sm text-slate-300 mt-1">Analysis</div>
-              </div>
-              <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-4 px-6 border border-white/10 flex-1">
-                <div className="text-lg lg:text-xl font-bold text-teal-400 whitespace-nowrap">Step-by-Step</div>
-                <div className="text-xs lg:text-sm text-slate-300 mt-1">Explanations</div>
-              </div>
-              <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-4 px-6 border border-white/10 flex-1">
-                <div className="text-lg lg:text-xl font-bold text-emerald-400 whitespace-nowrap">Personalised</div>
-                <div className="text-xs lg:text-sm text-slate-300 mt-1">Learning</div>
-              </div>
-              <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-4 px-6 border border-white/10 flex-1">
-                <div className="text-lg lg:text-xl font-bold text-purple-400 whitespace-nowrap">Mindmap</div>
-                <div className="text-xs lg:text-sm text-slate-300 mt-1">Summarizer</div>
+              <div className="grid grid-cols-2 gap-2 md:hidden">
+                <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-3 px-2 border border-white/10">
+                  <div className="text-sm font-bold text-emerald-400">Personalised</div>
+                  <div className="text-xs text-slate-300 mt-1">Learning</div>
+                </div>
+                <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-3 px-2 border border-white/10">
+                  <div className="text-sm font-bold text-purple-400">Mindmap</div>
+                  <div className="text-xs text-slate-300 mt-1">Summarizer</div>
+                </div>
               </div>
               
+              {/* Desktop Layout: All 5 items in one row */}
+              <div className="hidden md:grid md:grid-cols-5 gap-4 text-center">
+                <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-4 px-4 border border-white/10">
+                  <div className="text-lg lg:text-xl font-bold text-cyan-400">AI-Powered</div>
+                  <div className="text-xs lg:text-sm text-slate-300 mt-1">Solutions</div>
+                </div>
+                <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-4 px-4 border border-white/10">
+                  <div className="text-lg lg:text-xl font-bold text-blue-400">Instant</div>
+                  <div className="text-xs lg:text-sm text-slate-300 mt-1">Analysis</div>
+                </div>
+                <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-4 px-4 border border-white/10">
+                  <div className="text-lg lg:text-xl font-bold text-teal-400">Step-by-Step</div>
+                  <div className="text-xs lg:text-sm text-slate-300 mt-1">Explanations</div>
+                </div>
+                <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-4 px-4 border border-white/10">
+                  <div className="text-lg lg:text-xl font-bold text-emerald-400">Personalised</div>
+                  <div className="text-xs lg:text-sm text-slate-300 mt-1">Learning</div>
+                </div>
+                <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-4 px-4 border border-white/10">
+                  <div className="text-lg lg:text-xl font-bold text-purple-400">Mindmap</div>
+                  <div className="text-xs lg:text-sm text-slate-300 mt-1">Summarizer</div>
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         </div>

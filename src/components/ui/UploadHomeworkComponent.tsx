@@ -116,11 +116,38 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Add refs for auto-scrolling
+  const solutionContainerRef = useRef<HTMLDivElement>(null);
+  const relatedKnowledgeContainerRef = useRef<HTMLDivElement>(null);
+
   // Response checking state
   const { checkAndUseResponse } = useResponseCheck();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState('');
   const { showSuccess } = useNotification();
+
+  // Auto-scroll function for solution container
+  const scrollToBottom = (containerRef: React.RefObject<HTMLDivElement>) => {
+    if (containerRef.current) {
+      const container = containerRef.current;
+      container.scrollTop = container.scrollHeight;
+    }
+  };
+
+  // Auto-scroll effect for solution updates
+  useEffect(() => {
+    if (answer || (pageSolutions.length > 0 && pageSolutions[currentPage]?.solution)) {
+      // Small delay to ensure content is rendered before scrolling
+      setTimeout(() => scrollToBottom(solutionContainerRef), 100);
+    }
+  }, [answer, pageSolutions, currentPage]);
+
+  // Auto-scroll effect for related knowledge updates
+  useEffect(() => {
+    if (relatedKnowledge?.content) {
+      setTimeout(() => scrollToBottom(relatedKnowledgeContainerRef), 100);
+    }
+  }, [relatedKnowledge?.content]);
 
   // Load history from localStorage on component mount
   useEffect(() => {
@@ -1510,6 +1537,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
             }`}
             variants={itemVariants}
             animate={(answer || pageSolutions.length > 0) ? { boxShadow: "0 4px 20px rgba(6, 182, 212, 0.1)" } : {}}
+            ref={!fullScreenSolution ? solutionContainerRef : undefined}
           >
             {fullScreenSolution ? (
               // Fullscreen mode with document on left and solution on right
@@ -1572,7 +1600,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
                     <h3 className="text-lg font-semibold text-cyan-400 mb-4 flex-shrink-0">
                       {pageSolutions.length > 0 ? `Page ${currentPage + 1} Solution` : 'Solution'}
                     </h3>
-                    <div className="flex-1 overflow-y-auto">
+                    <div className="flex-1 overflow-y-auto" ref={solutionContainerRef}>
                       {pageSolutions.length > 0 ? (
                         // Page solution content
                         <div>
@@ -2240,6 +2268,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
+              ref={relatedKnowledgeContainerRef}
             >
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-semibold text-purple-400 flex items-center">

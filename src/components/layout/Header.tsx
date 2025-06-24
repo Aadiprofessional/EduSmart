@@ -511,7 +511,7 @@ const Header: React.FC = () => {
           }}
         >
           <IconComponent icon={AiOutlineUser} className="h-4 w-4 mr-3 flex-shrink-0" />
-          <span className="whitespace-nowrap">Profile</span>
+          <span className="whitespace-nowrap">{t('nav.profile')}</span>
         </Link>
         <Link
           to="/application-tracker"
@@ -522,7 +522,7 @@ const Header: React.FC = () => {
           }}
         >
           <IconComponent icon={FaClipboardList} className="h-4 w-4 mr-3 flex-shrink-0" />
-          <span className="whitespace-nowrap">Application Tracker</span>
+          <span className="whitespace-nowrap">{t('applicationTracker.title')}</span>
         </Link>
         {isProUser && (
           <Link
@@ -534,7 +534,7 @@ const Header: React.FC = () => {
             }}
           >
             <IconComponent icon={AiOutlineCrown} className="h-4 w-4 mr-3 flex-shrink-0" />
-            <span className="whitespace-nowrap">Dashboard</span>
+            <span className="whitespace-nowrap">{t('nav.dashboard')}</span>
           </Link>
         )}
         <button
@@ -545,7 +545,7 @@ const Header: React.FC = () => {
           className="w-full flex items-center px-4 py-3 text-gray-300 hover:text-red-400 hover:bg-red-500/5 rounded-xl transition-all duration-200"
         >
           <IconComponent icon={AiOutlineEdit} className="h-4 w-4 mr-3 flex-shrink-0" />
-          <span className="whitespace-nowrap">Sign Out</span>
+          <span className="whitespace-nowrap">{t('nav.logout')}</span>
         </button>
       </div>
     </motion.div>
@@ -585,254 +585,262 @@ const Header: React.FC = () => {
     >
       <div className="w-full max-w-none px-3 sm:px-4 lg:px-6">
         {/* Header with logo and navigation - improved spacing and alignment */}
-        <div className="relative flex justify-between items-center py-1 sm:py-2 min-h-[42px] sm:min-h-[49px] max-w-[1600px] mx-auto">
+        <div className="relative py-1 sm:py-2 min-h-[42px] sm:min-h-[49px] max-w-[1600px] mx-auto">
           
-          {/* Mobile: Menu button on left */}
-          <motion.button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-all duration-200 flex-shrink-0"
-            variants={buttonVariants}
-            whileHover="hover"
-            whileTap="tap"
-            data-magnetic
-          >
-            <IconComponent 
-              icon={isMobileMenuOpen ? AiOutlineClose : AiOutlineMenu} 
-              className="h-5 w-5" 
-            />
-          </motion.button>
+          {/* Mobile Layout: Grid with 3 equal columns */}
+          <div className="lg:hidden grid grid-cols-3 items-center w-full">
+            {/* Left: Menu button */}
+            <div className="flex justify-start">
+              <motion.button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="p-2 text-white hover:bg-white/10 rounded-lg transition-all duration-200 flex-shrink-0"
+                variants={buttonVariants}
+                whileHover="hover"
+                whileTap="tap"
+                data-magnetic
+              >
+                <IconComponent 
+                  icon={isMobileMenuOpen ? AiOutlineClose : AiOutlineMenu} 
+                  className="h-5 w-5" 
+                />
+              </motion.button>
+            </div>
 
-          {/* Desktop: Logo section on left */}
-          <motion.div 
-            className="hidden lg:flex items-center flex-shrink-0 min-w-0"
-            variants={logoVariants}
-            whileHover="hover"
-            data-magnetic
-          >
-            <Link to="/" className="flex items-center min-w-0">
-              <span className="font-bold text-xl lg:text-2xl xl:text-3xl bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent whitespace-nowrap relative">
-                MatrixEdu
-              </span>
-              {isProUser && (
-                <motion.div
-                  className="ml-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold px-2 py-1 rounded-full flex items-center flex-shrink-0"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.5, type: "spring" }}
-                >
-                  <IconComponent icon={AiOutlineCrown} className="w-3 h-3 mr-1" />
-                  <span className="text-xs">PRO</span>
-                </motion.div>
+            {/* Center: Logo */}
+            <div className="flex justify-center items-center">
+              <motion.div 
+                className="flex items-center"
+                variants={logoVariants}
+                whileHover="hover"
+                data-magnetic
+              >
+                <Link to="/" className="flex items-center min-w-0">
+                  <span className="font-bold text-lg sm:text-xl bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent whitespace-nowrap relative">
+                    ME
+                  </span>
+                  {isProUser && (
+                    <motion.div
+                      className="ml-1 sm:ml-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full flex items-center flex-shrink-0"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 0.5, type: "spring" }}
+                    >
+                      <IconComponent icon={AiOutlineCrown} className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
+                      <span className="text-xs">PRO</span>
+                    </motion.div>
+                  )}
+                </Link>
+              </motion.div>
+            </div>
+
+            {/* Right: User profile/actions */}
+            <div className="flex justify-end items-center space-x-1">
+              {user ? (
+                <div className="relative flex-shrink-0 user-menu-container">
+                  <motion.button
+                    ref={mobileUserMenuButtonRef}
+                    onClick={handleUserMenuToggle}
+                    className="user-menu-button flex items-center px-2 py-1 bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-sm rounded-full border border-white/10 text-white hover:border-white/30 transition-all duration-300 min-w-0"
+                    variants={buttonVariants}
+                    whileHover="hover"
+                    whileTap="tap"
+                    data-magnetic
+                  >
+                    <IconComponent icon={AiOutlineUser} className="h-4 w-4 mr-1 flex-shrink-0" />
+                    <span className="max-w-[60px] truncate text-sm font-medium">
+                      {user.user_metadata?.name || user.email?.split('@')[0] || 'User'}
+                    </span>
+                  </motion.button>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-1 flex-shrink-0">
+                  <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap">
+                    <Link
+                      to="/login"
+                      className="px-2 py-1 text-gray-300 hover:text-white transition-all duration-300 rounded-full hover:bg-white/5 text-sm font-medium whitespace-nowrap"
+                      data-magnetic
+                    >
+                      {t('nav.login')}
+                    </Link>
+                  </motion.div>
+                </div>
               )}
-            </Link>
-          </motion.div>
+            </div>
+          </div>
 
-          {/* Mobile: Logo in center with fixed width containers */}
-          <div className="lg:hidden flex-1 flex justify-center items-center relative">
+          {/* Desktop Layout: Flex with separate sections */}
+          <div className="hidden lg:flex justify-between items-center">
+            {/* Desktop: Logo section on left */}
             <motion.div 
-              className="flex items-center"
+              className="flex items-center flex-shrink-0 min-w-0"
               variants={logoVariants}
               whileHover="hover"
               data-magnetic
             >
               <Link to="/" className="flex items-center min-w-0">
-                <span className="font-bold text-lg sm:text-xl bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent whitespace-nowrap relative">
-                  ME
+                <span className="font-bold text-xl lg:text-2xl xl:text-3xl bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent whitespace-nowrap relative">
+                  MatrixEdu
                 </span>
                 {isProUser && (
                   <motion.div
-                    className="ml-1 sm:ml-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full flex items-center flex-shrink-0"
+                    className="ml-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold px-2 py-1 rounded-full flex items-center flex-shrink-0"
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.5, type: "spring" }}
                   >
-                    <IconComponent icon={AiOutlineCrown} className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
+                    <IconComponent icon={AiOutlineCrown} className="w-3 h-3 mr-1" />
                     <span className="text-xs">PRO</span>
                   </motion.div>
                 )}
               </Link>
             </motion.div>
-          </div>
-          
-          {/* Mobile: User profile/actions on right - fixed width */}
-          <div className="lg:hidden flex items-center space-x-1 flex-shrink-0 w-[80px] justify-end">
-            {user ? (
-              <div className="relative flex-shrink-0 user-menu-container">
-                <motion.button
-                  ref={mobileUserMenuButtonRef}
-                  onClick={handleUserMenuToggle}
-                  className="user-menu-button flex items-center px-2 py-1 bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-sm rounded-full border border-white/10 text-white hover:border-white/30 transition-all duration-300 min-w-0"
-                  variants={buttonVariants}
-                  whileHover="hover"
-                  whileTap="tap"
-                  data-magnetic
-                >
-                  <IconComponent icon={AiOutlineUser} className="h-4 w-4 mr-1 flex-shrink-0" />
-                  <span className="max-w-[60px] truncate text-sm font-medium">
-                    {user.user_metadata?.name || user.email?.split('@')[0] || 'User'}
-                  </span>
-                </motion.button>
-              </div>
-            ) : (
-              <div className="flex items-center space-x-1 flex-shrink-0">
-                <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap">
-                  <Link
-                    to="/login"
-                    className="px-2 py-1 text-gray-300 hover:text-white transition-all duration-300 rounded-full hover:bg-white/5 text-sm font-medium whitespace-nowrap"
-                    data-magnetic
-                  >
-                    Login
-                  </Link>
-                </motion.div>
-              </div>
-            )}
-          </div>
 
-          {/* Desktop Navigation - improved responsive design to prevent overflow */}
-          <nav className="hidden lg:flex items-center justify-center flex-1 px-2 min-w-0">
-            <div className="flex items-center space-x-0.5 xl:space-x-1 2xl:space-x-2 overflow-hidden">
-              {navigation.map((item) => (
-                <motion.div
-                  key={item.name}
-                  variants={navItemVariants}
-                  whileHover="hover"
-                  data-magnetic
-                  className="flex-shrink-0"
-                >
-                  <Link
-                    to={item.href}
-                    className={`flex items-center space-x-1 px-1 lg:px-1.5 xl:px-2 py-1 lg:py-1.5 rounded-lg xl:rounded-xl text-xs lg:text-xs xl:text-sm font-medium transition-all duration-300 whitespace-nowrap ${
-                      isActive(item.href)
-                        ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border border-blue-500/40 shadow-lg shadow-blue-500/25 backdrop-blur-sm'
-                        : 'text-gray-300 hover:text-white hover:bg-white/5 hover:backdrop-blur-sm'
-                    }`}
+            {/* Desktop Navigation - improved responsive design to prevent overflow */}
+            <nav className="flex items-center justify-center flex-1 px-2 min-w-0">
+              <div className="flex items-center space-x-0.5 xl:space-x-1 2xl:space-x-2 overflow-hidden">
+                {navigation.map((item) => (
+                  <motion.div
+                    key={item.name}
+                    variants={navItemVariants}
+                    whileHover="hover"
+                    data-magnetic
+                    className="flex-shrink-0"
                   >
-                    <IconComponent icon={item.icon} className="h-3 w-3 lg:h-4 lg:w-4 xl:h-4 xl:w-4 flex-shrink-0" />
-                    <span className="text-xs lg:text-xs xl:text-sm font-medium hidden lg:inline truncate max-w-[80px] xl:max-w-none">{item.name}</span>
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
-          </nav>
-          
-          {/* Desktop auth buttons and language selector - improved spacing and overflow handling */}
-          <div className="hidden lg:flex items-center space-x-1 xl:space-x-2 flex-shrink-0 min-w-0">
-            {/* Language Selector */}
-            <div className="language-selector-container flex-shrink-0">
-              <LanguageSelector />
-            </div>
-            
-            {user ? (
-              <>
-                {/* Pro User Status and Addon Button */}
-                {isProUser ? (
-                  <div className="flex items-center space-x-1 flex-shrink-0">
-                    {/* Response Counter */}
-                    <motion.div
-                      className="flex items-center px-1 xl:px-1.5 py-0.5 xl:py-1 bg-gradient-to-r from-green-500/10 to-blue-500/10 backdrop-blur-sm rounded-full border border-green-500/30 text-green-400 flex-shrink-0"
-                      variants={buttonVariants}
-                      whileHover="hover"
-                      data-magnetic
-                    >
-                      <IconComponent icon={AiOutlineCrown} className="h-3 w-3 xl:h-4 xl:w-4 mr-1 flex-shrink-0" />
-                      <span className="text-xs xl:text-sm font-medium">
-                        {responsesRemaining}
-                      </span>
-                    </motion.div>
-                    
-                    {/* Buy Addon Button for Low Responses */}
-                    {responsesRemaining < 50 && (
-                      <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap" className="flex-shrink-0">
-                        <Link
-                          to="/subscription"
-                          className="flex items-center px-1 xl:px-1.5 py-0.5 xl:py-1 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-full font-medium shadow-lg hover:shadow-orange-500/25 transition-all duration-300 text-xs xl:text-sm whitespace-nowrap"
-                          data-magnetic
-                        >
-                          <span className="hidden xl:inline">Buy More</span>
-                          <span className="xl:hidden">+</span>
-                        </Link>
-                      </motion.div>
-                    )}
-                  </div>
-                ) : (
-                  <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap" className="flex-shrink-0">
                     <Link
-                      to="/subscription"
-                      className="flex items-center px-1 xl:px-1.5 py-0.5 xl:py-1 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-full font-medium shadow-lg hover:shadow-orange-500/25 transition-all duration-300 text-xs xl:text-sm whitespace-nowrap"
-                      data-magnetic
+                      to={item.href}
+                      className={`flex items-center space-x-1 px-1 lg:px-1.5 xl:px-2 py-1 lg:py-1.5 rounded-lg xl:rounded-xl text-xs lg:text-xs xl:text-sm font-medium transition-all duration-300 whitespace-nowrap ${
+                        isActive(item.href)
+                          ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border border-blue-500/40 shadow-lg shadow-blue-500/25 backdrop-blur-sm'
+                          : 'text-gray-300 hover:text-white hover:bg-white/5 hover:backdrop-blur-sm'
+                      }`}
                     >
-                      <IconComponent icon={AiOutlineCrown} className="h-3 w-3 xl:h-4 xl:w-4 mr-1 xl:mr-1.5 flex-shrink-0" />
-                      <span className="hidden xl:inline">Upgrade</span>
-                      <span className="xl:hidden">Pro</span>
+                      <IconComponent icon={item.icon} className="h-3 w-3 lg:h-4 lg:w-4 xl:h-4 xl:w-4 flex-shrink-0" />
+                      <span className="text-xs lg:text-xs xl:text-sm font-medium hidden lg:inline truncate max-w-[80px] xl:max-w-none">{item.name}</span>
                     </Link>
                   </motion.div>
-                )}
-                
-                {/* Notification Button */}
-                <div className="relative flex-shrink-0">
-                  <motion.button
-                    ref={notificationButtonRef}
-                    onClick={handleNotificationMenuToggle}
-                    className={`notification-menu-button relative flex items-center px-1 xl:px-1.5 py-0.5 xl:py-1 backdrop-blur-sm rounded-full border transition-all duration-300 ${
-                      hasNotifications 
-                        ? 'bg-gradient-to-r from-red-500/20 to-orange-500/20 border-red-500/30 text-red-400 hover:border-red-500/50' 
-                        : 'bg-gradient-to-r from-slate-500/10 to-gray-500/10 border-white/10 text-gray-400 hover:border-white/30 hover:text-white'
-                    }`}
-                    variants={buttonVariants}
-                    whileHover="hover"
-                    whileTap="tap"
-                    data-magnetic
-                  >
-                    <IconComponent icon={AiOutlineBell} className="h-3 w-3 xl:h-4 xl:w-4 flex-shrink-0" />
-                    {hasNotifications && (
-                      <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full flex items-center justify-center">
-                        <span className="text-[8px] text-white font-bold">
-                          {notifications.length > 9 ? '9+' : notifications.length}
-                        </span>
-                      </div>
-                    )}
-                  </motion.button>
-                </div>
-                
-                <div className="relative flex-shrink-0 user-menu-container">
-                  <motion.button
-                    ref={userMenuButtonRef}
-                    onClick={handleUserMenuToggle}
-                    className="user-menu-button flex items-center px-1 xl:px-1.5 py-0.5 xl:py-1 bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-sm rounded-full border border-white/10 text-white hover:border-white/30 transition-all duration-300 min-w-0"
-                    variants={buttonVariants}
-                    whileHover="hover"
-                    whileTap="tap"
-                    data-magnetic
-                  >
-                    <IconComponent icon={AiOutlineUser} className="h-3 w-3 xl:h-4 xl:w-4 mr-1 xl:mr-1.5 flex-shrink-0" />
-                    <span className="max-w-[50px] xl:max-w-[70px] 2xl:max-w-[90px] truncate text-xs xl:text-sm font-medium">
-                      {user.user_metadata?.name || user.email?.split('@')[0] || 'User'}
-                    </span>
-                  </motion.button>
-                </div>
-              </>
-            ) : (
-              <div className="flex items-center space-x-1 xl:space-x-2 flex-shrink-0">
-                <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap">
-                  <Link
-                    to="/login"
-                    className="px-1 xl:px-1.5 py-0.5 xl:py-1 text-gray-300 hover:text-white transition-all duration-300 rounded-full hover:bg-white/5 text-xs xl:text-sm font-medium whitespace-nowrap"
-                    data-magnetic
-                  >
-                    Login
-                  </Link>
-                </motion.div>
-                <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap">
-                  <Link
-                    to="/signup"
-                    className="px-1 xl:px-1.5 2xl:px-2 py-0.5 xl:py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full font-medium shadow-lg hover:shadow-blue-500/25 transition-all duration-300 text-xs xl:text-sm whitespace-nowrap"
-                    data-magnetic
-                  >
-                    Sign Up
-                  </Link>
-                </motion.div>
+                ))}
               </div>
-            )}
+            </nav>
+            
+            {/* Desktop auth buttons and language selector - improved spacing and overflow handling */}
+            <div className="flex items-center space-x-1 xl:space-x-2 flex-shrink-0 min-w-0">
+              {/* Language Selector */}
+              <div className="language-selector-container flex-shrink-0">
+                <LanguageSelector />
+              </div>
+              
+              {user ? (
+                <>
+                  {/* Pro User Status and Addon Button */}
+                  {isProUser ? (
+                    <div className="flex items-center space-x-1 flex-shrink-0">
+                      {/* Response Counter */}
+                      <motion.div
+                        className="flex items-center px-1 xl:px-1.5 py-0.5 xl:py-1 bg-gradient-to-r from-green-500/10 to-blue-500/10 backdrop-blur-sm rounded-full border border-green-500/30 text-green-400 flex-shrink-0"
+                        variants={buttonVariants}
+                        whileHover="hover"
+                        data-magnetic
+                      >
+                        <IconComponent icon={AiOutlineCrown} className="h-3 w-3 xl:h-4 xl:w-4 mr-1 flex-shrink-0" />
+                        <span className="text-xs xl:text-sm font-medium">
+                          {responsesRemaining}
+                        </span>
+                      </motion.div>
+                      
+                      {/* Buy Addon Button for Low Responses */}
+                      {responsesRemaining < 50 && (
+                        <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap" className="flex-shrink-0">
+                          <Link
+                            to="/subscription"
+                            className="flex items-center px-1 xl:px-1.5 py-0.5 xl:py-1 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-full font-medium shadow-lg hover:shadow-orange-500/25 transition-all duration-300 text-xs xl:text-sm whitespace-nowrap"
+                            data-magnetic
+                          >
+                            <span className="hidden xl:inline">Buy More</span>
+                            <span className="xl:hidden">+</span>
+                          </Link>
+                        </motion.div>
+                      )}
+                    </div>
+                  ) : (
+                    <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap" className="flex-shrink-0">
+                      <Link
+                        to="/subscription"
+                        className="flex items-center px-1 xl:px-1.5 py-0.5 xl:py-1 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-full font-medium shadow-lg hover:shadow-orange-500/25 transition-all duration-300 text-xs xl:text-sm whitespace-nowrap"
+                        data-magnetic
+                      >
+                        <IconComponent icon={AiOutlineCrown} className="h-3 w-3 xl:h-4 xl:w-4 mr-1 xl:mr-1.5 flex-shrink-0" />
+                        <span className="hidden xl:inline">Upgrade</span>
+                        <span className="xl:hidden">Pro</span>
+                      </Link>
+                    </motion.div>
+                  )}
+                  
+                  {/* Notification Button */}
+                  <div className="relative flex-shrink-0">
+                    <motion.button
+                      ref={notificationButtonRef}
+                      onClick={handleNotificationMenuToggle}
+                      className={`notification-menu-button relative flex items-center px-1 xl:px-1.5 py-0.5 xl:py-1 backdrop-blur-sm rounded-full border transition-all duration-300 ${
+                        hasNotifications 
+                          ? 'bg-gradient-to-r from-red-500/20 to-orange-500/20 border-red-500/30 text-red-400 hover:border-red-500/50' 
+                          : 'bg-gradient-to-r from-slate-500/10 to-gray-500/10 border-white/10 text-gray-400 hover:border-white/30 hover:text-white'
+                      }`}
+                      variants={buttonVariants}
+                      whileHover="hover"
+                      whileTap="tap"
+                      data-magnetic
+                    >
+                      <IconComponent icon={AiOutlineBell} className="h-3 w-3 xl:h-4 xl:w-4 flex-shrink-0" />
+                      {hasNotifications && (
+                        <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full flex items-center justify-center">
+                          <span className="text-[8px] text-white font-bold">
+                            {notifications.length > 9 ? '9+' : notifications.length}
+                          </span>
+                        </div>
+                      )}
+                    </motion.button>
+                  </div>
+                  
+                  <div className="relative flex-shrink-0 user-menu-container">
+                    <motion.button
+                      ref={userMenuButtonRef}
+                      onClick={handleUserMenuToggle}
+                      className="user-menu-button flex items-center px-1 xl:px-1.5 py-0.5 xl:py-1 bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-sm rounded-full border border-white/10 text-white hover:border-white/30 transition-all duration-300 min-w-0"
+                      variants={buttonVariants}
+                      whileHover="hover"
+                      whileTap="tap"
+                      data-magnetic
+                    >
+                      <IconComponent icon={AiOutlineUser} className="h-3 w-3 xl:h-4 xl:w-4 mr-1 xl:mr-1.5 flex-shrink-0" />
+                      <span className="max-w-[50px] xl:max-w-[70px] 2xl:max-w-[90px] truncate text-xs xl:text-sm font-medium">
+                        {user.user_metadata?.name || user.email?.split('@')[0] || 'User'}
+                      </span>
+                    </motion.button>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center space-x-1 xl:space-x-2 flex-shrink-0">
+                  <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap">
+                    <Link
+                      to="/login"
+                      className="px-1 xl:px-1.5 py-0.5 xl:py-1 text-gray-300 hover:text-white transition-all duration-300 rounded-full hover:bg-white/5 text-xs xl:text-sm font-medium whitespace-nowrap"
+                      data-magnetic
+                    >
+                      {t('nav.login')}
+                    </Link>
+                  </motion.div>
+                  <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap">
+                    <Link
+                      to="/signup"
+                      className="px-1 xl:px-1.5 2xl:px-2 py-0.5 xl:py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full font-medium shadow-lg hover:shadow-blue-500/25 transition-all duration-300 text-xs xl:text-sm whitespace-nowrap"
+                      data-magnetic
+                    >
+                      {t('nav.signup')}
+                    </Link>
+                  </motion.div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
         
@@ -892,9 +900,9 @@ const Header: React.FC = () => {
                         <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-xl border border-green-500/30">
                           <div className="flex items-center">
                             <IconComponent icon={AiOutlineCrown} className="h-5 w-5 mr-3 text-green-400 flex-shrink-0" />
-                            <span className="text-green-400 font-medium">Pro Member</span>
+                            <span className="text-green-400 font-medium">{t('nav.proMember')}</span>
                           </div>
-                          <span className="text-green-400 text-sm font-medium">{responsesRemaining} left</span>
+                          <span className="text-green-400 text-sm font-medium">{responsesRemaining} {t('nav.left')}</span>
                         </div>
                         
                         {/* Buy Addon Button for Low Responses on Mobile */}
@@ -905,7 +913,7 @@ const Header: React.FC = () => {
                             onClick={() => setIsMobileMenuOpen(false)}
                           >
                             <IconComponent icon={AiOutlineCrown} className="h-5 w-5 mr-3 flex-shrink-0" />
-                            <span>Buy More Responses</span>
+                            <span>{t('nav.buyMore')}</span>
                           </Link>
                         )}
                       </div>
@@ -916,7 +924,7 @@ const Header: React.FC = () => {
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <IconComponent icon={AiOutlineCrown} className="h-5 w-5 mr-3 flex-shrink-0" />
-                        <span>Upgrade to Pro</span>
+                        <span>{t('nav.upgradeToPro')}</span>
                       </Link>
                     )}
                     
@@ -970,14 +978,14 @@ const Header: React.FC = () => {
                       className="block px-4 py-3 text-center text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200 font-medium"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      Login
+                      {t('nav.login')}
                     </Link>
                     <Link
                       to="/signup"
                       className="block px-4 py-3 text-center bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-medium transition-all duration-200 hover:shadow-lg"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      Sign Up
+                      {t('nav.signup')}
                     </Link>
                   </div>
                 )}
@@ -1012,7 +1020,7 @@ const Header: React.FC = () => {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-white flex items-center">
                 <IconComponent icon={FaBell} className="h-5 w-5 mr-2 text-blue-400" />
-                Notifications
+                {t('common.notifications')}
               </h3>
               {hasNotifications && (
                 <span className="text-xs text-gray-400">
@@ -1025,8 +1033,8 @@ const Header: React.FC = () => {
               {notifications.length === 0 ? (
                 <div className="text-center py-8">
                   <IconComponent icon={FaBell} className="h-12 w-12 text-gray-600 mx-auto mb-3" />
-                  <p className="text-gray-400 text-sm">No notifications</p>
-                  <p className="text-gray-500 text-xs mt-1">You're all caught up!</p>
+                  <p className="text-gray-400 text-sm">{t('common.noNotifications')}</p>
+                  <p className="text-gray-500 text-xs mt-1">{t('common.allCaughtUp')}</p>
                 </div>
               ) : (
                 notifications.map((notification) => {

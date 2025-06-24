@@ -17,6 +17,7 @@ import { ModelPositionProvider, useModelPosition } from '../utils/ModelPositionC
 const OurImpactSection: React.FC = () => {
   const sectionRef = useRef<HTMLElement>(null);
   const { registerComponent, unregisterComponent } = useModelPosition();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (sectionRef.current) {
@@ -68,7 +69,7 @@ const OurImpactSection: React.FC = () => {
         >
           <div className="relative">
             <h2 className="text-5xl md:text-6xl font-bold text-white mb-6 bg-gradient-to-r from-indigo-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-              Our Impact
+              {t('home.impact.title')}
             </h2>
             {/* Invisible anchor points for precise positioning */}
             <div 
@@ -88,16 +89,16 @@ const OurImpactSection: React.FC = () => {
             />
           </div>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-            Transforming education through cutting-edge technology and personalized learning experiences
+            {t('home.impact.subtitle')}
           </p>
         </motion.div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-8">
           {[
-            { number: '50K+', label: 'Students Enrolled', color: 'from-blue-400 to-blue-600' },
-            { number: '1000+', label: 'Courses Available', color: 'from-green-400 to-green-600' },
-            { number: '95%', label: 'Success Rate', color: 'from-yellow-400 to-yellow-600' },
-            { number: '24/7', label: 'AI Support', color: 'from-purple-400 to-purple-600' }
+            { number: '50K+', label: t('home.impact.studentsEnrolled'), color: 'from-blue-400 to-blue-600' },
+            { number: '1000+', label: t('home.impact.coursesAvailable'), color: 'from-green-400 to-green-600' },
+            { number: '95%', label: t('home.impact.successRate'), color: 'from-yellow-400 to-yellow-600' },
+            { number: '24/7', label: t('home.impact.aiSupport'), color: 'from-purple-400 to-purple-600' }
           ].map((stat, index) => (
             <motion.div
               key={index}
@@ -136,6 +137,7 @@ const ReadyToTransformSection: React.FC = () => {
   const sectionRef = useRef<HTMLElement>(null);
   const { registerComponent, unregisterComponent } = useModelPosition();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (sectionRef.current) {
@@ -195,7 +197,7 @@ const ReadyToTransformSection: React.FC = () => {
         >
           <div className="relative">
             <h2 className="text-5xl md:text-7xl font-bold text-white mb-8 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-              Ready to Transform Your Future?
+              {t('home.transform.title')}
             </h2>
             {/* Invisible anchor points for precise positioning */}
             <div 
@@ -215,7 +217,7 @@ const ReadyToTransformSection: React.FC = () => {
             />
           </div>
           <p className="text-xl md:text-2xl text-gray-300 mb-12">
-            Join thousands of students who are already experiencing the future of education with MatrixEdu's AI-powered learning platform.
+            {t('home.transform.subtitle')}
           </p>
           
           <div className="flex flex-row gap-3 sm:gap-6 justify-center items-center">
@@ -229,8 +231,8 @@ const ReadyToTransformSection: React.FC = () => {
               whileTap={{ scale: 0.95 }}
               data-magnetic
             >
-              <span className="hidden sm:inline">Start Your Journey</span>
-              <span className="sm:hidden">Start</span>
+              <span className="hidden sm:inline">{t('home.transform.startJourney')}</span>
+              <span className="sm:hidden">{t('home.transform.start')}</span>
             </motion.button>
             
             <motion.button
@@ -243,8 +245,8 @@ const ReadyToTransformSection: React.FC = () => {
               whileTap={{ scale: 0.95 }}
               data-magnetic
             >
-              <span className="hidden sm:inline">Explore Features</span>
-              <span className="sm:hidden">Explore</span>
+              <span className="hidden sm:inline">{t('home.transform.exploreFeatures')}</span>
+              <span className="sm:hidden">{t('home.transform.explore')}</span>
             </motion.button>
           </div>
         </motion.div>

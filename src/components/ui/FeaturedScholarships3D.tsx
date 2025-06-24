@@ -63,8 +63,8 @@ const FeaturedScholarships3D: React.FC = () => {
     {
       id: 'sample-1',
       icon: FaGraduationCap,
-      title: 'Merit-Based Excellence',
-      description: 'Scholarships awarded based on outstanding academic achievements and leadership potential.',
+      title: t('home.featuredScholarships.samples.meritBased.title'),
+      description: t('home.featuredScholarships.samples.meritBased.description'),
       amount: 'Up to $50,000',
       recipients: '500+ Students',
       deadline: 'March 2024',
@@ -75,8 +75,8 @@ const FeaturedScholarships3D: React.FC = () => {
     {
       id: 'sample-2',
       icon: FaGlobe,
-      title: 'Global Opportunities',
-      description: 'Special funding opportunities designed for international students pursuing excellence.',
+      title: t('home.featuredScholarships.samples.international.title'),
+      description: t('home.featuredScholarships.samples.international.description'),
       amount: 'Up to $30,000',
       recipients: '300+ Students',
       deadline: 'April 2024',
@@ -87,14 +87,26 @@ const FeaturedScholarships3D: React.FC = () => {
     {
       id: 'sample-3',
       icon: FaAward,
-      title: 'Need-Based Support',
-      description: 'Financial assistance based on demonstrated need and academic commitment.',
+      title: t('home.featuredScholarships.samples.needBased.title'),
+      description: t('home.featuredScholarships.samples.needBased.description'),
       amount: 'Up to $40,000',
       recipients: '400+ Students',
       deadline: 'May 2024',
       color: 'from-purple-400 to-purple-600',
       bgGradient: 'from-purple-500/10 to-purple-600/5',
       accentColor: 'purple-400'
+    },
+    {
+      id: 'sample-4',
+      icon: FaRocket,
+      title: t('home.featuredScholarships.samples.innovation.title'),
+      description: t('home.featuredScholarships.samples.innovation.description'),
+      amount: 'Up to $60,000',
+      recipients: '200+ Students',
+      deadline: 'June 2024',
+      color: 'from-orange-400 to-orange-600',
+      bgGradient: 'from-orange-500/10 to-orange-600/5',
+      accentColor: 'orange-400'
     }
   ];
 
@@ -118,6 +130,12 @@ const FeaturedScholarships3D: React.FC = () => {
         color: 'from-purple-400 to-purple-600',
         bgGradient: 'from-purple-500/10 to-purple-600/5',
         accentColor: 'purple-400'
+      },
+      {
+        icon: FaRocket,
+        color: 'from-orange-400 to-orange-600',
+        bgGradient: 'from-orange-500/10 to-orange-600/5',
+        accentColor: 'orange-400'
       }
     ];
 
@@ -139,7 +157,7 @@ const FeaturedScholarships3D: React.FC = () => {
 
   // Determine which scholarships to show
   const scholarshipsToShow = data?.scholarships && data.scholarships.length > 0 
-    ? data.scholarships.slice(0, 3).map(transformApiScholarship)
+    ? data.scholarships.slice(0, 4).map(transformApiScholarship)
     : sampleScholarships;
 
   const containerVariants = {
@@ -194,7 +212,7 @@ const FeaturedScholarships3D: React.FC = () => {
           <div className="flex justify-center items-center py-20">
             <div className="flex flex-col items-center space-y-4">
               <IconComponent icon={FaSpinner} className="text-4xl text-yellow-400 animate-spin" />
-              <p className="text-yellow-300 text-lg">Loading scholarship opportunities...</p>
+              <p className="text-yellow-300 text-lg">{t('home.featuredScholarships.loadingScholarships')}</p>
             </div>
           </div>
         )}
@@ -203,9 +221,9 @@ const FeaturedScholarships3D: React.FC = () => {
         {error && !loading && (
           <div className="flex justify-center items-center py-20">
             <div className="text-center">
-              <div className="text-red-400 text-xl mb-4">⚠️ Unable to load scholarships</div>
+              <div className="text-red-400 text-xl mb-4">⚠️ {t('home.featuredScholarships.errorLoading')}</div>
               <p className="text-gray-400">{error}</p>
-              <p className="text-gray-500 mt-2">Showing sample scholarships instead</p>
+              <p className="text-gray-500 mt-2">{t('home.featuredScholarships.showingSampleText')}</p>
             </div>
           </div>
         )}
@@ -227,7 +245,7 @@ const FeaturedScholarships3D: React.FC = () => {
               whileInView={{ scale: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              Scholarship Opportunities
+              {t('home.featuredScholarships.title')}
             </motion.h2>
           </div>
           <motion.p 
@@ -236,13 +254,13 @@ const FeaturedScholarships3D: React.FC = () => {
             whileInView={{ opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.4 }}
           >
-            Unlock your potential with our comprehensive scholarship programs designed to support academic excellence and innovation
+            {t('home.featuredScholarships.subtitle')}
           </motion.p>
         </motion.div>
 
         {/* Scholarship Cards - Enhanced design */}
         <motion.div
-          className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-8 mb-16"
+          className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-16"
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
@@ -257,26 +275,26 @@ const FeaturedScholarships3D: React.FC = () => {
                 rotateY: 5,
                 z: 50
               }}
-              className="group relative"
+              className="group relative h-full flex flex-col"
               data-magnetic
             >
               {/* Glow Effect */}
               <div className={`absolute -inset-1 bg-gradient-to-r ${scholarship.color} rounded-2xl blur opacity-0 group-hover:opacity-20 transition-all duration-500`}></div>
               
               {/* Card Content */}
-              <div className={`relative bg-gradient-to-br ${scholarship.bgGradient} backdrop-blur-lg border border-white/10 rounded-2xl p-3 sm:p-4 lg:p-8 h-full transition-all duration-500 group-hover:border-white/30`}>
+              <div className={`relative bg-gradient-to-br ${scholarship.bgGradient} backdrop-blur-lg border border-white/10 rounded-2xl p-3 sm:p-4 lg:p-6 h-full transition-all duration-500 group-hover:border-white/30 flex flex-col`}>
                 {/* Icon */}
                 <div className={`inline-flex items-center justify-center w-8 h-8 sm:w-12 sm:h-12 lg:w-16 lg:h-16 bg-gradient-to-r ${scholarship.color} rounded-2xl mb-3 sm:mb-4 lg:mb-6 group-hover:scale-110 transition-transform duration-300`}>
                   <IconComponent icon={scholarship.icon} className="text-sm sm:text-lg lg:text-2xl text-white" />
                 </div>
 
                 {/* Title */}
-                <h3 className="text-sm sm:text-lg lg:text-2xl font-bold text-white mb-2 sm:mb-3 lg:mb-4 group-hover:text-yellow-300 transition-colors duration-300 line-clamp-2">
+                <h3 className="text-sm sm:text-lg lg:text-xl font-bold text-white mb-2 sm:mb-3 lg:mb-4 group-hover:text-yellow-300 transition-colors duration-300 line-clamp-2">
                   {scholarship.title}
                 </h3>
 
                 {/* Description */}
-                <p className="text-gray-300 mb-3 sm:mb-4 lg:mb-6 leading-relaxed text-xs sm:text-sm lg:text-base line-clamp-3">
+                <p className="text-gray-300 mb-3 sm:mb-4 lg:mb-6 leading-relaxed text-xs sm:text-sm lg:text-base line-clamp-3 flex-grow">
                   {scholarship.description}
                 </p>
 
@@ -296,15 +314,15 @@ const FeaturedScholarships3D: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Apply Button */}
+                {/* Apply Button - Fixed at bottom */}
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className={`w-full bg-gradient-to-r ${scholarship.color} text-white font-semibold py-2 sm:py-3 px-3 sm:px-4 lg:px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-xs sm:text-sm lg:text-base`}
+                  className={`w-full bg-gradient-to-r ${scholarship.color} text-white font-semibold py-2 sm:py-3 px-3 sm:px-4 lg:px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-xs sm:text-sm lg:text-base mt-auto`}
                   onClick={() => handleApplyNow(scholarship.id)}
                 >
-                  <span className="hidden sm:inline">Apply Now</span>
-                  <span className="sm:hidden">Apply</span>
+                  <span className="hidden sm:inline">{t('home.featuredScholarships.applyNow')}</span>
+                  <span className="sm:hidden">{t('home.featuredScholarships.apply')}</span>
                 </motion.button>
               </div>
             </motion.div>
@@ -328,11 +346,11 @@ const FeaturedScholarships3D: React.FC = () => {
           </motion.div>
           
           <h3 className="text-xl sm:text-3xl md:text-4xl font-bold text-white mb-3 sm:mb-4">
-            Ready to Launch Your Future?
+            {t('home.featuredScholarships.cta.title')}
           </h3>
           
           <p className="text-sm sm:text-xl text-gray-300 mb-6 sm:mb-8 max-w-2xl mx-auto">
-            Don't let financial barriers hold you back. Explore our comprehensive scholarship database and find the perfect opportunity for your academic journey.
+            {t('home.featuredScholarships.cta.subtitle')}
           </p>
           
           <div className="flex flex-row gap-3 sm:gap-4 justify-center items-center">
@@ -345,8 +363,8 @@ const FeaturedScholarships3D: React.FC = () => {
                 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <span className="hidden sm:inline">Browse All Scholarships</span>
-                <span className="sm:hidden">Browse</span>
+                <span className="hidden sm:inline">{t('home.featuredScholarships.cta.browseAllScholarships')}</span>
+                <span className="sm:hidden">{t('home.featuredScholarships.cta.browse')}</span>
               </motion.button>
             </Link>
             
@@ -359,8 +377,8 @@ const FeaturedScholarships3D: React.FC = () => {
                 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <span className="hidden sm:inline">Application Guide</span>
-                <span className="sm:hidden">Guide</span>
+                <span className="hidden sm:inline">{t('home.featuredScholarships.cta.applicationGuide')}</span>
+                <span className="sm:hidden">{t('home.featuredScholarships.cta.guide')}</span>
               </motion.button>
             </Link>
           </div>

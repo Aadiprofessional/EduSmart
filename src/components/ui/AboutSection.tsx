@@ -9,10 +9,10 @@ const AboutSection: React.FC = () => {
   const { t } = useLanguage();
 
   const stats = [
-    { number: '15K+', label: 'Students Enrolled' },
-    { number: '95%', label: 'Success Rate' },
-    { number: '200+', label: 'Expert Instructors' },
-    { number: '100+', label: 'Global Partners' },
+    { number: '15K+', label: t('stats.studentsEnrolled') },
+    { number: '95%', label: t('stats.successRate') },
+    { number: '200+', label: t('stats.expertInstructors') },
+    { number: '100+', label: t('stats.globalPartners') },
   ];
 
   return (
