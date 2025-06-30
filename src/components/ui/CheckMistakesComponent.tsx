@@ -1,12 +1,25 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AiOutlineUpload, AiOutlineCamera, AiOutlineFullscreen, AiOutlineBulb, AiOutlineFileText, AiOutlineHistory, AiOutlineLoading3Quarters, AiOutlineLeft, AiOutlineRight, AiOutlineClose, AiOutlineCheckCircle, AiOutlineExclamationCircle, AiOutlineBook, AiOutlineDelete } from 'react-icons/ai';
+import { AiOutlineUpload, AiOutlineCamera, AiOutlineFullscreen, AiOutlineBulb, AiOutlineFileText, AiOutlineHistory, AiOutlineLoading3Quarters, AiOutlineLeft, AiOutlineRight, AiOutlineClose, AiOutlineCheckCircle, AiOutlineExclamationCircle, AiOutlineBook, AiOutlineDelete, AiOutlineExclamation } from 'react-icons/ai';
 import { FiDownload, FiCopy, FiShare2, FiClock } from 'react-icons/fi';
 import IconComponent from './IconComponent';
 import * as pdfjsLib from 'pdfjs-dist';
 import { useResponseCheck, ResponseUpgradeModal } from '../../utils/responseChecker';
 import { useNotification } from '../../utils/NotificationContext';
+import { useLanguage } from '../../utils/LanguageContext';
+import { useAuth } from '../../utils/AuthContext';
+
+// Import mistake check API functions
+import { 
+  submitMistakeCheck, 
+  getMistakeCheckHistory, 
+  updateMistakeCheck, 
+  deleteMistakeCheck,
+  getMistakeCheckById,
+  type MistakeCheckSubmissionData,
+  type MistakeCheckHistoryItem as APIHistoryItem
+} from '../../utils/mistakeCheckAPI';
 
 // Import markdown and math libraries
 import ReactMarkdown from 'react-markdown';
@@ -250,6 +263,9 @@ interface MistakeHistoryItem {
   pageMistakes?: PageMistakes[];
   currentPage?: number;
   overallProcessingComplete?: boolean;
+  extractedTexts?: ExtractedText[];
+  pageMarkings?: PageMarking[];
+  selectedMarkingStandard?: string;
 }
 
 // Portal Modal Component - renders at document.body level
@@ -320,6 +336,8 @@ const PortalModal: React.FC<PortalModalProps> = ({ isOpen, onClose, children, cl
 };
 
 const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ className = '' }) => {
+  const { t } = useLanguage();
+  const { user, session } = useAuth();
   const [file, setFile] = useState<File | null>(null);
   const [documentPages, setDocumentPages] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
@@ -336,16 +354,21 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
   const [markingSummary, setMarkingSummary] = useState<MarkingSummary | null>(null);
   
   // Add new state variables for the requested features
-  const [autoScroll, setAutoScroll] = useState(true);
   const [textExtractionEnabled, setTextExtractionEnabled] = useState(true); // Changed from false to true
   const [extractedTexts, setExtractedTexts] = useState<ExtractedText[]>([]);
   const [selectedMistakeId, setSelectedMistakeId] = useState<number | null>(null);
   const [isProcessingStarted, setIsProcessingStarted] = useState(false);
   
-  // Add history functionality
+  // Add history functionality with database integration
   const [showHistory, setShowHistory] = useState(false);
   const [mistakeHistory, setMistakeHistory] = useState<MistakeHistoryItem[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   
+  // Add confirmation modal state
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
+  const [confirmMessage, setConfirmMessage] = useState('');
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mistakesContainerRef = useRef<HTMLDivElement>(null); // Add ref for auto-scroll
 
@@ -353,7 +376,7 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
   const { checkAndUseResponse } = useResponseCheck();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState('');
-  const { showSuccess } = useNotification();
+  const { showSuccess, showError } = useNotification();
 
   // Add new state for text-only processing and marks summary
   const [textOnlyMode, setTextOnlyMode] = useState(false);
@@ -366,8 +389,92 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
   const [showFileViewModal, setShowFileViewModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Load history from localStorage on component mount
+  // Add page markings state for teacher marking functionality
+  const [pageMarkings, setPageMarkings] = useState<PageMarking[]>([]);
+
+  // Load history from database on component mount
   useEffect(() => {
+    loadHistoryFromDatabase();
+  }, []);
+
+  // Helper function to show confirmation modal
+  const showConfirmation = (message: string, action: () => void) => {
+    setConfirmMessage(message);
+    setConfirmAction(() => action);
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirm = () => {
+    if (confirmAction) {
+      confirmAction();
+    }
+    setShowConfirmModal(false);
+    setConfirmAction(null);
+    setConfirmMessage('');
+  };
+
+  const handleCancel = () => {
+    setShowConfirmModal(false);
+    setConfirmAction(null);
+    setConfirmMessage('');
+  };
+
+  // Load history from database
+  const loadHistoryFromDatabase = async () => {
+    try {
+      console.log('📚 Loading mistake check history from database...');
+      setLoading(true);
+      
+      const result = await getMistakeCheckHistory(user, session);
+      
+      if (result.success && result.history) {
+        console.log(`✅ Successfully loaded ${result.history.length} items from history`);
+        
+        // Transform API data to component's expected format
+        const transformedHistory: MistakeHistoryItem[] = result.history.map((item: APIHistoryItem) => ({
+          id: item.id,
+          fileName: item.fileName || 'Untitled',
+          text: item.text || '',
+          mistakes: Array.isArray(item.mistakes) ? item.mistakes : [],
+          markingSummary: item.markingSummary || null,
+          timestamp: item.timestamp,
+          fileType: item.fileType || 'text/plain',
+          documentPages: item.documentPages || undefined,
+          file: undefined, // Files are not stored in database
+          pageMistakes: item.pageMistakes || undefined,
+          currentPage: item.currentPage || 0,
+          overallProcessingComplete: item.overallProcessingComplete || false,
+          extractedTexts: item.extractedTexts || undefined,
+          pageMarkings: item.pageMarkings || undefined,
+          selectedMarkingStandard: item.selectedMarkingStandard || 'hkdse'
+        }));
+        
+        setMistakeHistory(transformedHistory);
+        // Removed the showSuccess notification to prevent unwanted UI behavior
+        console.log(`✅ Successfully loaded ${transformedHistory.length} items from history`);
+      } else {
+        console.warn('⚠️ No history data returned or API call failed:', result.error);
+        showError(result.error || 'Failed to load history from database');
+        
+        // Fallback to localStorage
+        console.log('🔄 Falling back to localStorage...');
+        loadHistoryFromLocalStorage();
+      }
+    } catch (error) {
+      console.error('❌ Error loading history from database:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      showError(`Failed to load history: ${errorMessage}`);
+      
+      // Fallback to localStorage
+      console.log('🔄 Falling back to localStorage due to error...');
+      loadHistoryFromLocalStorage();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fallback to localStorage for backward compatibility
+  const loadHistoryFromLocalStorage = () => {
     const savedHistory = localStorage.getItem('mistakeHistory');
     if (savedHistory) {
       try {
@@ -376,20 +483,75 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
           timestamp: new Date(item.timestamp)
         }));
         setMistakeHistory(parsedHistory);
+        console.log('📁 Loaded history from localStorage as fallback');
       } catch (error) {
-        console.error('Error loading mistake history:', error);
+        console.error('Error loading mistake history from localStorage:', error);
       }
     }
-  }, []);
+  };
 
-  // Save history to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem('mistakeHistory', JSON.stringify(mistakeHistory));
-  }, [mistakeHistory]);
+  // Function to save to database (enhanced from addToHistory)
+  const saveToDatabase = async (fileName: string, text: string, mistakes: Mistake[], markingSummary: MarkingSummary | null, fileType: string, documentPages?: string[], originalFile?: File, pageMistakes?: PageMistakes[], currentPageIndex?: number, processingComplete?: boolean, extractedTexts?: ExtractedText[], pageMarkings?: PageMarking[]) => {
+    try {
+      console.log('💾 Saving mistake check to database...');
+      
+      const submissionData: MistakeCheckSubmissionData = {
+        text,
+        fileName,
+        file: originalFile,
+        fileType,
+        documentPages,
+        mistakes,
+        pageMistakes,
+        extractedTexts,
+        pageMarkings,
+        markingSummary,
+        selectedMarkingStandard,
+        currentPage: currentPageIndex || 0,
+        overallProcessingComplete: processingComplete || false
+      };
 
-  // Function to add item to history
-  const addToHistory = (fileName: string, text: string, mistakes: Mistake[], markingSummary: MarkingSummary | null, fileType: string, documentPages?: string[], originalFile?: File, pageMistakes?: PageMistakes[], currentPageIndex?: number, processingComplete?: boolean) => {
-    const newItem: MistakeHistoryItem = {
+      console.log('🔄 Submitting data to backend...', {
+        fileName,
+        fileType,
+        mistakesCount: mistakes.length,
+        hasFile: !!originalFile,
+        textLength: text.length
+      });
+
+      const result = await submitMistakeCheck(submissionData, user, session);
+      
+      if (result.success) {
+        console.log('✅ Successfully saved to database');
+        // Silent auto-save - no user notification
+        
+        // Reload history to include the new item (silently)
+        loadHistoryFromDatabase();
+      } else {
+        console.error('❌ Failed to save to database:', result.error);
+        const errorMessage = `Failed to save to database: ${result.error || 'Unknown error'}`;
+        showError(errorMessage);
+        
+        // Fallback to localStorage
+        console.log('🔄 Falling back to localStorage...');
+        addToLocalStorageHistory(fileName, text, mistakes, markingSummary, fileType, documentPages, originalFile, pageMistakes, currentPageIndex, processingComplete, extractedTexts, pageMarkings);
+        // Silent fallback save - no user notification
+      }
+    } catch (error) {
+      console.error('❌ Database save error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      showError(`Failed to save to database: ${errorMessage}`);
+      
+      // Fallback to localStorage
+      console.log('🔄 Falling back to localStorage due to error...');
+      addToLocalStorageHistory(fileName, text, mistakes, markingSummary, fileType, documentPages, originalFile, pageMistakes, currentPageIndex, processingComplete, extractedTexts, pageMarkings);
+      showSuccess('Saved locally as fallback');
+    }
+  };
+
+  // Fallback function to add to localStorage (legacy support)
+  const addToLocalStorageHistory = (fileName: string, text: string, mistakes: Mistake[], markingSummary: MarkingSummary | null, fileType: string, documentPages?: string[], originalFile?: File, pageMistakes?: PageMistakes[], currentPageIndex?: number, processingComplete?: boolean, extractedTexts?: ExtractedText[], pageMarkings?: PageMarking[]) => {
+    const historyItem: MistakeHistoryItem = {
       id: Date.now().toString(),
       fileName,
       text,
@@ -401,78 +563,250 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
       file: originalFile,
       pageMistakes,
       currentPage: currentPageIndex,
-      overallProcessingComplete: processingComplete
+      overallProcessingComplete: processingComplete,
+      extractedTexts,
+      pageMarkings,
+      selectedMarkingStandard: selectedMarkingStandard
     };
-    setMistakeHistory(prev => [newItem, ...prev.slice(0, 19)]); // Keep only last 20 items
+    
+    setMistakeHistory(prev => [historyItem, ...prev.slice(0, 19)]); // Keep last 20 items
+    
+    // Also save to localStorage for backward compatibility
+    const updatedHistory = [historyItem, ...mistakeHistory.slice(0, 19)];
+    localStorage.setItem('mistakeHistory', JSON.stringify(updatedHistory));
   };
 
-  // Function to load from history
+  // Enhanced function to add to history (now uses database)
+  const addToHistory = (fileName: string, text: string, mistakes: Mistake[], markingSummary: MarkingSummary | null, fileType: string, documentPages?: string[], originalFile?: File, pageMistakes?: PageMistakes[], currentPageIndex?: number, processingComplete?: boolean, extractedTexts?: ExtractedText[], pageMarkings?: PageMarking[]) => {
+    // Save to database with fallback to localStorage
+    saveToDatabase(fileName, text, mistakes, markingSummary, fileType, documentPages, originalFile, pageMistakes, currentPageIndex, processingComplete, extractedTexts, pageMarkings);
+  };
+
+  // Function to load from history - Enhanced to properly restore view state
   const loadFromHistory = (item: MistakeHistoryItem) => {
     console.log('🔄 Loading from history:', {
       fileName: item.fileName,
       hasDocumentPages: !!item.documentPages?.length,
       hasPageMistakes: !!item.pageMistakes?.length,
+      hasExtractedTexts: !!item.extractedTexts?.length,
+      hasPageMarkings: !!item.pageMarkings?.length,
       currentPage: item.currentPage,
       overallComplete: item.overallProcessingComplete
     });
     
     setShowHistory(false);
     
-    // Restore document pages if available
+    // Clear any existing state first to ensure clean restoration
+    setLoading(false);
+    setProcessingStatus('');
+    setSelectedMistakeId(null);
+    setShowCorrectedText(false);
+    setCorrectedText('');
+    setShowReportModal(false);
+    setShowFileViewModal(false);
+    setFullScreenDocument(false);
+    setIsMobileMenuOpen(false);
+    
+    // CRITICAL: Set processing state to show results view immediately
+    setIsProcessingStarted(true);
+    setOverallProcessingComplete(item.overallProcessingComplete || true);
+    
+    // Restore document pages if available (PDF/Document mode)
     if (item.documentPages && item.documentPages.length > 0) {
+      console.log('📄 Restoring document mode from history with', item.documentPages.length, 'pages');
+      
+      // Set document state
       setDocumentPages(item.documentPages);
       setCurrentPage(item.currentPage || 0);
       setTextOnlyMode(false);
+      setDirectText('');
+      
+      // Create a mock file object for UI compatibility
+      const mockFile = new File([''], item.fileName, { 
+        type: item.fileType || 'application/pdf' 
+      });
+      setFile(mockFile);
+      
+      // Enable text extraction to show the proper layout
+      setTextExtractionEnabled(true);
       
       // Restore complete page mistakes if available
       if (item.pageMistakes && item.pageMistakes.length > 0) {
-        console.log('✅ Restoring complete page mistakes:', item.pageMistakes.length, 'pages');
+        console.log('✅ Restoring page mistakes for', item.pageMistakes.length, 'pages');
         setPageMistakes(item.pageMistakes);
-        setOverallProcessingComplete(item.overallProcessingComplete || true);
+      } else {
+        // Create comprehensive page mistakes from the main mistakes array
+        console.log('🔄 Creating page mistakes structure from main mistakes array');
+        const fallbackPageMistakes: PageMistakes[] = item.documentPages.map((_, index) => ({
+          pageNumber: index + 1,
+          mistakes: index === 0 ? item.mistakes : [], // Put all mistakes on first page as fallback
+          isLoading: false,
+          isComplete: true
+        }));
+        setPageMistakes(fallbackPageMistakes);
+      }
+
+      // Restore extracted texts if available
+      if (item.extractedTexts && item.extractedTexts.length > 0) {
+        console.log('✅ Restoring extracted texts for', item.extractedTexts.length, 'pages');
+        setExtractedTexts(item.extractedTexts);
+      } else {
+        // Create comprehensive extracted texts from the main text
+        console.log('🔄 Creating extracted texts structure from main text');
+        const fallbackExtractedTexts: ExtractedText[] = item.documentPages.map((_, index) => ({
+          pageNumber: index + 1,
+          text: index === 0 ? item.text : '', // Put all text on first page as fallback
+          isLoading: false,
+          isComplete: true
+        }));
+        setExtractedTexts(fallbackExtractedTexts);
+      }
+
+      // Restore page markings if available
+      if (item.pageMarkings && item.pageMarkings.length > 0) {
+        console.log('✅ Restoring page markings for', item.pageMarkings.length, 'pages');
+        setPageMarkings(item.pageMarkings);
+      } else {
+        // Reset page markings for clean state
+        setPageMarkings([]);
       }
     } else {
-      console.log('📝 Loading text analysis from history');
-      // Set text-only mode
+      console.log('📝 Loading text analysis mode from history');
+      
+      // Set text-only mode - this bypasses file requirement
       setTextOnlyMode(true);
       setDirectText(item.text);
       setDocumentPages([]);
+      setFile(null); // No file needed in text mode
+      setExtractedTexts([]);
+      setPageMarkings([]);
       
-      // Create page mistakes for text mode
+      // Create page mistakes for text mode - ensure mistakes are properly loaded
       const textPageMistakes: PageMistakes[] = [{
         pageNumber: 1,
-        mistakes: item.mistakes,
+        mistakes: item.mistakes || [], // Ensure mistakes array is not undefined
         isLoading: false,
         isComplete: true
       }];
       setPageMistakes(textPageMistakes);
-      setOverallProcessingComplete(true);
+      setCurrentPage(0); // Reset to first page for text mode
     }
     
-    // Restore marking summary
+    // Restore marking summary for assessment display
     setMarkingSummary(item.markingSummary);
-    
-    // Clear file state since we're loading from history
-    setFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+
+    // Restore marking standard if available
+    if (item.selectedMarkingStandard) {
+      setSelectedMarkingStandard(item.selectedMarkingStandard);
     }
     
-    // Clear any processing status
-    setProcessingStatus('');
-    setLoading(false);
-    setIsProcessingStarted(false);
+    // Generate corrected text if mistakes exist (for auto-correct functionality)
+    if (item.mistakes && item.mistakes.length > 0) {
+      const correctedText = generateCorrectedText(item.text, item.mistakes);
+      setCorrectedText(correctedText);
+    }
     
-    console.log('✅ History loaded successfully');
+    // Force a small delay to ensure all state is properly set and UI is updated
+    setTimeout(() => {
+      console.log('✅ History loaded successfully - Complete UI state restored');
+      console.log('📊 Final state after history restoration:', {
+        documentMode: !!item.documentPages?.length,
+        textMode: !item.documentPages?.length,
+        documentsCount: item.documentPages?.length || 0,
+        pageMistakesCount: item.pageMistakes?.length || (item.documentPages?.length || 1),
+        extractedTextsCount: item.extractedTexts?.length || (item.documentPages?.length || 1),
+        mistakesCount: item.mistakes?.length || 0,
+        hasMarkingSummary: !!item.markingSummary,
+        isProcessingStarted: true,
+        overallProcessingComplete: true,
+        textExtractionEnabled: true,
+        currentPage: item.currentPage || 0,
+        fileName: item.fileName,
+        fileType: item.fileType,
+        hasFile: !!item.documentPages?.length, // Mock file for document mode
+        textOnlyMode: !item.documentPages?.length
+      });
+      
+      // Scroll to show mistakes if any exist
+      if (mistakesContainerRef.current && (item.mistakes.length > 0 || (item.pageMistakes && item.pageMistakes.some(pm => pm.mistakes.length > 0)))) {
+        mistakesContainerRef.current.scrollTop = 0;
+      }
+      
+      // Show success message to confirm complete restoration
+      showSuccess(`Successfully restored: ${item.fileName} with ${item.documentPages?.length || 'text'} ${item.documentPages?.length ? (item.documentPages.length === 1 ? 'page' : 'pages') : 'content'}`);
+    }, 150); // Slightly longer delay for complex state restoration
   };
 
-  // Function to delete history item
-  const deleteHistoryItem = (id: string) => {
-    setMistakeHistory(prev => prev.filter(item => item.id !== id));
+  // Function to delete history item from database
+  const deleteHistoryItem = async (id: string) => {
+    try {
+      console.log('🗑️ Deleting history item from database:', id);
+      const result = await deleteMistakeCheck(id, user, session);
+      
+      if (result.success) {
+        console.log('✅ Successfully deleted from database');
+        // Silent delete - no user notification needed
+        
+        // Update local state immediately for better UX
+        setMistakeHistory(prev => prev.filter(item => item.id !== id));
+        
+        // Also remove from localStorage for backward compatibility
+        const updatedHistory = mistakeHistory.filter(item => item.id !== id);
+        localStorage.setItem('mistakeHistory', JSON.stringify(updatedHistory));
+      } else {
+        console.error('❌ Failed to delete from database:', result.error);
+        showError('Failed to delete from database: ' + (result.error || 'Unknown error'));
+        
+        // Fallback: remove from localStorage only
+        setMistakeHistory(prev => prev.filter(item => item.id !== id));
+        const updatedHistory = mistakeHistory.filter(item => item.id !== id);
+        localStorage.setItem('mistakeHistory', JSON.stringify(updatedHistory));
+      }
+    } catch (error) {
+      console.error('❌ Delete error:', error);
+      showError('Failed to delete history item');
+      
+      // Fallback: remove from localStorage
+      setMistakeHistory(prev => prev.filter(item => item.id !== id));
+      const updatedHistory = mistakeHistory.filter(item => item.id !== id);
+      localStorage.setItem('mistakeHistory', JSON.stringify(updatedHistory));
+    }
   };
 
   // Function to clear all history
-  const clearAllHistory = () => {
-    setMistakeHistory([]);
+  const clearAllHistory = async () => {
+    try {
+      console.log('🗑️ Clearing all history...');
+      
+      // Delete all items from database in parallel
+      const deletePromises = mistakeHistory.map(item => deleteMistakeCheck(item.id, user, session));
+      const results = await Promise.allSettled(deletePromises);
+      
+      const successCount = results.filter(result => 
+        result.status === 'fulfilled' && result.value.success
+      ).length;
+      
+      console.log(`✅ Successfully deleted ${successCount}/${mistakeHistory.length} items from database`);
+      
+      // Clear local state regardless of database results
+      setMistakeHistory([]);
+      localStorage.removeItem('mistakeHistory');
+      
+      if (successCount === mistakeHistory.length) {
+        showSuccess('All history cleared successfully!');
+      } else if (successCount > 0) {
+        showSuccess(`Cleared ${successCount} items, some items may have failed to delete from database`);
+      } else {
+        showError('Failed to clear history from database, but cleared locally');
+      }
+    } catch (error) {
+      console.error('❌ Clear all history error:', error);
+      
+      // Fallback: clear locally
+      setMistakeHistory([]);
+      localStorage.removeItem('mistakeHistory');
+      showError('Failed to clear database history, but cleared locally');
+    }
   };
 
   // Function to format relative time
@@ -704,10 +1038,11 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
 
   // Auto-scroll to bottom of mistakes container
   const scrollToBottom = () => {
-    if (autoScroll && mistakesContainerRef.current) {
+    if (mistakesContainerRef.current) {
       const container = mistakesContainerRef.current;
       setTimeout(() => {
-        container.scrollTop = container.scrollHeight;
+        // Scroll to bottom with a little extra padding
+        container.scrollTop = container.scrollHeight + 50;
       }, 100);
     }
   };
@@ -820,7 +1155,7 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
                   ));
                   
                   // Auto-scroll to show latest content
-                  if (autoScroll && pageNumber === currentPage + 1) {
+                  if (mistakesContainerRef.current && pageNumber === currentPage + 1) {
                     setTimeout(scrollToBottom, 100);
                   }
                 }
@@ -1332,7 +1667,7 @@ Be thorough and fair in your assessment.`
       }));
       setExtractedTexts(initialExtractedTexts);
       
-      setProcessingStatus('File ready - click "Check Mistakes & Get Marking" to start analysis');
+      setProcessingStatus('File ready - click "Check Mistakes" to start analysis');
       setLoading(false);
 
     } catch (error) {
@@ -1434,11 +1769,11 @@ Be thorough and fair in your assessment.`
 
   // Auto-scroll effect
   useEffect(() => {
-    if (autoScroll && mistakesContainerRef.current) {
+    if (mistakesContainerRef.current) {
       const container = mistakesContainerRef.current;
       container.scrollTop = container.scrollHeight;
     }
-  }, [pageMistakes, autoScroll, currentPage]);
+  }, [pageMistakes, currentPage]);
 
   // Process text directly without file upload
   const processTextDirectly = async (text: string) => {
@@ -1495,7 +1830,9 @@ Be thorough and fair in your assessment.`
           isComplete: true
         }],
         0,
-        true
+        true,
+        undefined, // extractedTexts - not used for text mode
+        undefined  // pageMarkings - not used for text mode
       );
       
       setOverallProcessingComplete(true);
@@ -1590,7 +1927,7 @@ Be thorough and fair in your assessment.`
                   ));
                   
                   // Auto-scroll to show latest content
-                  if (autoScroll) {
+                  if (mistakesContainerRef.current) {
                     setTimeout(scrollToBottom, 100);
                   }
                 }
@@ -1964,7 +2301,9 @@ Be thorough and fair in your assessment.`
             file, 
             pageMistakes, 
             currentPage, 
-            true
+            true,
+            extractedTexts, // Include extracted texts
+            pageMarkings    // Include page markings
           );
         }
       }
@@ -1989,182 +2328,332 @@ Be thorough and fair in your assessment.`
   };
 
   // If no file is uploaded, show upload interface
-  if (!file) {
+  if (!file && !textOnlyMode) {
     return (
       <div className={className}>
-        <motion.div 
-          className="max-w-4xl mx-auto px-4"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <motion.div
-            className="bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl p-4 lg:p-8 shadow-sm"
-            whileHover={{ boxShadow: "0 8px 32px rgba(6, 182, 212, 0.1)" }}
-          >
-            <div className="text-center mb-6 lg:mb-8">
-              <h2 className="text-2xl lg:text-3xl font-bold text-cyan-400 mb-2">
-                Check Mistakes & Get Marked
-              </h2>
-              <p className="text-slate-300 text-sm lg:text-base">
-                Upload your document to check for grammar, spelling, and punctuation mistakes, then get a detailed marking assessment
-              </p>
-            </div>
-
-            {/* Control Settings */}
-            <div className="flex items-center justify-center mb-4">
-              <div className="flex items-center space-x-4 bg-slate-600/20 backdrop-blur-sm rounded-lg p-3 lg:p-4 border border-white/10">
-                {/* Auto Scroll Toggle */}
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="autoScroll"
-                    checked={autoScroll}
-                    onChange={(e) => setAutoScroll(e.target.checked)}
-                    className="w-4 h-4 text-cyan-600 bg-slate-600 border-slate-400 rounded focus:ring-cyan-500 focus:ring-2"
-                  />
-                  <label htmlFor="autoScroll" className="text-slate-300 text-xs lg:text-sm font-medium cursor-pointer flex items-center">
-                    <IconComponent icon={AiOutlineLoading3Quarters} className="h-4 w-4 mr-1" />
-                    Auto Scroll
-                  </label>
+        <div className="h-full flex flex-col">
+          {/* Header with Title and History Button */}
+          <div className="flex items-center justify-between mb-8 px-4">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center">
+                  <IconComponent icon={AiOutlineBulb} className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-white">AI Mistake Checker</h1>
+                  <p className="text-slate-400 text-sm">Upload your work and get instant feedback</p>
                 </div>
               </div>
             </div>
+            <motion.button
+              onClick={() => {
+                console.log('History button clicked, current showHistory:', showHistory);
+                console.log('History items count:', mistakeHistory.length);
+                setShowHistory(true);
+              }}
+              className="flex items-center space-x-2 px-4 py-2 bg-slate-600/30 hover:bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 hover:text-white transition-all"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <IconComponent icon={AiOutlineHistory} className="h-5 w-5" />
+              <span>History</span>
+              {mistakeHistory.length > 0 && (
+                <span className="bg-cyan-500 text-white text-xs px-2 py-1 rounded-full">
+                  {mistakeHistory.length}
+                </span>
+              )}
+            </motion.button>
+          </div>
 
-            {/* Marking Standard Selector */}
-            <div className="flex items-center justify-center mb-4 lg:mb-6">
-              <div className="bg-slate-600/20 backdrop-blur-sm rounded-lg p-3 lg:p-4 border border-white/10 w-full max-w-md">
-                <label className="block text-xs lg:text-sm font-medium text-slate-300 mb-2 text-center">
-                  Select Marking Standard
-                </label>
-                <select
-                  value={selectedMarkingStandard}
-                  onChange={(e) => setSelectedMarkingStandard(e.target.value)}
-                  className="w-full px-3 lg:px-4 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm lg:text-base"
+          <div className="flex flex-1 overflow-hidden">
+            {/* Main Content Area */}
+            <div className="flex-1 flex flex-col max-w-4xl mx-auto px-4">
+              {/* Marking Standard Selector - Centered */}
+              <div className="flex items-center justify-center mb-8">
+                <div className="bg-slate-600/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 min-w-[400px]">
+                  <div className="text-center mb-4">
+                    <h2 className="text-lg font-semibold text-white mb-2">Select Marking Standard</h2>
+                    <p className="text-slate-400 text-sm">Choose the educational standard for accurate assessment</p>
+                  </div>
+                  <select
+                    value={selectedMarkingStandard}
+                    onChange={(e) => setSelectedMarkingStandard(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 text-center"
+                  >
+                    {MARKING_STANDARDS.map(standard => (
+                      <option key={standard.id} value={standard.id} className="bg-slate-700">
+                        {standard.name} - {standard.description}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              
+              {/* File Upload Area - Centered */}
+              <div className="mb-8">
+                <div 
+                  className="border-2 border-dashed border-white/20 rounded-xl p-12 text-center hover:border-cyan-500/50 cursor-pointer transition-all relative bg-slate-600/20 backdrop-blur-sm hover:bg-slate-600/30 min-h-[200px] flex flex-col justify-center"
+                  onClick={() => fileInputRef.current?.click()}
                 >
-                  {MARKING_STANDARDS.map(standard => (
-                    <option key={standard.id} value={standard.id} className="bg-slate-700">
-                      {standard.name} - {standard.description}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-slate-400 mt-2 text-center">
-                  {MARKING_STANDARDS.find(s => s.id === selectedMarkingStandard)?.description}
-                </p>
-              </div>
-            </div>
-            
-            <div className="mb-4 lg:mb-6">
-              <div 
-                className="border-2 border-dashed border-white/20 rounded-lg p-8 lg:p-12 text-center hover:border-cyan-500/50 cursor-pointer transition-colors relative bg-slate-600/20 backdrop-blur-sm"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <input 
-                  type="file" 
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  className="hidden"
-                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                />
-                <div className="text-slate-400">
-                  <IconComponent icon={AiOutlineUpload} className="h-10 w-10 lg:h-12 lg:w-12 mx-auto mb-4 text-cyan-400" />
-                  <p className="text-base lg:text-lg font-medium text-slate-300 mb-2">Drag and drop your file here, or click to browse</p>
-                  <p className="text-xs lg:text-sm">Supports PDF, Word documents, and images</p>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  />
+                  <div className="text-slate-400">
+                    <IconComponent icon={AiOutlineUpload} className="h-16 w-16 mx-auto mb-6 text-cyan-400" />
+                    <h3 className="text-xl font-semibold text-slate-300 mb-3">Drag and drop your file here, or click to browse</h3>
+                    <p className="text-slate-400">Supports PDF, Word documents, and images</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Text Input Option */}
-            <div className="mb-4 lg:mb-6">
-              <div className="text-center mb-4">
-                <span className="text-slate-400 text-xs lg:text-sm">or</span>
+              {/* Divider */}
+              <div className="relative mb-8">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-white/10"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-4 bg-slate-800 text-slate-400">Or</span>
+                </div>
               </div>
-              <div className="bg-slate-600/20 backdrop-blur-sm rounded-lg p-3 lg:p-4 border border-white/10">
-                <label className="block text-slate-300 mb-3 font-medium text-sm lg:text-base">
-                  Paste your text directly
-                </label>
-                <textarea
-                  placeholder="Paste your text here for mistake checking..."
-                  className="w-full h-24 lg:h-32 p-3 bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 placeholder-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-sm lg:text-base"
-                  onPaste={(e) => {
-                    const text = e.clipboardData.getData('text');
-                    if (text.trim()) {
-                      // Process text directly without file upload
-                      processTextDirectly(text.trim());
-                    }
-                  }}
-                  onChange={(e) => {
-                    const text = e.target.value;
-                    if (text.trim()) {
-                      // Process text directly
-                      processTextDirectly(text.trim());
-                    }
-                  }}
-                />
-                <p className="text-xs text-slate-400 mt-2">
-                  Text will be processed automatically as you type or paste
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-center">
-              <motion.button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={loading}
-                className={`flex items-center justify-center px-6 lg:px-8 py-3 lg:py-4 rounded-lg text-white font-medium shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all bg-gradient-to-r from-cyan-500 to-blue-500 text-sm lg:text-base`}
-                whileHover={!loading ? { scale: 1.02 } : {}}
-                whileTap={!loading ? { scale: 0.98 } : {}}
-              >
-                {loading ? (
-                  <>
-                    <motion.div
-                      className="w-4 h-4 lg:w-5 lg:h-5 border-2 border-white border-t-transparent rounded-full mr-2 lg:mr-3"
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    Check for Mistakes & Get Marking
-                    <IconComponent icon={AiOutlineBulb} className="h-4 w-4 lg:h-5 lg:w-5 ml-2" />
-                  </>
-                )}
-              </motion.button>
-            </div>
 
-            {/* History Button */}
-            <div className="mt-4 lg:mt-6 flex items-center justify-center">
-              <motion.button
-                type="button"
-                className="flex items-center justify-center px-4 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 font-medium hover:bg-slate-500/50 transition-colors text-sm lg:text-base"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowHistory(!showHistory)}
-              >
-                <IconComponent icon={AiOutlineHistory} className="h-4 w-4 lg:h-5 lg:w-5 mr-2" />
-                History ({mistakeHistory.length})
-              </motion.button>
-            </div>
-            
-            {processingStatus && (
-              <motion.div
-                className="mt-4 lg:mt-6 p-3 lg:p-4 bg-blue-500/10 backdrop-blur-sm rounded-lg border border-blue-500/20"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              >
-                <p className="text-xs lg:text-sm text-blue-400 flex items-center justify-center">
-                  <motion.div
-                    className="w-3 h-3 lg:w-4 lg:h-4 border-2 border-blue-400 border-t-transparent rounded-full mr-2"
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              {/* Text Input Option - Centered */}
+              <div className="mb-8">
+                <div className="bg-slate-600/20 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+                  <div className="text-center mb-4">
+                    <h3 className="text-lg font-semibold text-slate-300 mb-2">Paste your text directly</h3>
+                    <p className="text-slate-400 text-sm">Copy and paste your work for instant analysis</p>
+                  </div>
+                  <textarea
+                    placeholder="Paste your text here for mistake checking..."
+                    className="w-full h-40 p-4 bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 placeholder-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                    onPaste={(e) => {
+                      const text = e.clipboardData.getData('text');
+                      if (text.trim()) {
+                        // Process text directly without file upload
+                        processTextDirectly(text.trim());
+                      }
+                    }}
+                    onChange={(e) => {
+                      const text = e.target.value;
+                      if (text.trim()) {
+                        // Process text directly
+                        processTextDirectly(text.trim());
+                      }
+                    }}
                   />
-                  {processingStatus}
-                </p>
-              </motion.div>
-            )}
-          </motion.div>
-        </motion.div>
+                  <p className="text-xs text-slate-400 mt-3 text-center">
+                    Text will be processed automatically as you type or paste
+                  </p>
+                </div>
+              </div>
+              
+              {/* Check Button - Centered */}
+              <div className="flex items-center justify-center mb-6">
+                <motion.button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={loading}
+                  className={`flex items-center justify-center px-8 py-4 rounded-xl text-white font-semibold shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 min-w-[200px]`}
+                  whileHover={!loading ? { scale: 1.05 } : {}}
+                  whileTap={!loading ? { scale: 0.95 } : {}}
+                >
+                  {loading ? (
+                    <>
+                      <motion.div
+                        className="w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-3"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      Check Mistakes
+                      <IconComponent icon={AiOutlineBulb} className="h-5 w-5 ml-2" />
+                    </>
+                  )}
+                </motion.button>
+              </div>
+
+              {/* Processing Status */}
+              {processingStatus && (
+                <motion.div
+                  className="flex items-center justify-center"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <div className="p-4 bg-blue-500/10 backdrop-blur-sm rounded-xl border border-blue-500/20 max-w-md">
+                    <p className="text-sm text-blue-400 flex items-center justify-center">
+                      <motion.div
+                        className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full mr-2"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      />
+                      {processingStatus}
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          </div>
+
+          {/* History Modal */}
+          <PortalModal 
+            isOpen={showHistory} 
+            onClose={() => setShowHistory(false)}
+            className="w-full max-w-6xl h-[80vh] bg-slate-800/95 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden"
+          >
+            <div className="h-full flex flex-col">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-6 border-b border-white/10">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center">
+                    <IconComponent icon={AiOutlineHistory} className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">History</h2>
+                    <p className="text-slate-400 text-sm">Your previous mistake checks and assessments</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  {mistakeHistory.length > 0 && (
+                    <motion.button
+                      onClick={() => {
+                        showConfirmation('Are you sure you want to clear all history? This action cannot be undone.', clearAllHistory);
+                      }}
+                      className="px-3 py-1.5 text-xs bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg border border-red-500/20 transition-colors"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      Clear All
+                    </motion.button>
+                  )}
+                  <motion.button
+                    onClick={() => setShowHistory(false)}
+                    className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-400 hover:text-white transition-colors"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    <IconComponent icon={AiOutlineClose} className="h-5 w-5" />
+                  </motion.button>
+                </div>
+              </div>
+
+              {/* Modal Content */}
+              <div className="flex-1 overflow-hidden">
+                {mistakeHistory.length === 0 ? (
+                  <div className="h-full flex items-center justify-center">
+                    <div className="text-center">
+                      <IconComponent icon={AiOutlineHistory} className="mx-auto text-6xl mb-4 text-slate-500" />
+                      <h3 className="text-xl font-semibold text-slate-300 mb-2">No History Yet</h3>
+                      <p className="text-slate-400">Your checked documents will appear here</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-6 h-full overflow-y-auto">
+                    <div className="grid gap-4">
+                      {mistakeHistory.map((item) => (
+                        <motion.div
+                          key={item.id}
+                          className="bg-slate-700/30 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:bg-slate-700/50 transition-all cursor-pointer"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => loadFromHistory(item)}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-3 mb-3">
+                                <div className="w-10 h-10 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-lg flex items-center justify-center border border-cyan-500/20">
+                                  <IconComponent 
+                                    icon={item.fileType.includes('pdf') ? AiOutlineFileText : 
+                                          item.fileType.includes('image') ? AiOutlineCamera : AiOutlineFileText} 
+                                    className="h-5 w-5 text-cyan-400" 
+                                  />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="text-lg font-semibold text-white truncate">
+                                    {item.fileName || 'Text Analysis'}
+                                  </h3>
+                                  <p className="text-slate-400 text-sm">
+                                    {formatRelativeTime(item.timestamp)}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                <div className="bg-slate-600/30 rounded-lg p-3">
+                                  <div className="text-sm text-slate-400 mb-1">Mistakes Found</div>
+                                  <div className="text-xl font-bold text-red-400">
+                                    {item.mistakes?.length || 0}
+                                  </div>
+                                </div>
+                                
+                                {item.markingSummary && (
+                                  <div className="bg-slate-600/30 rounded-lg p-3">
+                                    <div className="text-sm text-slate-400 mb-1">Grade</div>
+                                    <div className="text-xl font-bold text-green-400">
+                                      {item.markingSummary.grade} ({Math.round(item.markingSummary.percentage)}%)
+                                    </div>
+                                  </div>
+                                )}
+
+                                <div className="bg-slate-600/30 rounded-lg p-3">
+                                  <div className="text-sm text-slate-400 mb-1">Document Type</div>
+                                  <div className="text-sm font-medium text-slate-300 capitalize">
+                                    {item.documentPages?.length ? `${item.documentPages.length} Page PDF` : 'Text Analysis'}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {item.text && (
+                                <div className="bg-slate-600/20 rounded-lg p-3 mb-3">
+                                  <div className="text-sm text-slate-400 mb-2">Content Preview</div>
+                                  <p className="text-slate-300 text-sm line-clamp-2">
+                                    {item.text.substring(0, 150)}...
+                                  </p>
+                                </div>
+                              )}
+
+                              {item.markingSummary?.strengths && item.markingSummary.strengths.length > 0 && (
+                                <div className="flex flex-wrap gap-2">
+                                  <span className="text-xs text-green-400 bg-green-500/10 px-2 py-1 rounded border border-green-500/20">
+                                    ✓ {item.markingSummary.strengths[0]}
+                                  </span>
+                                  {item.markingSummary.weaknesses[0] && (
+                                    <span className="text-xs text-red-400 bg-red-500/10 px-2 py-1 rounded border border-red-500/20">
+                                      ⚠ {item.markingSummary.weaknesses[0]}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex items-center space-x-2 ml-4">
+                              <motion.button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  showConfirmation('Are you sure you want to delete this history item?', () => deleteHistoryItem(item.id));
+                                }}
+                                className="p-2 hover:bg-red-500/20 rounded-lg text-red-400 hover:text-red-300 transition-colors"
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                              >
+                                <IconComponent icon={AiOutlineDelete} className="h-4 w-4" />
+                              </motion.button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </PortalModal>
+        </div>
       </div>
     );
   }
@@ -2188,7 +2677,7 @@ Be thorough and fair in your assessment.`
                 Document Ready for Analysis
               </h2>
               <p className="text-slate-300 mb-4">
-                {file.name} - {documentPages.length} page{documentPages.length > 1 ? 's' : ''} ready
+                {file?.name} - {documentPages.length} page{documentPages.length > 1 ? 's' : ''} ready
               </p>
               <p className="text-slate-400">
                 Using {MARKING_STANDARDS.find(s => s.id === selectedMarkingStandard)?.name} marking standard
@@ -2206,32 +2695,14 @@ Be thorough and fair in your assessment.`
               </div>
             </div>
 
-            {/* Control Settings */}
-            <div className="flex items-center justify-center mb-6">
-              <div className="flex items-center space-x-4 bg-slate-600/20 backdrop-blur-sm rounded-lg p-4 border border-white/10">
-                {/* Auto Scroll Toggle */}
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="autoScroll"
-                    checked={autoScroll}
-                    onChange={(e) => setAutoScroll(e.target.checked)}
-                    className="w-4 h-4 text-cyan-600 bg-slate-600 border-slate-400 rounded focus:ring-cyan-500 focus:ring-2"
-                  />
-                  <label htmlFor="autoScroll" className="text-slate-300 text-sm font-medium cursor-pointer flex items-center">
-                    <IconComponent icon={AiOutlineLoading3Quarters} className="h-4 w-4 mr-1" />
-                    Auto Scroll
-                  </label>
-                </div>
-              </div>
-            </div>
-
             {/* Marking Standard Selector */}
             <div className="flex items-center justify-center mb-6">
               <div className="bg-slate-600/20 backdrop-blur-sm rounded-lg p-4 border border-white/10">
-                <label className="block text-sm font-medium text-slate-300 mb-2 text-center">
-                  Marking Standard
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-slate-300 text-center flex-1">
+                    {t('aiStudy.selectMarkingStandard')}
+                  </label>
+                </div>
                 <select
                   value={selectedMarkingStandard}
                   onChange={(e) => setSelectedMarkingStandard(e.target.value)}
@@ -2275,7 +2746,7 @@ Be thorough and fair in your assessment.`
                   </>
                 ) : (
                   <>
-                    Check Mistakes & Get Marking
+                    Check Mistakes
                     <IconComponent icon={AiOutlineBulb} className="h-5 w-5 ml-2" />
                   </>
                 )}
@@ -2325,7 +2796,7 @@ Be thorough and fair in your assessment.`
               <h1 className="text-2xl font-bold text-cyan-400">
                 Check Mistakes & Assessment
               </h1>
-              <p className="text-slate-300">{file.name}</p>
+              <p className="text-slate-300">{file?.name}</p>
               <p className="text-sm text-slate-400">
                 Using {MARKING_STANDARDS.find(s => s.id === selectedMarkingStandard)?.name} standard
               </p>
@@ -2429,7 +2900,7 @@ Be thorough and fair in your assessment.`
             <h1 className="text-xl font-bold text-cyan-400 mb-1">
               Check Mistakes & Assessment
             </h1>
-            <p className="text-slate-300 text-sm truncate">{file.name}</p>
+            <p className="text-slate-300 text-sm truncate">{file?.name}</p>
             <p className="text-xs text-slate-400">
               Using {MARKING_STANDARDS.find(s => s.id === selectedMarkingStandard)?.name} standard
             </p>
@@ -2540,7 +3011,7 @@ Be thorough and fair in your assessment.`
       </div>
 
       {/* Mobile-Responsive Split View: Document and Content */}
-      <div className="flex flex-col lg:grid lg:grid-cols-2 gap-6 min-h-[calc(100vh-300px)]">
+      <div className="flex flex-col lg:grid lg:grid-cols-2 gap-6 min-h-[calc(100vh-200px)]">
         {/* Left Side - Document (Full width on mobile, half on desktop) */}
         <div className="bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl shadow-lg overflow-hidden order-2 lg:order-1">
           <div className="bg-slate-700/50 backdrop-blur-sm px-4 lg:px-6 py-3 lg:py-4 border-b border-white/10 flex items-center justify-between">
@@ -2718,27 +3189,35 @@ Be thorough and fair in your assessment.`
                           )}
                         </div>
                         
-                        {/* Color Legend */}
+                        {/* Color Legend - Made more prominent and always visible */}
                         {pageMistakes[currentPage]?.mistakes && pageMistakes[currentPage].mistakes.length > 0 && (
-                          <div className="mt-4 p-3 bg-slate-900/60 backdrop-blur-sm rounded-lg border border-white/20">
-                            <h4 className="text-sm font-medium text-slate-200 mb-2">Mistake Types:</h4>
-                            <div className="flex flex-wrap gap-3 text-xs">
+                          <div className="mt-6 mb-4 p-4 bg-slate-800/80 backdrop-blur-sm rounded-lg border border-white/30 shadow-lg">
+                            <h4 className="text-base font-semibold text-slate-100 mb-3 flex items-center">
+                              <div className="w-2 h-2 bg-cyan-400 rounded-full mr-2"></div>
+                              Mistake Types Legend
+                            </h4>
+                            <div className="grid grid-cols-2 gap-4 text-sm">
                               <div className="flex items-center">
-                                <div className="w-3 h-3 bg-red-500/50 border-b-2 border-red-400 rounded mr-2"></div>
-                                <span className="text-slate-300">Grammar</span>
+                                <div className="w-4 h-4 bg-red-500/60 border-b-2 border-red-400 rounded mr-3"></div>
+                                <span className="text-slate-200 font-medium">Grammar Errors</span>
                               </div>
                               <div className="flex items-center">
-                                <div className="w-3 h-3 bg-yellow-500/50 border-b-2 border-yellow-400 rounded mr-2"></div>
-                                <span className="text-slate-300">Spelling</span>
+                                <div className="w-4 h-4 bg-yellow-500/60 border-b-2 border-yellow-400 rounded mr-3"></div>
+                                <span className="text-slate-200 font-medium">Spelling Errors</span>
                               </div>
                               <div className="flex items-center">
-                                <div className="w-3 h-3 bg-blue-500/50 border-b-2 border-blue-400 rounded mr-2"></div>
-                                <span className="text-slate-300">Punctuation</span>
+                                <div className="w-4 h-4 bg-blue-500/60 border-b-2 border-blue-400 rounded mr-3"></div>
+                                <span className="text-slate-200 font-medium">Punctuation</span>
                               </div>
                               <div className="flex items-center">
-                                <div className="w-3 h-3 bg-orange-500/50 border-b-2 border-orange-400 rounded mr-2"></div>
-                                <span className="text-slate-300">Other</span>
+                                <div className="w-4 h-4 bg-orange-500/60 border-b-2 border-orange-400 rounded mr-3"></div>
+                                <span className="text-slate-200 font-medium">Other Issues</span>
                               </div>
+                            </div>
+                            <div className="mt-3 pt-3 border-t border-white/20">
+                              <p className="text-xs text-slate-400">
+                                💡 Click on highlighted text to see correction details
+                              </p>
                             </div>
                           </div>
                         )}
@@ -2823,7 +3302,7 @@ Be thorough and fair in your assessment.`
             )}
           </div>
           
-          <div className="flex-1 overflow-y-auto p-4 lg:p-6 max-h-64 lg:max-h-none" ref={mistakesContainerRef}>
+          <div className="flex-1 overflow-y-auto p-4 lg:p-6" ref={mistakesContainerRef} style={{ maxHeight: 'calc(100vh - 200px)' }}>
             {loading ? (
               <div className="flex flex-col items-center justify-center h-32 lg:h-full text-slate-400">
                 <motion.div
@@ -3004,8 +3483,115 @@ Be thorough and fair in your assessment.`
         </div>
       </div>
 
-      {/* Assessment Summary Section - REMOVED - Now only appears in modal */}
-      
+      {/* Assessment Summary Section - Now displayed below the main component */}
+      {markingSummary && overallProcessingComplete && (
+        <motion.div 
+          className="mt-8 max-w-6xl mx-auto"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="bg-gradient-to-br from-slate-800/50 to-slate-700/50 backdrop-blur-sm border border-white/10 rounded-xl p-6 shadow-lg">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-cyan-400 flex items-center">
+                <IconComponent icon={AiOutlineFileText} className="h-6 w-6 mr-3" />
+                Assessment Summary
+              </h3>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-cyan-400">
+                  {markingSummary.totalScore}/{markingSummary.maxScore}
+                </div>
+                <div className="text-sm text-slate-300">
+                  Grade: {markingSummary.grade} ({Math.round(markingSummary.percentage)}%)
+                </div>
+              </div>
+            </div>
+            
+            {/* Progress Bar */}
+            <div className="w-full bg-slate-600/30 rounded-full h-3 mb-6">
+              <motion.div 
+                className="bg-gradient-to-r from-cyan-500 to-blue-500 h-3 rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${markingSummary.percentage}%` }}
+                transition={{ duration: 1 }}
+              ></motion.div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Strengths */}
+              {markingSummary.strengths.length > 0 && (
+                <div className="bg-green-500/10 rounded-lg p-4 border border-green-500/20">
+                  <h4 className="text-green-400 font-semibold mb-3 flex items-center">
+                    <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                    Strengths
+                  </h4>
+                  <ul className="space-y-2">
+                    {markingSummary.strengths.slice(0, 2).map((strength, index) => (
+                      <li key={index} className="text-sm text-slate-300 flex items-start">
+                        <span className="text-green-400 mr-2">•</span>
+                        {strength}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Areas for Improvement */}
+              {markingSummary.weaknesses.length > 0 && (
+                <div className="bg-orange-500/10 rounded-lg p-4 border border-orange-500/20">
+                  <h4 className="text-orange-400 font-semibold mb-3 flex items-center">
+                    <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
+                    Areas for Improvement
+                  </h4>
+                  <ul className="space-y-2">
+                    {markingSummary.weaknesses.slice(0, 2).map((weakness, index) => (
+                      <li key={index} className="text-sm text-slate-300 flex items-start">
+                        <span className="text-orange-400 mr-2">•</span>
+                        {weakness}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Study Plan */}
+              {markingSummary.studyPlan.length > 0 && (
+                <div className="bg-purple-500/10 rounded-lg p-4 border border-purple-500/20">
+                  <h4 className="text-purple-400 font-semibold mb-3 flex items-center">
+                    <span className="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
+                    Study Plan
+                  </h4>
+                  <div className="space-y-2">
+                    {markingSummary.studyPlan.slice(0, 1).map((item, index) => (
+                      <div key={index} className="text-sm">
+                        <div className="text-purple-400 font-medium">{item.topic}</div>
+                        <div className="text-slate-300 text-xs">{item.description}</div>
+                      </div>
+                    ))}
+                    {markingSummary.studyPlan.length > 1 && (
+                      <p className="text-xs text-slate-400">+ {markingSummary.studyPlan.length - 1} more items</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* View Full Report Button */}
+            <div className="mt-6 text-center">
+              <motion.button
+                onClick={() => setShowReportModal(true)}
+                className="flex items-center justify-center px-6 py-3 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 rounded-lg text-purple-400 transition-colors border border-purple-500/30 mx-auto"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <IconComponent icon={AiOutlineFileText} className="h-5 w-5 mr-2" />
+                View Full Assessment Report
+              </motion.button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Response Upgrade Modal */}
       <ResponseUpgradeModal 
         isOpen={showUpgradeModal}
@@ -3171,7 +3757,7 @@ Be thorough and fair in your assessment.`
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-2xl font-bold text-cyan-400 flex items-center">
                 <IconComponent icon={AiOutlineFileText} className="h-6 w-6 mr-3" />
-                Original Document: {file.name}
+                Original Document: {file?.name}
               </h3>
               <button
                 onClick={() => setShowFileViewModal(false)}
@@ -3223,15 +3809,15 @@ Be thorough and fair in your assessment.`
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                       <div>
                         <span className="text-slate-400">File Name:</span>
-                        <span className="text-slate-200 ml-2">{file.name}</span>
+                        <span className="text-slate-200 ml-2">{file?.name}</span>
                       </div>
                       <div>
                         <span className="text-slate-400">File Type:</span>
-                        <span className="text-slate-200 ml-2">{file.type}</span>
+                        <span className="text-slate-200 ml-2">{file?.type}</span>
                       </div>
                       <div>
                         <span className="text-slate-400">File Size:</span>
-                        <span className="text-slate-200 ml-2">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                        <span className="text-slate-200 ml-2">{file?.size ? (file.size / 1024 / 1024).toFixed(2) : '0'} MB</span>
                       </div>
                     </div>
                   </div>
@@ -3277,7 +3863,7 @@ Be thorough and fair in your assessment.`
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={clearAllHistory}
+                    onClick={() => showConfirmation('Are you sure you want to clear all history? This action cannot be undone.', clearAllHistory)}
                     className="flex items-center px-4 py-2 bg-red-500/20 text-red-400 rounded-lg text-sm font-medium hover:bg-red-500/30 transition-colors border border-red-500/30"
                   >
                     <IconComponent icon={AiOutlineDelete} className="h-4 w-4 mr-2" />
@@ -3344,7 +3930,7 @@ Be thorough and fair in your assessment.`
                         <motion.button
                           onClick={(e) => {
                             e.stopPropagation();
-                            deleteHistoryItem(item.id);
+                            showConfirmation('Are you sure you want to delete this history item?', () => deleteHistoryItem(item.id));
                           }}
                           className="opacity-0 group-hover:opacity-100 p-2 text-slate-400 hover:text-red-400 transition-all rounded-lg hover:bg-red-500/10"
                           whileHover={{ scale: 1.1 }}
@@ -3382,12 +3968,49 @@ Be thorough and fair in your assessment.`
                     transition={{ duration: 0.5 }}
                   >
                     <IconComponent icon={AiOutlineHistory} className="mx-auto text-6xl mb-4 opacity-50" />
-                    <p className="text-xl font-medium mb-2">No mistake check history yet</p>
-                    <p className="text-sm">Your analyzed documents will appear here</p>
-                    <p className="text-xs mt-2 text-slate-500">Upload documents or enter text to get started</p>
+                    <p className="text-xl font-medium mb-2">{t('aiStudy.noMistakeCheckHistoryYet')}</p>
+                    <p className="text-sm">{t('aiStudy.analyzedDocumentsWillAppearHere')}</p>
+                    <p className="text-xs mt-2 text-slate-500">{t('aiStudy.uploadDocumentsOrEnterTextToGetStarted')}</p>
                   </motion.div>
                 </div>
               )}
+            </div>
+          </PortalModal>
+        )}
+      </AnimatePresence>
+
+      {/* Confirmation Modal */}
+      <AnimatePresence>
+        {showConfirmModal && (
+          <PortalModal 
+            isOpen={showConfirmModal}
+            onClose={handleCancel}
+            className="bg-slate-800/95 backdrop-blur-sm border border-white/10 rounded-xl p-6 max-w-md w-full shadow-2xl"
+          >
+            <div className="text-center">
+              <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <IconComponent icon={AiOutlineExclamation} className="h-6 w-6 text-red-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">Confirm Action</h3>
+              <p className="text-slate-300 mb-6">{confirmMessage}</p>
+              <div className="flex space-x-3 justify-center">
+                <motion.button
+                  onClick={handleCancel}
+                  className="px-4 py-2 bg-slate-600/50 hover:bg-slate-600/70 text-slate-300 rounded-lg transition-colors"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Cancel
+                </motion.button>
+                <motion.button
+                  onClick={handleConfirm}
+                  className="px-4 py-2 bg-red-500/80 hover:bg-red-500 text-white rounded-lg transition-colors"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Confirm
+                </motion.button>
+              </div>
             </div>
           </PortalModal>
         )}

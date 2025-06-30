@@ -180,7 +180,7 @@ const AiStudy: React.FC = () => {
     { id: 'flashcards', name: t('aiStudy.flashcards'), icon: FiLayers, requiresPro: true },
     { id: 'content-writer', name: t('aiStudy.contentWriter'), icon: FiPenTool, requiresPro: true },
     { id: 'citation-generator', name: t('aiStudy.citationGenerator'), icon: FiBookOpen, requiresPro: true },
-    { id: 'document-summarizer', name: 'Document Summarizer', icon: AiOutlineSearch, requiresPro: true },
+    { id: 'document-summarizer', name: t('aiStudy.documentSummarizer'), icon: AiOutlineSearch, requiresPro: true },
   ];
 
   // Function to get unique colors for each tool
@@ -423,10 +423,10 @@ const AiStudy: React.FC = () => {
             className="max-w-4xl mx-auto"
           >
             <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-teal-400 bg-clip-text text-transparent mb-6">
-              AI Study Assistant
+              {t('aiStudy.aiStudyAssistant')}
             </h1>
             <p className="text-xl md:text-2xl text-slate-300 mb-8 max-w-2xl mx-auto">
-              Enhance your learning with AI-powered tools
+              {t('aiStudy.enhanceYourLearning')}
             </p>
             
             {/* Quick Stats */}
@@ -439,50 +439,50 @@ const AiStudy: React.FC = () => {
               {/* Mobile Layout: 3 items in first row, 2 items in second row */}
               <div className="grid grid-cols-3 gap-2 mb-2 md:hidden">
                 <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-3 px-2 border border-white/10">
-                  <div className="text-sm font-bold text-cyan-400">AI-Powered</div>
-                  <div className="text-xs text-slate-300 mt-1">Solutions</div>
+                  <div className="text-sm font-bold text-cyan-400">{t('aiStudy.aiPowered')}</div>
+                  <div className="text-xs text-slate-300 mt-1">{t('aiStudy.solutions')}</div>
                 </div>
                 <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-3 px-2 border border-white/10">
-                  <div className="text-sm font-bold text-blue-400">Instant</div>
-                  <div className="text-xs text-slate-300 mt-1">Analysis</div>
+                  <div className="text-sm font-bold text-blue-400">{t('aiStudy.instant')}</div>
+                  <div className="text-xs text-slate-300 mt-1">{t('aiStudy.analysis')}</div>
                 </div>
                 <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-3 px-2 border border-white/10">
-                  <div className="text-sm font-bold text-teal-400">Step-by-Step</div>
-                  <div className="text-xs text-slate-300 mt-1">Explanations</div>
+                  <div className="text-sm font-bold text-teal-400">{t('aiStudy.stepByStep')}</div>
+                  <div className="text-xs text-slate-300 mt-1">{t('aiStudy.explanations')}</div>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 md:hidden">
                 <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-3 px-2 border border-white/10">
-                  <div className="text-sm font-bold text-emerald-400">Personalised</div>
-                  <div className="text-xs text-slate-300 mt-1">Learning</div>
+                  <div className="text-sm font-bold text-emerald-400">{t('aiStudy.personalised')}</div>
+                  <div className="text-xs text-slate-300 mt-1">{t('aiStudy.learning')}</div>
                 </div>
                 <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-3 px-2 border border-white/10">
-                  <div className="text-sm font-bold text-purple-400">Mindmap</div>
-                  <div className="text-xs text-slate-300 mt-1">Summarizer</div>
+                  <div className="text-sm font-bold text-purple-400">{t('aiStudy.mindmap')}</div>
+                  <div className="text-xs text-slate-300 mt-1">{t('aiStudy.summarizer')}</div>
                 </div>
               </div>
               
               {/* Desktop Layout: All 5 items in one row */}
               <div className="hidden md:grid md:grid-cols-5 gap-4 text-center">
                 <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-4 px-4 border border-white/10">
-                  <div className="text-lg lg:text-xl font-bold text-cyan-400">AI-Powered</div>
-                  <div className="text-xs lg:text-sm text-slate-300 mt-1">Solutions</div>
+                  <div className="text-lg lg:text-xl font-bold text-cyan-400">{t('aiStudy.aiPowered')}</div>
+                  <div className="text-xs lg:text-sm text-slate-300 mt-1">{t('aiStudy.solutions')}</div>
                 </div>
                 <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-4 px-4 border border-white/10">
-                  <div className="text-lg lg:text-xl font-bold text-blue-400">Instant</div>
-                  <div className="text-xs lg:text-sm text-slate-300 mt-1">Analysis</div>
+                  <div className="text-lg lg:text-xl font-bold text-blue-400">{t('aiStudy.instant')}</div>
+                  <div className="text-xs lg:text-sm text-slate-300 mt-1">{t('aiStudy.analysis')}</div>
                 </div>
                 <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-4 px-4 border border-white/10">
-                  <div className="text-lg lg:text-xl font-bold text-teal-400">Step-by-Step</div>
-                  <div className="text-xs lg:text-sm text-slate-300 mt-1">Explanations</div>
+                  <div className="text-lg lg:text-xl font-bold text-teal-400">{t('aiStudy.stepByStep')}</div>
+                  <div className="text-xs lg:text-sm text-slate-300 mt-1">{t('aiStudy.explanations')}</div>
                 </div>
                 <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-4 px-4 border border-white/10">
-                  <div className="text-lg lg:text-xl font-bold text-emerald-400">Personalised</div>
-                  <div className="text-xs lg:text-sm text-slate-300 mt-1">Learning</div>
+                  <div className="text-lg lg:text-xl font-bold text-emerald-400">{t('aiStudy.personalised')}</div>
+                  <div className="text-xs lg:text-sm text-slate-300 mt-1">{t('aiStudy.learning')}</div>
                 </div>
                 <div className="bg-slate-700/30 backdrop-blur-sm rounded-lg py-4 px-4 border border-white/10">
-                  <div className="text-lg lg:text-xl font-bold text-purple-400">Mindmap</div>
-                  <div className="text-xs lg:text-sm text-slate-300 mt-1">Summarizer</div>
+                  <div className="text-lg lg:text-xl font-bold text-purple-400">{t('aiStudy.mindmap')}</div>
+                  <div className="text-xs lg:text-sm text-slate-300 mt-1">{t('aiStudy.summarizer')}</div>
                 </div>
               </div>
             </motion.div>
@@ -679,11 +679,11 @@ const AiStudy: React.FC = () => {
                     <div className="bg-gradient-to-r from-yellow-400 to-orange-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                       <IconComponent icon={FaCrown} className="h-8 w-8 text-white" />
                     </div>
-                    <h3 className="text-2xl font-bold text-white mb-2">Upgrade to Pro</h3>
+                    <h3 className="text-2xl font-bold text-white mb-2">{t('aiStudy.upgradeModal.title')}</h3>
                     <p className="text-slate-300 mb-6">
                       {!isProUser 
-                        ? "Unlock unlimited AI-powered features and enhance your learning experience!"
-                        : "You've run out of responses for this month. Upgrade to get more!"
+                        ? t('aiStudy.upgradeModal.notProDescription')
+                        : t('aiStudy.upgradeModal.limitReachedDescription')
                       }
                     </p>
                     
@@ -692,25 +692,25 @@ const AiStudy: React.FC = () => {
                         <div className="bg-green-500/20 p-1 rounded-full">
                           <IconComponent icon={FaCheck} className="w-4 h-4 text-green-400" />
                         </div>
-                        <span className="text-slate-300">Generous monthly AI response allowance</span>
+                        <span className="text-slate-300">{t('aiStudy.upgradeModal.features.generousAllowance')}</span>
                       </div>
                       <div className="flex items-center space-x-3">
                         <div className="bg-green-500/20 p-1 rounded-full">
                           <IconComponent icon={FaCheck} className="h-3 w-3 text-green-400" />
                         </div>
-                        <span className="text-slate-300">Advanced AI tutoring</span>
+                        <span className="text-slate-300">{t('aiStudy.upgradeModal.features.advancedTutoring')}</span>
                       </div>
                       <div className="flex items-center space-x-3">
                         <div className="bg-green-500/20 p-1 rounded-full">
                           <IconComponent icon={FaCheck} className="h-3 w-3 text-green-400" />
                         </div>
-                        <span className="text-slate-300">Content generation & analysis</span>
+                        <span className="text-slate-300">{t('aiStudy.upgradeModal.features.contentGeneration')}</span>
                       </div>
                       <div className="flex items-center space-x-3">
                         <div className="bg-green-500/20 p-1 rounded-full">
                           <IconComponent icon={FaCheck} className="h-3 w-3 text-green-400" />
                         </div>
-                        <span className="text-slate-300">Priority support</span>
+                        <span className="text-slate-300">{t('aiStudy.upgradeModal.features.prioritySupport')}</span>
                       </div>
                     </div>
 
@@ -721,7 +721,7 @@ const AiStudy: React.FC = () => {
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
-                        Maybe Later
+                        {t('aiStudy.upgradeModal.maybeLaterBtn')}
                       </motion.button>
                       <motion.button
                         onClick={() => {
@@ -732,7 +732,7 @@ const AiStudy: React.FC = () => {
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
-                        Upgrade Now
+                        {t('aiStudy.upgradeModal.upgradeNowBtn')}
                       </motion.button>
                     </div>
                   </div>
@@ -757,7 +757,7 @@ const AiStudy: React.FC = () => {
                 <IconComponent icon={AiOutlineUpload} className="h-7 w-7 text-cyan-400" />
               </div>
               <h3 className="text-xl font-semibold text-cyan-400 mb-2">{t('aiStudy.instantHomeworkHelpTitle')}</h3>
-              <p className="text-slate-300">Upload your homework images and get instant AI-powered solutions with step-by-step explanations</p>
+              <p className="text-slate-300">{t('aiStudy.instantHomeworkHelpDescription')}</p>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -780,7 +780,7 @@ const AiStudy: React.FC = () => {
                 <IconComponent icon={AiOutlineEdit} className="h-7 w-7 text-orange-400" />
               </div>
               <h3 className="text-xl font-semibold text-orange-400 mb-2">{t('aiStudy.aiContentWriterTitle')}</h3>
-              <p className="text-slate-300">Generate high-quality essays, reports, and creative content with AI assistance and plagiarism checking</p>
+              <p className="text-slate-300">{t('aiStudy.aiContentWriterDescription')}</p>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -803,7 +803,7 @@ const AiStudy: React.FC = () => {
                 <IconComponent icon={AiOutlineRobot} className="h-7 w-7 text-emerald-400" />
               </div>
               <h3 className="text-xl font-semibold text-emerald-400 mb-2">{t('aiStudy.aiTutorChatTitle')}</h3>
-              <p className="text-slate-300">Interactive AI tutor available 24/7 for personalized learning support across all subjects</p>
+              <p className="text-slate-300">{t('aiStudy.aiTutorChatDescription')}</p>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -825,8 +825,8 @@ const AiStudy: React.FC = () => {
               <div className="bg-gradient-to-br from-purple-400/20 to-indigo-500/20 w-14 h-14 rounded-full flex items-center justify-center mb-4 border border-purple-400/30">
                 <IconComponent icon={FiCalendar} className="h-7 w-7 text-purple-400" />
               </div>
-              <h3 className="text-xl font-semibold text-purple-400 mb-2">Smart Study Planner</h3>
-              <p className="text-slate-300 mb-4">AI-powered study scheduling with personalized recommendations and progress tracking</p>
+              <h3 className="text-xl font-semibold text-purple-400 mb-2">{t('aiStudy.smartStudyPlannerTitle')}</h3>
+              <p className="text-slate-300 mb-4">{t('aiStudy.smartStudyPlannerDescription')}</p>
               <div className="flex gap-2">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
@@ -834,7 +834,7 @@ const AiStudy: React.FC = () => {
                   onClick={() => handleTabSwitch('study-planner')}
                   className="flex-1 text-purple-400 font-medium flex items-center justify-center text-sm hover:text-purple-300 transition-colors bg-purple-500/10 hover:bg-purple-500/20 px-4 py-2 rounded-lg border border-purple-500/30"
                 >
-                  Use Here
+                  {t('aiStudy.useHereBtn')}
                   <IconComponent icon={FiArrowRight} className="h-4 w-4 ml-1" />
                 </motion.button>
                 <motion.button
@@ -843,7 +843,7 @@ const AiStudy: React.FC = () => {
                   onClick={() => navigate('/dashboard?tab=study-planner')}
                   className="flex-1 text-purple-400 font-medium flex items-center justify-center text-sm hover:text-purple-300 transition-colors px-4 py-2 rounded-lg border border-purple-500/30 hover:bg-purple-500/10"
                 >
-                  Go to Planner
+                  {t('aiStudy.gotoPlannerBtn')}
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
@@ -860,14 +860,14 @@ const AiStudy: React.FC = () => {
                 <IconComponent icon={FiCheckCircle} className="h-7 w-7 text-red-400" />
               </div>
               <h3 className="text-xl font-semibold text-red-400 mb-2">{t('aiStudy.mistakeChecker')}</h3>
-              <p className="text-slate-300">AI-powered mistake detection and correction for your homework and assignments</p>
+              <p className="text-slate-300">{t('aiStudy.mistakeCheckerDescription')}</p>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => handleTabSwitch('mistake-checker')}
                 className="mt-4 text-red-400 font-medium flex items-center text-sm hover:text-red-300 transition-colors"
               >
-                Check Mistakes
+                {t('aiStudy.checkMistakesBtn')}
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
@@ -883,14 +883,14 @@ const AiStudy: React.FC = () => {
                 <IconComponent icon={FiLayers} className="h-7 w-7 text-yellow-400" />
               </div>
               <h3 className="text-xl font-semibold text-yellow-400 mb-2">{t('aiStudy.flashcards')}</h3>
-              <p className="text-slate-300">Create interactive flashcards from your notes and PDFs for effective memorization</p>
+              <p className="text-slate-300">{t('aiStudy.flashcardsDescription')}</p>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => handleTabSwitch('flashcards')}
                 className="mt-4 text-yellow-400 font-medium flex items-center text-sm hover:text-yellow-300 transition-colors"
               >
-                Create Flashcards
+                {t('aiStudy.createFlashcardsBtn')}
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
@@ -906,14 +906,14 @@ const AiStudy: React.FC = () => {
                 <IconComponent icon={FiBookOpen} className="h-7 w-7 text-indigo-400" />
               </div>
               <h3 className="text-xl font-semibold text-indigo-400 mb-2">{t('aiStudy.citationGenerator')}</h3>
-              <p className="text-slate-300">Generate proper academic citations in APA, MLA, and other formats automatically</p>
+              <p className="text-slate-300">{t('aiStudy.citationGeneratorDescription')}</p>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => handleTabSwitch('citation-generator')}
                 className="mt-4 text-indigo-400 font-medium flex items-center text-sm hover:text-indigo-300 transition-colors"
               >
-                Generate Citations
+                {t('aiStudy.generateCitationsBtn')}
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
@@ -928,15 +928,15 @@ const AiStudy: React.FC = () => {
               <div className="bg-gradient-to-br from-green-400/20 to-emerald-500/20 w-14 h-14 rounded-full flex items-center justify-center mb-4 border border-green-400/30">
                 <IconComponent icon={AiOutlineSearch} className="h-7 w-7 text-green-400" />
               </div>
-              <h3 className="text-xl font-semibold text-green-400 mb-2">Document Summarizer</h3>
-              <p className="text-slate-300">AI-powered document analysis and summarization with interactive mind maps</p>
+              <h3 className="text-xl font-semibold text-green-400 mb-2">{t('aiStudy.documentSummarizer')}</h3>
+              <p className="text-slate-300">{t('aiStudy.documentSummarizerDescription')}</p>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => handleTabSwitch('document-summarizer')}
                 className="mt-4 text-green-400 font-medium flex items-center text-sm hover:text-green-300 transition-colors"
               >
-                Summarize Documents
+                {t('aiStudy.summarizeDocumentsBtn')}
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>

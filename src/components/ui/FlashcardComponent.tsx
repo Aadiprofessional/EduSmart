@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AiOutlineBulb, AiOutlineLoading3Quarters, AiOutlineFolder, AiOutlinePlus } from 'react-icons/ai';
@@ -6,15 +6,17 @@ import { FiLayers, FiBookmark, FiTrash2, FiUpload, FiImage, FiFile, FiEdit3, FiF
 import IconComponent from './IconComponent';
 import { useResponseCheck, ResponseUpgradeModal } from '../../utils/responseChecker';
 import { useNotification } from '../../utils/NotificationContext';
+import { useLanguage } from '../../utils/LanguageContext';
+import { flashcardService } from '../../services/flashcardService';
 
-interface Flashcard {
+export interface Flashcard {
   id: string;
   question: string;
   answer: string;
   mastered: boolean;
 }
 
-interface FlashcardSet {
+export interface FlashcardSet {
   id: string;
   name: string;
   description: string;
@@ -26,6 +28,7 @@ interface FlashcardSet {
 
 interface FlashcardComponentProps {
   className?: string;
+  userId?: string;
   onGenerateFromNotes?: () => Promise<any>;
   onGenerateFromPDF?: (file: File) => Promise<any>;
 }
@@ -96,44 +99,21 @@ const PortalModal: React.FC<PortalModalProps> = ({ isOpen, onClose, children, cl
   );
 };
 
-const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '', onGenerateFromNotes, onGenerateFromPDF }) => {
+const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ 
+  className = '', 
+  userId = 'b846c59e-7422-4be3-a4f6-dd20145e8400', // Default user ID for testing
+  onGenerateFromNotes, 
+  onGenerateFromPDF 
+}) => {
+  const { t } = useLanguage();
   // Response checking state
   const { checkAndUseResponse } = useResponseCheck();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState('');
-  const { showError, showWarning } = useNotification();
+  const { showError, showWarning, showSuccess } = useNotification();
 
-  const [flashcardSets, setFlashcardSets] = useState<FlashcardSet[]>([
-    {
-      id: '1',
-      name: 'General Knowledge',
-      description: 'Basic science and math concepts',
-      createdAt: new Date(),
-      source: 'manual',
-      flashcards: [
-        {
-          id: '1',
-          question: 'What is photosynthesis?',
-          answer: 'The process by which green plants and some other organisms use sunlight to synthesize nutrients from carbon dioxide and water.',
-          mastered: false
-        },
-        {
-          id: '2',
-          question: 'What is Newton\'s First Law?',
-          answer: 'An object at rest stays at rest and an object in motion stays in motion with the same speed and in the same direction unless acted upon by an unbalanced force.',
-          mastered: true
-        },
-        {
-          id: '3',
-          question: 'What is the Pythagorean theorem?',
-          answer: 'In a right-angled triangle, the square of the hypotenuse equals the sum of squares of the other two sides: a² + b² = c².',
-          mastered: false
-        }
-      ]
-    }
-  ]);
-
-  const [activeSetId, setActiveSetId] = useState('1');
+  const [flashcardSets, setFlashcardSets] = useState<FlashcardSet[]>([]);
+  const [activeSetId, setActiveSetId] = useState('');
   const [currentFlashcard, setCurrentFlashcard] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [newFlashcard, setNewFlashcard] = useState({ question: '', answer: '' });
@@ -143,10 +123,50 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
   const [newSetDescription, setNewSetDescription] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Add states for AI generation modal
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [isGeneratingFromPrompt, setIsGeneratingFromPrompt] = useState(false);
 
   const activeSet = flashcardSets.find(set => set.id === activeSetId) || flashcardSets[0];
   const flashcards = activeSet?.flashcards || [];
+
+  // Function to find first unmarked card index
+  const findFirstUnmarkedCard = (cards: Flashcard[]): number => {
+    const unmarkedIndex = cards.findIndex(card => !card.mastered);
+    return unmarkedIndex >= 0 ? unmarkedIndex : 0; // If all are mastered, start from 0
+  };
+
+  // Load flashcard sets on component mount
+  useEffect(() => {
+    if (userId) {
+      console.log('Loading flashcard sets for user:', userId);
+      loadFlashcardSets();
+    }
+  }, [userId]);
+
+  const loadFlashcardSets = async () => {
+    try {
+      setIsLoading(true);
+      console.log('Fetching flashcard sets from API...');
+      const sets = await flashcardService.getUserFlashcardSets(userId);
+      console.log('Received flashcard sets:', sets);
+      setFlashcardSets(sets);
+      if (sets.length > 0 && !activeSetId) {
+        const firstSet = sets[0];
+        setActiveSetId(firstSet.id);
+        setCurrentFlashcard(findFirstUnmarkedCard(firstSet.flashcards));
+      }
+    } catch (error) {
+      console.error('Error loading flashcard sets:', error);
+      showError('Failed to load flashcard sets');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const buttonVariants = {
     hover: { scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.1)" },
@@ -289,33 +309,34 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
         throw new Error('No valid flashcards generated from content');
       }
 
-      // Create new flashcard set
-      const newFlashcards: Flashcard[] = flashcardsData.map((item: any, index: number) => ({
-        id: `${Date.now()}-${index}`,
-        question: item.question || `Question ${index + 1}`,
-        answer: item.answer || `Answer ${index + 1}`,
+      // Create new flashcard set using API
+      const newFlashcards = flashcardsData.map((item: any) => ({
+        question: item.question || 'Question',
+        answer: item.answer || 'Answer',
         mastered: false
       }));
 
-      const newSet: FlashcardSet = {
-        id: Date.now().toString(),
-        name: `Flashcards from ${fileName}`,
-        description: `Generated from uploaded file: ${fileName}`,
-        createdAt: new Date(),
-        source: 'file-upload',
-        sourceFile: fileName,
-        flashcards: newFlashcards
-      };
+      const newSet = await flashcardService.createFlashcardSet(
+        userId,
+        `Flashcards from ${fileName}`,
+        `Generated from uploaded file: ${fileName}`,
+        'file-upload',
+        fileName,
+        newFlashcards
+      );
 
+      // Update local state
       setFlashcardSets(prev => [newSet, ...prev]);
       setActiveSetId(newSet.id);
       setCurrentFlashcard(0);
       setShowAnswer(false);
+      showSuccess(`Created flashcard set with ${newFlashcards.length} cards`);
 
       console.log('Generated flashcards:', newFlashcards);
       return newFlashcards;
     } catch (error) {
       console.error('Error generating flashcards:', error);
+      showError(error instanceof Error ? error.message : 'Failed to generate flashcards');
       throw error;
     } finally {
       setIsGenerating(false);
@@ -353,6 +374,11 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
 
   // Generate flashcards from general topics
   const generateFlashcardsFromTopics = async () => {
+    setShowAIModal(true);
+  };
+
+  // Generate flashcards from custom prompt
+  const generateFlashcardsFromPrompt = async (prompt: string) => {
     // Check responses before generating flashcards
     const responseResult = await checkAndUseResponse({
       responseType: 'flashcard_ai_generation',
@@ -365,7 +391,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
     }
 
     try {
-      setIsGenerating(true);
+      setIsGeneratingFromPrompt(true);
 
       const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
@@ -381,7 +407,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
               content: [
                 {
                   type: "text", 
-                  text: "You are an AI assistant that creates educational flashcards. Generate 8-12 high-quality flashcards covering important concepts in science, mathematics, history, and literature. Each flashcard should have a clear question and a comprehensive answer. Format your response as a JSON array with objects containing 'question' and 'answer' fields."
+                  text: "You are an AI assistant that creates educational flashcards. Generate 8-15 high-quality flashcards based on the provided topic or prompt. Each flashcard should have a clear question and a comprehensive answer. Format your response as a JSON array with objects containing 'question' and 'answer' fields. Make sure the JSON is valid and properly formatted."
                 }
               ]
             },
@@ -390,7 +416,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
               content: [
                 {
                   type: "text",
-                  text: "Please generate educational flashcards covering important concepts across different subjects. Include topics like basic science principles, mathematical concepts, historical events, and literary terms. Make sure the questions are clear and the answers are informative but concise."
+                  text: `Please generate educational flashcards for the following topic: "${prompt}". Create questions that test understanding of key concepts, definitions, important facts, and practical applications related to this topic. Make sure each question is clear and each answer is informative but concise.`
                 }
               ]
             }
@@ -406,7 +432,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
       const data = await response.json();
       const content_text = data.choices[0].message.content;
       
-      // Try to extract JSON from the response
+      // Parse AI response
       let flashcardsData;
       try {
         const jsonMatch = content_text.match(/\[[\s\S]*\]/);
@@ -417,43 +443,61 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
         }
       } catch (parseError) {
         console.error('Failed to parse JSON:', parseError);
-        throw new Error('Failed to parse generated flashcards');
+        showError('Failed to parse AI response');
+        return;
       }
 
       if (!Array.isArray(flashcardsData) || flashcardsData.length === 0) {
         throw new Error('No valid flashcards generated');
       }
 
-      // Create new flashcard set
-      const newFlashcards: Flashcard[] = flashcardsData.map((item: any, index: number) => ({
-        id: `${Date.now()}-${index}`,
-        question: item.question || `Question ${index + 1}`,
-        answer: item.answer || `Answer ${index + 1}`,
+      // Create new flashcard set using API
+      const newFlashcards = flashcardsData.map((item: any) => ({
+        question: item.question || 'Question',
+        answer: item.answer || 'Answer',
         mastered: false
       }));
 
-      const newSet: FlashcardSet = {
-        id: Date.now().toString(),
-        name: 'AI Generated Study Set',
-        description: 'Generated flashcards covering various academic topics',
-        createdAt: new Date(),
-        source: 'ai-generated',
-        flashcards: newFlashcards
-      };
+      const newSet = await flashcardService.createFlashcardSet(
+        userId,
+        `${prompt} - Flashcards`,
+        `AI generated flashcards for: ${prompt}`,
+        'ai-generated',
+        undefined,
+        newFlashcards
+      );
 
+      // Update local state
       setFlashcardSets(prev => [newSet, ...prev]);
       setActiveSetId(newSet.id);
       setCurrentFlashcard(0);
       setShowAnswer(false);
+      setShowAIModal(false);
+      setAiPrompt('');
+      showSuccess(`Created flashcard set with ${newFlashcards.length} cards`);
 
       console.log('Generated flashcards:', newFlashcards);
     } catch (error) {
       console.error('Error generating flashcards:', error);
       showError('Failed to generate flashcards. Please try again.');
     } finally {
-      setIsGenerating(false);
+      setIsGeneratingFromPrompt(false);
     }
   };
+
+  // Quick topic suggestions
+  const quickTopics = [
+    'JavaScript Fundamentals',
+    'React Hooks',
+    'World History',
+    'Biology Cell Structure',
+    'Mathematics Algebra',
+    'Chemistry Periodic Table',
+    'Physics Mechanics',
+    'Computer Science Algorithms',
+    'English Grammar',
+    'Psychology Basics'
+  ];
 
   const handleNextFlashcard = () => {
     setShowAnswer(false);
@@ -469,98 +513,180 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
     );
   };
 
-  const toggleFlashcardMastery = () => {
-    setFlashcardSets(prev => 
-      prev.map(set => 
-        set.id === activeSetId 
-          ? {
-              ...set,
-              flashcards: set.flashcards.map((card, i) => 
-                i === currentFlashcard ? {...card, mastered: !card.mastered} : card
-              )
-            }
-          : set
-      )
-    );
+  const toggleFlashcardMastery = async () => {
+    if (!flashcards[currentFlashcard]) return;
+
+    try {
+      const currentCard = flashcards[currentFlashcard];
+      const updatedCard = await flashcardService.updateFlashcard(
+        userId,
+        currentCard.id,
+        undefined,
+        undefined,
+        !currentCard.mastered
+      );
+
+      // Update local state
+      setFlashcardSets(prev => 
+        prev.map(set => 
+          set.id === activeSetId 
+            ? {
+                ...set,
+                flashcards: set.flashcards.map((card) => 
+                  card.id === currentCard.id ? updatedCard : card
+                )
+              }
+            : set
+        )
+      );
+    } catch (error) {
+      console.error('Error updating flashcard mastery:', error);
+      showError('Failed to update flashcard');
+    }
   };
 
-  const handleAddFlashcard = (e: React.FormEvent) => {
+  const handleAddFlashcard = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!newFlashcard.question.trim() || !newFlashcard.answer.trim()) return;
+    if (!activeSetId) return;
     
-    const newCard: Flashcard = {
-      id: Date.now().toString(),
-      question: newFlashcard.question,
-      answer: newFlashcard.answer,
-      mastered: false
-    };
-    
-    setFlashcardSets(prev => 
-      prev.map(set => 
-        set.id === activeSetId 
-          ? { ...set, flashcards: [...set.flashcards, newCard] }
-          : set
-      )
-    );
-    
-    setNewFlashcard({ question: '', answer: '' });
-    setCurrentFlashcard(flashcards.length);
-  };
-
-  const deleteFlashcard = (id: string) => {
-    setFlashcardSets(prev => 
-      prev.map(set => 
-        set.id === activeSetId 
-          ? { ...set, flashcards: set.flashcards.filter(card => card.id !== id) }
-          : set
-      )
-    );
-    
-    if (currentFlashcard >= flashcards.length - 1) {
-      setCurrentFlashcard(Math.max(0, flashcards.length - 2));
+    try {
+      const newCard = await flashcardService.addFlashcard(
+        userId,
+        activeSetId,
+        newFlashcard.question,
+        newFlashcard.answer,
+        false
+      );
+      
+      // Update local state
+      setFlashcardSets(prev => 
+        prev.map(set => 
+          set.id === activeSetId 
+            ? { ...set, flashcards: [...set.flashcards, newCard] }
+            : set
+        )
+      );
+      
+      setNewFlashcard({ question: '', answer: '' });
+      setCurrentFlashcard(flashcards.length);
+      showSuccess('Flashcard added successfully');
+    } catch (error) {
+      console.error('Error adding flashcard:', error);
+      showError('Failed to add flashcard');
     }
   };
 
-  const deleteFlashcardSet = (setId: string) => {
+  const deleteFlashcard = async (id: string) => {
+    // Add confirmation dialog
+    const confirmed = window.confirm('Are you sure you want to delete this flashcard? This action cannot be undone.');
+    if (!confirmed) return;
+
+    try {
+      await flashcardService.deleteFlashcard(userId, id);
+      
+      // Update local state
+      setFlashcardSets(prev => 
+        prev.map(set => 
+          set.id === activeSetId 
+            ? { ...set, flashcards: set.flashcards.filter(card => card.id !== id) }
+            : set
+        )
+      );
+      
+      // Adjust current flashcard index if needed
+      const updatedFlashcards = flashcards.filter(card => card.id !== id);
+      if (currentFlashcard >= updatedFlashcards.length) {
+        setCurrentFlashcard(Math.max(0, updatedFlashcards.length - 1));
+      }
+      
+      // Reset answer state
+      setShowAnswer(false);
+      
+      showSuccess('Flashcard deleted successfully');
+    } catch (error) {
+      console.error('Error deleting flashcard:', error);
+      showError('Failed to delete flashcard');
+    }
+  };
+
+  const deleteFlashcardSet = async (setId: string) => {
     if (flashcardSets.length <= 1) return; // Don't delete the last set
     
-    setFlashcardSets(prev => prev.filter(set => set.id !== setId));
+    // Add confirmation dialog
+    const setToDelete = flashcardSets.find(set => set.id === setId);
+    const confirmed = window.confirm(`Are you sure you want to delete the flashcard set "${setToDelete?.name}"? This will delete all ${setToDelete?.flashcards.length || 0} flashcards in this set. This action cannot be undone.`);
+    if (!confirmed) return;
     
-    if (setId === activeSetId) {
-      const remainingSets = flashcardSets.filter(set => set.id !== setId);
-      if (remainingSets.length > 0) {
-        setActiveSetId(remainingSets[0].id);
-        setCurrentFlashcard(0);
+    try {
+      await flashcardService.deleteFlashcardSet(userId, setId);
+      
+      // Update local state
+      setFlashcardSets(prev => prev.filter(set => set.id !== setId));
+      
+      if (setId === activeSetId) {
+        const remainingSets = flashcardSets.filter(set => set.id !== setId);
+        if (remainingSets.length > 0) {
+          setActiveSetId(remainingSets[0].id);
+          setCurrentFlashcard(0);
+          setShowAnswer(false);
+        }
       }
+      showSuccess('Flashcard set deleted successfully');
+    } catch (error) {
+      console.error('Error deleting flashcard set:', error);
+      showError('Failed to delete flashcard set');
     }
   };
 
-  const createNewSet = () => {
+  const createNewSet = async () => {
     if (!newSetName.trim()) return;
     
-    const newSet: FlashcardSet = {
-      id: Date.now().toString(),
-      name: newSetName,
-      description: newSetDescription,
-      createdAt: new Date(),
-      source: 'manual',
-      flashcards: []
-    };
-    
-    setFlashcardSets(prev => [newSet, ...prev]);
-    setActiveSetId(newSet.id);
-    setCurrentFlashcard(0);
-    setShowAnswer(false);
-    setShowCreateSet(false);
-    setNewSetName('');
-    setNewSetDescription('');
+    try {
+      const newSet = await flashcardService.createFlashcardSet(
+        userId,
+        newSetName,
+        newSetDescription,
+        'manual'
+      );
+      
+      // Update local state
+      setFlashcardSets(prev => [newSet, ...prev]);
+      setActiveSetId(newSet.id);
+      setCurrentFlashcard(0);
+      setShowAnswer(false);
+      setShowCreateSet(false);
+      setNewSetName('');
+      setNewSetDescription('');
+      showSuccess('Flashcard set created successfully');
+    } catch (error) {
+      console.error('Error creating flashcard set:', error);
+      showError('Failed to create flashcard set');
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className={`bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-white/10 ${className}`}>
+        <div className="flex items-center justify-center py-8">
+          <motion.div
+            className="w-8 h-8 mr-3"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          >
+            <IconComponent icon={AiOutlineLoading3Quarters} className="h-8 w-8 text-cyan-400" />
+          </motion.div>
+          <span className="text-slate-300">Loading flashcard sets...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-white/10 ${className}`}>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-semibold text-cyan-400">Flashcards</h2>
+        <h2 className="text-2xl font-semibold text-cyan-400">{t('aiStudy.flashcards')}</h2>
         <motion.button
           onClick={() => setShowCreateSet(true)}
           className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-4 py-2 rounded-lg flex items-center font-medium"
@@ -568,7 +694,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
           whileTap={{ scale: 0.95 }}
         >
           <IconComponent icon={FiFolderPlus} className="mr-2 h-4 w-4" />
-          New Set
+          {t('aiStudy.newSet')}
         </motion.button>
       </div>
 
@@ -576,20 +702,20 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
       <div className="mb-6">
         <div className="flex items-center space-x-2 mb-3">
           <IconComponent icon={AiOutlineFolder} className="h-5 w-5 text-cyan-400" />
-          <span className="text-lg font-medium text-blue-400">Study Sets</span>
+          <span className="text-lg font-medium text-blue-400">{t('aiStudy.studySets')}</span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {flashcardSets.map((set) => (
             <motion.div
               key={set.id}
-              className={`p-4 rounded-lg cursor-pointer transition-all border ${
+              className={`group p-4 rounded-lg cursor-pointer transition-all border ${
                 set.id === activeSetId
                   ? 'bg-cyan-500/20 border-cyan-500/30 text-cyan-400'
                   : 'bg-slate-600/30 border-white/10 text-slate-300 hover:bg-slate-600/50'
               }`}
               onClick={() => {
                 setActiveSetId(set.id);
-                setCurrentFlashcard(0);
+                setCurrentFlashcard(findFirstUnmarkedCard(set.flashcards));
                 setShowAnswer(false);
               }}
               whileHover={{ scale: 1.02 }}
@@ -607,11 +733,12 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
                       e.stopPropagation();
                       deleteFlashcardSet(set.id);
                     }}
-                    className="p-1 text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200"
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
+                    title={`Delete "${set.name}" flashcard set`}
                   >
-                    <IconComponent icon={FiTrash2} className="h-3 w-3" />
+                    <IconComponent icon={FiTrash2} className="h-4 w-4" />
                   </motion.button>
                 )}
               </div>
@@ -627,7 +754,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
           className="bg-slate-700/50 backdrop-blur-sm border border-white/10 rounded-xl p-6 shadow-sm"
         >
           <h3 className="text-lg font-medium text-blue-400 mb-4 flex items-center">
-            <IconComponent icon={FiLayers} className="mr-2" /> Study Cards
+            <IconComponent icon={FiLayers} className="mr-2" /> {t('aiStudy.studyCards')}
           </h3>
           
           {flashcards.length > 0 ? (
@@ -636,11 +763,11 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
                 <div className="text-center">
                   <div className="mb-4">
                     <span className="text-sm text-cyan-400 font-medium">
-                      Card {currentFlashcard + 1} of {flashcards.length}
+                      {t('aiStudy.card')} {currentFlashcard + 1} of {flashcards.length}
                     </span>
                     {flashcards[currentFlashcard]?.mastered && (
                       <span className="ml-2 bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full text-xs border border-emerald-500/30">
-                        Mastered
+                        {t('aiStudy.mastered')}
                       </span>
                     )}
                   </div>
@@ -672,7 +799,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
                         onClick={() => setShowAnswer(true)}
                         className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-6 py-2 rounded-lg font-medium"
                       >
-                        Show Answer
+                        {t('aiStudy.showAnswer')}
                       </motion.button>
                     ) : (
                       <div className="flex space-x-2">
@@ -687,7 +814,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
                               : 'bg-gradient-to-r from-emerald-500 to-green-500 text-white'
                           }`}
                         >
-                          {flashcards[currentFlashcard]?.mastered ? 'Unmark' : 'Mark as Mastered'}
+                          {flashcards[currentFlashcard]?.mastered ? t('aiStudy.unmark') : t('aiStudy.markAsMastered')}
                         </motion.button>
                         
                         <motion.button
@@ -697,7 +824,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
                           onClick={() => setShowAnswer(false)}
                           className="bg-slate-600/50 text-slate-300 px-4 py-2 rounded-lg font-medium border border-white/10"
                         >
-                          Hide Answer
+                          {t('aiStudy.hideAnswer')}
                         </motion.button>
                       </div>
                     )}
@@ -716,7 +843,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
-                  Previous
+                  {t('aiStudy.previous')}
                 </motion.button>
                 
                 <motion.button
@@ -727,7 +854,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
                   className="bg-red-500/20 border border-red-500/30 text-red-400 px-4 py-2 rounded-lg flex items-center backdrop-blur-sm hover:bg-red-500/30"
                 >
                   <IconComponent icon={FiTrash2} className="h-4 w-4 mr-1" />
-                  Delete
+                  {t('aiStudy.delete')}
                 </motion.button>
                 
                 <motion.button
@@ -737,7 +864,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
                   onClick={handleNextFlashcard}
                   className="bg-slate-700/50 border border-white/10 text-slate-300 px-4 py-2 rounded-lg flex items-center backdrop-blur-sm"
                 >
-                  Next
+                  {t('aiStudy.next')}
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
@@ -747,8 +874,8 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
           ) : (
             <div className="text-center py-8 text-slate-400">
               <IconComponent icon={FiLayers} className="mx-auto text-4xl mb-2" />
-              <p>No flashcards in this set</p>
-              <p className="text-sm mt-1">Create your first flashcard to start studying</p>
+              <p>{t('aiStudy.noFlashcardsInThisSet')}</p>
+              <p className="text-sm mt-1">{t('aiStudy.createYourFirstFlashcardToStartStudying')}</p>
             </div>
           )}
         </motion.div>
@@ -759,18 +886,18 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
           className="bg-slate-700/50 backdrop-blur-sm border border-white/10 rounded-xl p-6 shadow-sm"
         >
           <h3 className="text-lg font-medium text-blue-400 mb-4 flex items-center">
-            <IconComponent icon={FiBookmark} className="mr-2" /> Create Flashcards
+            <IconComponent icon={FiBookmark} className="mr-2" /> {t('aiStudy.createFlashcards')}
           </h3>
           
           <div className="space-y-3 mb-4">
             <motion.button 
               onClick={generateFlashcardsFromTopics}
-              disabled={isGenerating}
+              disabled={isGenerating || isGeneratingFromPrompt}
               className="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg flex items-center justify-center font-medium disabled:opacity-50"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              {isGenerating ? (
+              {(isGenerating || isGeneratingFromPrompt) ? (
                 <motion.div
                   className="w-5 h-5 mr-2"
                   animate={{ rotate: 360 }}
@@ -781,7 +908,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
               ) : (
                 <IconComponent icon={AiOutlineBulb} className="mr-2" />
               )}
-              Generate from AI
+              {t('aiStudy.generateFromAI')}
             </motion.button>
             
             <motion.button 
@@ -802,7 +929,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
               ) : (
                 <IconComponent icon={FiUpload} className="mr-2" />
               )}
-              Upload File (PDF, Image, Doc)
+              {t('aiStudy.uploadFilePDFImageDoc')}
             </motion.button>
             
             <input
@@ -818,17 +945,17 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-white/20"></div>
             </div>
-            <span className="relative bg-slate-800 px-2 text-sm text-slate-400">or create manually</span>
+            <span className="relative bg-slate-800 px-2 text-sm text-slate-400">{t('aiStudy.orCreateManually')}</span>
           </div>
           
           <form onSubmit={handleAddFlashcard}>
             <div className="mb-3">
               <label className="block text-slate-300 mb-1 text-sm font-medium">
-                Question
+                {t('aiStudy.question')}
               </label>
               <textarea
                 className="w-full p-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none h-20 text-slate-200 placeholder-slate-400"
-                placeholder="Enter your question here"
+                placeholder={t('aiStudy.enterYourQuestionHere')}
                 value={newFlashcard.question}
                 onChange={(e) => setNewFlashcard({...newFlashcard, question: e.target.value})}
               />
@@ -836,11 +963,11 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
             
             <div className="mb-4">
               <label className="block text-slate-300 mb-1 text-sm font-medium">
-                Answer
+                {t('aiStudy.answer')}
               </label>
               <textarea
                 className="w-full p-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none h-20 text-slate-200 placeholder-slate-400"
-                placeholder="Enter the answer here"
+                placeholder={t('aiStudy.enterTheAnswerHere')}
                 value={newFlashcard.answer}
                 onChange={(e) => setNewFlashcard({...newFlashcard, answer: e.target.value})}
               />
@@ -853,7 +980,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
               whileTap="tap"
               className="w-full bg-gradient-to-r from-emerald-500 to-green-500 text-white py-2 rounded-lg font-medium"
             >
-              Add Flashcard
+              {t('aiStudy.addFlashcard')}
             </motion.button>
           </form>
         </motion.div>
@@ -865,31 +992,31 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
         onClose={() => setShowCreateSet(false)}
         className="bg-slate-800 rounded-xl p-6 max-w-md w-full mx-4 border border-white/10"
       >
-        <h3 className="text-xl font-semibold text-cyan-400 mb-4">Create New Flashcard Set</h3>
+        <h3 className="text-xl font-semibold text-cyan-400 mb-4">{t('aiStudy.createNewFlashcardSet')}</h3>
         
         <div className="space-y-4">
           <div>
             <label className="block text-slate-300 mb-1 text-sm font-medium">
-              Set Name
+              {t('aiStudy.setName')}
             </label>
             <input
               type="text"
               value={newSetName}
               onChange={(e) => setNewSetName(e.target.value)}
               className="w-full p-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-slate-200 placeholder-slate-400"
-              placeholder="Enter set name"
+              placeholder={t('aiStudy.enterSetName')}
             />
           </div>
           
           <div>
             <label className="block text-slate-300 mb-1 text-sm font-medium">
-              Description (optional)
+              {t('aiStudy.descriptionOptional')}
             </label>
             <textarea
               value={newSetDescription}
               onChange={(e) => setNewSetDescription(e.target.value)}
               className="w-full p-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none h-20 text-slate-200 placeholder-slate-400"
-              placeholder="Enter description"
+              placeholder={t('aiStudy.enterDescription')}
             />
           </div>
           
@@ -901,7 +1028,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              Create Set
+              {t('aiStudy.createSet')}
             </motion.button>
             
             <motion.button
@@ -910,7 +1037,88 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({ className = '',
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              Cancel
+              {t('aiStudy.cancel')}
+            </motion.button>
+          </div>
+        </div>
+      </PortalModal>
+      
+      {/* AI Generation Modal */}
+      <PortalModal 
+        isOpen={showAIModal}
+        onClose={() => {
+          setShowAIModal(false);
+          setAiPrompt('');
+        }}
+        className="bg-slate-800 rounded-xl p-6 max-w-2xl w-full mx-4 border border-white/10"
+      >
+        <h3 className="text-xl font-semibold text-cyan-400 mb-4 flex items-center">
+          <IconComponent icon={AiOutlineBulb} className="mr-2" />
+          Generate AI Flashcards
+        </h3>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-slate-300 mb-2 text-sm font-medium">
+              What topic would you like to create flashcards for?
+            </label>
+            <textarea
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              className="w-full p-3 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none h-24 text-slate-200 placeholder-slate-400"
+              placeholder="Enter a topic, subject, or specific area you want to study (e.g., 'React Hooks', 'World War 2', 'Calculus derivatives')..."
+            />
+          </div>
+          
+          <div>
+            <p className="text-slate-300 mb-3 text-sm font-medium">Or choose from quick topics:</p>
+            <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+              {quickTopics.map((topic) => (
+                <motion.button
+                  key={topic}
+                  onClick={() => setAiPrompt(topic)}
+                  className="p-2 bg-slate-600/30 border border-white/10 rounded-lg text-left text-slate-300 hover:bg-slate-600/50 hover:border-cyan-500/30 transition-all text-sm"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {topic}
+                </motion.button>
+              ))}
+            </div>
+          </div>
+          
+          <div className="flex space-x-3">
+            <motion.button
+              onClick={() => generateFlashcardsFromPrompt(aiPrompt)}
+              disabled={!aiPrompt.trim() || isGeneratingFromPrompt}
+              className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 text-white py-2 rounded-lg font-medium disabled:opacity-50 flex items-center justify-center"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              {isGeneratingFromPrompt ? (
+                <motion.div
+                  className="w-5 h-5 mr-2"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                >
+                  <IconComponent icon={AiOutlineLoading3Quarters} className="h-5 w-5" />
+                </motion.div>
+              ) : (
+                <IconComponent icon={AiOutlineBulb} className="mr-2 h-4 w-4" />
+              )}
+              Generate Flashcards
+            </motion.button>
+            
+            <motion.button
+              onClick={() => {
+                setShowAIModal(false);
+                setAiPrompt('');
+              }}
+              className="flex-1 bg-slate-600/50 text-slate-300 py-2 rounded-lg font-medium border border-white/10"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              {t('aiStudy.cancel')}
             </motion.button>
           </div>
         </div>

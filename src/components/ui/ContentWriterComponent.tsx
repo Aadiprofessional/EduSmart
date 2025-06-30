@@ -10,6 +10,7 @@ import { BsQuote } from 'react-icons/bs';
 import IconComponent from './IconComponent';
 import { useResponseCheck, ResponseUpgradeModal } from '../../utils/responseChecker';
 import { useNotification } from '../../utils/NotificationContext';
+import { useLanguage } from '../../utils/LanguageContext';
 
 // Import markdown and math libraries
 import ReactMarkdown from 'react-markdown';
@@ -87,6 +88,7 @@ const PortalModal: React.FC<PortalModalProps> = ({ isOpen, onClose, children, cl
 };
 
 const ContentWriterComponent: React.FC = () => {
+  const { t } = useLanguage();
   // Preprocess LaTeX for react-markdown
   const preprocessLaTeX = (content: string) => {
     return content
@@ -241,12 +243,12 @@ const ContentWriterComponent: React.FC = () => {
   };
 
   const templates = [
-    { id: 'college-app', name: 'College Application Essay', icon: FiBook },
-    { id: 'cover-letter', name: 'Cover Letter', icon: FiFileText },
-    { id: 'recommendation', name: 'Recommendation Letter', icon: FiMail },
-    { id: 'research-paper', name: 'Research Paper', icon: FiClipboard },
-    { id: 'scholarship', name: 'Scholarship Application', icon: FiClipboard },
-    { id: 'personal-statement', name: 'Personal Statement', icon: FiFileText },
+    { id: 'college-app', name: t('aiStudy.collegeApplicationEssay'), icon: FiBook },
+    { id: 'cover-letter', name: t('aiStudy.coverLetter'), icon: FiMail },
+    { id: 'recommendation', name: t('aiStudy.recommendationLetters'), icon: FiMail },
+    { id: 'research-paper', name: t('aiStudy.researchPaper'), icon: FiClipboard },
+    { id: 'scholarship', name: t('aiStudy.scholarshipApplication'), icon: FiClipboard },
+    { id: 'personal-statement', name: t('aiStudy.personalStatement'), icon: FiFileText },
   ];
 
   // Interface for parsed result
@@ -648,7 +650,7 @@ Create professional, academic-quality content that meets the request requirement
     let templatePrompt = '';
     switch(templateId) {
       case 'college-app':
-        templatePrompt = 'Write a compelling college application essay about my passion for computer science and how it has shaped my future goals.';
+        templatePrompt = t('aiStudy.collegeApplicationTemplate');
         break;
       case 'cover-letter':
         templatePrompt = 'Create a professional cover letter for an internship position at a tech company highlighting my skills in programming and teamwork.';
@@ -657,7 +659,7 @@ Create professional, academic-quality content that meets the request requirement
         templatePrompt = 'Write a recommendation letter for a student applying to graduate school, emphasizing their research abilities and academic achievements.';
         break;
       case 'research-paper':
-        templatePrompt = 'Generate an outline for a research paper on the impact of artificial intelligence in education.';
+        templatePrompt = t('aiStudy.researchPaperTemplate');
         break;
       case 'scholarship':
         templatePrompt = 'Create a scholarship application essay discussing my financial needs and academic achievements.';
@@ -1233,11 +1235,11 @@ ${prompt}`
         {/* Header Section */}
         <motion.div variants={itemVariants} className="mb-6">
           <h1 className="text-3xl font-bold text-cyan-400">
-            AI Content Writer
-            <span className="ml-2 text-lg font-normal text-slate-300">for Students</span>
+            {t('aiStudy.aiContentWriter')}
+            <span className="ml-2 text-lg font-normal text-slate-300">{t('aiStudy.forStudents')}</span>
           </h1>
           <p className="text-slate-400 mt-1">
-            Generate professional content for applications, essays, letters, and more.
+            {t('aiStudy.generateProfessionalContentForApplicationsEssaysLettersAndMore')}
           </p>
         </motion.div>
 
@@ -1274,7 +1276,7 @@ ${prompt}`
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Describe what you want to generate... For example: Write a compelling college application essay about my passion for computer science."
+                placeholder={t('aiStudy.contentWriterPlaceholder')}
                 className="w-full h-40 p-4 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 placeholder-slate-400 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none"
               />
               <motion.button
@@ -1288,12 +1290,12 @@ ${prompt}`
                 {isGenerating ? (
                   <>
                     <IconComponent icon={FiRotateCw} className="animate-spin mr-2" /> 
-                    Generating...
+                    {t('aiStudy.generating')}
                   </>
                 ) : (
                   <>
                     <IconComponent icon={AiOutlineBulb} className="mr-2" /> 
-                    Generate Content
+                    {t('aiStudy.generateContent')}
                   </>
                 )}
               </motion.button>
@@ -1307,7 +1309,7 @@ ${prompt}`
                 className="mt-3 w-full bg-slate-600/50 backdrop-blur-sm border border-white/10 text-slate-300 font-medium py-2 px-6 rounded-lg flex items-center justify-center hover:bg-slate-500/50 transition-colors"
               >
                 <IconComponent icon={AiOutlineHistory} className="mr-2" /> 
-                View History
+                {t('aiStudy.viewHistory')}
               </motion.button>
             </div>
 
@@ -1319,19 +1321,19 @@ ${prompt}`
               <ul className="space-y-3 text-slate-300">
                 <li className="flex items-start">
                   <span className="bg-teal-500/20 text-teal-400 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 text-xs border border-teal-500/30">1</span>
-                  <span>Be specific in your prompt for better results</span>
+                  <span>{t('aiStudy.beSpecificInYourPromptForBetterResults')}</span>
                 </li>
                 <li className="flex items-start">
                   <span className="bg-teal-500/20 text-teal-400 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 text-xs border border-teal-500/30">2</span>
-                  <span>Edit the generated content to personalize it</span>
+                  <span>{t('aiStudy.editTheGeneratedContentToPersonalizeIt')}</span>
                 </li>
                 <li className="flex items-start">
                   <span className="bg-teal-500/20 text-teal-400 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 text-xs border border-teal-500/30">3</span>
-                  <span>Use formatting tools to improve readability</span>
+                  <span>{t('aiStudy.useFormattingToolsToImproveReadability')}</span>
                 </li>
                 <li className="flex items-start">
                   <span className="bg-teal-500/20 text-teal-400 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 text-xs border border-teal-500/30">4</span>
-                  <span>Always review and personalize AI-generated content</span>
+                  <span>{t('aiStudy.alwaysReviewAndPersonalizeAIGeneratedContent')}</span>
                 </li>
               </ul>
             </motion.div>
@@ -1348,7 +1350,7 @@ ${prompt}`
                   whileTap="tap"
                   onClick={() => applyFormatting('bold')}
                   className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
-                  title="Bold"
+                  title={t('aiStudy.bold')}
                 >
                   <IconComponent icon={AiOutlineBold} />
                 </motion.button>
@@ -1358,7 +1360,7 @@ ${prompt}`
                   whileTap="tap"
                   onClick={() => applyFormatting('italic')}
                   className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
-                  title="Italic"
+                  title={t('aiStudy.italic')}
                 >
                   <IconComponent icon={AiOutlineItalic} />
                 </motion.button>
@@ -1368,7 +1370,7 @@ ${prompt}`
                   whileTap="tap"
                   onClick={() => applyFormatting('underline')}
                   className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
-                  title="Underline"
+                  title={t('aiStudy.underline')}
                 >
                   <IconComponent icon={AiOutlineUnderline} />
                 </motion.button>
@@ -1379,7 +1381,7 @@ ${prompt}`
                   whileTap="tap"
                   onClick={() => applyFormatting('list-ordered')}
                   className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
-                  title="Ordered List"
+                  title={t('aiStudy.orderedList')}
                 >
                   <IconComponent icon={AiOutlineOrderedList} />
                 </motion.button>
@@ -1389,7 +1391,7 @@ ${prompt}`
                   whileTap="tap"
                   onClick={() => applyFormatting('list-unordered')}
                   className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
-                  title="Unordered List"
+                  title={t('aiStudy.unorderedList')}
                 >
                   <IconComponent icon={AiOutlineUnorderedList} />
                 </motion.button>
@@ -1399,7 +1401,7 @@ ${prompt}`
                   whileTap="tap"
                   onClick={() => applyFormatting('quote')}
                   className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
-                  title="Quote"
+                  title={t('aiStudy.quote')}
                 >
                   <IconComponent icon={BsQuote} />
                 </motion.button>
@@ -1410,7 +1412,7 @@ ${prompt}`
                   whileTap="tap"
                   onClick={() => changeFontSize(2)}
                   className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
-                  title="Increase Font Size"
+                  title={t('aiStudy.increaseFontSize')}
                 >
                   <IconComponent icon={AiOutlinePlus} />
                 </motion.button>
@@ -1420,7 +1422,7 @@ ${prompt}`
                   whileTap="tap"
                   onClick={() => changeFontSize(-2)}
                   className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
-                  title="Decrease Font Size"
+                  title={t('aiStudy.decreaseFontSize')}
                 >
                   <IconComponent icon={AiOutlineMinus} />
                 </motion.button>
@@ -1431,7 +1433,7 @@ ${prompt}`
                   whileTap="tap"
                   onClick={handleCopyContent}
                   className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
-                  title="Copy Content"
+                  title={t('aiStudy.copyContent')}
                 >
                   <IconComponent icon={FiCopy} />
                 </motion.button>
@@ -1441,7 +1443,7 @@ ${prompt}`
                   whileTap="tap"
                   onClick={() => handleDownloadContent('txt')}
                   className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
-                  title="Download"
+                  title={t('aiStudy.download')}
                 >
                   <IconComponent icon={FiDownload} />
                 </motion.button>
@@ -1451,7 +1453,7 @@ ${prompt}`
                   whileTap="tap"
                   onClick={handleShareContent}
                   className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
-                  title="Share"
+                  title={t('aiStudy.share')}
                 >
                   <IconComponent icon={FiShare2} />
                 </motion.button>
@@ -1467,7 +1469,7 @@ ${prompt}`
                       value={editedContent}
                       onChange={(e) => setEditedContent(e.target.value)}
                       onFocus={handleEditorFocus}
-                      placeholder="Start writing or generate content using AI..."
+                      placeholder={t('aiStudy.startWritingOrGenerateContentUsingAI')}
                       className="w-full h-full p-6 bg-slate-700/30 backdrop-blur-sm text-slate-300 placeholder-slate-400 resize-none focus:outline-none border-none"
                       style={{ fontSize: `${fontSize}px`, lineHeight: '1.6' }}
                     />
@@ -1485,7 +1487,7 @@ ${prompt}`
                         whileTap={{ scale: 0.95 }}
                       >
                         <IconComponent icon={AiOutlineRobot} className="h-4 w-4" />
-                        <span>Ask AI</span>
+                        <span>{t('aiStudy.askAI')}</span>
                       </motion.button>
                     )}
                   </div>
@@ -1531,10 +1533,10 @@ ${prompt}`
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                       >
-                        Previous
+                        {t('aiStudy.previous')}
                       </motion.button>
                       <span className="text-sm text-slate-400">
-                        Page {currentPage} of {calculateTotalPages()}
+                        {t('aiStudy.page')} {currentPage} {t('aiStudy.of')} {calculateTotalPages()}
                       </span>
                       <motion.button
                         onClick={() => setCurrentPage(p => Math.min(calculateTotalPages(), p + 1))}
@@ -1543,7 +1545,7 @@ ${prompt}`
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                       >
-                        Next
+                        {t('aiStudy.next')}
                       </motion.button>
                     </>
                   )}
@@ -1560,7 +1562,7 @@ ${prompt}`
           className="bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl shadow-lg max-w-4xl w-full max-h-[80vh] overflow-hidden"
         >
           <div className="bg-slate-700/50 backdrop-blur-sm px-6 py-4 border-b border-white/10 flex items-center justify-between">
-            <h3 className="text-xl font-bold text-cyan-400">Content History</h3>
+            <h3 className="text-xl font-bold text-cyan-400">{t('aiStudy.contentHistory')}</h3>
             <motion.button
               onClick={() => setShowHistory(false)}
               className="p-2 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10"
@@ -1575,8 +1577,8 @@ ${prompt}`
             {contentHistory.length === 0 ? (
               <div className="text-center py-12">
                 <IconComponent icon={AiOutlineHistory} className="h-12 w-12 mx-auto mb-4 text-slate-400" />
-                <h3 className="text-lg font-medium text-slate-300 mb-2">No history yet</h3>
-                <p className="text-slate-400">Generated content will appear here for easy access.</p>
+                <h3 className="text-lg font-medium text-slate-300 mb-2">{t('aiStudy.noHistoryYet')}</h3>
+                <p className="text-slate-400">{t('aiStudy.generatedContentWillAppearHereForEasyAccess')}</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -1657,12 +1659,12 @@ ${prompt}`
                 {isProcessingSelection ? (
                   <>
                     <IconComponent icon={AiOutlineLoading3Quarters} className="animate-spin mr-2" />
-                    Processing...
+                    {t('aiStudy.processing')}
                   </>
                 ) : (
                   <>
                     <IconComponent icon={AiOutlineRobot} className="mr-2" />
-                    Ask AI
+                    {t('aiStudy.askAI')}
                   </>
                 )}
               </motion.button>
@@ -1686,7 +1688,7 @@ ${prompt}`
                 exit={{ scale: 0.9, opacity: 0 }}
               >
                 <div className="bg-slate-700/50 backdrop-blur-sm px-6 py-4 border-b border-white/10 flex items-center justify-between">
-                  <h3 className="text-xl font-bold text-cyan-400">AI Response</h3>
+                <h3 className="text-xl font-bold text-cyan-400">{t('aiStudy.aiResponse')}</h3>
                   <motion.button
                     onClick={() => setShowAskAIModal(false)}
                     className="p-2 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10"
@@ -1720,7 +1722,7 @@ ${prompt}`
                     whileTap={{ scale: 0.95 }}
                   >
                     <IconComponent icon={FiCopy} className="mr-2 h-4 w-4" />
-                    Copy
+                    {t('aiStudy.copy')}
                   </motion.button>
                   <motion.button
                     onClick={() => setShowAskAIModal(false)}
@@ -1728,7 +1730,7 @@ ${prompt}`
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    Close
+                    {t('aiStudy.close')}
                   </motion.button>
                 </div>
               </motion.div>

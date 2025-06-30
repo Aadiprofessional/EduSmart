@@ -24,6 +24,151 @@ export const zhTW = {
     upgradeToPro: '升級到專業版'
   },
 
+  // Dashboard
+  database: {
+    title: '大學資料庫',
+    subtitle: '透過我們全面的資料庫發現和探索全球大學',
+    searchPlaceholder: '按名稱、位置或專業搜尋大學...',
+    advancedFilters: '進階篩選',
+    reset: '重置',
+    aiAnalysis: 'AI分析',
+    getRecommendations: '獲取推薦',
+    compareUniversities: '比較大學',
+    
+    // Sorting options
+    sort: {
+      featured: '精選',
+      ranking: '最佳排名',
+      tuitionLowHigh: '學費：從低到高',
+      tuitionHighLow: '學費：從高到低',
+      acceptanceRate: '錄取率',
+      studentPopulation: '學生人數'
+    },
+    
+    // General terms
+    loading: '載入中...',
+    noResultsFound: '未找到結果',
+    ranking: '排名',
+    tuition: '學費',
+    acceptanceRate: '錄取率',
+    type: '類型',
+    viewDetails: '查看詳情',
+    previous: '上一頁',
+    next: '下一頁',
+    showing: '顯示',
+    of: '共',
+    universities: '所大學',
+    
+    // AI Analysis
+    aiAnalysisReport: 'AI分析報告',
+    personalizedInsightsBasedOnYourProfile: '基於您個人資料的個人化見解',
+    analyzingYourProfile: '正在分析您的個人資料...',
+    realTimeAnalysis: '即時分析',
+    academicStrength: '學術實力',
+    competitiveLevel: '競爭水平',
+    budgetAnalysis: '預算分析',
+    universitiesMatchYourBudget: '所大學符合您的預算',
+    recommendedRegions: '推薦地區',
+    suggestions: '建議',
+    
+    // Recommendations
+    personalizedRecommendations: '個人化推薦',
+    top5UniversitiesMatchedToYourProfile: '與您個人資料匹配的前5所大學',
+    findingYourPerfectMatches: '正在尋找您的完美匹配...',
+    aiAnalysisInProgress: 'AI分析進行中',
+    qsRanking: 'QS排名',
+    minGPA: '最低GPA',
+    remove: '移除',
+    compare: '比較',
+    noRecommendationsAvailable: '暫無推薦',
+    pleaseTryAgain: '請重試',
+    
+    // Advanced Filters
+    refineYourUniversitySearchWithDetailedCriteria: '使用詳細標準細化您的大學搜尋',
+    location: '位置',
+    allRegions: '所有地區',
+    allCampusTypes: '所有校園類型',
+    urban: '城市',
+    suburban: '郊區',
+    rural: '農村',
+    academic: '學術',
+    allProgramLevels: '所有項目級別',
+    undergraduate: '大學部',
+    graduate: '研究所',
+    both: '兩者',
+    allRankingTypes: '所有排名類型',
+    rankingsAndStatistics: '排名與統計',
+    financial: '財務',
+    applicationFee: '申請費',
+    financialAidAvailable: '提供經濟援助',
+    campusAndEnvironment: '校園與環境',
+    allCampusSizes: '所有校園規模',
+    small: '小型',
+    medium: '中型',
+    large: '大型',
+    studentPopulation: '學生人數',
+    onCampusHousing: '校內住宿',
+    sportsPrograms: '體育項目',
+    admissionRequirements: '入學要求',
+    allDifficultyLevels: '所有難度級別',
+    highlyCompetitive: '高度競爭',
+    moderatelyCompetitive: '中度競爭',
+    lessCompetitive: '低度競爭',
+    minimumGPA: '最低GPA',
+    allTestRequirements: '所有考試要求',
+    satRequired: '需要SAT',
+    actRequired: '需要ACT',
+    greRequired: '需要GRE',
+    gmatRequired: '需要GMAT',
+    noTestRequired: '無考試要求',
+    allLanguageRequirements: '所有語言要求',
+    ieltsRequired: '需要雅思',
+    toeflRequired: '需要托福',
+    noLanguageTestRequired: '無語言考試要求',
+    essayRequired: '需要論文',
+    interviewRequired: '需要面試',
+    openApplicationsOnly: '僅開放申請',
+    exchangeProgramsAvailable: '提供交換項目',
+    careerServices: '就業服務',
+    clubsAndOrganizations: '社團和組織',
+    resetAllFilters: '重置所有篩選',
+    cancel: '取消',
+    applyFilters: '套用篩選',
+    
+    // Mobile filters
+    filters: '篩選',
+    country: '國家',
+    allCountries: '所有國家',
+    universityType: '大學類型',
+    allTypes: '所有類型',
+    majorField: '專業領域',
+    allMajors: '所有專業',
+    tuitionFee: '學費',
+    quickFilters: '快速篩選',
+    scholarshipsAvailable: '提供獎學金',
+    openApplications: '開放申請',
+    onlineProgramsAvailable: '提供線上項目',
+    sortBy: '排序方式',
+    featured: '精選',
+    bestRanking: '最佳排名',
+    lowestTuition: '最低學費',
+    highestTuition: '最高學費',
+    
+    // Cost Calculator
+    costCalculator: '費用計算器',
+    detailedCostEstimationFor: '詳細費用估算',
+    university: '大學',
+    calculatingDetailedCostEstimation: '正在計算詳細費用估算...',
+    totalEstimatedAnnualCost: '預計年度總費用',
+    financialAidInformation: '經濟援助資訊',
+    workStudyOptions: '工讀選項',
+    budgetTips: '預算建議',
+    visaRequirements: '簽證要求',
+    importantNotes: '重要說明',
+    disclaimer: '免責聲明',
+    allCostEstimatesAreAIGeneratedAndMayVaryBasedOnIndividualCircumstancesProgramRequirementsLifestyleChoicesAndCurrentExchangeRatesPleaseVerifyWithTheUniversityForTheMostAccurateInformation: '所有費用估算均由AI生成，可能因個人情況、項目要求、生活方式選擇和當前匯率而有所不同。請與大學核實以獲取最準確的資訊。'
+  },
+
   // Authentication
   auth: {
     login: {
@@ -468,377 +613,368 @@ export const zhTW = {
 
   // AI Study Tools
   aiStudy: {
-    title: 'AI學習工具',
-    chatbot: {
-      title: 'AI聊天機器人',
-      placeholder: '向AI助手提問...',
-      send: '發送',
-      thinking: 'AI正在思考...',
-      error: '抱歉，發生了錯誤。請重試。',
-      welcome: '您好！我是您的AI學習助手。我能為您做些什麼？'
-    },
-    contentWriter: {
-      title: 'AI內容寫手',
-      prompt: '請描述您想要建立的內容',
-      generate: '生成內容',
-      regenerate: '重新生成',
-      copy: '複製內容',
-      save: '儲存內容',
-      tone: '語調',
-      length: '長度',
-      type: '類型'
-    },
-    mistakeChecker: {
-      title: '錯誤檢查器',
-      checkGrammar: '檢查語法',
-      checkSpelling: '檢查拼寫',
-      checkStyle: '檢查風格',
-      suggestions: '建議',
-      corrections: '修正',
-      apply: '應用',
-      ignore: '忽略'
-    },
-    studyPlanner: {
-      title: '學習計劃器',
-      createPlan: '建立計劃',
-      editPlan: '編輯計劃',
-      deletePlan: '刪除計劃',
-      addTask: '新增任務',
-      markComplete: '標記為完成',
-      dueDate: '截止日期',
-      priority: '優先級',
-      status: '狀態',
-      progress: '進度'
-    }
-  },
-
-  // File Upload
-  fileUpload: {
-    title: '檔案上傳',
-    dragDrop: '拖放檔案到此處或點選選擇',
-    selectFile: '選擇檔案',
-    uploading: '正在上傳...',
-    uploaded: '上傳完成',
-    failed: '上傳失敗',
-    maxSize: '最大檔案大小',
-    allowedTypes: '允許的檔案類型',
-    remove: '移除檔案'
-  },
-
-  // Error Messages
-  errors: {
-    general: '發生了錯誤。請重試。',
-    network: '網路連接錯誤。請檢查您的網路連接。',
-    unauthorized: '您沒有權限執行此操作。',
-    notFound: '未找到請求的資源。',
-    serverError: '伺服器錯誤。請稍後再試。',
-    validationError: '請檢查您的輸入並重試。',
-    fileTooBig: '檔案太大。請選擇較小的檔案。',
-    invalidFileType: '不支援的檔案類型。',
-    uploadFailed: '檔案上傳失敗。請重試。'
-  },
-
-  // Success Messages
-  success: {
-    saved: '成功儲存',
-    updated: '成功更新',
-    deleted: '成功刪除',
-    uploaded: '成功上傳',
-    sent: '成功發送',
-    created: '成功建立',
-    registered: '註冊成功',
-    loginSuccess: '登入成功',
-    logoutSuccess: '登出成功',
-    passwordChanged: '密碼更改成功'
-  },
-
-  // Language Selector
-  languageSelector: {
-    title: '選擇語言',
-    english: '英文',
-    simplifiedChinese: '簡體中文',
-    traditionalChinese: '繁體中文'
-  },
-
-  // Contact Form
-  contactForm: {
-    title: '聯絡我們',
-    name: '姓名',
-    email: '電子郵件',
-    subject: '主題',
-    message: '訊息',
-    send: '發送訊息',
-    required: '此欄位為必填項',
-    success: '訊息發送成功！我們會儘快回覆您。',
-    error: '發送訊息時發生錯誤。請重試。'
-  },
-
-  // Dashboard
-  dashboard: {
-    title: '儀表板',
-    welcome: '歡迎回來',
-    overview: '概覽',
-    recentActivity: '最近活動',
-    quickActions: '快速操作',
-    stats: '統計資料',
-    notifications: '通知',
-    calendar: '行事曆',
-    tasks: '任務',
-    progress: '進度'
-  },
-
-  // Settings
-  settings: {
-    title: '設定',
-    general: '一般',
-    account: '帳戶',
-    privacy: '隱私',
-    notifications: '通知',
-    language: '語言',
-    theme: '主題',
-    security: '安全性',
-    billing: '帳單',
-    advanced: '進階'
-  },
-
-  // Application Tracker
-  applicationTracker: {
-    title: '申請追蹤器',
-    addApplication: '新增申請',
-    editApplication: '編輯申請',
-    deleteApplication: '刪除申請',
-    institution: '學校',
-    program: '課程',
-    deadline: '截止日期',
-    status: '狀態',
-    requirements: '要求',
-    documents: '文件',
-    notes: '備註',
-    applied: '已申請',
-    pending: '待處理',
-    accepted: '已接受',
-    rejected: '已拒絕',
-    waitlisted: '候補名單'
-  },
-
-  // Footer
-  footer: {
-    about: "透過AI驅動的學習體驗和尖端技術革命教育。",
-    browseCourses: "瀏覽課程",
-    findScholarships: "尋找獎學金",
-    quickLinks: "快速連結",
-    resources: "資源",
-    contact: "聯絡",
-    contactUs: "聯絡我們",
-    phone: "電話",
-    email: "電子郵件",
-    address: "地址",
-    privacyPolicy: "隱私政策",
-    termsOfService: "服務條款",
-    cookiePolicy: "Cookie政策",
+    // Main page titles and descriptions
+    toolName: '文件摘要器',
+    aiStudyAssistant: 'AI學習助手',
+    enhanceYourLearning: '用AI驅動的工具增強您的學習',
     
-    // Footer sections text that was hardcoded
-    aiEducation: "面向未來的AI教育",
-    hongKongOffice: "香港辦公室",
-    shenzhenOffice: "深圳辦公室",
-    contactInfo: {
-      phone: "+852 66359879",
-      email: "info@matrixaiglobal.com",
-      address: "香港"
+    // Quick stats section
+    aiPowered: 'AI驅動',
+    solutions: '解決方案',
+    instant: '即時',
+    analysis: '分析',
+    stepByStep: '逐步',
+    explanations: '解釋',
+    personalised: '個人化',
+    learning: '學習',
+    mindmap: '心智圖',
+    summarizer: '摘要器',
+    
+    // Tab names
+    uploadHomework: "上傳作業",
+    aiTutor: "AI導師",
+    mistakeChecker: "錯誤檢查器",
+    studyPlanner: "學習計劃器",
+    flashcards: "記憶卡片",
+    contentWriter: "內容寫作器",
+    citationGenerator: "引用生成器",
+    documentSummarizer: "文件摘要器",
+    
+    // Upgrade Modal
+    upgradeModal: {
+      title: "解鎖高級功能",
+      notProDescription: "升級到專業版以存取所有AI驅動的學習工具和無限回應。",
+      limitReachedDescription: "您已達到每月回應限制。升級到專業版以獲得無限存取權限。",
+      features: {
+        generousAllowance: "豐富的月度配額",
+        advancedTutoring: "進階AI輔導",
+        contentGeneration: "內容生成工具",
+        prioritySupport: "優先支援"
+      },
+      maybeLaterBtn: "稍後再說",
+      upgradeNowBtn: "立即升級"
     },
     
-    // Resource links
-    resourceLinks: {
-      scholarships: "獎學金",
-      applicationTracker: "申請追蹤器", 
-      privacyPolicy: "隱私政策",
-      termsOfService: "服務條款",
-      faq: "常見問題"
-    }
-  },
-
-  // Thank You Page
-  thankYou: {
-    title: "謝謝您！",
-    addonPurchaseSuccessful: "附加服務購買成功！",
-    welcomeToPro: "歡迎使用專業版！",
-    addonMessage: "您已成功為您的計劃添加了更多回覆。您的額外回覆現在可以使用了！",
-    proMessage: "您已成功升級到我們的專業版計劃。準備釋放無限的學習潛力！",
-    transactionId: "交易ID",
-    unlimitedAi: "無限AI",
-    responsesPerMonth: "每月500+回覆",
-    premiumFeatures: "高級功能",
-    advancedAiTools: "高級AI工具",
-    prioritySupport: "優先支援",
-    twentyFourSevenAssistance: "24/7協助",
-    extraResponsesAdded: "額外回覆已添加！",
-    extraResponsesMessage: "您的額外回覆現在可用並準備使用。",
-    proMember: "專業會員",
-    responsesRemaining: "剩餘回覆",
-    startLearningNow: "立即開始學習",
-    redirectingMessage: "10秒後重定向到首頁",
-    welcomeToFamily: "歡迎加入EduSmart專業版大家庭！"
-  },
-
-  // Mistake Checker
-  mistakeChecker: {
-    title: "AI錯誤檢測器",
-    subtitle: "上傳您的作品，即時獲得語法、風格和內容回饋",
-    uploadFile: "上傳檔案",
-    checkMistakes: "檢查錯誤並獲得評分",
-    processing: "處理中...",
-    startingAnalysis: "開始分析...",
-    viewFile: "檢視檔案",
-    autoCorrect: "自動糾錯",
-    viewReport: "檢視報告",
-    changeFile: "更換檔案",
-    showOriginal: "顯示原文",
-    showCorrected: "顯示修正版",
-    applyCorrections: "套用自動更正",
-    viewFullReport: "檢視完整報告",
-    viewOriginalFile: "檢視原始檔案"
-  },
-
-  // Statistics
-  stats: {
-    studentsEnrolled: "註冊學生",
-    successRate: "成功率",
-    expertInstructors: "專家導師",
-    globalPartners: "全球合作夥伴"
-  },
-
-  // Chatbot responses
-  chatBotResponses: {
-    courseResponse: "我們提供各種課程，包括AI開發、資料科學、網頁開發等。請造訪我們的課程頁面了解詳情。",
-    scholarshipResponse: "MatrixEdu提供各種獎學金和財政援助選項的資訊。請查看我們的獎學金頁面獲取最新機會。",
-    applicationResponse: "您可以使用我們的申請追蹤器來追蹤您的申請。它協助您整理截止日期和教育機會的要求。",
-    aiResponse: "我們有專門的AI課程和資源。我們的課程部分提供機器學習、深度學習和AI倫理的前沿內容。",
-    resourceResponse: "MatrixEdu提供各種教育資源，包括電子書、教學和互動工具。請查看我們的資源頁面。",
-    blogResponse: "我們的部落格刊登有關教育趨勢、學習技巧和技術見解的文章。請造訪部落格部分獲取最新文章。",
-    greetingResponse: "您好！我今天如何協助您的教育之旅？",
-    thankYouResponse: "不客氣！如果您需要其他協助，請隨時詢問。",
-    fallbackResponse: "我不太明白。您能重新表述您的問題嗎？我可以協助您解答課程、獎學金、申請、資源等問題。"
-  },
-
-  // Content Writer
-  contentWriter: {
-    title: "AI內容寫作器",
-    subtitle: "借助AI協助產生高品質學術內容",
-    promptPlaceholder: "描述您想要產生的內容...例如：為我對電腦科學的熱情寫一篇引人入勝的大學申請文章。",
-    generateContent: "產生內容",
-    generating: "產生中...",
-    viewHistory: "檢視歷史",
-    downloadPdf: "下載PDF",
-    downloadDoc: "下載DOC",
-    downloadTxt: "下載TXT",
-    copyToClipboard: "複製到剪貼簿",
-    copied: "已複製到剪貼簿！",
-    templates: "模板",
-    prompt: "提示詞",
-    wordCount: "字數",
-    contentType: "內容類型",
-    tone: "語調",
-    format: "格式",
-    fontSize: "字體大小",
-    fontFamily: "字體系列",
-    backToWriter: "返回寫作器",
-    previewMode: "預覽模式",
-    editorMode: "編輯模式",
+    instantHomeworkHelpTitle: "即時作業幫助",
+    instantHomeworkHelpDescription: "立即獲得任何學科的逐步解決方案和解釋。",
+    tryNowBtn: "立即嘗試",
+    
+    aiContentWriterTitle: "AI內容寫作器",
+    aiContentWriterDescription: "輕鬆生成高質量的論文、報告和創意內容。",
+    startWritingBtn: "開始寫作",
+    
+    aiTutorChatTitle: "AI導師聊天",
+    aiTutorChatDescription: "個人化學習，所有學科的適應性AI輔導。",
+    chatNowBtn: "立即聊天",
+    
+    smartStudyPlannerTitle: "智能學習計劃器",
+    smartStudyPlannerDescription: "創建優化的學習時間表，智能截止日期管理。",
+    useHereBtn: "在此使用",
+    gotoPlannerBtn: "前往計劃器",
+    
+    flashcardGeneratorTitle: "記憶卡片生成器",
+    flashcardsDescription: "從任何內容自動創建互動學習記憶卡片",
+    createFlashcardsBtn: "創建記憶卡片",
+    
+    citationGeneratorTitle: "引用生成器",
+    citationGeneratorDescription: "生成APA、MLA、芝加哥和哈佛格式的準確引用。",
+    generateCitationsBtn: "生成引用",
+    
+    documentSummarizerTitle: "文件摘要器",
+    documentSummarizerDescription: "全面分析和關鍵洞察",
+    summarizeDocumentsBtn: "摘要文件",
+    
+    grammarCheckerTitle: "語法檢查器",
+    mistakeCheckerDescription: "進階語法和風格檢查，提供寫作改進建議。",
+    checkMistakesBtn: "檢查錯誤",
+    
+    // Floating action button
+    ask_ai_tutor: "詢問AI導師",
+    
+    // Document Summarizer specific
+    documentSummarizerUpload: "上傳文件",
+    dragDropText: "將文件拖放到此處",
+    orClickToBrowse: "或點擊瀏覽",
+    documentPreview: "文件預覽",
+    additionalContext: "附加上下文（可選）",
+    pasteTextHere: "在此貼上文字",
+    addContextPlaceholder: "添加任何關於文件的附加上下文或具體問題...",
+    pasteTextPlaceholder: "在此貼上您的文字以進行分析和摘要...",
+    characters: "字元",
+    pagesLoaded: "頁面已載入",
     history: "歷史記錄",
-    loadFromHistory: "從歷史記錄載入",
-    deleteHistory: "刪除歷史",
-    downloadOptions: "下載選項",
-    shareContent: "分享內容",
-    aiEditModal: "AI內容編輯器",
-    aiEditDescription: "描述您想要進行的具體更改。例如：\"將所有麻省理工學院的提及改為史丹佛大學\"或\"將籃球引用更新為足球\"",
-    aiEditPlaceholder: "例如：將所有麻省理工學院的提及改為史丹佛大學，或將籃球引用更新為足球...",
-    applyChanges: "套用更改",
+    clear: "清除",
+    getSummary: "獲取摘要",
+    autoScroll: "自動捲動",
+    
+    // Results section
+    results: "結果",
+    aiPoweredAnalysis: "AI驅動的文件分析",
+    showSummary: "顯示摘要",
+    showMindmap: "顯示心智圖",
+    fullscreen: "全螢幕",
+    
+    // Study Planner specific
+    addTask: "新增任務",
+    taskDescription: "任務描述",
+    enterTaskDescription: "輸入任務描述",
+    subject: "科目",
+    enterSubject: "輸入科目",
+    dueDate: "截止日期",
+    priority: "優先級",
+    lowPriority: "低優先級",
+    mediumPriority: "中優先級",
+    highPriority: "高優先級",
+    estimatedHours: "預計小時數",
+    filters: "篩選器",
+    sortByDate: "按日期排序",
+    sortByDateDesc: "按日期排序（降序）",
+    sortByPriority: "按優先級排序",
+    sortByPriorityDesc: "按優先級排序（降序）",
+    sortBySubject: "按科目排序",
+    sortBySubjectDesc: "按科目排序（降序）",
+    sortByHours: "按小時排序",
+    sortByHoursDesc: "按小時排序（降序）",
+    sortByCompletion: "按完成度排序",
+    clearFilters: "清除篩選器",
+    filterByDate: "按日期篩選",
+    filterByPriority: "按優先級篩選",
+    filterBySubject: "按科目篩選",
+    allPriorities: "所有優先級",
+    allSubjects: "所有科目",
+    showingTasksFor: "顯示任務：",
+    noTasksFound: "未找到任務",
+    noTasksScheduled: "此日期沒有安排任務。",
+    addTaskOrAdjustFilters: "新增新任務或調整篩選器以檢視任務。",
+    moreTasksText: "更多",
+    
+    // Citation Generator specific
+    enterUrlPlaceholder: "輸入URL、DOI或貼上引用詳情",
+    selectCitationStyle: "選擇引用格式",
+    generateCitation: "生成引用",
+    citationResult: "引用結果",
+    copyCitation: "複製引用",
+    
+    // Flashcard Component
+    studySets: "學習套裝",
+    cards: "卡片",
+    createNewSet: "建立新套裝",
+    newSet: "新套裝",
+    studyCards: "學習卡片",
+    card: "卡片",
+    mastered: "已掌握",
+    showAnswer: "顯示答案",
+    unmark: "取消標記",
+    markAsMastered: "標記為已掌握",
+    hideAnswer: "隱藏答案",
+    noFlashcardsInThisSet: "此套裝中沒有記憶卡片",
+    createYourFirstFlashcardToStartStudying: "建立您的第一張記憶卡片開始學習",
+    generateFromAI: "從AI生成",
+    uploadFilePDFImageDoc: "上傳檔案（PDF、圖片、文件）",
+    orCreateManually: "或手動建立",
+    enterYourQuestionHere: "在此輸入您的問題",
+    enterTheAnswerHere: "在此輸入答案",
+    addFlashcard: "新增記憶卡片",
+    createNewFlashcardSet: "建立新記憶卡片套裝",
+    descriptionOptional: "描述（可選）",
+    enterDescription: "輸入描述",
+    selectStudySet: "選擇學習套裝開始學習",
+    flipCard: "翻轉卡片",
+    nextCard: "下一張卡片",
+    previousCard: "上一張卡片",
+    studyMode: "學習模式",
+    editMode: "編輯模式",
+    addCard: "新增卡片",
+    editCard: "編輯卡片",
+    deleteCard: "刪除卡片",
+    question: "問題",
+    answer: "答案",
+    enterQuestion: "在此輸入您的問題...",
+    enterAnswer: "在此輸入您的答案...",
+    saveCard: "儲存卡片",
+    deleteSet: "刪除套裝",
+    generateFromFile: "從檔案生成",
+    generateWithAI: "用AI生成",
+    
+    // AI Tutor Chat Component
+    aiTutorChat: "AI導師聊天",
+    welcomeMessage: "你好！我是你的來自香港的AI學習助手。今天我能為你的作業提供什麼幫助嗎？我可以協助數學、科學、文學、歷史等更多科目！",
+    typeMessage: "在此輸入您的消息...",
+    sendMessage: "發送訊息",
+    uploadImage: "上傳圖片",
+    newChat: "新聊天",
+    chatHistory: "聊天歷史",
+    clearHistory: "清除記錄",
+    downloadChat: "下載聊天",
+    copyMessage: "複製消息",
+    shareMessage: "分享消息",
+    regenerateResponse: "重新生成回覆",
+    you: "你",
+    welcomeChat: "歡迎聊天",
+    aiTutorResponse: "AI導師回覆",
+    justNow: "剛剛",
+    personalStudyAssistant: "您的個人學習助手",
+    
+    // Upload Homework Component specific
+    fileLoadedSuccessfully: "文件載入成功",
+    loadingRelatedKnowledge: "載入相關知識中...",
+    relatedKnowledgeButton: "相關知識",
+    exitFullscreen: "退出全螢幕",
+    solution: "解答",
+
+    // AI Tutor Chat specific translations
+    aiTutorSystemPrompt: "你是一個有用的AI輔導助手。幫助學生完成作業，清楚地解釋概念，提供逐步解決方案，並鼓勵學習。始終使用與學生問題相同的語言回答——英文問題用英文，中文問題用中文等。在需要時使用LaTeX語法清楚地格式化你的回答，包括適當的數學符號。",
+    extractTextPrompt: "請提取並閱讀此圖像中的所有文本。如果有任何作業問題或問題，請清楚地識別它們。",
+    
+    // Quick question examples
+    helpSolveMathProblem: "幫我解決這個數學問題",
+    explainPhotosynthesis: "解釋光合作用",
+    pythagoreanTheorem: "什麼是勾股定理？",
+    writeGoodEssay: "如何寫好一篇文章？",
+    climateChangeCauses: "什麼導致了氣候變化？",
+    newtonsLaws: "解釋牛頓運動定律",
+    
+    // Quick action buttons
+    helpWithMathHomework: "數學作業幫助",
+    explainAConcept: "解釋一個概念",
+    checkMyWork: "檢查我的作業",
+    scienceExperimentHelp: "科學實驗幫助",
+    studyTips: "學習技巧",
+    essayWritingHelp: "文章寫作幫助",
+    
+    // Error messages
+    apiCallFailed: "API調用失敗",
+    failedToGetResponse: "無法從AI獲取回覆。請重試。",
+    noResponseGenerated: "抱歉，我無法生成回覆。請重試。",
+    pleaseSelectImageFile: "請選擇圖片文件（PNG、JPG、JPEG等）",
+    fileSizeTooLarge: "文件大小必須小於10MB",
+    failedToProcessImage: "處理圖片失敗。請重試。",
+    failedToExtractText: "從圖片中提取文本失敗。請重試。",
+    errorProcessingImage: "處理圖片時出錯：",
+    sorryEncounteredError: "抱歉，我遇到了錯誤。請重試。",
+    apologizeForError: "抱歉，我遇到了錯誤。請重試。",
+    
+    // Time formatting
+    minutesAgo: "分鐘前",
+    hoursAgo: "小時前", 
+    daysAgo: "天前",
+    
+    // Chat actions
+    save: "保存",
     cancel: "取消",
-    processing: "處理中...",
-    analyzing: "分析內容中...",
-    finalizing: "最終確定中...",
-    error: "產生內容時出錯。請重試。",
+    newChatTitle: "新聊天",
+
+    // Check Mistakes Component
+    checkMistakesAndGetMarked: "檢查錯誤並獲得評分",
+    uploadDocumentToCheck: "上傳您的文檔以檢查語法、拼寫和標點錯誤，然後獲得詳細的評分評估",
+    hkdseHongKong: "HKDSE（香港）- 香港中學文憑考試",
+    pasteYourTextHereForMistakeChecking: "在此粘貼您的文本以進行錯誤檢查...",
     
-    // Template names
-    templateNames: {
-      collegeApp: "大學申請文章",
-      coverLetter: "求職信",
-      recommendation: "推薦信",
-      researchPaper: "研究論文",
-      scholarship: "獎學金文章",
-      personalStatement: "個人陳述"
-    },
+    // Study Planner Component
+    aiImport: "AI導入",
+    aiStudyRoadmapGenerator: "AI學習路線圖生成器",
+    analyzeWithAI: "AI分析",
+    aiRoadmap: "AI路線圖",
+    priorityText: "{priority}優先級",
     
-    // Template prompts
-    templatePrompts: {
-      collegeApp: "為我對電腦科學的熱情寫一篇引人入勝的大學申請文章，以及它如何塑造了我的未來目標。",
-      coverLetter: "為科技公司實習職位建立一份專業求職信，突出我在程式設計和團隊合作方面的技能。",
-      recommendation: "為申請研究所的學生寫一封推薦信，強調他們的研究能力和學術成就。",
-      researchPaper: "為人工智慧在教育中的影響產生研究論文大綱。",
-      scholarship: "建立獎學金申請文章，討論我的經濟需求和學術成就。",
-      personalStatement: "寫一份個人陳述，解釋我學習醫學科學的動機和職業抱負。"
-    },
+    // Additional missing keys for Check Mistakes Component
+    selectMarkingStandard: "選擇評分標準",
+    or: "或",
+    pasteYourTextDirectly: "直接貼上您的文本",
+
+    // Flashcard Component specific
+  
+    orUploadImageOrPDFOrDocument: "或上傳圖片、PDF或文件",
+    orUploadImageOrPDF: "或上傳圖片或PDF",
+    orUploadDocument: "或上傳文件",
+    orUploadPDF: "或上傳PDF",
+  
+    orCreateFlashcardSet: "或創建閃卡集",
+    orCreateFlashcard: "或創建閃卡",
+    createSet: "創建集",
+    createFlashcards: "創建閃卡",
+  
+    delete: "刪除",
+    next: "下一個",
+    previous: "上一個",
+  
+    setName: "集名稱",
+    enterSetName: "輸入集名稱",
+    description: "描述",
+
+    create: "創建",
+
+    //content writer component specific
+    beSpecificInYourPromptForBetterResults: "在提示詞中具體化以獲得更好的結果",
+    editTheGeneratedContentToPersonalizeIt: "編輯生成的內容以個性化",
+    useFormattingToolsToImproveReadability: "使用格式化工具以提高可讀性",
+    alwaysReviewAndPersonalizeAIGeneratedContent: "始終審查和個性化AI生成的內容",
+    startWritingOrGenerateContentUsingAI: "開始寫作或使用AI生成內容",
+    words: "字數",
+    startWriting: "開始寫作",
+    contentWriterPlaceholder: "描述您想要生成的內容...例如：寫一篇關於我對計算機科學的熱情的引人入勝的大學申請文章。",
+ 
+
+    collegeApplicationEssay: "大學申請文章",
+    recommendationLetter: "推薦信",
+    researchPaper: "研究論文",
+    scholarshipEssay: "獎學金申請文章",
+    personalStatement: "個人陳述",
+    businessPlan: "商業計劃書",
+    coverLetter: "求職信",
+    researchPaperOutline: "研究論文大綱",
+    scholarshipApplication: "獎學金申請",
+
+    title: "AI內容寫作器",
+    subtitle: "使用AI生成高質量的學術內容",
+    promptPlaceholder: "描述您想要生成的內容...例如：寫一篇關於我對計算機科學的熱情的引人入勝的大學申請文章。",
+    generateContent: "生成內容",
+    contentWriterGenerating: "正在生成...",
+    generateProfessionalContentForApplicationsEssaysLettersAndMore: "生成專業內容，適用於申請、論文、信件等",
+    generateContentForAnyPurpose: "生成任何用途的內容",
+    generateContentForAnyPurposeDescription: "無論是學術論文、商業計劃書還是個人陳述，AI都能滿足您的需求",
+    generateContentForAnyPurposeDescription2: "無論是申請、論文、信件還是其他任何用途，AI都能滿足您的需求",
+    generateContentForAnyPurposeDescription3: "無論是學術論文、商業計劃書還是個人陳述，AI都能滿足您的需求",
     
-    // History examples
-    historyExamples: {
-      collegeAppTitle: "大學申請文章",
-      collegeAppContent: "當我反思我的高中之旅時...",
-      collegeAppPrompt: "為我對電腦科學的熱情寫一篇引人入勝的大學申請文章",
-      researchPaperTitle: "研究論文大綱",
-      researchPaperContent: "技術對現代教育的影響...",
-      researchPaperPrompt: "為人工智慧在教育中的影響產生研究論文大綱",
-      threeDaysAgo: "3天前",
-      oneWeekAgo: "1週前",
-      justNow: "剛剛"
-    },
+    forStudents: "給學生",
+    viewHistory: "查看歷史",
+    recommendationLetters: "推薦信",
+    aiContentWriter: "AI內容寫作器",
     
-    // Content types
-    contentTypes: {
-      essay: "文章",
-      article: "學術文章", 
-      blog: "部落格文章",
-      report: "報告",
-      summary: "摘要",
-      outline: "大綱"
-    },
+  
     
-    // Tones
-    tones: {
-      formal: "正式",
-      informal: "非正式",
-      academic: "學術性",
-      professional: "專業",
-      conversational: "對話式",
-      persuasive: "說服性"
-    }
   },
 
-  // Scholarship Programs Component
-  scholarshipPrograms: {
-    title: "獎學金項目",
-    subtitle: "探索各種資助機會來支援您的教育之旅",
-    applyButton: "立即申請",
-    exploreButton: "探索所有獎學金",
-    
-    // Scholarship Types
-    scholarships: {
-      meritBased: {
-        title: "優秀獎學金",
-        description: "基於學術卓越和成就授予的獎學金。",
-        amount: "高達 $50,000"
-      },
-      international: {
-        title: "國際學生獎學金", 
-        description: "為國際學生提供的特殊資助機會。",
-        amount: "高達 $30,000"
-      },
-      needBased: {
-        title: "需求型經濟援助",
-        description: "基於證明經濟需求的財政援助。",
-        amount: "高達 $40,000"
-      }
-    }
-  }
+  // Upload Homework Component specific (root level)
+    submitYourQuestion: "提交您的問題",
+  describeYourQuestionOrProblem: "描述您的問題或難題",
+  typeYourQuestionOrProblemHere: "在此輸入您的問題或難題...",
+    orUploadYourQuestion: "或上傳您的問題",
+  dragAndDropYourFileHereOrClickToBrowse: "將文件拖放到此處，或點擊瀏覽",
+  supportsPDFWordAndImages: "支援PDF、Word文件和圖片",
+    takePhoto: "拍照",
+    getAnswer: "獲取答案",
+    getSolution: "獲取解答",
+
+  // Homework History Component specific (root level)
+  homeworkHistory: "作業歷史",
+  noHomeworkHistoryYet: "暫無作業歷史",
+  yourSolvedHomeworkProblemsWillAppearHere: "您已解決的作業問題將顯示在這裡",
+  uploadDocumentsOrAskQuestionsToGetStarted: "上傳文件或提問以開始使用",
+  items: "項",
+  item: "項",
+  clickToRestore: "點擊恢復",
+  solved: "已解決",
+  complete: "完成",
+  relatedKnowledge: "相關知識",
+  loadingKnowledgePoints: "載入知識點中...",
+  pages: "頁",
+  page: "頁",
+  generatingSolutionForThisPage: "正在為此頁面生成解答...",
+  yourSolutionWillAppearHere: "提交作業問題後，您的解答將顯示在這裡。",
+  processing: "處理中",
+  error: "錯誤",
+  pending: "待處理"
 };
 
 export default zhTW; 

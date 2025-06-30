@@ -3673,12 +3673,15 @@ Please provide realistic cost estimates based on the university's location and t
                       <IconComponent icon={FaUniversity} className="mx-auto" />
                     </div>
                     <h3 className="text-xl font-bold text-gray-700 mb-2">
-                      {isLoading ? 'Loading Universities...' : 'No Universities Found'}
+                      {isLoading 
+                        ? t('database.loading')
+                        : t('database.noResultsFound')
+                      }
                     </h3>
                     <p className="text-gray-600 mb-4">
                       {isLoading 
-                        ? 'Please wait while we fetch university data...' 
-                        : 'Try adjusting your filters or search criteria to see more results.'
+                        ? t('database.loading')
+                        : t('database.noResultsFound')
                       }
                     </p>
                     {!isLoading && (
@@ -3686,7 +3689,7 @@ Please provide realistic cost estimates based on the university's location and t
                         onClick={resetFilters}
                         className="bg-primary hover:bg-primary-dark text-white font-medium py-2 px-4 rounded"
                       >
-                        Reset Filters
+                        {t('database.reset')}
                       </button>
                     )}
                     {isLoading && (
@@ -3744,15 +3747,15 @@ Please provide realistic cost estimates based on the university's location and t
                                 </div>
                                 <div className="space-y-1 text-xs mb-3">
                                   <div className="flex justify-between items-center">
-                                    <span className="text-gray-500">Ranking:</span>
+                                     <span className="text-gray-500">{t('database.ranking')}:</span>
                                     <span className="font-medium text-purple-600">#{university.ranking || 'N/A'}</span>
                                   </div>
                                   <div className="flex justify-between items-center">
-                                    <span className="text-gray-500">Tuition:</span>
+                                    <span className="text-gray-500">{t('database.tuition')}:</span>
                                     <span className="font-medium text-green-600">{formatTuitionFee(university.tuition_fee)}</span>
                                   </div>
                                   <div className="flex justify-between items-center">
-                                    <span className="text-gray-500">Accept Rate:</span>
+                                    <span className="text-gray-500">{t('database.acceptanceRate')}:</span>
                                     <span className="font-medium">{formatAcceptanceRate(university.acceptance_rate)}</span>
                                   </div>
                                 </div>
@@ -3763,7 +3766,7 @@ Please provide realistic cost estimates based on the university's location and t
                                   }}
                                   className="w-full px-3 py-1.5 bg-purple-600 text-white text-xs font-medium rounded-md hover:bg-purple-700 transition-colors"
                                 >
-                                  View Details
+                                  {t('database.viewDetails')}
                                 </button>
                               </div>
                             </motion.div>
@@ -3800,15 +3803,15 @@ Please provide realistic cost estimates based on the university's location and t
                                   </div>
                                   <div className="grid grid-cols-2 gap-2 text-xs">
                                     <div>
-                                      <span className="text-gray-500">Rank: </span>
+                                      <span className="text-gray-500">{t('database.ranking')}: </span>
                                       <span className="font-medium text-purple-600">#{university.ranking || 'N/A'}</span>
                                     </div>
                                     <div>
-                                      <span className="text-gray-500">Type: </span>
+                                      <span className="text-gray-500">{t('database.type')}: </span>
                                       <span className="font-medium">{university.type || 'N/A'}</span>
                                     </div>
                                     <div className="col-span-2">
-                                      <span className="text-gray-500">Tuition: </span>
+                                      <span className="text-gray-500">{t('database.tuition')}: </span>
                                       <span className="font-medium text-green-600">{formatTuitionFee(university.tuition_fee)}</span>
                                     </div>
                                   </div>
@@ -3903,7 +3906,7 @@ Please provide realistic cost estimates based on the university's location and t
                             : 'bg-primary text-white hover:bg-primary-dark'
                         }`}
                       >
-                        Previous
+                        {t('database.previous')}
                       </motion.button>
 
                       <div className="flex space-x-1">
@@ -3948,12 +3951,12 @@ Please provide realistic cost estimates based on the university's location and t
                             : 'bg-primary text-white hover:bg-primary-dark'
                         }`}
                       >
-                        Next
+                            {t('database.next')}
                       </motion.button>
                     </div>
 
                     <div className="text-sm text-gray-600">
-                      Showing {startIndex + 1}-{Math.min(endIndex, sortedUniversities.length)} of {sortedUniversities.length} universities
+                      {t('database.showing')} {startIndex + 1}-{Math.min(endIndex, sortedUniversities.length)} {t('database.of')} {sortedUniversities.length} {t('database.universities')}
                     </div>
                   </motion.div>
                 )}
@@ -4003,8 +4006,8 @@ Please provide realistic cost estimates based on the university's location and t
                 <div className="flex items-center">
                   <IconComponent icon={FaRobot} className="mr-2 sm:mr-3 text-xl sm:text-2xl" />
                   <div>
-                    <h2 className="text-lg sm:text-2xl font-bold">AI Analysis Report</h2>
-                    <p className="text-purple-100 text-sm sm:text-base">Personalized insights based on your profile</p>
+                    <h2 className="text-lg sm:text-2xl font-bold">{t('database.aiAnalysisReport')}</h2>
+                    <p className="text-purple-100 text-sm sm:text-base">{t('database.personalizedInsightsBasedOnYourProfile')}</p>
                   </div>
                 </div>
                 <button 
@@ -4022,12 +4025,12 @@ Please provide realistic cost estimates based on the university's location and t
                   <div className="flex items-center justify-center py-8">
                     <div className="text-center">
                       <IconComponent icon={FaSpinner} className="animate-spin text-4xl text-purple-500 mb-4" />
-                      <p className="text-gray-600">Analyzing your profile...</p>
+                      <p className="text-gray-600">{t('database.analyzingYourProfile')}</p>
                     </div>
                   </div>
                   {streamingAnalysisContent && (
                     <div className="bg-gray-50 rounded-lg p-4">
-                      <h3 className="font-semibold text-gray-800 mb-2">Real-time Analysis:</h3>
+                      <h3 className="font-semibold text-gray-800 mb-2">{t('database.realTimeAnalysis')}:</h3>
                       <div className="text-gray-700 whitespace-pre-wrap">{streamingAnalysisContent}</div>
                     </div>
                   )}
@@ -4036,7 +4039,7 @@ Please provide realistic cost estimates based on the university's location and t
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                   <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 sm:p-6">
                     <h3 className="text-base sm:text-lg font-bold text-blue-800 mb-3 sm:mb-4 flex items-center">
-                      <IconComponent icon={FaTrophy} className="mr-2" /> Academic Strength
+                      <IconComponent icon={FaTrophy} className="mr-2" /> {t('database.academicStrength')}
                     </h3>
                     <div className="text-2xl sm:text-3xl font-bold text-blue-600 mb-2">{aiAnalysisData.academicStrength}%</div>
                     <div className="w-full bg-blue-200 rounded-full h-3">
@@ -4046,24 +4049,24 @@ Please provide realistic cost estimates based on the university's location and t
                       ></div>
                     </div>
                     <p className="text-blue-700 mt-2 text-sm">
-                      Competitive Level: <span className="font-semibold">{aiAnalysisData.competitiveLevel}</span>
+                      {t('database.competitiveLevel')}: <span className="font-semibold">{aiAnalysisData.competitiveLevel}</span>
                     </p>
                   </div>
 
                   <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 sm:p-6">
                     <h3 className="text-base sm:text-lg font-bold text-green-800 mb-3 sm:mb-4 flex items-center">
-                      <IconComponent icon={FaDollarSign} className="mr-2" /> Budget Analysis
+                      <IconComponent icon={FaDollarSign} className="mr-2" /> {t('database.budgetAnalysis')}
                     </h3>
                     <div className="text-base sm:text-lg font-bold text-green-600 mb-2">{aiAnalysisData.budgetAnalysis.level}</div>
                     <p className="text-green-700 text-sm mb-3">{aiAnalysisData.budgetAnalysis.recommendation}</p>
                     <div className="text-sm text-green-600">
-                      <span className="font-semibold">{aiAnalysisData.budgetAnalysis.affordableOptions}</span> universities match your budget
+                      <span className="font-semibold">{aiAnalysisData.budgetAnalysis.affordableOptions}</span> {t('database.universitiesMatchYourBudget')}
                     </div>
                   </div>
 
                   <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 sm:p-6">
                     <h3 className="text-base sm:text-lg font-bold text-orange-800 mb-3 sm:mb-4 flex items-center">
-                      <IconComponent icon={FaGlobe} className="mr-2" /> Recommended Regions
+                      <IconComponent icon={FaGlobe} className="mr-2" /> {t('database.recommendedRegions')}
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {aiAnalysisData.recommendedRegions.map((region: string, index: number) => (
@@ -4076,7 +4079,7 @@ Please provide realistic cost estimates based on the university's location and t
 
                   <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 sm:p-6">
                     <h3 className="text-base sm:text-lg font-bold text-purple-800 mb-3 sm:mb-4 flex items-center">
-                      <IconComponent icon={FaLightbulb} className="mr-2" /> Suggestions
+                      <IconComponent icon={FaLightbulb} className="mr-2" /> {t('database.suggestions')}
                     </h3>
                     <ul className="space-y-2">
                       {aiAnalysisData.suggestions.map((suggestion: string, index: number) => (
@@ -4109,8 +4112,8 @@ Please provide realistic cost estimates based on the university's location and t
                 <div className="flex items-center">
                   <IconComponent icon={FaLightbulb} className="mr-2 sm:mr-3 text-xl sm:text-2xl" />
                   <div>
-                    <h2 className="text-lg sm:text-2xl font-bold">Personalized Recommendations</h2>
-                    <p className="text-blue-100 text-sm sm:text-base">Top 5 universities matched to your profile</p>
+                    <h2 className="text-lg sm:text-2xl font-bold">{t('database.personalizedRecommendations')}</h2>
+                    <p className="text-blue-100 text-sm sm:text-base">{t('database.top5UniversitiesMatchedToYourProfile')}</p>
                   </div>
                 </div>
                 <button 
@@ -4128,12 +4131,12 @@ Please provide realistic cost estimates based on the university's location and t
                   <div className="flex items-center justify-center py-8">
                     <div className="text-center">
                       <IconComponent icon={FaSpinner} className="animate-spin text-4xl text-blue-500 mb-4" />
-                      <p className="text-gray-600">Finding your perfect matches...</p>
+                      <p className="text-gray-600">{t('database.findingYourPerfectMatches')}</p>
                     </div>
                   </div>
                   {streamingRecommendationsContent && (
                     <div className="bg-gray-50 rounded-lg p-4">
-                      <h3 className="font-semibold text-gray-800 mb-2">AI Analysis in Progress:</h3>
+                      <h3 className="font-semibold text-gray-800 mb-2">{t('database.aiAnalysisInProgress')}:</h3>
                       <div className="text-gray-700 whitespace-pre-wrap">{streamingRecommendationsContent}</div>
                     </div>
                   )}
@@ -4167,15 +4170,15 @@ Please provide realistic cost estimates based on the university's location and t
                       
                       <div className="space-y-2 mb-4">
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">QS Ranking:</span>
+                          <span className="text-gray-600">{t('database.qsRanking')}:</span>
                           <span className="font-semibold text-primary">#{university.qsRanking}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Tuition:</span>
+                          <span className="text-gray-600">{t('database.tuition')}:</span>
                           <span className="font-semibold text-green-600">{university.tuitionFees.undergraduate}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Min GPA:</span>
+                          <span className="text-gray-600">{t('database.minGPA')}:</span>
                           <span className="font-semibold">{university.admissionRequirements.minGPA}</span>
                         </div>
                       </div>
@@ -4199,7 +4202,7 @@ Please provide realistic cost estimates based on the university's location and t
                           }}
                           className="flex-1 bg-primary hover:bg-primary-dark text-white py-2 px-3 rounded-lg text-sm font-medium"
                         >
-                          View Details
+                          {t('database.viewDetails')}
                         </motion.button>
                         <motion.button
                           whileHover={{ scale: 1.03 }}
@@ -4211,7 +4214,7 @@ Please provide realistic cost estimates based on the university's location and t
                               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                           }`}
                         >
-                          {compareList.some(u => u.id === university.id) ? 'Remove' : 'Compare'}
+                          {compareList.some(u => u.id === university.id) ? t('database.remove') : t('database.compare')}
                         </motion.button>
                       </div>
                     </motion.div>
@@ -4219,7 +4222,7 @@ Please provide realistic cost estimates based on the university's location and t
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <p className="text-gray-500">No recommendations available. Please try again.</p>
+                  <p className="text-gray-500">{t('database.noRecommendationsAvailable')}. {t('database.pleaseTryAgain')}</p>
                 </div>
               )}
             </div>
@@ -4247,8 +4250,8 @@ Please provide realistic cost estimates based on the university's location and t
                 <div className="flex items-center">
                   <IconComponent icon={FaFilter} className="mr-3 text-2xl" />
                   <div>
-                    <h2 className="text-2xl font-bold">Advanced Filters</h2>
-                    <p className="text-gray-100">Refine your university search with detailed criteria</p>
+                    <h2 className="text-2xl font-bold">{t('database.advancedFilters')}</h2>
+                    <p className="text-gray-100">{t('database.refineYourUniversitySearchWithDetailedCriteria')}</p>
                   </div>
                 </div>
                 <button 
@@ -4268,7 +4271,7 @@ Please provide realistic cost estimates based on the university's location and t
                 {/* Location Filters */}
                 <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6">
                   <h3 className="text-lg font-bold text-green-800 mb-4 flex items-center">
-                    <IconComponent icon={FaMapMarkerAlt} className="mr-2" /> Location
+                    <IconComponent icon={FaMapMarkerAlt} className="mr-2" /> {t('database.location')}
                   </h3>
                   <div className="space-y-3">
                     <select
@@ -4277,7 +4280,7 @@ Please provide realistic cost estimates based on the university's location and t
                       onChange={handleFilterChange}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="">All Regions</option>
+                      <option value="">{t('database.allRegions')}</option>
                       {availableRegions.map((region) => (
                         <option key={region} value={region}>{region}</option>
                       ))}
@@ -4289,10 +4292,10 @@ Please provide realistic cost estimates based on the university's location and t
                       onChange={handleFilterChange}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="">All Campus Types</option>
-                      <option value="urban">Urban</option>
-                      <option value="suburban">Suburban</option>
-                      <option value="rural">Rural</option>
+                      <option value="">{t('database.allCampusTypes')}</option>
+                      <option value="urban">{t('database.urban')}</option>
+                      <option value="suburban">{t('database.suburban')}</option>
+                      <option value="rural">{t('database.rural')}</option>
                     </select>
                   </div>
                 </div>
@@ -4300,7 +4303,7 @@ Please provide realistic cost estimates based on the university's location and t
                 {/* Academic Filters */}
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6">
                   <h3 className="text-lg font-bold text-purple-800 mb-4 flex items-center">
-                    <IconComponent icon={FaGraduationCap} className="mr-2" /> Academic
+                    <IconComponent icon={FaGraduationCap} className="mr-2" /> {t('database.academic')}
                   </h3>
                   <div className="space-y-3">
                     <select
@@ -4309,10 +4312,10 @@ Please provide realistic cost estimates based on the university's location and t
                       onChange={handleFilterChange}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="">All Program Levels</option>
-                      <option value="undergraduate">Undergraduate</option>
-                      <option value="graduate">Graduate</option>
-                      <option value="both">Both</option>
+                      <option value="">{t('database.allProgramLevels')}</option>
+                      <option value="undergraduate">{t('database.undergraduate')}</option>
+                      <option value="graduate">{t('database.graduate')}</option>
+                      <option value="both">{t('database.both')}</option>
                     </select>
 
                     <select
@@ -4321,7 +4324,7 @@ Please provide realistic cost estimates based on the university's location and t
                       onChange={handleFilterChange}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="">All Ranking Types</option>
+                      <option value="">{t('database.allRankingTypes')}</option>
                       {availableRankingTypes.map((type) => (
                         <option key={type} value={type}>{type}</option>
                       ))}
@@ -4332,12 +4335,12 @@ Please provide realistic cost estimates based on the university's location and t
                 {/* Rankings & Statistics */}
                 <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6">
                   <h3 className="text-lg font-bold text-yellow-800 mb-4 flex items-center">
-                    <IconComponent icon={FaTrophy} className="mr-2" /> Rankings & Statistics
+                    <IconComponent icon={FaTrophy} className="mr-2" /> {t('database.rankingsAndStatistics')}
                   </h3>
                   <div className="space-y-3">
                     <div>
                       <label className="block text-sm text-gray-600 mb-2">
-                        Acceptance Rate: {filters.acceptanceRateRange[0]}% - {filters.acceptanceRateRange[1]}%
+                        {t('database.acceptanceRate')}: {filters.acceptanceRateRange[0]}% - {filters.acceptanceRateRange[1]}%
                       </label>
                       <input
                         type="range"
@@ -4364,12 +4367,12 @@ Please provide realistic cost estimates based on the university's location and t
                 {/* Financial Filters */}
                 <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6">
                   <h3 className="text-lg font-bold text-green-800 mb-4 flex items-center">
-                    <IconComponent icon={FaDollarSign} className="mr-2" /> Financial
+                    <IconComponent icon={FaDollarSign} className="mr-2" /> {t('database.financial')}
                   </h3>
                   <div className="space-y-3">
                     <div>
                       <label className="block text-sm text-gray-600 mb-2">
-                        Application Fee: ${filters.applicationFeeRange[0]} - ${filters.applicationFeeRange[1]}
+                        {t('database.applicationFee')}: ${filters.applicationFeeRange[0]} - ${filters.applicationFeeRange[1]}
                       </label>
                       <input
                         type="range"
@@ -4399,7 +4402,7 @@ Please provide realistic cost estimates based on the university's location and t
                         onChange={(e) => setFilters(prev => ({ ...prev, financialAidAvailable: e.target.checked }))}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <label className="text-sm text-gray-700">Financial Aid Available</label>
+                      <label className="text-sm text-gray-700">{t('database.financialAidAvailable')}</label>
                     </div>
                   </div>
                 </div>
@@ -4407,7 +4410,7 @@ Please provide realistic cost estimates based on the university's location and t
                 {/* Campus & Environment */}
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6">
                   <h3 className="text-lg font-bold text-blue-800 mb-4 flex items-center">
-                    <IconComponent icon={FaBuilding} className="mr-2" /> Campus & Environment
+                    <IconComponent icon={FaBuilding} className="mr-2" /> {t('database.campusAndEnvironment')}
                   </h3>
                   <div className="space-y-3">
                     <select
@@ -4416,15 +4419,15 @@ Please provide realistic cost estimates based on the university's location and t
                       onChange={handleFilterChange}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="">All Campus Sizes</option>
-                      <option value="small">Small (&lt; 5,000 students)</option>
-                      <option value="medium">Medium (5,000 - 15,000 students)</option>
-                      <option value="large">Large (&gt; 15,000 students)</option>
+                      <option value="">{t('database.allCampusSizes')}</option>
+                      <option value="small">{t('database.small')}</option>
+                      <option value="medium">{t('database.medium')}</option>
+                      <option value="large">{t('database.large')}</option>
                     </select>
 
                     <div>
                       <label className="block text-sm text-gray-600 mb-2">
-                        Student Population: {filters.studentPopulationRange[0].toLocaleString()} - {filters.studentPopulationRange[1].toLocaleString()}
+                        {t('database.studentPopulation')}: {filters.studentPopulationRange[0].toLocaleString()} - {filters.studentPopulationRange[1].toLocaleString()}
                       </label>
                       <input
                         type="range"
@@ -4454,7 +4457,7 @@ Please provide realistic cost estimates based on the university's location and t
                         onChange={(e) => setFilters(prev => ({ ...prev, dormitoriesAvailable: e.target.checked }))}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <label className="text-sm text-gray-700">On-Campus Housing</label>
+                      <label className="text-sm text-gray-700">{t('database.onCampusHousing')}</label>
                     </div>
 
                     <div className="flex items-center space-x-2">
@@ -4465,7 +4468,7 @@ Please provide realistic cost estimates based on the university's location and t
                         onChange={(e) => setFilters(prev => ({ ...prev, sportsPrograms: e.target.checked }))}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <label className="text-sm text-gray-700">Sports Programs</label>
+                      <label className="text-sm text-gray-700">{t('database.sportsPrograms')}</label>
                     </div>
                   </div>
                 </div>
@@ -4473,7 +4476,7 @@ Please provide realistic cost estimates based on the university's location and t
                 {/* Admission Requirements */}
                 <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-6">
                   <h3 className="text-lg font-bold text-red-800 mb-4 flex items-center">
-                    <IconComponent icon={FaCheckCircle} className="mr-2" /> Admission Requirements
+                    <IconComponent icon={FaCheckCircle} className="mr-2" /> {t('database.admissionRequirements')}
                   </h3>
                   <div className="space-y-3">
                     <select
@@ -4482,15 +4485,15 @@ Please provide realistic cost estimates based on the university's location and t
                       onChange={handleFilterChange}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="">All Difficulty Levels</option>
-                      <option value="highly_competitive">Highly Competitive</option>
-                      <option value="moderately_competitive">Moderately Competitive</option>
-                      <option value="less_competitive">Less Competitive</option>
+                      <option value="">{t('database.allDifficultyLevels')}</option>
+                      <option value="highly_competitive">{t('database.highlyCompetitive')}</option>
+                      <option value="moderately_competitive">{t('database.moderatelyCompetitive')}</option>
+                      <option value="less_competitive">{t('database.lessCompetitive')}</option>
                     </select>
 
                     <div>
                       <label className="block text-sm text-gray-600 mb-2">
-                        Minimum GPA: {filters.minGPA[0]} - {filters.minGPA[1]}
+                        {t('database.minimumGPA')}: {filters.minGPA[0]} - {filters.minGPA[1]}
                       </label>
                       <input
                         type="range"
@@ -4518,12 +4521,12 @@ Please provide realistic cost estimates based on the university's location and t
                       onChange={handleFilterChange}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="">All Test Requirements</option>
-                      <option value="sat_required">SAT Required</option>
-                      <option value="act_required">ACT Required</option>
-                      <option value="gre_required">GRE Required</option>
-                      <option value="gmat_required">GMAT Required</option>
-                      <option value="no_test_required">No Test Required</option>
+                      <option value="">{t('database.allTestRequirements')}</option>
+                      <option value="sat_required">{t('database.satRequired')}</option>
+                      <option value="act_required">{t('database.actRequired')}</option>
+                      <option value="gre_required">{t('database.greRequired')}</option>
+                      <option value="gmat_required">{t('database.gmatRequired')}</option>
+                      <option value="no_test_required">{t('database.noTestRequired')}</option>
                     </select>
 
                     <select
@@ -4532,10 +4535,10 @@ Please provide realistic cost estimates based on the university's location and t
                       onChange={handleFilterChange}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="">All Language Requirements</option>
-                      <option value="ielts_required">IELTS Required</option>
-                      <option value="toefl_required">TOEFL Required</option>
-                      <option value="no_language_test">No Language Test Required</option>
+                      <option value="">{t('database.allLanguageRequirements')}</option>
+                      <option value="ielts_required">{t('database.ieltsRequired')}</option>
+                      <option value="toefl_required">{t('database.toeflRequired')}</option>
+                      <option value="no_language_test">{t('database.noLanguageTestRequired')}</option>
                     </select>
 
                     <div className="flex items-center space-x-2">
@@ -4546,7 +4549,7 @@ Please provide realistic cost estimates based on the university's location and t
                         onChange={(e) => setFilters(prev => ({ ...prev, essayRequired: e.target.checked ? 'true' : '' }))}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <label className="text-sm text-gray-700">Essay Required</label>
+                      <label className="text-sm text-gray-700">{t('database.essayRequired')}</label>
                     </div>
 
                     <div className="flex items-center space-x-2">
@@ -4557,7 +4560,7 @@ Please provide realistic cost estimates based on the university's location and t
                         onChange={(e) => setFilters(prev => ({ ...prev, interviewRequired: e.target.checked ? 'true' : '' }))}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <label className="text-sm text-gray-700">Interview Required</label>
+                      <label className="text-sm text-gray-700">{t('database.interviewRequired')}</label>
                     </div>
 
                     <div className="flex items-center space-x-2">
@@ -4568,7 +4571,7 @@ Please provide realistic cost estimates based on the university's location and t
                         onChange={(e) => setFilters(prev => ({ ...prev, showOnlyOpenApplications: e.target.checked }))}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <label className="text-sm text-gray-700">Open Applications Only</label>
+                      <label className="text-sm text-gray-700">{t('database.openApplicationsOnly')}</label>
                     </div>
                   </div>
                 </div>
@@ -4576,7 +4579,7 @@ Please provide realistic cost estimates based on the university's location and t
                 {/* Additional Features */}
                 <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6">
                   <h3 className="text-lg font-bold text-orange-800 mb-4 flex items-center">
-                    <IconComponent icon={FaStar} className="mr-2" /> Additional Features
+                    <IconComponent icon={FaStar} className="mr-2" /> {t('database.additionalFeatures')}
                   </h3>
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2">
@@ -4587,7 +4590,7 @@ Please provide realistic cost estimates based on the university's location and t
                         onChange={(e) => setFilters(prev => ({ ...prev, onlineProgramsAvailable: e.target.checked }))}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <label className="text-sm text-gray-700">Online Programs</label>
+                      <label className="text-sm text-gray-700">{t('database.onlineProgramsAvailable')}</label>
                     </div>
 
                     <div className="flex items-center space-x-2">
@@ -4598,7 +4601,7 @@ Please provide realistic cost estimates based on the university's location and t
                         onChange={(e) => setFilters(prev => ({ ...prev, exchangeProgramsAvailable: e.target.checked }))}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <label className="text-sm text-gray-700">Exchange Programs</label>
+                      <label className="text-sm text-gray-700">{t('database.exchangeProgramsAvailable')}</label>
                     </div>
 
                     <div className="flex items-center space-x-2">
@@ -4609,7 +4612,7 @@ Please provide realistic cost estimates based on the university's location and t
                         onChange={(e) => setFilters(prev => ({ ...prev, careerServices: e.target.checked }))}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <label className="text-sm text-gray-700">Career Services</label>
+                      <label className="text-sm text-gray-700">{t('database.careerServices')}</label>
                     </div>
 
                     <div className="flex items-center space-x-2">
@@ -4620,7 +4623,7 @@ Please provide realistic cost estimates based on the university's location and t
                         onChange={(e) => setFilters(prev => ({ ...prev, clubsAndOrganizations: e.target.checked }))}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <label className="text-sm text-gray-700">Clubs & Organizations</label>
+                      <label className="text-sm text-gray-700">{t('database.clubsAndOrganizations')}</label>
                     </div>
                   </div>
                 </div>
@@ -4633,20 +4636,20 @@ Please provide realistic cost estimates based on the university's location and t
                   onClick={resetFilters}
                   className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors"
                 >
-                  Reset All Filters
+                  {t('database.resetAllFilters')}
                 </button>
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowMoreFiltersModal(false)}
                     className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors"
                   >
-                    Cancel
+                    {t('database.cancel')}
                   </button>
                   <button
                     onClick={() => setShowMoreFiltersModal(false)}
                     className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
                   >
-                    Apply Filters
+                    {t('database.applyFilters')}
                   </button>
                 </div>
               </div>
@@ -4672,7 +4675,7 @@ Please provide realistic cost estimates based on the university's location and t
             >
               {/* Header */}
               <div className="top-20 bg-white border-b px-4 py-4 flex justify-between items-center  z-10 ">
-                <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
+                <h3 className="text-lg font-semibold text-gray-900">{t('database.filters')}</h3>
                 <button
                   onClick={() => setShowMobileFilters(false)}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors bg-gray-50 border border-gray-200 mb-2"
@@ -4685,13 +4688,13 @@ Please provide realistic cost estimates based on the university's location and t
               <div className="p-4 space-y-6 ">
                 {/* Basic Filters */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 mt-20">Country</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 mt-20">{t('database.country')}</label>
                   <select
                     value={filters.country}
                     onChange={(e) => setFilters(prev => ({ ...prev, country: e.target.value }))}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                   >
-                    <option value="">All Countries</option>
+                    <option value="">{t('database.allCountries')}</option>
                     {availableCountries.map(country => (
                       <option key={country} value={country}>{country}</option>
                     ))}
@@ -4699,13 +4702,13 @@ Please provide realistic cost estimates based on the university's location and t
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">University Type</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('database.universityType')}</label>
                   <select
                     value={filters.type}
                     onChange={(e) => setFilters(prev => ({ ...prev, type: e.target.value }))}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                   >
-                    <option value="">All Types</option>
+                    <option value="">{t('database.allTypes')}</option>
                     {availableUniversityTypes.map(type => (
                       <option key={type} value={type}>{type}</option>
                     ))}
@@ -4713,13 +4716,13 @@ Please provide realistic cost estimates based on the university's location and t
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Major/Field</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('database.majorField')}</label>
                   <select
                     value={filters.major}
                     onChange={(e) => setFilters(prev => ({ ...prev, major: e.target.value }))}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                   >
-                    <option value="">All Majors</option>
+                    <option value="">{t('database.allMajors')}</option>
                     {availableMajors.slice(0, 20).map(major => (
                       <option key={major} value={major}>{major}</option>
                     ))}
@@ -4729,7 +4732,7 @@ Please provide realistic cost estimates based on the university's location and t
                 {/* Tuition Fee Range */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tuition Fee: ${filters.tuitionFees[0].toLocaleString()} - ${filters.tuitionFees[1].toLocaleString()}
+                    {t('database.tuitionFee')}: ${filters.tuitionFees[0].toLocaleString()} - ${filters.tuitionFees[1].toLocaleString()}
                   </label>
                   <input
                     type="range"
@@ -4759,7 +4762,7 @@ Please provide realistic cost estimates based on the university's location and t
 
                 {/* Quick Filters */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">Quick Filters</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">{t('database.quickFilters')}</label>
                   <div className="space-y-2">
                     <label className="flex items-center">
                       <input
@@ -4768,7 +4771,7 @@ Please provide realistic cost estimates based on the university's location and t
                         onChange={(e) => setFilters(prev => ({ ...prev, scholarshipAvailable: e.target.checked }))}
                         className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                       />
-                      <span className="ml-2 text-sm text-gray-700">Scholarships Available</span>
+                      <span className="ml-2 text-sm text-gray-700">{t('database.scholarshipsAvailable')}</span>
                     </label>
                     <label className="flex items-center">
                       <input
@@ -4777,7 +4780,7 @@ Please provide realistic cost estimates based on the university's location and t
                         onChange={(e) => setFilters(prev => ({ ...prev, showOnlyOpenApplications: e.target.checked }))}
                         className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                       />
-                      <span className="ml-2 text-sm text-gray-700">Open Applications</span>
+                      <span className="ml-2 text-sm text-gray-700">{t('database.openApplications')}</span>
                     </label>
                     <label className="flex items-center">
                       <input
@@ -4786,24 +4789,24 @@ Please provide realistic cost estimates based on the university's location and t
                         onChange={(e) => setFilters(prev => ({ ...prev, onlineProgramsAvailable: e.target.checked }))}
                         className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                       />
-                      <span className="ml-2 text-sm text-gray-700">Online Programs</span>
+                      <span className="ml-2 text-sm text-gray-700">{t('database.onlineProgramsAvailable')}</span>
                     </label>
                   </div>
                 </div>
 
                 {/* Sort By */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('database.sortBy')}</label>
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                   >
-                    <option value="featured">Featured</option>
-                    <option value="qsRanking">Best Ranking</option>
-                    <option value="tuition_asc">Lowest Tuition</option>
-                    <option value="tuition_desc">Highest Tuition</option>
-                    <option value="acceptance_rate">Acceptance Rate</option>
+                    <option value="featured">{t('database.featured')}</option>
+                    <option value="qsRanking">{t('database.bestRanking')}</option>
+                    <option value="tuition_asc">{t('database.lowestTuition')}</option>
+                    <option value="tuition_desc">{t('database.highestTuition')}</option>
+                    <option value="acceptance_rate">{t('database.acceptanceRate')}</option>
                   </select>
                 </div>
               </div>
@@ -4814,13 +4817,13 @@ Please provide realistic cost estimates based on the university's location and t
                   onClick={resetFilters}
                   className="flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors"
                 >
-                  Reset
+                  {t('database.reset')}
                 </button>
                 <button
                   onClick={() => setShowMobileFilters(false)}
                   className="flex-1 px-4 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"
                 >
-                  Apply Filters
+                  {t('database.applyFilters')}
                 </button>
               </div>
             </motion.div>
@@ -4851,9 +4854,9 @@ Please provide realistic cost estimates based on the university's location and t
                 <div className="flex items-center">
                   <IconComponent icon={FaCalculator} className="mr-2 sm:mr-3 text-xl sm:text-2xl" />
                   <div>
-                    <h2 className="text-lg sm:text-2xl font-bold">Cost Calculator</h2>
+                    <h2 className="text-lg sm:text-2xl font-bold">{t('database.costCalculator')}</h2>
                     <p className="text-emerald-100 text-sm sm:text-base">
-                      Detailed cost estimation for {selectedUniversityForCost?.name || 'University'}
+                      {t('database.detailedCostEstimationFor')} {selectedUniversityForCost?.name || t('database.university')}
                     </p>
                   </div>
                 </div>
@@ -4872,7 +4875,7 @@ Please provide realistic cost estimates based on the university's location and t
                   <div className="flex items-center justify-center py-8">
                     <div className="text-center">
                       <IconComponent icon={FaSpinner} className="animate-spin text-4xl text-emerald-500 mb-4" />
-                      <p className="text-gray-600">Calculating detailed cost estimation...</p>
+                      <p className="text-gray-600">{t('database.calculatingDetailedCostEstimation')}</p>
                     </div>
                   </div>
                 
@@ -4981,7 +4984,7 @@ Please provide realistic cost estimates based on the university's location and t
                   {/* Total Annual Cost */}
                   <div className="bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl p-6">
                     <div className="text-center">
-                      <h3 className="text-2xl font-bold mb-2">Total Estimated Annual Cost</h3>
+                      <h3 className="text-2xl font-bold mb-2">{t('database.totalEstimatedAnnualCost')}</h3>
                       <div className="text-4xl font-bold mb-2">${costEstimationData.totalAnnualCost.toLocaleString()}</div>
                       <p className="text-emerald-100">*Costs may vary based on lifestyle and program requirements</p>
                     </div>
@@ -4990,26 +4993,26 @@ Please provide realistic cost estimates based on the university's location and t
                   {/* Financial Aid Info */}
                   <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl p-4 sm:p-6">
                     <h4 className="text-lg font-bold text-indigo-800 mb-4 flex items-center">
-                      <IconComponent icon={FaDollarSign} className="mr-2" /> Financial Aid Information
+                      <IconComponent icon={FaDollarSign} className="mr-2" /> {t('database.financialAidInformation')}
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div className="text-center">
                         <div className={`text-2xl mb-2 ${costEstimationData.financialAidInfo.available ? 'text-green-600' : 'text-red-500'}`}>
                           <IconComponent icon={costEstimationData.financialAidInfo.available ? FaCheckCircle : FaTimes} />
                         </div>
-                        <p className="text-sm text-indigo-700">Financial Aid Available</p>
+                        <p className="text-sm text-indigo-700">{t('database.financialAidAvailable')}</p>
                       </div>
                       <div className="text-center">
                         <div className={`text-2xl mb-2 ${costEstimationData.financialAidInfo.scholarshipAvailable ? 'text-green-600' : 'text-red-500'}`}>
                           <IconComponent icon={costEstimationData.financialAidInfo.scholarshipAvailable ? FaCheckCircle : FaTimes} />
                         </div>
-                        <p className="text-sm text-indigo-700">Scholarships Available</p>
+                        <p className="text-sm text-indigo-700">{t('database.scholarshipsAvailable')}</p>
                       </div>
                       <div className="text-center">
                         <div className={`text-2xl mb-2 ${costEstimationData.financialAidInfo.workStudyOptions ? 'text-green-600' : 'text-red-500'}`}>
                           <IconComponent icon={costEstimationData.financialAidInfo.workStudyOptions ? FaCheckCircle : FaTimes} />
                         </div>
-                        <p className="text-sm text-indigo-700">Work-Study Options</p>
+                        <p className="text-sm text-indigo-700">{t('database.workStudyOptions')}</p>
                       </div>
                     </div>
                   </div>
@@ -5018,13 +5021,13 @@ Please provide realistic cost estimates based on the university's location and t
                   {costEstimationData.budgetTips.length > 0 && (
                     <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-4 sm:p-6">
                       <h4 className="text-lg font-bold text-yellow-800 mb-4 flex items-center">
-                        <IconComponent icon={FaLightbulb} className="mr-2" /> Budget Tips
+                        <IconComponent icon={FaLightbulb} className="mr-2" /> {t('database.budgetTips')}
                       </h4>
                       <ul className="space-y-2">
                         {costEstimationData.budgetTips.map((tip, index) => (
                           <li key={index} className="flex items-start">
                             <IconComponent icon={FaCheck} className="text-yellow-600 mr-2 mt-1 flex-shrink-0" />
-                            <span className="text-yellow-800">{tip}</span>
+                              <span className="text-yellow-800">{tip}</span>
                           </li>
                         ))}
                       </ul>
@@ -5035,7 +5038,7 @@ Please provide realistic cost estimates based on the university's location and t
                   {costEstimationData.visaRequirements.length > 0 && (
                     <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-4 sm:p-6">
                       <h4 className="text-lg font-bold text-red-800 mb-4 flex items-center">
-                        <IconComponent icon={FaFlag} className="mr-2" /> Visa Requirements
+                        <IconComponent icon={FaFlag} className="mr-2" /> {t('database.visaRequirements')}
                       </h4>
                       <ul className="space-y-2">
                         {costEstimationData.visaRequirements.map((requirement, index) => (
@@ -5052,7 +5055,7 @@ Please provide realistic cost estimates based on the university's location and t
                   {costEstimationData.additionalNotes.length > 0 && (
                     <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 sm:p-6">
                       <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                        <IconComponent icon={FaInfoCircle} className="mr-2" /> Important Notes
+                        <IconComponent icon={FaInfoCircle} className="mr-2" /> {t('database.importantNotes')}
                       </h4>
                       <ul className="space-y-2">
                         {costEstimationData.additionalNotes.map((note, index) => (
@@ -5068,8 +5071,7 @@ Please provide realistic cost estimates based on the university's location and t
                   {/* Disclaimer */}
                   <div className="bg-gradient-to-r from-gray-100 to-gray-200 rounded-xl p-4 text-center">
                     <p className="text-gray-600 text-sm">
-                      <strong>Disclaimer:</strong> All cost estimates are AI-generated and may vary based on individual circumstances, 
-                      program requirements, lifestyle choices, and current exchange rates. Please verify with the university for the most accurate information.
+                      <strong>{t('database.disclaimer')}:</strong> {t('database.allCostEstimatesAreAIGeneratedAndMayVaryBasedOnIndividualCircumstancesProgramRequirementsLifestyleChoicesAndCurrentExchangeRatesPleaseVerifyWithTheUniversityForTheMostAccurateInformation')}
                     </p>
                   </div>
                 </div>

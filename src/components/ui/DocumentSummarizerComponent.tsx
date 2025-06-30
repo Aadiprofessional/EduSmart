@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AiOutlineUpload, AiOutlineFileText, AiOutlineBulb, AiOutlineHistory, AiOutlineFullscreen, AiOutlineCamera, AiOutlineLoading3Quarters } from 'react-icons/ai';
-import { FiDownload, FiCopy, FiShare2, FiClock, FiTrash2, FiEye, FiZap, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { AiOutlineUpload, AiOutlineFileText, AiOutlineBulb, AiOutlineHistory, AiOutlineLoading3Quarters, AiOutlineFullscreen, AiOutlineSearch, AiOutlineRobot } from 'react-icons/ai';
+import { FiDownload, FiCopy, FiShare2, FiChevronLeft, FiChevronRight, FiEye, FiTrash2, FiZap, FiClock } from 'react-icons/fi';
 import IconComponent from './IconComponent';
 import * as pdfjsLib from 'pdfjs-dist';
 import ReactMarkdown from 'react-markdown';
@@ -16,6 +16,8 @@ import * as echarts from 'echarts';
 import { jsPDF } from 'jspdf';
 import { Document, Paragraph, TextRun, Packer } from 'docx';
 import { useResponseCheck, ResponseUpgradeModal } from '../../utils/responseChecker';
+import { useNotification } from '../../utils/NotificationContext';
+import { useLanguage } from '../../utils/LanguageContext';
 
 // Set up PDF.js worker with a more reliable approach
 if (typeof window !== 'undefined') {
@@ -166,6 +168,7 @@ const PortalModal: React.FC<PortalModalProps> = ({ isOpen, onClose, children, cl
 };
 
 const DocumentSummarizerComponent: React.FC<DocumentSummarizerComponentProps> = ({ className = '' }) => {
+  const { t } = useLanguage();
   // Response checking state
   const { checkAndUseResponse } = useResponseCheck();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -631,7 +634,7 @@ Please provide a well-structured, informative summary using proper markdown form
     if (!summary || isGeneratingMindmap) return;
     
     setIsGeneratingMindmap(true);
-    setProcessingStatus('🧠 Creating key points structure...');
+    setProcessingStatus(t('aiStudy.creatingKeyPointsStructure'));
 
     try {
       // First, generate key points in XML format
@@ -688,7 +691,7 @@ Return only the XML structure, no additional text or explanation.`
         stream: false
       };
 
-      setProcessingStatus('🔍 Analyzing document structure...');
+      setProcessingStatus(t('aiStudy.analyzingDocumentStructure'));
 
       const xmlResponse = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
@@ -706,7 +709,7 @@ Return only the XML structure, no additional text or explanation.`
       const xmlData = await xmlResponse.json();
       const xmlContent = xmlData.choices?.[0]?.message?.content || '';
       
-      setProcessingStatus('🗂️ Converting to interactive mindmap...');
+      setProcessingStatus(t('aiStudy.convertingToInteractiveMindmap'));
 
       // Now convert the XML structure to mindmap JSON
       const mindmapRequestPayload = {
@@ -796,7 +799,7 @@ Return only the JSON structure, no additional text or explanation.`
         if (jsonMatch) {
           const parsedData = JSON.parse(jsonMatch[0]);
           setMindmapData(parsedData);
-          setProcessingStatus('✅ Interactive mindmap generated successfully!');
+          setProcessingStatus(t('aiStudy.interactiveMindmapGenerated'));
         } else {
           throw new Error('No valid JSON found in mindmap response');
         }
@@ -869,11 +872,11 @@ Return only the JSON structure, no additional text or explanation.`
         }
         
         setMindmapData(fallbackData);
-        setProcessingStatus('⚠️ Using enhanced fallback mindmap structure');
+        setProcessingStatus(t('aiStudy.usingEnhancedFallbackMindmap'));
       }
     } catch (error) {
       console.error('Error generating mindmap:', error);
-      setProcessingStatus('❌ Error generating mindmap');
+      setProcessingStatus(t('aiStudy.errorGeneratingMindmap'));
       
       // Fallback mindmap based on document type
       const fallbackData = {
@@ -966,7 +969,7 @@ Return only the JSON structure, no additional text or explanation.`
     
     while (retryCount <= maxRetries) {
       try {
-        setProcessingStatus(retryCount > 0 ? `Retrying PDF conversion (attempt ${retryCount + 1})...` : 'Loading PDF...');
+        setProcessingStatus(retryCount > 0 ? t('aiStudy.retryingPdfConversion').replace('{attempt}', (retryCount + 1).toString()) : t('aiStudy.loadingPdf'));
         
         const arrayBuffer = await file.arrayBuffer();
         
@@ -990,10 +993,10 @@ Return only the JSON structure, no additional text or explanation.`
         const pdf = await loadingTask.promise as PDFDocumentProxy;
         const images: string[] = [];
         
-        setProcessingStatus(`Converting ${pdf.numPages} pages to images...`);
+        setProcessingStatus(t('aiStudy.convertingPagesToImages').replace('{total}', pdf.numPages.toString()));
         
         for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-          setProcessingStatus(`Converting page ${pageNum} of ${pdf.numPages}...`);
+          setProcessingStatus(t('aiStudy.convertingPage').replace('{current}', pageNum.toString()).replace('{total}', pdf.numPages.toString()));
           
           try {
             const page = await pdf.getPage(pageNum);
@@ -1028,7 +1031,7 @@ Return only the JSON structure, no additional text or explanation.`
           } catch (pageError) {
             console.error(`Error processing page ${pageNum}:`, pageError);
             // Continue with other pages even if one fails
-            setProcessingStatus(`Warning: Could not process page ${pageNum}, continuing...`);
+            setProcessingStatus(t('aiStudy.warningCouldNotProcessPage').replace('{page}', pageNum.toString()));
           }
         }
         
@@ -1036,7 +1039,7 @@ Return only the JSON structure, no additional text or explanation.`
           throw new Error('No pages could be processed from the PDF');
         }
         
-        setProcessingStatus(`PDF conversion completed! Processed ${images.length} pages.`);
+        setProcessingStatus(t('aiStudy.pdfConversionCompleted').replace('{count}', images.length.toString()));
         return images;
         
       } catch (error) {
@@ -1085,7 +1088,7 @@ Return only the JSON structure, no additional text or explanation.`
   // Process file for page-by-page summarization
   const processFile = async (file: File) => {
     setLoading(true);
-    setProcessingStatus('Loading file for preview...');
+    setProcessingStatus(t('aiStudy.loadingFileForPreview'));
     setSummary('');
     setPageSummaries([]);
     setOverallProcessingComplete(false);
@@ -1096,7 +1099,7 @@ Return only the JSON structure, no additional text or explanation.`
       if (file.type === 'application/pdf') {
         imageUrls = await convertPdfToImages(file);
       } else if (file.type.startsWith('image/')) {
-        setProcessingStatus('Loading image...');
+        setProcessingStatus(t('aiStudy.loadingImage'));
         
         const imageDataUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
@@ -1110,7 +1113,7 @@ Return only the JSON structure, no additional text or explanation.`
         // For text files, read content directly
         const text = await file.text();
         setTextInput(text);
-        setProcessingStatus('Text file loaded successfully! You can now click "Generate Summary" to summarize.');
+        setProcessingStatus(t('aiStudy.textFileLoadedSuccessfully'));
         setShowGetSummaryButton(false); // For text files, use direct summarization
         return;
       } else {
@@ -1120,10 +1123,10 @@ Return only the JSON structure, no additional text or explanation.`
       setDocumentPages(imageUrls);
       setCurrentPage(0);
       setShowGetSummaryButton(true);
-      setProcessingStatus('File loaded successfully! You can now add additional context or click "Generate Summary" to summarize.');
+      setProcessingStatus(t('aiStudy.fileLoadedSuccessfully'));
       
     } catch (error) {
-      setProcessingStatus('Error loading file');
+      setProcessingStatus(t('aiStudy.errorLoadingFile'));
       console.error('File processing error:', error);
     } finally {
       setLoading(false);
@@ -1163,7 +1166,7 @@ Return only the JSON structure, no additional text or explanation.`
     
     setLoading(true);
     setSummaryComplete(false);
-    setProcessingStatus('🚀 Analyzing text...');
+    setProcessingStatus(t('aiStudy.analyzingText'));
     setSummary('');
     setStreamingText('');
     setMindmapData(null);
@@ -1174,7 +1177,7 @@ Return only the JSON structure, no additional text or explanation.`
     } catch (error) {
       console.error('Error generating summary:', error);
       setSummary(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      setProcessingStatus('❌ Error generating summary');
+      setProcessingStatus(t('aiStudy.errorGeneratingSummary'));
       setSummaryComplete(false);
     } finally {
       setLoading(false);
@@ -1309,7 +1312,7 @@ Please provide a well-structured summary using proper markdown formatting.`
     
     setLoading(true);
     setSummaryComplete(false);
-    setProcessingStatus('🚀 Starting document analysis...');
+    setProcessingStatus(t('aiStudy.startingDocumentAnalysis'));
     setSummary('');
     setStreamingText('');
     setMindmapData(null);
@@ -1327,14 +1330,14 @@ Please provide a well-structured summary using proper markdown formatting.`
         }));
         setPageSummaries(initialPageSummaries);
         
-        setProcessingStatus(`📄 Processing ${documentPages.length} pages in parallel...`);
+        setProcessingStatus(t('aiStudy.processingPagesInParallel').replace('{count}', documentPages.length.toString()));
         
         // Process all pages in parallel
         const pagePromises = documentPages.map(async (pageImage, index) => {
           const pageNumber = index + 1;
           
           try {
-            setProcessingStatus(`🔍 Analyzing page ${pageNumber}...`);
+            setProcessingStatus(t('aiStudy.analyzingPage').replace('{page}', pageNumber.toString()));
             const pageSummary = await summarizePageContent(pageImage, pageNumber);
             
             // Update page summary as complete
@@ -1362,7 +1365,7 @@ Please provide a well-structured summary using proper markdown formatting.`
         // Wait for all pages to complete
         const pageResults = await Promise.all(pagePromises);
         
-        setProcessingStatus('📝 Generating comprehensive summary...');
+        setProcessingStatus(t('aiStudy.generatingComprehensiveSummary'));
         
         // Generate comprehensive summary from all page summaries
         const allPageSummaries = pageResults.map(result => result.summary).join('\n\n');
@@ -1379,7 +1382,7 @@ Please provide a well-structured summary using proper markdown formatting.`
     } catch (error) {
       console.error('Error in document processing:', error);
       setSummary(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      setProcessingStatus('❌ Error processing document');
+      setProcessingStatus(t('aiStudy.errorProcessingDocument'));
       setSummaryComplete(false);
     } finally {
       setLoading(false);
@@ -1498,7 +1501,7 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
 
     setSummary(fullContent.trim());
     setSummaryComplete(true);
-    setProcessingStatus('✅ Comprehensive summary generated!');
+    setProcessingStatus(t('aiStudy.comprehensiveSummaryGenerated'));
     
     // Add to history with enhanced data
     if (fullContent.trim()) {
@@ -1586,7 +1589,7 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
   const handleCopyContent = () => {
     const content = summary || streamingText;
     navigator.clipboard.writeText(content).then(() => {
-      setProcessingStatus('✅ Summary copied to clipboard!');
+      setProcessingStatus(t('aiStudy.summaryCopiedToClipboard'));
       setTimeout(() => setProcessingStatus(''), 2000);
     });
   };
@@ -1601,7 +1604,7 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
       }).catch(console.error);
     } else {
       navigator.clipboard.writeText(content);
-      setProcessingStatus('✅ Summary copied to clipboard for sharing!');
+      setProcessingStatus(t('aiStudy.summaryCopiedForSharing'));
       setTimeout(() => setProcessingStatus(''), 2000);
     }
   };
@@ -1651,8 +1654,8 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
               <IconComponent icon={AiOutlineBulb} className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-cyan-400">Document Summarizer</h2>
-              <p className="text-cyan-300 text-sm mt-1 font-medium">Comprehensive analysis and key insights</p>
+              <h2 className="text-2xl font-bold text-cyan-400">{t('aiStudy.documentSummarizer')}</h2>
+              <p className="text-cyan-300 text-sm mt-1 font-medium">{t('aiStudy.documentSummarizerDescription')}</p>
             </div>
           </div>
           
@@ -1669,7 +1672,7 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
                 />
                 <label htmlFor="autoScrollSummary" className="text-slate-300 text-sm font-medium cursor-pointer flex items-center">
                   <IconComponent icon={AiOutlineLoading3Quarters} className="h-4 w-4 mr-1" />
-                  Auto Scroll
+                  {t('aiStudy.autoScroll')}
                 </label>
               </div>
             </div>
@@ -1679,7 +1682,7 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
           <div className="mb-6">
             <label className="block text-slate-300 mb-3 font-medium flex items-center">
               <IconComponent icon={AiOutlineUpload} className="h-5 w-5 mr-2 text-cyan-400" />
-              Upload Document
+              {t('aiStudy.uploadDocument')}
             </label>
             <div 
               className="border-2 border-dashed border-cyan-500/30 rounded-xl p-8 text-center hover:border-cyan-400/50 cursor-pointer transition-all duration-300 relative bg-gradient-to-br from-slate-600/20 to-slate-700/20 backdrop-blur-sm hover:from-slate-600/30 hover:to-slate-700/30"
@@ -1712,7 +1715,7 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
                     <p className="font-medium text-cyan-300">{file.name}</p>
                     <p className="text-sm text-slate-400 mt-1">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
                     {documentPages.length > 0 && (
-                      <p className="text-sm text-cyan-300 mt-2">{documentPages.length} pages loaded</p>
+                      <p className="text-sm text-cyan-300 mt-2">{documentPages.length} {t('aiStudy.pagesLoaded')}</p>
                     )}
                   </div>
                 </div>
@@ -1724,8 +1727,8 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
                   >
                     <IconComponent icon={AiOutlineUpload} className="h-12 w-12 mx-auto mb-4 text-cyan-400" />
                   </motion.div>
-                  <p className="text-lg font-medium text-slate-300 mb-2">Drag and drop your document here</p>
-                  <p className="text-sm">or click to browse</p>
+                  <p className="text-lg font-medium text-slate-300 mb-2">{t('aiStudy.dragDropText')}</p>
+                  <p className="text-sm">{t('aiStudy.orClickToBrowse')}</p>
                   <div className="flex items-center justify-center space-x-4 mt-4 text-xs text-slate-500">
                     <span className="bg-slate-600/50 px-2 py-1 rounded">PDF</span>
                     <span className="bg-slate-600/50 px-2 py-1 rounded">Images</span>
@@ -1743,7 +1746,7 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
               <div className="flex items-center justify-between mb-3">
                 <label className="block text-slate-300 font-medium flex items-center">
                   <IconComponent icon={FiEye} className="h-5 w-5 mr-2 text-cyan-400" />
-                  Document Preview
+                  {t('aiStudy.documentPreview')}
                 </label>
                 <div className="flex items-center space-x-2">
                   <motion.button
@@ -1783,7 +1786,7 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
           <div className="mb-6">
             <label className="block text-slate-300 mb-3 font-medium flex items-center">
               <IconComponent icon={AiOutlineFileText} className="h-5 w-5 mr-2 text-cyan-400" />
-              {documentPages.length > 0 ? 'Additional Context (Optional)' : 'Or paste your text here'}
+              {documentPages.length > 0 ? t('aiStudy.additionalContext') : t('aiStudy.pasteTextHere')}
             </label>
             <div className="relative">
               <textarea
@@ -1791,12 +1794,12 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
                 onChange={(e) => setTextInput(e.target.value)}
                 className="w-full p-4 bg-slate-600/30 backdrop-blur-sm border border-cyan-500/20 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none h-64 text-slate-200 placeholder-slate-400 transition-all duration-300"
                 placeholder={documentPages.length > 0 ? 
-                  "Add any additional context or specific questions about the document..." : 
-                  "Paste your text content here for summarization..."
+                  t('aiStudy.addContextPlaceholder') : 
+                  t('aiStudy.pasteTextPlaceholder')
                 }
               />
               <div className="absolute bottom-3 right-3 text-xs text-slate-500">
-                {textInput.length} characters
+                {textInput.length} {t('aiStudy.characters')}
               </div>
             </div>
           </div>
@@ -1813,7 +1816,7 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
                 onClick={() => setShowHistory(!showHistory)}
               >
                 <IconComponent icon={AiOutlineHistory} className="h-5 w-5 mr-2" />
-                History ({summaryHistory.length})
+                {t('aiStudy.history')} ({summaryHistory.length})
               </motion.button>
               
               <motion.button
@@ -1825,7 +1828,7 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
                 onClick={handleRemoveFile}
               >
                 <IconComponent icon={FiTrash2} className="h-5 w-5 mr-2" />
-                Clear
+                {t('aiStudy.clear')}
               </motion.button>
             </div>
             
@@ -1847,12 +1850,12 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
                       animate={{ rotate: 360 }}
                       transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                     />
-                    Processing...
+                    {t('common.processing')}
                   </>
                 ) : (
                   <>
                     <IconComponent icon={FiZap} className="h-5 w-5 mr-2" />
-                    Generate Summary
+                    {t('aiStudy.getSummary')}
                   </>
                 )}
               </motion.button>
@@ -1873,12 +1876,12 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
                       animate={{ rotate: 360 }}
                       transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                     />
-                    Processing...
+                    {t('common.processing')}
                   </>
                 ) : (
                   <>
                     <IconComponent icon={FiZap} className="h-5 w-5 mr-2" />
-                    Generate Summary
+                    {t('aiStudy.getSummary')}
                   </>
                 )}
               </motion.button>
@@ -1894,8 +1897,8 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
                 <IconComponent icon={AiOutlineBulb} className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-cyan-400">Results</h2>
-                <p className="text-purple-300 text-sm mt-1 font-medium">AI-powered document analysis</p>
+                <h2 className="text-2xl font-bold text-cyan-400">{t('aiStudy.results')}</h2>
+                <p className="text-purple-300 text-sm mt-1 font-medium">{t('aiStudy.aiPoweredAnalysis')}</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
@@ -1912,7 +1915,7 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
                   transition={{ delay: 0.5 }}
                 >
                   <IconComponent icon={FiEye} className="h-4 w-4 mr-2" />
-                  {showMindmap ? 'Show Summary' : 'Show Mindmap'}
+                  {showMindmap ? t('aiStudy.showSummary') : t('aiStudy.showMindmap')}
                 </motion.button>
               )}
               
@@ -1925,7 +1928,7 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
                   className="flex items-center text-cyan-400 font-medium hover:text-cyan-300 transition-colors"
                 >
                   <IconComponent icon={AiOutlineFullscreen} className="h-5 w-5 mr-1" />
-                  Fullscreen
+                  {t('aiStudy.fullscreen')}
                 </motion.button>
               )}
             </div>
@@ -2141,7 +2144,7 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
                   onClick={() => setShowDownloadOptions(!showDownloadOptions)}
                   className="flex items-center text-sm px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-lg text-white font-medium shadow-lg transition-all duration-300"
                 >
-                  <IconComponent icon={FiDownload} className="mr-2" /> Download
+                  <IconComponent icon={FiDownload} className="mr-2" /> {t('common.download')}
                 </motion.button>
                 
                 <AnimatePresence>
@@ -2156,19 +2159,19 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
                         onClick={() => handleDownloadContent('txt')}
                         className="block w-full text-left px-4 py-2 text-slate-300 hover:bg-slate-600 rounded-t-lg transition-colors"
                       >
-                        Download as TXT
+                        {t('common.download')} as TXT
                       </button>
                       <button
                         onClick={() => handleDownloadContent('pdf')}
                         className="block w-full text-left px-4 py-2 text-slate-300 hover:bg-slate-600 transition-colors"
                       >
-                        Download as PDF
+                        {t('common.download')} as PDF
                       </button>
                       <button
                         onClick={() => handleDownloadContent('doc')}
                         className="block w-full text-left px-4 py-2 text-slate-300 hover:bg-slate-600 rounded-b-lg transition-colors"
                       >
-                        Download as DOCX
+                        {t('common.download')} as DOCX
                       </button>
                     </motion.div>
                   )}

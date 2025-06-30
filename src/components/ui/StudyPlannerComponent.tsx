@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AiOutlineBulb, AiOutlineRobot } from 'react-icons/ai';
+import { AiOutlineBulb, AiOutlineRobot, AiOutlineUp, AiOutlineDown } from 'react-icons/ai';
 import { FiCalendar, FiClock, FiCheck, FiPlus, FiEdit, FiTrash2, FiFilter, FiChevronLeft, FiChevronRight, FiUpload, FiBook, FiChevronUp, FiChevronDown } from 'react-icons/fi';
 import { FaCalendarAlt, FaSort, FaSortAmountDown, FaTimes, FaBell, FaBrain } from 'react-icons/fa';
 import IconComponent from './IconComponent';
@@ -318,7 +318,7 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
             ))}
             {tasksForDay.length > 2 && (
               <div className="text-xs text-slate-400 px-1">
-                +{tasksForDay.length - 2} more
+                +{tasksForDay.length - 2} {t('aiStudy.moreTasksText')}
               </div>
             )}
           </div>
@@ -1343,7 +1343,7 @@ Remember: Return ONLY the XML structure. No additional text.`
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <IconComponent icon={FiCalendar} className="h-6 w-6 text-cyan-400" />
-            <h2 className="text-xl font-bold text-cyan-400">Study Planner</h2>
+            <h2 className="text-xl font-bold text-cyan-400">{t('aiStudy.studyPlanner')}</h2>
           </div>
           <div className="flex items-center space-x-3">
             <motion.button
@@ -1352,10 +1352,10 @@ Remember: Return ONLY the XML structure. No additional text.`
               variants={buttonVariants}
               whileHover="hover"
               whileTap="tap"
-              title="AI Timetable Import"
+              title={t('aiStudy.aiTimetableImport')}
             >
               <IconComponent icon={FaBrain} className="h-4 w-4 mr-2" />
-              AI Import
+              {t('aiStudy.aiImport')}
             </motion.button>
             <motion.button
               onClick={openAISuggestionModal}
@@ -1363,10 +1363,10 @@ Remember: Return ONLY the XML structure. No additional text.`
               variants={buttonVariants}
               whileHover="hover"
               whileTap="tap"
-              title="AI Study Roadmap Generator"
+              title={t('aiStudy.aiStudyRoadmapGenerator')}
             >
               <IconComponent icon={AiOutlineBulb} className="h-4 w-4 mr-2" />
-              AI Roadmap
+              {t('aiStudy.aiRoadmap')}
             </motion.button>
             <motion.button
               onClick={() => setShowAddForm(!showAddForm)}
@@ -1376,7 +1376,7 @@ Remember: Return ONLY the XML structure. No additional text.`
               whileTap="tap"
             >
               <IconComponent icon={FiPlus} className="h-4 w-4 mr-2" />
-              Add Task
+              {t('aiStudy.addTask')}
             </motion.button>
           </div>
         </div>
@@ -1393,31 +1393,31 @@ Remember: Return ONLY the XML structure. No additional text.`
           <form onSubmit={handleAddTask} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-slate-300 text-sm font-medium mb-2">Task</label>
+                <label className="block text-slate-300 text-sm font-medium mb-2">{t('aiStudy.taskDescription')}</label>
                 <input
                   type="text"
                   value={newTask.task}
                   onChange={(e) => setNewTask({...newTask, task: e.target.value})}
                   className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 placeholder-slate-400 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                  placeholder="Enter task description"
+                  placeholder={t('aiStudy.enterTaskDescription')}
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 text-sm font-medium mb-2">Subject</label>
+                <label className="block text-slate-300 text-sm font-medium mb-2">{t('aiStudy.subject')}</label>
                 <input
                   type="text"
                   value={newTask.subject}
                   onChange={(e) => setNewTask({...newTask, subject: e.target.value})}
                   className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 placeholder-slate-400 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                  placeholder="Enter subject"
+                  placeholder={t('aiStudy.enterSubject')}
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 text-sm font-medium mb-2">Due Date</label>
+                <label className="block text-slate-300 text-sm font-medium mb-2">{t('aiStudy.dueDate')}</label>
                 <input
                   type="date"
                   value={newTask.date}
@@ -1428,20 +1428,20 @@ Remember: Return ONLY the XML structure. No additional text.`
               </div>
 
               <div>
-                <label className="block text-slate-300 text-sm font-medium mb-2">Priority</label>
+                <label className="block text-slate-300 text-sm font-medium mb-2">{t('aiStudy.priority')}</label>
                 <select
                   value={newTask.priority}
                   onChange={(e) => setNewTask({...newTask, priority: e.target.value as 'low' | 'medium' | 'high'})}
                   className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                 >
-                  <option value="low">Low Priority</option>
-                  <option value="medium">Medium Priority</option>
-                  <option value="high">High Priority</option>
+                  <option value="low">{t('aiStudy.lowPriority')}</option>
+                  <option value="medium">{t('aiStudy.mediumPriority')}</option>
+                  <option value="high">{t('aiStudy.highPriority')}</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-slate-300 text-sm font-medium mb-2">Estimated Hours</label>
+                <label className="block text-slate-300 text-sm font-medium mb-2">{t('aiStudy.estimatedHours')}</label>
                 <input
                   type="number"
                   min="1"
@@ -1462,7 +1462,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                 whileTap="tap"
               >
                 <IconComponent icon={FiCheck} className="h-4 w-4 mr-2" />
-                Add Task
+                {t('aiStudy.addTask')}
               </motion.button>
 
               <motion.button
@@ -1473,7 +1473,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                 whileHover="hover"
                 whileTap="tap"
               >
-                Cancel
+                {t('aiStudy.cancel')}
               </motion.button>
             </div>
           </form>
@@ -1500,7 +1500,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                 whileTap="tap"
               >
                 <IconComponent icon={FiFilter} className="h-4 w-4 mr-2" />
-                Filters
+                {t('aiStudy.filters')}
               </motion.button>
 
               <select
@@ -1508,15 +1508,15 @@ Remember: Return ONLY the XML structure. No additional text.`
                 onChange={(e) => setSortBy(e.target.value)}
                 className="px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
               >
-                <option value="date">Sort by Date</option>
-                <option value="date_desc">Sort by Date (Desc)</option>
-                <option value="priority">Sort by Priority</option>
-                <option value="priority_desc">Sort by Priority (Desc)</option>
-                <option value="subject">Sort by Subject</option>
-                <option value="subject_desc">Sort by Subject (Desc)</option>
-                <option value="hours">Sort by Hours</option>
-                <option value="hours_desc">Sort by Hours (Desc)</option>
-                <option value="completion">Sort by Completion</option>
+                <option value="date">{t('aiStudy.sortByDate')}</option>
+                <option value="date_desc">{t('aiStudy.sortByDateDesc')}</option>
+                <option value="priority">{t('aiStudy.sortByPriority')}</option>
+                <option value="priority_desc">{t('aiStudy.sortByPriorityDesc')}</option>
+                <option value="subject">{t('aiStudy.sortBySubject')}</option>
+                <option value="subject_desc">{t('aiStudy.sortBySubjectDesc')}</option>
+                <option value="hours">{t('aiStudy.sortByHours')}</option>
+                <option value="hours_desc">{t('aiStudy.sortByHoursDesc')}</option>
+                <option value="completion">{t('aiStudy.sortByCompletion')}</option>
               </select>
 
               {(selectedDate || selectedCalendarDate || filterPriority !== 'all' || filterSubject !== 'all') && (
@@ -1528,7 +1528,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                   whileTap="tap"
                 >
                   <IconComponent icon={FaTimes} className="h-4 w-4 mr-2" />
-                  Clear Filters
+                  {t('aiStudy.clearFilters')}
                 </motion.button>
               )}
             </div>
@@ -1541,7 +1541,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                 exit={{ opacity: 0, height: 0 }}
               >
                 <div>
-                  <label className="block text-slate-300 text-sm font-medium mb-2">Filter by Date</label>
+                  <label className="block text-slate-300 text-sm font-medium mb-2">{t('aiStudy.filterByDate')}</label>
                   <input
                     type="date"
                     value={selectedDate}
@@ -1551,27 +1551,27 @@ Remember: Return ONLY the XML structure. No additional text.`
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 text-sm font-medium mb-2">Filter by Priority</label>
+                  <label className="block text-slate-300 text-sm font-medium mb-2">{t('aiStudy.filterByPriority')}</label>
                   <select
                     value={filterPriority}
                     onChange={(e) => setFilterPriority(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                   >
-                    <option value="all">All Priorities</option>
-                    <option value="high">High Priority</option>
-                    <option value="medium">Medium Priority</option>
-                    <option value="low">Low Priority</option>
+                    <option value="all">{t('aiStudy.allPriorities')}</option>
+                    <option value="high">{t('aiStudy.highPriority')}</option>
+                    <option value="medium">{t('aiStudy.mediumPriority')}</option>
+                    <option value="low">{t('aiStudy.lowPriority')}</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 text-sm font-medium mb-2">Filter by Subject</label>
+                  <label className="block text-slate-300 text-sm font-medium mb-2">{t('aiStudy.filterBySubject')}</label>
                   <select
                     value={filterSubject}
                     onChange={(e) => setFilterSubject(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                   >
-                    <option value="all">All Subjects</option>
+                    <option value="all">{t('aiStudy.allSubjects')}</option>
                     {getUniqueSubjects().map(subject => (
                       <option key={subject} value={subject}>{subject}</option>
                     ))}
@@ -1583,7 +1583,7 @@ Remember: Return ONLY the XML structure. No additional text.`
             {selectedCalendarDate && (
               <div className="mt-4 p-3 bg-blue-500/20 rounded-lg border border-blue-500/30">
                 <p className="text-blue-400 text-sm">
-                  Showing tasks for: {selectedCalendarDate.toLocaleDateString()}
+                  {t('aiStudy.showingTasksFor')}: {selectedCalendarDate.toLocaleDateString()}
                 </p>
               </div>
             )}
@@ -1594,9 +1594,9 @@ Remember: Return ONLY the XML structure. No additional text.`
             {filteredTasks.length === 0 ? (
               <div className="text-center py-12">
                 <IconComponent icon={AiOutlineBulb} className="h-12 w-12 mx-auto mb-4 text-slate-400" />
-                <h3 className="text-lg font-medium text-slate-300 mb-2">No tasks found</h3>
+                <h3 className="text-lg font-medium text-slate-300 mb-2">{t('aiStudy.noTasksFound')}</h3>
                 <p className="text-slate-400">
-                  {selectedCalendarDate ? 'No tasks scheduled for this date.' : 'Add a new task or adjust your filters to see tasks here.'}
+                  {selectedCalendarDate ? t('aiStudy.noTasksScheduled') : t('aiStudy.addTaskOrAdjustFilters')}
                 </p>
               </div>
             ) : (
@@ -1855,12 +1855,12 @@ Remember: Return ONLY the XML structure. No additional text.`
                             {isProcessingAI ? (
                               <>
                                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                                Analyzing...
+                                {t('aiStudy.analyzing')}
                               </>
                             ) : (
                               <>
                                 <IconComponent icon={AiOutlineRobot} className="h-4 w-4 mr-2" />
-                                Analyze with AI
+                                {t('aiStudy.analyzeWithAI')}
                               </>
                             )}
                           </motion.button>
@@ -1914,7 +1914,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-bold text-emerald-400 flex items-center">
                     <IconComponent icon={AiOutlineBulb} className="mr-2" />
-                    AI Study Roadmap Generator
+                    {t('aiStudy.aiStudyRoadmapGenerator')}
                   </h2>
                   <motion.button
                     onClick={closeAISuggestionModal}
@@ -2162,7 +2162,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                           >
-                            Expand All
+                            {t('aiStudy.expandAll')}
                           </motion.button>
                           <motion.button
                             onClick={collapseAllSections}
@@ -2170,7 +2170,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                           >
-                            Collapse All
+                            {t('aiStudy.collapseAll')}
                           </motion.button>
                         </div>
                       </div>
@@ -2185,7 +2185,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                             >
                               <h4 className="text-sm font-semibold text-emerald-400 flex items-center">
                                 <IconComponent icon={FiFilter} className="mr-2" />
-                                Priority Matrix
+                                {t('aiStudy.priorityMatrix')}
                               </h4>
                               <IconComponent 
                                 icon={expandedSections.priorityMatrix ? FiChevronUp : FiChevronDown} 
@@ -2242,7 +2242,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                           <div className="bg-slate-600/30 rounded-lg p-4 border border-white/5">
                             <h4 className="text-sm font-semibold text-emerald-400 mb-3 flex items-center">
                               <IconComponent icon={FiCalendar} className="mr-2" />
-                              Timeline
+                              {t('aiStudy.timeline')}
                             </h4>
                             <div className="space-y-3">
                               {aiSuggestionResult.timeline.map((phase, idx) => (
@@ -2253,7 +2253,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                                   </div>
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <div>
-                                      <h6 className="text-xs font-medium text-slate-400 mb-1">Tasks</h6>
+                                      <h6 className="text-xs font-medium text-slate-400 mb-1">{t('aiStudy.tasks')}</h6>
                                       <ul className="text-xs text-slate-500 space-y-1">
                                         {phase.tasks.map((task, taskIdx) => (
                                           <li key={taskIdx} className="flex items-start">
@@ -2264,7 +2264,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                                       </ul>
                                     </div>
                                     <div>
-                                      <h6 className="text-xs font-medium text-slate-400 mb-1">Milestones</h6>
+                                      <h6 className="text-xs font-medium text-slate-400 mb-1">{t('aiStudy.milestones')}</h6>
                                       <ul className="text-xs text-slate-500 space-y-1">
                                         {phase.milestones.map((milestone, milestoneIdx) => (
                                           <li key={milestoneIdx} className="flex items-start">
@@ -2286,7 +2286,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                           <div className="bg-slate-600/30 rounded-lg p-4 border border-white/5">
                             <h4 className="text-sm font-semibold text-emerald-400 mb-3 flex items-center">
                               <IconComponent icon={FiEdit} className="mr-2" />
-                              Application Strategy
+                              {t('aiStudy.applicationStrategy')}
                             </h4>
                             <div className="space-y-3">
                               {aiSuggestionResult.applicationStrategy.map((strategy, idx) => (
@@ -2314,7 +2314,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                           <div className="bg-slate-600/30 rounded-lg p-4 border border-white/5">
                             <h4 className="text-sm font-semibold text-emerald-400 mb-3 flex items-center">
                               <IconComponent icon={FiClock} className="mr-2" />
-                              Study Optimization
+                              {t('aiStudy.studyOptimization')}
                             </h4>
                             <div className="space-y-3">
                               {aiSuggestionResult.studyOptimization.map((subject, idx) => (
@@ -2325,7 +2325,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                                   </div>
                                   <p className="text-xs text-slate-400 mb-2">{subject.strategy}</p>
                                   <div>
-                                    <h6 className="text-xs font-medium text-slate-400 mb-1">Resources</h6>
+                                    <h6 className="text-xs font-medium text-slate-400 mb-1">{t('aiStudy.resources')}</h6>
                                     <ul className="text-xs text-slate-500 space-y-1">
                                       {subject.resources.map((resource, resourceIdx) => (
                                         <li key={resourceIdx} className="flex items-start">
@@ -2346,7 +2346,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                           <div className="bg-slate-600/30 rounded-lg p-4 border border-white/5">
                             <h4 className="text-sm font-semibold text-emerald-400 mb-3 flex items-center">
                               <IconComponent icon={FaBell} className="mr-2" />
-                              Deadline Management
+                              {t('aiStudy.deadlineManagement')}
                             </h4>
                             <div className="space-y-3">
                               {aiSuggestionResult.deadlineManagement.map((deadline, idx) => (
@@ -2383,16 +2383,16 @@ Remember: Return ONLY the XML structure. No additional text.`
                           <div className="bg-slate-600/30 rounded-lg p-4 border border-white/5">
                             <h4 className="text-sm font-semibold text-emerald-400 mb-3 flex items-center">
                               <IconComponent icon={FiCalendar} className="mr-2" />
-                              Workload Distribution
+                              {t('aiStudy.workloadDistribution')}
                             </h4>
                             <div className="space-y-3">
                               {aiSuggestionResult.workloadDistribution.map((week, idx) => (
                                 <div key={idx} className="bg-slate-700/50 rounded-lg p-3">
                                   <div className="flex items-center justify-between mb-2">
-                                    <h5 className="text-xs font-medium text-slate-300">Week {week.week}</h5>
+                                    <h5 className="text-xs font-medium text-slate-300">{t('aiStudy.week')} {week.week}</h5>
                                     <div className="flex space-x-2">
-                                      <span className="text-xs text-blue-400">Study: {week.studyHours}h</span>
-                                      <span className="text-xs text-orange-400">Apps: {week.applicationHours}h</span>
+                                      <span className="text-xs text-blue-400">{t('aiStudy.study')}: {week.studyHours}h</span>
+                                      <span className="text-xs text-orange-400">{t('aiStudy.apps')}: {week.applicationHours}h</span>
                                     </div>
                                   </div>
                                   <ul className="text-xs text-slate-500 space-y-1">
@@ -2414,7 +2414,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                           <div className="bg-slate-600/30 rounded-lg p-4 border border-white/5">
                             <h4 className="text-sm font-semibold text-emerald-400 mb-3 flex items-center">
                               <IconComponent icon={FiTrash2} className="mr-2" />
-                              Risk Mitigation
+                              {t('aiStudy.riskMitigation')}
                             </h4>
                             <div className="space-y-3">
                               {aiSuggestionResult.riskMitigation.map((risk, idx) => (
@@ -2426,7 +2426,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                                       risk.impact === 'medium' ? 'bg-yellow-500/20 text-yellow-400' : 
                                       'bg-green-500/20 text-green-400'
                                     }`}>
-                                      {risk.impact} impact
+                                      {risk.impact} {t('aiStudy.impact')}
                                     </span>
                                   </div>
                                   <ul className="text-xs text-slate-500 space-y-1">
@@ -2516,7 +2516,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                           <div className="bg-slate-600/30 rounded-lg p-4 border border-white/5">
                             <h4 className="text-sm font-semibold text-emerald-400 mb-3 flex items-center">
                               <IconComponent icon={FiCheck} className="mr-2" />
-                              Progress Tracking
+                              {t('aiStudy.progressTracking')}
                             </h4>
                             <div className="space-y-3">
                               {aiSuggestionResult.progressTracking.map((milestone, idx) => (

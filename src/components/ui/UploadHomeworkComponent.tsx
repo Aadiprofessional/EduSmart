@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AiOutlineUpload, AiOutlineCamera, AiOutlineFullscreen, AiOutlineBulb, AiOutlineFileText, AiOutlineHistory } from 'react-icons/ai';
 import { FiDownload, FiCopy, FiShare2, FiClock, FiTrash2 } from 'react-icons/fi';
@@ -8,6 +9,15 @@ import { jsPDF } from 'jspdf';
 import { Document, Paragraph, TextRun, Packer } from 'docx';
 import { useResponseCheck, ResponseUpgradeModal } from '../../utils/responseChecker';
 import { useNotification } from '../../utils/NotificationContext';
+import { useLanguage } from '../../utils/LanguageContext';
+
+// Import homework API functions
+import { 
+  submitHomework, 
+  getHomeworkHistory, 
+  updateHomework, 
+  deleteHomework 
+} from '../../utils/homeworkAPI';
 
 // Import markdown and math libraries
 import ReactMarkdown from 'react-markdown';
@@ -60,7 +70,8 @@ interface UploadHomeworkComponentProps {
 
 interface HomeworkHistoryItem {
   id: string;
-  fileName: string;
+  fileName?: string;
+  fileUrl?: string;
   question: string;
   answer: string;
   timestamp: Date;
@@ -90,7 +101,74 @@ interface RelatedKnowledge {
   isComplete: boolean;
 }
 
+// Portal Modal Component - renders at document.body level
+interface PortalModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+  className?: string;
+}
+
+const PortalModal: React.FC<PortalModalProps> = ({ isOpen, onClose, children, className = '' }) => {
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return ReactDOM.createPortal(
+    <AnimatePresence>
+      <motion.div 
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          zIndex: 9999
+        }}
+      >
+        <motion.div 
+          className={className}
+          initial={{ scale: 0.9, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.9, opacity: 0, y: 20 }}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: 'relative',
+            maxWidth: '90vw',
+            maxHeight: '90vh'
+          }}
+        >
+          {children}
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>,
+    document.body
+  );
+};
+
 const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ className = '' }) => {
+  const { t } = useLanguage();
   const [file, setFile] = useState<File | null>(null);
   const [question, setQuestion] = useState('');
   const [loading, setLoading] = useState(false);
@@ -149,108 +227,340 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
     }
   }, [relatedKnowledge?.content]);
 
-  // Load history from localStorage on component mount
+  // Load history from database on component mount
   useEffect(() => {
-    const savedHistory = localStorage.getItem('homeworkHistory');
-    if (savedHistory) {
+    const loadHistoryFromDatabase = async () => {
       try {
-        const parsedHistory = JSON.parse(savedHistory).map((item: any) => ({
-          ...item,
-          timestamp: new Date(item.timestamp)
-        }));
-        setHomeworkHistory(parsedHistory);
+        console.log('📚 Loading homework history from database...');
+        const result = await getHomeworkHistory();
+        
+        if (result.success && result.history) {
+          console.log('✅ Loaded homework history:', result.history.length, 'items');
+          setHomeworkHistory(result.history);
+        } else {
+          console.error('❌ Failed to load homework history:', result.error);
+          // Try to load from localStorage as fallback
+          const savedHistory = localStorage.getItem('homeworkHistory');
+          if (savedHistory) {
+            try {
+              const parsedHistory = JSON.parse(savedHistory).map((item: any) => ({
+                ...item,
+                timestamp: new Date(item.timestamp)
+              }));
+              setHomeworkHistory(parsedHistory);
+              console.log('📦 Loaded fallback history from localStorage');
+            } catch (error) {
+              console.error('Error loading fallback history:', error);
+            }
+          }
+        }
       } catch (error) {
-        console.error('Error loading homework history:', error);
+        console.error('Error loading homework history from database:', error);
+        // Try localStorage as fallback
+        const savedHistory = localStorage.getItem('homeworkHistory');
+        if (savedHistory) {
+          try {
+            const parsedHistory = JSON.parse(savedHistory).map((item: any) => ({
+              ...item,
+              timestamp: new Date(item.timestamp)
+            }));
+            setHomeworkHistory(parsedHistory);
+            console.log('📦 Loaded fallback history from localStorage');
+          } catch (error) {
+            console.error('Error loading fallback history:', error);
+          }
+        }
       }
-    }
+    };
+
+    loadHistoryFromDatabase();
   }, []);
 
-  // Save history to localStorage whenever it changes
+  // Save history to localStorage whenever it changes (backup)
   useEffect(() => {
     localStorage.setItem('homeworkHistory', JSON.stringify(homeworkHistory));
   }, [homeworkHistory]);
 
-  // Function to add item to history - updated to include complete page solutions and state
-  const addToHistory = (fileName: string, question: string, answer: string, fileType: string, documentPages?: string[], originalFile?: File, pageSolutions?: PageSolution[], currentPageIndex?: number, processingComplete?: boolean) => {
-    const newItem: HomeworkHistoryItem = {
-      id: Date.now().toString(),
-      fileName,
-      question,
-      answer,
-      timestamp: new Date(),
-      fileType,
-      documentPages,
-      file: originalFile,
-      pageSolutions,
-      currentPage: currentPageIndex,
-      overallProcessingComplete: processingComplete
-    };
-    setHomeworkHistory(prev => [newItem, ...prev.slice(0, 19)]); // Keep only last 20 items
+  // Function to add item to history - updated to save to database
+  const addToHistory = async (fileName: string, question: string, answer: string, fileType: string, documentPages?: string[], originalFile?: File, pageSolutions?: PageSolution[], currentPageIndex?: number, processingComplete?: boolean) => {
+    try {
+      console.log('💾 Saving homework to database...');
+      
+      // Submit to database
+      const submissionData = {
+        question,
+        solution: answer,
+        file: originalFile,
+        fileType,
+        fileName,
+        pageSolutions,
+        currentPage: currentPageIndex,
+        processingComplete: processingComplete || false
+      };
+
+      const result = await submitHomework(submissionData);
+      
+      if (result.success && result.homework) {
+        console.log('✅ Homework saved to database successfully');
+        
+        // Create the history item from the database response
+        const newItem: HomeworkHistoryItem = {
+          id: result.homework.id.toString(),
+          fileName: result.homework.fileName,
+          fileUrl: result.homework.fileUrl,
+          question: result.homework.question,
+          answer: result.homework.solution,
+          timestamp: new Date(result.homework.timestamp),
+          fileType: result.homework.fileType,
+          documentPages,
+          file: originalFile,
+          pageSolutions: result.homework.pageSolutions,
+          currentPage: result.homework.currentPage,
+          overallProcessingComplete: result.homework.processingComplete
+        };
+        
+        // Update local state
+        setHomeworkHistory(prev => [newItem, ...prev.slice(0, 19)]); // Keep only last 20 items
+      } else {
+        console.error('❌ Failed to save homework to database:', result.error);
+        
+        // Fallback to localStorage only
+        const newItem: HomeworkHistoryItem = {
+          id: Date.now().toString(),
+          fileName,
+          question,
+          answer,
+          timestamp: new Date(),
+          fileType,
+          documentPages,
+          file: originalFile,
+          pageSolutions,
+          currentPage: currentPageIndex,
+          overallProcessingComplete: processingComplete
+        };
+        setHomeworkHistory(prev => [newItem, ...prev.slice(0, 19)]);
+      }
+    } catch (error) {
+      console.error('❌ Error saving homework:', error);
+      
+      // Fallback to localStorage only
+      const newItem: HomeworkHistoryItem = {
+        id: Date.now().toString(),
+        fileName,
+        question,
+        answer,
+        timestamp: new Date(),
+        fileType,
+        documentPages,
+        file: originalFile,
+        pageSolutions,
+        currentPage: currentPageIndex,
+        overallProcessingComplete: processingComplete
+      };
+      setHomeworkHistory(prev => [newItem, ...prev.slice(0, 19)]);
+    }
+  };
+
+  // Function to convert PDF URL to images (for history restoration)
+  const convertPdfUrlToImages = async (pdfUrl: string): Promise<string[]> => {
+    try {
+      setProcessingStatus('Loading PDF from history...');
+      
+      // Fetch PDF from URL
+      const response = await fetch(pdfUrl);
+      const arrayBuffer = await response.arrayBuffer();
+      
+      // Initialize PDF.js with proper worker setup
+      const loadingTask = pdfjsLib.getDocument({
+        data: arrayBuffer,
+        useWorkerFetch: false,
+        isEvalSupported: false,
+        useSystemFonts: true
+      });
+      
+      const pdf = await loadingTask.promise as PDFDocumentProxy;
+      const images: string[] = [];
+      
+      setProcessingStatus(`Converting ${pdf.numPages} pages to images...`);
+      
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        setProcessingStatus(`Converting page ${pageNum} of ${pdf.numPages}...`);
+        
+        const page = await pdf.getPage(pageNum);
+        const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better quality
+        
+        // Create canvas
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        
+        if (!context) {
+          throw new Error('Could not get canvas context');
+        }
+        
+        // Render page to canvas
+        const renderContext = {
+          canvasContext: context,
+          viewport: viewport,
+        };
+        
+        await page.render(renderContext).promise;
+        
+        // Convert canvas to base64 image
+        const imageDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        images.push(imageDataUrl);
+      }
+      
+      setProcessingStatus('PDF conversion completed!');
+      return images;
+    } catch (error) {
+      console.error('PDF URL conversion error:', error);
+      setProcessingStatus('Error converting PDF');
+      throw error;
+    }
   };
 
   // Function to load from history - updated to restore complete state including all page solutions
-  const loadFromHistory = (item: HomeworkHistoryItem) => {
+  const loadFromHistory = async (item: HomeworkHistoryItem) => {
+    const displayFileName = item.fileName || 'Text Question';
+    
     console.log('🔄 Loading from history:', {
-      fileName: item.fileName,
+      fileName: displayFileName,
       hasDocumentPages: !!item.documentPages?.length,
       hasPageSolutions: !!item.pageSolutions?.length,
       currentPage: item.currentPage,
-      overallComplete: item.overallProcessingComplete
+      overallComplete: item.overallProcessingComplete,
+      fileUrl: item.fileUrl,
+      fileType: item.fileType
     });
     
     setQuestion(item.question);
     setAnswer(item.answer);
     setShowHistory(false);
+    setLoading(true);
+    setProcessingStatus('Restoring from history...');
     
-    // Restore document pages if available
-    if (item.documentPages && item.documentPages.length > 0) {
-      setDocumentPages(item.documentPages);
-      setCurrentPage(item.currentPage || 0);
-      
-      // Restore complete page solutions if available
-      if (item.pageSolutions && item.pageSolutions.length > 0) {
-        console.log('✅ Restoring complete page solutions:', item.pageSolutions.length, 'pages');
-        setPageSolutions(item.pageSolutions);
-        setShowGetAnswerButton(false); // Hide button since solutions are already loaded
-        setOverallProcessingComplete(item.overallProcessingComplete || true);
+    try {
+      // Restore document pages if available (for both PDFs and images)
+      if (item.documentPages && item.documentPages.length > 0) {
+        console.log('📄 Restoring document pages:', item.documentPages.length);
+        setDocumentPages(item.documentPages);
+        setCurrentPage(item.currentPage || 0);
+        
+        // Restore complete page solutions if available
+        if (item.pageSolutions && item.pageSolutions.length > 0) {
+          console.log('✅ Restoring complete page solutions:', item.pageSolutions.length, 'pages');
+          setPageSolutions(item.pageSolutions);
+          setShowGetAnswerButton(false); // Hide button since solutions are already loaded
+          setOverallProcessingComplete(item.overallProcessingComplete || true);
+        } else {
+          console.log('⚠️ No page solutions found, creating legacy fallback');
+          // Fallback: Initialize page solutions with the combined answer (legacy support)
+          const initialPageSolutions: PageSolution[] = item.documentPages.map((_, index) => ({
+            pageNumber: index + 1,
+            solution: index === 0 ? item.answer : '', // Only first page has the answer for legacy items
+            isLoading: false,
+            isComplete: true
+          }));
+          setPageSolutions(initialPageSolutions);
+          setShowGetAnswerButton(true); // Show button for legacy items
+          setOverallProcessingComplete(false);
+        }
+      } else if (item.fileUrl && item.fileType === 'application/pdf') {
+        // Handle PDF files that need to be converted to images
+        console.log('📄 PDF file detected, converting to images:', item.fileUrl);
+        
+        try {
+          const convertedImages = await convertPdfUrlToImages(item.fileUrl);
+          setDocumentPages(convertedImages);
+          setCurrentPage(0);
+          
+          // If we have page solutions, restore them
+          if (item.pageSolutions && item.pageSolutions.length > 0) {
+            setPageSolutions(item.pageSolutions);
+            setShowGetAnswerButton(false);
+            setOverallProcessingComplete(item.overallProcessingComplete || true);
+          } else {
+            // Legacy support - create page solutions from the main answer
+            const initialPageSolutions: PageSolution[] = convertedImages.map((_, index) => ({
+              pageNumber: index + 1,
+              solution: index === 0 ? item.answer : '',
+              isLoading: false,
+              isComplete: true
+            }));
+            setPageSolutions(initialPageSolutions);
+            setShowGetAnswerButton(true);
+            setOverallProcessingComplete(false);
+          }
+        } catch (error) {
+          console.error('❌ Error converting PDF from history:', error);
+          setProcessingStatus('Error loading PDF from history');
+          // Fallback to showing the answer without document pages
+          setDocumentPages([]);
+          setPageSolutions([]);
+          setShowGetAnswerButton(false);
+          setOverallProcessingComplete(false);
+        }
+      } else if (item.fileUrl && item.fileType?.startsWith('image/')) {
+        // Handle single image files
+        console.log('🖼️ Restoring single image file:', item.fileUrl);
+        setDocumentPages([item.fileUrl]);
+        setCurrentPage(0);
+        setPageSolutions([]);
+        setShowGetAnswerButton(false);
+        setOverallProcessingComplete(false);
       } else {
-        console.log('⚠️ No page solutions found, creating legacy fallback');
-        // Fallback: Initialize page solutions with the combined answer (legacy support)
-        const initialPageSolutions: PageSolution[] = item.documentPages.map((_, index) => ({
-          pageNumber: index + 1,
-          solution: index === 0 ? item.answer : '', // Only first page has the answer for legacy items
-          isLoading: false,
-          isComplete: true
-        }));
-        setPageSolutions(initialPageSolutions);
-        setShowGetAnswerButton(true); // Show button for legacy items
+        console.log('📝 Loading text question from history');
+        // Clear document-related state for text questions
+        setDocumentPages([]);
+        setPageSolutions([]);
+        setShowGetAnswerButton(false);
         setOverallProcessingComplete(false);
       }
-    } else {
-      console.log('📝 Loading text question from history');
-      // Clear document-related state for text questions
-      setDocumentPages([]);
-      setPageSolutions([]);
-      setShowGetAnswerButton(false);
-      setOverallProcessingComplete(false);
+    } catch (error) {
+      console.error('❌ Error loading from history:', error);
+      setProcessingStatus('Error loading from history');
     }
     
     // Clear file state since we're loading from history
     setFile(null);
+    
+    // Clear file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
     
-    // Clear any processing status
-    setProcessingStatus('');
-    setLoading(false);
+    // Clear any processing status after a delay
+    setTimeout(() => {
+      setProcessingStatus('');
+      setLoading(false);
+      setIsProcessingStarted(false); // Reset processing state
+    }, 1000);
     
     console.log('✅ History loaded successfully');
   };
 
-  // Function to delete history item
-  const deleteHistoryItem = (id: string) => {
-    setHomeworkHistory(prev => prev.filter(item => item.id !== id));
+  // Function to delete history item - updated to delete from database
+  const deleteHistoryItem = async (id: string) => {
+    try {
+      console.log('🗑️ Deleting homework from database:', id);
+      
+      const result = await deleteHomework(id);
+      
+      if (result.success) {
+        console.log('✅ Homework deleted from database successfully');
+        setHomeworkHistory(prev => prev.filter(item => item.id !== id));
+      } else {
+        console.error('❌ Failed to delete homework from database:', result.error);
+        // Still update local state for better UX
+        setHomeworkHistory(prev => prev.filter(item => item.id !== id));
+      }
+    } catch (error) {
+      console.error('❌ Error deleting homework:', error);
+      // Still update local state
+      setHomeworkHistory(prev => prev.filter(item => item.id !== id));
+    }
   };
 
   // Function to clear all history
@@ -590,7 +900,6 @@ Format your response with:
 - If the questions in the image are in English, respond in English
 - If the questions in the image are in Chinese, respond in Chinese
 - If the questions are in another language, respond in that same language
-- If no specific language is detected, default to English
 
 Please provide:
 - A clear understanding of what each problem is asking
@@ -827,7 +1136,7 @@ Format your response with:
       
       // Show the Get Answer button instead of auto-processing
       setShowGetAnswerButton(true);
-      setProcessingStatus('File loaded successfully! You can now add additional questions or click "Get Answer" to solve.');
+      setProcessingStatus(t('aiStudy.fileLoadedSuccessfully'));
       
       const totalProcessTime = Date.now() - processStartTime;
       console.log('✅ File loading completed');
@@ -996,7 +1305,7 @@ Format your response with:
         
         // Add to history with final page solutions and complete state
         if (combinedSolution && file) {
-          addToHistory(file.name, question || 'Document Analysis', combinedSolution, file.type, documentPages, file, finalPageSolutions, currentPage, true);
+          await addToHistory(file.name, question || 'Document Analysis', combinedSolution, file.type, documentPages, file, finalPageSolutions, currentPage, true);
           console.log('💾 Added to history with complete page solutions');
         }
         
@@ -1010,7 +1319,7 @@ Format your response with:
         setAnswer(solution);
         
         // Add to history
-        addToHistory('Text Question', question, solution, 'text', undefined, undefined, undefined, undefined, undefined);
+        await addToHistory('Text Question', question, solution, 'text', undefined, undefined, undefined, undefined, undefined);
         console.log('✅ Text question processed successfully');
       } else {
         throw new Error('Please provide a question or upload a document');
@@ -1345,7 +1654,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
       setAnswer(solution);
       
       // Add to history
-      addToHistory('Text Question', question, solution, 'text', undefined, undefined, undefined, undefined, undefined);
+      await addToHistory('Text Question', question, solution, 'text', undefined, undefined, undefined, undefined, undefined);
       console.log('✅ Text question processed successfully');
     } catch (error) {
       console.error('💥 Text submission error:', error);
@@ -1376,24 +1685,24 @@ please give small bullet points of what knowlegde is needed to solve the problem
       >
         {/* Input Section */}
         <motion.div variants={itemVariants}>
-          <h2 className="text-2xl font-semibold text-cyan-400 mb-6">Submit Your Question</h2>
+          <h2 className="text-2xl font-semibold text-cyan-400 mb-6">{t('submitYourQuestion')}</h2>
           
           <form onSubmit={handleSubmit}>
             <div className="mb-6">
               <label className="block text-slate-300 mb-2 font-medium">
-                Describe your question or problem
+                {t('describeYourQuestionOrProblem')}
               </label>
               <textarea
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 className="w-full p-4 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none h-40 text-slate-200 placeholder-slate-400"
-                placeholder="Type your question or problem here..."
+                placeholder={t('typeYourQuestionOrProblemHere')}
               />
             </div>
             
             <div className="mb-6">
               <label className="block text-slate-300 mb-2 font-medium">
-                Or upload your question
+                {t('orUploadYourQuestion')}
               </label>
               <div 
                 className="border-2 border-dashed border-white/20 rounded-lg p-8 text-center hover:border-cyan-500/50 cursor-pointer transition-colors relative bg-slate-600/30 backdrop-blur-sm"
@@ -1428,8 +1737,8 @@ please give small bullet points of what knowlegde is needed to solve the problem
                 ) : (
                   <div className="text-slate-400">
                     <IconComponent icon={AiOutlineUpload} className="h-8 w-8 mx-auto mb-2" />
-                    <p>Drag and drop your file here, or click to browse</p>
-                    <p className="text-sm mt-1">Supports PDF, Word, and images</p>
+                    <p>{t('dragAndDropYourFileHereOrClickToBrowse')}</p>
+                    <p className="text-sm mt-1">{t('supportsPDFWordAndImages')}</p>
                   </div>
                 )}
               </div>
@@ -1445,7 +1754,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
                 onClick={() => setShowHistory(!showHistory)}
               >
                 <IconComponent icon={AiOutlineHistory} className="h-5 w-5 mr-2" />
-                History ({homeworkHistory.length})
+                {t('aiStudy.history')} ({homeworkHistory.length})
               </motion.button>
               
               <motion.button
@@ -1457,7 +1766,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
                 onClick={() => fileInputRef.current?.click()}
               >
                 <IconComponent icon={AiOutlineCamera} className="h-5 w-5 mr-2" />
-                Take Photo
+                {t('takePhoto')}
               </motion.button>
               
               {/* Get Answer Button - shows when file is uploaded or question is typed */}
@@ -1471,7 +1780,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
                   onClick={handleGetAnswer}
                   disabled={loading || isProcessingStarted}
                 >
-                  {loading ? 'Processing...' : 'Get Answer'}
+                  {loading ? t('processing') : t('getAnswer')}
                   <IconComponent icon={AiOutlineBulb} className="h-5 w-5 ml-2" />
                 </motion.button>
               ) : (
@@ -1483,7 +1792,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
                   whileTap={!loading && !isProcessingStarted ? "tap" : {}}
                   disabled={loading || isProcessingStarted || (!question.trim() && documentPages.length === 0)}
                 >
-                  {loading ? 'Processing...' : 'Get Solution'}
+                  {loading ? t('processing') : t('getSolution')}
                   <IconComponent icon={AiOutlineBulb} className="h-5 w-5 ml-2" />
                 </motion.button>
               )}
@@ -1494,7 +1803,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
         {/* Results Section */}
         <motion.div variants={itemVariants}>
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-semibold text-cyan-400">Solution</h2>
+            <h2 className="text-2xl font-semibold text-cyan-400">{t('aiStudy.solution')}</h2>
             <div className="flex items-center space-x-3">
               {/* Related Knowledge Button - appears after answer is complete */}
               {((answer && !loading) || (pageSolutions.length > 0 && pageSolutions.some(ps => ps.isComplete && !ps.error))) && (
@@ -1507,7 +1816,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
                   className="flex items-center px-4 py-2 bg-purple-600/50 backdrop-blur-sm border border-purple-500/30 rounded-lg text-purple-200 font-medium hover:bg-purple-500/50 transition-colors"
                 >
                   <IconComponent icon={AiOutlineBulb} className="h-4 w-4 mr-2" />
-                  {loadingKnowledge ? 'Loading...' : 'Related Knowledge'}
+                  {loadingKnowledge ? t('aiStudy.loadingRelatedKnowledge') : t('aiStudy.relatedKnowledgeButton')}
                 </motion.button>
               )}
               
@@ -1523,7 +1832,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
                     icon={AiOutlineFullscreen} 
                     className="h-5 w-5 mr-1" 
                   />
-                  {fullScreenSolution ? "Exit Fullscreen" : "Fullscreen"}
+                  {fullScreenSolution ? t('aiStudy.exitFullscreen') : t('aiStudy.fullscreen')}
                 </motion.button>
               )}
             </div>
@@ -1575,7 +1884,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
                     onClick={() => setFullScreenSolution(false)}
                     className="bg-slate-600/50 backdrop-blur-sm text-slate-300 px-4 py-2 rounded-lg shadow-md hover:bg-slate-500/50 border border-white/10"
                   >
-                    Exit Fullscreen
+                    {t('aiStudy.exitFullscreen')}
                   </motion.button>
                 </div>
                 
@@ -1615,14 +1924,14 @@ please give small bullet points of what knowlegde is needed to solve the problem
                                       animate={{ rotate: 360 }}
                                       transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                                     />
-                                    <span className="text-sm">Processing...</span>
+                                    <span className="text-sm">{t('processing')}</span>
                                   </div>
                                 )}
                                 {pageSolutions[currentPage]?.isComplete && !pageSolutions[currentPage]?.error && (
-                                  <span className="text-sm text-emerald-400 font-medium">✓ Complete</span>
+                                  <span className="text-sm text-emerald-400 font-medium">✓ {t('complete')}</span>
                                 )}
                                 {pageSolutions[currentPage]?.error && (
-                                  <span className="text-sm text-red-400 font-medium">⚠ Error</span>
+                                  <span className="text-sm text-red-400 font-medium">⚠ {t('error')}</span>
                                 )}
                               </div>
                             </div>
@@ -1644,12 +1953,12 @@ please give small bullet points of what knowlegde is needed to solve the problem
                                     }`}
                                     title={`Page ${index + 1}: ${
                                       ps.isComplete && !ps.error
-                                        ? 'Complete'
+                                        ? t('complete')
                                         : ps.error
-                                        ? 'Error'
+                                        ? t('error')
                                         : ps.isLoading
-                                        ? 'Processing'
-                                        : 'Pending'
+                                        ? t('processing')
+                                        : t('pending')
                                     }`}
                                   />
                                 ))}
@@ -1692,12 +2001,12 @@ please give small bullet points of what knowlegde is needed to solve the problem
                                   animate={{ rotate: 360 }}
                                   transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                                 />
-                                <span className="text-slate-300">Generating solution for this page...</span>
+                                <span className="text-slate-300">{t('generatingSolutionForThisPage')}</span>
                               </div>
                             ) : (
                               <div className="flex flex-col items-center justify-center h-full text-slate-400">
                                 <IconComponent icon={AiOutlineBulb} className="h-12 w-12 mb-3 opacity-50" />
-                                <p className="text-center">Your solution will appear here after submitting your homework problem.</p>
+                                <p className="text-center">{t('yourSolutionWillAppearHere')}</p>
                               </div>
                             )}
                           </div>
@@ -1731,7 +2040,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
                       ) : (
                         <div className="flex flex-col items-center justify-center h-full text-slate-400">
                           <IconComponent icon={AiOutlineBulb} className="h-12 w-12 mb-3 opacity-50" />
-                          <p className="text-center">Your solution will appear here after submitting your homework problem.</p>
+                          <p className="text-center">{t('yourSolutionWillAppearHere')}</p>
                         </div>
                       )}
                     </div>
@@ -1770,14 +2079,14 @@ please give small bullet points of what knowlegde is needed to solve the problem
                             animate={{ rotate: 360 }}
                             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                           />
-                          <span className="text-sm">Processing...</span>
+                          <span className="text-sm">{t('processing')}</span>
                         </div>
                       )}
                       {pageSolutions[currentPage]?.isComplete && !pageSolutions[currentPage]?.error && (
-                        <span className="text-sm text-emerald-400 font-medium">✓ Complete</span>
+                        <span className="text-sm text-emerald-400 font-medium">✓ {t('complete')}</span>
                       )}
                       {pageSolutions[currentPage]?.error && (
-                        <span className="text-sm text-red-400 font-medium">⚠ Error</span>
+                        <span className="text-sm text-red-400 font-medium">⚠ {t('error')}</span>
                       )}
                     </div>
                   </div>
@@ -1799,12 +2108,12 @@ please give small bullet points of what knowlegde is needed to solve the problem
                           }`}
                           title={`Page ${index + 1}: ${
                             ps.isComplete && !ps.error
-                              ? 'Complete'
+                              ? t('complete')
                               : ps.error
-                              ? 'Error'
+                              ? t('error')
                               : ps.isLoading
-                              ? 'Processing'
-                              : 'Pending'
+                              ? t('processing')
+                              : t('pending')
                           }`}
                         />
                       ))}
@@ -1847,12 +2156,12 @@ please give small bullet points of what knowlegde is needed to solve the problem
                         animate={{ rotate: 360 }}
                         transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                       />
-                      <span className="text-slate-300">Generating solution for this page...</span>
+                      <span className="text-slate-300">{t('generatingSolutionForThisPage')}</span>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center h-full text-slate-400">
                       <IconComponent icon={AiOutlineBulb} className="h-12 w-12 mb-3 opacity-50" />
-                      <p className="text-center">Your solution will appear here after submitting your homework problem.</p>
+                      <p className="text-center">{t('yourSolutionWillAppearHere')}</p>
                     </div>
                   )}
                 </div>
@@ -1893,7 +2202,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-slate-400">
                 <IconComponent icon={AiOutlineBulb} className="h-12 w-12 mb-3 opacity-50" />
-                <p className="text-center">Your solution will appear here after submitting your homework problem.</p>
+                <p className="text-center">{t('yourSolutionWillAppearHere')}</p>
               </div>
             )}
           </motion.div>
@@ -2083,277 +2392,348 @@ please give small bullet points of what knowlegde is needed to solve the problem
       {/* History Panel */}
       <AnimatePresence>
         {showHistory && (
-          <motion.div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowHistory(false)}
+          <PortalModal
+            isOpen={showHistory}
+            onClose={() => setShowHistory(false)}
+            className="bg-slate-800/90 backdrop-blur-sm border border-white/10 rounded-xl p-6 max-w-4xl w-full max-h-[80vh] overflow-hidden shadow-2xl"
           >
-            <motion.div 
-              className="bg-slate-800/90 backdrop-blur-sm border border-white/10 rounded-xl p-6 max-w-4xl w-full max-h-[80vh] overflow-hidden shadow-2xl"
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-semibold text-cyan-400 flex items-center">
-                  <IconComponent icon={AiOutlineHistory} className="h-7 w-7 mr-3" />
-                  Homework History
-                  <span className="ml-3 text-sm bg-cyan-500/20 text-cyan-400 px-3 py-1 rounded-full">
-                    {homeworkHistory.length} item{homeworkHistory.length !== 1 ? 's' : ''}
-                  </span>
-                </h3>
-                <div className="flex items-center space-x-3">
-                  {homeworkHistory.length > 0 && (
-                    <motion.button
-                      variants={buttonVariants}
-                      whileHover="hover"
-                      whileTap="tap"
-                      onClick={clearAllHistory}
-                      className="flex items-center px-4 py-2 bg-red-500/20 text-red-400 rounded-lg text-sm font-medium hover:bg-red-500/30 transition-colors border border-red-500/30"
-                    >
-                      <IconComponent icon={FiTrash2} className="h-4 w-4 mr-2" />
-                      Clear All
-                    </motion.button>
-                  )}
-                  <button
-                    onClick={() => setShowHistory(false)}
-                    className="text-slate-400 hover:text-slate-300 p-2 rounded-lg hover:bg-slate-700/50 transition-colors"
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-semibold text-cyan-400 flex items-center">
+                <IconComponent icon={AiOutlineHistory} className="h-7 w-7 mr-3" />
+                {t('homeworkHistory')}
+                <span className="ml-3 text-sm bg-cyan-500/20 text-cyan-400 px-3 py-1 rounded-full">
+                  {homeworkHistory.length} {homeworkHistory.length !== 1 ? t('items') : t('item')}
+                </span>
+              </h3>
+              <div className="flex items-center space-x-3">
+                {homeworkHistory.length > 0 && (
+                  <motion.button
+                    variants={buttonVariants}
+                    whileHover="hover"
+                    whileTap="tap"
+                    onClick={clearAllHistory}
+                    className="flex items-center px-4 py-2 bg-red-500/20 text-red-400 rounded-lg text-sm font-medium hover:bg-red-500/30 transition-colors border border-red-500/30"
                   >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
+                    <IconComponent icon={FiTrash2} className="h-4 w-4 mr-2" />
+                    {t('clearAll')}
+                  </motion.button>
+                )}
+                <button
+                  onClick={() => setShowHistory(false)}
+                  className="text-slate-400 hover:text-slate-300 p-2 rounded-lg hover:bg-slate-700/50 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
-              
-              <div className="overflow-y-auto max-h-[calc(80vh-120px)]">
-                {homeworkHistory.length > 0 ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {homeworkHistory.map((item) => (
-                      <motion.div
-                        key={item.id}
-                        className="p-5 bg-slate-700/40 backdrop-blur-sm rounded-xl cursor-pointer hover:bg-slate-600/50 transition-all duration-300 group border border-white/10 hover:border-cyan-500/30"
-                        onClick={() => loadFromHistory(item)}
-                        whileHover={{ scale: 1.02, y: -2 }}
-                        whileTap={{ scale: 0.98 }}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center space-x-3">
-                            <div className="p-2 bg-cyan-500/20 rounded-lg">
-                              <IconComponent 
-                                icon={item.fileType === 'text' ? AiOutlineFileText : AiOutlineUpload} 
-                                className="h-5 w-5 text-cyan-400" 
+            </div>
+            
+            <div className="overflow-y-auto max-h-[calc(80vh-120px)]">
+              {homeworkHistory.length > 0 ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {homeworkHistory.map((item) => (
+                    <motion.div
+                      key={item.id}
+                      className="p-5 bg-slate-700/40 backdrop-blur-sm rounded-xl cursor-pointer hover:bg-slate-600/50 transition-all duration-300 group border border-white/10 hover:border-cyan-500/30"
+                      onClick={() => loadFromHistory(item)}
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <div className="flex gap-4">
+                        {/* Document Preview Section */}
+                        {item.documentPages && item.documentPages.length > 0 ? (
+                          <div className="flex-shrink-0 w-20 h-24 bg-slate-800/50 rounded-lg overflow-hidden border border-white/10 relative">
+                            {item.fileType === 'application/pdf' ? (
+                              // PDF Preview
+                              <div className="w-full h-full flex flex-col items-center justify-center bg-red-500/20">
+                                <svg className="w-8 h-8 text-red-400 mb-1" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                                </svg>
+                                <span className="text-xs text-red-400 font-bold">PDF</span>
+                              </div>
+                            ) : (
+                              // Image Preview
+                              <img 
+                                src={item.documentPages[0]} 
+                                alt="Document preview"
+                                className="w-full h-full object-cover"
                               />
+                            )}
+                            {item.documentPages.length > 1 && (
+                              <div className="absolute -bottom-1 -right-1 bg-cyan-500 text-white text-xs px-1 py-0.5 rounded text-center font-medium min-w-[20px]">
+                                +{item.documentPages.length - 1}
+                              </div>
+                            )}
+                          </div>
+                        ) : item.fileType === 'application/pdf' || item.fileType?.startsWith('image/') ? (
+                          // Show file type indicator even without documentPages
+                          <div className="flex-shrink-0 w-20 h-24 bg-slate-800/50 rounded-lg overflow-hidden border border-white/10 relative flex flex-col items-center justify-center">
+                            {item.fileType === 'application/pdf' ? (
+                              <>
+                                <svg className="w-8 h-8 text-red-400 mb-1" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                                </svg>
+                                <span className="text-xs text-red-400 font-bold">PDF</span>
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-8 h-8 text-green-400 mb-1" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                                </svg>
+                                <span className="text-xs text-green-400 font-bold">IMG</span>
+                              </>
+                            )}
+                          </div>
+                        ) : null}
+                        
+                        {/* Content Section */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center space-x-3 flex-1">
+                              <div className="p-2 bg-cyan-500/20 rounded-lg">
+                                <IconComponent 
+                                  icon={item.fileType === 'text' ? AiOutlineFileText : AiOutlineUpload} 
+                                  className="h-5 w-5 text-cyan-400" 
+                                />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-slate-200 truncate">
+                                  {item.fileName || 'Text Question'}
+                                </p>
+                                <div className="flex items-center space-x-2 mt-1">
+                                  {/* File type indicator */}
+                                  {item.fileType && item.fileType !== 'text' && (
+                                    <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded-full font-medium">
+                                      {item.fileType === 'application/pdf' ? 'PDF' : 
+                                       item.fileType.startsWith('image/') ? 'Image' : 
+                                       item.fileType.includes('document') ? 'Doc' : 'File'}
+                                    </span>
+                                  )}
+                                  {/* Show page count for documents */}
+                                  {item.documentPages && item.documentPages.length > 0 && (
+                                    <span className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded-full font-medium">
+                                      {item.documentPages.length} {item.documentPages.length > 1 ? t('pages') : t('page')}
+                                    </span>
+                                  )}
+                                  {/* Show completion status for page solutions */}
+                                  {item.pageSolutions && item.pageSolutions.length > 0 && (
+                                    <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full font-medium">
+                                      {item.pageSolutions.filter(ps => ps.isComplete && !ps.error).length}/{item.pageSolutions.length} {t('solved')}
+                                    </span>
+                                  )}
+                                  <span className="text-xs text-slate-400 flex items-center">
+                                    <IconComponent icon={FiClock} className="h-3 w-3 mr-1" />
+                                    {formatRelativeTime(item.timestamp)}
+                                  </span>
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold text-slate-200 truncate">
-                                {item.fileName}
-                              </p>
-                              <div className="flex items-center space-x-2 mt-1">
-                                {/* Show page count for documents */}
-                                {item.documentPages && item.documentPages.length > 0 && (
-                                  <span className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded-full font-medium">
-                                    {item.documentPages.length} page{item.documentPages.length > 1 ? 's' : ''}
-                                  </span>
-                                )}
-                                {/* Show completion status for page solutions */}
-                                {item.pageSolutions && item.pageSolutions.length > 0 && (
-                                  <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full font-medium">
-                                    {item.pageSolutions.filter(ps => ps.isComplete && !ps.error).length}/{item.pageSolutions.length} solved
-                                  </span>
-                                )}
-                                <span className="text-xs text-slate-400 flex items-center">
-                                  <IconComponent icon={FiClock} className="h-3 w-3 mr-1" />
-                                  {formatRelativeTime(item.timestamp)}
-                                </span>
+                            
+                            <motion.button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                await deleteHistoryItem(item.id);
+                              }}
+                              className="opacity-0 group-hover:opacity-100 p-2 text-slate-400 hover:text-red-400 transition-all rounded-lg hover:bg-red-500/10 flex-shrink-0"
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                            >
+                              <IconComponent icon={FiTrash2} className="h-4 w-4" />
+                            </motion.button>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <p className="text-sm text-slate-300 line-clamp-2">
+                              <span className="font-medium text-cyan-400">Q:</span> {item.question.length > 120 ? `${item.question.substring(0, 120)}...` : item.question}
+                            </p>
+                            {/* Improved answer formatting with proper markdown rendering */}
+                            <div className="text-xs text-slate-400 line-clamp-3">
+                              <span className="font-medium text-green-400">A:</span> 
+                              <div className="inline-block ml-1 prose prose-xs max-w-none
+                                prose-headings:text-cyan-300 prose-headings:text-xs prose-headings:font-medium prose-headings:m-0
+                                prose-p:text-slate-400 prose-p:text-xs prose-p:m-0 prose-p:leading-relaxed prose-p:inline
+                                prose-strong:text-slate-300 prose-strong:font-semibold prose-strong:text-xs
+                                prose-em:text-slate-400 prose-em:italic prose-em:text-xs
+                                prose-code:bg-slate-600/50 prose-code:text-cyan-300 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs
+                                prose-ul:text-xs prose-ul:m-0 prose-ol:text-xs prose-ol:m-0
+                                prose-li:text-slate-400 prose-li:text-xs prose-li:m-0
+                                prose-a:text-cyan-300 prose-a:text-xs"
+                              >
+                                <ReactMarkdown
+                                  remarkPlugins={[remarkMath]}
+                                  components={{
+                                    // Simplified components for preview
+                                    p: ({ children }) => <span className="text-slate-400 text-xs">{children}</span>,
+                                    strong: ({ children }) => <span className="text-slate-300 font-semibold text-xs">{children}</span>,
+                                    em: ({ children }) => <span className="text-slate-400 italic text-xs">{children}</span>,
+                                    code: ({ children }) => <span className="bg-slate-600/50 text-cyan-300 px-1 py-0.5 rounded text-xs font-mono">{children}</span>,
+                                    h1: ({ children }) => <span className="text-cyan-300 font-medium text-xs">{children}</span>,
+                                    h2: ({ children }) => <span className="text-cyan-300 font-medium text-xs">{children}</span>,
+                                    h3: ({ children }) => <span className="text-cyan-300 font-medium text-xs">{children}</span>,
+                                    h4: ({ children }) => <span className="text-cyan-300 font-medium text-xs">{children}</span>,
+                                    ul: ({ children }) => <span className="text-slate-400 text-xs">{children}</span>,
+                                    ol: ({ children }) => <span className="text-slate-400 text-xs">{children}</span>,
+                                    li: ({ children }) => <span className="text-slate-400 text-xs">{children}</span>,
+                                    a: ({ children }) => <span className="text-cyan-300 text-xs">{children}</span>,
+                                    blockquote: ({ children }) => <span className="text-slate-400 italic text-xs">{children}</span>,
+                                  }}
+                                >
+                                  {preprocessLaTeX(item.answer.length > 200 ? `${item.answer.substring(0, 200)}...` : item.answer)}
+                                </ReactMarkdown>
                               </div>
                             </div>
                           </div>
                           
-                          <motion.button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteHistoryItem(item.id);
-                            }}
-                            className="opacity-0 group-hover:opacity-100 p-2 text-slate-400 hover:text-red-400 transition-all rounded-lg hover:bg-red-500/10"
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                          >
-                            <IconComponent icon={FiTrash2} className="h-4 w-4" />
-                          </motion.button>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <p className="text-sm text-slate-300 line-clamp-2">
-                            <span className="font-medium text-cyan-400">Q:</span> {item.question.length > 120 ? `${item.question.substring(0, 120)}...` : item.question}
-                          </p>
-                          <p className="text-xs text-slate-400 line-clamp-2">
-                            <span className="font-medium text-green-400">A:</span> {item.answer.length > 150 ? `${item.answer.substring(0, 150)}...` : item.answer}
-                          </p>
-                        </div>
-                        
-                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-600/50">
-                          <div className="flex items-center space-x-2">
-                            {/* Show indicators for different types of saved content */}
-                            {item.overallProcessingComplete && (
-                              <span className="text-xs text-emerald-400 font-medium bg-emerald-500/10 px-2 py-1 rounded-full" title="Complete processing">
-                                ✓ Complete
-                              </span>
-                            )}
-                            {item.pageSolutions && item.pageSolutions.length > 0 && (
-                              <span className="text-xs text-blue-400 font-medium" title="Has page-by-page solutions">
-                                📄
-                              </span>
-                            )}
-                            {item.documentPages && item.documentPages.length > 0 && (
-                              <span className="text-xs text-purple-400 font-medium" title="Has document images">
-                                🖼️
-                              </span>
-                            )}
+                          <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-600/50">
+                            <div className="flex items-center space-x-2">
+                              {/* Show indicators for different types of saved content */}
+                              {item.overallProcessingComplete && (
+                                <span className="text-xs text-emerald-400 font-medium bg-emerald-500/10 px-2 py-1 rounded-full" title="Complete processing">
+                                  ✓ {t('complete')}
+                                </span>
+                              )}
+                              {item.pageSolutions && item.pageSolutions.length > 0 && (
+                                <span className="text-xs text-blue-400 font-medium" title="Has page-by-page solutions">
+                                  📄
+                                </span>
+                              )}
+                              {item.documentPages && item.documentPages.length > 0 && (
+                                <span className="text-xs text-purple-400 font-medium" title="Has document images">
+                                  🖼️
+                                </span>
+                              )}
+                            </div>
+                            
+                            <motion.div 
+                              className="text-xs text-cyan-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center"
+                              initial={{ x: 10 }}
+                              animate={{ x: 0 }}
+                            >
+                              {t('clickToRestore')}
+                              <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </motion.div>
                           </div>
-                          
-                          <motion.div 
-                            className="text-xs text-cyan-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center"
-                            initial={{ x: 10 }}
-                            animate={{ x: 0 }}
-                          >
-                            Click to restore
-                            <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                          </motion.div>
                         </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-16 text-slate-400">
-                    <motion.div
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ duration: 0.5 }}
-                    >
-                      <IconComponent icon={AiOutlineHistory} className="mx-auto text-6xl mb-4 opacity-50" />
-                      <p className="text-xl font-medium mb-2">No homework history yet</p>
-                      <p className="text-sm">Your solved homework problems will appear here</p>
-                      <p className="text-xs mt-2 text-slate-500">Upload documents or ask questions to get started</p>
+                      </div>
                     </motion.div>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-16 text-slate-400">
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <IconComponent icon={AiOutlineHistory} className="mx-auto text-6xl mb-4 opacity-50" />
+                    <p className="text-xl font-medium mb-2">{t('noHomeworkHistoryYet')}</p>
+                    <p className="text-sm">{t('yourSolvedHomeworkProblemsWillAppearHere')}</p>
+                    <p className="text-xs mt-2 text-slate-500">{t('uploadDocumentsOrAskQuestionsToGetStarted')}</p>
+                  </motion.div>
+                </div>
+              )}
+            </div>
+          </PortalModal>
         )}
       </AnimatePresence>
 
       {/* Related Knowledge Modal */}
       <AnimatePresence>
         {showRelatedKnowledge && (
-          <motion.div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowRelatedKnowledge(false)}
+          <PortalModal
+            isOpen={showRelatedKnowledge}
+            onClose={() => setShowRelatedKnowledge(false)}
+            className="bg-slate-800/90 backdrop-blur-sm border border-white/10 rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl"
           >
-            <motion.div 
-              className="bg-slate-800/90 backdrop-blur-sm border border-white/10 rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              ref={relatedKnowledgeContainerRef}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-purple-400 flex items-center">
-                  <IconComponent icon={AiOutlineBulb} className="h-6 w-6 mr-2" />
-                  Related Knowledge
-                </h3>
-                <button
-                  onClick={() => setShowRelatedKnowledge(false)}
-                  className="text-slate-400 hover:text-slate-300 p-2 rounded-lg hover:bg-slate-700/50"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-purple-400 flex items-center">
+                <IconComponent icon={AiOutlineBulb} className="h-6 w-6 mr-2" />
+                {t('relatedKnowledge')}
+              </h3>
+              <button
+                onClick={() => setShowRelatedKnowledge(false)}
+                className="text-slate-400 hover:text-slate-300 p-2 rounded-lg hover:bg-slate-700/50"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {loadingKnowledge ? (
+              <div className="flex items-center justify-center py-8">
+                <motion.div
+                  className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mr-3"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                />
+                <span className="text-slate-300">{t('loadingKnowledgePoints')}</span>
               </div>
-              
-              {loadingKnowledge ? (
-                <div className="flex items-center justify-center py-8">
-                  <motion.div
-                    className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mr-3"
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  />
-                  <span className="text-slate-300">Loading knowledge points...</span>
-                </div>
-              ) : relatedKnowledge ? (
-                <div className="space-y-6">
-                  {relatedKnowledge.content && (
-                    <div className="prose prose-lg max-w-none
-                      prose-headings:text-cyan-400 
-                      prose-p:text-slate-300 prose-p:leading-relaxed
-                      prose-strong:text-slate-200 prose-strong:font-bold
-                      prose-em:text-slate-300 prose-em:italic
-                      prose-code:bg-slate-700/50 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-sm prose-code:text-cyan-300
-                      prose-pre:bg-slate-700/50 prose-pre:border prose-pre:border-slate-600
-                      prose-blockquote:border-l-4 prose-blockquote:border-cyan-500 prose-blockquote:bg-cyan-500/10
-                      prose-ul:space-y-1 prose-ol:space-y-1
-                      prose-li:marker:text-cyan-400 prose-li:text-slate-300
-                      prose-a:text-cyan-400 prose-a:font-medium
-                      prose-table:border prose-table:border-slate-600
-                      prose-th:bg-slate-700/50 prose-th:font-semibold prose-th:text-cyan-400
-                      prose-td:border-t prose-td:border-slate-600 prose-td:text-slate-300
-                      prose-h2:text-xl prose-h2:font-bold prose-h2:text-purple-400 prose-h2:mt-6 prose-h2:mb-4 prose-h2:border-b prose-h2:border-purple-500/30 prose-h2:pb-2
-                      prose-h3:text-lg prose-h3:font-semibold prose-h3:text-blue-400 prose-h3:mt-4 prose-h3:mb-3
-                      prose-h4:text-base prose-h4:font-medium prose-h4:text-teal-400 prose-h4:mt-3 prose-h4:mb-2"
+            ) : relatedKnowledge ? (
+              <div className="space-y-6">
+                {relatedKnowledge.content && (
+                  <div className="prose prose-lg max-w-none
+                    prose-headings:text-cyan-400 
+                    prose-p:text-slate-300 prose-p:leading-relaxed
+                    prose-strong:text-slate-200 prose-strong:font-bold
+                    prose-em:text-slate-300 prose-em:italic
+                    prose-code:bg-slate-700/50 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-sm prose-code:text-cyan-300
+                    prose-pre:bg-slate-700/50 prose-pre:border prose-pre:border-slate-600
+                    prose-blockquote:border-l-4 prose-blockquote:border-cyan-500 prose-blockquote:bg-cyan-500/10
+                    prose-ul:space-y-1 prose-ol:space-y-1
+                    prose-li:marker:text-cyan-400 prose-li:text-slate-300
+                    prose-a:text-cyan-400 prose-a:font-medium
+                    prose-table:border prose-table:border-slate-600
+                    prose-th:bg-slate-700/50 prose-th:font-semibold prose-th:text-cyan-400
+                    prose-td:border-t prose-td:border-slate-600 prose-td:text-slate-300
+                    prose-h2:text-xl prose-h2:font-bold prose-h2:text-purple-400 prose-h2:mt-6 prose-h2:mb-4 prose-h2:border-b prose-h2:border-purple-500/30 prose-h2:pb-2
+                    prose-h3:text-lg prose-h3:font-semibold prose-h3:text-blue-400 prose-h3:mt-4 prose-h3:mb-3
+                    prose-h4:text-base prose-h4:font-medium prose-h4:text-teal-400 prose-h4:mt-3 prose-h4:mb-2"
+                  >
+                    <ReactMarkdown
+                      remarkPlugins={[remarkMath, remarkGfm]}
+                      rehypePlugins={[rehypeKatex]}
+                      components={markdownComponents}
                     >
-                      <ReactMarkdown
-                        remarkPlugins={[remarkMath, remarkGfm]}
-                        rehypePlugins={[rehypeKatex]}
-                        components={markdownComponents}
-                      >
-                        {preprocessLaTeX(relatedKnowledge.content)}
-                      </ReactMarkdown>
-                    </div>
-                  )}
-                  
-                  {/* Show loading indicator if still streaming */}
-                  {!relatedKnowledge.isComplete && relatedKnowledge.content && (
-                    <div className="flex items-center justify-center py-4">
-                      <motion.div
-                        className="w-6 h-6 border-3 border-purple-500 border-t-transparent rounded-full mr-2"
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                      />
-                      <span className="text-slate-400 text-sm">Generating more content...</span>
-                    </div>
-                  )}
-                  
-                  {!relatedKnowledge.content && !loadingKnowledge && (
-                    <div className="text-center py-8 text-slate-400">
-                      <IconComponent icon={AiOutlineBulb} className="mx-auto text-4xl mb-2 opacity-50" />
-                      <p>No knowledge points available</p>
-                      <p className="text-sm mt-1">Please try again</p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-slate-400">
-                  <IconComponent icon={AiOutlineBulb} className="mx-auto text-4xl mb-2 opacity-50" />
-                  <p>Failed to load knowledge points</p>
-                  <p className="text-sm mt-1">Please try again</p>
-                </div>
-              )}
-            </motion.div>
-          </motion.div>
+                      {preprocessLaTeX(relatedKnowledge.content)}
+                    </ReactMarkdown>
+                  </div>
+                )}
+                
+                {/* Show loading indicator if still streaming */}
+                {!relatedKnowledge.isComplete && relatedKnowledge.content && (
+                  <div className="flex items-center justify-center py-4">
+                    <motion.div
+                      className="w-6 h-6 border-3 border-purple-500 border-t-transparent rounded-full mr-2"
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    />
+                    <span className="text-slate-400 text-sm">Generating more content...</span>
+                  </div>
+                )}
+                
+                {!relatedKnowledge.content && !loadingKnowledge && (
+                  <div className="text-center py-8 text-slate-400">
+                    <IconComponent icon={AiOutlineBulb} className="mx-auto text-4xl mb-2 opacity-50" />
+                    <p>No knowledge points available</p>
+                    <p className="text-sm mt-1">Please try again</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-slate-400">
+                <IconComponent icon={AiOutlineBulb} className="mx-auto text-4xl mb-2 opacity-50" />
+                <p>Failed to load knowledge points</p>
+                <p className="text-sm mt-1">Please try again</p>
+              </div>
+            )}
+          </PortalModal>
         )}
       </AnimatePresence>
 
