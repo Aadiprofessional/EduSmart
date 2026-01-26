@@ -24,6 +24,12 @@ import { universityAPI } from '../utils/apiService';
 import { useLanguage } from '../utils/LanguageContext';
 import { userProfileAPI, UserProfile } from '../utils/userProfileAPI';
 import { useNotification } from '../utils/NotificationContext';
+import { 
+  UniversityCardSkeleton, 
+  UniversityListSkeleton, 
+  AIAnalysisSkeleton, 
+  RecommendationsSkeleton 
+} from '../components/ui/Skeleton';
 import axios from 'axios';
 
 // Cost Estimation Interface
@@ -1674,7 +1680,7 @@ const Database: React.FC = () => {
         
         // Simplify the API call - get all universities first, then filter on frontend
         console.log('Fetching universities...');
-        const response = await universityAPI.getAll(1, 300); // Changed from 100 to 300 to fetch all universities
+        const response = await universityAPI.getAll(1, 1000); // Changed from 100 to 300 to fetch all universities
         
         console.log('API Response:', response);
         
@@ -2130,14 +2136,14 @@ Please provide your analysis in this exact XML format:
 Analyze their academic strength, competitiveness, budget considerations, recommended study regions, and provide actionable suggestions for improvement.`;
 
       // Call the AI API with streaming using the same API as AI tutor
-      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
+          'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || '4ca49c30-f9e7-467e-8269-cc156c131881'}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: "qwen-vl-max",
+          model: "doubao-seed-1-6-vision-250815",
           messages: [
             {
               role: "system",
@@ -2302,7 +2308,7 @@ Analyze their academic strength, competitiveness, budget considerations, recomme
 
       const profile = profileResult.profile;
 
-      // Prepare user data and university list for AI
+      // Prepare user data for AI
       const userData = {
         name: profile.full_name,
         currentEducation: profile.current_education_level,
@@ -2325,15 +2331,51 @@ Analyze their academic strength, competitiveness, budget considerations, recomme
         careerGoals: profile.career_goals
       };
 
-      // Create a simplified university list for AI processing
-      const universityList = universities.map(uni => ({
+      // Pre-filter universities to reduce API payload size
+      let filteredUniversities = universities;
+      
+      // Filter by preferred field if available
+      if (profile.preferred_field) {
+        filteredUniversities = filteredUniversities.filter(uni => 
+          uni.majorStrengths.some(major => 
+            major.toLowerCase().includes(profile.preferred_field.toLowerCase())
+          )
+        );
+      }
+      
+      // Filter by budget range if available
+      if (profile.budget_range) {
+        filteredUniversities = filteredUniversities.filter(uni => {
+          const fee = parseInt(uni.tuitionFees.undergraduate.replace(/[^0-9]/g, ''));
+          if (profile.budget_range === 'Under $20,000') return fee < 20000;
+          if (profile.budget_range === '$20,000 - $40,000') return fee >= 20000 && fee <= 40000;
+          if (profile.budget_range === '$40,000 - $60,000') return fee >= 40000 && fee <= 60000;
+          return true; // Above $60,000 - no filter
+        });
+      }
+      
+      // Filter by preferred location/region if available
+      if (profile.preferred_study_location) {
+        filteredUniversities = filteredUniversities.filter(uni => 
+          uni.country.toLowerCase().includes(profile.preferred_study_location.toLowerCase()) ||
+          uni.region.toLowerCase().includes(profile.preferred_study_location.toLowerCase())
+        );
+      }
+      
+      // Sort by ranking and take top 50 universities to reduce API payload
+      const topUniversities = filteredUniversities
+        .sort((a, b) => a.qsRanking - b.qsRanking)
+        .slice(0, 50);
+
+      // Create a simplified university list for AI processing (much smaller payload)
+      const universityList = topUniversities.map(uni => ({
         id: uni.id,
         name: uni.name,
         country: uni.country,
         qsRanking: uni.qsRanking,
-        tuitionFees: uni.tuitionFees,
+        tuitionFee: uni.tuitionFees.undergraduate,
         minGPA: uni.admissionRequirements.minGPA,
-        majorStrengths: uni.majorStrengths,
+        majorStrengths: uni.majorStrengths.slice(0, 3), // Limit to top 3 majors
         acceptanceRate: uni.acceptanceRate,
         region: uni.region
       }));
@@ -2341,9 +2383,18 @@ Analyze their academic strength, competitiveness, budget considerations, recomme
       const aiPrompt = `Based on this student's profile, please select the top 5 most suitable universities from the provided list and return them in XML format.
 
 Student Profile:
-${JSON.stringify(userData, null, 2)}
+- Name: ${userData.name}
+- Current Education: ${userData.currentEducation}
+- GPA: ${userData.gpa}/${userData.gpaScale}
+- Field of Study: ${userData.fieldOfStudy}
+- Preferred Field: ${userData.preferredField}
+- Preferred Degree: ${userData.preferredDegree}
+- Budget Range: ${userData.budgetRange}
+- Preferred Location: ${userData.preferredLocation}
+- Test Scores: SAT: ${userData.testScores.sat}, TOEFL: ${userData.testScores.toefl}, IELTS: ${userData.testScores.ielts}
+- Career Goals: ${userData.careerGoals}
 
-Available Universities:
+Available Universities (Top 50 filtered):
 ${JSON.stringify(universityList, null, 2)}
 
 Please analyze the student's academic profile, test scores, field preferences, budget, and location preferences to select the 5 best matching universities. Return your recommendations in this XML format:
@@ -2374,14 +2425,14 @@ Please analyze the student's academic profile, test scores, field preferences, b
 Consider factors like academic fit, budget compatibility, location preferences, admission requirements, and career alignment.`;
 
       // Call the AI API with streaming using the same API as AI tutor
-      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
+          'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || '4ca49c30-f9e7-467e-8269-cc156c131881'}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: "qwen-vl-max",
+          model: "doubao-seed-1-6-vision-250815",
           messages: [
             {
               role: "system",
@@ -2451,9 +2502,25 @@ Consider factors like academic fit, budget compatibility, location preferences, 
         reader.releaseLock();
       }
 
+      // Extract XML from the response (it might be wrapped in code blocks)
+      let xmlContent = aiContent;
+      
+      // Check if the response contains XML wrapped in code blocks
+      const xmlMatch = aiContent.match(/```xml\s*([\s\S]*?)\s*```/) || aiContent.match(/<recommendations[\s\S]*?<\/recommendations>/);
+      if (xmlMatch) {
+        xmlContent = xmlMatch[1] || xmlMatch[0];
+      }
+
       // Parse XML response
       const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(aiContent, 'text/xml');
+      const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
+      
+      // Check for XML parsing errors
+      const parserError = xmlDoc.querySelector('parsererror');
+      if (parserError) {
+        console.warn('XML parsing failed, falling back to algorithmic recommendations');
+        throw new Error('XML parsing failed');
+      }
       
       // Extract recommended university IDs
       const universityElements = xmlDoc.querySelectorAll('recommendations university');
@@ -2462,16 +2529,20 @@ Consider factors like academic fit, budget compatibility, location preferences, 
         return id ? id : null; // Keep as string instead of parsing to int
       }).filter(id => id !== null);
 
-      // Get the actual university objects
+      // Get the actual university objects from the original universities array
       const recommendations = recommendedIds
         .map(id => universities.find(uni => uni.id === id))
         .filter(uni => uni !== undefined)
         .slice(0, 5); // Ensure we only get top 5
 
+      // Process AI recommendations and add fallback if needed
+      const validRecommendations = recommendations.filter((uni): uni is University => uni !== undefined);
+
       // If AI didn't return enough recommendations, fall back to algorithm
-      if (recommendations.length < 5) {
+      if (validRecommendations.length < 3) {
+        console.log('AI returned insufficient recommendations, using algorithmic fallback');
         const fallbackRecommendations = generateUniversityRecommendations(profile, universities);
-        const combined = [...recommendations, ...fallbackRecommendations]
+        const combined = [...validRecommendations, ...fallbackRecommendations]
           .filter((uni): uni is University => uni !== undefined)
           .filter((uni, index, self) => index === self.findIndex(u => u.id === uni.id))
           .slice(0, 5);
@@ -2489,7 +2560,6 @@ Consider factors like academic fit, budget compatibility, location preferences, 
           });
         }
       } else {
-        const validRecommendations = recommendations.filter((uni): uni is University => uni !== undefined);
         setRecommendedUniversities(validRecommendations);
         
         // Add only the first recommended university to compare list
@@ -2511,7 +2581,7 @@ Consider factors like academic fit, budget compatibility, location preferences, 
         queryData: { 
           recommendationType: 'ai_recommendations',
           userProfileCompletion: userProfileCompletion,
-          universityCount: universities.length
+          universityCount: topUniversities.length // Use filtered count
         },
         responsesUsed: 1
       });
@@ -2524,7 +2594,22 @@ Consider factors like academic fit, budget compatibility, location preferences, 
 
     } catch (error) {
       console.error('Error in Get Recommendations:', error);
-      showError('Error getting recommendations. Please try again.');
+      
+      // Even on error, try to provide fallback recommendations
+      try {
+        const profileResult = await userProfileAPI.getUserProfile(session);
+        if (profileResult.success && profileResult.profile) {
+          const fallbackRecommendations = generateUniversityRecommendations(profileResult.profile, universities);
+          if (fallbackRecommendations.length > 0) {
+            setRecommendedUniversities(fallbackRecommendations);
+            console.log('Provided fallback recommendations due to AI error');
+          }
+        }
+      } catch (fallbackError) {
+        console.error('Fallback recommendations also failed:', fallbackError);
+      }
+      
+      showError('AI recommendations failed, but we provided some alternatives based on your profile.');
     } finally {
       setIsLoadingAI(false);
       setIsStreamingRecommendations(false);
@@ -2811,27 +2896,60 @@ Consider factors like academic fit, budget compatibility, location preferences, 
         preferredLocation: profile.preferred_study_location
       };
 
-      // Use a smaller subset for faster processing
-      const universityList = universities.slice(0, 20).map(uni => ({
+      // Pre-filter universities for better matching
+      let filteredUniversities = universities;
+      
+      // Filter by preferred field if available
+      if (profile.preferred_field) {
+        filteredUniversities = filteredUniversities.filter(uni => 
+          uni.majorStrengths.some(major => 
+            major.toLowerCase().includes(profile.preferred_field.toLowerCase())
+          )
+        );
+      }
+      
+      // Filter by budget range if available
+      if (profile.budget_range) {
+        filteredUniversities = filteredUniversities.filter(uni => {
+          const fee = parseInt(uni.tuitionFees.undergraduate.replace(/[^0-9]/g, ''));
+          if (profile.budget_range === 'Under $20,000') return fee < 20000;
+          if (profile.budget_range === '$20,000 - $40,000') return fee >= 20000 && fee <= 40000;
+          if (profile.budget_range === '$40,000 - $60,000') return fee >= 40000 && fee <= 60000;
+          return true; // Above $60,000 - no filter
+        });
+      }
+      
+      // Use top 20 universities from filtered list for faster processing
+      const universityList = filteredUniversities
+        .sort((a, b) => a.qsRanking - b.qsRanking)
+        .slice(0, 20)
+        .map(uni => ({
         id: uni.id,
         name: uni.name,
         country: uni.country,
         qsRanking: uni.qsRanking,
-        majorStrengths: uni.majorStrengths
+          majorStrengths: uni.majorStrengths.slice(0, 2), // Limit to top 2 majors
+          tuitionFee: uni.tuitionFees.undergraduate
       }));
 
       const quickPrompt = `Based on this student profile, select the single best university from the list and return only the university ID in XML format:
 
-Student: ${JSON.stringify(userData, null, 2)}
+Student Profile:
+- Name: ${userData.name}
+- GPA: ${userData.gpa}
+- Field: ${userData.fieldOfStudy} → ${userData.preferredField}
+- Budget: ${userData.budgetRange}
+- Location: ${userData.preferredLocation}
+
 Universities: ${JSON.stringify(universityList, null, 2)}
 
 Return format: <recommendation><university id="X"/></recommendation>`;
 
       try {
-        const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+        const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
           method: 'POST',
           headers: {
-            'Authorization': 'Bearer sk-80beadf6603b4832981d0d65896b1ae0',
+            'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || 'sk-4d21243994a04bb09f431cb2471cdd6c'}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -3072,14 +3190,14 @@ Please provide a comprehensive cost breakdown in XML format:
 Please provide realistic cost estimates based on the university's location and typical expenses for international students. Include all major cost categories and helpful tips for budget management.`;
 
       // Call the AI API for cost estimation using the same API as AI tutor
-      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
+          'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || '4ca49c30-f9e7-467e-8269-cc156c131881'}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: "qwen-vl-max",
+            model: "doubao-seed-1-6-vision-250815",
           messages: [
             {
               role: "system",
@@ -3667,36 +3785,62 @@ Please provide realistic cost estimates based on the university's location and t
                   </div>
                 </div>
 
-                {sortedUniversities.length === 0 ? (
+                {isLoading ? (
+                  <motion.div
+                    variants={staggerContainer(0.05, 0)}
+                    initial="hidden"
+                    animate="show"
+                  >
+                    {/* Mobile View Skeleton */}
+                    <div className="lg:hidden">
+                      {mobileViewMode === 'grid' ? (
+                        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                          {[...Array(8)].map((_, index) => (
+                            <UniversityCardSkeleton key={index} isMobile={true} />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {[...Array(6)].map((_, index) => (
+                            <UniversityListSkeleton key={index} isMobile={true} />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Desktop View Skeleton */}
+                    <div className="hidden lg:block">
+                      <div className={viewMode === 'grid' ? 
+                        'grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6' : 
+                        'space-y-4'
+                      }>
+                        {[...Array(viewMode === 'grid' ? 9 : 6)].map((_, index) => (
+                          viewMode === 'grid' ? (
+                            <UniversityCardSkeleton key={index} />
+                          ) : (
+                            <UniversityListSkeleton key={index} />
+                          )
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                ) : sortedUniversities.length === 0 ? (
                   <div className="bg-gray-50 rounded-lg p-8 text-center">
                     <div className="text-gray-400 text-5xl mb-4">
                       <IconComponent icon={FaUniversity} className="mx-auto" />
                     </div>
                     <h3 className="text-xl font-bold text-gray-700 mb-2">
-                      {isLoading 
-                        ? t('database.loading')
-                        : t('database.noResultsFound')
-                      }
+                      {t('database.noResultsFound')}
                     </h3>
                     <p className="text-gray-600 mb-4">
-                      {isLoading 
-                        ? t('database.loading')
-                        : t('database.noResultsFound')
-                      }
+                      {t('database.noResultsFound')}
                     </p>
-                    {!isLoading && (
-                      <button 
-                        onClick={resetFilters}
-                        className="bg-primary hover:bg-primary-dark text-white font-medium py-2 px-4 rounded"
-                      >
-                        {t('database.reset')}
-                      </button>
-                    )}
-                    {isLoading && (
-                      <div className="flex justify-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                      </div>
-                    )}
+                    <button 
+                      onClick={resetFilters}
+                      className="bg-primary hover:bg-primary-dark text-white font-medium py-2 px-4 rounded"
+                    >
+                      {t('database.reset')}
+                    </button>
                   </div>
                 ) : (
                   <motion.div
@@ -3993,9 +4137,9 @@ Please provide realistic cost estimates based on the university's location and t
 
       {/* AI Analysis Modal */}
       {showAIAnalysis && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center p-4 pt-16">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <motion.div 
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[65vh] overflow-hidden mt-4"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl max-h-[95vh] overflow-hidden"
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
@@ -4019,19 +4163,16 @@ Please provide realistic cost estimates based on the university's location and t
               </div>
             </div>
             
-            <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(85vh-8rem)]">
+            <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(95vh-10rem)]">
               {isStreamingAnalysis ? (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-center py-8">
-                    <div className="text-center">
-                      <IconComponent icon={FaSpinner} className="animate-spin text-4xl text-purple-500 mb-4" />
-                      <p className="text-gray-600">{t('database.analyzingYourProfile')}</p>
-                    </div>
-                  </div>
+                  <AIAnalysisSkeleton />
                   {streamingAnalysisContent && (
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <h3 className="font-semibold text-gray-800 mb-2">{t('database.realTimeAnalysis')}:</h3>
-                      <div className="text-gray-700 whitespace-pre-wrap">{streamingAnalysisContent}</div>
+                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 max-h-96 overflow-y-auto">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">AI Analysis in Progress:</h4>
+                      <div className="text-sm text-gray-600 whitespace-pre-wrap break-words">
+                        {streamingAnalysisContent}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -4099,9 +4240,9 @@ Please provide realistic cost estimates based on the university's location and t
 
       {/* Recommendations Modal */}
       {showRecommendations && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center p-4 pt-16">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <motion.div 
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[65vh] overflow-hidden mt-4"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl max-h-[90vh] overflow-hidden"
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
@@ -4125,19 +4266,16 @@ Please provide realistic cost estimates based on the university's location and t
               </div>
             </div>
             
-            <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(85vh-8rem)]">
+            <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-10rem)]">
               {isStreamingRecommendations ? (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-center py-8">
-                    <div className="text-center">
-                      <IconComponent icon={FaSpinner} className="animate-spin text-4xl text-blue-500 mb-4" />
-                      <p className="text-gray-600">{t('database.findingYourPerfectMatches')}</p>
-                    </div>
-                  </div>
+                  <RecommendationsSkeleton />
                   {streamingRecommendationsContent && (
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <h3 className="font-semibold text-gray-800 mb-2">{t('database.aiAnalysisInProgress')}:</h3>
-                      <div className="text-gray-700 whitespace-pre-wrap">{streamingRecommendationsContent}</div>
+                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 max-h-96 overflow-y-auto">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">AI Recommendations in Progress:</h4>
+                      <div className="text-sm text-gray-600 whitespace-pre-wrap break-words">
+                        {streamingRecommendationsContent}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -4222,7 +4360,40 @@ Please provide realistic cost estimates based on the university's location and t
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <p className="text-gray-500">{t('database.noRecommendationsAvailable')}. {t('database.pleaseTryAgain')}</p>
+                  <div className="text-gray-400 text-6xl mb-4">
+                    <IconComponent icon={FaUniversity} className="mx-auto" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-700 mb-2">{t('database.noRecommendationsAvailable')}</h3>
+                  <p className="text-gray-500 mb-6">We couldn't find suitable recommendations based on your profile. This might be due to:</p>
+                  <ul className="text-left text-gray-600 mb-6 max-w-md mx-auto space-y-2">
+                    <li>• Limited university data matching your criteria</li>
+                    <li>• Very specific field or location preferences</li>
+                    <li>• Budget constraints filtering out most options</li>
+                  </ul>
+                  <div className="flex gap-3 justify-center">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                        setShowRecommendations(false);
+                        window.location.href = '/profile';
+                      }}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium"
+                    >
+                      Update Profile
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                        setShowRecommendations(false);
+                        resetFilters();
+                      }}
+                      className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium"
+                    >
+                      Browse All Universities
+                    </motion.button>
+                  </div>
                 </div>
               )}
             </div>
@@ -4840,7 +5011,7 @@ Please provide realistic cost estimates based on the university's location and t
 
       {/* Cost Estimation Modal */}
       {showCostEstimationModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center p-4 pt-16">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <motion.div 
             className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[120vh] overflow-hidden mt-4"
             initial={{ opacity: 0, y: 50 }}
@@ -5084,4 +5255,4 @@ Please provide realistic cost estimates based on the university's location and t
   );
 };
 
-export default Database; 
+export default Database;

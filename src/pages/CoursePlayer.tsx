@@ -278,7 +278,7 @@ const CoursePlayer: React.FC = (): JSX.Element => {
   // AI Functions with proper streaming
   const generateAISummary = async (summaryText: string): Promise<string> => {
     const requestPayload = {
-      model: "qwen-vl-max",
+      model: "doubao-seed-1-6-vision-250815",
       messages: [
         {
           role: "system",
@@ -331,10 +331,10 @@ Please provide a well-structured, educational summary using proper markdown form
       stream: true
     };
 
-    const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
+    const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || '4ca49c30-f9e7-467e-8269-cc156c131881'}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(requestPayload)
@@ -388,7 +388,7 @@ Please provide a well-structured, educational summary using proper markdown form
 
   const generateQuickQuestions = async (lectureContent: string): Promise<QuickQuestion[]> => {
     const requestPayload = {
-      model: "qwen-vl-max",
+      model: "doubao-seed-1-6-vision-250815",
       messages: [
         {
           role: "system",
@@ -424,10 +424,10 @@ Lecture content: ${lectureContent.substring(0, 1000)}...`
     };
 
     try {
-      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
+          'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || '4ca49c30-f9e7-467e-8269-cc156c131881'}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestPayload)
@@ -571,7 +571,7 @@ Provide clear, helpful, and educational responses that encourage learning.`;
       }
 
       const requestPayload = {
-        model: "qwen-vl-max",
+        model: "doubao-seed-1-6-vision-250815",
         messages: [
           {
             role: "system",
@@ -599,10 +599,10 @@ Please provide a helpful, well-structured educational response using the markdow
         stream: true
       };
 
-      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
+          'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || 'sk-4d21243994a04bb09f431cb2471cdd6c'}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestPayload)
@@ -2783,4 +2783,4 @@ Please provide a helpful, well-structured educational response using the markdow
   );
 };
 
-export default CoursePlayer; 
+export default CoursePlayer;

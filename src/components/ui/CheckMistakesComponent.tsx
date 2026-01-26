@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import ReactDOM from 'react-dom';
+import ReactDOM, { flushSync } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AiOutlineUpload, AiOutlineCamera, AiOutlineFullscreen, AiOutlineBulb, AiOutlineFileText, AiOutlineHistory, AiOutlineLoading3Quarters, AiOutlineLeft, AiOutlineRight, AiOutlineClose, AiOutlineCheckCircle, AiOutlineExclamationCircle, AiOutlineBook, AiOutlineDelete, AiOutlineExclamation } from 'react-icons/ai';
 import { FiDownload, FiCopy, FiShare2, FiClock } from 'react-icons/fi';
@@ -392,10 +392,32 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
   // Add page markings state for teacher marking functionality
   const [pageMarkings, setPageMarkings] = useState<PageMarking[]>([]);
 
+  // Add state to track history restoration
+  const [isRestoringFromHistory, setIsRestoringFromHistory] = useState(false);
+
   // Load history from database on component mount
   useEffect(() => {
     loadHistoryFromDatabase();
   }, []);
+
+  // Add useEffect to monitor state after history restoration
+  useEffect(() => {
+    if (isRestoringFromHistory && isProcessingStarted && overallProcessingComplete) {
+      console.log('🔄 State synchronized after history restoration:', {
+        file: !!file,
+        isProcessingStarted,
+        overallProcessingComplete,
+        documentPages: documentPages.length,
+        extractedTexts: extractedTexts.length,
+        pageMistakes: pageMistakes.length,
+        markingSummary: !!markingSummary,
+        textOnlyMode
+      });
+      
+      // Mark restoration as complete
+      setIsRestoringFromHistory(false);
+    }
+  }, [isRestoringFromHistory, isProcessingStarted, overallProcessingComplete, file, documentPages, extractedTexts, pageMistakes, markingSummary, textOnlyMode]);
 
   // Helper function to show confirmation modal
   const showConfirmation = (message: string, action: () => void) => {
@@ -421,77 +443,54 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
 
   // Load history from database
   const loadHistoryFromDatabase = async () => {
+    // Only load history if user is authenticated
+    if (!user && !session) {
+      console.log('🚫 No authenticated user - clearing history');
+      setMistakeHistory([]);
+      setIsLoadingHistory(false);
+      return;
+    }
+
+    setIsLoadingHistory(true);
     try {
       console.log('📚 Loading mistake check history from database...');
-      setLoading(true);
-      
       const result = await getMistakeCheckHistory(user, session);
       
       if (result.success && result.history) {
-        console.log(`✅ Successfully loaded ${result.history.length} items from history`);
-        
-        // Transform API data to component's expected format
-        const transformedHistory: MistakeHistoryItem[] = result.history.map((item: APIHistoryItem) => ({
-          id: item.id,
-          fileName: item.fileName || 'Untitled',
-          text: item.text || '',
-          mistakes: Array.isArray(item.mistakes) ? item.mistakes : [],
-          markingSummary: item.markingSummary || null,
-          timestamp: item.timestamp,
-          fileType: item.fileType || 'text/plain',
-          documentPages: item.documentPages || undefined,
-          file: undefined, // Files are not stored in database
-          pageMistakes: item.pageMistakes || undefined,
-          currentPage: item.currentPage || 0,
-          overallProcessingComplete: item.overallProcessingComplete || false,
-          extractedTexts: item.extractedTexts || undefined,
-          pageMarkings: item.pageMarkings || undefined,
-          selectedMarkingStandard: item.selectedMarkingStandard || 'hkdse'
-        }));
-        
-        setMistakeHistory(transformedHistory);
-        // Removed the showSuccess notification to prevent unwanted UI behavior
-        console.log(`✅ Successfully loaded ${transformedHistory.length} items from history`);
+        console.log('✅ Loaded mistake check history:', result.history.length, 'items');
+        setMistakeHistory(result.history);
       } else {
-        console.warn('⚠️ No history data returned or API call failed:', result.error);
-        showError(result.error || 'Failed to load history from database');
-        
-        // Fallback to localStorage
-        console.log('🔄 Falling back to localStorage...');
-        loadHistoryFromLocalStorage();
+        console.error('❌ Failed to load mistake check history:', result.error);
+        // Do not fallback to localStorage for security reasons
+        setMistakeHistory([]);
+        if (mistakeHistory.length === 0) {
+          showError(result.error || 'Failed to load history from database');
+        }
       }
     } catch (error) {
       console.error('❌ Error loading history from database:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      showError(`Failed to load history: ${errorMessage}`);
       
-      // Fallback to localStorage
-      console.log('🔄 Falling back to localStorage due to error...');
-      loadHistoryFromLocalStorage();
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Fallback to localStorage for backward compatibility
-  const loadHistoryFromLocalStorage = () => {
-    const savedHistory = localStorage.getItem('mistakeHistory');
-    if (savedHistory) {
-      try {
-        const parsedHistory = JSON.parse(savedHistory).map((item: any) => ({
-          ...item,
-          timestamp: new Date(item.timestamp)
-        }));
-        setMistakeHistory(parsedHistory);
-        console.log('📁 Loaded history from localStorage as fallback');
-      } catch (error) {
-        console.error('Error loading mistake history from localStorage:', error);
+      // Do not fallback to localStorage for security reasons
+      setMistakeHistory([]);
+      
+      // Only show error if no history is available
+      if (mistakeHistory.length === 0) {
+        showError(`Failed to load history: ${errorMessage}`);
       }
+    } finally {
+      setIsLoadingHistory(false);
     }
   };
 
   // Function to save to database (enhanced from addToHistory)
   const saveToDatabase = async (fileName: string, text: string, mistakes: Mistake[], markingSummary: MarkingSummary | null, fileType: string, documentPages?: string[], originalFile?: File, pageMistakes?: PageMistakes[], currentPageIndex?: number, processingComplete?: boolean, extractedTexts?: ExtractedText[], pageMarkings?: PageMarking[]) => {
+    // Require authentication for saving
+    if (!user && !session) {
+      console.warn('⚠️ Cannot save mistake check - user not authenticated');
+      return;
+    }
+
     try {
       console.log('💾 Saving mistake check to database...');
       
@@ -531,54 +530,19 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
         console.error('❌ Failed to save to database:', result.error);
         const errorMessage = `Failed to save to database: ${result.error || 'Unknown error'}`;
         showError(errorMessage);
-        
-        // Fallback to localStorage
-        console.log('🔄 Falling back to localStorage...');
-        addToLocalStorageHistory(fileName, text, mistakes, markingSummary, fileType, documentPages, originalFile, pageMistakes, currentPageIndex, processingComplete, extractedTexts, pageMarkings);
-        // Silent fallback save - no user notification
+        // Do not save to localStorage as fallback - require authentication
       }
     } catch (error) {
       console.error('❌ Database save error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       showError(`Failed to save to database: ${errorMessage}`);
-      
-      // Fallback to localStorage
-      console.log('🔄 Falling back to localStorage due to error...');
-      addToLocalStorageHistory(fileName, text, mistakes, markingSummary, fileType, documentPages, originalFile, pageMistakes, currentPageIndex, processingComplete, extractedTexts, pageMarkings);
-      showSuccess('Saved locally as fallback');
+      // Do not save to localStorage as fallback - require authentication
     }
   };
 
-  // Fallback function to add to localStorage (legacy support)
-  const addToLocalStorageHistory = (fileName: string, text: string, mistakes: Mistake[], markingSummary: MarkingSummary | null, fileType: string, documentPages?: string[], originalFile?: File, pageMistakes?: PageMistakes[], currentPageIndex?: number, processingComplete?: boolean, extractedTexts?: ExtractedText[], pageMarkings?: PageMarking[]) => {
-    const historyItem: MistakeHistoryItem = {
-      id: Date.now().toString(),
-      fileName,
-      text,
-      mistakes,
-      markingSummary,
-      timestamp: new Date(),
-      fileType,
-      documentPages,
-      file: originalFile,
-      pageMistakes,
-      currentPage: currentPageIndex,
-      overallProcessingComplete: processingComplete,
-      extractedTexts,
-      pageMarkings,
-      selectedMarkingStandard: selectedMarkingStandard
-    };
-    
-    setMistakeHistory(prev => [historyItem, ...prev.slice(0, 19)]); // Keep last 20 items
-    
-    // Also save to localStorage for backward compatibility
-    const updatedHistory = [historyItem, ...mistakeHistory.slice(0, 19)];
-    localStorage.setItem('mistakeHistory', JSON.stringify(updatedHistory));
-  };
-
-  // Enhanced function to add to history (now uses database)
+  // Enhanced function to add to history (now uses database only)
   const addToHistory = (fileName: string, text: string, mistakes: Mistake[], markingSummary: MarkingSummary | null, fileType: string, documentPages?: string[], originalFile?: File, pageMistakes?: PageMistakes[], currentPageIndex?: number, processingComplete?: boolean, extractedTexts?: ExtractedText[], pageMarkings?: PageMarking[]) => {
-    // Save to database with fallback to localStorage
+    // Save to database - authentication required
     saveToDatabase(fileName, text, mistakes, markingSummary, fileType, documentPages, originalFile, pageMistakes, currentPageIndex, processingComplete, extractedTexts, pageMarkings);
   };
 
@@ -586,190 +550,273 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
   const loadFromHistory = (item: MistakeHistoryItem) => {
     console.log('🔄 Loading from history:', {
       fileName: item.fileName,
+      mistakesCount: item.mistakes?.length || 0,
       hasDocumentPages: !!item.documentPages?.length,
-      hasPageMistakes: !!item.pageMistakes?.length,
       hasExtractedTexts: !!item.extractedTexts?.length,
+      hasPageMistakes: !!item.pageMistakes?.length,
       hasPageMarkings: !!item.pageMarkings?.length,
+      hasMarkingSummary: !!item.markingSummary,
+      overallComplete: item.overallProcessingComplete,
       currentPage: item.currentPage,
-      overallComplete: item.overallProcessingComplete
+      selectedStandard: item.selectedMarkingStandard
     });
+
+    // IMPORTANT: Set restoration flag first to prevent useEffect interference
+    setIsRestoringFromHistory(true);
     
-    setShowHistory(false);
-    
-    // Clear any existing state first to ensure clean restoration
+    // Clear loading state immediately to show results
     setLoading(false);
     setProcessingStatus('');
+
+    // Close history modal first
+    setShowHistory(false);
+
+    // Reset selection states
     setSelectedMistakeId(null);
     setShowCorrectedText(false);
-    setCorrectedText('');
-    setShowReportModal(false);
-    setShowFileViewModal(false);
-    setFullScreenDocument(false);
-    setIsMobileMenuOpen(false);
+    setTextOnlyMode(false);
     
-    // CRITICAL: Set processing state to show results view immediately
-    setIsProcessingStarted(true);
-    setOverallProcessingComplete(item.overallProcessingComplete || true);
-    
-    // Restore document pages if available (PDF/Document mode)
-    if (item.documentPages && item.documentPages.length > 0) {
-      console.log('📄 Restoring document mode from history with', item.documentPages.length, 'pages');
+    // For text-only mode restoration
+    if (!item.documentPages?.length && item.text) {
+      console.log('📝 Restoring text-only mode from history');
+      setTextOnlyMode(true);
+      setFile(null);
+      setDocumentPages([]);
+      setDirectText(item.text || '');
       
-      // Set document state
+      // Restore mistakes for text mode
+      if (item.mistakes?.length) {
+        const mistakes: Mistake[] = item.mistakes.map(mistake => ({
+          id: mistake.id,
+          incorrect: mistake.incorrect,
+          correct: mistake.correct,
+          type: mistake.type,
+          explanation: mistake.explanation
+        }));
+        
+        // Create page mistakes for text mode (single page)
+        const textPageMistakes: PageMistakes = {
+          pageNumber: 1,
+          mistakes: mistakes,
+          isLoading: false,
+          isComplete: true
+        };
+        setPageMistakes([textPageMistakes]);
+        setCurrentPage(0);
+      }
+      
+      // Restore marking summary
+      if (item.markingSummary) {
+        setMarkingSummary(item.markingSummary);
+      }
+      
+      // Restore selected marking standard
+      if (item.selectedMarkingStandard) {
+        setSelectedMarkingStandard(item.selectedMarkingStandard);
+      }
+      
+      setIsProcessingStarted(true);
+      setOverallProcessingComplete(true);
+      
+      // Clear restoration flag
+      setTimeout(() => {
+        setIsRestoringFromHistory(false);
+        console.log('🎯 Text-only restoration completed');
+      }, 100);
+      
+      return;
+    }
+
+    // For document-based history items
+    if (item.documentPages?.length) {
+      console.log('📄 Restoring document mode from history with', item.documentPages.length, 'pages');
       setDocumentPages(item.documentPages);
       setCurrentPage(item.currentPage || 0);
       setTextOnlyMode(false);
-      setDirectText('');
       
-      // Create a mock file object for UI compatibility
-      const mockFile = new File([''], item.fileName, { 
-        type: item.fileType || 'application/pdf' 
-      });
-      setFile(mockFile);
-      
-      // Enable text extraction to show the proper layout
-      setTextExtractionEnabled(true);
-      
-      // Restore complete page mistakes if available
-      if (item.pageMistakes && item.pageMistakes.length > 0) {
-        console.log('✅ Restoring page mistakes for', item.pageMistakes.length, 'pages');
-        setPageMistakes(item.pageMistakes);
+      // Create or restore file state
+      if (item.file) {
+        setFile(item.file);
       } else {
-        // Create comprehensive page mistakes from the main mistakes array
-        console.log('🔄 Creating page mistakes structure from main mistakes array');
-        const fallbackPageMistakes: PageMistakes[] = item.documentPages.map((_, index) => ({
-          pageNumber: index + 1,
-          mistakes: index === 0 ? item.mistakes : [], // Put all mistakes on first page as fallback
-          isLoading: false,
-          isComplete: true
-        }));
-        setPageMistakes(fallbackPageMistakes);
-      }
-
-      // Restore extracted texts if available
-      if (item.extractedTexts && item.extractedTexts.length > 0) {
-        console.log('✅ Restoring extracted texts for', item.extractedTexts.length, 'pages');
-        setExtractedTexts(item.extractedTexts);
-      } else {
-        // Create comprehensive extracted texts from the main text
-        console.log('🔄 Creating extracted texts structure from main text');
-        const fallbackExtractedTexts: ExtractedText[] = item.documentPages.map((_, index) => ({
-          pageNumber: index + 1,
-          text: index === 0 ? item.text : '', // Put all text on first page as fallback
-          isLoading: false,
-          isComplete: true
-        }));
-        setExtractedTexts(fallbackExtractedTexts);
-      }
-
-      // Restore page markings if available
-      if (item.pageMarkings && item.pageMarkings.length > 0) {
-        console.log('✅ Restoring page markings for', item.pageMarkings.length, 'pages');
-        setPageMarkings(item.pageMarkings);
-      } else {
-        // Reset page markings for clean state
-        setPageMarkings([]);
+        // Create a pseudo-file for document-based items
+        const pseudoFile = new File([''], item.fileName, { 
+          type: item.fileType || 'application/pdf',
+          lastModified: item.timestamp.getTime()
+        });
+        setFile(pseudoFile);
       }
     } else {
-      console.log('📝 Loading text analysis mode from history');
-      
-      // Set text-only mode - this bypasses file requirement
-      setTextOnlyMode(true);
-      setDirectText(item.text);
+      // Clear document states if no document pages
       setDocumentPages([]);
-      setFile(null); // No file needed in text mode
+      setFile(null);
+    }
+
+    // Restore extracted texts
+    if (item.extractedTexts?.length) {
+      console.log('📝 Restoring extracted texts:', item.extractedTexts.length, 'pages');
+      const restoredTexts: ExtractedText[] = item.extractedTexts.map(text => ({
+        pageNumber: text.pageNumber,
+        text: text.text || '',
+        isLoading: false,
+        isComplete: true,
+        error: text.error
+      }));
+      setExtractedTexts(restoredTexts);
+    } else {
       setExtractedTexts([]);
-      setPageMarkings([]);
-      
-      // Create page mistakes for text mode - ensure mistakes are properly loaded
-      const textPageMistakes: PageMistakes[] = [{
+    }
+
+    // Restore page mistakes
+    if (item.pageMistakes?.length) {
+      console.log('🚨 Restoring page mistakes:', item.pageMistakes.length, 'pages');
+      const restoredPageMistakes: PageMistakes[] = item.pageMistakes.map(pm => ({
+        pageNumber: pm.pageNumber,
+        mistakes: pm.mistakes || [],
+        isLoading: false,
+        isComplete: true,
+        error: pm.error
+      }));
+      setPageMistakes(restoredPageMistakes);
+    } else if (item.mistakes?.length) {
+      // Fallback: Create page mistakes from legacy mistakes array
+      const legacyPageMistakes: PageMistakes = {
         pageNumber: 1,
-        mistakes: item.mistakes || [], // Ensure mistakes array is not undefined
+        mistakes: item.mistakes,
         isLoading: false,
         isComplete: true
-      }];
-      setPageMistakes(textPageMistakes);
-      setCurrentPage(0); // Reset to first page for text mode
+      };
+      setPageMistakes([legacyPageMistakes]);
+    } else {
+      setPageMistakes([]);
     }
-    
-    // Restore marking summary for assessment display
-    setMarkingSummary(item.markingSummary);
 
-    // Restore marking standard if available
+    // Restore page markings
+    if (item.pageMarkings?.length) {
+      console.log('📊 Restoring page markings:', item.pageMarkings.length, 'pages');
+      const restoredPageMarkings: PageMarking[] = item.pageMarkings.map(pm => ({
+        pageNumber: pm.pageNumber,
+        questions: pm.questions || [],
+        totalMarks: pm.totalMarks || 0,
+        maxMarks: pm.maxMarks || 0,
+        isLoading: false,
+        isComplete: true,
+        error: pm.error
+      }));
+      setPageMarkings(restoredPageMarkings);
+    } else {
+      setPageMarkings([]);
+    }
+
+    // Restore marking summary
+    if (item.markingSummary) {
+      console.log('📊 Restoring marking summary');
+      setMarkingSummary(item.markingSummary);
+    } else {
+      setMarkingSummary(null);
+    }
+
+    // Restore selected marking standard
     if (item.selectedMarkingStandard) {
       setSelectedMarkingStandard(item.selectedMarkingStandard);
     }
+
+    // Set processing states - CRITICAL for showing results
+    setIsProcessingStarted(true);
+    setOverallProcessingComplete(true);
     
-    // Generate corrected text if mistakes exist (for auto-correct functionality)
-    if (item.mistakes && item.mistakes.length > 0) {
-      const correctedText = generateCorrectedText(item.text, item.mistakes);
-      setCorrectedText(correctedText);
+    // Generate corrected text if mistakes exist
+    if (item.mistakes?.length) {
+      const allText = item.text || item.extractedTexts?.map(et => et.text).join('\n') || '';
+      if (allText) {
+        const corrected = generateCorrectedText(allText, item.mistakes);
+        setCorrectedText(corrected);
+      }
     }
-    
-    // Force a small delay to ensure all state is properly set and UI is updated
+
+    // Final state synchronization with extended timeout
     setTimeout(() => {
-      console.log('✅ History loaded successfully - Complete UI state restored');
-      console.log('📊 Final state after history restoration:', {
-        documentMode: !!item.documentPages?.length,
-        textMode: !item.documentPages?.length,
-        documentsCount: item.documentPages?.length || 0,
-        pageMistakesCount: item.pageMistakes?.length || (item.documentPages?.length || 1),
-        extractedTextsCount: item.extractedTexts?.length || (item.documentPages?.length || 1),
+      console.log('🎯 Final restoration state set:', {
+        hasData: !!(item.mistakes?.length || item.markingSummary),
         mistakesCount: item.mistakes?.length || 0,
-        hasMarkingSummary: !!item.markingSummary,
+        documentMode: !!item.documentPages?.length,
+        textOnlyMode: !item.documentPages?.length,
+        hasDocumentPages: !!item.documentPages?.length,
         isProcessingStarted: true,
-        overallProcessingComplete: true,
-        textExtractionEnabled: true,
-        currentPage: item.currentPage || 0,
-        fileName: item.fileName,
-        fileType: item.fileType,
-        hasFile: !!item.documentPages?.length, // Mock file for document mode
-        textOnlyMode: !item.documentPages?.length
+        restorationComplete: true,
+        currentPage: item.currentPage || 0
       });
       
-      // Scroll to show mistakes if any exist
-      if (mistakesContainerRef.current && (item.mistakes.length > 0 || (item.pageMistakes && item.pageMistakes.some(pm => pm.mistakes.length > 0)))) {
-        mistakesContainerRef.current.scrollTop = 0;
-      }
+      // Clear restoration flag
+      setIsRestoringFromHistory(false);
       
-      // Show success message to confirm complete restoration
-      showSuccess(`Successfully restored: ${item.fileName} with ${item.documentPages?.length || 'text'} ${item.documentPages?.length ? (item.documentPages.length === 1 ? 'page' : 'pages') : 'content'}`);
-    }, 150); // Slightly longer delay for complex state restoration
+      // Final check that loading is false and content should be visible
+      console.log('🔍 Post-restoration final state check:', {
+        loading: false, // Should be false
+        isProcessingStarted: true, // Should be true
+        overallProcessingComplete: true, // Should be true  
+        file: !!item.documentPages?.length || !!item.file, // Should be true for docs
+        documentPages: item.documentPages?.length || 0,
+        extractedTexts: item.extractedTexts?.length || 0,
+        pageMistakes: item.pageMistakes?.length || 0,
+        markingSummary: !!item.markingSummary,
+        textOnlyMode: !item.documentPages?.length,
+        isRestoringFromHistory: false
+      });
+    }, 500);
+    
+    // Show success message
+    alert('✅ Successfully restored from history!');
   };
 
   // Function to delete history item from database
   const deleteHistoryItem = async (id: string) => {
     try {
       console.log('🗑️ Deleting history item from database:', id);
+      
+      // First update UI optimistically for better UX
+      const itemToDelete = mistakeHistory.find(item => item.id === id);
+      if (itemToDelete) {
+        setMistakeHistory(prev => prev.filter(item => item.id !== id));
+        console.log('🎯 Optimistically removed item from UI:', itemToDelete.fileName);
+      }
+      
       const result = await deleteMistakeCheck(id, user, session);
+      console.log('🗑️ Delete API result:', result);
       
       if (result.success) {
         console.log('✅ Successfully deleted from database');
-        // Silent delete - no user notification needed
-        
-        // Update local state immediately for better UX
-        setMistakeHistory(prev => prev.filter(item => item.id !== id));
         
         // Also remove from localStorage for backward compatibility
         const updatedHistory = mistakeHistory.filter(item => item.id !== id);
         localStorage.setItem('mistakeHistory', JSON.stringify(updatedHistory));
+        
+        showSuccess(`Successfully deleted "${itemToDelete?.fileName || 'item'}"`);
       } else {
         console.error('❌ Failed to delete from database:', result.error);
-        showError('Failed to delete from database: ' + (result.error || 'Unknown error'));
         
-        // Fallback: remove from localStorage only
-        setMistakeHistory(prev => prev.filter(item => item.id !== id));
-        const updatedHistory = mistakeHistory.filter(item => item.id !== id);
-        localStorage.setItem('mistakeHistory', JSON.stringify(updatedHistory));
+        // Revert the optimistic update since delete failed
+        if (itemToDelete) {
+          setMistakeHistory(prev => {
+            const exists = prev.find(item => item.id === id);
+            return exists ? prev : [...prev, itemToDelete].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+          });
+        }
+        
+        showError('Failed to delete from database: ' + (result.error || 'Unknown error'));
       }
     } catch (error) {
       console.error('❌ Delete error:', error);
-      showError('Failed to delete history item');
       
-      // Fallback: remove from localStorage
-      setMistakeHistory(prev => prev.filter(item => item.id !== id));
-      const updatedHistory = mistakeHistory.filter(item => item.id !== id);
-      localStorage.setItem('mistakeHistory', JSON.stringify(updatedHistory));
+      // Revert the optimistic update since delete failed
+      const itemToRestore = mistakeHistory.find(item => item.id === id);
+      if (itemToRestore) {
+        setMistakeHistory(prev => {
+          const exists = prev.find(item => item.id === id);
+          return exists ? prev : [...prev, itemToRestore].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+        });
+      }
+      
+      showError('Failed to delete history item: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
 
@@ -929,14 +976,14 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
     console.log(`📝 Starting text extraction for page ${pageNumber}`);
     
     try {
-      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: "qwen-vl-max",
+      const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || '4ca49c30-f9e7-467e-8269-cc156c131881'}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: "doubao-seed-1-6-vision-250815",
           messages: [
             {
               role: "system",
@@ -1056,14 +1103,14 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
       
       const userPrompt = "Extract all text from this image and then find mistakes. Use the exact format specified: first EXTRACTED_TEXT section, then MISTAKES section.";
 
-      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: "qwen-vl-max",
+      const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || '4ca49c30-f9e7-467e-8269-cc156c131881'}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: "doubao-seed-1-6-vision-250815",
           messages: [
             {
               role: "system",
@@ -1301,14 +1348,14 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
     console.log(`🎯 Starting teacher marking for page ${pageNumber} with ${markingStandard.name} standard`);
     
     try {
-      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: "qwen-vl-max",
+      const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || '4ca49c30-f9e7-467e-8269-cc156c131881'}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: "doubao-seed-1-6-vision-250815",
           messages: [
             {
               role: "system",
@@ -1718,6 +1765,12 @@ Be thorough and fair in your assessment.`
 
   // Handle text extraction when toggle is enabled
   useEffect(() => {
+    // IMPORTANT: Don't run this effect during history restoration to avoid overwriting restored data
+    if (isRestoringFromHistory) {
+      console.log('⚠️ Skipping text extraction useEffect during history restoration');
+      return;
+    }
+    
     if (textExtractionEnabled && documentPages.length > 0 && extractedTexts.length === 0) {
       // Initialize extracted texts
       const initialExtractedTexts: ExtractedText[] = documentPages.map((_, index) => ({
@@ -1765,19 +1818,24 @@ Be thorough and fair in your assessment.`
         console.log('✅ Text extraction after toggle completed');
       });
     }
-  }, [textExtractionEnabled, documentPages.length]);
+  }, [textExtractionEnabled, documentPages.length, isRestoringFromHistory]);
 
   // Auto-scroll effect
   useEffect(() => {
+    // Don't auto-scroll during history restoration to avoid interference
+    if (isRestoringFromHistory) {
+      return;
+    }
+    
     if (mistakesContainerRef.current) {
       const container = mistakesContainerRef.current;
       container.scrollTop = container.scrollHeight;
     }
-  }, [pageMistakes, currentPage]);
+  }, [pageMistakes, currentPage, isRestoringFromHistory]);
 
   // Process text directly without file upload
   const processTextDirectly = async (text: string) => {
-    if (!text.trim() || loading || isProcessingStarted) return;
+    if (!text.trim() || loading || isProcessingStarted || isRestoringFromHistory) return;
     
     setIsProcessingStarted(true);
     setLoading(true);
@@ -1861,14 +1919,14 @@ Be thorough and fair in your assessment.`
       
       const userPrompt = `Analyze this text and find mistakes. For each mistake, respond ONLY in this exact format:\n\nMISTAKE: [exact incorrect text]\nCORRECTION: [exact corrected text]\nTYPE: [mistake type]\n\nText to analyze:\n\n${text}`;
 
-      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: "qwen-vl-max",
+      const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || '4ca49c30-f9e7-467e-8269-cc156c131881'}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: "doubao-seed-1-6-vision-250815",
           messages: [
             {
               role: "system",
@@ -2691,6 +2749,11 @@ Be thorough and fair in your assessment.`
                   src={documentPages[0]} 
                   alt="Document preview"
                   className="w-full h-full object-contain"
+                  onError={(e) => {
+                    // Handle broken image URLs (e.g., expired blob URLs from history)
+                    e.currentTarget.style.display = 'none';
+                    console.log('🖼️ Document preview image failed to load - likely expired blob URL from history');
+                  }}
                 />
               </div>
             </div>
@@ -2781,90 +2844,93 @@ Be thorough and fair in your assessment.`
       {/* Mobile-Responsive Header */}
       <div className="mb-6">
         {/* Desktop Header */}
-        <div className="hidden lg:flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <motion.button
-              onClick={handleRemoveFile}
-              className="flex items-center px-4 py-2 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <IconComponent icon={AiOutlineLeft} className="h-4 w-4 mr-2" />
-              Back to Upload
-            </motion.button>
-            <div>
-              <h1 className="text-2xl font-bold text-cyan-400">
-                Check Mistakes & Assessment
-              </h1>
-              <p className="text-slate-300">{file?.name}</p>
-              <p className="text-sm text-slate-400">
-                Using {MARKING_STANDARDS.find(s => s.id === selectedMarkingStandard)?.name} standard
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            {/* Page Navigation */}
-            {documentPages.length > 1 && (
-              <div className="flex items-center space-x-4">
-                <button 
-                  className="px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-cyan-400 border border-cyan-500/30"
-                  disabled={currentPage === 0}
-                  onClick={() => setCurrentPage(prev => prev - 1)}
-                >
-                  Previous
-                </button>
-                <span className="text-slate-300 font-medium">
-                  Page {currentPage + 1} of {documentPages.length}
-                </span>
-                <button 
-                  className="px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-cyan-400 border border-cyan-500/30"
-                  disabled={currentPage === documentPages.length - 1}
-                  onClick={() => setCurrentPage(prev => prev + 1)}
-                >
-                  Next
-                </button>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex items-center space-x-2">
-              {/* View File Button */}
+        <div className="hidden lg:block">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
               <motion.button
-                onClick={() => setShowFileViewModal(true)}
-                className="flex items-center px-3 py-2 bg-blue-500/20 hover:bg-blue-500/30 rounded-lg text-blue-400 transition-colors border border-blue-500/30"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                onClick={handleRemoveFile}
+                className="flex items-center px-3 py-1.5 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10 text-sm"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                <IconComponent icon={AiOutlineFileText} className="h-4 w-4 mr-1" />
-                View File
+                <IconComponent icon={AiOutlineLeft} className="h-3 w-3 mr-1.5" />
+                Back
               </motion.button>
-
-              {/* Auto Correct Button */}
-              {(pageMistakes.some(pm => pm.mistakes.length > 0)) && (
-                <motion.button
-                  onClick={applyAutoCorrect}
-                  className="flex items-center px-3 py-2 bg-green-500/20 hover:bg-green-500/30 rounded-lg text-green-400 transition-colors border border-green-500/30"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <IconComponent icon={AiOutlineCheckCircle} className="h-4 w-4 mr-1" />
-                  Auto Correct
-                </motion.button>
+              <div className="border-l border-white/20 h-8"></div>
+              <div>
+                <h1 className="text-lg font-bold text-cyan-400">
+                  Mistake Checker
+                </h1>
+                <p className="text-slate-300 text-sm truncate max-w-[300px]">{file?.name}</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              {/* Compact Page Navigation */}
+              {documentPages.length > 1 && (
+                <div className="flex items-center space-x-2 bg-slate-600/30 rounded-lg px-3 py-1.5 border border-white/10">
+                  <button 
+                    className="p-1 bg-cyan-500/20 hover:bg-cyan-500/30 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-cyan-400"
+                    disabled={currentPage === 0}
+                    onClick={() => setCurrentPage(prev => prev - 1)}
+                  >
+                    <IconComponent icon={AiOutlineLeft} className="h-3 w-3" />
+                  </button>
+                  <span className="text-slate-300 font-medium text-sm px-2">
+                    {currentPage + 1}/{documentPages.length}
+                  </span>
+                  <button 
+                    className="p-1 bg-cyan-500/20 hover:bg-cyan-500/30 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-cyan-400"
+                    disabled={currentPage === documentPages.length - 1}
+                    onClick={() => setCurrentPage(prev => prev + 1)}
+                  >
+                    <IconComponent icon={AiOutlineRight} className="h-3 w-3" />
+                  </button>
+                </div>
               )}
 
-              {/* View Report Button */}
-              {markingSummary && overallProcessingComplete && (
+              {/* Compact Action Buttons */}
+              <div className="flex items-center space-x-1">
+                {/* View File Button */}
                 <motion.button
-                  onClick={() => setShowReportModal(true)}
-                  className="flex items-center px-3 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 rounded-lg text-purple-400 transition-colors border border-purple-500/30"
+                  onClick={() => setShowFileViewModal(true)}
+                  className="flex items-center px-2 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 rounded text-blue-400 transition-colors border border-blue-500/30 text-sm"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
+                  title="View Original File"
                 >
-                  <IconComponent icon={AiOutlineFileText} className="h-4 w-4 mr-1" />
-                  View Report
+                  <IconComponent icon={AiOutlineFileText} className="h-3 w-3 mr-1" />
+                  View
                 </motion.button>
-              )}
+
+                {/* Auto Correct Button */}
+                {(pageMistakes.some(pm => pm.mistakes.length > 0)) && (
+                  <motion.button
+                    onClick={applyAutoCorrect}
+                    className="flex items-center px-2 py-1.5 bg-green-500/20 hover:bg-green-500/30 rounded text-green-400 transition-colors border border-green-500/30 text-sm"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    title="Apply Auto Corrections"
+                  >
+                    <IconComponent icon={AiOutlineCheckCircle} className="h-3 w-3 mr-1" />
+                    Auto
+                  </motion.button>
+                )}
+
+                {/* View Report Button */}
+                {markingSummary && overallProcessingComplete && (
+                  <motion.button
+                    onClick={() => setShowReportModal(true)}
+                    className="flex items-center px-2 py-1.5 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 rounded text-purple-400 transition-colors border border-purple-500/30 text-sm"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    title="View Assessment Report"
+                  >
+                    <IconComponent icon={AiOutlineFileText} className="h-3 w-3 mr-1" />
+                    Report
+                  </motion.button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -3127,6 +3193,11 @@ Be thorough and fair in your assessment.`
                     src={documentPages[currentPage]} 
                     alt={`Document page ${currentPage + 1}`}
                     className="absolute inset-0 w-full h-full object-contain opacity-20"
+                    onError={(e) => {
+                      // Handle broken image URLs (e.g., expired blob URLs from history)
+                      e.currentTarget.style.display = 'none';
+                      console.log('🖼️ Image failed to load for page', currentPage + 1, '- likely expired blob URL from history');
+                    }}
                   />
                   
                   {/* Text Overlay */}
@@ -3801,6 +3872,11 @@ Be thorough and fair in your assessment.`
                       src={documentPages[currentPage]} 
                       alt={`Document page ${currentPage + 1}`}
                       className="max-w-full max-h-[70vh] object-contain shadow-lg"
+                      onError={(e) => {
+                        // Handle broken image URLs (e.g., expired blob URLs from history)
+                        e.currentTarget.style.display = 'none';
+                        console.log('🖼️ File view modal image failed to load for page', currentPage + 1, '- likely expired blob URL from history');
+                      }}
                     />
                   </div>
 
@@ -4019,4 +4095,4 @@ Be thorough and fair in your assessment.`
   );
 };
 
-export default CheckMistakesComponent; 
+export default CheckMistakesComponent;

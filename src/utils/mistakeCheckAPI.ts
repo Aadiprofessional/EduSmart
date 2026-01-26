@@ -1,7 +1,7 @@
 import { mistakeCheckAPI } from './apiService';
 
 // Get user ID from authentication context or localStorage - proper authentication
-const getUserId = (user?: any, session?: any): string => {
+const getUserId = (user?: any, session?: any): string | null => {
   // First try to get user ID from the provided authentication context
   if (user?.id) {
     console.log('📱 Found user ID from auth context:', user.id);
@@ -35,7 +35,7 @@ const getUserId = (user?: any, session?: any): string => {
     }
   }
   
-  // Try Supabase auth
+  // Try Supabase auth patterns
   const supabaseAuthStr = localStorage.getItem('sb-cdqrmxmqsoxncnkxiqwu-auth-token');
   if (supabaseAuthStr && supabaseAuthStr !== 'undefined' && supabaseAuthStr !== 'null') {
     try {
@@ -49,9 +49,28 @@ const getUserId = (user?: any, session?: any): string => {
     }
   }
   
-  // If no authenticated user found, return a fallback or throw error
-  console.warn('⚠️ No authenticated user found, using fallback user ID');
-  return 'anonymous-user'; // Fallback instead of throwing error
+  // Check other possible Supabase auth keys
+  const keys = Object.keys(localStorage);
+  for (const key of keys) {
+    if (key.includes('supabase') || key.includes('auth')) {
+      try {
+        const data = localStorage.getItem(key);
+        if (data && data !== 'undefined' && data !== 'null') {
+          const parsed = JSON.parse(data);
+          if (parsed?.user?.id) {
+            console.log('📱 Found user ID from auth key:', key, parsed.user.id);
+            return parsed.user.id;
+          }
+        }
+      } catch (e) {
+        // Continue to next key
+      }
+    }
+  }
+  
+  // No authenticated user found
+  console.warn('⚠️ No authenticated user found');
+  return null;
 };
 
 export interface MistakeCheckSubmissionData {
@@ -87,11 +106,32 @@ export interface MistakeCheckHistoryItem {
   selectedMarkingStandard?: string;
 }
 
-// Submit a new mistake check - Enhanced with user context
+// Submit a new mistake check - Enhanced with user context and better error handling
 export const submitMistakeCheck = async (data: MistakeCheckSubmissionData, user?: any, session?: any) => {
   try {
     const userId = getUserId(user, session);
+    
+    if (!userId) {
+      return { 
+        success: false, 
+        error: 'User authentication required. Please log in to submit mistake check.'
+      };
+    }
+    
     console.log('🔄 Submitting mistake check for user:', userId);
+    console.log('📊 Submission data:', {
+      fileName: data.fileName,
+      fileType: data.fileType,
+      textLength: data.text?.length || 0,
+      mistakesCount: data.mistakes?.length || 0,
+      pageMistakesCount: data.pageMistakes?.length || 0,
+      extractedTextsCount: data.extractedTexts?.length || 0,
+      pageMarkingsCount: data.pageMarkings?.length || 0,
+      hasMarkingSummary: !!data.markingSummary,
+      currentPage: data.currentPage,
+      overallProcessingComplete: data.overallProcessingComplete,
+      hasFile: !!data.file
+    });
     
     const result = await mistakeCheckAPI.submit({
       uid: userId, // Use 'uid' as expected by the API
@@ -110,8 +150,16 @@ export const submitMistakeCheck = async (data: MistakeCheckSubmissionData, user?
       file: data.file
     });
     
-    console.log('✅ Mistake check submitted successfully');
-    return { success: true, data: result };
+    if (result.success) {
+      console.log('✅ Mistake check submitted successfully:', result.data);
+      return { success: true, data: result.data };
+    } else {
+      console.error('❌ API returned error:', result.error);
+      return { 
+        success: false, 
+        error: result.error || 'Failed to submit mistake check'
+      };
+    }
   } catch (error: any) {
     console.error('❌ Error submitting mistake check:', error);
     return { 
@@ -121,25 +169,62 @@ export const submitMistakeCheck = async (data: MistakeCheckSubmissionData, user?
   }
 };
 
-// Get mistake check history - Enhanced with user context
+// Get mistake check history - Enhanced with better error handling and data validation
 export const getMistakeCheckHistory = async (user?: any, session?: any) => {
   try {
     const userId = getUserId(user, session);
+    
+    if (!userId) {
+      return { 
+        success: false, 
+        error: 'User authentication required. Please log in to view history.',
+        history: []
+      };
+    }
+    
     console.log('🔄 Fetching mistake check history for user:', userId);
     
     const result = await mistakeCheckAPI.getHistory(userId);
-    console.log('✅ History fetched successfully');
+    console.log('📋 Raw API result:', result);
     
     if (result.success && result.data) {
       const historyData = result.data.history || result.data;
+      console.log('📊 History data received:', {
+        isArray: Array.isArray(historyData),
+        length: Array.isArray(historyData) ? historyData.length : 0,
+        sample: Array.isArray(historyData) && historyData.length > 0 ? {
+          id: historyData[0].id,
+          fileName: historyData[0].fileName,
+          hasErrors: !!historyData[0].mistakes,
+          hasPageMistakes: !!historyData[0].pageMistakes,
+          hasExtractedTexts: !!historyData[0].extractedTexts
+        } : 'No data'
+      });
+      
+      const transformedHistory = Array.isArray(historyData) ? historyData.map((item: any) => ({
+        id: item.id?.toString() || item.id,
+        fileName: item.fileName || 'Untitled',
+        text: item.text || '',
+        mistakes: Array.isArray(item.mistakes) ? item.mistakes : [],
+        markingSummary: item.markingSummary || null,
+        timestamp: new Date(item.timestamp || item.created_at),
+        fileType: item.fileType || item.file_type || 'text/plain',
+        documentPages: item.documentPages || item.document_pages || undefined,
+        pageMistakes: item.pageMistakes || item.page_mistakes || undefined,
+        currentPage: item.currentPage ?? item.current_page ?? 0,
+        overallProcessingComplete: item.overallProcessingComplete ?? item.overall_processing_complete ?? false,
+        extractedTexts: item.extractedTexts || item.extracted_texts || undefined,
+        pageMarkings: item.pageMarkings || item.page_markings || undefined,
+        selectedMarkingStandard: item.selectedMarkingStandard || item.selected_marking_standard || 'hkdse'
+      })) : [];
+      
+      console.log('✅ History transformed successfully:', transformedHistory.length, 'items');
       return { 
         success: true, 
-        history: Array.isArray(historyData) ? historyData.map((item: any) => ({
-          ...item,
-          timestamp: new Date(item.timestamp)
-        })) : []
+        history: transformedHistory
       };
     } else {
+      console.warn('⚠️ API call failed or returned no data:', result.error);
       return { 
         success: false, 
         error: result.error || 'Failed to fetch history',
@@ -160,7 +245,7 @@ export const getMistakeCheckHistory = async (user?: any, session?: any) => {
 export const updateMistakeCheck = async (id: string, data: Partial<MistakeCheckSubmissionData>, user?: any, session?: any) => {
   try {
     const userId = getUserId(user, session);
-    console.log('🔄 Updating mistake check for user:', userId);
+    console.log('🔄 Updating mistake check for user:', userId, 'ID:', id);
     
     const result = await mistakeCheckAPI.update(id, {
       text: data.text,
@@ -174,8 +259,16 @@ export const updateMistakeCheck = async (id: string, data: Partial<MistakeCheckS
       overall_processing_complete: data.overallProcessingComplete
     });
     
-    console.log('✅ Mistake check updated successfully');
-    return { success: true, data: result };
+    if (result.success) {
+      console.log('✅ Mistake check updated successfully');
+      return { success: true, data: result.data };
+    } else {
+      console.error('❌ Update failed:', result.error);
+      return { 
+        success: false, 
+        error: result.error || 'Failed to update mistake check'
+      };
+    }
   } catch (error: any) {
     console.error('❌ Error updating mistake check:', error);
     return { 
@@ -189,11 +282,28 @@ export const updateMistakeCheck = async (id: string, data: Partial<MistakeCheckS
 export const deleteMistakeCheck = async (id: string, user?: any, session?: any) => {
   try {
     const userId = getUserId(user, session);
-    console.log('🔄 Deleting mistake check for user:', userId);
     
-    await mistakeCheckAPI.delete(id, userId);
-    console.log('✅ Mistake check deleted successfully');
-    return { success: true };
+    if (!userId) {
+      return { 
+        success: false, 
+        error: 'User authentication required. Please log in to delete mistake check.'
+      };
+    }
+    
+    console.log('🔄 Deleting mistake check for user:', userId, 'ID:', id);
+    
+    const result = await mistakeCheckAPI.delete(id, userId);
+    
+    if (result.success) {
+      console.log('✅ Mistake check deleted successfully');
+      return { success: true };
+    } else {
+      console.error('❌ Delete failed:', result.error);
+      return { 
+        success: false, 
+        error: result.error || 'Failed to delete mistake check'
+      };
+    }
   } catch (error: any) {
     console.error('❌ Error deleting mistake check:', error);
     return { 
@@ -207,28 +317,51 @@ export const deleteMistakeCheck = async (id: string, user?: any, session?: any) 
 export const getMistakeCheckById = async (id: string, user?: any, session?: any) => {
   try {
     const userId = getUserId(user, session);
-    console.log('🔄 Fetching mistake check by ID for user:', userId);
+    
+    if (!userId) {
+      return { 
+        success: false, 
+        error: 'User authentication required. Please log in to view mistake check.'
+      };
+    }
+    
+    console.log('🔄 Fetching mistake check by ID for user:', userId, 'ID:', id);
     
     const result = await mistakeCheckAPI.getById(id, userId);
-    console.log('✅ Mistake check fetched successfully');
     
     if (result.success && result.data) {
-      const mistakeCheckData = result.data.mistakeCheck || result.data;
+      const item = result.data.mistakeCheck || result.data;
+      const transformedMistakeCheck: MistakeCheckHistoryItem = {
+        id: item.id?.toString() || item.id,
+        fileName: item.fileName || 'Untitled',
+        text: item.text || '',
+        mistakes: Array.isArray(item.mistakes) ? item.mistakes : [],
+        markingSummary: item.markingSummary || null,
+        timestamp: new Date(item.timestamp || item.created_at),
+        fileType: item.fileType || item.file_type || 'text/plain',
+        documentPages: item.documentPages || item.document_pages || undefined,
+        pageMistakes: item.pageMistakes || item.page_mistakes || undefined,
+        currentPage: item.currentPage ?? item.current_page ?? 0,
+        overallProcessingComplete: item.overallProcessingComplete ?? item.overall_processing_complete ?? false,
+        extractedTexts: item.extractedTexts || item.extracted_texts || undefined,
+        pageMarkings: item.pageMarkings || item.page_markings || undefined,
+        selectedMarkingStandard: item.selectedMarkingStandard || item.selected_marking_standard || 'hkdse'
+      };
+      
+      console.log('✅ Mistake check fetched successfully');
       return { 
         success: true, 
-        data: {
-          ...mistakeCheckData,
-          timestamp: new Date(mistakeCheckData.timestamp)
-        }
+        mistakeCheck: transformedMistakeCheck
       };
     } else {
+      console.error('❌ Failed to fetch mistake check:', result.error);
       return { 
         success: false, 
         error: result.error || 'Failed to fetch mistake check'
       };
     }
   } catch (error: any) {
-    console.error('❌ Error fetching mistake check by ID:', error);
+    console.error('❌ Error fetching mistake check:', error);
     return { 
       success: false, 
       error: error.message || 'Failed to fetch mistake check'

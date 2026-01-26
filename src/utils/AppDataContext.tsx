@@ -1,16 +1,22 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { StudyPlannerApiService } from '../services/studyPlannerApi';
+import { useUser } from '../contexts/UserContext';
 
 export interface ApplicationTask {
   id: number;
+  application_id?: number;
   task: string;
   completed: boolean;
   dueDate?: string;
+  due_date?: string;
   reminder?: boolean;
   reminderDate?: string;
+  reminder_date?: string;
 }
 
 export interface Application {
   id: number;
+  user_id?: string;
   university: string;
   program: string;
   country: string;
@@ -20,20 +26,26 @@ export interface Application {
   tasks: ApplicationTask[];
   reminder?: boolean;
   reminderDate?: string;
+  reminder_date?: string;
+  application_tasks?: ApplicationTask[];
 }
 
 export interface StudyTask {
   id: string;
+  user_id?: string;
   task: string;
   subject: string;
   date: string;
   completed: boolean;
   priority: 'low' | 'medium' | 'high';
   estimatedHours: number;
+  estimated_hours?: number;
   source?: 'application' | 'study';
   applicationId?: number;
+  application_id?: number;
   reminder?: boolean;
   reminderDate?: string;
+  reminder_date?: string;
 }
 
 export interface AppDataContextType {
@@ -41,16 +53,19 @@ export interface AppDataContextType {
   studyTasks: StudyTask[];
   setApplications: (applications: Application[]) => void;
   setStudyTasks: (tasks: StudyTask[]) => void;
-  addApplication: (application: Application) => void;
-  updateApplication: (id: number, application: Partial<Application>) => void;
-  deleteApplication: (id: number) => void;
-  addStudyTask: (task: StudyTask) => void;
-  updateStudyTask: (id: string, task: Partial<StudyTask>) => void;
-  deleteStudyTask: (id: string) => void;
+  addApplication: (application: Application) => Promise<void>;
+  updateApplication: (id: number, application: Partial<Application>) => Promise<void>;
+  deleteApplication: (id: number) => Promise<void>;
+  addStudyTask: (task: StudyTask) => Promise<void>;
+  updateStudyTask: (id: string, task: Partial<StudyTask>) => Promise<void>;
+  deleteStudyTask: (id: string) => Promise<void>;
   syncApplicationToStudy: (application: Application) => void;
-  toggleTaskReminder: (taskId: string | number, isApplication?: boolean) => void;
-  setReminder: (taskId: string | number, reminderDate: string, isApplication?: boolean) => void;
-  unsetReminder: (taskId: string | number, isApplication?: boolean) => void;
+  toggleTaskReminder: (taskId: string | number, isApplication?: boolean) => Promise<void>;
+  setReminder: (taskId: string | number, reminderDate: string, isApplication?: boolean) => Promise<void>;
+  unsetReminder: (taskId: string | number, isApplication?: boolean) => Promise<void>;
+  refreshData: (force?: boolean) => Promise<void>;
+  isLoading: boolean;
+  error: string | null;
 }
 
 const AppDataContext = createContext<AppDataContextType | undefined>(undefined);
@@ -65,61 +80,172 @@ export const useAppData = () => {
 
 interface AppDataProviderProps {
   children: ReactNode;
+  userId?: string; // Make userId optional for backward compatibility
 }
 
-export const AppDataProvider: React.FC<AppDataProviderProps> = ({ children }) => {
+export const AppDataProvider: React.FC<AppDataProviderProps> = ({ children, userId }) => {
+  const { user } = useUser();
+  
+  // Generate a consistent demo UUID for unauthenticated users
+  const getDemoUserId = () => {
+    // Check if we have a stored demo user ID
+    let demoUserId = localStorage.getItem('demo-user-id');
+    if (!demoUserId) {
+      // Generate a proper UUID format for demo user
+      demoUserId = '00000000-0000-4000-8000-000000000001';
+      localStorage.setItem('demo-user-id', demoUserId);
+    }
+    return demoUserId;
+  };
+
+  // Get effective user ID from props, context, or generate demo UUID
+  const effectiveUserId = userId || user?.id || getDemoUserId();
+  
   const [applications, setApplicationsState] = useState<Application[]>([]);
   const [studyTasks, setStudyTasksState] = useState<StudyTask[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lastRefresh, setLastRefresh] = useState<number>(0);
+  const [apiService] = useState(() => new StudyPlannerApiService(effectiveUserId));
+  
+  // Cache timeout: 10 seconds for real-time feel
+  const CACHE_TIMEOUT = 10 * 1000;
 
-  // Initialize with sample data
-  useEffect(() => {
-    const sampleApplications: Application[] = [
-      {
-        id: 1,
-        university: 'Stanford University',
-        program: 'MS in Computer Science',
-        country: 'USA',
-        deadline: '2025-12-01',
-        status: 'in-progress',
-        notes: 'Need to complete Statement of Purpose and get recommendation letters',
-        tasks: [
-          { id: 1, task: 'Request transcript', completed: true },
-          { id: 2, task: 'Ask for recommendation letters', completed: true },
-          { id: 3, task: 'Write Statement of Purpose', completed: false, dueDate: '2025-11-15' },
-          { id: 4, task: 'Prepare resume', completed: false, dueDate: '2025-11-10' }
-        ]
-      },
-      {
-        id: 2,
-        university: 'MIT',
-        program: 'PhD in Artificial Intelligence',
-        country: 'USA',
-        deadline: '2025-12-15',
-        status: 'planning',
-        notes: 'Need to contact potential advisors',
-        tasks: [
-          { id: 1, task: 'Research faculty members', completed: false, dueDate: '2025-10-30' },
-          { id: 2, task: 'Email potential advisors', completed: false, dueDate: '2025-11-05' },
-          { id: 3, task: 'Prepare research proposal', completed: false, dueDate: '2025-11-20' }
-        ]
-      },
-      {
-        id: 3,
-        university: 'University of Cambridge',
-        program: 'MPhil in Machine Learning',
-        country: 'UK',
-        deadline: '2025-11-15',
-        status: 'submitted',
-        notes: 'Application submitted on October 20th. Waiting for response.',
-        tasks: [
-          { id: 1, task: 'Submit application', completed: true },
-          { id: 2, task: 'Pay application fee', completed: true },
-          { id: 3, task: 'Send supporting documents', completed: true }
-        ]
+  // Convert backend data to frontend format
+  const normalizeStudyTask = (task: any): StudyTask => ({
+    id: task.id,
+    task: task.task,
+    subject: task.subject,
+    date: task.date,
+    completed: task.completed,
+    priority: task.priority,
+    estimatedHours: task.estimated_hours || task.estimatedHours || 1,
+    source: task.source || 'study',
+    applicationId: task.application_id || task.applicationId,
+    reminder: task.reminder,
+    reminderDate: task.reminder_date || task.reminderDate,
+  });
+
+  const normalizeApplication = (app: any): Application => ({
+    id: app.id,
+    university: app.university,
+    program: app.program,
+    country: app.country,
+    deadline: app.deadline,
+    status: app.status,
+    notes: app.notes || '',
+    reminder: app.reminder,
+    reminderDate: app.reminder_date || app.reminderDate,
+    tasks: (app.application_tasks || app.tasks || []).map((task: any) => ({
+      id: task.id,
+      task: task.task,
+      completed: task.completed,
+      dueDate: task.due_date || task.dueDate,
+      reminder: task.reminder,
+      reminderDate: task.reminder_date || task.reminderDate,
+    })),
+  });
+
+  // Convert frontend data to backend format
+  const denormalizeStudyTask = (task: StudyTask) => ({
+    id: task.id,
+    task: task.task,
+    subject: task.subject,
+    date: task.date,
+    completed: task.completed,
+    priority: task.priority,
+    estimated_hours: task.estimatedHours || task.estimated_hours || 1,
+    source: task.source || 'study',
+    application_id: task.applicationId || task.application_id,
+    reminder: task.reminder,
+    reminder_date: task.reminderDate || task.reminder_date,
+  });
+
+  const denormalizeApplication = (app: Application) => ({
+    id: app.id,
+    university: app.university,
+    program: app.program,
+    country: app.country,
+    deadline: app.deadline,
+    status: app.status,
+    notes: app.notes || '',
+    reminder: app.reminder,
+    reminder_date: app.reminderDate || app.reminder_date,
+  });
+
+  // Load data from API with caching
+  const refreshData = useCallback(async (force = false) => {
+    const now = Date.now();
+    
+    // Skip refresh if cache is still valid and not forced
+    if (!force && (now - lastRefresh) < CACHE_TIMEOUT) {
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // Load study tasks and applications in parallel
+      const [studyTasksResult, applicationsResult] = await Promise.all([
+        apiService.getStudyTasks(),
+        apiService.getApplications(),
+      ]);
+
+      if (studyTasksResult.success && studyTasksResult.data) {
+        const normalizedTasks = studyTasksResult.data.map(normalizeStudyTask);
+        setStudyTasksState(normalizedTasks);
+      } else {
+        console.warn('Failed to load study tasks:', studyTasksResult.error);
+        // Fallback to sample data if API fails
+        setStudyTasksState(getSampleStudyTasks());
       }
-    ];
 
-    const sampleStudyTasks: StudyTask[] = [
+      if (applicationsResult.success && applicationsResult.data) {
+        const normalizedApps = applicationsResult.data.map(normalizeApplication);
+        setApplicationsState(normalizedApps);
+      } else {
+        console.warn('Failed to load applications:', applicationsResult.error);
+        // Fallback to sample data if API fails
+        setApplicationsState(getSampleApplications());
+      }
+      
+      setLastRefresh(now);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load data';
+      setError(errorMessage);
+      console.error('Error loading data:', err);
+      
+      // Fallback to sample data
+      setStudyTasksState(getSampleStudyTasks());
+      setApplicationsState(getSampleApplications());
+    } finally {
+      setIsLoading(false);
+    }
+  }, [effectiveUserId, lastRefresh, apiService]);
+
+  // Initialize data on mount and when userId changes
+  useEffect(() => {
+    refreshData(true); // Force initial load
+  }, [effectiveUserId]); // Only depend on userId change
+
+  // Auto-refresh when component mounts or becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        refreshData(false); // Don't force, use cache if valid
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [refreshData]);
+
+  // Sample data for fallback
+  const getSampleStudyTasks = (): StudyTask[] => [
       {
         id: '1',
         task: 'Complete math homework',
@@ -152,18 +278,52 @@ export const AppDataProvider: React.FC<AppDataProviderProps> = ({ children }) =>
       }
     ];
 
-    setApplicationsState(sampleApplications);
-    setStudyTasksState(sampleStudyTasks);
-
-    // Sync application tasks to study tasks
-    sampleApplications.forEach(app => {
-      syncApplicationToStudy(app);
-    });
-  }, []);
+  const getSampleApplications = (): Application[] => [
+    {
+      id: 1,
+      university: 'Stanford University',
+      program: 'Computer Science',
+      country: 'USA',
+      deadline: '2025-07-01',
+      status: 'in-progress',
+      notes: 'Working on personal statement',
+      tasks: [
+        {
+          id: 1,
+          task: 'Complete personal statement',
+          completed: false,
+          dueDate: '2025-06-30'
+        },
+        {
+          id: 2,
+          task: 'Get letters of recommendation',
+          completed: true,
+          dueDate: '2025-06-28'
+        }
+      ]
+    },
+    {
+      id: 2,
+      university: 'MIT',
+      program: 'Electrical Engineering',
+      country: 'USA',
+      deadline: '2025-07-15',
+      status: 'planning',
+      notes: 'Need to prepare for entrance exam',
+      tasks: [
+        {
+          id: 3,
+          task: 'Prepare for GRE',
+          completed: false,
+          dueDate: '2025-07-10'
+        }
+      ]
+    }
+  ];
 
   const setApplications = (newApplications: Application[]) => {
     setApplicationsState(newApplications);
-    // Sync all applications to study tasks
+    // Also sync to study tasks that are application-derived
     newApplications.forEach(app => {
       syncApplicationToStudy(app);
     });
@@ -173,256 +333,207 @@ export const AppDataProvider: React.FC<AppDataProviderProps> = ({ children }) =>
     setStudyTasksState(tasks);
   };
 
-  const addApplication = (application: Application) => {
-    setApplicationsState(prev => [...prev, application]);
-    syncApplicationToStudy(application);
-  };
-
-  const updateApplication = (id: number, updatedApplication: Partial<Application>) => {
-    setApplicationsState(prev => {
-      const updated = prev.map(app => 
-        app.id === id ? { ...app, ...updatedApplication } : app
-      );
-      // Re-sync the updated application
-      const app = updated.find(a => a.id === id);
-      if (app) {
-        syncApplicationToStudy(app);
+  const addApplication = async (application: Application) => {
+    try {
+      const normalizedApp = denormalizeApplication(application);
+      const result = await apiService.createApplication(normalizedApp);
+      
+      if (result.success && result.data) {
+        await refreshData(true); // Refresh to get latest data
+      } else {
+        throw new Error(result.error || 'Failed to create application');
       }
-      return updated;
-    });
+    } catch (error) {
+      console.error('Error adding application:', error);
+      throw error;
+    }
   };
 
-  const deleteApplication = (id: number) => {
-    setApplicationsState(prev => prev.filter(app => app.id !== id));
-    // Remove related study tasks
-    setStudyTasksState(prev => prev.filter(task => task.applicationId !== id));
+  const updateApplication = async (id: number, updatedApplication: Partial<Application>) => {
+    try {
+      // Handle application task updates separately
+      if (updatedApplication.tasks) {
+        const app = applications.find(a => a.id === id);
+      if (app) {
+          // Update each task through the API
+          for (const task of updatedApplication.tasks) {
+            if (task.id) {
+              const taskData = {
+                task: task.task,
+                completed: task.completed,
+                due_date: task.dueDate,
+                reminder: task.reminder,
+                reminder_date: task.reminderDate
+              };
+              await apiService.updateApplicationTask(task.id, taskData);
+            }
+          }
+        }
+        // Remove tasks from the update object as they're handled separately
+        const { tasks, ...appUpdateData } = updatedApplication;
+        updatedApplication = appUpdateData;
+      }
+
+      // Update the application itself if there are changes
+      if (Object.keys(updatedApplication).length > 0) {
+        const normalizedUpdate = denormalizeApplication(updatedApplication as Application);
+        const result = await apiService.updateApplication(id, normalizedUpdate);
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to update application');
+        }
+      }
+
+      await refreshData(true); // Refresh to get latest data
+    } catch (error) {
+      console.error('Error updating application:', error);
+      throw error;
+    }
   };
 
-  const addStudyTask = (task: StudyTask) => {
-    setStudyTasksState(prev => [...prev, task]);
+  const deleteApplication = async (id: number) => {
+    try {
+      const result = await apiService.deleteApplication(id);
+      
+      if (result.success) {
+        await refreshData(true); // Refresh to get latest data
+      } else {
+        throw new Error(result.error || 'Failed to delete application');
+      }
+    } catch (error) {
+      console.error('Error deleting application:', error);
+      throw error;
+    }
   };
 
-  const updateStudyTask = (id: string, updatedTask: Partial<StudyTask>) => {
-    setStudyTasksState(prev => 
-      prev.map(task => 
-        task.id === id ? { ...task, ...updatedTask } : task
-      )
-    );
+  const addStudyTask = async (task: StudyTask) => {
+    try {
+      const normalizedTask = denormalizeStudyTask(task);
+      const result = await apiService.createStudyTask(normalizedTask);
+      
+      if (result.success && result.data) {
+        await refreshData(true); // Refresh to get latest data
+      } else {
+        throw new Error(result.error || 'Failed to create study task');
+      }
+    } catch (error) {
+      console.error('Error adding study task:', error);
+      throw error;
+    }
   };
 
-  const deleteStudyTask = (id: string) => {
-    setStudyTasksState(prev => prev.filter(task => task.id !== id));
+  const updateStudyTask = async (id: string, updatedTask: Partial<StudyTask>) => {
+    try {
+      const normalizedUpdate = denormalizeStudyTask(updatedTask as StudyTask);
+      const result = await apiService.updateStudyTask(id, normalizedUpdate);
+      
+      if (result.success) {
+        await refreshData(true); // Refresh to get latest data
+      } else {
+        throw new Error(result.error || 'Failed to update study task');
+      }
+    } catch (error) {
+      console.error('Error updating study task:', error);
+      throw error;
+    }
+  };
+
+  const deleteStudyTask = async (id: string) => {
+    try {
+      const result = await apiService.deleteStudyTask(id);
+      
+      if (result.success) {
+        await refreshData(true); // Refresh to get latest data
+      } else {
+        throw new Error(result.error || 'Failed to delete study task');
+      }
+    } catch (error) {
+      console.error('Error deleting study task:', error);
+      throw error;
+    }
   };
 
   const syncApplicationToStudy = (application: Application) => {
-    // Add application deadline as a study task
-    const deadlineTask: StudyTask = {
-      id: `app-deadline-${application.id}`,
-      task: `${application.university} - ${application.program} Application Deadline`,
-      subject: 'Applications',
-      date: application.reminder && application.reminderDate ? application.reminderDate.split('T')[0] : application.deadline,
-      completed: application.status === 'submitted' || application.status === 'accepted' || application.status === 'rejected',
-      priority: 'high',
-      estimatedHours: 1,
-      source: 'application',
-      applicationId: application.id,
-      reminder: application.reminder,
-      reminderDate: application.reminderDate
-    };
-
-    // Add application tasks as study tasks
-    const taskStudyTasks: StudyTask[] = application.tasks.map(task => ({
-      id: `app-task-${application.id}-${task.id}`,
-      task: `${task.task} (${application.university})`,
-      subject: 'Applications',
-      date: task.reminder && task.reminderDate ? task.reminderDate.split('T')[0] : (task.dueDate || application.deadline),
-      completed: task.completed,
-      priority: 'medium',
-      estimatedHours: 2,
-      source: 'application',
-      applicationId: application.id,
-      reminder: task.reminder,
-      reminderDate: task.reminderDate
-    }));
-
-    // Update study tasks - remove old ones and add new ones
-    setStudyTasksState(prev => {
-      const filtered = prev.filter(task => task.applicationId !== application.id);
-      return [...filtered, deadlineTask, ...taskStudyTasks];
-    });
+    // This function can be used to create virtual study tasks from applications
+    // but since we handle this in the frontend filtering, we don't need to persist them
   };
 
-  const toggleTaskReminder = (taskId: string | number, isApplication = false) => {
+  const toggleTaskReminder = async (taskId: string | number, isApplication = false) => {
+    try {
     if (isApplication) {
-      setApplicationsState(prev =>
-        prev.map(app => {
-          if (app.id === taskId) {
-            return { ...app, reminder: !app.reminder };
-          }
-          
-          // Check if it's a composite task ID (appId-taskId format)
-          if (typeof taskId === 'string' && taskId.includes('-')) {
-            const [appIdStr, taskIdStr] = taskId.split('-');
-            const appId = parseInt(appIdStr);
-            const actualTaskId = parseInt(taskIdStr);
-            
-            if (app.id === appId) {
-              const updatedTasks = app.tasks.map(task => 
-                task.id === actualTaskId ? { ...task, reminder: !task.reminder } : task
-              );
-              const updatedApp = { ...app, tasks: updatedTasks };
-              syncApplicationToStudy(updatedApp);
-              return updatedApp;
-            }
-          }
-          
-          return app;
-        })
-      );
-    } else {
-      setStudyTasksState(prev =>
-        prev.map(task => 
-          task.id === taskId ? { ...task, reminder: !task.reminder } : task
-        )
-      );
+        const app = applications.find(a => a.id === Number(taskId));
+        if (app) {
+          await updateApplication(app.id, { 
+            reminder: !app.reminder,
+            reminderDate: app.reminder ? undefined : new Date().toISOString()
+          });
+        }
+      } else {
+        const task = studyTasks.find(t => t.id === String(taskId));
+        if (task) {
+          await updateStudyTask(task.id, { 
+            reminder: !task.reminder,
+            reminderDate: task.reminder ? undefined : new Date().toISOString()
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling reminder:', error);
+      throw error;
     }
   };
 
-  const setReminder = (taskId: string | number, reminderDate: string, isApplication = false) => {
+  const setReminder = async (taskId: string | number, reminderDate: string, isApplication = false) => {
+    try {
     if (isApplication) {
-      setApplicationsState(prev =>
-        prev.map(app => {
-          if (app.id === taskId) {
-            const updatedApp = { ...app, reminder: true, reminderDate };
-            syncApplicationToStudy(updatedApp);
-            return updatedApp;
-          }
-          
-          // Check if it's a composite task ID (appId-taskId format)
-          if (typeof taskId === 'string' && taskId.includes('-')) {
-            const [appIdStr, taskIdStr] = taskId.split('-');
-            const appId = parseInt(appIdStr);
-            const actualTaskId = parseInt(taskIdStr);
-            
-            if (app.id === appId) {
-              const updatedTasks = app.tasks.map(task => 
-                task.id === actualTaskId ? { ...task, reminder: true, reminderDate } : task
-              );
-              const updatedApp = { ...app, tasks: updatedTasks };
-              syncApplicationToStudy(updatedApp);
-              return updatedApp;
-            }
-          }
-          
-          return app;
-        })
-      );
+        const app = applications.find(a => a.id === Number(taskId));
+        if (app) {
+          await updateApplication(app.id, { 
+            reminder: true,
+            reminderDate: reminderDate
+          });
+        }
     } else {
-      setStudyTasksState(prev =>
-        prev.map(task => {
-          if (task.id === taskId) {
-            const updatedTask = { ...task, reminder: true, reminderDate };
-            // If this is a synced task from application, update the original application too
-            if (task.source === 'application' && task.applicationId) {
-              const appId = task.applicationId;
-              if (task.id.startsWith(`app-deadline-${appId}`)) {
-                // This is an application deadline task
-                setApplicationsState(prevApps =>
-                  prevApps.map(app => 
-                    app.id === appId ? { ...app, reminder: true, reminderDate } : app
-                  )
-                );
-              } else if (task.id.startsWith(`app-task-${appId}-`)) {
-                // This is an application task
-                const originalTaskId = parseInt(task.id.split('-').pop() || '0');
-                setApplicationsState(prevApps =>
-                  prevApps.map(app => 
-                    app.id === appId ? {
-                      ...app,
-                      tasks: app.tasks.map(appTask => 
-                        appTask.id === originalTaskId ? { ...appTask, reminder: true, reminderDate } : appTask
-                      )
-                    } : app
-                  )
-                );
-              }
-            }
-            return updatedTask;
-          }
-          return task;
-        })
-      );
+        const task = studyTasks.find(t => t.id === String(taskId));
+        if (task) {
+          await updateStudyTask(task.id, { 
+            reminder: true,
+            reminderDate: reminderDate
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error setting reminder:', error);
+      throw error;
     }
   };
 
-  const unsetReminder = (taskId: string | number, isApplication = false) => {
+  const unsetReminder = async (taskId: string | number, isApplication = false) => {
+    try {
     if (isApplication) {
-      setApplicationsState(prev =>
-        prev.map(app => {
-          if (app.id === taskId) {
-            const updatedApp = { ...app, reminder: false, reminderDate: undefined };
-            syncApplicationToStudy(updatedApp);
-            return updatedApp;
-          }
-          
-          // Check if it's a composite task ID (appId-taskId format)
-          if (typeof taskId === 'string' && taskId.includes('-')) {
-            const [appIdStr, taskIdStr] = taskId.split('-');
-            const appId = parseInt(appIdStr);
-            const actualTaskId = parseInt(taskIdStr);
-            
-            if (app.id === appId) {
-              const updatedTasks = app.tasks.map(task => 
-                task.id === actualTaskId ? { ...task, reminder: false, reminderDate: undefined } : task
-              );
-              const updatedApp = { ...app, tasks: updatedTasks };
-              syncApplicationToStudy(updatedApp);
-              return updatedApp;
-            }
-          }
-          
-          return app;
-        })
-      );
+        const app = applications.find(a => a.id === Number(taskId));
+        if (app) {
+          await updateApplication(app.id, { 
+            reminder: false,
+            reminderDate: undefined
+          });
+        }
     } else {
-      setStudyTasksState(prev =>
-        prev.map(task => {
-          if (task.id === taskId) {
-            const updatedTask = { ...task, reminder: false, reminderDate: undefined };
-            // If this is a synced task from application, update the original application too
-            if (task.source === 'application' && task.applicationId) {
-              const appId = task.applicationId;
-              if (task.id.startsWith(`app-deadline-${appId}`)) {
-                // This is an application deadline task
-                setApplicationsState(prevApps =>
-                  prevApps.map(app => 
-                    app.id === appId ? { ...app, reminder: false, reminderDate: undefined } : app
-                  )
-                );
-              } else if (task.id.startsWith(`app-task-${appId}-`)) {
-                // This is an application task
-                const originalTaskId = parseInt(task.id.split('-').pop() || '0');
-                setApplicationsState(prevApps =>
-                  prevApps.map(app => 
-                    app.id === appId ? {
-                      ...app,
-                      tasks: app.tasks.map(appTask => 
-                        appTask.id === originalTaskId ? { ...appTask, reminder: false, reminderDate: undefined } : appTask
-                      )
-                    } : app
-                  )
-                );
-              }
-            }
-            return updatedTask;
-          }
-          return task;
-        })
-      );
+        const task = studyTasks.find(t => t.id === String(taskId));
+        if (task) {
+          await updateStudyTask(task.id, { 
+            reminder: false,
+            reminderDate: undefined
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error unsetting reminder:', error);
+      throw error;
     }
   };
 
-  const value: AppDataContextType = {
+  const contextValue: AppDataContextType = {
     applications,
     studyTasks,
     setApplications,
@@ -436,12 +547,15 @@ export const AppDataProvider: React.FC<AppDataProviderProps> = ({ children }) =>
     syncApplicationToStudy,
     toggleTaskReminder,
     setReminder,
-    unsetReminder
+    unsetReminder,
+    refreshData,
+    isLoading,
+    error,
   };
 
   return (
-    <AppDataContext.Provider value={value}>
+    <AppDataContext.Provider value={contextValue}>
       {children}
     </AppDataContext.Provider>
   );
-}; 
+};

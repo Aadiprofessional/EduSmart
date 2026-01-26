@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FaCrown, FaCheck, FaTimes, FaRocket, FaStar, FaInfinity, 
   FaLightbulb, FaBrain, FaGraduationCap, FaChartLine, FaShieldAlt,
-  FaSpinner, FaCreditCard, FaPaypal, FaApplePay, FaGooglePay, FaPlus
+  FaSpinner, FaPlus
 } from 'react-icons/fa';
 import { AiOutlineCrown, AiOutlineClose } from 'react-icons/ai';
 import Header from '../components/layout/Header';
@@ -18,11 +18,6 @@ const Subscription: React.FC = () => {
   const navigate = useNavigate();
   const { user, session } = useAuth();
   const { subscriptionStatus, plans, addons, loading, refreshStatus } = useSubscription();
-  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
-  const [selectedAddon, setSelectedAddon] = useState<AddonPlan | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'credit_card' | 'paypal' | 'apple_pay' | 'google_pay'>('credit_card');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -33,121 +28,19 @@ const Subscription: React.FC = () => {
   }, [user, navigate]);
 
   const handlePlanSelect = (plan: SubscriptionPlan) => {
-    setSelectedPlan(plan);
-    setSelectedAddon(null);
-    setShowPaymentModal(true);
+    navigate('/payment', {
+      state: {
+        selectedPlan: plan
+      }
+    });
   };
 
   const handleAddonSelect = (addon: AddonPlan) => {
-    setSelectedAddon(addon);
-    setSelectedPlan(null);
-    setShowPaymentModal(true);
-  };
-
-  const generateTransactionId = () => {
-    return 'txn_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-  };
-
-  const handlePurchase = async () => {
-    if (!session || (!selectedPlan && !selectedAddon)) return;
-
-    // Debug logging
-    console.log('Purchase Debug Info:', {
-      hasSession: !!session,
-      hasUser: !!session?.user,
-      userId: session?.user?.id,
-      hasAccessToken: !!session?.access_token,
-      selectedPlan: selectedPlan?.id,
-      selectedAddon: selectedAddon?.id,
-      paymentMethod
+    navigate('/payment', {
+      state: {
+        selectedAddon: addon
+      }
     });
-
-    setIsProcessing(true);
-    setError(null);
-
-    try {
-      const transactionId = generateTransactionId();
-      let result;
-
-      if (selectedPlan) {
-        console.log('Calling buySubscription with:', {
-          planId: selectedPlan.id,
-          transactionId,
-          amount: selectedPlan.price,
-          paymentMethod
-        });
-        
-        result = await subscriptionAPI.buySubscription(
-          selectedPlan.id,
-          transactionId,
-          selectedPlan.price,
-          paymentMethod,
-          session
-        );
-      } else if (selectedAddon) {
-        console.log('Calling buyAddon with:', {
-          addonId: selectedAddon.id,
-          transactionId,
-          amount: selectedAddon.price,
-          paymentMethod
-        });
-        
-        result = await subscriptionAPI.buyAddon(
-          selectedAddon.id,
-          transactionId,
-          selectedAddon.price,
-          paymentMethod,
-          session
-        );
-      }
-
-      console.log('Purchase result:', result);
-
-      if (result?.success) {
-        setShowPaymentModal(false);
-        await refreshStatus();
-        
-        // Navigate to thank you page with purchase details
-        navigate('/thank-you', {
-          state: {
-            planName: selectedPlan?.name || selectedAddon?.name,
-            planPrice: selectedPlan?.price || selectedAddon?.price,
-            isAddon: !!selectedAddon,
-            transactionId: transactionId
-          },
-          replace: true
-        });
-      } else {
-        // Handle error object properly - extract message if it's an object
-        let errorMessage = 'Purchase failed. Please try again.';
-        
-        if (result?.error) {
-          if (typeof result.error === 'string') {
-            errorMessage = result.error;
-          } else if (typeof result.error === 'object' && result.error !== null && 'message' in result.error) {
-            errorMessage = (result.error as any).message;
-          } else if (typeof result.error === 'object') {
-            // If it's an object but no message property, try to stringify it meaningfully
-            errorMessage = JSON.stringify(result.error);
-          }
-        }
-        
-        setError(errorMessage);
-      }
-    } catch (error: any) {
-      console.error('Purchase error:', error);
-      let errorMessage = 'Purchase failed. Please try again.';
-      
-      if (error.message) {
-        errorMessage = error.message;
-      } else if (typeof error === 'string') {
-        errorMessage = error;
-      }
-      
-      setError(errorMessage);
-    } finally {
-      setIsProcessing(false);
-    }
   };
 
   const containerVariants = {
@@ -177,13 +70,6 @@ const Subscription: React.FC = () => {
       transition: { duration: 0.3 }
     }
   };
-
-  const paymentMethods = [
-    { id: 'credit_card', name: 'Credit Card', icon: FaCreditCard },
-    { id: 'paypal', name: 'PayPal', icon: FaPaypal },
-    { id: 'apple_pay', name: 'Apple Pay', icon: FaApplePay },
-    { id: 'google_pay', name: 'Google Pay', icon: FaGooglePay },
-  ];
 
   const features = [
     { icon: FaRocket, title: 'AI-Powered Responses', description: 'Get intelligent answers to your questions' },
@@ -320,7 +206,7 @@ const Subscription: React.FC = () => {
               {Array.isArray(plans) && plans.map((plan) => (
                 <motion.div
                   key={plan.id}
-                  className="relative bg-black/30 backdrop-blur-xl rounded-2xl border border-white/10 p-8 hover:border-purple-500/50 transition-all duration-300"
+                  className="relative bg-black/30 backdrop-blur-xl rounded-2xl border border-white/10 p-8 hover:border-purple-500/50 transition-all duration-300 flex flex-col h-full"
                   variants={planCardVariants}
                   whileHover="hover"
                 >
@@ -343,7 +229,7 @@ const Subscription: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-3 mb-8">
+                  <div className="space-y-3 mb-8 flex-grow">
                     <div className="flex items-center">
                       <IconComponent icon={FaCheck} className="w-5 h-5 text-green-400 mr-3" />
                       <span className="text-gray-300">{plan.response_limit} AI responses</span>
@@ -362,17 +248,19 @@ const Subscription: React.FC = () => {
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => handlePlanSelect(plan)}
-                    disabled={subscriptionStatus?.isPro}
-                    className={`w-full py-4 rounded-xl font-bold text-lg transition-all duration-300 ${
-                      subscriptionStatus?.isPro
-                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transform hover:scale-105'
-                    }`}
-                  >
-                    {subscriptionStatus?.isPro ? 'Already Pro' : 'Get Started'}
-                  </button>
+                  <div className="mt-auto">
+                    <button
+                      onClick={() => handlePlanSelect(plan)}
+                      disabled={subscriptionStatus?.isPro}
+                      className={`w-full py-4 rounded-xl font-bold text-lg transition-all duration-300 ${
+                        subscriptionStatus?.isPro
+                          ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transform hover:scale-105'
+                      }`}
+                    >
+                      {subscriptionStatus?.isPro ? 'Already Pro' : 'Get Started'}
+                    </button>
+                  </div>
                 </motion.div>
               ))}
             </div>
@@ -455,88 +343,6 @@ const Subscription: React.FC = () => {
                     <IconComponent icon={AiOutlineClose} className="w-4 h-4" />
                   </button>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Payment Modal */}
-          <AnimatePresence>
-            {showPaymentModal && (selectedPlan || selectedAddon) && (
-              <motion.div
-                className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <motion.div
-                  className="bg-slate-900 rounded-2xl border border-white/10 p-8 max-w-md w-full"
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.9, opacity: 0 }}
-                >
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-2xl font-bold text-white">Complete Purchase</h3>
-                    <button
-                      onClick={() => setShowPaymentModal(false)}
-                      className="text-gray-400 hover:text-white"
-                    >
-                      <IconComponent icon={AiOutlineClose} className="w-6 h-6" />
-                    </button>
-                  </div>
-
-                  <div className="mb-6">
-                    <div className="bg-black/20 rounded-xl p-4 mb-4">
-                      <h4 className="text-lg font-semibold text-white mb-2">
-                        {selectedPlan?.name || selectedAddon?.name}
-                      </h4>
-                      <p className="text-gray-400 mb-3">
-                        {selectedPlan?.description || selectedAddon?.description}
-                      </p>
-                      <div className="text-2xl font-bold text-white">
-                        ${selectedPlan?.price || selectedAddon?.price}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mb-6">
-                    <h4 className="text-lg font-semibold text-white mb-4">Payment Method</h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      {paymentMethods.map((method) => (
-                        <button
-                          key={method.id}
-                          onClick={() => setPaymentMethod(method.id as any)}
-                          className={`flex items-center justify-center p-3 rounded-lg border transition-all duration-200 ${
-                            paymentMethod === method.id
-                              ? 'border-purple-500 bg-purple-500/10 text-purple-400'
-                              : 'border-white/10 text-gray-400 hover:border-white/20'
-                          }`}
-                        >
-                          <IconComponent icon={method.icon} className="w-5 h-5 mr-2" />
-                          <span className="text-sm">{method.name}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={handlePurchase}
-                    disabled={isProcessing}
-                    className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-bold text-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isProcessing ? (
-                      <div className="flex items-center justify-center">
-                        <IconComponent icon={FaSpinner} className="w-5 h-5 mr-2 animate-spin" />
-                        Processing...
-                      </div>
-                    ) : (
-                      `Purchase for $${selectedPlan?.price || selectedAddon?.price}`
-                    )}
-                  </button>
-
-                  <p className="text-gray-400 text-sm text-center mt-4">
-                    Your payment is secure and encrypted. Cancel anytime.
-                  </p>
-                </motion.div>
               </motion.div>
             )}
           </AnimatePresence>

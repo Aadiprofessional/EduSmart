@@ -11,7 +11,10 @@ import { useAuth } from '../../utils/AuthContext';
 import { useSubscription } from '../../utils/SubscriptionContext';
 import { useLanguage } from '../../utils/LanguageContext';
 import { useAppData } from '../../utils/AppDataContext';
+import { StudyPlannerApiService } from '../../services/studyPlannerApi';
 import eduLogo from '../../assets/edulogo.jpeg';
+import { supabase } from '../../utils/supabase';
+import { subscriptionAPI } from '../../utils/subscriptionAPI';
 
 const Header: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -23,7 +26,7 @@ const Header: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, signOut, session } = useAuth();
   const { isProUser, responsesRemaining } = useSubscription();
   const { t } = useLanguage();
   const { studyTasks, applications } = useAppData();
@@ -201,9 +204,7 @@ const Header: React.FC = () => {
   const navigation = [
     { name: t('nav.home'), href: '/', icon: AiOutlineHome },
     { name: t('nav.aiStudy'), href: '/ai-study', icon: AiOutlineBulb },
-    { name: t('nav.aiCourses'), href: '/ai-courses', icon: AiOutlineRobot },
     { name: t('nav.database'), href: '/database', icon: AiOutlineDatabase },
-    { name: t('nav.successStories'), href: '/case-studies', icon: AiOutlineTrophy },
     { name: t('nav.resources'), href: '/resources', icon: AiOutlineBook },
     { name: t('nav.blog'), href: '/blog', icon: AiOutlineRead },
   ];
@@ -280,6 +281,75 @@ const Header: React.FC = () => {
       clearInterval(interval);
     };
   }, []);
+  
+  // Set up real-time subscription for user subscription status
+  useEffect(() => {
+    if (!user?.id) return;
+    
+    // Subscribe to user subscription status changes
+    const subscriptionChannel = supabase.channel(`user-subscription-${user.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'user_subscriptions',
+        filter: `user_id=eq.${user.id}`
+      }, async (payload) => {
+        console.log('Subscription status changed:', payload);
+        // Refresh subscription status when changes occur
+        if (session) {
+          const result = await subscriptionAPI.getStatus(session);
+          if (result.success && result.data) {
+            console.log('Real-time subscription update:', result.data);
+            // The SubscriptionContext will handle the update automatically
+          }
+        }
+      })
+      .subscribe();
+    
+    // Subscribe to notification updates
+    const notificationChannel = supabase.channel('notification-updates')
+      .on('broadcast', { event: 'notification-read' }, (payload) => {
+        console.log('Notification marked as read:', payload);
+        // If this is for the current user, we could refresh the notifications
+        // This will be handled by the AppDataContext's refreshData function
+        if (payload.payload.user_id === user.id) {
+          // The notifications will be refreshed automatically through the AppDataContext
+        }
+      })
+      .subscribe();
+      
+    // Subscribe to study tasks and applications changes
+    const studyTasksChannel = supabase.channel(`study-tasks-${user.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'study_tasks',
+        filter: `user_id=eq.${user.id}`
+      }, () => {
+        console.log('Study tasks updated');
+        // The AppDataContext will handle the refresh
+      })
+      .subscribe();
+      
+    const applicationsChannel = supabase.channel(`applications-${user.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'applications',
+        filter: `user_id=eq.${user.id}`
+      }, () => {
+        console.log('Applications updated');
+        // The AppDataContext will handle the refresh
+      })
+      .subscribe();
+      
+    return () => {
+      subscriptionChannel.unsubscribe();
+      notificationChannel.unsubscribe();
+      studyTasksChannel.unsubscribe();
+      applicationsChannel.unsubscribe();
+    };
+  }, [user, session]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -424,7 +494,43 @@ const Header: React.FC = () => {
   };
 
   const handleNotificationMenuToggle = () => {
-    setIsNotificationMenuOpen(prev => !prev);
+    // Toggle notification menu
+    const newState = !isNotificationMenuOpen;
+    setIsNotificationMenuOpen(newState);
+    
+    // If opening the menu, mark all notifications as read
+    if (newState && notifications.length > 0 && user?.id) {
+      // Mark all reminders as inactive by updating their is_active status
+      notifications.forEach(notification => {
+        if (notification.id) {
+          const reminderId = parseInt(notification.id.split('-')[1]);
+          if (!isNaN(reminderId)) {
+            // Update the reminder to mark it as inactive
+            const studyPlannerApi = new StudyPlannerApiService(user.id);
+            studyPlannerApi.updateReminder(reminderId, { is_active: false })
+              .then(() => {
+                console.log(`Marked notification ${notification.id} as read`);
+                
+                // Use Supabase to broadcast the change to all clients
+                const channel = supabase.channel('notification-updates');
+                channel.subscribe();
+                channel.send({
+                  type: 'broadcast',
+                  event: 'notification-read',
+                  payload: { 
+                    user_id: user.id,
+                    notification_id: notification.id,
+                    reminder_id: reminderId
+                  }
+                });
+              })
+              .catch(error => {
+                console.error('Failed to mark notification as read:', error);
+              });
+          }
+        }
+      });
+    }
   };
 
   const logoVariants = {
@@ -1124,4 +1230,4 @@ const Header: React.FC = () => {
   );
 };
 
-export default Header; 
+export default Header;

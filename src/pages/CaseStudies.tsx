@@ -8,6 +8,7 @@ import IconComponent from '../components/ui/IconComponent';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../utils/LanguageContext';
 import { caseStudyAPI } from '../utils/apiService';
+import { CaseStudiesSkeleton } from '../components/ui/Skeleton';
 
 interface CaseStudy {
   id: string;
@@ -531,12 +532,7 @@ const CaseStudies: React.FC = () => {
             <section className="py-6 sm:py-12">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 {loading ? (
-                  <div className="flex justify-center items-center py-12 sm:py-20">
-                    <div className="text-center">
-                      <IconComponent icon={FaSpinner} className="animate-spin text-3xl sm:text-4xl text-purple-600 mb-4 mx-auto" />
-                      <p className="text-sm sm:text-base text-gray-600 mb-4">Please wait while we load the success stories.</p>
-                    </div>
-                  </div>
+                  <CaseStudiesSkeleton viewMode={viewMode} />
                 ) : caseStudies.length > 0 ? (
                   <motion.div 
                     className={viewMode === 'grid' 

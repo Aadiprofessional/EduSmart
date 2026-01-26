@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AiOutlineBulb, AiOutlineRobot, AiOutlineUp, AiOutlineDown } from 'react-icons/ai';
@@ -6,7 +6,7 @@ import { FiCalendar, FiClock, FiCheck, FiPlus, FiEdit, FiTrash2, FiFilter, FiChe
 import { FaCalendarAlt, FaSort, FaSortAmountDown, FaTimes, FaBell, FaBrain } from 'react-icons/fa';
 import IconComponent from './IconComponent';
 import { useLanguage } from '../../utils/LanguageContext';
-import { useAppData, StudyTask } from '../../utils/AppDataContext';
+import { useAppData, StudyTask, Application } from '../../utils/AppDataContext';
 import { useNotification } from '../../utils/NotificationContext';
 
 interface StudyPlannerComponentProps {
@@ -79,19 +79,19 @@ const PortalModal: React.FC<PortalModalProps> = ({ isOpen, onClose, children, cl
   );
 };
 
+// Generate a proper UUID v4
+const generateUUID = (): string => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className = '' }) => {
   const { t } = useLanguage();
   const { showSuccess, showError, showWarning } = useNotification();
-  const { 
-    studyTasks, 
-    applications,
-    addStudyTask, 
-    updateStudyTask, 
-    deleteStudyTask,
-    setReminder,
-    toggleTaskReminder,
-    unsetReminder
-  } = useAppData();
+  const { studyTasks, applications, addStudyTask, updateStudyTask, deleteStudyTask, updateApplication, setReminder, unsetReminder, refreshData, isLoading } = useAppData();
   
   const [newTask, setNewTask] = useState({
     task: '',
@@ -243,7 +243,16 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
 
   const getTasksForDate = (date: Date) => {
     const dateString = formatDateForComparison(date);
-    return studyTasks.filter(task => task.date === dateString);
+    const tasks = studyTasks.filter(task => task.date === dateString);
+    
+    return tasks.sort((a, b) => {
+      // Sort by priority and completion status
+      if (a.completed !== b.completed) {
+        return a.completed ? 1 : -1;
+      }
+      const priorityOrder = { high: 3, medium: 2, low: 1 };
+      return priorityOrder[b.priority] - priorityOrder[a.priority];
+    });
   };
 
   const navigateMonth = (direction: 'prev' | 'next') => {
@@ -378,45 +387,74 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
     );
   };
 
-  const handleAddTask = (e: React.FormEvent) => {
+  // Updated task addition handler to ensure database save
+  const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTask.task.trim() || !newTask.subject.trim() || !newTask.date) return;
     
-    const task: StudyTask = {
-      id: Date.now().toString(),
-      ...newTask,
-      completed: false
-    };
-    
-    addStudyTask(task);
-    setNewTask({
-      task: '',
-      subject: '',
-      date: '',
-      priority: 'medium',
-      estimatedHours: 1
-    });
-    setShowAddForm(false);
-  };
-
-  const handleTaskToggle = (id: string) => {
-    const task = studyTasks.find(t => t.id === id);
-    if (task) {
-      updateStudyTask(id, { completed: !task.completed });
+    try {
+      const task: StudyTask = {
+        id: generateUUID(),
+        ...newTask,
+        completed: false,
+        source: 'study'
+      };
+      
+      await addStudyTask(task);
+      
+      // Clear form and close
+      setNewTask({
+        task: '',
+        subject: '',
+        date: '',
+        priority: 'medium',
+        estimatedHours: 1
+      });
+      setShowAddForm(false);
+      
+      showSuccess('Task added successfully!');
+    } catch (error) {
+      console.error('Error adding task:', error);
+      showError('Failed to add task. Please try again.');
     }
   };
 
-  const handleDeleteTask = (id: string) => {
-    deleteStudyTask(id);
+  const handleTaskToggle = async (id: string) => {
+    try {
+      const task = studyTasks.find(t => t.id === id);
+      if (task) {
+        await updateStudyTask(id, { completed: !task.completed });
+        showSuccess(task.completed ? 'Task marked as incomplete' : 'Task completed!');
+      }
+    } catch (error) {
+      console.error('Error updating task:', error);
+      showError('Failed to update task. Please try again.');
+    }
   };
 
-  const handlePriorityUpdate = (taskId: string, currentPriority: 'low' | 'medium' | 'high') => {
-    const priorityOrder: ('low' | 'medium' | 'high')[] = ['low', 'medium', 'high'];
-    const currentIndex = priorityOrder.indexOf(currentPriority);
-    const nextIndex = (currentIndex + 1) % priorityOrder.length;
-    const newPriority = priorityOrder[nextIndex];
-    
-    updateStudyTask(taskId, { priority: newPriority });
+  const handleDeleteTask = async (id: string) => {
+    try {
+      await deleteStudyTask(id);
+      showSuccess('Task deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      showError('Failed to delete task. Please try again.');
+    }
+  };
+
+  const handlePriorityUpdate = async (taskId: string, currentPriority: 'low' | 'medium' | 'high') => {
+    try {
+      const priorityOrder: ('low' | 'medium' | 'high')[] = ['low', 'medium', 'high'];
+      const currentIndex = priorityOrder.indexOf(currentPriority);
+      const nextIndex = (currentIndex + 1) % priorityOrder.length;
+      const newPriority = priorityOrder[nextIndex];
+      
+      await updateStudyTask(taskId, { priority: newPriority });
+      showSuccess(`Priority updated to ${newPriority}!`);
+    } catch (error) {
+      console.error('Error updating priority:', error);
+      showError('Failed to update priority. Please try again.');
+    }
   };
 
   const getPriorityColor = (priority: string) => {
@@ -428,62 +466,58 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
     }
   };
 
-  // Filter and sort tasks
+  // Filter tasks to show only:
+  // 1. Study tasks 
+  // 2. Tasks from applications that have reminders set
   const getFilteredAndSortedTasks = () => {
-    let filtered = studyTasks;
-
-    // Filter by selected calendar date
-    if (selectedCalendarDate) {
-      const selectedDateString = formatDateForComparison(selectedCalendarDate);
-      filtered = filtered.filter(task => task.date === selectedDateString);
-    }
-
-    // Filter by selected date
-    if (selectedDate) {
-      filtered = filtered.filter(task => task.date === selectedDate);
-    }
-
-    // Filter by priority
+    let filtered = studyTasks.filter(task => task.source !== 'application' || !task.source);
+    
+    // Apply priority filter
     if (filterPriority !== 'all') {
       filtered = filtered.filter(task => task.priority === filterPriority);
     }
-
-    // Filter by subject
+    
+    // Apply subject filter
     if (filterSubject !== 'all') {
       filtered = filtered.filter(task => task.subject === filterSubject);
     }
 
-    // Sort tasks
-    return filtered.sort((a, b) => {
-      switch (sortBy) {
-        case 'date':
-          return new Date(a.date).getTime() - new Date(b.date).getTime();
-        case 'date_desc':
-          return new Date(b.date).getTime() - new Date(a.date).getTime();
-        case 'priority':
+    // Apply date filter if selectedDate is set
+    if (selectedDate) {
+      filtered = filtered.filter(task => task.date === selectedDate);
+    }
+
+    // Sort by the selected criteria
+    switch (sortBy) {
+      case 'priority':
+        filtered.sort((a, b) => {
           const priorityOrder = { high: 3, medium: 2, low: 1 };
-          return priorityOrder[b.priority] - priorityOrder[a.priority];
-        case 'priority_desc':
-          const priorityOrderDesc = { high: 3, medium: 2, low: 1 };
-          return priorityOrderDesc[a.priority] - priorityOrderDesc[b.priority];
-        case 'subject':
-          return a.subject.localeCompare(b.subject);
-        case 'subject_desc':
-          return b.subject.localeCompare(a.subject);
-        case 'hours':
-          return b.estimatedHours - a.estimatedHours;
-        case 'hours_desc':
-          return a.estimatedHours - b.estimatedHours;
-        case 'time_added':
-          return parseInt(a.id) - parseInt(b.id);
-        case 'time_added_desc':
-          return parseInt(b.id) - parseInt(a.id);
-        case 'completion':
-          return Number(a.completed) - Number(b.completed);
-        default:
+          if (priorityOrder[b.priority] !== priorityOrder[a.priority]) {
+            return priorityOrder[b.priority] - priorityOrder[a.priority];
+          }
           return new Date(a.date).getTime() - new Date(b.date).getTime();
-      }
-    });
+        });
+        break;
+      case 'subject':
+        filtered.sort((a, b) => {
+          if (a.subject !== b.subject) {
+            return a.subject.localeCompare(b.subject);
+          }
+          return new Date(a.date).getTime() - new Date(b.date).getTime();
+        });
+        break;
+      case 'date':
+      default:
+        filtered.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        break;
+    }
+
+    return filtered;
+  };
+
+  // Get applications with reminders for calendar display
+  const getApplicationsWithReminders = () => {
+    return applications.filter(app => app.reminder);
   };
 
   // Get unique subjects for filter
@@ -504,8 +538,17 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
       isOpen: true,
       taskId
     });
-    setReminderDate('');
-    setReminderTime('');
+    
+    // Pre-fill with existing reminder if available for study tasks only
+    const task = studyTasks.find(t => t.id === taskId);
+    if (task?.reminderDate) {
+      const reminderDate = new Date(task.reminderDate);
+      setReminderDate(reminderDate.toISOString().split('T')[0]);
+      setReminderTime(reminderDate.toTimeString().slice(0, 5));
+    } else {
+      setReminderDate('');
+      setReminderTime('');
+    }
   };
 
   const closeReminderModal = () => {
@@ -517,19 +560,45 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
     setReminderTime('');
   };
 
-  const handleSetReminder = () => {
-    if (!reminderDate || !reminderTime) {
-      return;
-    }
+  const handleSetReminder = async () => {
+    if (!reminderModal.isOpen || !reminderDate || !reminderTime) return;
 
-    const reminderDateTime = `${reminderDate}T${reminderTime}`;
-    setReminder(reminderModal.taskId, reminderDateTime, false);
-    closeReminderModal();
+    try {
+      const reminderDateTime = `${reminderDate}T${reminderTime}`;
+      const taskId = reminderModal.taskId;
+      
+      // Only handle real study tasks
+      await updateStudyTask(taskId, { 
+        reminder: true, 
+        reminderDate: reminderDateTime 
+      });
+      showSuccess('Reminder set successfully!');
+      
+      closeReminderModal();
+    } catch (error) {
+      console.error('Error setting reminder:', error);
+      showError('Failed to set reminder. Please try again.');
+    }
   };
 
-  const handleUnsetReminder = () => {
-    unsetReminder(reminderModal.taskId, false);
-    closeReminderModal();
+  const handleUnsetReminder = async () => {
+    if (!reminderModal.isOpen) return;
+
+    try {
+      const taskId = reminderModal.taskId;
+      
+      // Only handle real study tasks
+      await updateStudyTask(taskId, { 
+        reminder: false, 
+        reminderDate: undefined 
+      });
+      showSuccess('Reminder removed successfully!');
+      
+      closeReminderModal();
+    } catch (error) {
+      console.error('Error removing reminder:', error);
+      showError('Failed to remove reminder. Please try again.');
+    }
   };
 
   // AI Processing Functions
@@ -549,7 +618,7 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
       console.log('📡 Making API request to extract text from image...');
 
       const requestPayload = {
-        model: "qwen-vl-max",
+        model: "doubao-seed-1-6-vision-250815",
         messages: [
           {
             role: "user",
@@ -570,10 +639,10 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
         stream: true
       };
 
-      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
+          'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || 'sk-4d21243994a04bb09f431cb2471cdd6c'}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestPayload)
@@ -635,14 +704,14 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
 
   const analyzeWithAI = async (extractedText: string): Promise<any> => {
     try {
-      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: "qwen-vl-max",
+      const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || '4ca49c30-f9e7-467e-8269-cc156c131881'}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: "doubao-seed-1-6-vision-250815",
           messages: [
             {
               role: "system",
@@ -693,13 +762,13 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
 
     // Check file type (only images for now)
     if (!file.type.startsWith('image/')) {
-      showError('Please select an image file (PNG, JPG, JPEG, GIF). PDF support coming soon!');
+      showWarning('Please select an image file (PNG, JPG, JPEG, GIF). PDF support coming soon!');
       return;
     }
 
     // Check file size (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
-      showError('File size must be less than 10MB');
+      showWarning('File size must be less than 10MB');
       return;
     }
 
@@ -746,31 +815,38 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
     }
   };
 
-  const addAITasks = () => {
+  // Updated AI task addition to ensure database save
+  const addAITasks = async () => {
     if (!aiAnalysisResult) return;
 
-    let addedCount = 0;
-    aiAnalysisResult.forEach((task: any) => {
-      if (task.title && task.dueDate) {
-        const newTask: StudyTask = {
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-          task: task.title,
-          subject: task.subject || 'General',
-          date: task.dueDate,
-          priority: task.priority || 'medium',
-          completed: false,
-          estimatedHours: task.estimatedHours || 2,
-          source: 'study'
-        };
-        addStudyTask(newTask);
-        addedCount++;
-      }
-    });
+    try {
+      let addedCount = 0;
+      const taskPromises = aiAnalysisResult.map(async (task: any) => {
+        if (task.title && task.dueDate) {
+          const newTask: StudyTask = {
+            id: generateUUID(),
+            task: task.title,
+            subject: task.subject || 'General',
+            date: task.dueDate,
+            priority: task.priority || 'medium',
+            completed: false,
+            estimatedHours: task.estimatedHours || 2,
+            source: 'study'
+          };
+          await addStudyTask(newTask);
+          addedCount++;
+        }
+      });
 
-    showSuccess(`Successfully added ${addedCount} tasks to your study planner!`);
-    setShowAIModal(false);
-    setUploadedFile(null);
-    setAiAnalysisResult(null);
+      await Promise.all(taskPromises);
+      showSuccess(`Successfully added ${addedCount} tasks to your study planner!`);
+      setShowAIModal(false);
+      setUploadedFile(null);
+      setAiAnalysisResult(null);
+    } catch (error) {
+      console.error('Error adding AI tasks:', error);
+      showError('Failed to add some tasks. Please try again.');
+    }
   };
 
   const closeAIModal = () => {
@@ -987,14 +1063,14 @@ IMPORTANT: Return your response in the following XML format ONLY. Do not include
 
 Focus on creating a realistic, actionable plan that maximizes success in both academic performance and university admissions. Include specific reminder dates, task relationships, and comprehensive deadline management.`;
 
-      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
+          'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || '4ca49c30-f9e7-467e-8269-cc156c131881'}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: "qwen-vl-max",
+          model: "doubao-seed-1-6-vision-250815",
           messages: [
             {
               role: "system",
@@ -1331,6 +1407,50 @@ Remember: Return ONLY the XML structure. No additional text.`
 
   const filteredTasks = getFilteredAndSortedTasks();
 
+  // Updated date change handler to ensure database save
+  const handleDateChange = async (taskId: string, newDate: string) => {
+    try {
+      await updateStudyTask(taskId, { date: newDate });
+      showSuccess('Task date updated!');
+    } catch (error) {
+      console.error('Error updating task date:', error);
+      showError('Failed to update task date. Please try again.');
+    }
+  };
+
+  // Updated subject change handler to ensure database save
+  const handleSubjectChange = async (taskId: string, newSubject: string) => {
+    try {
+      await updateStudyTask(taskId, { subject: newSubject });
+      showSuccess('Task subject updated!');
+    } catch (error) {
+      console.error('Error updating task subject:', error);
+      showError('Failed to update task subject. Please try again.');
+    }
+  };
+
+  // Updated estimated hours change handler to ensure database save
+  const handleEstimatedHoursChange = async (taskId: string, newHours: number) => {
+    try {
+      await updateStudyTask(taskId, { estimatedHours: newHours });
+      showSuccess('Estimated hours updated!');
+    } catch (error) {
+      console.error('Error updating estimated hours:', error);
+      showError('Failed to update estimated hours. Please try again.');
+    }
+  };
+
+  // Updated task name change handler to ensure database save
+  const handleTaskNameChange = async (taskId: string, newTaskName: string) => {
+    try {
+      await updateStudyTask(taskId, { task: newTaskName });
+      showSuccess('Task name updated!');
+    } catch (error) {
+      console.error('Error updating task name:', error);
+      showError('Failed to update task name. Please try again.');
+    }
+  };
+
   return (
     <motion.div
       className={`bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl shadow-lg overflow-hidden ${className}`}
@@ -1628,19 +1748,44 @@ Remember: Return ONLY the XML structure. No additional text.`
                         </motion.button>
 
                         <div className="flex-1">
-                          <h4 className={`font-medium ${task.completed ? 'line-through text-slate-400' : 'text-slate-200'}`}>
-                            {task.task}
-                          </h4>
+                          <input
+                            type="text"
+                            value={task.task}
+                            onChange={(e) => handleTaskNameChange(task.id, e.target.value)}
+                            className={`w-full bg-transparent border-none outline-none font-medium text-sm px-2 py-1 rounded transition-colors ${
+                              task.completed ? 'line-through text-slate-400' : 'text-slate-200 hover:bg-slate-600/30 focus:bg-slate-600/50'
+                            }`}
+                            placeholder="Task name"
+                          />
                           <div className="flex items-center space-x-4 mt-1">
-                            <span className="text-sm text-cyan-400">{task.subject}</span>
-                            <span className="text-sm text-slate-400 flex items-center">
-                              <IconComponent icon={FiCalendar} className="h-3 w-3 mr-1" />
-                              {new Date(task.date).toLocaleDateString()}
-                            </span>
-                            <span className="text-sm text-slate-400 flex items-center">
-                              <IconComponent icon={FiClock} className="h-3 w-3 mr-1" />
-                              {task.estimatedHours}h
-                            </span>
+                            <input
+                              type="text"
+                              value={task.subject}
+                              onChange={(e) => handleSubjectChange(task.id, e.target.value)}
+                              className="text-sm text-cyan-400 bg-transparent border-none outline-none px-2 py-1 rounded hover:bg-slate-600/30 focus:bg-slate-600/50 w-24"
+                              placeholder="Subject"
+                            />
+                            <div className="flex items-center">
+                              <IconComponent icon={FiCalendar} className="h-3 w-3 mr-1 text-slate-400" />
+                              <input
+                                type="date"
+                                value={task.date}
+                                onChange={(e) => handleDateChange(task.id, e.target.value)}
+                                className="text-sm text-slate-400 bg-transparent border-none outline-none px-2 py-1 rounded hover:bg-slate-600/30 focus:bg-slate-600/50"
+                              />
+                            </div>
+                            <div className="flex items-center">
+                              <IconComponent icon={FiClock} className="h-3 w-3 mr-1 text-slate-400" />
+                              <input
+                                type="number"
+                                value={task.estimatedHours}
+                                onChange={(e) => handleEstimatedHoursChange(task.id, parseInt(e.target.value) || 1)}
+                                min="1"
+                                max="24"
+                                className="text-sm text-slate-400 bg-transparent border-none outline-none px-2 py-1 rounded hover:bg-slate-600/30 focus:bg-slate-600/50 w-16"
+                              />
+                              <span className="text-sm text-slate-400">h</span>
+                            </div>
                           </div>
                           {task.reminder && task.reminderDate && (
                             <div className="text-xs text-yellow-400 mt-1 flex items-center">
@@ -2700,4 +2845,4 @@ Remember: Return ONLY the XML structure. No additional text.`
   );
 };
 
-export default StudyPlannerComponent; 
+export default StudyPlannerComponent;

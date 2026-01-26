@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaEnvelope, FaLock, FaGoogle, FaFacebook, FaEye, FaEyeSlash, FaRocket, FaBrain, FaGraduationCap, FaStar, FaUsers, FaTrophy, FaBook, FaLightbulb } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaGoogle, FaApple, FaEye, FaEyeSlash, FaRocket, FaBrain, FaGraduationCap, FaStar, FaUsers, FaTrophy, FaBook, FaLightbulb } from 'react-icons/fa';
 import IconComponent from '../components/ui/IconComponent';
 import { motion } from 'framer-motion';
 import { useAuth } from '../utils/AuthContext';
@@ -8,7 +8,7 @@ import { useLanguage } from '../utils/LanguageContext';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { signIn, signInWithGoogle, signInWithFacebook } = useAuth();
+  const { signIn, signInWithGoogle, signInWithApple } = useAuth();
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
     email: '',
@@ -84,14 +84,23 @@ const Login: React.FC = () => {
 
   const handleSocialLogin = async (provider: string) => {
     try {
+      setAuthError(null);
+      
+      // Store current location for redirect after auth
+      sessionStorage.setItem('returnTo', window.location.pathname);
+      
       if (provider === 'Google') {
+        console.log('Initiating Google OAuth...');
         await signInWithGoogle();
-      } else if (provider === 'Facebook') {
-        await signInWithFacebook();
+        // The redirect will happen automatically through Supabase OAuth flow
+      } else if (provider === 'Apple') {
+        console.log('Initiating Apple OAuth...');
+        await signInWithApple();
+        // The redirect will happen automatically through Supabase OAuth flow
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error with ${provider} login:`, error);
-      setAuthError(`${provider} ${t('auth.login.socialLoginError')}`);
+      setAuthError(`${provider} ${t('auth.login.socialLoginError')}: ${error.message || 'Please try again.'}`);
     }
   };
 
@@ -538,14 +547,14 @@ const Login: React.FC = () => {
                     <span className="font-medium relative z-10">Google</span>
                   </motion.button>
                   <motion.button
-                    onClick={() => handleSocialLogin('Facebook')}
+                    onClick={() => handleSocialLogin('Apple')}
                     className="flex items-center justify-center gap-1 sm:gap-2 bg-blue-600/20 backdrop-blur-sm border border-blue-500/30 text-white px-2 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl hover:bg-blue-600/30 transition-all duration-300 relative overflow-hidden group text-sm sm:text-base"
                     whileHover={{ y: -2, scale: 1.02 }}
                     whileTap={{ y: 0, scale: 0.98 }}
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-blue-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <IconComponent icon={FaFacebook} className="text-blue-400 relative z-10 text-sm sm:text-base" />
-                    <span className="font-medium relative z-10">Facebook</span>
+                    <IconComponent icon={FaApple} className="text-blue-400 relative z-10 text-sm sm:text-base" />
+                    <span className="font-medium relative z-10">Apple</span>
                   </motion.button>
                 </motion.div>
                 

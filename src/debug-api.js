@@ -2,7 +2,7 @@
 // Run this with: node src/debug-api.js
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 
-  (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 'https://edusmart-server.pages.dev');
+  (process.env.NODE_ENV === 'development' ? 'https://server.matrixedu.ai' : 'https://server.matrixedu.ai');
 
 console.log('=== API Configuration Debug ===');
 console.log('NODE_ENV:', process.env.NODE_ENV);

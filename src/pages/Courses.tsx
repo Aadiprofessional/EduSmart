@@ -50,6 +50,7 @@ import {
 import IconWrapper from '../components/IconWrapper';
 import PageHeader from '../components/ui/PageHeader';
 import IconComponent from '../components/ui/IconComponent';
+import { CourseCardSkeleton } from '../components/ui/Skeleton';
 import { API_BASE_URL } from '../config/api';
 import { API_BASE, API_V2_BASE, getAuthHeaders } from '../config/api';
 
@@ -811,8 +812,13 @@ const Courses: React.FC = () => {
 
         {/* Course Grid/List */}
         {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <IconWrapper icon={FaSpinner} className="animate-spin text-4xl text-blue-600" />
+          <div className={viewMode === 'grid' 
+            ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            : "space-y-6"
+          }>
+            {[...Array(viewMode === 'grid' ? 12 : 6)].map((_, index) => (
+              <CourseCardSkeleton key={index} isMobile={window.innerWidth < 768} />
+            ))}
           </div>
         ) : error ? (
           <div className="text-center py-20">

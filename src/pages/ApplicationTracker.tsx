@@ -9,19 +9,28 @@ import { useLanguage } from '../utils/LanguageContext';
 import { useNotification } from '../utils/NotificationContext';
 import { useAppData, Application, ApplicationTask } from '../utils/AppDataContext';
 import { useNavigate } from 'react-router-dom';
+import { FiPlus, FiCalendar, FiCheck, FiClock, FiEdit, FiTrash2, FiBell, FiExternalLink, FiFilter, FiSearch, FiMapPin, FiUser, FiBook } from 'react-icons/fi';
 
 const ApplicationTracker: React.FC = () => {
   const { t } = useLanguage();
-  const { showWarning, showConfirmation } = useNotification();
+  const { showWarning, showConfirmation, showSuccess, showError } = useNotification();
   const navigate = useNavigate();
   const { 
     applications, 
-    addApplication, 
-    updateApplication, 
+    studyTasks,
+    addApplication,
+    updateApplication,
     deleteApplication,
+    addStudyTask,
+    updateStudyTask,
+    deleteStudyTask,
+    syncApplicationToStudy,
     toggleTaskReminder,
     setReminder,
-    unsetReminder
+    unsetReminder,
+    refreshData,
+    isLoading,
+    error
   } = useAppData();
 
   const [isAddingApplication, setIsAddingApplication] = useState(false);
@@ -33,7 +42,9 @@ const ApplicationTracker: React.FC = () => {
     deadline: '',
     status: 'planning',
     notes: '',
-    tasks: []
+    tasks: [],
+    reminder: false,
+    reminderDate: ''
   });
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('deadline');
@@ -55,57 +66,79 @@ const ApplicationTracker: React.FC = () => {
   const [editingTask, setEditingTask] = useState<{appId: number, taskId: number} | null>(null);
   const [editTaskText, setEditTaskText] = useState('');
 
-  // Add new application
-  const handleAddApplication = () => {
-    if (!newApplication.university || !newApplication.program || !newApplication.deadline) {
-      showWarning(t('applicationTracker.requiredFields') || 'Please fill in all required fields');
-      return;
+  // Load applications on component mount
+  useEffect(() => {
+    refreshData();
+  }, [refreshData]);
+
+  // Handle application creation
+  const handleCreateApplication = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newApplication.university?.trim() || !newApplication.program?.trim() || !newApplication.deadline) return;
+
+    try {
+      const application: Application = {
+        id: Math.max(...applications.map(a => a.id), 0) + 1,
+        university: newApplication.university || '',
+        program: newApplication.program || '',
+        country: newApplication.country || '',
+        deadline: newApplication.deadline || '',
+        status: newApplication.status || 'planning',
+        notes: newApplication.notes || '',
+        tasks: [],
+        reminder: newApplication.reminder || false,
+        reminderDate: newApplication.reminderDate || ''
+      };
+
+      await addApplication(application);
+      
+      // Reset form
+      setNewApplication({
+        university: '',
+        program: '',
+        country: '',
+        deadline: '',
+        status: 'planning',
+        notes: '',
+        reminder: false,
+        reminderDate: ''
+      });
+      setIsAddingApplication(false);
+      
+      showSuccess('Application added successfully!');
+    } catch (error) {
+      console.error('Error creating application:', error);
+      showError('Failed to create application. Please try again.');
     }
-    
-    const application: Application = {
-      id: applications.length > 0 ? Math.max(...applications.map(a => a.id)) + 1 : 1,
-      university: newApplication.university || '',
-      program: newApplication.program || '',
-      country: newApplication.country || '',
-      deadline: newApplication.deadline || '',
-      status: newApplication.status as 'planning' | 'in-progress' | 'submitted' | 'interview' | 'accepted' | 'rejected' | 'waitlisted',
-      notes: newApplication.notes || '',
-      tasks: newApplication.tasks || []
-    };
-    
-    addApplication(application);
-    setNewApplication({
-      university: '',
-      program: '',
-      country: '',
-      deadline: '',
-      status: 'planning',
-      notes: '',
-      tasks: []
-    });
-    setIsAddingApplication(false);
+  };
+
+  // Handle application update wrapper for button clicks
+  const handleUpdateApplicationClick = (id: number, updates: Partial<Application>) => {
+    return () => handleUpdateApplication(id, updates);
   };
 
   // Update existing application
-  const handleUpdateApplication = () => {
-    if (isEditingApplication === null) return;
-    
-    if (!newApplication.university || !newApplication.program || !newApplication.deadline) {
-      showWarning(t('applicationTracker.requiredFields') || 'Please fill in all required fields');
-      return;
+  const handleUpdateApplication = async (id: number, updates: Partial<Application>) => {
+    try {
+      await updateApplication(id, updates);
+      setIsEditingApplication(null);
+      setNewApplication({
+        university: '',
+        program: '',
+        country: '',
+        deadline: '',
+        status: 'planning',
+        notes: '',
+        tasks: [],
+        reminder: false,
+        reminderDate: ''
+      });
+      
+      showSuccess('Application updated successfully!');
+    } catch (error) {
+      console.error('Error updating application:', error);
+      showError('Failed to update application. Please try again.');
     }
-    
-    updateApplication(isEditingApplication, newApplication);
-    setIsEditingApplication(null);
-    setNewApplication({
-      university: '',
-      program: '',
-      country: '',
-      deadline: '',
-      status: 'planning',
-      notes: '',
-      tasks: []
-    });
   };
 
   // Edit application
@@ -118,51 +151,74 @@ const ApplicationTracker: React.FC = () => {
       deadline: app.deadline,
       status: app.status,
       notes: app.notes,
-      tasks: app.tasks
+      tasks: app.tasks,
+      reminder: !!app.reminder,
+      reminderDate: app.reminderDate || ''
     });
   };
 
   // Delete application
-  const handleDeleteApplication = (id: number) => {
+  const handleDeleteApplication = async (id: number) => {
     showConfirmation({
       message: t('applicationTracker.confirmDelete') || 'Are you sure you want to delete this application?',
       confirmText: 'Delete',
       cancelText: 'Cancel',
       type: 'danger',
-      onConfirm: () => {
-        deleteApplication(id);
+      onConfirm: async () => {
+        await deleteApplication(id);
+        showSuccess('Application deleted successfully!');
       }
     });
   };
 
   // Toggle task completion
-  const toggleTaskCompletion = (appId: number, taskId: number) => {
-    const app = applications.find(a => a.id === appId);
-    if (!app) return;
+  const toggleTaskCompletion = async (appId: number, taskId: number) => {
+    try {
+      const app = applications.find(a => a.id === appId);
+      if (!app) return;
 
-    const updatedTasks = app.tasks.map(task => {
-      if (task.id === taskId) {
-        return { ...task, completed: !task.completed };
-      }
-      return task;
-    });
+      const updatedTasks = app.tasks.map(task => {
+        if (task.id === taskId) {
+          return { ...task, completed: !task.completed };
+        }
+        return task;
+      });
 
-    updateApplication(appId, { tasks: updatedTasks });
+      await updateApplication(appId, { tasks: updatedTasks });
+      showSuccess('Task status updated successfully!');
+    } catch (error) {
+      console.error('Error updating task completion:', error);
+      showError('Failed to update task. Please try again.');
+    }
   };
 
   // Add task to application
-  const addTask = (appId: number) => {
+  const addTask = async (appId: number) => {
     const taskText = newTaskInputs[appId] || '';
     if (!taskText.trim()) return;
     
-    const app = applications.find(a => a.id === appId);
-    if (!app) return;
+    try {
+      const app = applications.find(a => a.id === appId);
+      if (!app) return;
 
-    const newTaskId = app.tasks.length > 0 ? Math.max(...app.tasks.map(t => t.id)) + 1 : 1;
-    const updatedTasks = [...app.tasks, { id: newTaskId, task: taskText, completed: false }];
-    
-    updateApplication(appId, { tasks: updatedTasks });
-    setNewTaskInputs(prev => ({ ...prev, [appId]: '' }));
+      const newTaskId = app.tasks.length > 0 ? Math.max(...app.tasks.map(t => t.id)) + 1 : 1;
+      const newTask = { 
+        id: newTaskId, 
+        task: taskText.trim(), 
+        completed: false,
+        dueDate: '',
+        reminder: false,
+        reminderDate: ''
+      };
+      const updatedTasks = [...app.tasks, newTask];
+      
+      await updateApplication(appId, { tasks: updatedTasks });
+      setNewTaskInputs(prev => ({ ...prev, [appId]: '' }));
+      showSuccess('Task added successfully!');
+    } catch (error) {
+      console.error('Error adding task:', error);
+      showError('Failed to add task. Please try again.');
+    }
   };
 
   // Edit task
@@ -171,22 +227,28 @@ const ApplicationTracker: React.FC = () => {
     setEditTaskText(currentText);
   };
 
-  const saveTaskEdit = () => {
+  const saveTaskEdit = async () => {
     if (!editingTask || !editTaskText.trim()) return;
     
-    const app = applications.find(a => a.id === editingTask.appId);
-    if (!app) return;
+    try {
+      const app = applications.find(a => a.id === editingTask.appId);
+      if (!app) return;
 
-    const updatedTasks = app.tasks.map(task => {
-      if (task.id === editingTask.taskId) {
-        return { ...task, task: editTaskText };
-      }
-      return task;
-    });
+      const updatedTasks = app.tasks.map(task => {
+        if (task.id === editingTask.taskId) {
+          return { ...task, task: editTaskText.trim() };
+        }
+        return task;
+      });
 
-    updateApplication(editingTask.appId, { tasks: updatedTasks });
-    setEditingTask(null);
-    setEditTaskText('');
+      await updateApplication(editingTask.appId, { tasks: updatedTasks });
+      setEditingTask(null);
+      setEditTaskText('');
+      showSuccess('Task updated successfully!');
+    } catch (error) {
+      console.error('Error updating task:', error);
+      showError('Failed to update task. Please try again.');
+    }
   };
 
   const cancelTaskEdit = () => {
@@ -195,17 +257,25 @@ const ApplicationTracker: React.FC = () => {
   };
 
   // Delete task
-  const deleteTask = (appId: number, taskId: number) => {
-    const app = applications.find(a => a.id === appId);
-    if (!app) return;
+  const deleteTask = async (appId: number, taskId: number) => {
+    if (window.confirm('Are you sure you want to delete this task?')) {
+      try {
+        const app = applications.find(a => a.id === appId);
+        if (!app) return;
 
-    const updatedTasks = app.tasks.filter(task => task.id !== taskId);
-    updateApplication(appId, { tasks: updatedTasks });
+        const updatedTasks = app.tasks.filter(task => task.id !== taskId);
+        await updateApplication(appId, { tasks: updatedTasks });
+        showSuccess('Task deleted successfully!');
+      } catch (error) {
+        console.error('Error deleting task:', error);
+        showError('Failed to delete task. Please try again.');
+      }
+    }
   };
 
   // Update application status
-  const updateApplicationStatus = (appId: number, newStatus: Application['status']) => {
-    updateApplication(appId, { status: newStatus });
+  const updateApplicationStatus = async (appId: number, newStatus: Application['status']) => {
+    await handleUpdateApplication(appId, { status: newStatus });
   };
 
   // Handle reminder modal
@@ -231,20 +301,72 @@ const ApplicationTracker: React.FC = () => {
     setReminderTime('');
   };
 
-  const handleSetReminder = () => {
-    if (!reminderDate || !reminderTime) {
-      showWarning('Please select both date and time for the reminder');
-      return;
-    }
+  const handleSetReminder = async () => {
+    if (!reminderModal.isOpen || !reminderDate || !reminderTime) return;
 
-    const reminderDateTime = `${reminderDate}T${reminderTime}`;
-    setReminder(reminderModal.taskId, reminderDateTime, reminderModal.isApplication);
-    closeReminderModal();
+    try {
+      const reminderDateTime = `${reminderDate}T${reminderTime}`;
+      
+      if (reminderModal.type === 'application') {
+        await setReminder(reminderModal.taskId, reminderDateTime, true);
+        showSuccess('Application reminder set successfully!');
+      } else if (reminderModal.type === 'task') {
+        // For task reminders, we need to update the application's task array
+        const appId = parseInt(reminderModal.taskId.toString().split('-')[0]);
+        const taskId = parseInt(reminderModal.taskId.toString().split('-')[1]);
+        
+        const app = applications.find(a => a.id === appId);
+        if (app) {
+          const updatedTasks = app.tasks.map(task => {
+            if (task.id === taskId) {
+              return { ...task, reminder: true, reminderDate: reminderDateTime };
+            }
+            return task;
+          });
+          
+          await updateApplication(appId, { tasks: updatedTasks });
+          showSuccess('Task reminder set successfully!');
+        }
+      }
+      
+      closeReminderModal();
+    } catch (error) {
+      console.error('Error setting reminder:', error);
+      showError('Failed to set reminder. Please try again.');
+    }
   };
 
-  const handleUnsetReminder = () => {
-    unsetReminder(reminderModal.taskId, reminderModal.isApplication);
-    closeReminderModal();
+  const handleUnsetReminder = async () => {
+    if (!reminderModal.isOpen) return;
+
+    try {
+      if (reminderModal.type === 'application') {
+        await unsetReminder(reminderModal.taskId, true);
+        showSuccess('Application reminder removed!');
+      } else if (reminderModal.type === 'task') {
+        // For task reminders, we need to update the application's task array
+        const appId = parseInt(reminderModal.taskId.toString().split('-')[0]);
+        const taskId = parseInt(reminderModal.taskId.toString().split('-')[1]);
+        
+        const app = applications.find(a => a.id === appId);
+        if (app) {
+          const updatedTasks = app.tasks.map(task => {
+            if (task.id === taskId) {
+              return { ...task, reminder: false, reminderDate: '' };
+            }
+            return task;
+          });
+          
+          await updateApplication(appId, { tasks: updatedTasks });
+          showSuccess('Task reminder removed!');
+        }
+      }
+      
+      closeReminderModal();
+    } catch (error) {
+      console.error('Error removing reminder:', error);
+      showError('Failed to remove reminder. Please try again.');
+    }
   };
 
   // Filter applications by status
@@ -881,7 +1003,9 @@ const ApplicationTracker: React.FC = () => {
                         deadline: '',
                         status: 'planning',
                         notes: '',
-                        tasks: []
+                        tasks: [],
+                        reminder: false,
+                        reminderDate: ''
                       });
                     }}
                     className="bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 px-6 py-3 rounded-lg transition-colors"
@@ -891,7 +1015,7 @@ const ApplicationTracker: React.FC = () => {
                     {t('common.cancel') || 'Cancel'}
                   </motion.button>
                   <motion.button
-                    onClick={isEditingApplication !== null ? handleUpdateApplication : handleAddApplication}
+                    onClick={isEditingApplication !== null ? handleUpdateApplicationClick(isEditingApplication, newApplication) : handleCreateApplication}
                     className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-all"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}

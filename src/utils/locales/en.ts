@@ -477,7 +477,8 @@ export const en = {
     toolName: 'Document Summarizer',
     aiStudyAssistant: 'AI Study Assistant',
     enhanceYourLearning: 'Enhance your learning with AI-powered tools',
-    
+    delete: 'Delete',
+    askAI: 'Ask AI',
     // Quick stats section
     aiPowered: 'AI-Powered',
     solutions: 'Solutions',
@@ -491,7 +492,7 @@ export const en = {
     summarizer: 'Summarizer',
     
     // Tab names
-    uploadHomework: "Upload Homework",
+    uploadHomework: "Upload Question",
     aiTutor: "AI Tutor",
     mistakeChecker: "Mistake Checker",
     studyPlanner: "Study Planner",

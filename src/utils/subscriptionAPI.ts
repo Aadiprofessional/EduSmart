@@ -7,14 +7,35 @@ const apiCall = async (method: string, endpoint: string, data: any = null, sessi
     const headers = getDefaultHeaders(!!session, session);
 
     // Debug logging for session
-    console.log('Session debug info:', {
+    console.log('🔐 Session debug info:', {
       hasSession: !!session,
       hasAccessToken: !!session?.access_token,
       userId: session?.user?.id,
       sessionUserId: session?.user?.id,
       tokenLength: session?.access_token?.length,
-      userEmail: session?.user?.email
+      userEmail: session?.user?.email,
+      sessionObject: session ? 'Session exists' : 'No session',
+      accessTokenPreview: session?.access_token ? `${session.access_token.substring(0, 20)}...` : 'No token'
     });
+
+    // Additional check for authentication
+    if (!session) {
+      console.warn('⚠️ No session provided to API call');
+      return { 
+        success: false, 
+        error: 'No authentication session provided',
+        status: 401 
+      };
+    }
+
+    if (!session.access_token) {
+      console.warn('⚠️ Session exists but no access token');
+      return { 
+        success: false, 
+        error: 'No access token in session',
+        status: 401 
+      };
+    }
 
     const config = {
       method,
@@ -94,6 +115,7 @@ export interface UserSubscription {
   end_date: string;
   responses_remaining: number;
   responses_total: number;
+  responses_used: number;
   last_response_refresh: string | null;
   is_pro: boolean;
   created_at: string;
@@ -165,13 +187,13 @@ export interface SubscriptionStatus {
 
 // Subscription API functions
 export const subscriptionAPI = {
-  // Public endpoints (no auth required)
-  getPlans: async (): Promise<{ success: boolean; data?: SubscriptionPlan[]; error?: string }> => {
-    return apiCall('GET', '/api/subscriptions/plans');
+  // Authenticated endpoints (require session)
+  getPlans: async (session?: Session | null): Promise<{ success: boolean; data?: SubscriptionPlan[]; error?: string }> => {
+    return apiCall('GET', '/api/subscriptions/plans', null, session);
   },
 
-  getAddons: async (): Promise<{ success: boolean; data?: AddonPlan[]; error?: string }> => {
-    return apiCall('GET', '/api/subscriptions/addons');
+  getAddons: async (session?: Session | null): Promise<{ success: boolean; data?: AddonPlan[]; error?: string }> => {
+    return apiCall('GET', '/api/subscriptions/addons', null, session);
   },
 
   // Authenticated endpoints
@@ -197,6 +219,67 @@ export const subscriptionAPI = {
     }, session);
   },
 
+  // Antom payment methods
+  createAntomPaymentSession: async (
+    planId: string | undefined,
+    addonId: string | undefined,
+    amount: number,
+    paymentMethod: string,
+    session?: Session | null
+  ): Promise<{ success: boolean; data?: any; error?: string }> => {
+    // Validate inputs
+    if (!amount || amount <= 0) {
+      return { success: false, error: 'Invalid payment amount' };
+    }
+    
+    if (!paymentMethod) {
+      return { success: false, error: 'Payment method is required' };
+    }
+    
+    if (!session?.user?.id) {
+      return { success: false, error: 'User authentication required' };
+    }
+    
+    // Validate plan or addon
+    if (!planId && !addonId) {
+      return { success: false, error: 'Plan or addon is required' };
+    }
+    
+    const requestData = {
+      planId,
+      addonId,
+      amount,
+      currency: 'USD',
+      paymentMethod,
+      orderDescription: planId ? 'EduSmart Pro Subscription' : 'EduSmart Response Add-on',
+      buyerInfo: {
+        email: session.user.email || '',
+        name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || '',
+        userId: session.user.id
+      }
+    };
+    
+    console.log('Creating Antom payment session:', requestData);
+    
+    return apiCall('POST', '/api/antom/create-payment-session', requestData, session);
+  },
+
+  inquireAntomPayment: async (paymentRequestId: string, session?: Session | null): Promise<{ success: boolean; data?: any; error?: string }> => {
+    if (!paymentRequestId) {
+      return { success: false, error: 'Payment request ID is required' };
+    }
+    
+    if (!session?.user?.id) {
+      return { success: false, error: 'User authentication required' };
+    }
+    
+    console.log('Inquiring Antom payment status:', paymentRequestId);
+    
+    return apiCall('POST', '/api/antom/inquire-payment', {
+      paymentRequestId
+    }, session);
+  },
+
   useResponse: async (responseType: string, queryData: any, responsesUsed: number = 1, session?: Session | null): Promise<{ success: boolean; data?: any; error?: string }> => {
     return apiCall('POST', '/api/subscriptions/use-response', {
       responseType,
@@ -218,4 +301,4 @@ export const subscriptionAPI = {
   }
 };
 
-export default subscriptionAPI; 
+export default subscriptionAPI;

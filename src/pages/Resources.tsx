@@ -8,6 +8,7 @@ import IconComponent from '../components/ui/IconComponent';
 import { motion, AnimatePresence } from 'framer-motion';
 import { responseAPI } from '../utils/apiService';
 import { useLanguage } from '../utils/LanguageContext';
+import { ResourceCardSkeleton } from '../components/ui/Skeleton';
 
 interface Resource {
   id: string;
@@ -496,10 +497,46 @@ const Resources: React.FC = () => {
             </div>
 
             {loading ? (
-              <div className="flex justify-center items-center min-h-[400px]">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading resources...</p>
+              <div className="flex flex-col lg:flex-row gap-8">
+                {/* Desktop Sidebar Skeleton */}
+                <div className="hidden lg:block lg:w-1/4">
+                  <div className="bg-white rounded-xl shadow-lg p-6 animate-pulse">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="h-5 bg-gray-300 rounded w-16"></div>
+                      <div className="h-4 bg-gray-300 rounded w-20"></div>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="h-10 bg-gray-300 rounded"></div>
+                      <div className="h-10 bg-gray-300 rounded"></div>
+                      <div className="h-10 bg-gray-300 rounded"></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Main Content Skeleton */}
+                <div className="lg:w-3/4">
+                  <div className="bg-white rounded-xl shadow-lg p-6 mb-6 animate-pulse">
+                    <div className="h-6 bg-gray-300 rounded w-48 mb-2"></div>
+                    <div className="h-4 bg-gray-300 rounded w-32"></div>
+                  </div>
+
+                  {/* Desktop View Skeleton */}
+                  <div className="hidden lg:block">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {[...Array(9)].map((_, index) => (
+                        <ResourceCardSkeleton key={index} />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Mobile View Skeleton */}
+                  <div className="lg:hidden">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                      {[...Array(6)].map((_, index) => (
+                        <ResourceCardSkeleton key={index} isMobile={true} />
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             ) : (

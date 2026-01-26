@@ -617,7 +617,7 @@ export const zhTW = {
     toolName: '文件摘要器',
     aiStudyAssistant: 'AI學習助手',
     enhanceYourLearning: '用AI驅動的工具增強您的學習',
-    
+ 
     // Quick stats section
     aiPowered: 'AI驅動',
     solutions: '解決方案',
@@ -631,7 +631,7 @@ export const zhTW = {
     summarizer: '摘要器',
     
     // Tab names
-    uploadHomework: "上傳作業",
+    uploadHomework: "上傳問題",
     aiTutor: "AI導師",
     mistakeChecker: "錯誤檢查器",
     studyPlanner: "學習計劃器",

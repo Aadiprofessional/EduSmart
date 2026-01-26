@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { subscriptionAPI, SubscriptionStatus } from './subscriptionAPI';
+import { PRO_PLAN_IDS } from '../services/supabaseSubscriptionService';
 
 interface ProStatusContextType {
   isProUser: boolean;
@@ -111,18 +112,48 @@ export const ProStatusProvider: React.FC<{ children: ReactNode }> = ({ children 
       const result = await subscriptionAPI.getStatus(session);
       
       if (result.success && result.data) {
-        const status = result.data;
+        console.log('Raw PRO status from API:', result.data);
         
-        setSubscriptionStatus(status);
-        setIsProUser(status.isPro || false);
-        setResponsesRemaining(status.responsesRemaining || 0);
+        // Process the API response to calculate correct values
+        const rawData = result.data;
+        
+        // Calculate responses from active addons
+        let totalResponsesFromAddons = 0;
+        const activeAddons = rawData.addons?.filter((addon: any) => addon.status === 'active') || [];
+        
+        activeAddons.forEach((addon: any) => {
+          totalResponsesFromAddons += addon.responses_added || 0;
+        });
+        
+        // Check if user has active subscription or addons
+        const hasActiveSubscription = rawData.subscription?.status === 'active' || activeAddons.length > 0;
+        // Check if user is Pro (either by flag or by plan ID)
+        const isPro = !!(rawData.isPro || (rawData.subscription?.plan_id && PRO_PLAN_IDS.includes(rawData.subscription.plan_id)));
+        
+        // Use only subscription responses for display (don't add addon responses)
+        const subscriptionResponses = rawData.subscription?.responses_remaining || 0;
+        const totalResponses = subscriptionResponses;
+        
+        // Create processed status object
+        const processedStatus: SubscriptionStatus = {
+          hasActiveSubscription,
+          isPro,
+          subscription: rawData.subscription,
+          addons: rawData.addons || [],
+          responsesRemaining: totalResponses,
+          totalResponses: totalResponses
+        };
+        
+        setSubscriptionStatus(processedStatus);
+        setIsProUser(isPro);
+        setResponsesRemaining(totalResponses);
         
         // Save to cache
-        saveToCache(status.isPro || false, status.responsesRemaining || 0);
+        saveToCache(isPro, totalResponses);
         
         console.log('Updated PRO status:', {
-          isPro: status.isPro,
-          responsesRemaining: status.responsesRemaining
+          isPro: isPro,
+          responsesRemaining: totalResponses
         });
       } else {
         console.error('Failed to fetch subscription status:', result.error);
@@ -217,8 +248,8 @@ export const withProStatus = <P extends object>(
 
 // Utility function to check if feature requires PRO
 export const requiresProAccess = (featureId: string): boolean => {
-  const freeFeatures = [
-    'study-planner'  // Only study planner is truly free
+  const freeFeatures: string[] = [
+
   ];
   
   // All other features require PRO (including upload, citation generator, etc.)
@@ -255,4 +286,4 @@ export const ProBadge: React.FC<{
       </svg>
     </div>
   );
-}; 
+};

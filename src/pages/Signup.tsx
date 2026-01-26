@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaEnvelope, FaLock, FaUserAlt, FaGoogle, FaFacebook, FaEye, FaEyeSlash, FaRocket, FaBrain, FaGraduationCap, FaStar, FaShieldAlt, FaUsers, FaCertificate, FaClock, FaGlobe, FaChartLine } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaUserAlt, FaGoogle, FaApple, FaEye, FaEyeSlash, FaRocket, FaBrain, FaGraduationCap, FaStar, FaShieldAlt, FaUsers, FaCertificate, FaClock, FaGlobe, FaChartLine } from 'react-icons/fa';
 import IconComponent from '../components/ui/IconComponent';
 import { useAuth } from '../utils/AuthContext';
 import { useLanguage } from '../utils/LanguageContext';
@@ -9,7 +9,7 @@ import { useNotification } from '../utils/NotificationContext';
 
 const Signup: React.FC = () => {
   const navigate = useNavigate();
-  const { signUp, signInWithGoogle, signInWithFacebook } = useAuth();
+  const { signUp, signInWithGoogle, signInWithApple } = useAuth();
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
     name: '',
@@ -110,14 +110,23 @@ const Signup: React.FC = () => {
 
   const handleSocialSignup = async (provider: string) => {
     try {
+      setAuthError(null);
+      
+      // Store current page in session storage for redirect after auth
+      sessionStorage.setItem('returnTo', '/');
+      
       if (provider === 'Google') {
         await signInWithGoogle();
-      } else if (provider === 'Facebook') {
-        await signInWithFacebook();
+        // OAuth flow initiated, user will be redirected to Google
+        console.log('Google OAuth flow initiated from signup');
+      } else if (provider === 'Apple') {
+        await signInWithApple();
+        // OAuth flow initiated, user will be redirected to Apple
+        console.log('Apple OAuth flow initiated from signup');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error with ${provider} signup:`, error);
-      setAuthError(`${provider} ${t('auth.signup.socialSignupError')}`);
+      setAuthError(`Failed to sign up with ${provider}. Please try again.`);
     }
   };
   
@@ -572,14 +581,14 @@ const Signup: React.FC = () => {
                     <span className="font-medium relative z-10">Google</span>
                   </motion.button>
                   <motion.button
-                    onClick={() => handleSocialSignup('Facebook')}
+                    onClick={() => handleSocialSignup('Apple')}
                     className="flex items-center justify-center gap-1 sm:gap-2 bg-blue-600/20 backdrop-blur-sm border border-blue-500/30 text-white px-2 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl hover:bg-blue-600/30 transition-all duration-300 relative overflow-hidden group text-sm sm:text-base"
                     whileHover={{ y: -2, scale: 1.02 }}
                     whileTap={{ y: 0, scale: 0.98 }}
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-blue-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <IconComponent icon={FaFacebook} className="text-blue-400 relative z-10 text-sm sm:text-base" />
-                    <span className="font-medium relative z-10">Facebook</span>
+                    <IconComponent icon={FaApple} className="text-blue-400 relative z-10 text-sm sm:text-base" />
+                    <span className="font-medium relative z-10">Apple</span>
                   </motion.button>
                 </motion.div>
                 

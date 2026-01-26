@@ -1,38 +1,71 @@
 import axios from 'axios';
 import { API_BASE_URL } from '../config/api';
 
-// Helper function to make API calls
-const apiCall = async (method: string, endpoint: string, data: any = null) => {
-  try {
-    const config = {
-      method,
-      url: `${API_BASE_URL}${endpoint}`,
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      ...(data && { data })
-    };
+// Helper function to make API calls with retry logic
+const apiCall = async (method: string, endpoint: string, data: any = null, retries: number = 3) => {
+  let lastError: any;
+  
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const config = {
+        method,
+        url: `${API_BASE_URL}${endpoint}`,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        ...(data && { data })
+      };
 
-    console.log(`Making ${method} request to ${API_BASE_URL}${endpoint}`);
-    
-    const response = await axios(config);
-    return { success: true, data: response.data };
-  } catch (error: any) {
-    console.error('API Call Error:', {
-      method,
-      endpoint,
-      url: `${API_BASE_URL}${endpoint}`,
-      error: error.message,
-      status: error.response?.status,
-      data: error.response?.data
-    });
-    
-    return { 
-      success: false, 
-      error: error.response?.data || error.message,
-      status: error.response?.status 
-    };
+      console.log(`🔄 Making ${method} request to ${API_BASE_URL}${endpoint} (attempt ${attempt + 1}/${retries + 1})`);
+      if (data && method !== 'GET') {
+        console.log('📤 Request data:', data);
+      }
+      
+      const response = await axios(config);
+      console.log(`✅ ${method} request successful:`, response.status);
+      
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      lastError = error;
+      
+      // For 500+ errors or network errors, retry if we have attempts left
+      const shouldRetry = (error.response?.status >= 500 || !error.response) && attempt < retries;
+      
+      if (shouldRetry) {
+        console.warn(`⚠️ API Call Error (attempt ${attempt + 1}/${retries + 1}):`, {
+          method,
+          endpoint,
+          url: `${API_BASE_URL}${endpoint}`,
+          error: error.message,
+          status: error.response?.status,
+          retrying: true
+        });
+        
+        // Exponential backoff: wait 1s, 2s, 4s between retries
+        const delay = Math.pow(2, attempt) * 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      
+      console.error('❌ API Call Error (final):', {
+        method,
+        endpoint,
+        url: `${API_BASE_URL}${endpoint}`,
+        error: error.message,
+        status: error.response?.status,
+        responseData: error.response?.data,
+        requestData: data
+      });
+      
+      break;
+    }
   }
+  
+  return { 
+    success: false, 
+    error: lastError.response?.data?.error || lastError.response?.data || lastError.message,
+    status: lastError.response?.status 
+  };
 };
 
 // Blog API functions (public only for user website)
@@ -402,4 +435,4 @@ export const fetchResponseTypes = async () => {
   }
 };
 
-export default blogAPI; 
+export default blogAPI;

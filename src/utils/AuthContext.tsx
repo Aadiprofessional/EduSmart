@@ -16,7 +16,7 @@ type AuthContextType = {
   }>;
   signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
-  signInWithFacebook: () => Promise<void>;
+  signInWithApple: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -35,9 +35,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
+      
+      // Handle OAuth sign-in completion
+      if (event === 'SIGNED_IN' && session?.user) {
+        // Check if this is an OAuth user (Google, Facebook, etc.)
+        const provider = session.user.app_metadata?.provider;
+        if (provider && provider !== 'email') {
+          console.log('OAuth sign-in detected:', provider);
+          // The profile will be created automatically by the backend
+          // when the user makes their first authenticated request
+        }
+      }
     });
 
     return () => {
@@ -110,23 +122,47 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
+        options: {
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Google OAuth error:', error);
+        throw error;
+      }
+      
+      console.log('Google OAuth initiated successfully');
     } catch (error: any) {
       console.error('Error signing in with Google:', error.message);
+      throw error;
     }
   };
 
-  const signInWithFacebook = async () => {
+  const signInWithApple = async () => {
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'facebook',
+        provider: 'apple',
+        options: {
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Apple OAuth error:', error);
+        throw error;
+      }
+      
+      console.log('Apple OAuth initiated successfully');
     } catch (error: any) {
-      console.error('Error signing in with Facebook:', error.message);
+      console.error('Error signing in with Apple:', error.message);
+      throw error;
     }
   };
 
@@ -138,7 +174,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     signIn,
     signOut,
     signInWithGoogle,
-    signInWithFacebook,
+    signInWithApple,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

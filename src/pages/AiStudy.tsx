@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AiOutlineUpload, AiOutlineBulb, AiOutlineRobot, AiOutlineHistory, AiOutlineSearch, AiOutlineEdit } from 'react-icons/ai';
+import { AiOutlineUpload, AiOutlineBulb, AiOutlineRobot, AiOutlineHistory, AiOutlineSearch, AiOutlineEdit, AiOutlineUser } from 'react-icons/ai';
 import { FiBookOpen, FiClock, FiCalendar, FiCheck, FiBookmark, FiEdit, FiMenu, FiCheckCircle, FiMessageSquare, FiLayers, FiPenTool, FiTrendingUp, FiArrowRight } from 'react-icons/fi';
 import { FaCrown, FaExclamationTriangle, FaCheck } from 'react-icons/fa';
 import IconComponent from '../components/ui/IconComponent';
@@ -11,6 +11,7 @@ import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import CitationGenerator from '../components/ui/CitationGenerator';
 import { ContentWriterComponent } from '../components/ui/ContentWriterComponent';
+import { HumanizerComponent } from '../components/ui/HumanizerComponent';
 import CheckMistakesComponent from '../components/ui/CheckMistakesComponent';
 import AiTutorChatComponent from '../components/ui/AiTutorChatComponent';
 import UploadHomeworkComponent from '../components/ui/UploadHomeworkComponent';
@@ -36,6 +37,7 @@ const AiStudy: React.FC = () => {
     'study-planner': false,
     'flashcards': false,
     'content-writer': false,
+    'humanizer': false,
     'citation-generator': false,
     'document-summarizer': false,
   });
@@ -100,6 +102,7 @@ const AiStudy: React.FC = () => {
         'document-summarizer': 'document-summarizer',
         'study-planner': 'study-planner',
         'content-writer': 'content-writer',
+        'humanizer': 'humanizer',
         'ai-tutor': 'ai-tutor'
       };
       
@@ -176,9 +179,10 @@ const AiStudy: React.FC = () => {
     { id: 'upload', name: t('aiStudy.uploadHomework'), icon: AiOutlineUpload, requiresPro: true },
     { id: 'ai-tutor', name: t('aiStudy.aiTutor'), icon: FiMessageSquare, requiresPro: true },
     { id: 'mistake-checker', name: t('aiStudy.mistakeChecker'), icon: FiCheckCircle, requiresPro: true },
-    { id: 'study-planner', name: t('aiStudy.studyPlanner'), icon: FiCalendar, requiresPro: false },
+    { id: 'study-planner', name: t('aiStudy.studyPlanner'), icon: FiCalendar, requiresPro: true },
     { id: 'flashcards', name: t('aiStudy.flashcards'), icon: FiLayers, requiresPro: true },
     { id: 'content-writer', name: t('aiStudy.contentWriter'), icon: FiPenTool, requiresPro: true },
+    { id: 'humanizer', name: 'Humanizer', icon: AiOutlineUser, requiresPro: true },
     { id: 'citation-generator', name: t('aiStudy.citationGenerator'), icon: FiBookOpen, requiresPro: true },
     { id: 'document-summarizer', name: t('aiStudy.documentSummarizer'), icon: AiOutlineSearch, requiresPro: true },
   ];
@@ -246,6 +250,16 @@ const AiStudy: React.FC = () => {
         hoverText: 'group-hover:from-orange-300 group-hover:via-red-300 group-hover:to-pink-300',
         hoverIcon: 'group-hover:from-orange-400/30 group-hover:to-red-400/30'
       },
+      'humanizer': {
+        text: isActive 
+          ? 'bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent'
+          : 'bg-gradient-to-r from-pink-400 via-rose-400 to-red-400 bg-clip-text text-transparent',
+        icon: isActive 
+          ? 'bg-blue-500/20 text-blue-400'
+          : 'bg-gradient-to-r from-pink-500/20 to-rose-500/20 text-pink-400',
+        hoverText: 'group-hover:from-pink-300 group-hover:via-rose-300 group-hover:to-red-300',
+        hoverIcon: 'group-hover:from-pink-400/30 group-hover:to-rose-400/30'
+      },
       'citation-generator': {
         text: isActive 
           ? 'bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent'
@@ -274,14 +288,14 @@ const AiStudy: React.FC = () => {
   // Function to generate flashcards from notes using AI
   const generateFlashcardsFromNotes = async () => {
     try {
-      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
+          'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || '4ca49c30-f9e7-467e-8269-cc156c131881'}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: "qwen-vl-max",
+          model: "doubao-seed-1-6-vision-250815",
           messages: [
             {
               role: "system",
@@ -302,7 +316,7 @@ const AiStudy: React.FC = () => {
               ]
             }
           ],
-          stream: false
+          stream: true
         })
       });
 
@@ -339,14 +353,14 @@ const AiStudy: React.FC = () => {
       // For now, we'll extract text from the PDF and then generate flashcards
       // In a real implementation, you'd convert PDF to images first
       
-      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
+          'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || '4ca49c30-f9e7-467e-8269-cc156c131881'}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: "qwen-vl-max",
+          model: "doubao-seed-1-6-vision-250815",
           messages: [
             {
               role: "system",
@@ -367,7 +381,7 @@ const AiStudy: React.FC = () => {
               ]
             }
           ],
-          stream: false
+          stream: true
         })
       });
 
@@ -630,6 +644,11 @@ const AiStudy: React.FC = () => {
                 {componentStates['content-writer'] && <ContentWriterComponent />}
               </div>
 
+              {/* Humanizer */}
+              <div className={activeTab === 'humanizer' ? 'block' : 'hidden'}>
+                {componentStates['humanizer'] && <HumanizerComponent />}
+              </div>
+
               {/* Citation Generator */}
               <div className={activeTab === 'citation-generator' ? 'block' : 'hidden'}>
                 {componentStates['citation-generator'] && <CitationGenerator />}
@@ -644,6 +663,7 @@ const AiStudy: React.FC = () => {
               <div className={activeTab === 'flashcards' ? 'block' : 'hidden'}>
                 {componentStates['flashcards'] && (
                   <FlashcardComponent 
+                    userId={user?.id}
                     onGenerateFromNotes={generateFlashcardsFromNotes}
                     onGenerateFromPDF={generateFlashcardsFromPDF}
                   />
@@ -788,6 +808,29 @@ const AiStudy: React.FC = () => {
                 className="mt-4 text-orange-400 font-medium flex items-center text-sm hover:text-orange-300 transition-colors"
               >
                 {t('aiStudy.startWritingBtn')}
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </motion.button>
+            </motion.div>
+            
+            <motion.div 
+              className="bg-gradient-to-br from-pink-500/20 to-rose-600/20 backdrop-blur-lg p-6 rounded-xl border border-pink-400/30 hover:border-pink-400/50 transition-all duration-300"
+              variants={itemVariants}
+              whileHover={{ y: -5, boxShadow: "0 25px 50px rgba(244, 63, 94, 0.15)" }}
+            >
+              <div className="bg-gradient-to-br from-pink-400/20 to-rose-500/20 w-14 h-14 rounded-full flex items-center justify-center mb-4 border border-pink-400/30">
+                <IconComponent icon={AiOutlineUser} className="h-7 w-7 text-pink-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-pink-400 mb-2">Humanizer</h3>
+              <p className="text-slate-300">Rewrite AI-generated content to sound more natural and human-like.</p>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handleTabSwitch('humanizer')}
+                className="mt-4 text-pink-400 font-medium flex items-center text-sm hover:text-pink-300 transition-colors"
+              >
+                Start Humanizing
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
@@ -968,4 +1011,4 @@ const AiStudy: React.FC = () => {
   );
 };
 
-export default AiStudy; 
+export default AiStudy;

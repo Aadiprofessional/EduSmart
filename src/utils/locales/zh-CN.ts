@@ -449,7 +449,7 @@ export const zhCN = {
     toolName: '文档摘要器',
     aiStudyAssistant: 'AI学习助手',
     enhanceYourLearning: '用AI驱动的工具增强您的学习',
-    
+   
     // Quick stats section
     aiPowered: 'AI驱动',
     solutions: '解决方案',
@@ -463,7 +463,7 @@ export const zhCN = {
     summarizer: '摘要器',
     
     // Tab names
-    uploadHomework: "上传作业",
+    uploadHomework: "上传问题",
     aiTutor: "AI导师",
     mistakeChecker: "错误检查器",
     studyPlanner: "学习计划器",

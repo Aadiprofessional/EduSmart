@@ -14,10 +14,13 @@ import { synthwave84 } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import 'katex/dist/katex.min.css';
 import * as echarts from 'echarts';
 import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 import { Document, Paragraph, TextRun, Packer } from 'docx';
 import { useResponseCheck, ResponseUpgradeModal } from '../../utils/responseChecker';
 import { useNotification } from '../../utils/NotificationContext';
 import { useLanguage } from '../../utils/LanguageContext';
+import { useAuth } from '../../utils/AuthContext';
+import { documentSummarizerService, FrontendSummaryItem } from '../../services/documentSummarizerService';
 
 // Set up PDF.js worker with a more reliable approach
 if (typeof window !== 'undefined') {
@@ -167,18 +170,114 @@ const PortalModal: React.FC<PortalModalProps> = ({ isOpen, onClose, children, cl
   );
 };
 
+// Get user ID from authentication context - updated for better Supabase integration
+const getUserId = (user?: any, session?: any): string | null => {
+  console.log('🔍 DocumentSummarizer - Getting user ID from auth context...', {
+    hasUser: !!user,
+    hasSession: !!session,
+    userId: user?.id,
+    sessionUserId: session?.user?.id,
+    userEmail: user?.email || session?.user?.email
+  });
+
+  // Priority 1: Supabase session user ID (most reliable)
+  if (session?.user?.id) {
+    console.log('✅ Found user ID from Supabase session:', session.user.id);
+    return session.user.id;
+  }
+  
+  // Priority 2: Direct user object ID
+  if (user?.id) {
+    console.log('✅ Found user ID from auth user context:', user.id);
+    return user.id;
+  }
+
+  // Priority 3: Try current Supabase session from client
+  try {
+    const supabaseClient = (window as any).supabase;
+    if (supabaseClient) {
+      const currentSession = supabaseClient.auth.getSession();
+      if (currentSession?.data?.session?.user?.id) {
+        console.log('✅ Found user ID from current Supabase session:', currentSession.data.session.user.id);
+        return currentSession.data.session.user.id;
+      }
+    }
+  } catch (e) {
+    console.warn('Could not access Supabase client from window');
+  }
+
+  // Priority 4: Try Supabase auth from localStorage (recent format)
+  const keys = Object.keys(localStorage);
+  for (const key of keys) {
+    if (key.startsWith('sb-') && key.includes('auth-token')) {
+      try {
+        const authStr = localStorage.getItem(key);
+        if (authStr && authStr !== 'undefined' && authStr !== 'null') {
+          const authData = JSON.parse(authStr);
+          if (authData?.user?.id) {
+            console.log('✅ Found user ID from Supabase localStorage:', key, authData.user.id);
+            return authData.user.id;
+          }
+        }
+      } catch (e) {
+        continue;
+      }
+    }
+  }
+  
+  // Priority 5: Legacy auth patterns (fallback)
+  const userId = localStorage.getItem('userId') || localStorage.getItem('user_id');
+  if (userId && userId !== 'undefined' && userId !== 'null') {
+    console.log('⚠️ Found user ID from legacy localStorage:', userId);
+    return userId;
+  }
+  
+  // Priority 6: User object in localStorage (fallback)
+  const userStr = localStorage.getItem('user');
+  if (userStr && userStr !== 'undefined' && userStr !== 'null') {
+    try {
+      const storedUser = JSON.parse(userStr);
+      if (storedUser && (storedUser.id || storedUser.user_id || storedUser.uid)) {
+        const foundUserId = storedUser.id || storedUser.user_id || storedUser.uid;
+        console.log('⚠️ Found user ID from stored user object:', foundUserId);
+        return foundUserId;
+      }
+    } catch (e) {
+      console.warn('Failed to parse user from localStorage');
+    }
+  }
+  
+  console.error('❌ No user ID found - user must be authenticated to use Document Summarizer');
+  return null;
+};
+
 const DocumentSummarizerComponent: React.FC<DocumentSummarizerComponentProps> = ({ className = '' }) => {
   const { t } = useLanguage();
+  const { user, session, loading: authLoading } = useAuth();
+  
+  // API and user states
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [isSavingToHistory, setIsSavingToHistory] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [currentDocumentId, setCurrentDocumentId] = useState<string | null>(null);
+  const [apiDebugLog, setApiDebugLog] = useState<string[]>([]);
+  const [showDebugConsole, setShowDebugConsole] = useState(false);
+  
   // Response checking state
   const { checkAndUseResponse } = useResponseCheck();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState('');
   
   const [file, setFile] = useState<File | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [textInput, setTextInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isLoadingSummary, setIsLoadingSummary] = useState(false);
+  const [isLoadingMindmap, setIsLoadingMindmap] = useState(false);
   const [summary, setSummary] = useState('');
   const [mindmapData, setMindmapData] = useState<any>(null);
+  const [mindmapError, setMindmapError] = useState<string>('');
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const [processingStatus, setProcessingStatus] = useState<string>('');
   const [showHistory, setShowHistory] = useState(false);
   const [summaryHistory, setSummaryHistory] = useState<SummaryHistoryItem[]>([]);
@@ -204,26 +303,61 @@ const DocumentSummarizerComponent: React.FC<DocumentSummarizerComponentProps> = 
   const mindmapChart = useRef<echarts.ECharts | null>(null);
   const summaryContainerRef = useRef<HTMLDivElement>(null); // Add ref for auto-scroll
 
-  // Load history from localStorage on component mount
-  useEffect(() => {
-    const savedHistory = localStorage.getItem('summaryHistory');
-    if (savedHistory) {
-      try {
-        const parsedHistory = JSON.parse(savedHistory).map((item: any) => ({
-          ...item,
-          timestamp: new Date(item.timestamp)
-        }));
-        setSummaryHistory(parsedHistory);
-      } catch (error) {
-        console.error('Error loading summary history:', error);
-      }
-    }
-  }, []);
+  // Check authentication status and provide user feedback
+  const isAuthenticated = !!(user?.id || session?.user?.id);
+  const currentUserId = getUserId(user, session);
 
-  // Save history to localStorage whenever it changes
+  // Load history from API with authentication
   useEffect(() => {
-    localStorage.setItem('summaryHistory', JSON.stringify(summaryHistory));
-  }, [summaryHistory]);
+    const loadHistoryFromAPI = async () => {
+      // Only load history if user is authenticated
+      if (!currentUserId) {
+        console.log('🚫 No authenticated user - clearing history');
+        setSummaryHistory([]);
+        setIsLoadingHistory(false);
+        return;
+      }
+
+      setIsLoadingHistory(true);
+      setHistoryError(null);
+      
+      try {
+        console.log('📚 Loading document summary history from API...');
+        addDebugLog('📚 Loading history from API...');
+        
+        if (!currentUserId) {
+          throw new Error('No authenticated user ID found');
+        }
+        
+        const response = await documentSummarizerService.getDocumentSummaryHistory(currentUserId);
+        
+        if (response.success && response.documentHistory) {
+          const frontendHistory = response.documentHistory.map(item => 
+            documentSummarizerService.convertToFrontendFormat(item)
+          );
+          setSummaryHistory(frontendHistory);
+          console.log('✅ Loaded document summary history:', frontendHistory.length, 'items');
+          addDebugLog(`✅ Loaded ${frontendHistory.length} items from API`);
+        } else {
+          throw new Error('Invalid API response format');
+        }
+      } catch (error) {
+        console.error('❌ Error loading history from API:', error);
+        setHistoryError('Failed to load history from server');
+        addDebugLog(`❌ History load failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        
+        // Do not fallback to localStorage for security reasons
+        setSummaryHistory([]);
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    };
+
+    loadHistoryFromAPI();
+  }, [currentUserId, user?.id, session?.user?.id]);
+
+  // Remove the old localStorage auto-save effect since we'll save manually to API
+  // The old effect was: useEffect(() => { localStorage.setItem('summaryHistory', JSON.stringify(summaryHistory)); }, [summaryHistory]);
 
   // Auto-scroll to bottom of summary container
   const scrollToBottom = () => {
@@ -519,406 +653,232 @@ const DocumentSummarizerComponent: React.FC<DocumentSummarizerComponentProps> = 
     return fullText;
   };
 
-  // Improved summarize text with live streaming
-  const summarizeText = async (text: string): Promise<string> => {
-    const requestPayload = {
-      model: "qwen-vl-max",
-      messages: [
-        {
-          role: "system",
-          content: [
-            {
-              type: "text", 
-              text: "You are an expert document summarization assistant. Create comprehensive, well-structured summaries that capture key points, main ideas, and important details. Use clear markdown formatting with headers, bullet points, numbered lists, and proper structure. Make the summary engaging and easy to read."
-            }
-          ]
-        },
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: `Please create a comprehensive and well-formatted summary of the following text. Structure your summary with:
-
-## 📋 Executive Summary
-Brief overview of the main topic and key findings
-
-## 🎯 Key Points
-- Main ideas and concepts
-- Important details and facts
-- Critical insights
-
-## 📊 Detailed Analysis
-More in-depth breakdown of the content with subsections as needed
-
-## 💡 Key Takeaways
-- Summary of implications
-- Important conclusions
-- Actionable insights
-
-**Text to summarize:**
-${text}
-
-Please provide a well-structured, informative summary using proper markdown formatting with emojis and clear sections.`
-            }
-          ]
-        }
-      ],
-      stream: true
-    };
-
-    const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestPayload)
+  // Simple extractive text summarization function
+  const extractiveSummarize = (text: string, sentences: number = 5): string => {
+    if (!text.trim()) return '';
+    
+    // Split into sentences
+    const sentenceArray = text.split(/[.!?]+/).filter(s => s.trim().length > 10);
+    
+    if (sentenceArray.length <= sentences) {
+      return text;
+    }
+    
+    // Score sentences based on word frequency and position
+    const words = text.toLowerCase().split(/\W+/).filter(w => w.length > 3);
+    const wordFreq: { [key: string]: number } = {};
+    
+    words.forEach(word => {
+      wordFreq[word] = (wordFreq[word] || 0) + 1;
     });
-
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
-    }
-
-    const reader = response.body?.getReader();
-    if (!reader) {
-      throw new Error('No response body reader available');
-    }
-
-    let fullContent = '';
-    setStreamingText('');
-
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = new TextDecoder().decode(value);
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') continue;
-
-            try {
-              const parsed = JSON.parse(data);
-              const content_chunk = parsed.choices?.[0]?.delta?.content;
-              
-              if (content_chunk) {
-                fullContent += content_chunk;
-                setStreamingText(fullContent);
-                
-                // Auto-scroll to show latest content
-                if (autoScroll) {
-                  setTimeout(scrollToBottom, 50);
-                }
-              }
-            } catch (parseError) {
-              continue;
-            }
-          }
-        }
-      }
-    } finally {
-      reader.releaseLock();
-    }
-
-    setSummary(fullContent.trim());
-    setSummaryComplete(true);
-    return fullContent.trim();
+    
+    // Score each sentence
+    const sentenceScores = sentenceArray.map((sentence, index) => {
+      const sentenceWords = sentence.toLowerCase().split(/\W+/).filter(w => w.length > 3);
+      const score = sentenceWords.reduce((sum, word) => sum + (wordFreq[word] || 0), 0) / sentenceWords.length;
+      const positionWeight = index < sentenceArray.length * 0.3 ? 1.2 : 1; // Boost early sentences
+      return { sentence: sentence.trim(), score: score * positionWeight, index };
+    });
+    
+    // Get top sentences
+    const topSentences = sentenceScores
+      .sort((a, b) => b.score - a.score)
+      .slice(0, sentences)
+      .sort((a, b) => a.index - b.index);
+    
+    return topSentences.map(s => s.sentence).join('. ') + '.';
   };
 
-  // Generate mindmap data from summary using XML format
-  const generateMindmapFromSummary = async () => {
-    if (!summary || isGeneratingMindmap) return;
+  // Generate mindmap structure from text
+  const generateMindmapStructure = (text: string): any => {
+    if (!text.trim()) return null;
     
-    setIsGeneratingMindmap(true);
-    setProcessingStatus(t('aiStudy.creatingKeyPointsStructure'));
-
-    try {
-      // First, generate key points in XML format
-      const xmlRequestPayload = {
-        model: "qwen-vl-max",
-        messages: [
-          {
-            role: "system",
-            content: [
-              {
-                type: "text", 
-                text: "You are an expert content structuring assistant. Convert document summaries into hierarchical XML structures with headings, sub-headings, and sub-sub-headings. Create a clear, logical hierarchy that represents the document's key points and structure."
-              }
-            ]
-          },
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: `Please analyze the following document summary and create a hierarchical XML structure with key points organized as:
-- Main headings (level 1)
-- Sub headings (level 2) 
-- Sub sub headings (level 3)
-
-Return ONLY the XML structure in this exact format:
-
-<document>
-  <heading level="1" title="Main Topic 1">
-    <heading level="2" title="Subtopic 1.1">
-      <heading level="3" title="Key Point 1.1.1"/>
-      <heading level="3" title="Key Point 1.1.2"/>
-    </heading>
-    <heading level="2" title="Subtopic 1.2">
-      <heading level="3" title="Key Point 1.2.1"/>
-    </heading>
-  </heading>
-  <heading level="1" title="Main Topic 2">
-    <heading level="2" title="Subtopic 2.1">
-      <heading level="3" title="Key Point 2.1.1"/>
-      <heading level="3" title="Key Point 2.1.2"/>
-    </heading>
-  </heading>
-</document>
-
-Document Summary to Structure:
-${summary}
-
-Return only the XML structure, no additional text or explanation.`
-              }
-            ]
-          }
-        ],
-        stream: false
-      };
-
-      setProcessingStatus(t('aiStudy.analyzingDocumentStructure'));
-
-      const xmlResponse = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(xmlRequestPayload)
+    // Extract key topics from headers and keywords
+    const lines = text.split('\n').filter(line => line.trim());
+    const headers = lines.filter(line => line.startsWith('#') || line.includes(':') || line.length < 80);
+    
+    // If no clear structure, create topic-based mindmap
+    if (headers.length < 2) {
+      const words = text.toLowerCase().split(/\W+/).filter(w => w.length > 4);
+      const wordFreq: { [key: string]: number } = {};
+      
+      words.forEach(word => {
+        wordFreq[word] = (wordFreq[word] || 0) + 1;
       });
-
-      if (!xmlResponse.ok) {
-        throw new Error(`XML API request failed: ${xmlResponse.status} ${xmlResponse.statusText}`);
-      }
-
-      const xmlData = await xmlResponse.json();
-      const xmlContent = xmlData.choices?.[0]?.message?.content || '';
       
-      setProcessingStatus(t('aiStudy.convertingToInteractiveMindmap'));
-
-      // Now convert the XML structure to mindmap JSON
-      const mindmapRequestPayload = {
-        model: "qwen-vl-max",
-        messages: [
-          {
-            role: "system",
-            content: [
-              {
-                type: "text", 
-                text: "You are a mindmap data converter. Convert XML hierarchical structures into JSON format suitable for interactive tree visualization. Create a well-structured tree with proper nesting and clear relationships."
-              }
-            ]
-          },
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: `Convert the following XML structure into a hierarchical JSON mindmap format. Return ONLY valid JSON in this exact format:
-
-{
-  "name": "Document Overview",
-  "children": [
-    {
-      "name": "Main Topic 1",
-      "children": [
-        {
-          "name": "Subtopic 1.1",
-          "children": [
-            {"name": "Key Point 1.1.1"},
-            {"name": "Key Point 1.1.2"}
-          ]
-        },
-        {
-          "name": "Subtopic 1.2",
-          "children": [
-            {"name": "Key Point 1.2.1"}
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Main Topic 2",
-      "children": [
-        {
-          "name": "Subtopic 2.1",
-          "children": [
-            {"name": "Key Point 2.1.1"},
-            {"name": "Key Point 2.1.2"}
-          ]
-        }
-      ]
-    }
-  ]
-}
-
-XML Structure to Convert:
-${xmlContent}
-
-Return only the JSON structure, no additional text or explanation.`
-              }
-            ]
-          }
-        ],
-        stream: false
-      };
-
-      const mindmapResponse = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(mindmapRequestPayload)
-      });
-
-      if (!mindmapResponse.ok) {
-        throw new Error(`Mindmap API request failed: ${mindmapResponse.status} ${mindmapResponse.statusText}`);
-      }
-
-      const mindmapData = await mindmapResponse.json();
-      const mindmapText = mindmapData.choices?.[0]?.message?.content || '';
+      const topWords = Object.entries(wordFreq)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 8)
+        .map(([word]) => ({ name: word.charAt(0).toUpperCase() + word.slice(1) }));
       
-      try {
-        const jsonMatch = mindmapText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const parsedData = JSON.parse(jsonMatch[0]);
-          setMindmapData(parsedData);
-          setProcessingStatus(t('aiStudy.interactiveMindmapGenerated'));
-        } else {
-          throw new Error('No valid JSON found in mindmap response');
-        }
-      } catch (error) {
-        console.error('Error parsing mindmap JSON:', error);
-        
-        // Enhanced fallback structure based on summary content
-        const summaryLines = summary.split('\n').filter(line => line.trim());
-        const headings = summaryLines.filter(line => line.startsWith('#'));
-        
-        let fallbackData;
-        
-        if (headings.length > 0) {
-          // Create structure based on actual headings from summary
-          const children = headings.slice(0, 6).map((heading, index) => {
-            const cleanHeading = heading.replace(/^#+\s*/, '').replace(/[📋🎯📊🔍💡✨]/g, '').trim();
-            return {
-              name: cleanHeading || `Section ${index + 1}`,
-              children: [
-                { name: "Key Concept" },
-                { name: "Important Details" },
-                { name: "Main Insights" }
-              ]
-            };
-          });
-          
-          fallbackData = {
-            name: file?.name?.replace(/\.[^/.]+$/, '') || "Document Summary",
-            children: children
-          };
-        } else {
-          // Default fallback structure
-          fallbackData = {
-            name: file?.name?.replace(/\.[^/.]+$/, '') || "Document Summary",
-            children: [
-              {
-                name: "Executive Summary",
-                children: [
-                  { name: "Main Purpose" },
-                  { name: "Key Findings" },
-                  { name: "Primary Objectives" }
-                ]
-              },
-              {
-                name: "Key Points",
-                children: [
-                  { name: "Important Concept 1" },
-                  { name: "Important Concept 2" },
-                  { name: "Critical Insights" }
-                ]
-              },
-              {
-                name: "Analysis",
-                children: [
-                  { name: "Detailed Breakdown" },
-                  { name: "Supporting Evidence" },
-                  { name: "Implications" }
-                ]
-              },
-              {
-                name: "Conclusions",
-                children: [
-                  { name: "Key Takeaways" },
-                  { name: "Recommendations" },
-                  { name: "Next Steps" }
-                ]
-              }
-            ]
-          };
-        }
-        
-        setMindmapData(fallbackData);
-        setProcessingStatus(t('aiStudy.usingEnhancedFallbackMindmap'));
-      }
-    } catch (error) {
-      console.error('Error generating mindmap:', error);
-      setProcessingStatus(t('aiStudy.errorGeneratingMindmap'));
-      
-      // Fallback mindmap based on document type
-      const fallbackData = {
-        name: file?.name?.replace(/\.[^/.]+$/, '') || "Document Analysis",
+      return {
+        name: "Document Summary",
         children: [
           {
-            name: "Document Overview",
-            children: [
-              { name: "Main Topic" },
-              { name: "Document Type" },
-              { name: "Key Purpose" }
-            ]
+            name: "Key Topics",
+            children: topWords.slice(0, 4)
           },
           {
-            name: "Content Analysis",
-            children: [
-              { name: "Primary Themes" },
-              { name: "Important Data" },
-              { name: "Key Arguments" }
-            ]
-          },
-          {
-            name: "Insights",
-            children: [
-              { name: "Main Conclusions" },
-              { name: "Critical Points" },
-              { name: "Implications" }
-            ]
+            name: "Additional Concepts", 
+            children: topWords.slice(4, 8)
           }
         ]
       };
-      setMindmapData(fallbackData);
+    }
+    
+    // Create structured mindmap from headers
+    const topics = headers.slice(0, 6).map(header => {
+      const cleanHeader = header.replace(/^#+\s*/, '').replace(/[:\.]+$/, '').trim();
+      return { name: cleanHeader || "Topic" };
+    });
+    
+    const midpoint = Math.ceil(topics.length / 2);
+    
+    return {
+      name: "Document Overview",
+      children: [
+        {
+          name: "Main Topics",
+          children: topics.slice(0, midpoint)
+        },
+        {
+          name: "Additional Points",
+          children: topics.slice(midpoint)
+        }
+      ]
+    };
+  };
+
+  // Improved summarize text with live streaming simulation
+  const summarizeText = async (text: string): Promise<string> => {
+    if (!text.trim()) {
+      throw new Error('Please enter some text to summarize');
+    }
+
+    setIsLoadingSummary(true);
+    setErrorMessage('');
+    setCurrentDocumentId(null); // Reset for new document
+    setStreamingText('');
+
+    try {
+      // Generate summary using extractive method
+      const generatedSummary = extractiveSummarize(text, 5);
+      
+      // Enhance with basic formatting
+      const formattedSummary = `# Document Summary\n\n## Key Points:\n\n${generatedSummary}\n\n## Overview:\nThis summary was generated from your input text, highlighting the most important sentences and concepts.`;
+      
+      // Simulate streaming for better UX
+      let currentText = '';
+      const words = formattedSummary.split(' ');
+      
+      for (let i = 0; i < words.length; i++) {
+        currentText += words[i] + ' ';
+        setStreamingText(currentText);
+        await new Promise(resolve => setTimeout(resolve, 50)); // Simulate processing delay
+      }
+      
+      setSummary(formattedSummary);
+      setSummaryComplete(true);
+      
+      // Save summary immediately after generation and wait for completion
+      try {
+        await saveSummaryRealTime(
+          'Text Summary - ' + new Date().toLocaleDateString(),
+          formattedSummary,
+          'text',
+          text
+        );
+      } catch (saveError) {
+        console.warn('API save failed but continuing workflow:', saveError);
+        addDebugLog('⚠️ API save failed, using localStorage fallback');
+        // Continue with localStorage save
+        const historyItem: SummaryHistoryItem = {
+          id: Date.now().toString(),
+          title: 'Text Summary - ' + new Date().toLocaleDateString(),
+          summary: formattedSummary,
+          mindmapData: null,
+          timestamp: new Date(),
+          sourceType: 'text',
+        };
+        setSummaryHistory(prev => [historyItem, ...prev]);
+        localStorage.setItem('documentSummarizerHistory', JSON.stringify([historyItem, ...summaryHistory]));
+      }
+      
+      // Auto-generate mindmap after summary is saved
+      setTimeout(() => {
+        generateMindmapFromSummary();
+      }, 200); // Small delay to ensure save is complete
+      
+      console.log('✅ Text summarization completed');
+      return formattedSummary;
+      
+    } catch (error) {
+      console.error('Error summarizing text:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Failed to summarize text';
+      setErrorMessage(errorMsg);
+      throw error;
     } finally {
-      setIsGeneratingMindmap(false);
-      setTimeout(() => setProcessingStatus(''), 3000);
+      setIsLoadingSummary(false);
     }
   };
 
-  // Add to history with enhanced data structure
-  const addToHistory = (title: string, summary: string, mindmapData: any, sourceType: 'file' | 'text', fileName?: string, documentPages?: string[], pageSummaries?: PageSummary[], originalFile?: File) => {
-    const newItem: SummaryHistoryItem = {
-      id: Date.now().toString(),
+  // Generate mindmap data from summary
+  const generateMindmapFromSummary = async () => {
+    if (!summary.trim()) {
+      setErrorMessage('Please generate a summary first before creating a mind map');
+      return;
+    }
+
+    setIsLoadingMindmap(true);
+    setMindmapError('');
+
+    try {
+      // Generate mindmap structure
+      const mindmapStructure = generateMindmapStructure(summary);
+      
+      if (mindmapStructure) {
+        setMindmapData(mindmapStructure);
+        
+        // Save mindmap immediately after generation (non-blocking)
+        saveMindmapRealTime(mindmapStructure).catch(error => {
+          console.warn('Mindmap API save failed but continuing workflow:', error);
+        });
+        
+        console.log('✅ Mind map generated successfully');
+      } else {
+        throw new Error('Unable to generate mindmap from summary');
+      }
+      
+    } catch (error) {
+      console.error('Error generating mindmap:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Failed to generate mind map';
+      setMindmapError(errorMsg);
+      setErrorMessage(errorMsg);
+    } finally {
+      setIsLoadingMindmap(false);
+    }
+  };
+
+  // Add to history with enhanced data structure - now saves to API
+  const addToHistory = async (
+    title: string, 
+    summary: string, 
+    mindmapData: any, 
+    sourceType: 'file' | 'text',
+    fileName?: string, 
+    documentPages?: string[], 
+    pageSummaries?: PageSummary[], 
+    originalFile?: File,
+    textInput?: string
+  ) => {
+    // Require authentication for saving history
+    if (!currentUserId) {
+      console.warn('⚠️ Cannot save document summary - user not authenticated');
+      return;
+    }
+
+    const newEntry: FrontendSummaryItem = {
+      id: Math.random().toString(36).substr(2, 9),
       title,
       summary,
       mindmapData,
@@ -927,9 +887,140 @@ Return only the JSON structure, no additional text or explanation.`
       fileName,
       documentPages,
       pageSummaries,
-      file: originalFile
+      file: originalFile,
     };
-    setSummaryHistory(prev => [newItem, ...prev.slice(0, 19)]);
+
+    // Update local state immediately for responsive UI
+    setSummaryHistory(prev => [newEntry, ...prev]);
+
+    // Try to save to API (non-blocking)
+    try {
+      const savedId = await saveToAPIRealTime(
+        title, 
+        summary, 
+        mindmapData, 
+        sourceType,
+        textInput,
+        fileName, 
+        documentPages, 
+        pageSummaries, 
+        originalFile
+      );
+      
+      if (savedId) {
+        // Update the entry with the actual API ID
+        newEntry.id = savedId;
+        setSummaryHistory(prev => 
+          prev.map(item => item.id === newEntry.id ? { ...item, id: savedId } : item)
+        );
+      }
+    } catch (error) {
+      console.error('❌ API save failed - authentication required:', error);
+      addDebugLog('⚠️ API save failed, using localStorage fallback');
+      // Remove from local state if API save fails (require authentication)
+      setSummaryHistory(prev => prev.filter(item => item.id !== newEntry.id));
+    }
+  };
+
+  // Add debug log function
+  const addDebugLog = (message: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setApiDebugLog(prev => [`[${timestamp}] ${message}`, ...prev.slice(0, 9)]); // Keep last 10 messages
+  };
+
+  // Save summary immediately when generated (before mindmap) - non-blocking
+  const saveSummaryRealTime = async (title: string, summary: string, sourceType: 'file' | 'text', textInput?: string, fileName?: string, documentPages?: string[], pageSummaries?: PageSummary[], originalFile?: File) => {
+    console.log('💾 Saving summary in real-time...');
+    addDebugLog('💾 Starting summary save...');
+    
+    try {
+      const savedId = await saveToAPIRealTime(
+        title, 
+        summary, 
+        {}, // Empty mindmap for now
+        sourceType,
+        textInput,
+        fileName, 
+        documentPages, 
+        pageSummaries, 
+        originalFile,
+        false // New document
+      );
+      
+      if (savedId) {
+        setCurrentDocumentId(savedId);
+        console.log('✅ Summary saved with ID:', savedId);
+        addDebugLog(`✅ Summary saved (ID: ${savedId.substring(0, 8)}...)`);
+      }
+    } catch (error) {
+      console.warn('Summary save failed:', error);
+      addDebugLog(`❌ Summary save failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  // Update with mindmap when generated - non-blocking
+  const saveMindmapRealTime = async (mindmapData: any) => {
+    console.log('🗺️ Saving mindmap in real-time...');
+    addDebugLog('🗺️ Starting mindmap save...');
+    
+    // Don't block the UI - run in background
+    setTimeout(async () => {
+      try {
+        if (currentDocumentId) {
+          await saveToAPIRealTime(
+            '', // Title not needed for update
+            '', // Summary not needed for update
+            mindmapData,
+            'text', // Dummy value for update
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            true // This is an update
+          );
+          console.log('✅ Mindmap saved successfully');
+          addDebugLog('✅ Mindmap saved successfully');
+          
+          // Update the mindmap in local history as well
+          setSummaryHistory(prev => prev.map(item => {
+            if (item.id === currentDocumentId) {
+              return { ...item, mindmapData };
+            }
+            return item;
+          }));
+        } else {
+          console.log('No current document ID for mindmap update');
+          addDebugLog('⚠️ No document ID available for mindmap save');
+        }
+      } catch (error) {
+        console.warn('Mindmap save failed:', error);
+        addDebugLog(`❌ Mindmap save failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }, 100); // Small delay to ensure document ID is set
+  };
+
+  // Delete from history with API integration
+  const deleteFromHistory = async (itemId: string) => {
+    // Require authentication for deleting
+    if (!currentUserId) {
+      console.warn('⚠️ Cannot delete document summary - user not authenticated');
+      return;
+    }
+
+    // Remove from local state immediately for responsive UI
+    setSummaryHistory(prev => prev.filter(item => item.id !== itemId));
+
+    // Try to delete from API
+    try {
+      await documentSummarizerService.deleteDocumentSummary(itemId, currentUserId);
+      console.log('✅ Successfully deleted from API');
+    } catch (error) {
+      console.error('❌ Error deleting from API:', error);
+      // Add the item back to local state if API delete failed
+      // (This requires re-fetching history or storing the item temporarily)
+      // For now, we'll just log the error
+    }
   };
 
   // Load from history with enhanced restoration
@@ -1187,7 +1278,7 @@ Return only the JSON structure, no additional text or explanation.`
   // Summarize individual page content
   const summarizePageContent = async (pageImage: string, pageNumber: number): Promise<string> => {
     const requestPayload = {
-      model: "qwen-vl-max",
+      model: "doubao-seed-1-6-vision-250815",
       messages: [
         {
           role: "system",
@@ -1235,10 +1326,10 @@ Please provide a well-structured summary using proper markdown formatting.`
       stream: true
     };
 
-    const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
+    const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
+        'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || '4ca49c30-f9e7-467e-8269-cc156c131881'}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(requestPayload)
@@ -1391,133 +1482,81 @@ Please provide a well-structured summary using proper markdown formatting.`
 
   // Generate comprehensive summary from all page summaries
   const generateComprehensiveSummary = async (allPageContent: string, documentTitle: string) => {
-    const requestPayload = {
-      model: "qwen-vl-max",
-      messages: [
-        {
-          role: "system",
-          content: [
-            {
-              type: "text", 
-              text: "You are an expert document summarization assistant. Create a comprehensive, well-structured summary that synthesizes information from multiple pages of a document. Focus on creating a cohesive narrative that captures the document's main themes, key insights, and important details while maintaining logical flow and structure."
-            }
-          ]
-        },
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: `Please create a comprehensive summary of this document by synthesizing the page-by-page analysis provided below. Structure your summary as follows:
-
-## 📋 Executive Summary
-Brief overview of the document's main purpose and key findings
-
-## 🎯 Key Themes & Topics
-Main themes and topics covered throughout the document
-
-## 📊 Important Information
-- Critical facts, data, and insights
-- Key arguments and conclusions
-- Important references or citations
-
-## 🔍 Detailed Analysis
-More in-depth breakdown of the content with subsections as needed
-
-## 💡 Key Takeaways
-- Summary of main conclusions
-- Important implications
-- Actionable insights
-
-**Document Title:** ${documentTitle}
-
-**Page-by-page content to synthesize:**
-${allPageContent}
-
-Please provide a well-structured, comprehensive summary that creates a cohesive understanding of the entire document.`
-            }
-          ]
-        }
-      ],
-      stream: true
-    };
-
-    const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestPayload)
-    });
-
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    if (!allPageContent.trim()) {
+      setErrorMessage('No content available to summarize');
+      return;
     }
 
-    const reader = response.body?.getReader();
-    if (!reader) {
-      throw new Error('No response body reader available');
-    }
-
-    let fullContent = '';
+    setIsLoadingSummary(true);
+    setErrorMessage('');
+    setCurrentDocumentId(null); // Reset for new document
     setStreamingText('');
 
     try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = new TextDecoder().decode(value);
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') continue;
-
-            try {
-              const parsed = JSON.parse(data);
-              const content_chunk = parsed.choices?.[0]?.delta?.content;
-              
-              if (content_chunk) {
-                fullContent += content_chunk;
-                setStreamingText(fullContent);
-                
-                // Auto-scroll to show latest content
-                if (autoScroll) {
-                  setTimeout(scrollToBottom, 50);
-                }
-              }
-            } catch (parseError) {
-              continue;
-            }
-          }
-        }
+      // Generate summary using extractive method
+      const generatedSummary = extractiveSummarize(allPageContent, 8); // More sentences for files
+      
+      // Enhance with structured formatting for documents
+      const formattedSummary = `# ${documentTitle || 'Document Summary'}\n\n## Executive Summary:\n\n${generatedSummary}\n\n## Document Analysis:\nThis summary was generated from ${pageSummaries.length} page(s) of content, extracting the most relevant and important information from your document.`;
+      
+      // Simulate streaming for better UX
+      let currentText = '';
+      const words = formattedSummary.split(' ');
+      
+      for (let i = 0; i < words.length; i++) {
+        currentText += words[i] + ' ';
+        setStreamingText(currentText);
+        await new Promise(resolve => setTimeout(resolve, 30)); // Faster for longer content
       }
-    } finally {
-      reader.releaseLock();
-    }
-
-    setSummary(fullContent.trim());
+      
+      setSummary(formattedSummary);
     setSummaryComplete(true);
-    setProcessingStatus(t('aiStudy.comprehensiveSummaryGenerated'));
-    
-    // Add to history with enhanced data
-    if (fullContent.trim()) {
-      addToHistory(
-        documentTitle || 'Document Summary',
-        fullContent.trim(),
-        null, // mindmap will be generated automatically
+      
+      // Save summary immediately after generation and wait for completion
+      try {
+        await saveSummaryRealTime(
+          documentTitle || 'Document Summary - ' + new Date().toLocaleDateString(),
+          formattedSummary,
         'file',
-        file?.name,
+          undefined, // No text input for file
+          file?.name || 'uploaded_document',
         documentPages,
         pageSummaries,
         file || undefined
       );
+      } catch (saveError) {
+        console.warn('API save failed but continuing workflow:', saveError);
+        addDebugLog('⚠️ API save failed, using localStorage fallback');
+        // Continue with localStorage save
+        const historyItem: SummaryHistoryItem = {
+          id: Date.now().toString(),
+          title: documentTitle || 'Document Summary - ' + new Date().toLocaleDateString(),
+          summary: formattedSummary,
+          mindmapData: null,
+          timestamp: new Date(),
+          sourceType: 'file',
+          fileName: file?.name || 'uploaded_document',
+          documentPages,
+          pageSummaries,
+        };
+        setSummaryHistory(prev => [historyItem, ...prev]);
+        localStorage.setItem('documentSummarizerHistory', JSON.stringify([historyItem, ...summaryHistory]));
+      }
+      
+      // Automatically generate mind map after summary is saved
+      setTimeout(() => {
+        generateMindmapFromSummary();
+      }, 200); // Small delay to ensure save is complete
+      
+      console.log('✅ Comprehensive summary generated successfully');
+      
+    } catch (error) {
+      console.error('Error generating comprehensive summary:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Failed to generate summary';
+      setErrorMessage(errorMsg);
+    } finally {
+      setIsLoadingSummary(false);
     }
-    
-    return fullContent.trim();
   };
 
   // Download content in different formats
@@ -1529,29 +1568,64 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
     
     switch (format) {
       case 'txt':
-        const blob = new Blob([content], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${fileName}-summary.txt`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        downloadSummaryAsText(fileName);
         break;
         
       case 'pdf':
-        const pdf = new jsPDF();
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4',
+          putOnlyUsedFonts: true
+        });
         const lines = content.split('\n');
         let yPosition = 20;
+        const margin = 10;
+        const pageHeight = pdf.internal.pageSize.height;
+        const lineHeight = 7;
+        const maxY = pageHeight - margin;
+        
+        // Set font size and type for better readability
+        pdf.setFontSize(11);
+        
+        // Use a font that supports Unicode characters
+        pdf.addFont('Helvetica', 'Helvetica', 'normal');
+        pdf.setFont('Helvetica');
         
         lines.forEach(line => {
-          if (yPosition > 280) {
+          // Check if we need a new page
+          if (yPosition > maxY) {
             pdf.addPage();
             yPosition = 20;
           }
-          pdf.text(line, 10, yPosition);
-          yPosition += 7;
+          
+          // Handle long lines by wrapping text
+          if (line.length > 80) {
+            const splitLines = pdf.splitTextToSize(line, pdf.internal.pageSize.width - (margin * 2));
+            splitLines.forEach((splitLine: string) => {
+              // Use the text method with encoding option
+              pdf.text(splitLine, margin, yPosition, { 
+                charSpace: 0,
+                lineHeightFactor: 1.15,
+                maxWidth: pdf.internal.pageSize.width - (margin * 2)
+              });
+              yPosition += lineHeight;
+              
+              // Check if we need a new page after adding a wrapped line
+              if (yPosition > maxY) {
+                pdf.addPage();
+                yPosition = 20;
+              }
+            });
+          } else {
+            // Use the text method with encoding option
+            pdf.text(line, margin, yPosition, { 
+              charSpace: 0,
+              lineHeightFactor: 1.15,
+              maxWidth: pdf.internal.pageSize.width - (margin * 2)
+            });
+            yPosition += lineHeight;
+          }
         });
         
         pdf.save(`${fileName}-summary.pdf`);
@@ -1583,6 +1657,71 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
     }
     
     setShowDownloadOptions(false);
+  };
+  
+  // Download summary as text file
+  const downloadSummaryAsText = (fileName: string = 'document-summary') => {
+    const content = summary || streamingText;
+    if (!content) return;
+    
+    // Clean the filename to ensure it's valid
+    const cleanFileName = fileName.replace(/[\/:*?"<>|]/g, '-');
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+    const safeFileName = `${cleanFileName}-summary-${timestamp}.txt`;
+    
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = safeFileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    // Log the download for analytics
+    console.log('✅ Summary downloaded as text file');
+    addDebugLog(`📄 Summary downloaded as text: ${safeFileName}`);
+  };
+  
+  // Download mindmap as image
+  const downloadMindmapAsImage = () => {
+    if (!mindmapData || !mindmapChart.current) return;
+    
+    try {
+      // Use the chart instance directly from the ref
+      const chart = mindmapChart.current;
+      if (!chart) {
+        console.error('Cannot find ECharts instance');
+        return;
+      }
+      
+      // Get the data URL of the chart with higher quality settings
+      const dataURL = chart.getDataURL({
+        type: 'png',
+        pixelRatio: 3, // Increased from 2 to 3 for higher quality
+        backgroundColor: '#1e293b',
+        excludeComponents: ['toolbox'] // Exclude toolbox from the exported image
+      });
+      
+      // Create a link to download the image
+      const link = document.createElement('a');
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+      link.download = `mindmap-${timestamp}.png`;
+      link.href = dataURL;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setShowDownloadOptions(false);
+      
+      // Log the download for analytics
+      console.log('✅ Mindmap downloaded as image');
+      addDebugLog('🖼️ Mindmap downloaded as image');
+    } catch (error) {
+      console.error('Error downloading mindmap as image:', error);
+      setErrorMessage('Failed to download mindmap as image');
+    }
   };
 
   // Copy content to clipboard
@@ -1629,6 +1768,143 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
       fileInputRef.current.value = '';
     }
   };
+
+  // Real-time save function - saves immediately when content is generated
+  const saveToAPIRealTime = async (
+    title: string, 
+    summary: string, 
+    mindmapData: any, 
+    sourceType: 'file' | 'text',
+    textInput?: string,
+    fileName?: string, 
+    documentPages?: string[], 
+    pageSummaries?: PageSummary[], 
+    originalFile?: File,
+    isUpdate: boolean = false
+  ): Promise<string | null> => {
+    if (!currentUserId) {
+      console.log('📱 No user ID available for API save');
+      return null;
+    }
+
+    try {
+      setIsSavingToHistory(true);
+      
+      const metadata = {
+        hasDocumentPages: !!documentPages?.length,
+        pageCount: documentPages?.length || 0,
+        completedPages: pageSummaries?.filter(ps => ps.isComplete)?.length || 0,
+        savedAt: new Date().toISOString(),
+        aiModel: 'client-side-processing',
+        processingTime: 0,
+      };
+
+      if (isUpdate && currentDocumentId) {
+        // Update existing document
+        const updateData = {
+          uid: currentUserId,
+          title,
+          summary,
+          mindmapData,
+          metadata,
+        };
+        
+        const response = await documentSummarizerService.updateDocumentSummary(currentDocumentId, updateData);
+        console.log('✅ Successfully updated document in API:', response.documentSummary.id);
+        return response.documentSummary.id;
+      } else {
+        // Create new document - don't send documentPages to avoid payload size issues
+        const saveData = {
+          uid: currentUserId,
+          title,
+          summary,
+          sourceType,
+          textInput,
+          fileName: sourceType === 'file' ? (fileName || originalFile?.name || 'uploaded_document') : undefined,
+          fileType: originalFile?.type,
+          fileSize: originalFile?.size,
+          // Don't send documentPages (base64 images are too large)
+          // documentPages,
+          pageSummaries: pageSummaries?.map(ps => ({
+            pageNumber: ps.pageNumber,
+            summary: ps.summary,
+            isLoading: ps.isLoading,
+            isComplete: ps.isComplete,
+          })),
+          mindmapData,
+          metadata,
+        };
+        
+        const response = await documentSummarizerService.saveDocumentSummary(saveData);
+        console.log('✅ Successfully saved document to API:', response.documentSummary.id);
+        setCurrentDocumentId(response.documentSummary.id);
+        return response.documentSummary.id;
+      }
+    } catch (error) {
+      console.error('❌ Error saving to API:', error);
+      return null;
+    } finally {
+      setIsSavingToHistory(false);
+    }
+  };
+
+  // Early return if user is not authenticated (after all hooks)
+  if (!authLoading && !isAuthenticated) {
+    return (
+      <div className={className}>
+        <motion.div 
+          className="bg-gradient-to-br from-slate-600/20 to-slate-700/20 backdrop-blur-sm border border-orange-500/20 rounded-xl p-8 text-center shadow-xl"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <motion.div
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <IconComponent icon={AiOutlineRobot} className="h-16 w-16 mx-auto mb-4 text-orange-400" />
+          </motion.div>
+          <h2 className="text-2xl font-bold text-orange-400 mb-4">Authentication Required</h2>
+          <p className="text-slate-300 mb-6 text-lg leading-relaxed">
+            Please sign in to your account to use the Document Summarizer. This feature requires authentication to save your summaries and provide personalized assistance.
+          </p>
+          <div className="space-y-4">
+            <motion.button
+              onClick={() => window.location.href = '/login'}
+              className="px-8 py-3 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 mx-auto block"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              Sign In to Continue
+            </motion.button>
+            <p className="text-slate-400 text-sm">
+              Don't have an account? <a href="/signup" className="text-orange-400 hover:text-orange-300 underline">Sign up here</a>
+            </p>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Loading state for authentication
+  if (authLoading) {
+    return (
+      <div className={className}>
+        <motion.div 
+          className="bg-gradient-to-br from-slate-600/20 to-slate-700/20 backdrop-blur-sm border border-cyan-500/20 rounded-xl p-8 text-center shadow-xl"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          <motion.div
+            className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full mx-auto mb-4"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          />
+          <p className="text-slate-300 text-lg">Checking authentication...</p>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className={className}>
@@ -2155,24 +2431,49 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
                     >
-                      <button
-                        onClick={() => handleDownloadContent('txt')}
-                        className="block w-full text-left px-4 py-2 text-slate-300 hover:bg-slate-600 rounded-t-lg transition-colors"
-                      >
-                        {t('common.download')} as TXT
-                      </button>
-                      <button
-                        onClick={() => handleDownloadContent('pdf')}
-                        className="block w-full text-left px-4 py-2 text-slate-300 hover:bg-slate-600 transition-colors"
-                      >
-                        {t('common.download')} as PDF
-                      </button>
-                      <button
-                        onClick={() => handleDownloadContent('doc')}
-                        className="block w-full text-left px-4 py-2 text-slate-300 hover:bg-slate-600 rounded-b-lg transition-colors"
-                      >
-                        {t('common.download')} as DOCX
-                      </button>
+                      {/* Summary download options */}
+                      {!showMindmap && (
+                        <>
+                          <div className="px-4 py-2 text-xs text-slate-400 border-b border-slate-600 rounded-t-lg">Summary Options</div>
+                          <button
+                            onClick={() => handleDownloadContent('txt')}
+                            className="block w-full text-left px-4 py-2 text-slate-300 hover:bg-slate-600 transition-colors"
+                          >
+                            {t('common.download')} as TXT
+                          </button>
+                          <button
+                            onClick={() => handleDownloadContent('pdf')}
+                            className="block w-full text-left px-4 py-2 text-slate-300 hover:bg-slate-600 transition-colors"
+                          >
+                            {t('common.download')} as PDF
+                          </button>
+                          <button
+                            onClick={() => handleDownloadContent('doc')}
+                            className="block w-full text-left px-4 py-2 text-slate-300 hover:bg-slate-600 rounded-b-lg transition-colors"
+                          >
+                            {t('common.download')} as DOCX
+                          </button>
+                        </>
+                      )}
+                      
+                      {/* Mindmap download options */}
+                      {showMindmap && (
+                        <>
+                          <div className="px-4 py-2 text-xs text-slate-400 border-b border-slate-600 rounded-t-lg">Mindmap Options</div>
+                          <button
+                            onClick={downloadMindmapAsImage}
+                            className="block w-full text-left px-4 py-2 text-slate-300 hover:bg-slate-600 transition-colors"
+                          >
+                            {t('common.download')} as PNG
+                          </button>
+                          <button
+                            onClick={() => downloadSummaryAsText()}
+                            className="block w-full text-left px-4 py-2 text-slate-300 hover:bg-slate-600 rounded-b-lg transition-colors"
+                          >
+                            {t('common.download')} Summary as TXT
+                          </button>
+                        </>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -2215,6 +2516,18 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
                 <span className="bg-cyan-500/20 text-cyan-300 px-3 py-1 rounded-full text-sm font-medium">
                   {summaryHistory.length} items
                 </span>
+                {isLoadingHistory && (
+                  <div className="flex items-center space-x-2 bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full text-sm font-medium">
+                    <IconComponent icon={AiOutlineLoading3Quarters} className="h-4 w-4 animate-spin" />
+                    <span>Loading...</span>
+                  </div>
+                )}
+                {isSavingToHistory && (
+                  <div className="flex items-center space-x-2 bg-green-500/20 text-green-300 px-3 py-1 rounded-full text-sm font-medium">
+                    <IconComponent icon={AiOutlineLoading3Quarters} className="h-4 w-4 animate-spin" />
+                    <span>Saving...</span>
+                  </div>
+                )}
               </div>
               <motion.button
                 onClick={() => setShowHistory(false)}
@@ -2227,6 +2540,21 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
                 </svg>
               </motion.button>
             </div>
+            
+            {/* Error Message */}
+            {historyError && (
+              <motion.div 
+                className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-300 text-sm"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                <div className="flex items-center space-x-2">
+                  <IconComponent icon={FiTrash2} className="h-4 w-4" />
+                  <span>Error: {historyError}</span>
+                </div>
+              </motion.div>
+            )}
             
             <div className="space-y-4 max-h-96 overflow-y-auto custom-scrollbar" ref={summaryContainerRef}>
               {summaryHistory.length > 0 ? (
@@ -2277,7 +2605,7 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
                       <motion.button
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSummaryHistory(prev => prev.filter(h => h.id !== item.id));
+                          deleteFromHistory(item.id);
                         }}
                         className="opacity-0 group-hover:opacity-100 p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all duration-300 ml-3"
                         whileHover={{ scale: 1.1 }}
@@ -2290,14 +2618,30 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
                 ))
               ) : (
                 <div className="text-center py-12 text-slate-400">
+                  {isLoadingHistory ? (
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                    >
+                      <IconComponent icon={AiOutlineLoading3Quarters} className="mx-auto text-6xl mb-4 opacity-50" />
+                    </motion.div>
+                  ) : (
                   <motion.div
                     animate={{ scale: [1, 1.1, 1] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   >
                     <IconComponent icon={AiOutlineHistory} className="mx-auto text-6xl mb-4 opacity-50" />
                   </motion.div>
-                  <p className="text-lg font-medium text-slate-300 mb-2">No summary history yet</p>
-                  <p className="text-sm">Your document summaries will appear here after processing</p>
+                  )}
+                  <p className="text-lg font-medium text-slate-300 mb-2">
+                    {isLoadingHistory ? 'Loading history...' : 'No summary history yet'}
+                  </p>
+                  <p className="text-sm">
+                    {isLoadingHistory 
+                      ? 'Please wait while we fetch your document summaries'
+                      : 'Your document summaries will appear here after processing'
+                    }
+                  </p>
                 </div>
               )}
             </div>
@@ -2407,6 +2751,66 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
           ) : null}
         </div>
       </PortalModal>
+
+      {/* Debug Console for API Status */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <motion.button
+            onClick={() => setShowDebugConsole(!showDebugConsole)}
+            className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg shadow-lg transition-all duration-200 text-sm font-medium mb-2 block ml-auto"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            {showDebugConsole ? '🐛 Hide Debug' : '🐛 Show Debug'}
+          </motion.button>
+          
+          {showDebugConsole && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className="bg-slate-800/95 backdrop-blur-sm border border-slate-600 rounded-lg p-4 w-80 max-h-60 overflow-y-auto shadow-xl"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-cyan-400 font-medium text-sm">API Debug Console</h4>
+                <button
+                  onClick={() => setApiDebugLog([])}
+                  className="text-slate-400 hover:text-white text-xs px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded transition-colors"
+                >
+                  Clear
+                </button>
+              </div>
+              <div className="space-y-1">
+                {apiDebugLog.length === 0 ? (
+                  <p className="text-slate-400 text-xs">No API activity yet...</p>
+                ) : (
+                  apiDebugLog.map((log, index) => (
+                    <div
+                      key={index}
+                      className={`text-xs p-2 rounded ${
+                        log.includes('✅') 
+                          ? 'bg-green-900/30 text-green-300' 
+                          : log.includes('❌') 
+                          ? 'bg-red-900/30 text-red-300'
+                          : log.includes('⚠️')
+                          ? 'bg-yellow-900/30 text-yellow-300'
+                          : 'bg-slate-700/50 text-slate-300'
+                      }`}
+                    >
+                      {log}
+                    </div>
+                  ))
+                )}
+              </div>
+              <div className="mt-3 pt-2 border-t border-slate-600">
+                <p className="text-xs text-slate-400">
+                  Current Doc ID: {currentDocumentId ? currentDocumentId.substring(0, 8) + '...' : 'None'}
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </div>
+      )}
 
       {/* Custom Scrollbar Styles */}
       <style dangerouslySetInnerHTML={{
@@ -2536,4 +2940,4 @@ Please provide a well-structured, comprehensive summary that creates a cohesive 
   );
 };
 
-export default DocumentSummarizerComponent; 
+export default DocumentSummarizerComponent;

@@ -11,6 +11,7 @@ import IconComponent from './IconComponent';
 import { useResponseCheck, ResponseUpgradeModal } from '../../utils/responseChecker';
 import { useNotification } from '../../utils/NotificationContext';
 import { useLanguage } from '../../utils/LanguageContext';
+import { useAuth } from '../../utils/AuthContext';
 
 // Import markdown and math libraries
 import ReactMarkdown from 'react-markdown';
@@ -20,6 +21,112 @@ import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import 'katex/dist/katex.min.css';
+
+// API Configuration
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://server.matrixedu.ai/api' 
+  : 'https://server.matrixedu.ai/api';
+
+// Get user ID from authentication context or localStorage - proper authentication
+const getUserId = (user?: any, session?: any): string | null => {
+  // First try to get user ID from the provided authentication context
+  if (user?.id) {
+    console.log('📱 Found user ID from auth context:', user.id);
+    return user.id;
+  }
+  
+  if (session?.user?.id) {
+    console.log('📱 Found user ID from session:', session.user.id);
+    return session.user.id;
+  }
+  
+  // Try to get user ID from localStorage first (common auth pattern)
+  const userId = localStorage.getItem('userId') || localStorage.getItem('user_id');
+  if (userId && userId !== 'undefined' && userId !== 'null') {
+    console.log('📱 Found user ID in localStorage:', userId);
+    return userId;
+  }
+  
+  // Try to get from user object in localStorage
+  const userStr = localStorage.getItem('user');
+  if (userStr && userStr !== 'undefined' && userStr !== 'null') {
+    try {
+      const user = JSON.parse(userStr);
+      if (user && (user.id || user.user_id || user.uid)) {
+        const foundUserId = user.id || user.user_id || user.uid;
+        console.log('📱 Found user ID from user object:', foundUserId);
+        return foundUserId;
+      }
+    } catch (e) {
+      console.warn('Failed to parse user from localStorage');
+    }
+  }
+  
+  // Try Supabase auth patterns
+  const supabaseAuthStr = localStorage.getItem('sb-cdqrmxmqsoxncnkxiqwu-auth-token');
+  if (supabaseAuthStr && supabaseAuthStr !== 'undefined' && supabaseAuthStr !== 'null') {
+    try {
+      const authData = JSON.parse(supabaseAuthStr);
+      if (authData.user?.id) {
+        console.log('📱 Found user ID from Supabase auth:', authData.user.id);
+        return authData.user.id;
+      }
+    } catch (e) {
+      console.warn('Failed to parse Supabase auth from localStorage');
+    }
+  }
+  
+  // Check other possible Supabase auth keys
+  const keys = Object.keys(localStorage);
+  for (const key of keys) {
+    if (key.includes('supabase') || key.includes('auth')) {
+      try {
+        const data = localStorage.getItem(key);
+        if (data && data !== 'undefined' && data !== 'null') {
+          const parsed = JSON.parse(data);
+          if (parsed?.user?.id) {
+            console.log('📱 Found user ID from auth key:', key, parsed.user.id);
+            return parsed.user.id;
+          }
+        }
+      } catch (e) {
+        // Continue to next key
+      }
+    }
+  }
+  
+  // No authenticated user found
+  console.warn('⚠️ No authenticated user found');
+  return null;
+};
+
+
+// Content Writer API Interface
+interface ContentItem {
+  id: string;
+  user_id: string;
+  title: string;
+  prompt: string;
+  generated_content: string;
+  template_type: string;
+  content_type: string;
+  word_count: number;
+  tone: string;
+  font_size: number;
+  metadata: any;
+  created_at: string;
+  updated_at: string;
+}
+
+interface ContentHistoryResponse {
+  contentHistory: ContentItem[];
+  pagination: {
+    totalItems: number;
+    totalPages: number;
+    currentPage: number;
+    itemsPerPage: number;
+  };
+}
 
 // Portal Modal Component - renders at document.body level
 interface PortalModalProps {
@@ -89,6 +196,73 @@ const PortalModal: React.FC<PortalModalProps> = ({ isOpen, onClose, children, cl
 
 const ContentWriterComponent: React.FC = () => {
   const { t } = useLanguage();
+  const { user, session } = useAuth();
+  
+  // Get current user ID dynamically
+  const currentUserId = getUserId(user, session);
+
+  // Check if user is authenticated
+  useEffect(() => {
+    if (!currentUserId) {
+      console.warn('⚠️ No authenticated user found in ContentWriterComponent');
+    }
+  }, [currentUserId]);
+
+  // Add CSS styles for the range slider
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      /* Range slider styles */
+      .slider::-webkit-slider-thumb {
+        appearance: none;
+        height: 20px;
+        width: 20px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #06b6d4, #3b82f6);
+        cursor: pointer;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      }
+      
+      .slider::-moz-range-thumb {
+        height: 20px;
+        width: 20px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #06b6d4, #3b82f6);
+        cursor: pointer;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      }
+      
+      .slider::-webkit-slider-track {
+        height: 8px;
+        border-radius: 4px;
+        background: rgba(71, 85, 105, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      
+      .slider::-moz-range-track {
+        height: 8px;
+        border-radius: 4px;
+        background: rgba(71, 85, 105, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      
+      .slider:focus {
+        outline: none;
+      }
+      
+      .slider:focus::-webkit-slider-thumb {
+        box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.3);
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
   // Preprocess LaTeX for react-markdown
   const preprocessLaTeX = (content: string) => {
     return content
@@ -116,21 +290,23 @@ const ContentWriterComponent: React.FC = () => {
         </code>
       );
     },
-    h1: ({ children }: any) => <h1 className="text-2xl font-bold text-cyan-400 mt-6 mb-4 border-b-2 border-cyan-500/30 pb-2">{children}</h1>,
-    h2: ({ children }: any) => <h2 className="text-xl font-bold text-cyan-400 mt-5 mb-3 border-b border-cyan-500/20 pb-1">{children}</h2>,
-    h3: ({ children }: any) => <h3 className="text-lg font-bold text-blue-400 mt-4 mb-2 bg-blue-500/10 px-3 py-2 rounded border border-blue-500/20">{children}</h3>,
-    h4: ({ children }: any) => <h4 className="text-base font-semibold text-slate-300 mt-3 mb-2">{children}</h4>,
-    p: ({ children }: any) => <p className="text-slate-300 mb-4 leading-relaxed">{children}</p>,
-    ul: ({ children }: any) => <ul className="list-disc list-inside mb-4 text-slate-300 space-y-1">{children}</ul>,
-    ol: ({ children }: any) => <ol className="list-decimal list-inside mb-4 text-slate-300 space-y-1">{children}</ol>,
-    li: ({ children }: any) => <li className="mb-1 pl-2">{children}</li>,
+    h1: ({ children }: any) => <h1 className="text-2xl font-bold text-cyan-400 mt-6 mb-4 border-b-2 border-cyan-500/30 pb-2" style={{color: '#22d3ee !important'}}>{children}</h1>,
+    h2: ({ children }: any) => <h2 className="text-xl font-bold text-cyan-400 mt-5 mb-3 border-b border-cyan-500/20 pb-1" style={{color: '#22d3ee !important'}}>{children}</h2>,
+    h3: ({ children }: any) => <h3 className="text-lg font-bold text-blue-400 mt-4 mb-2 bg-blue-500/10 px-3 py-2 rounded border border-blue-500/20" style={{color: '#60a5fa !important'}}>{children}</h3>,
+    h4: ({ children }: any) => <h4 className="text-base font-semibold text-slate-300 mt-3 mb-2" style={{color: '#cbd5e1 !important'}}>{children}</h4>,
+    h5: ({ children }: any) => <h5 className="text-sm font-semibold text-slate-300 mt-3 mb-2" style={{color: '#cbd5e1 !important'}}>{children}</h5>,
+    h6: ({ children }: any) => <h6 className="text-sm font-semibold text-slate-300 mt-3 mb-2" style={{color: '#cbd5e1 !important'}}>{children}</h6>,
+    p: ({ children }: any) => <p className="text-slate-300 mb-4 leading-relaxed" style={{color: '#cbd5e1 !important'}}>{children}</p>,
+    ul: ({ children }: any) => <ul className="list-disc list-inside mb-4 text-slate-300 space-y-1" style={{color: '#cbd5e1 !important'}}>{children}</ul>,
+    ol: ({ children }: any) => <ol className="list-decimal list-inside mb-4 text-slate-300 space-y-1" style={{color: '#cbd5e1 !important'}}>{children}</ol>,
+    li: ({ children }: any) => <li className="mb-1 pl-2 text-slate-300" style={{color: '#cbd5e1 !important'}}>{children}</li>,
     blockquote: ({ children }: any) => (
-      <blockquote className="border-l-4 border-cyan-500 pl-4 my-4 bg-cyan-500/10 py-3 rounded-r italic text-slate-300 backdrop-blur-sm">
+      <blockquote className="border-l-4 border-cyan-500 pl-4 my-4 bg-cyan-500/10 py-3 rounded-r italic text-slate-300 backdrop-blur-sm" style={{color: '#cbd5e1 !important'}}>
         {children}
       </blockquote>
     ),
-    strong: ({ children }: any) => <strong className="font-bold text-slate-200 bg-yellow-500/20 px-1 rounded">{children}</strong>,
-    em: ({ children }: any) => <em className="italic text-slate-300">{children}</em>,
+    strong: ({ children }: any) => <strong className="font-bold text-slate-200 bg-yellow-500/20 px-1 rounded" style={{color: '#e2e8f0 !important'}}>{children}</strong>,
+    em: ({ children }: any) => <em className="italic text-slate-300" style={{color: '#cbd5e1 !important'}}>{children}</em>,
     table: ({ children }: any) => (
       <div className="overflow-x-auto my-4">
         <table className="min-w-full border border-slate-600 rounded-lg overflow-hidden bg-slate-700/30 backdrop-blur-sm">{children}</table>
@@ -139,10 +315,10 @@ const ContentWriterComponent: React.FC = () => {
     thead: ({ children }: any) => <thead className="bg-slate-600/50">{children}</thead>,
     tbody: ({ children }: any) => <tbody>{children}</tbody>,
     tr: ({ children }: any) => <tr className="border-b border-slate-600 hover:bg-slate-600/30">{children}</tr>,
-    th: ({ children }: any) => <th className="px-4 py-2 text-left font-semibold text-cyan-400">{children}</th>,
-    td: ({ children }: any) => <td className="px-4 py-2 text-slate-300">{children}</td>,
+    th: ({ children }: any) => <th className="px-4 py-2 text-left font-semibold text-cyan-400" style={{color: '#22d3ee !important'}}>{children}</th>,
+    td: ({ children }: any) => <td className="px-4 py-2 text-slate-300" style={{color: '#cbd5e1 !important'}}>{children}</td>,
     a: ({ children, href }: any) => (
-      <a href={href} className="text-cyan-400 hover:text-cyan-300 underline font-medium" target="_blank" rel="noopener noreferrer">
+      <a href={href} className="text-cyan-400 hover:text-cyan-300 underline font-medium" target="_blank" rel="noopener noreferrer" style={{color: '#22d3ee !important'}}>
         {children}
       </a>
     ),
@@ -162,7 +338,6 @@ const ContentWriterComponent: React.FC = () => {
   const [askAIInstruction, setAskAIInstruction] = useState('');
   const [askAISuggestion, setAskAISuggestion] = useState('');
   const [isProcessingSelection, setIsProcessingSelection] = useState(false);
-  const askAIButtonRef = useRef<HTMLDivElement>(null);
   
   // Add missing state variables for content generation
   const [contentType, setContentType] = useState('essay');
@@ -171,28 +346,16 @@ const ContentWriterComponent: React.FC = () => {
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState<'analyzing' | 'generating' | 'finalizing'>('analyzing');
   
-  const [contentHistory, setContentHistory] = useState<{ 
-    title: string, 
-    date: string, 
-    content: string,
-    template: string,
-    prompt: string 
-  }[]>([
-    { 
-      title: "College Application Essay", 
-      date: "3 days ago", 
-      content: "As I reflect on my journey through high school...",
-      template: "college-app",
-      prompt: "Write a compelling college application essay about my passion for computer science"
-    },
-    { 
-      title: "Research Paper Outline", 
-      date: "1 week ago", 
-      content: "The impact of technology on modern education...",
-      template: "research-paper",
-      prompt: "Generate an outline for a research paper on the impact of artificial intelligence in education"
-    },
-  ]);
+  // Updated contentHistory to use API data structure
+  const [contentHistory, setContentHistory] = useState<ContentItem[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [historyPagination, setHistoryPagination] = useState({
+    totalItems: 0,
+    totalPages: 0,
+    currentPage: 1,
+    itemsPerPage: 10
+  });
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const [showAIEditModal, setShowAIEditModal] = useState(false);
   const [editInstructions, setEditInstructions] = useState('');
@@ -277,21 +440,21 @@ const ContentWriterComponent: React.FC = () => {
           await delay(2000 * i); // Exponential backoff
         }
 
-        const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: "qwen-vl-max",
+        const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || '4ca49c30-f9e7-467e-8269-cc156c131881'}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: "doubao-seed-1-6-vision-250815",
             messages: [
               {
                 role: "system",
                 content: [
                   {
                     type: "text", 
-                    text: "You are a professional academic writing assistant. Generate high-quality, well-structured content based on user prompts. Focus on clarity, coherence, and academic standards. Use proper markdown formatting for better readability."
+                    text: "You are a professional academic writing assistant. You MUST strictly follow word count requirements. When a user specifies a word count, you must generate content that matches that exact count (within 10% tolerance). Always count words carefully and stop when you reach the target. Quality is important, but adhering to word count is CRITICAL."
                   }
                 ]
               },
@@ -300,24 +463,7 @@ const ContentWriterComponent: React.FC = () => {
                 content: [
                   {
                     type: "text",
-                    text: `Please help me create well-written content based on this request:
-
-${prompt}
-
-Please provide:
-1. Well-structured and organized content
-2. Clear and engaging writing style
-3. Proper grammar and formatting
-4. Relevant examples and details where appropriate
-
-Format your response with:
-- Use **bold** for important terms and concepts
-- Use proper headings and subheadings for structure
-- Use bullet points for lists and key points
-- Provide comprehensive, high-quality content
-- Make it engaging and informative
-
-Create professional, academic-quality content that meets the request requirements.`
+                    text: prompt
                   }
                 ]
               }
@@ -406,122 +552,6 @@ Create professional, academic-quality content that meets the request requirement
   };
 
   // Generate content with streaming
-  const generateContent = async () => {
-    if (!prompt.trim()) return;
-    
-    // Check responses before generating content
-    const responseResult = await checkAndUseResponse({
-      responseType: 'content_generation',
-      responsesUsed: 1
-    });
-    if (!responseResult.canProceed) {
-      setShowUpgradeModal(true);
-      setUpgradeMessage(responseResult.message || 'Please upgrade to continue');
-      return;
-    }
-    
-    setIsGenerating(true);
-    setProgress(0);
-    setCurrentStep('analyzing');
-    setGeneratedContent(''); // Clear previous content
-    setEditedContent(''); // Clear edited content too
-    
-    try {
-      const fullPrompt = `Generate ${contentType} content about: ${prompt}
-      
-      ${contentType === 'essay' ? 'Please write a well-structured essay with introduction, body paragraphs, and conclusion.' : ''}
-      ${contentType === 'article' ? 'Please write an informative article with clear headings and sections.' : ''}
-      ${contentType === 'blog' ? 'Please write an engaging blog post with a catchy introduction and conclusion.' : ''}
-      ${contentType === 'report' ? 'Please write a professional report with executive summary and detailed analysis.' : ''}
-      ${contentType === 'summary' ? 'Please write a concise summary highlighting the key points.' : ''}
-      ${contentType === 'outline' ? 'Please create a detailed outline with main points and sub-points.' : ''}
-      
-      Target length: ${wordCount} words
-      Tone: ${tone}
-      
-      Please provide high-quality, original content that is well-researched and properly structured.`;
-
-      setCurrentStep('generating');
-      setProgress(25);
-
-      let fullContent = '';
-      
-      // Use streaming API call with real-time updates
-      await makeAPICall(fullPrompt, 3, (chunk: string) => {
-        fullContent += chunk;
-        
-        // Update content in real-time for streaming effect
-        setGeneratedContent(fullContent);
-        setEditedContent(fullContent);
-        
-        // Update progress based on content length
-        const estimatedProgress = Math.min(25 + (fullContent.length / (wordCount * 6)) * 65, 90);
-        setProgress(estimatedProgress);
-      });
-
-      setCurrentStep('finalizing');
-      setProgress(95);
-      
-      // Clean up the AI response to remove unwanted text
-      let cleanedContent = fullContent
-        .replace(/^(I am [^.]*(AI|LLM|Assistant|GPT|language model)[^.]*\.)/i, '') // Remove AI self-identification
-        .replace(/^(Here'?s?( is)?( a| an| your| the)?( \d+[-\s]word)? (essay|response|text|content|output)[:.]\s*)/i, '') // Remove "Here's an essay:" type text
-        .replace(/^(In response to your request|As requested|Based on your prompt)[^.]*/i, '') // Remove other common AI prefixes
-        .replace(/^[\s\n]*/, '') // Remove leading whitespace
-        .replace(/\n*$/g, '') // Remove trailing newlines
-        .replace(/(Let me know if you|Hope this|If you need any|Do you want me to)[^]*$/i, '') // Remove trailing questions
-        .replace(/#{1,6}\s*/g, '') // Remove markdown headers
-        .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown but keep text
-        .replace(/\*(.*?)\*/g, '$1') // Remove italic markdown but keep text
-        .replace(/_(.*?)_/g, '$1') // Remove underline markdown but keep text
-        .replace(/==(.*?)==/g, '$1') // Remove highlight markdown but keep text
-        .trim();
-        
-      // Extract title if it exists 
-      let title = '';
-      const titleMatch = cleanedContent.match(/^(?:Title:?\s*)(.*?)(?:\n|$)/i);
-      if (titleMatch && titleMatch[1]) {
-        title = titleMatch[1].trim();
-      }
-        
-      // Add title back if it was removed
-      if (title && !cleanedContent.includes(title)) {
-        cleanedContent = `Title: ${title}\n\n${cleanedContent}`;
-      }
-        
-      // Final update with cleaned content
-      setGeneratedContent(cleanedContent);
-      setEditedContent(cleanedContent);
-      
-      // Add to history with template and prompt information
-      const newHistoryItem = {
-        title: title || getHistoryTitle(prompt),
-        date: 'Just now',
-        content: cleanedContent,
-        template: activeTemplate,
-        prompt: prompt
-      };
-      setContentHistory([newHistoryItem, ...contentHistory]);
-      
-      setProgress(100);
-      
-      // Small delay to show completion
-      setTimeout(() => {
-        setIsGenerating(false);
-        setProgress(0);
-        setCurrentStep('analyzing');
-      }, 500);
-      
-    } catch (error) {
-      console.error('Error generating content:', error);
-      setGeneratedContent('Error generating content. Please try again.');
-      setEditedContent('Error generating content. Please try again.');
-      setIsGenerating(false);
-      setProgress(0);
-      setCurrentStep('analyzing');
-    }
-  };
-
   const handleGenerateContent = async () => {
     if (!prompt.trim()) return;
     
@@ -543,19 +573,37 @@ Create professional, academic-quality content that meets the request requirement
     setEditedContent(''); // Clear edited content too
     
     try {
-      const fullPrompt = `Generate ${contentType} content about: ${prompt}
-      
-      ${contentType === 'essay' ? 'Please write a well-structured essay with introduction, body paragraphs, and conclusion.' : ''}
-      ${contentType === 'article' ? 'Please write an informative article with clear headings and sections.' : ''}
-      ${contentType === 'blog' ? 'Please write an engaging blog post with a catchy introduction and conclusion.' : ''}
-      ${contentType === 'report' ? 'Please write a professional report with executive summary and detailed analysis.' : ''}
-      ${contentType === 'summary' ? 'Please write a concise summary highlighting the key points.' : ''}
-      ${contentType === 'outline' ? 'Please create a detailed outline with main points and sub-points.' : ''}
-      
-      Target length: ${wordCount} words
-      Tone: ${tone}
-      
-      Please provide high-quality, original content that is well-researched and properly structured.`;
+      // Create a much more specific and strict prompt
+      const contentTypeInstructions = {
+        'essay': 'Write a well-structured essay with introduction, body paragraphs, and conclusion.',
+        'article': 'Write an informative article with clear headings and sections.',
+        'blog': 'Write an engaging blog post with a catchy introduction and conclusion.',
+        'report': 'Write a professional report with executive summary and detailed analysis.',
+        'summary': 'Write a concise summary highlighting the key points.',
+        'outline': 'Create a detailed outline with main points and sub-points.'
+      };
+
+      const fullPrompt = `STRICT WORD COUNT REQUIREMENT: You must write EXACTLY ${wordCount} words (±10 words maximum).
+
+TASK: Generate ${contentType} content about: ${prompt}
+
+REQUIREMENTS:
+- Word count: EXACTLY ${wordCount} words (this is mandatory - count carefully!)
+- Content type: ${contentType}
+- Tone: ${tone}
+- ${contentTypeInstructions[contentType as keyof typeof contentTypeInstructions] || 'Create well-structured content.'}
+
+INSTRUCTIONS:
+1. Write high-quality, original content
+2. Use proper structure and formatting
+3. Stay focused on the topic: ${prompt}
+4. CRITICALLY IMPORTANT: Count your words as you write and STOP at exactly ${wordCount} words
+5. Do not exceed the word limit under any circumstances
+6. If you reach the word count before completing a thought, end gracefully
+
+Remember: The word count of ${wordCount} words is NON-NEGOTIABLE. Quality within this constraint is what matters.
+
+Begin writing now:`;
 
       setCurrentStep('generating');
       setProgress(25);
@@ -578,8 +626,26 @@ Create professional, academic-quality content that meets the request requirement
       setCurrentStep('finalizing');
       setProgress(95);
       
-      // Clean up the AI response to remove unwanted text
-      let cleanedContent = fullContent
+      // Save the RAW AI response to database (not cleaned)
+      const rawContent = fullContent.trim() || 'I apologize, but I could not generate content. Please try again.';
+      
+      // Extract title if it exists for saving
+      let title = '';
+      const titleMatch = rawContent.match(/^(?:Title:?\s*)(.*?)(?:\n|$)/i);
+      if (titleMatch && titleMatch[1]) {
+        title = titleMatch[1].trim();
+      }
+      
+      // Save RAW content to API
+      const savedContent = await saveContentToAPI(
+        title || getHistoryTitle(prompt),
+        prompt,
+        rawContent, // Save the raw AI response
+        activeTemplate
+      );
+      
+      // Clean up the content ONLY for display purposes
+      let cleanedContent = rawContent
         .replace(/^(I am [^.]*(AI|LLM|Assistant|GPT|language model)[^.]*\.)/i, '') // Remove AI self-identification
         .replace(/^(Here'?s?( is)?( a| an| your| the)?( \d+[-\s]word)? (essay|response|text|content|output)[:.]\s*)/i, '') // Remove "Here's an essay:" type text
         .replace(/^(In response to your request|As requested|Based on your prompt)[^.]*/i, '') // Remove other common AI prefixes
@@ -593,31 +659,23 @@ Create professional, academic-quality content that meets the request requirement
         .replace(/==(.*?)==/g, '$1') // Remove highlight markdown but keep text
         .trim();
         
-      // Extract title if it exists 
-      let title = '';
-      const titleMatch = cleanedContent.match(/^(?:Title:?\s*)(.*?)(?:\n|$)/i);
-      if (titleMatch && titleMatch[1]) {
-        title = titleMatch[1].trim();
-      }
-        
       // Add title back if it was removed
       if (title && !cleanedContent.includes(title)) {
         cleanedContent = `Title: ${title}\n\n${cleanedContent}`;
       }
         
-      // Final update with cleaned content
+      // Final update with cleaned content for display
       setGeneratedContent(cleanedContent);
       setEditedContent(cleanedContent);
       
-      // Add to history with template and prompt information
-      const newHistoryItem = {
-        title: title || getHistoryTitle(prompt),
-        date: 'Just now',
-        content: cleanedContent,
-        template: activeTemplate,
-        prompt: prompt
-      };
-      setContentHistory([newHistoryItem, ...contentHistory]);
+      // Log actual word count for debugging
+      const actualWordCount = cleanedContent.split(/\s+/).filter(word => word.length > 0).length;
+      console.log(`📊 Requested: ${wordCount} words, Generated: ${actualWordCount} words`);
+      
+      if (savedContent) {
+        // Refresh history to get the latest data
+        await fetchContentHistory();
+      }
       
       setProgress(100);
       
@@ -638,38 +696,34 @@ Create professional, academic-quality content that meets the request requirement
     }
   };
 
-  const getHistoryTitle = (promptText: string) => {
-    // Extract a title from the prompt
-    return promptText.split(' ').slice(0, 4).join(' ') + '...';
+  // Delete content from history
+  const deleteContentFromHistory = async (contentId: string) => {
+    try {
+      if (!currentUserId) {
+        showSuccess('Please log in to delete content.', 'error');
+        return;
+      }
+
+      const response = await axios.delete(`${API_BASE_URL}/content-writer/${contentId}?uid=${currentUserId}`);
+      
+      if (response.data && response.data.success) {
+        showSuccess('Content deleted successfully!');
+        // Refresh history to update the list
+        await fetchContentHistory();
+      } else {
+        throw new Error('Failed to delete content');
+      }
+    } catch (error) {
+      console.error('Error deleting content:', error);
+      showSuccess('Error deleting content. Please try again.', 'error');
+    }
   };
 
-  const selectTemplate = (templateId: string) => {
-    setActiveTemplate(templateId);
-    
-    // Set default prompts based on template
-    let templatePrompt = '';
-    switch(templateId) {
-      case 'college-app':
-        templatePrompt = t('aiStudy.collegeApplicationTemplate');
-        break;
-      case 'cover-letter':
-        templatePrompt = 'Create a professional cover letter for an internship position at a tech company highlighting my skills in programming and teamwork.';
-        break;
-      case 'recommendation':
-        templatePrompt = 'Write a recommendation letter for a student applying to graduate school, emphasizing their research abilities and academic achievements.';
-        break;
-      case 'research-paper':
-        templatePrompt = t('aiStudy.researchPaperTemplate');
-        break;
-      case 'scholarship':
-        templatePrompt = 'Create a scholarship application essay discussing my financial needs and academic achievements.';
-        break;
-      case 'personal-statement':
-        templatePrompt = 'Write a personal statement explaining my motivation to study medical sciences and my career aspirations.';
-        break;
+  // Show confirmation dialog for delete
+  const confirmDeleteContent = (contentId: string, title: string) => {
+    if (window.confirm(`Are you sure you want to delete "${title}"? This action cannot be undone.`)) {
+      deleteContentFromHistory(contentId);
     }
-    
-    setPrompt(templatePrompt);
   };
 
   const handleCopyContent = () => {
@@ -850,10 +904,14 @@ Create professional, academic-quality content that meets the request requirement
     setFontSize(Math.max(12, Math.min(24, fontSize + delta)));
   };
 
-  const loadFromHistory = (item: { title: string, date: string, content: string, template: string, prompt: string }) => {
-    setEditedContent(item.content);
-    setActiveTemplate(item.template);
+  const loadFromHistory = (item: ContentItem) => {
+    setEditedContent(item.generated_content);
+    setActiveTemplate(item.template_type);
     setPrompt(item.prompt);
+    setContentType(item.content_type);
+    setWordCount(item.word_count);
+    setTone(item.tone);
+    setFontSize(item.font_size);
     setShowHistory(false);
   };
 
@@ -878,14 +936,14 @@ Please return the edited content with the requested changes applied. Maintain th
       setEditStep('updating');
       setEditProgress(50);
 
-      const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer sk-80beadf6603b4832981d0d65896b1ae0',
+      const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || '4ca49c30-f9e7-467e-8269-cc156c131881'}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: "qvq-max",
+          model: "doubao-seed-1-6-vision-250815",
           messages: [
             {
               role: "user",
@@ -1033,17 +1091,19 @@ ${prompt}`
     
     // Handle clicks outside the editor to cancel selection
     const handleClickOutside = (e: MouseEvent) => {
-      // Keep button visible when clicking on the Ask AI button or when modal is open
-      if (
-        askAIButtonRef.current?.contains(e.target as Node) ||
-        showAskAIModal
-      ) {
-        e.stopPropagation();
+      // Don't hide the button if modal is open or about to open
+      if (showAskAIModal) {
         return;
       }
       
-      // Otherwise hide the button when clicking outside
+      // Only hide the button when clicking outside both the editor and the toolbar
       if (!editorRef.current?.contains(e.target as Node)) {
+        // Check if the click was on the Ask AI button in the toolbar
+        const askAIButton = document.querySelector('[data-ask-ai-button]');
+        if (askAIButton?.contains(e.target as Node)) {
+          return; // Don't hide if clicking on the Ask AI button
+        }
+        
         setShowAskAIButton(false);
         setSelectionData(null);
       }
@@ -1096,10 +1156,10 @@ Instruction: ${instruction}
 
 Please provide a helpful response or suggestion for improving this text.`;
 
-      const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer sk-80beadf6603b4832981d0d65896b1ae0',
+          'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || 'sk-4d21243994a04bb09f431cb2471cdd6c'}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -1206,23 +1266,160 @@ ${prompt}`
     resetSelection();
   };
 
-  // Update askAIButtonRef position
-  useEffect(() => {
-    if (showAskAIButton && selectionData && editorRef.current && askAIButtonRef.current) {
-      const textarea = editorRef.current;
-      const textareaRect = textarea.getBoundingClientRect();
+
+  // API Functions
+  const saveContentToAPI = async (
+    title: string, 
+    prompt: string, 
+    generatedContent: string, 
+    templateType: string = activeTemplate
+  ): Promise<ContentItem | null> => {
+    try {
+      if (!currentUserId) {
+        showSuccess('Please log in to save content.', 'error');
+        return null;
+      }
+
+      setIsSaving(true);
       
-      // Position the button at a fixed offset from the editor to make it easier to click
-      const buttonTop = textareaRect.top + 50;
-      const buttonLeft = textareaRect.left + textareaRect.width/2 - 55;
+      const response = await axios.post(`${API_BASE_URL}/content-writer/save`, {
+        uid: currentUserId,
+        title,
+        prompt,
+        generatedContent,
+        templateType,
+        contentType,
+        wordCount,
+        tone,
+        fontSize,
+        metadata: {
+          timestamp: new Date().toISOString(),
+          version: '1.0'
+        }
+      });
+
+      if (response.data && response.data.content) {
+        showSuccess('Content saved successfully!');
+        return response.data.content;
+      }
       
-      // Set position as fixed rather than absolute for better clickability
-      askAIButtonRef.current.style.position = 'fixed';
-      askAIButtonRef.current.style.top = `${buttonTop}px`;
-      askAIButtonRef.current.style.left = `${buttonLeft}px`;
-      askAIButtonRef.current.style.zIndex = '9999';
+      return null;
+    } catch (error) {
+      console.error('Error saving content:', error);
+      showSuccess('Error saving content. Please try again.', 'error');
+      return null;
+    } finally {
+      setIsSaving(false);
     }
-  }, [showAskAIButton, selectionData]);
+  };
+
+  const fetchContentHistory = async (page: number = 1, limit: number = 10): Promise<void> => {
+    try {
+      if (!currentUserId) {
+        console.warn('No authenticated user for fetching content history');
+        return;
+      }
+
+      setIsLoadingHistory(true);
+      
+      const response = await axios.get<ContentHistoryResponse>(
+        `${API_BASE_URL}/content-writer/history/${currentUserId}?page=${page}&limit=${limit}`
+      );
+
+      if (response.data) {
+        const apiHistory = response.data.contentHistory.map(item => ({
+          ...item,
+          date: formatDate(item.created_at)
+        }));
+        
+        setContentHistory(apiHistory);
+        setHistoryPagination(response.data.pagination);
+      }
+    } catch (error) {
+      console.error('Error fetching content history:', error);
+      showSuccess('Error loading content history.', 'error');
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  // Helper function to format date
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} hours ago`;
+    if (diffInMinutes < 10080) return `${Math.floor(diffInMinutes / 1440)} days ago`;
+    
+    return date.toLocaleDateString();
+  };
+
+  // Load content history on component mount
+  useEffect(() => {
+    fetchContentHistory();
+  }, []);
+
+  // Manual save function for edited content
+  const handleManualSave = async () => {
+    if (!editedContent.trim()) {
+      showSuccess('No content to save.', 'error');
+      return;
+    }
+
+    if (!currentUserId) {
+      showSuccess('Please log in to save content.', 'error');
+      return;
+    }
+
+    const title = getHistoryTitle(editedContent);
+    const savedContent = await saveContentToAPI(
+      title,
+      prompt || 'Manually saved content',
+      editedContent,
+      activeTemplate
+    );
+
+    if (savedContent) {
+      await fetchContentHistory();
+    }
+  };
+
+  const getHistoryTitle = (promptText: string) => {
+    // Extract a title from the prompt
+    return promptText.split(' ').slice(0, 4).join(' ') + '...';
+  };
+
+  const selectTemplate = (templateId: string) => {
+    setActiveTemplate(templateId);
+    
+    // Set default prompts based on template
+    let templatePrompt = '';
+    switch(templateId) {
+      case 'college-app':
+        templatePrompt = t('aiStudy.collegeApplicationTemplate');
+        break;
+      case 'cover-letter':
+        templatePrompt = 'Create a professional cover letter for an internship position at a tech company highlighting my skills in programming and teamwork.';
+        break;
+      case 'recommendation':
+        templatePrompt = 'Write a recommendation letter for a student applying to graduate school, emphasizing their research abilities and academic achievements.';
+        break;
+      case 'research-paper':
+        templatePrompt = t('aiStudy.researchPaperTemplate');
+        break;
+      case 'scholarship':
+        templatePrompt = 'Create a scholarship application essay discussing my financial needs and academic achievements.';
+        break;
+      case 'personal-statement':
+        templatePrompt = 'Write a personal statement explaining my motivation to study medical sciences and my career aspirations.';
+        break;
+    }
+    
+    setPrompt(templatePrompt);
+  };
 
   return (
     <motion.div
@@ -1279,6 +1476,75 @@ ${prompt}`
                 placeholder={t('aiStudy.contentWriterPlaceholder')}
                 className="w-full h-40 p-4 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 placeholder-slate-400 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none"
               />
+              
+              {/* Content Settings */}
+              <div className="mt-4 space-y-4">
+                <h3 className="text-lg font-semibold text-cyan-400 flex items-center">
+                  <IconComponent icon={FiSettings} className="mr-2" /> Content Settings
+                </h3>
+                
+                {/* Word Count */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Word Count: {wordCount} words
+                  </label>
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="range"
+                      min="50"
+                      max="2000"
+                      step="50"
+                      value={wordCount}
+                      onChange={(e) => setWordCount(parseInt(e.target.value))}
+                      className="flex-1 h-2 bg-slate-600/50 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                    <input
+                      type="number"
+                      min="50"
+                      max="2000"
+                      value={wordCount}
+                      onChange={(e) => setWordCount(Math.max(50, Math.min(2000, parseInt(e.target.value) || 100)))}
+                      className="w-20 px-2 py-1 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded text-slate-300 text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                    />
+                  </div>
+                </div>
+                
+                {/* Content Type */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Content Type</label>
+                  <select
+                    value={contentType}
+                    onChange={(e) => setContentType(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  >
+                    <option value="essay">Essay</option>
+                    <option value="article">Article</option>
+                    <option value="blog">Blog Post</option>
+                    <option value="report">Report</option>
+                    <option value="summary">Summary</option>
+                    <option value="outline">Outline</option>
+                  </select>
+                </div>
+                
+                {/* Tone */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Tone</label>
+                  <select
+                    value={tone}
+                    onChange={(e) => setTone(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  >
+                    <option value="academic">Academic</option>
+                    <option value="professional">Professional</option>
+                    <option value="casual">Casual</option>
+                    <option value="formal">Formal</option>
+                    <option value="conversational">Conversational</option>
+                    <option value="persuasive">Persuasive</option>
+                    <option value="creative">Creative</option>
+                  </select>
+                </div>
+              </div>
+              
               <motion.button
                 variants={buttonVariants}
                 whileHover="hover"
@@ -1309,7 +1575,7 @@ ${prompt}`
                 className="mt-3 w-full bg-slate-600/50 backdrop-blur-sm border border-white/10 text-slate-300 font-medium py-2 px-6 rounded-lg flex items-center justify-center hover:bg-slate-500/50 transition-colors"
               >
                 <IconComponent icon={AiOutlineHistory} className="mr-2" /> 
-                {t('aiStudy.viewHistory')}
+                {t('aiStudy.viewHistory')} ({contentHistory.length})
               </motion.button>
             </div>
 
@@ -1441,6 +1707,21 @@ ${prompt}`
                   variants={buttonVariants}
                   whileHover="hover"
                   whileTap="tap"
+                  onClick={handleManualSave}
+                  disabled={isSaving || !editedContent.trim()}
+                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Save Content"
+                >
+                  {isSaving ? (
+                    <IconComponent icon={AiOutlineLoading3Quarters} className="animate-spin" />
+                  ) : (
+                    <IconComponent icon={FiSave} />
+                  )}
+                </motion.button>
+                <motion.button
+                  variants={buttonVariants}
+                  whileHover="hover"
+                  whileTap="tap"
                   onClick={() => handleDownloadContent('txt')}
                   className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
                   title={t('aiStudy.download')}
@@ -1457,6 +1738,28 @@ ${prompt}`
                 >
                   <IconComponent icon={FiShare2} />
                 </motion.button>
+                
+                {/* Flexible spacer to push AI Edit button to the right */}
+                <div className="flex-grow"></div>
+                
+                {/* Ask AI Button - appears when text is selected */}
+                {showAskAIButton && selectionData && (
+                  <AnimatePresence>
+                    <motion.button
+                      onClick={handleAskAIForSelection}
+                      data-ask-ai-button="true"
+                      className="flex items-center px-3 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg shadow-lg hover:shadow-xl transition-all text-sm font-medium space-x-2"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <IconComponent icon={AiOutlineRobot} className="h-4 w-4" />
+                      <span>{t('aiStudy.askAI')}</span>
+                    </motion.button>
+                  </AnimatePresence>
+                )}
               </div>
 
               {/* Editor Content */}
@@ -1473,23 +1776,6 @@ ${prompt}`
                       className="w-full h-full p-6 bg-slate-700/30 backdrop-blur-sm text-slate-300 placeholder-slate-400 resize-none focus:outline-none border-none"
                       style={{ fontSize: `${fontSize}px`, lineHeight: '1.6' }}
                     />
-                    
-                    {/* Ask AI Button */}
-                    {showAskAIButton && selectionData && (
-                      <motion.button
-                        ref={askAIButtonRef as any}
-                        onClick={handleAskAIForSelection}
-                        className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-3 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all text-sm font-medium flex items-center space-x-2"
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <IconComponent icon={AiOutlineRobot} className="h-4 w-4" />
-                        <span>{t('aiStudy.askAI')}</span>
-                      </motion.button>
-                    )}
                   </div>
                 </div>
 
@@ -1562,7 +1848,12 @@ ${prompt}`
           className="bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl shadow-lg max-w-4xl w-full max-h-[80vh] overflow-hidden"
         >
           <div className="bg-slate-700/50 backdrop-blur-sm px-6 py-4 border-b border-white/10 flex items-center justify-between">
-            <h3 className="text-xl font-bold text-cyan-400">{t('aiStudy.contentHistory')}</h3>
+            <div>
+              <h3 className="text-xl font-bold text-cyan-400">{t('aiStudy.contentHistory')}</h3>
+              <p className="text-sm text-slate-400">
+                {historyPagination.totalItems} {historyPagination.totalItems === 1 ? 'item' : 'items'} total
+              </p>
+            </div>
             <motion.button
               onClick={() => setShowHistory(false)}
               className="p-2 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10"
@@ -1574,7 +1865,13 @@ ${prompt}`
           </div>
           
           <div className="p-6 overflow-y-auto max-h-[60vh]">
-            {contentHistory.length === 0 ? (
+            {isLoadingHistory ? (
+              <div className="text-center py-12">
+                <IconComponent icon={AiOutlineLoading3Quarters} className="h-12 w-12 mx-auto mb-4 text-cyan-400 animate-spin" />
+                <h3 className="text-lg font-medium text-slate-300 mb-2">Loading history...</h3>
+                <p className="text-slate-400">Please wait while we fetch your content history.</p>
+              </div>
+            ) : contentHistory.length === 0 ? (
               <div className="text-center py-12">
                 <IconComponent icon={AiOutlineHistory} className="h-12 w-12 mx-auto mb-4 text-slate-400" />
                 <h3 className="text-lg font-medium text-slate-300 mb-2">{t('aiStudy.noHistoryYet')}</h3>
@@ -1584,7 +1881,7 @@ ${prompt}`
               <div className="space-y-4">
                 {contentHistory.map((item, index) => (
                   <motion.div
-                    key={index}
+                    key={item.id}
                     className="bg-slate-700/30 backdrop-blur-sm border border-white/10 rounded-lg p-4 hover:bg-slate-600/30 transition-colors cursor-pointer"
                     onClick={() => loadFromHistory(item)}
                     whileHover={{ scale: 1.02 }}
@@ -1593,15 +1890,71 @@ ${prompt}`
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <h4 className="font-medium text-cyan-400 mb-1">{item.title}</h4>
-                        <p className="text-sm text-slate-400 mb-2">{item.date}</p>
-                        <p className="text-sm text-slate-300 line-clamp-2">{item.content.substring(0, 150)}...</p>
+                        <p className="text-sm text-slate-400 mb-2">{formatDate(item.created_at)}</p>
+                        <p className="text-sm text-slate-300 line-clamp-2">{item.generated_content.substring(0, 150)}...</p>
+                        <div className="flex items-center mt-2 space-x-2">
+                          <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded border border-blue-500/30">
+                            {item.template_type}
+                          </span>
+                          <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded border border-green-500/30">
+                            {item.content_type}
+                          </span>
+                          <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded border border-purple-500/30">
+                            {item.word_count} words
+                          </span>
+                        </div>
                       </div>
-                      <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded border border-blue-500/30">
-                        {item.template}
-                      </span>
+                      <div className="flex items-center space-x-2 ml-4">
+                        <motion.button
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent triggering loadFromHistory
+                            confirmDeleteContent(item.id, item.title);
+                          }}
+                          className="px-2 py-1 bg-red-500/50 hover:bg-red-600 rounded text-white transition-colors"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          title="Delete content"
+                        >
+                          <IconComponent icon={FiTrash} className="h-4 w-4" />
+                        </motion.button>
+                      </div>
                     </div>
                   </motion.div>
                 ))}
+                
+                {/* Pagination */}
+                {historyPagination.totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/10">
+                    <div className="text-sm text-slate-400">
+                      Showing {(historyPagination.currentPage - 1) * historyPagination.itemsPerPage + 1} to{' '}
+                      {Math.min(historyPagination.currentPage * historyPagination.itemsPerPage, historyPagination.totalItems)} of{' '}
+                      {historyPagination.totalItems} items
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <motion.button
+                        onClick={() => fetchContentHistory(historyPagination.currentPage - 1)}
+                        disabled={historyPagination.currentPage === 1}
+                        className="px-3 py-1 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded text-slate-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-white/10"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        Previous
+                      </motion.button>
+                      <span className="text-sm text-slate-400">
+                        Page {historyPagination.currentPage} of {historyPagination.totalPages}
+                      </span>
+                      <motion.button
+                        onClick={() => fetchContentHistory(historyPagination.currentPage + 1)}
+                        disabled={historyPagination.currentPage === historyPagination.totalPages}
+                        className="px-3 py-1 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded text-slate-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-white/10"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        Next
+                      </motion.button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1633,74 +1986,54 @@ ${prompt}`
               </div>
             )}
             
-            <textarea
-              value={askAIInstruction}
-              onChange={(e) => setAskAIInstruction(e.target.value)}
-              placeholder="What would you like to know about this text? (e.g., 'Improve this paragraph', 'Make it more formal', 'Explain this concept')"
-              className="w-full h-32 p-4 bg-slate-700/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 placeholder-slate-400 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none"
-            />
-            
-            <div className="flex items-center justify-end space-x-3 mt-4">
-              <motion.button
-                onClick={() => setShowAskAIModal(false)}
-                className="px-4 py-2 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Cancel
-              </motion.button>
-              <motion.button
-                onClick={processAskAIRequest}
-                disabled={!askAIInstruction.trim() || isProcessingSelection}
-                className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:shadow-lg rounded-lg text-white font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                {isProcessingSelection ? (
-                  <>
-                    <IconComponent icon={AiOutlineLoading3Quarters} className="animate-spin mr-2" />
-                    {t('aiStudy.processing')}
-                  </>
-                ) : (
-                  <>
-                    <IconComponent icon={AiOutlineRobot} className="mr-2" />
-                    {t('aiStudy.askAI')}
-                  </>
-                )}
-              </motion.button>
-            </div>
-          </div>
-        </PortalModal>
-
-        {/* AI Response Modal */}
-        <AnimatePresence>
-          {showAskAIModal && (
-            <motion.div
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <motion.div
-                className="bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl shadow-lg max-w-4xl w-full max-h-[80vh] overflow-hidden"
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-              >
-                <div className="bg-slate-700/50 backdrop-blur-sm px-6 py-4 border-b border-white/10 flex items-center justify-between">
-                <h3 className="text-xl font-bold text-cyan-400">{t('aiStudy.aiResponse')}</h3>
+            {/* Show input form if no suggestion yet */}
+            {!askAISuggestion && (
+              <>
+                <textarea
+                  value={askAIInstruction}
+                  onChange={(e) => setAskAIInstruction(e.target.value)}
+                  placeholder="What would you like to know about this text? (e.g., 'Improve this paragraph', 'Make it more formal', 'Explain this concept')"
+                  className="w-full h-32 p-4 bg-slate-700/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 placeholder-slate-400 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none"
+                />
+                
+                <div className="flex items-center justify-end space-x-3 mt-4">
                   <motion.button
                     onClick={() => setShowAskAIModal(false)}
-                    className="p-2 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10"
+                    className="px-4 py-2 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    <IconComponent icon={FiX} className="h-5 w-5" />
+                    Cancel
+                  </motion.button>
+                  <motion.button
+                    onClick={processAskAIRequest}
+                    disabled={!askAIInstruction.trim() || isProcessingSelection}
+                    className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:shadow-lg rounded-lg text-white font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    {isProcessingSelection ? (
+                      <>
+                        <IconComponent icon={AiOutlineLoading3Quarters} className="animate-spin mr-2" />
+                        {t('aiStudy.processing')}
+                      </>
+                    ) : (
+                      <>
+                        <IconComponent icon={AiOutlineRobot} className="mr-2" />
+                        {t('aiStudy.askAI')}
+                      </>
+                    )}
                   </motion.button>
                 </div>
-                
-                <div className="p-6 overflow-y-auto max-h-[60vh]">
-                  <div className="prose prose-invert max-w-none">
+              </>
+            )}
+            
+            {/* Show AI response if available */}
+            {askAISuggestion && (
+              <>
+                <div className="mb-4">
+                  <h4 className="text-lg font-medium text-cyan-400 mb-2">{t('aiStudy.aiResponse')}</h4>
+                  <div className="prose prose-invert max-w-none bg-slate-700/30 backdrop-blur-sm rounded-lg border border-white/10 p-4">
                     <ReactMarkdown
                       remarkPlugins={[remarkMath, remarkGfm]}
                       rehypePlugins={[rehypeKatex]}
@@ -1711,11 +2044,13 @@ ${prompt}`
                   </div>
                 </div>
                 
-                <div className="bg-slate-700/50 backdrop-blur-sm px-6 py-4 border-t border-white/10 flex items-center justify-end space-x-3">
+                <div className="flex items-center justify-end space-x-3">
                   <motion.button
                     onClick={() => {
                       navigator.clipboard.writeText(askAISuggestion);
-                      // You could add a toast notification here
+                      // Reset for next use
+                      setAskAISuggestion('');
+                      setAskAIInstruction('');
                     }}
                     className="px-4 py-2 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10 flex items-center"
                     whileHover={{ scale: 1.05 }}
@@ -1725,7 +2060,11 @@ ${prompt}`
                     {t('aiStudy.copy')}
                   </motion.button>
                   <motion.button
-                    onClick={() => setShowAskAIModal(false)}
+                    onClick={() => {
+                      setShowAskAIModal(false);
+                      setAskAISuggestion('');
+                      setAskAIInstruction('');
+                    }}
                     className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:shadow-lg rounded-lg text-white font-medium transition-all"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -1733,10 +2072,10 @@ ${prompt}`
                     {t('aiStudy.close')}
                   </motion.button>
                 </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              </>
+            )}
+          </div>
+        </PortalModal>
         
         {/* Response Upgrade Modal */}
         <ResponseUpgradeModal 

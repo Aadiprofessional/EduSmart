@@ -10,12 +10,14 @@ import { Document, Paragraph, TextRun, Packer } from 'docx';
 import { useResponseCheck, ResponseUpgradeModal } from '../../utils/responseChecker';
 import { useNotification } from '../../utils/NotificationContext';
 import { useLanguage } from '../../utils/LanguageContext';
+import { useAuth } from '../../utils/AuthContext';
+
+import { supabase } from '../../utils/supabase';
+import { v4 as uuidv4 } from 'uuid';
 
 // Import homework API functions
 import { 
-  submitHomework, 
   getHomeworkHistory, 
-  updateHomework, 
   deleteHomework 
 } from '../../utils/homeworkAPI';
 
@@ -167,8 +169,53 @@ const PortalModal: React.FC<PortalModalProps> = ({ isOpen, onClose, children, cl
   );
 };
 
+// Helper to convert base64 to Blob
+const base64ToBlob = (base64: string, mimeType: string = 'image/jpeg'): Blob => {
+  const byteCharacters = atob(base64.split(',')[1]);
+  const byteArrays = [];
+
+  for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+    const slice = byteCharacters.slice(offset, offset + 512);
+    const byteNumbers = new Array(slice.length);
+    for (let i = 0; i < slice.length; i++) {
+      byteNumbers[i] = slice.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    byteArrays.push(byteArray);
+  }
+
+  return new Blob(byteArrays, { type: mimeType });
+};
+
+// Helper to get local ISO string with offset
+const toLocalISOString = (date: Date) => {
+  const tzo = -date.getTimezoneOffset();
+  const dif = tzo >= 0 ? '+' : '-';
+  const pad = (num: number) => {
+    const norm = Math.floor(Math.abs(num));
+    return (norm < 10 ? '0' : '') + norm;
+  };
+
+  return date.getFullYear() +
+    '-' + pad(date.getMonth() + 1) +
+    '-' + pad(date.getDate()) +
+    'T' + pad(date.getHours()) +
+    ':' + pad(date.getMinutes()) +
+    ':' + pad(date.getSeconds()) +
+    dif + pad(tzo / 60) + ':' + pad(tzo % 60);
+};
+
 const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ className = '' }) => {
   const { t } = useLanguage();
+  const { user, session } = useAuth();
+  
+  // Check if user is authenticated
+  useEffect(() => {
+    if (!user && !session) {
+      console.warn('⚠️ No authenticated user found in UploadHomeworkComponent');
+    }
+  }, [user, session]);
+
   const [file, setFile] = useState<File | null>(null);
   const [question, setQuestion] = useState('');
   const [loading, setLoading] = useState(false);
@@ -204,6 +251,31 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
   const [upgradeMessage, setUpgradeMessage] = useState('');
   const { showSuccess } = useNotification();
 
+  // Helper to upload file to Supabase
+  const uploadToSupabase = async (file: File | Blob, fileName: string): Promise<string | null> => {
+    try {
+      // Use chat-attachments bucket
+      const filePath = `${user?.id || 'anonymous'}/${Date.now()}_${fileName}`;
+      const { data, error } = await supabase.storage
+        .from('chat-attachments')
+        .upload(filePath, file);
+
+      if (error) {
+        console.error('Supabase upload error:', error);
+        return null;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('chat-attachments')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Upload to Supabase failed:', error);
+      return null;
+    }
+  };
+
   // Auto-scroll function for solution container
   const scrollToBottom = (containerRef: React.RefObject<HTMLDivElement>) => {
     if (containerRef.current) {
@@ -230,62 +302,68 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
   // Load history from database on component mount
   useEffect(() => {
     const loadHistoryFromDatabase = async () => {
+      // Only load history if user is authenticated
+      if (!user && !session) {
+        console.log('🚫 No authenticated user - clearing history');
+        setHomeworkHistory([]);
+        return;
+      }
+
       try {
         console.log('📚 Loading homework history from database...');
-        const result = await getHomeworkHistory();
+        const result = await getHomeworkHistory(user, session);
         
         if (result.success && result.history) {
           console.log('✅ Loaded homework history:', result.history.length, 'items');
           setHomeworkHistory(result.history);
         } else {
           console.error('❌ Failed to load homework history:', result.error);
-          // Try to load from localStorage as fallback
-          const savedHistory = localStorage.getItem('homeworkHistory');
-          if (savedHistory) {
-            try {
-              const parsedHistory = JSON.parse(savedHistory).map((item: any) => ({
-                ...item,
-                timestamp: new Date(item.timestamp)
-              }));
-              setHomeworkHistory(parsedHistory);
-              console.log('📦 Loaded fallback history from localStorage');
-            } catch (error) {
-              console.error('Error loading fallback history:', error);
-            }
-          }
+          // Do not fallback to localStorage for security reasons
+          setHomeworkHistory([]);
         }
       } catch (error) {
         console.error('Error loading homework history from database:', error);
-        // Try localStorage as fallback
-        const savedHistory = localStorage.getItem('homeworkHistory');
-        if (savedHistory) {
-          try {
-            const parsedHistory = JSON.parse(savedHistory).map((item: any) => ({
-              ...item,
-              timestamp: new Date(item.timestamp)
-            }));
-            setHomeworkHistory(parsedHistory);
-            console.log('📦 Loaded fallback history from localStorage');
-          } catch (error) {
-            console.error('Error loading fallback history:', error);
-          }
-        }
+        // Do not fallback to localStorage for security reasons
+        setHomeworkHistory([]);
       }
     };
 
     loadHistoryFromDatabase();
-  }, []);
+  }, [user, session]);
 
-  // Save history to localStorage whenever it changes (backup)
-  useEffect(() => {
-    localStorage.setItem('homeworkHistory', JSON.stringify(homeworkHistory));
-  }, [homeworkHistory]);
 
-  // Function to add item to history - updated to save to database
+
+  // Function to add item to history - only for authenticated users
   const addToHistory = async (fileName: string, question: string, answer: string, fileType: string, documentPages?: string[], originalFile?: File, pageSolutions?: PageSolution[], currentPageIndex?: number, processingComplete?: boolean) => {
+    // Require authentication for saving history
+    if (!user && !session) {
+      console.warn('⚠️ Cannot save homework history - user not authenticated');
+      return;
+    }
+
     try {
-      console.log('💾 Saving homework to database...');
+      console.log('💾 Saving homework to local history (database save disabled)...');
       
+      // Create a local history item
+      const newItem: HomeworkHistoryItem = {
+        id: uuidv4(), // Generate a temporary ID
+        fileName: fileName,
+        fileUrl: '', // URL is not saved to DB anymore
+        question: question,
+        answer: answer,
+        timestamp: new Date(),
+        fileType: fileType,
+        documentPages,
+        file: originalFile,
+        pageSolutions: pageSolutions,
+        currentPage: currentPageIndex,
+        overallProcessingComplete: processingComplete || false
+      };
+      
+      // Update local state
+      setHomeworkHistory(prev => [newItem, ...prev.slice(0, 19)]); // Keep only last 20 items
+
+      /*
       // Submit to database
       const submissionData = {
         question,
@@ -298,7 +376,7 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
         processingComplete: processingComplete || false
       };
 
-      const result = await submitHomework(submissionData);
+      const result = await submitHomework(submissionData, user, session);
       
       if (result.success && result.homework) {
         console.log('✅ Homework saved to database successfully');
@@ -323,41 +401,12 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
         setHomeworkHistory(prev => [newItem, ...prev.slice(0, 19)]); // Keep only last 20 items
       } else {
         console.error('❌ Failed to save homework to database:', result.error);
-        
-        // Fallback to localStorage only
-        const newItem: HomeworkHistoryItem = {
-          id: Date.now().toString(),
-          fileName,
-          question,
-          answer,
-          timestamp: new Date(),
-          fileType,
-          documentPages,
-          file: originalFile,
-          pageSolutions,
-          currentPage: currentPageIndex,
-          overallProcessingComplete: processingComplete
-        };
-        setHomeworkHistory(prev => [newItem, ...prev.slice(0, 19)]);
+        // Do not save to localStorage as fallback - require authentication
       }
+      */
     } catch (error) {
       console.error('❌ Error saving homework:', error);
-      
-      // Fallback to localStorage only
-      const newItem: HomeworkHistoryItem = {
-        id: Date.now().toString(),
-        fileName,
-        question,
-        answer,
-        timestamp: new Date(),
-        fileType,
-        documentPages,
-        file: originalFile,
-        pageSolutions,
-        currentPage: currentPageIndex,
-        overallProcessingComplete: processingComplete
-      };
-      setHomeworkHistory(prev => [newItem, ...prev.slice(0, 19)]);
+      // Do not save to localStorage as fallback - require authentication
     }
   };
 
@@ -543,23 +592,27 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
 
   // Function to delete history item - updated to delete from database
   const deleteHistoryItem = async (id: string) => {
+    // Require authentication for deleting history
+    if (!user && !session) {
+      console.warn('⚠️ Cannot delete homework - user not authenticated');
+      return;
+    }
+
     try {
       console.log('🗑️ Deleting homework from database:', id);
       
-      const result = await deleteHomework(id);
+      const result = await deleteHomework(id, user, session);
       
       if (result.success) {
         console.log('✅ Homework deleted from database successfully');
         setHomeworkHistory(prev => prev.filter(item => item.id !== id));
       } else {
         console.error('❌ Failed to delete homework from database:', result.error);
-        // Still update local state for better UX
-        setHomeworkHistory(prev => prev.filter(item => item.id !== id));
+        // Do not update local state if database delete failed for consistency
       }
     } catch (error) {
       console.error('❌ Error deleting homework:', error);
-      // Still update local state
-      setHomeworkHistory(prev => prev.filter(item => item.id !== id));
+      // Do not update local state if delete failed for consistency
     }
   };
 
@@ -583,8 +636,9 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
   // Preprocess LaTeX for react-markdown
   const preprocessLaTeX = (content: string) => {
     return content
-      .replace(/\\\[(.*?)\\\]/g, (_, eq) => `$$${eq}$$`)   // block math
-      .replace(/\\\((.*?)\\\)/g, (_, eq) => `$${eq}$`);    // inline math
+      .replace(/\\\[(.*?)\\\]/g, (_, eq) => `$$${eq}$$`)   // block math \[ ... \]
+      .replace(/\\\((.*?)\\\)/g, (_, eq) => `$${eq}$`)    // inline math \( ... \)
+      .replace(/\[\s*([^\[\]]+?)\s*\](?!\()/g, (_, eq) => `$$${eq}$$`); // block math [ ... ] excluding links
   };
 
   // Custom components for ReactMarkdown
@@ -834,336 +888,78 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
     }
   };
 
-  // Combined function to extract text and solve homework - works for both images and text
-  const extractAndSolveHomework = async (imageUrl?: string, textQuestion?: string, pageNumber?: number): Promise<string> => {
-    console.log(`🔄 Starting extractAndSolveHomework process for page ${pageNumber || 'text'}`);
-    console.log('📸 Image URL received:', imageUrl ? 'Image URL present' : 'No image URL');
-    console.log('📝 Text question received:', textQuestion ? `Text question: ${textQuestion.substring(0, 100)}...` : 'No text question');
-    console.log('⏰ Process start time:', new Date().toISOString());
-    
-    try {
-      console.log('📡 Preparing API request to Qwen VL Max');
-      console.log('🔗 API Endpoint: https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions');
-      console.log('🤖 Model: qwen-vl-max');
-      
-      // Build content array based on whether we have image or text
-      const content: any[] = [];
-      
-      if (imageUrl) {
-        content.push({
-          type: "image_url",
-          image_url: {
-            url: imageUrl
-          }
-        });
-      }
-      
-      if (textQuestion) {
-        content.push({
-          type: "text",
-          text: `Please solve this homework problem with detailed step-by-step explanations:
 
-${textQuestion}
 
-Please provide:
-1. A clear understanding of what the problem is asking
-2. Step-by-step solution with explanations
-3. Final answer
-4. Any relevant concepts or formulas used
-
-**Language Instructions**: 
-- If the question is in English, respond in English
-- If the question is in Chinese, respond in Chinese
-- If the question is in another language, respond in that same language
-- If no specific language is detected, default to English
-
-Make sure to explain each step so the student can learn from the solution. Show your reasoning process and provide comprehensive explanations.
-
-Format your response with:
-- Use **bold** for important terms and concepts
-- Use proper mathematical notation with LaTeX format for equations
-- Structure your solution with clear headings and numbered steps
-- Highlight final answers prominently
-- Use bullet points for lists and key points`
-        });
-      } else {
-        content.push({
-          type: "text",
-          text: `Please analyze this image and solve any homework problems you find. Follow these steps:
-
-1. First, extract and read all text from the image
-2. Identify the homework questions or problems
-3. Provide detailed step-by-step solutions with explanations
-4. Show your reasoning process and provide comprehensive explanations
-
-**Language Instructions**: 
-- If the questions in the image are in English, respond in English
-- If the questions in the image are in Chinese, respond in Chinese
-- If the questions are in another language, respond in that same language
-
-Please provide:
-- A clear understanding of what each problem is asking
-- Step-by-step solution with explanations for each problem
-- Final answers
-- Any relevant concepts or formulas used
-
-Make sure to explain each step so the student can learn from the solution and only give the solution to the homework problems.
-
-Format your response with:
-- Use **bold** for important terms and concepts
-- Use proper mathematical notation with LaTeX format for equations
-- Structure your solution with clear headings and numbered steps
-- Highlight final answers prominently
-- Use bullet points for lists and key points`
-        });
-      }
-      
-      const requestPayload = {
-        model: "qwen-vl-max",
-        messages: [
-          {
-            role: "system",
-            content: [
-              {
-                type: "text", 
-                text: "You are a helpful homework assistant. Analyze images containing homework problems or solve text-based homework problems and provide detailed step-by-step solutions with explanations. Always respond in the same language as the question - English for English questions, Chinese for Chinese questions, etc. Format your responses clearly with proper mathematical notation using LaTeX syntax when needed."
-              }
-            ]
-          },
-          {
-            role: "user",
-            content: content
-          }
-        ],
-        stream: true
-      };
-
-      console.log('📤 Request payload prepared');
-      console.log('📋 Payload details:', {
-        model: requestPayload.model,
-        messagesCount: requestPayload.messages.length,
-        hasImage: content.some(c => c.type === 'image_url'),
-        hasText: content.some(c => c.type === 'text'),
-        contentItems: content.length,
-        textPromptLength: content.find(c => c.type === 'text')?.text?.length || 0,
-        streamEnabled: true,
-        pageNumber: pageNumber || 'N/A'
-      });
-
-      const apiStartTime = Date.now();
-      console.log(`🚀 Sending streaming API request for page ${pageNumber || 'text'} at:`, new Date(apiStartTime).toISOString());
-
-      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestPayload)
-      });
-
-      const apiResponseTime = Date.now();
-      const responseTimeMs = apiResponseTime - apiStartTime;
-      console.log(`📥 Streaming API response received for page ${pageNumber || 'text'}`);
-      console.log('⏱️ Initial response time:', responseTimeMs + 'ms');
-      console.log('📊 Response status:', response.status, response.statusText);
-
-      if (!response.ok) {
-        console.error(`❌ API request failed for page ${pageNumber || 'text'}`);
-        console.error('🔴 Status:', response.status);
-        console.error('🔴 Status text:', response.statusText);
-        
-        let errorBody = '';
-        try {
-          errorBody = await response.text();
-          console.error('🔴 Error response body:', errorBody);
-        } catch (e) {
-          console.error('🔴 Could not read error response body:', e);
-        }
-        
-        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
-      }
-
-      console.log(`✅ API request successful for page ${pageNumber || 'text'}, starting stream processing`);
-      console.log('📖 Reading streaming response body...');
-
-      // Handle streaming response
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('No response body reader available');
-      }
-
-      let fullContent = '';
-      let isFirstChunk = true;
-
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) {
-            console.log(`🏁 Streaming completed for page ${pageNumber || 'text'}`);
-            break;
-          }
-
-          const chunk = new TextDecoder().decode(value);
-          const lines = chunk.split('\n');
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              if (data === '[DONE]') {
-                console.log(`✅ Stream marked as DONE for page ${pageNumber || 'text'}`);
-                continue;
-              }
-
-              try {
-                const parsed = JSON.parse(data);
-                const content_chunk = parsed.choices?.[0]?.delta?.content;
-                
-                if (content_chunk) {
-                  if (isFirstChunk) {
-                    console.log(`📝 First content chunk received for page ${pageNumber || 'text'}, starting real-time display`);
-                    isFirstChunk = false;
-                  }
-                  
-                  fullContent += content_chunk;
-                  
-                  // Update page solution in real-time if pageNumber is provided
-                  if (pageNumber !== undefined) {
-                    setPageSolutions(prev => prev.map(ps => 
-                      ps.pageNumber === pageNumber 
-                        ? { ...ps, solution: fullContent, isLoading: true }
-                        : ps
-                    ));
-                  } else {
-                    // For text questions, update answer directly
-                    setAnswer(fullContent);
-                  }
-                }
-              } catch (parseError) {
-                // Skip invalid JSON lines
-                continue;
-              }
-            }
-          }
-        }
-      } finally {
-        reader.releaseLock();
-      }
-
-      const totalProcessTime = Date.now() - apiStartTime;
-      console.log(`📄 Full content received for page ${pageNumber || 'text'}`);
-      console.log('📊 Final content length:', fullContent.length);
-      console.log('📝 Content preview (first 200 chars):', fullContent.substring(0, 200) + '...');
-      console.log('⏰ Total streaming time:', totalProcessTime + 'ms');
-      console.log(`🎯 Streaming process completed successfully for page ${pageNumber || 'text'}`);
-
-      return fullContent.trim() || 'No solution could be generated';
-
-    } catch (error) {
-      console.error(`💥 Error in extractAndSolveHomework for page ${pageNumber || 'text'}`);
-      console.error('🔴 Error type:', error instanceof Error ? error.constructor.name : typeof error);
-      console.error('🔴 Error message:', error instanceof Error ? error.message : String(error));
-      console.error('🔴 Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-      console.error('⏰ Error occurred at:', new Date().toISOString());
-      
-      throw error;
-    }
-  };
-
-  // Process uploaded file - now just loads the file and shows Get Answer button
-  const processFile = async (file: File) => {
-    console.log('🚀 Starting processFile - loading file for preview');
-    console.log('📁 File details:', {
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      lastModified: new Date(file.lastModified).toISOString()
-    });
+  // Process uploaded files
+  const processFiles = async (files: File[]) => {
+    console.log('🚀 Starting processFiles - loading files for preview');
+    console.log('📁 Files count:', files.length);
     
     setLoading(true);
-    setProcessingStatus('Loading file for preview...');
+    setProcessingStatus('Loading files for preview...');
     setAnswer(''); // Clear previous answer
     setPageSolutions([]); // Clear previous page solutions
     setOverallProcessingComplete(false);
     
-    const processStartTime = Date.now();
-    console.log('⏰ File loading start time:', new Date(processStartTime).toISOString());
-    
     try {
-      let imageUrls: string[] = [];
+      let allImageUrls: string[] = [];
       
-      if (file.type === 'application/pdf') {
-        console.log('📄 Processing PDF file');
-        // Convert PDF to images
-        imageUrls = await convertPdfToImages(file);
-        console.log('✅ PDF converted to', imageUrls.length, 'images');
-      } else if (file.type.startsWith('image/')) {
-        console.log('🖼️ Processing image file');
-        // Convert image file to data URL
-        setProcessingStatus('Loading image...');
+      for (const file of files) {
+        console.log('📄 Processing file:', file.name);
         
-        const imageProcessStartTime = Date.now();
-        console.log('⏰ Image conversion start time:', new Date(imageProcessStartTime).toISOString());
-        
-        const imageDataUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            const result = reader.result as string;
-            console.log('✅ Image converted to data URL');
-            console.log('📊 Data URL length:', result.length);
-            console.log('📊 Data URL preview:', result.substring(0, 100) + '...');
-            resolve(result);
-          };
-          reader.onerror = (error) => {
-            console.error('❌ Error converting image to data URL:', error);
-            reject(error);
-          };
-          reader.readAsDataURL(file);
-        });
-        
-        const imageProcessTime = Date.now() - imageProcessStartTime;
-        console.log('⏱️ Image conversion time:', imageProcessTime + 'ms');
-        
-        imageUrls = [imageDataUrl];
-      } else {
-        console.error('❌ Unsupported file type:', file.type);
-        throw new Error('Unsupported file type. Please upload a PDF or image file.');
+        if (file.type === 'application/pdf') {
+          // Convert PDF to images
+          const pdfImages = await convertPdfToImages(file);
+          allImageUrls = [...allImageUrls, ...pdfImages];
+        } else if (file.type.startsWith('image/')) {
+          // Convert image file to data URL
+          const imageDataUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+          allImageUrls.push(imageDataUrl);
+        } else {
+          console.warn('Skipping unsupported file type:', file.type);
+        }
       }
       
-      console.log('📸 Total images loaded:', imageUrls.length);
-      setDocumentPages(imageUrls);
+      console.log('📸 Total images loaded:', allImageUrls.length);
+      setDocumentPages(allImageUrls);
       setCurrentPage(0);
       
-      // Show the Get Answer button instead of auto-processing
+      // Show the Get Answer button
       setShowGetAnswerButton(true);
       setProcessingStatus(t('aiStudy.fileLoadedSuccessfully'));
       
-      const totalProcessTime = Date.now() - processStartTime;
-      console.log('✅ File loading completed');
-      console.log('⏱️ Total file loading time:', totalProcessTime + 'ms');
+      console.log('✅ Files loading completed');
       
     } catch (error) {
-      const totalProcessTime = Date.now() - processStartTime;
-      console.error('💥 File loading error after', totalProcessTime + 'ms');
-      console.error('🔴 Error type:', error instanceof Error ? error.constructor.name : typeof error);
-      console.error('🔴 Error message:', error instanceof Error ? error.message : String(error));
-      console.error('🔴 Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-      
-      setProcessingStatus('Error loading file');
-      setAnswer(`Failed to load file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('💥 Files loading error:', error);
+      setProcessingStatus('Error loading files');
+      setAnswer(`Failed to load files: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setShowGetAnswerButton(false);
     } finally {
       setLoading(false);
       setTimeout(() => setProcessingStatus(''), 3000);
-      console.log('🏁 processFile function completed');
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const selectedFile = e.target.files[0];
-      setFile(selectedFile);
-      processFile(selectedFile);
+      if (e.target.files.length > 1) {
+        // Multiple files selected
+        const files = Array.from(e.target.files);
+        // We'll store the first file as the primary "file" for now, but process all
+        setFile(files[0]);
+        processFiles(files);
+      } else {
+        // Single file
+        const selectedFile = e.target.files[0];
+        setFile(selectedFile);
+        processFiles([selectedFile]);
+      }
     }
   };
 
@@ -1181,150 +977,193 @@ Format your response with:
     }
   };
 
-  // New function to handle getting the answer (combines document + text question)
+  // New function to handle getting the answer via Webhook
   const handleGetAnswer = async () => {
     // Prevent multiple clicks
     if (loading || isProcessingStarted) return;
     
-    console.log('🚀 Starting handleGetAnswer');
+    console.log('🚀 Starting handleGetAnswer (Webhook)');
     console.log('📝 Question:', question);
     console.log('📄 Document pages:', documentPages.length);
 
-    // Check responses before proceeding
-    const responseResult = await checkAndUseResponse({
-      responseType: 'homework_solution',
-      queryData: { 
-        hasDocument: documentPages.length > 0, 
-        pageCount: documentPages.length,
-        questionLength: question.length 
-      },
-      responsesUsed: 1
-    });
-
-    if (!responseResult.canProceed) {
-      setUpgradeMessage(responseResult.message || 'Unable to process request');
-      setShowUpgradeModal(true);
-      return;
-    }
-    
     // Mark processing as started to prevent double clicks
     setIsProcessingStarted(true);
     setLoading(true);
-    setProcessingStatus('Analyzing and solving...');
+    setProcessingStatus('Uploading and analyzing...');
     setAnswer(''); // Clear previous answer
     setPageSolutions([]); // Clear previous page solutions
     setOverallProcessingComplete(false);
     setShowGetAnswerButton(false); // Hide the button while processing
     
     try {
-      if (documentPages.length > 0) {
-        // Process document with optional additional question
-        console.log('🔄 Processing document with', documentPages.length, 'pages');
-        
-        // Initialize page solutions for all pages
-        const initialPageSolutions: PageSolution[] = documentPages.map((_, index) => ({
-          pageNumber: index + 1,
-          solution: '',
-          isLoading: true,
-          isComplete: false
-        }));
-        setPageSolutions(initialPageSolutions);
-        
-        setProcessingStatus(`Processing all ${documentPages.length} pages in parallel...`);
-        setLoading(false); // Set loading to false so user can navigate pages
-        
-        // Process all pages in parallel
-        console.log('🔄 Starting parallel processing of all pages');
-        const processingPromises = documentPages.map(async (imageUrl, index) => {
-          const pageNumber = index + 1;
-          console.log(`🚀 Starting processing for page ${pageNumber}`);
-          
-          try {
-            // Combine image with additional text question if provided
-            const combinedQuestion = question.trim() ? question : undefined;
-            const solution = await extractAndSolveHomework(imageUrl, combinedQuestion, pageNumber);
-            
-            // Mark page as complete
-            setPageSolutions(prev => prev.map(ps => 
-              ps.pageNumber === pageNumber 
-                ? { ...ps, solution, isLoading: false, isComplete: true }
-                : ps
-            ));
-            
-            console.log(`✅ Page ${pageNumber} processing completed successfully`);
-            return { pageNumber, solution, success: true };
-          } catch (error) {
-            console.error(`❌ Error processing page ${pageNumber}:`, error);
-            
-            // Mark page as error
-            setPageSolutions(prev => prev.map(ps => 
-              ps.pageNumber === pageNumber 
-                ? { 
-                    ...ps, 
-                    solution: `Error processing page ${pageNumber}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                    isLoading: false, 
-                    isComplete: true,
-                    error: error instanceof Error ? error.message : 'Unknown error'
-                  }
-                : ps
-            ));
-            
-            return { pageNumber, error: error instanceof Error ? error.message : 'Unknown error', success: false };
-          }
-        });
-        
-        // Wait for all pages to complete
-        console.log('⏳ Waiting for all pages to complete processing...');
-        const results = await Promise.allSettled(processingPromises);
-        
-        console.log('✅ All pages processing completed');
-        
-        // Get the final page solutions state after all processing
-        const finalPageSolutions = await new Promise<PageSolution[]>((resolve) => {
-          // Use a small timeout to ensure state is updated
-          setTimeout(() => {
-            setPageSolutions(currentSolutions => {
-              resolve(currentSolutions);
-              return currentSolutions;
-            });
-          }, 100);
-        });
-        
-        // Create combined solution for history using final solutions
-        const completedSolutions = finalPageSolutions.filter(ps => ps.isComplete && !ps.error);
-        let combinedSolution = '';
-        if (completedSolutions.length > 0) {
-          if (documentPages.length > 1) {
-            combinedSolution = completedSolutions.map(ps => 
-              `--- Page ${ps.pageNumber} ---\n\n${ps.solution}`
-            ).join('\n\n');
-          } else {
-            combinedSolution = completedSolutions[0]?.solution || '';
-          }
+      let fileUrl = '';
+      const pagesUrl: string[] = [];
+      const fileType = file?.type || 'text';
+
+      // 1. Upload original file if exists and is PDF/DOCX
+      if (file && (file.type === 'application/pdf' || file.type.includes('document'))) {
+        setProcessingStatus('Uploading original file...');
+        const uploadedUrl = await uploadToSupabase(file, file.name);
+        if (uploadedUrl) {
+            fileUrl = uploadedUrl;
+            console.log('✅ Original file uploaded:', fileUrl);
         }
-        
-        // Add to history with final page solutions and complete state
-        if (combinedSolution && file) {
-          await addToHistory(file.name, question || 'Document Analysis', combinedSolution, file.type, documentPages, file, finalPageSolutions, currentPage, true);
-          console.log('💾 Added to history with complete page solutions');
-        }
-        
-        setOverallProcessingComplete(true);
-        setProcessingStatus('All pages processed successfully!');
-        
-      } else if (question.trim()) {
-        // Process text question only
-        console.log('🔄 Processing text question only');
-        const solution = await extractAndSolveHomework(undefined, question);
-        setAnswer(solution);
-        
-        // Add to history
-        await addToHistory('Text Question', question, solution, 'text', undefined, undefined, undefined, undefined, undefined);
-        console.log('✅ Text question processed successfully');
-      } else {
-        throw new Error('Please provide a question or upload a document');
       }
+
+      // 2. Upload images (pages)
+      if (documentPages.length > 0) {
+        setProcessingStatus(`Uploading ${documentPages.length} pages...`);
+        for (let i = 0; i < documentPages.length; i++) {
+            const pageDataUrl = documentPages[i];
+            let blob: Blob;
+            
+            // Convert data URL to Blob
+            if (pageDataUrl.startsWith('data:')) {
+                blob = base64ToBlob(pageDataUrl, 'image/jpeg');
+            } else {
+                try {
+                    const res = await fetch(pageDataUrl);
+                    blob = await res.blob();
+                } catch (e) {
+                    console.error('Failed to fetch page image:', e);
+                    continue;
+                }
+            }
+
+            const fileName = `page_${i + 1}.jpg`;
+            const uploadedPageUrl = await uploadToSupabase(blob, fileName);
+            if (uploadedPageUrl) {
+                pagesUrl.push(uploadedPageUrl);
+            }
+        }
+        console.log('✅ All pages uploaded:', pagesUrl.length);
+      }
+
+      // 3. Prepare payload
+      const payload = {
+        input_text: question || "Describe your question or problem", // User input text
+        pagesUrl: pagesUrl,
+        fileUrl: fileUrl, // URL of the original file (if PDF/DOCX)
+        file_name: file?.name || "",
+        no_of_pages: pagesUrl.length, // Number of pages
+        file_type: fileType,
+        uid: user?.id || 'anonymous',
+        local_time: toLocalISOString(new Date())
+      };
+
+      console.log('📤 Sending webhook payload:', payload);
+      setProcessingStatus('Analyzing with AI...');
+
+      // 4. Send to Webhook
+      const response = await fetch('https://n8n.matrixaiserver.com/webhook/uploadQuestion', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Webhook request failed: ${response.status} ${response.statusText}`);
+      }
+
+      if (!response.body) {
+        throw new Error('ReadableStream not supported by browser or response body is null');
+      }
+
+      // 5. Handle Streaming Response
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let answerText = '';
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) {
+          break;
+        }
+
+        const chunk = decoder.decode(value, { stream: true });
+        buffer += chunk;
+        
+        // Split buffer by possible JSON boundaries (}{) or just try to parse progressively
+        // The format is: {"type":...} {"type":...}
+        // We can split by '} {' and reconstruct
+        
+        // Regex to match full JSON objects
+        // We'll try to find complete objects and parse them
+        let startIndex = 0;
+        let braceCount = 0;
+        let inString = false;
+        let escape = false;
+        
+        for (let i = 0; i < buffer.length; i++) {
+            const char = buffer[i];
+            
+            if (escape) {
+                escape = false;
+                continue;
+            }
+            
+            if (char === '\\') {
+                escape = true;
+                continue;
+            }
+            
+            if (char === '"') {
+                inString = !inString;
+                continue;
+            }
+            
+            if (!inString) {
+                if (char === '{') {
+                    if (braceCount === 0) startIndex = i;
+                    braceCount++;
+                } else if (char === '}') {
+                    braceCount--;
+                    if (braceCount === 0) {
+                        // Found a complete object
+                        const jsonStr = buffer.substring(startIndex, i + 1);
+                        try {
+                            const json = JSON.parse(jsonStr);
+                            if (json.type === 'item' && json.content) {
+                                answerText += json.content;
+                                setAnswer(prev => prev + json.content);
+                            }
+                        } catch (e) {
+                            // Ignore parse errors for partial/malformed chunks
+                            console.warn('JSON parse error:', e);
+                        }
+                        
+                        // Advance buffer
+                        buffer = buffer.substring(i + 1);
+                        i = -1; // Reset loop to start of new buffer
+                    }
+                }
+            }
+        }
+      }
+
       
+      console.log('📥 Full webhook response received');
+
+      setOverallProcessingComplete(true);
+      setProcessingStatus('Analysis complete!');
+      
+      // Add to history (local only)
+      await addToHistory(
+        file?.name || 'Text Question', 
+        question || 'Question', 
+        answerText, 
+        fileType, 
+        documentPages, 
+        file || undefined, 
+        undefined, 
+        0, 
+        true
+      );
+
     } catch (error) {
       console.error('💥 Get answer error:', error);
       setAnswer(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -1403,7 +1242,7 @@ Format your response as a clear, organized list of knowledge points that would h
       }
       
       const requestPayload = {
-        model: "qwen-vl-max",
+        model: "doubao-seed-1-6-vision-250815",
         messages: [
           {
             role: "system",
@@ -1422,10 +1261,10 @@ Format your response as a clear, organized list of knowledge points that would h
         stream: false
       };
 
-      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
+          'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || 'sk-4d21243994a04bb09f431cb2471cdd6c'}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestPayload)
@@ -1507,7 +1346,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
       ];
       
       const requestPayload = {
-        model: "qwen-vl-max",
+        model: "doubao-seed-1-6-vision-250815",
         messages: [
           {
             role: "system",
@@ -1526,10 +1365,10 @@ please give small bullet points of what knowlegde is needed to solve the problem
         stream: true // Enable streaming
       };
 
-      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
+          'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || 'sk-4d21243994a04bb09f431cb2471cdd6c'}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestPayload)
@@ -1612,58 +1451,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // If we have a document uploaded, use handleGetAnswer instead
-    if (documentPages.length > 0) {
-      handleGetAnswer();
-      return;
-    }
-    
-    // Only handle pure text questions here
-    if (!question.trim() || loading || isProcessingStarted) return;
-    
-    console.log('🚀 Starting text question submission');
-    console.log('📝 Question:', question);
-
-    // Check responses before proceeding
-    const responseResult = await checkAndUseResponse({
-      responseType: 'homework_solution',
-      queryData: { 
-        hasDocument: false, 
-        questionLength: question.length 
-      },
-      responsesUsed: 1
-    });
-
-    if (!responseResult.canProceed) {
-      setUpgradeMessage(responseResult.message || 'Unable to process request');
-      setShowUpgradeModal(true);
-      return;
-    }
-    
-    // Mark processing as started
-    setIsProcessingStarted(true);
-    setLoading(true);
-    setProcessingStatus('Solving homework problem...');
-    setAnswer(''); // Clear previous answer
-    setPageSolutions([]); // Clear page solutions for text questions
-    
-    try {
-      // Use the same API function for text questions
-      const solution = await extractAndSolveHomework(undefined, question);
-      setAnswer(solution);
-      
-      // Add to history
-      await addToHistory('Text Question', question, solution, 'text', undefined, undefined, undefined, undefined, undefined);
-      console.log('✅ Text question processed successfully');
-    } catch (error) {
-      console.error('💥 Text submission error:', error);
-      setAnswer(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      setIsProcessingStarted(false); // Reset on error
-    } finally {
-      setLoading(false);
-      setProcessingStatus('');
-    }
+    handleGetAnswer();
   };
 
   return (
@@ -1714,6 +1502,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
                   onChange={handleFileChange}
                   className="hidden"
                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  multiple
                 />
                 {file ? (
                   <div className="text-slate-300 relative">
@@ -2047,7 +1836,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
                   </div>
                 </div>
               </div>
-            ) : loading ? (
+            ) : (!answer && loading) ? (
               // Loading state
               <div className="flex flex-col items-center justify-center h-full text-slate-300">
                 <motion.div
@@ -2747,4 +2536,4 @@ please give small bullet points of what knowlegde is needed to solve the problem
   );
 };
 
-export default UploadHomeworkComponent; 
+export default UploadHomeworkComponent;

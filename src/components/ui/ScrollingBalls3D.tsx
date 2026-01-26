@@ -419,6 +419,7 @@ const Scene3D: React.FC = () => {
 
 const ScrollingBalls3D: React.FC = () => {
   const [isMobile, setIsMobile] = useState(false);
+  const [webglError, setWebglError] = useState(false);
 
   useEffect(() => {
     // Check if device is mobile
@@ -432,8 +433,14 @@ const ScrollingBalls3D: React.FC = () => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Don't render on mobile devices
-  if (isMobile) {
+  // WebGL error handler
+  const handleWebGLError = (error: any) => {
+    console.warn('WebGL context lost, disabling 3D scene:', error);
+    setWebglError(true);
+  };
+
+  // Don't render on mobile devices or if WebGL error occurred
+  if (isMobile || webglError) {
     return null;
   }
 
@@ -441,8 +448,15 @@ const ScrollingBalls3D: React.FC = () => {
     <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 39 }}>
       <Canvas
         camera={{ position: [0, 0, 8], fov: 75 }}
-        gl={{ antialias: true, alpha: true }}
+        gl={{ 
+          antialias: true, 
+          alpha: true,
+          preserveDrawingBuffer: false,
+          powerPreference: "high-performance"
+        }}
         style={{ background: 'transparent', pointerEvents: 'none' }}
+        onError={handleWebGLError}
+        fallback={null}
       >
         <Scene3D />
       </Canvas>
@@ -454,4 +468,4 @@ const ScrollingBalls3D: React.FC = () => {
 useGLTF.preload('/models/scene.gltf');
 useGLTF.preload('/models/testing/scene.gltf');
 
-export default ScrollingBalls3D; 
+export default ScrollingBalls3D;

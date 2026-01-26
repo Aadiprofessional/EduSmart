@@ -212,14 +212,14 @@ const ChatBot: React.FC = () => {
   // Handle AI API call for pro users
   const handleAIResponse = async (userMessage: string): Promise<string> => {
     try {
-      const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer sk-0d874843ff2542c38940adcbeb2b2cc4',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: "qwen-vl-max",
+      const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || '4ca49c30-f9e7-467e-8269-cc156c131881'}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: "doubao-seed-1-6-vision-250815",
           messages: [
             {
               role: "system",
@@ -810,4 +810,4 @@ const ChatBot: React.FC = () => {
   );
 };
 
-export default ChatBot; 
+export default ChatBot;
