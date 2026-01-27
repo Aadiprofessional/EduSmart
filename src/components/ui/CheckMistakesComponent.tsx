@@ -2523,7 +2523,7 @@ Be thorough and fair in your assessment.`
                       <motion.div
                         className="w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-3"
                         animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                       />
                       Processing...
                     </>
@@ -2548,7 +2548,7 @@ Be thorough and fair in your assessment.`
                       <motion.div
                         className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full mr-2"
                         animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                       />
                       {processingStatus}
                     </p>
@@ -2803,7 +2803,7 @@ Be thorough and fair in your assessment.`
                     <motion.div
                       className="w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-3"
                       animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                     />
                     Starting Analysis...
                   </>
@@ -2826,7 +2826,7 @@ Be thorough and fair in your assessment.`
                   <motion.div
                     className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full mr-2"
                     animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                   />
                   {processingStatus}
                 </p>
@@ -3207,7 +3207,7 @@ Be thorough and fair in your assessment.`
                         <motion.div
                           className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full mb-2"
                           animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                         />
                         <p className="text-sm">Extracting text...</p>
                       </div>
@@ -3323,7 +3323,7 @@ Be thorough and fair in your assessment.`
                       <motion.div
                         className="w-4 h-4 border-2 border-cyan-400 border-t-transparent rounded-full mr-2"
                         animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                       />
                       <span className="text-xs lg:text-sm">Processing...</span>
                     </div>
@@ -3379,7 +3379,7 @@ Be thorough and fair in your assessment.`
                 <motion.div
                   className="w-12 h-12 lg:w-16 lg:h-16 border-4 border-cyan-500 border-t-transparent rounded-full mb-4"
                   animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                 />
                 <p className="text-center text-sm">{processingStatus || 'Checking for mistakes...'}</p>
               </div>

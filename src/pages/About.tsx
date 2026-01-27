@@ -36,7 +36,7 @@ const About: React.FC = () => {
     visible: {
       y: 0,
       opacity: 1,
-      transition: { duration: 0.6, ease: "easeOut" }
+      transition: { duration: 0.6, ease: [0, 0, 0.58, 1] as const }
     }
   };
 
@@ -127,7 +127,7 @@ const About: React.FC = () => {
             transition={{
               duration: 20,
               repeat: Infinity,
-              ease: "linear"
+              ease: [0, 0, 1, 1] as const
             }}
           />
           
@@ -177,7 +177,7 @@ const About: React.FC = () => {
                 transition={{
                   duration: 3,
                   repeat: Infinity,
-                  ease: "linear"
+                  ease: [0, 0, 1, 1] as const
                 }}
                 style={{
                   backgroundSize: '200% 100%'
@@ -302,7 +302,7 @@ const About: React.FC = () => {
                         <motion.div
                           className="text-6xl text-cyan-400 opacity-20"
                           animate={{ rotate: 360 }}
-                          transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                          transition={{ duration: 10, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                         >
                           <IconComponent icon={FaAtom} />
                         </motion.div>
@@ -405,7 +405,7 @@ const About: React.FC = () => {
                           padding: '1px',
                         }}
                         animate={{ rotate: 360 }}
-                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                        transition={{ duration: 3, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                       />
                     </HolographicCard>
                   </motion.div>

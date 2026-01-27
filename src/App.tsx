@@ -19,6 +19,7 @@ import ApplicationTracker from './pages/ApplicationTracker';
 import Signup from './pages/Signup';
 import ChatBotPage from './pages/ChatBot';
 import AiStudy from './pages/AiStudy';
+import AiTutorPage from './pages/AiTutorPage';
 import Profile from './pages/Profile';
 import Subscription from './pages/Subscription';
 import Payment from './pages/Payment';
@@ -110,6 +111,7 @@ function App() {
                       <Route path="/case-studies" element={<CaseStudies />} />
                       <Route path="/ai-courses" element={<Courses />} />
                       <Route path="/ai-study" element={<AiStudy />} />
+                      <Route path="/ai-tutor" element={<AiTutorPage />} />
                       <Route path="/resources" element={<Resources />} />
                       <Route path="/blog" element={<Blog />} />
                       <Route path="/blog/:id" element={<Blog />} />
@@ -141,6 +143,7 @@ function App() {
                         </ProtectedRoute>
                       } />
                       <Route path="/chatbot" element={<ChatBotPage />} />
+                      <Route path="/chatbot/:chatId" element={<ChatBotPage />} />
                       <Route path="/thank-you" element={<ThankYou />} />
                       <Route path="/terms" element={<TermsOfService />} />
                       <Route path="/privacy" element={<PrivacyPolicy />} />

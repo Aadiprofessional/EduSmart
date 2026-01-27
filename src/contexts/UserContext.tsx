@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../utils/supabase';
 import { useAuth } from '../utils/AuthContext';
@@ -6,6 +7,7 @@ export interface User {
   id: string;
   email?: string;
   name?: string;
+  uid?: string; // Add uid alias for compatibility
 }
 
 interface UserContextType {
@@ -13,6 +15,9 @@ interface UserContextType {
   setUser: (user: User | null) => void;
   isLoading: boolean;
   isAuthenticated: boolean;
+  userData?: any; // Mock property
+  isPro?: boolean; // Mock property
+  refreshUserData?: () => void; // Mock property
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -44,7 +49,8 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         const userData: User = {
           id: authUser.id,
           email: authUser.email,
-          name: authUser.user_metadata?.name || authUser.user_metadata?.full_name || authUser.email
+          name: authUser.user_metadata?.name || authUser.user_metadata?.full_name || authUser.email,
+          uid: authUser.id // Alias id to uid
         };
         setUser(userData);
       } else {
@@ -59,7 +65,10 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     user,
     setUser,
     isLoading,
-    isAuthenticated: !!user
+    isAuthenticated: !!user,
+    userData: user, // Mock
+    isPro: false, // Mock
+    refreshUserData: () => {} // Mock
   };
 
   return (

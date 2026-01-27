@@ -93,7 +93,7 @@ const Subscription: React.FC = () => {
           <div className="text-center">
             <motion.div
               animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
               className="inline-block"
             >
               <IconComponent icon={FaSpinner} className="w-12 h-12 text-purple-400 mb-4" />
@@ -131,7 +131,7 @@ const Subscription: React.FC = () => {
                 transition={{
                   duration: 2,
                   repeat: Infinity,
-                  ease: "easeInOut"
+                  ease: [0.42, 0, 0.58, 1] as const
                 }}
               >
                 <IconComponent icon={FaCrown} className="w-12 h-12 text-white" />

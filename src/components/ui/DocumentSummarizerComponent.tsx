@@ -93,7 +93,7 @@ const itemVariants = {
   visible: { 
     opacity: 1, 
     y: 0,
-    transition: { duration: 0.5, ease: "easeOut" }
+    transition: { duration: 0.5, ease: [0, 0, 0.58, 1] as const }
   }
 };
 
@@ -1898,7 +1898,7 @@ Please provide a well-structured summary using proper markdown formatting.`
           <motion.div
             className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full mx-auto mb-4"
             animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
           />
           <p className="text-slate-300 text-lg">Checking authentication...</p>
         </motion.div>
@@ -1999,7 +1999,7 @@ Please provide a well-structured summary using proper markdown formatting.`
                 <div className="text-slate-400">
                   <motion.div
                     animate={{ y: [0, -10, 0] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    transition={{ duration: 2, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const }}
                   >
                     <IconComponent icon={AiOutlineUpload} className="h-12 w-12 mx-auto mb-4 text-cyan-400" />
                   </motion.div>
@@ -2124,7 +2124,7 @@ Please provide a well-structured summary using proper markdown formatting.`
                     <motion.div
                       className="w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2"
                       animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                     />
                     {t('common.processing')}
                   </>
@@ -2150,7 +2150,7 @@ Please provide a well-structured summary using proper markdown formatting.`
                     <motion.div
                       className="w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2"
                       animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                     />
                     {t('common.processing')}
                   </>
@@ -2220,7 +2220,7 @@ Please provide a well-structured summary using proper markdown formatting.`
                 <motion.div
                   className="w-20 h-20 border-4 border-cyan-500 border-t-transparent rounded-full mb-6"
                   animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                 />
                 <motion.p 
                   className="text-center text-slate-300 text-lg font-medium"
@@ -2258,7 +2258,7 @@ Please provide a well-structured summary using proper markdown formatting.`
                           <motion.div
                             className="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full mr-2"
                             animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                           />
                           Processing...
                         </div>
@@ -2337,7 +2337,7 @@ Please provide a well-structured summary using proper markdown formatting.`
                     <motion.div
                       className="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full mr-3"
                       animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                     />
                     <span className="text-cyan-300 text-sm font-medium">
                       {processingStatus || '🚀 Generating summary in real-time...'}
@@ -2486,7 +2486,7 @@ Please provide a well-structured summary using proper markdown formatting.`
                     <motion.div
                       className="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full mr-2"
                       animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                     />
                   )}
                   {processingStatus}
@@ -2621,7 +2621,7 @@ Please provide a well-structured summary using proper markdown formatting.`
                   {isLoadingHistory ? (
                     <motion.div
                       animate={{ rotate: 360 }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                      transition={{ duration: 2, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                     >
                       <IconComponent icon={AiOutlineLoading3Quarters} className="mx-auto text-6xl mb-4 opacity-50" />
                     </motion.div>

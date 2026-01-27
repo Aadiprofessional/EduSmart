@@ -9,11 +9,9 @@ import { useAuth } from '../utils/AuthContext';
 import { useProStatus, ProBadge, requiresProAccess } from '../utils/proStatusUtils';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
-import CitationGenerator from '../components/ui/CitationGenerator';
 import { ContentWriterComponent } from '../components/ui/ContentWriterComponent';
 import { HumanizerComponent } from '../components/ui/HumanizerComponent';
 import CheckMistakesComponent from '../components/ui/CheckMistakesComponent';
-import AiTutorChatComponent from '../components/ui/AiTutorChatComponent';
 import UploadHomeworkComponent from '../components/ui/UploadHomeworkComponent';
 import StudyPlannerComponent from '../components/ui/StudyPlannerComponent';
 import FlashcardComponent from '../components/ui/FlashcardComponent';
@@ -32,13 +30,11 @@ const AiStudy: React.FC = () => {
   // Component state preservation
   const [componentStates, setComponentStates] = useState<{[key: string]: boolean}>({
     'upload': true,
-    'ai-tutor': false,
     'mistake-checker': false,
     'study-planner': false,
     'flashcards': false,
     'content-writer': false,
     'humanizer': false,
-    'citation-generator': false,
     'document-summarizer': false,
   });
 
@@ -103,7 +99,6 @@ const AiStudy: React.FC = () => {
         'study-planner': 'study-planner',
         'content-writer': 'content-writer',
         'humanizer': 'humanizer',
-        'ai-tutor': 'ai-tutor'
       };
       
       const targetTab = tabMapping[tabParam] || tabParam;
@@ -177,13 +172,11 @@ const AiStudy: React.FC = () => {
 
   const tools = [
     { id: 'upload', name: t('aiStudy.uploadHomework'), icon: AiOutlineUpload, requiresPro: true },
-    { id: 'ai-tutor', name: t('aiStudy.aiTutor'), icon: FiMessageSquare, requiresPro: true },
     { id: 'mistake-checker', name: t('aiStudy.mistakeChecker'), icon: FiCheckCircle, requiresPro: true },
     { id: 'study-planner', name: t('aiStudy.studyPlanner'), icon: FiCalendar, requiresPro: true },
     { id: 'flashcards', name: t('aiStudy.flashcards'), icon: FiLayers, requiresPro: true },
     { id: 'content-writer', name: t('aiStudy.contentWriter'), icon: FiPenTool, requiresPro: true },
     { id: 'humanizer', name: 'Humanizer', icon: AiOutlineUser, requiresPro: true },
-    { id: 'citation-generator', name: t('aiStudy.citationGenerator'), icon: FiBookOpen, requiresPro: true },
     { id: 'document-summarizer', name: t('aiStudy.documentSummarizer'), icon: AiOutlineSearch, requiresPro: true },
   ];
 
@@ -199,16 +192,6 @@ const AiStudy: React.FC = () => {
           : 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-400',
         hoverText: 'group-hover:from-cyan-300 group-hover:via-blue-300 group-hover:to-teal-300',
         hoverIcon: 'group-hover:from-cyan-400/30 group-hover:to-blue-400/30'
-      },
-      'ai-tutor': {
-        text: isActive 
-          ? 'bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent'
-          : 'bg-gradient-to-r from-emerald-400 via-green-400 to-teal-400 bg-clip-text text-transparent',
-        icon: isActive 
-          ? 'bg-blue-500/20 text-blue-400'
-          : 'bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-emerald-400',
-        hoverText: 'group-hover:from-emerald-300 group-hover:via-green-300 group-hover:to-teal-300',
-        hoverIcon: 'group-hover:from-emerald-400/30 group-hover:to-green-400/30'
       },
       'mistake-checker': {
         text: isActive 
@@ -259,16 +242,6 @@ const AiStudy: React.FC = () => {
           : 'bg-gradient-to-r from-pink-500/20 to-rose-500/20 text-pink-400',
         hoverText: 'group-hover:from-pink-300 group-hover:via-rose-300 group-hover:to-red-300',
         hoverIcon: 'group-hover:from-pink-400/30 group-hover:to-rose-400/30'
-      },
-      'citation-generator': {
-        text: isActive 
-          ? 'bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent'
-          : 'bg-gradient-to-r from-indigo-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent',
-        icon: isActive 
-          ? 'bg-blue-500/20 text-blue-400'
-          : 'bg-gradient-to-r from-indigo-500/20 to-blue-500/20 text-indigo-400',
-        hoverText: 'group-hover:from-indigo-300 group-hover:via-blue-300 group-hover:to-cyan-300',
-        hoverIcon: 'group-hover:from-indigo-400/30 group-hover:to-blue-400/30'
       },
       'document-summarizer': {
         text: isActive 
@@ -629,11 +602,6 @@ const AiStudy: React.FC = () => {
                 {componentStates['upload'] && <UploadHomeworkComponent />}
               </div>
 
-              {/* AI Tutor */}
-              <div className={activeTab === 'ai-tutor' ? 'block' : 'hidden'}>
-                {componentStates['ai-tutor'] && <AiTutorChatComponent />}
-              </div>
-
               {/* Mistake Checker */}
               <div className={activeTab === 'mistake-checker' ? 'block' : 'hidden'}>
                 {componentStates['mistake-checker'] && <CheckMistakesComponent />}
@@ -647,11 +615,6 @@ const AiStudy: React.FC = () => {
               {/* Humanizer */}
               <div className={activeTab === 'humanizer' ? 'block' : 'hidden'}>
                 {componentStates['humanizer'] && <HumanizerComponent />}
-              </div>
-
-              {/* Citation Generator */}
-              <div className={activeTab === 'citation-generator' ? 'block' : 'hidden'}>
-                {componentStates['citation-generator'] && <CitationGenerator />}
               </div>
 
               {/* Study Planner */}
@@ -837,28 +800,7 @@ const AiStudy: React.FC = () => {
               </motion.button>
             </motion.div>
             
-            <motion.div 
-              className="bg-gradient-to-br from-emerald-500/20 to-teal-600/20 backdrop-blur-lg p-6 rounded-xl border border-emerald-400/30 hover:border-emerald-400/50 transition-all duration-300"
-              variants={itemVariants}
-              whileHover={{ y: -5, boxShadow: "0 25px 50px rgba(20, 184, 166, 0.15)" }}
-            >
-              <div className="bg-gradient-to-br from-emerald-400/20 to-teal-500/20 w-14 h-14 rounded-full flex items-center justify-center mb-4 border border-emerald-400/30">
-                <IconComponent icon={AiOutlineRobot} className="h-7 w-7 text-emerald-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-emerald-400 mb-2">{t('aiStudy.aiTutorChatTitle')}</h3>
-              <p className="text-slate-300">{t('aiStudy.aiTutorChatDescription')}</p>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => handleTabSwitch('ai-tutor')}
-                className="mt-4 text-emerald-400 font-medium flex items-center text-sm hover:text-emerald-300 transition-colors"
-              >
-                {t('aiStudy.chatNowBtn')}
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </motion.button>
-            </motion.div>
+
             
             <motion.div 
               className="bg-gradient-to-br from-purple-500/20 to-indigo-600/20 backdrop-blur-lg p-6 rounded-xl border border-purple-400/30 hover:border-purple-400/50 transition-all duration-300"
@@ -941,29 +883,6 @@ const AiStudy: React.FC = () => {
             </motion.div>
             
             <motion.div 
-              className="bg-gradient-to-br from-indigo-500/20 to-violet-600/20 backdrop-blur-lg p-6 rounded-xl border border-indigo-400/30 hover:border-indigo-400/50 transition-all duration-300"
-              variants={itemVariants}
-              whileHover={{ y: -5, boxShadow: "0 25px 50px rgba(99, 102, 241, 0.15)" }}
-            >
-              <div className="bg-gradient-to-br from-indigo-400/20 to-violet-500/20 w-14 h-14 rounded-full flex items-center justify-center mb-4 border border-indigo-400/30">
-                <IconComponent icon={FiBookOpen} className="h-7 w-7 text-indigo-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-indigo-400 mb-2">{t('aiStudy.citationGenerator')}</h3>
-              <p className="text-slate-300">{t('aiStudy.citationGeneratorDescription')}</p>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => handleTabSwitch('citation-generator')}
-                className="mt-4 text-indigo-400 font-medium flex items-center text-sm hover:text-indigo-300 transition-colors"
-              >
-                {t('aiStudy.generateCitationsBtn')}
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </motion.button>
-            </motion.div>
-            
-            <motion.div 
               className="bg-gradient-to-br from-green-500/20 to-emerald-600/20 backdrop-blur-lg p-6 rounded-xl border border-green-400/30 hover:border-green-400/50 transition-all duration-300"
               variants={itemVariants}
               whileHover={{ y: -5, boxShadow: "0 25px 50px rgba(34, 197, 94, 0.15)" }}
@@ -986,24 +905,6 @@ const AiStudy: React.FC = () => {
               </motion.button>
             </motion.div>
           </motion.div>
-
-          {/* Floating Action Button */}
-          <motion.button
-            className="fixed bottom-5 right-5 md:right-20 z-40 bg-gradient-to-r from-orange-500 to-red-500 text-white p-4 rounded-full shadow-2xl flex items-center justify-center backdrop-blur-sm border border-orange-400/30"
-            whileHover={{ 
-              scale: 1.1, 
-              boxShadow: "0 20px 40px rgba(251, 146, 60, 0.4)",
-              backgroundColor: "rgba(251, 146, 60, 0.9)"
-            }}
-            whileTap={{ scale: 0.95 }}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            onClick={() => handleTabSwitch('ai-tutor')}
-          >
-            <IconComponent icon={AiOutlineRobot} className="h-6 w-6" />
-            <span className="ml-2 font-medium hidden md:inline">{t('aiStudy.ask_ai_tutor')}</span>
-          </motion.button>
         </div>
       </motion.div>
       <Footer />

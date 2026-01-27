@@ -1,312 +1,214 @@
-// Study Planner API Service
-// Connects frontend to the backend study planner APIs
 
-import { API_BASE_URL } from '../config/api';
+import { supabase } from './supabase';
 
-// Generate a proper UUID v4
-const generateUUID = (): string => {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-};
-
-export interface StudyTask {
+export interface ChatFile {
   id: string;
-  user_id: string;
-  task: string;
-  subject: string;
-  date: string;
-  completed: boolean;
-  priority: 'low' | 'medium' | 'high';
-  estimated_hours: number;
-  source?: 'application' | 'study';
-  application_id?: number;
-  reminder?: boolean;
-  reminder_date?: string;
-  created_at?: string;
-  updated_at?: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  storagePath: string;
+  url?: string;
+  base64?: string;
+  extractedText?: string;
+  pdfPages?: string[];
+  fileContent?: string;
+  mimeType?: string;
 }
 
-export interface Application {
-  id: number;
-  user_id: string;
-  university: string;
-  program: string;
-  country: string;
-  deadline: string;
-  status: 'planning' | 'in-progress' | 'submitted' | 'interview' | 'accepted' | 'rejected' | 'waitlisted';
-  notes?: string;
-  reminder?: boolean;
-  reminder_date?: string;
-  created_at?: string;
-  updated_at?: string;
-  application_tasks?: ApplicationTask[];
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: string;
+  files?: ChatFile[];
 }
 
-export interface ApplicationTask {
-  id: number;
-  application_id: number;
-  task: string;
-  completed: boolean;
-  due_date?: string;
-  reminder?: boolean;
-  reminder_date?: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface Reminder {
-  id: number;
-  user_id: string;
-  type: 'study_task' | 'application' | 'application_task';
-  reference_id: string;
+export interface ChatSession {
+  id: string;
   title: string;
-  description?: string;
-  reminder_date: string;
-  priority: 'low' | 'medium' | 'high';
-  is_active: boolean;
-  metadata?: any;
-  created_at?: string;
-  updated_at?: string;
+  updated_at: string;
+  created_at: string;
+  chat_data: ChatMessage[];
+  user_id: string;
 }
 
-export interface DashboardStats {
-  studyTasks: {
-    total: number;
-    completed: number;
-    pending: number;
-    highPriority: number;
-  };
-  applications: {
-    total: number;
-    planning: number;
-    inProgress: number;
-    submitted: number;
-  };
-  reminders: {
-    active: number;
-    today: number;
-  };
-}
+export const chatService = {
+  // Get all chat sessions for the current user
+  async getChatSessions(): Promise<ChatSession[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
 
-class StudyPlannerApiService {
-  private baseUrl: string;
-  private userId: string;
+    const { data, error } = await supabase
+      .from('chat_sessions')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('is_deleted', false) // Assuming soft delete, or just ignore if physical delete is used
+      .order('updated_at', { ascending: false });
 
-  constructor(userId: string) {
-    // Use centralized API configuration
-    this.baseUrl = API_BASE_URL;
-    this.userId = userId;
-  }
+    if (error) throw error;
+    return data || [];
+  },
 
-  private async makeRequest<T>(
-    endpoint: string, 
-    options: RequestInit = {},
-    retries: number = 3
-  ): Promise<{ success: boolean; data?: T; message?: string; error?: string }> {
-    let lastError: any;
-    
-    for (let attempt = 0; attempt <= retries; attempt++) {
-      try {
-        const url = `${this.baseUrl}${endpoint}`;
-        
-        const response = await fetch(url, {
-          ...options,
-          headers: {
-            'Content-Type': 'application/json',
-            ...options.headers,
-          },
-        });
+  // Get a specific chat session
+  async getChatSession(sessionId: string): Promise<ChatSession | null> {
+    const { data, error } = await supabase
+      .from('chat_sessions')
+      .select('*')
+      .eq('id', sessionId)
+      .single();
 
-        const result = await response.json();
-        
-        if (!response.ok) {
-          // For 500 errors, retry if we have attempts left
-          if (response.status >= 500 && attempt < retries) {
-            console.warn(`API Error (${response.status}) - Attempt ${attempt + 1}/${retries + 1}:`, result);
-            lastError = new Error(result.error || result.message || `HTTP ${response.status}`);
-            
-            // Exponential backoff: wait 1s, 2s, 4s between retries
-            const delay = Math.pow(2, attempt) * 1000;
-            await new Promise(resolve => setTimeout(resolve, delay));
-            continue;
-          }
-          
-          console.error(`API Error (${response.status}):`, result);
-          return {
-            success: false,
-            error: result.error || result.message || `HTTP ${response.status}`,
-          };
-        }
-
-        return result;
-      } catch (error) {
-        lastError = error;
-        
-        // For network errors, retry if we have attempts left
-        if (attempt < retries) {
-          console.warn(`Network error - Attempt ${attempt + 1}/${retries + 1}:`, error);
-          
-          // Exponential backoff: wait 1s, 2s, 4s between retries
-          const delay = Math.pow(2, attempt) * 1000;
-          await new Promise(resolve => setTimeout(resolve, delay));
-          continue;
-        }
-        
-        console.error('Network error (final attempt):', error);
-      }
+    if (error) {
+      console.error('Error fetching chat session:', error);
+      return null;
     }
-    
-    return {
-      success: false,
-      error: lastError instanceof Error ? lastError.message : 'Network error after retries',
+    return data;
+  },
+
+  // Create a new chat session
+  async createChatSession(title: string): Promise<ChatSession> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data, error } = await supabase
+      .from('chat_sessions')
+      .insert({
+        user_id: user.id,
+        title,
+        chat_data: [],
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Update a chat session's metadata (e.g., title)
+  async updateChatSession(sessionId: string, updates: Partial<ChatSession>): Promise<void> {
+    const { error } = await supabase
+      .from('chat_sessions')
+      .update(updates)
+      .eq('id', sessionId);
+
+    if (error) throw error;
+  },
+
+  // Delete a chat session
+  async deleteChatSession(sessionId: string): Promise<void> {
+    const { error } = await supabase
+      .from('chat_sessions')
+      .delete()
+      .eq('id', sessionId);
+
+    if (error) throw error;
+  },
+
+  // Update the chat data (messages) for a session
+  async updateChatData(sessionId: string, chatData: ChatMessage[]): Promise<void> {
+    const { error } = await supabase
+      .from('chat_sessions')
+      .update({
+        chat_data: chatData,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', sessionId);
+
+    if (error) throw error;
+  },
+
+  // Add a message to a session
+  async addMessage(sessionId: string, message: ChatMessage): Promise<void> {
+    const session = await this.getChatSession(sessionId);
+    if (!session) throw new Error('Session not found');
+
+    const updatedChatData = [...session.chat_data, message];
+    await this.updateChatData(sessionId, updatedChatData);
+  },
+
+  // Generate a unique ID for messages
+  generateMessageId(): string {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+  },
+
+  // Upload a file and link it to a chat message
+  async uploadFile(
+    file: File, 
+    sessionId: string, 
+    messageIndex: number, 
+    base64?: string, 
+    extractedText?: string, 
+    pages?: string[]
+  ): Promise<ChatFile> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Upload to Storage
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `${user.id}/${sessionId}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('chat-files')
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    // Save metadata to Database
+    const fileData = {
+      session_id: sessionId,
+      file_name: file.name,
+      file_type: file.type,
+      file_size: file.size,
+      storage_path: filePath,
+      mime_type: file.type,
+      message_index: messageIndex
     };
+
+    const { data, error: dbError } = await supabase
+      .from('chat_files')
+      .insert(fileData)
+      .select()
+      .single();
+
+    if (dbError) throw dbError;
+
+    // Return the ChatFile object
+    return {
+      id: data.id,
+      fileName: data.file_name,
+      fileType: data.file_type,
+      fileSize: data.file_size,
+      storagePath: data.storage_path,
+      mimeType: data.mime_type,
+      // Add extra fields needed by the UI but not stored directly in this table structure (or stored differently)
+      // Note: The UI seems to expect these to be returned or available
+      base64: base64, 
+      extractedText: extractedText,
+      pdfPages: pages
+    };
+  },
+
+  // Get files associated with a specific message in a session
+  async getMessageFiles(sessionId: string, messageIndex: number): Promise<ChatFile[]> {
+    const { data, error } = await supabase
+      .from('chat_files')
+      .select('*')
+      .eq('session_id', sessionId)
+      .eq('message_index', messageIndex);
+
+    if (error) throw error;
+
+    return data.map(file => ({
+      id: file.id,
+      fileName: file.file_name,
+      fileType: file.file_type,
+      fileSize: file.file_size,
+      storagePath: file.storage_path,
+      mimeType: file.mime_type
+      // Note: base64, extractedText, pdfPages are not stored in chat_files table in the provided schema
+      // They might be needed to be fetched from storage or stored in a separate column/table if persistence is required
+      // For now, we return what we have. The UI handles missing extracted text by showing a placeholder.
+    }));
   }
-
-  // ============= STUDY TASKS =============
-
-  async getStudyTasks(): Promise<{ success: boolean; data?: StudyTask[]; error?: string }> {
-    return this.makeRequest<StudyTask[]>(`/api/study-planner/users/${this.userId}/study-tasks`);
-  }
-
-  async getStudyTaskById(taskId: string): Promise<{ success: boolean; data?: StudyTask; error?: string }> {
-    return this.makeRequest<StudyTask>(`/api/study-planner/study-tasks/${taskId}`);
-  }
-
-  async createStudyTask(taskData: Omit<StudyTask, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<{ success: boolean; data?: StudyTask; error?: string }> {
-    return this.makeRequest<StudyTask>('/api/study-planner/study-tasks', {
-      method: 'POST',
-      body: JSON.stringify({
-        ...taskData,
-        user_id: this.userId,
-      }),
-    });
-  }
-
-  async updateStudyTask(taskId: string, updateData: Partial<StudyTask>): Promise<{ success: boolean; data?: StudyTask; error?: string }> {
-    return this.makeRequest<StudyTask>(`/api/study-planner/study-tasks/${taskId}`, {
-      method: 'PUT',
-      body: JSON.stringify(updateData),
-    });
-  }
-
-  async deleteStudyTask(taskId: string): Promise<{ success: boolean; error?: string }> {
-    return this.makeRequest(`/api/study-planner/study-tasks/${taskId}`, {
-      method: 'DELETE',
-    });
-  }
-
-  // ============= APPLICATIONS =============
-
-  async getApplications(): Promise<{ success: boolean; data?: Application[]; error?: string }> {
-    return this.makeRequest<Application[]>(`/api/study-planner/users/${this.userId}/applications`);
-  }
-
-  async getApplicationById(applicationId: number): Promise<{ success: boolean; data?: Application; error?: string }> {
-    return this.makeRequest<Application>(`/api/study-planner/applications/${applicationId}`);
-  }
-
-  async createApplication(applicationData: Omit<Application, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'application_tasks'>): Promise<{ success: boolean; data?: Application; error?: string }> {
-    return this.makeRequest<Application>('/api/study-planner/applications', {
-      method: 'POST',
-      body: JSON.stringify({
-        ...applicationData,
-        user_id: this.userId,
-      }),
-    });
-  }
-
-  async updateApplication(applicationId: number, updateData: Partial<Application>): Promise<{ success: boolean; data?: Application; error?: string }> {
-    return this.makeRequest<Application>(`/api/study-planner/applications/${applicationId}`, {
-      method: 'PUT',
-      body: JSON.stringify(updateData),
-    });
-  }
-
-  async deleteApplication(applicationId: number): Promise<{ success: boolean; error?: string }> {
-    return this.makeRequest(`/api/study-planner/applications/${applicationId}`, {
-      method: 'DELETE',
-    });
-  }
-
-  // ============= APPLICATION TASKS =============
-
-  async createApplicationTask(applicationId: number, taskData: Omit<ApplicationTask, 'id' | 'application_id' | 'created_at' | 'updated_at'>): Promise<{ success: boolean; data?: ApplicationTask; error?: string }> {
-    return this.makeRequest<ApplicationTask>(`/api/study-planner/applications/${applicationId}/tasks`, {
-      method: 'POST',
-      body: JSON.stringify(taskData),
-    });
-  }
-
-  async updateApplicationTask(taskId: number, updateData: Partial<ApplicationTask>): Promise<{ success: boolean; data?: ApplicationTask; error?: string }> {
-    return this.makeRequest<ApplicationTask>(`/api/study-planner/application-tasks/${taskId}`, {
-      method: 'PUT',
-      body: JSON.stringify(updateData),
-    });
-  }
-
-  async deleteApplicationTask(taskId: number): Promise<{ success: boolean; error?: string }> {
-    return this.makeRequest(`/api/study-planner/application-tasks/${taskId}`, {
-      method: 'DELETE',
-    });
-  }
-
-  // ============= REMINDERS =============
-
-  async getReminders(): Promise<{ success: boolean; data?: Reminder[]; error?: string }> {
-    return this.makeRequest<Reminder[]>(`/api/study-planner/users/${this.userId}/reminders`);
-  }
-
-  async createReminder(reminderData: Omit<Reminder, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<{ success: boolean; data?: Reminder; error?: string }> {
-    return this.makeRequest<Reminder>('/api/study-planner/reminders', {
-      method: 'POST',
-      body: JSON.stringify({
-        ...reminderData,
-        user_id: this.userId,
-      }),
-    });
-  }
-
-  async updateReminder(reminderId: number, updateData: Partial<Reminder>): Promise<{ success: boolean; data?: Reminder; error?: string }> {
-    return this.makeRequest<Reminder>(`/api/study-planner/reminders/${reminderId}`, {
-      method: 'PUT',
-      body: JSON.stringify(updateData),
-    });
-  }
-
-  async deleteReminder(reminderId: number): Promise<{ success: boolean; error?: string }> {
-    return this.makeRequest(`/api/study-planner/reminders/${reminderId}`, {
-      method: 'DELETE',
-    });
-  }
-
-  // ============= NOTIFICATIONS =============
-
-  async getUpcomingNotifications(): Promise<{ success: boolean; data?: any[]; error?: string }> {
-    try {
-      const now = new Date();
-      const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-      
-      // Get reminders for the next week
-      const result = await this.makeRequest<any[]>(`/api/study-planner/users/${this.userId}/reminders?startDate=${now.toISOString()}&endDate=${weekFromNow.toISOString()}&isActive=true`);
-      
-      return result;
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch notifications',
-      };
-    }
-  }
-
-  // ============= DASHBOARD =============
-
-  async getDashboardStats(): Promise<{ success: boolean; data?: DashboardStats; error?: string }> {
-    return this.makeRequest<DashboardStats>(`/api/study-planner/users/${this.userId}/dashboard/stats`);
-  }
-}
-
-export { StudyPlannerApiService };
+};

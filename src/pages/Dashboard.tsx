@@ -330,7 +330,7 @@ const Dashboard: React.FC = () => {
                 transition={{
                   duration: 2,
                   repeat: Infinity,
-                  ease: "easeInOut"
+                  ease: [0.42, 0, 0.58, 1] as const
                 }}
               >
                 <IconComponent icon={FaCrown} className="w-12 h-12 text-white" />
@@ -379,7 +379,7 @@ const Dashboard: React.FC = () => {
                     className="absolute left-0 top-0 h-full bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500 rounded-full shadow-lg"
                     initial={{ width: 0 }}
                     animate={{ width: `${progressPercentage}%` }}
-                    transition={{ duration: 1.5, ease: "easeOut" }}
+                    transition={{ duration: 1.5, ease: [0, 0, 0.58, 1] as const }}
                   >
                     {/* Animated shine effect */}
                     <motion.div
@@ -390,7 +390,7 @@ const Dashboard: React.FC = () => {
                       transition={{
                         duration: 2,
                         repeat: Infinity,
-                        ease: "easeInOut"
+                        ease: [0.42, 0, 0.58, 1] as const
                       }}
                     />
                   </motion.div>

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, Variants } from 'framer-motion';
 import { 
   FaCheckCircle, FaCrown, FaRocket, FaStar, FaGift, 
   FaHome, FaHeart, FaMagic
@@ -65,49 +65,49 @@ const ThankYou: React.FC = () => {
     navigate('/', { replace: true });
   };
 
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0, scale: 0.8 },
     visible: {
       opacity: 1,
       scale: 1,
       transition: {
         duration: 0.8,
-        ease: "easeOut",
+        ease: [0, 0, 0.58, 1] as const,
         staggerChildren: 0.2
       }
     }
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, y: 30 },
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.6, ease: "easeOut" }
+      transition: { duration: 0.6, ease: [0, 0, 0.58, 1] as const }
     }
   };
 
-  const floatingVariants = {
+  const floatingVariants: Variants = {
     animate: {
       y: [-10, 10, -10],
       rotate: [-5, 5, -5],
       transition: {
         duration: 3,
         repeat: Infinity,
-        ease: "easeInOut"
+        ease: [0.42, 0, 0.58, 1] as const
       }
     }
   };
 
-  const sparkleVariants = {
+  const sparkleVariants: Variants = {
     animate: {
-      scale: [1, 1.2, 1],
+      scale: [1, 1.5, 1],
       rotate: [0, 180, 360],
-      opacity: [0.7, 1, 0.7],
+      opacity: [0, 1, 0],
       transition: {
-        duration: 2,
+        duration: 1.5,
         repeat: Infinity,
-        ease: "easeInOut"
+        ease: [0.42, 0, 0.58, 1] as const
       }
     }
   };
@@ -303,7 +303,7 @@ const ThankYou: React.FC = () => {
               transition={{ 
                 duration: 2, 
                 repeat: Infinity,
-                ease: "easeInOut"
+                ease: [0.42, 0, 0.58, 1] as const
               }}
               className="inline-block"
             >

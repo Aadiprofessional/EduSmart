@@ -533,7 +533,7 @@ const ChatBot: React.FC = () => {
           <motion.div
             className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
             animate={{ rotate: 360 }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            transition={{ duration: 20, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
           />
           
           {/* Pulsing ring */}
@@ -549,7 +549,7 @@ const ChatBot: React.FC = () => {
             ) : (
               <motion.div
                 animate={{ rotate: [0, 360] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                transition={{ duration: 2, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
               >
                 <IconWrapper icon={FaRobot} size={20} />
               </motion.div>

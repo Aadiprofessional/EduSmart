@@ -248,7 +248,7 @@ const Hero3D: React.FC = () => {
           transition={{
             duration: 10,
             repeat: Infinity,
-            ease: "easeInOut"
+            ease: [0.42, 0, 0.58, 1] as const
           }}
         />
         <motion.div
@@ -261,7 +261,7 @@ const Hero3D: React.FC = () => {
           transition={{
             duration: 8,
             repeat: Infinity,
-            ease: "easeInOut",
+            ease: [0.42, 0, 0.58, 1] as const,
             delay: 1
           }}
         />
@@ -275,7 +275,7 @@ const Hero3D: React.FC = () => {
           transition={{
             duration: 12,
             repeat: Infinity,
-            ease: "easeInOut",
+            ease: [0.42, 0, 0.58, 1] as const,
             delay: 2
           }}
         />
@@ -318,7 +318,7 @@ const Hero3D: React.FC = () => {
             transition={{
               duration: 4,
               repeat: Infinity,
-              ease: "easeInOut"
+              ease: [0.42, 0, 0.58, 1] as const
             }}
           />
           <motion.path
@@ -331,7 +331,7 @@ const Hero3D: React.FC = () => {
             transition={{
               duration: 5,
               repeat: Infinity,
-              ease: "easeInOut",
+              ease: [0.42, 0, 0.58, 1] as const,
               delay: 1
             }}
           />
@@ -500,8 +500,8 @@ const Hero3D: React.FC = () => {
                 scale: [1, 1.1, 1]
               }}
               transition={{ 
-                rotate: { duration: 20, repeat: Infinity, ease: "linear" },
-                scale: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+                rotate: { duration: 20, repeat: Infinity, ease: [0, 0, 1, 1] as const },
+                scale: { duration: 2, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const }
               }}
             >
               <IconComponent icon={AiOutlineBulb} className="w-4 h-4 lg:w-6 lg:h-6 text-white" />
@@ -516,7 +516,7 @@ const Hero3D: React.FC = () => {
               transition={{ 
                 duration: 4, 
                 repeat: Infinity, 
-                ease: "easeInOut" 
+                ease: [0.42, 0, 0.58, 1] as const 
               }}
             >
               <IconComponent icon={FiZap} className="w-4 h-4 lg:w-5 lg:h-5 text-white" />
@@ -615,13 +615,13 @@ const Hero3D: React.FC = () => {
       <motion.div
         className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10"
         animate={{ y: [0, 15, 0] }}
-        transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+        transition={{ duration: 2.5, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const }}
       >
         <div className="w-6 h-10 lg:w-8 lg:h-12 border-3 border-cyan-500/60 rounded-full flex justify-center backdrop-blur-sm bg-slate-900/20 shadow-lg">
           <motion.div 
             className="w-1.5 h-3 lg:w-2 lg:h-4 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full mt-1.5 lg:mt-2 shadow-sm"
             animate={{ opacity: [0.3, 1, 0.3] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const }}
           />
         </div>
       </motion.div>

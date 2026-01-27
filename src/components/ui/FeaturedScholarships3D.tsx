@@ -178,7 +178,7 @@ const FeaturedScholarships3D: React.FC = () => {
       opacity: 1,
       transition: {
         duration: 0.8,
-        ease: "easeOut"
+        ease: [0, 0, 0.58, 1] as const
       }
     }
   };

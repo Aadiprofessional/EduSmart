@@ -1,5 +1,7 @@
+import { Variants } from 'framer-motion';
+
 // Animation variants for framer-motion
-export const fadeIn = (direction: "up" | "down" | "left" | "right", delay: number = 0) => {
+export const fadeIn = (direction: "up" | "down" | "left" | "right", delay: number = 0): Variants => {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   
   // Use smaller values for mobile devices
@@ -20,7 +22,7 @@ export const fadeIn = (direction: "up" | "down" | "left" | "right", delay: numbe
         type: "tween",
         duration: duration,
         delay,
-        ease: [0.25, 0.25, 0.25, 0.75],
+        ease: [0.25, 0.25, 0.25, 0.75] as const,
       },
     },
   };
@@ -38,7 +40,7 @@ export const staggerContainer = (staggerChildren: number, delayChildren: number 
   };
 };
 
-export const scaleVariant = (delay: number = 0) => {
+export const scaleVariant = (delay: number = 0): Variants => {
   return {
     hidden: {
       scale: 0,
@@ -56,7 +58,12 @@ export const scaleVariant = (delay: number = 0) => {
   };
 };
 
-export const slideIn = (direction: "up" | "down" | "left" | "right", type: string, delay: number, duration: number) => {
+export const slideIn = (
+  direction: "up" | "down" | "left" | "right",
+  type: "tween" | "spring" | "inertia" | "keyframes",
+  delay: number,
+  duration: number
+): Variants => {
   return {
     hidden: {
       x: direction === "left" ? "-100%" : direction === "right" ? "100%" : 0,
@@ -69,7 +76,7 @@ export const slideIn = (direction: "up" | "down" | "left" | "right", type: strin
         type,
         delay,
         duration,
-        ease: "easeOut",
+        ease: [0, 0, 0.58, 1] as const,
       },
     },
   };

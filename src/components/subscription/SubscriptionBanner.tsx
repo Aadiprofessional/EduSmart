@@ -85,7 +85,7 @@ const SubscriptionBanner: React.FC = () => {
               transition={{
                 duration: 2,
                 repeat: Infinity,
-                ease: "easeInOut"
+                ease: [0.42, 0, 0.58, 1] as const
               }}
             >
               <IconComponent icon={FaCrown} className="w-12 h-12 text-white" />

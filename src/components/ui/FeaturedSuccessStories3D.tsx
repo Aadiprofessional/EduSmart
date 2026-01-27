@@ -64,7 +64,7 @@ const itemVariants = {
     rotateX: 0,
     transition: {
       duration: 0.6,
-      ease: "easeOut"
+      ease: [0, 0, 0.58, 1] as const
     }
   }
 };

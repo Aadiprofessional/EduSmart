@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaGraduationCap, FaUniversity, FaCalendarAlt, FaDollarSign, FaMapMarkerAlt, FaSearch, FaFilter, FaBookmark, FaRegBookmark, FaExternalLinkAlt, FaSpinner, FaTimesCircle, FaTimes, FaCheck, FaEye, FaHeart, FaStar, FaAward, FaGlobe, FaRobot, FaAtom, FaBolt, FaRocket, FaUsers, FaClock, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { HiOutlineAcademicCap, HiOutlineLocationMarker } from 'react-icons/hi';
 import IconComponent from '../components/ui/IconComponent';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { useLanguage } from '../utils/LanguageContext';
 import { scholarshipAPI } from '../utils/apiService';
 
@@ -23,7 +23,7 @@ interface Scholarship {
 }
 
 // Enhanced Animation variants with futuristic effects
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -34,7 +34,7 @@ const containerVariants = {
   }
 };
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { y: 40, opacity: 0, scale: 0.95 },
   visible: {
     y: 0,
@@ -49,7 +49,7 @@ const itemVariants = {
   }
 };
 
-const cardVariants = {
+const cardVariants: Variants = {
   hidden: { scale: 0.9, opacity: 0, rotateX: -15 },
   visible: {
     scale: 1,
@@ -75,14 +75,14 @@ const cardVariants = {
   }
 };
 
-const floatingVariants = {
+const floatingVariants: Variants = {
   animate: {
     y: [-20, 20, -20],
     rotate: [0, 5, -5, 0],
     transition: {
       duration: 6,
       repeat: Infinity,
-      ease: "easeInOut"
+      ease: [0.42, 0, 0.58, 1] as const
     }
   }
 };
@@ -304,7 +304,7 @@ const Scholarships: React.FC = () => {
           <motion.div 
             className="relative"
             animate={{ rotate: 360 }}
-            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            transition={{ duration: 2, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
           >
             <div className="w-20 h-20 border-4 border-blue-300/30 rounded-full"></div>
             <div className="absolute top-0 left-0 w-20 h-20 border-4 border-blue-400 rounded-full border-t-transparent animate-spin"></div>

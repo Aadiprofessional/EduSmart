@@ -158,7 +158,7 @@ const Signup: React.FC = () => {
       transition: {
         duration: 6,
         repeat: Infinity,
-        ease: "easeInOut"
+        ease: [0.42, 0, 0.58, 1] as const
       }
     }
   };
@@ -177,7 +177,7 @@ const Signup: React.FC = () => {
         duration: 10 + Math.random() * 4,
         repeat: Infinity,
         delay: delay,
-        ease: "easeInOut"
+        ease: [0.42, 0, 0.58, 1] as const
       }}
     />
   );
@@ -206,7 +206,7 @@ const Signup: React.FC = () => {
           initial={{ pathLength: 0, opacity: 0 }}
           animate={{ pathLength: 1, opacity: 1 }}
           transition={{
-            pathLength: { duration: 3, repeat: Infinity, ease: "easeInOut" },
+            pathLength: { duration: 3, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const },
             opacity: { duration: 1 }
           }}
         />
@@ -218,7 +218,7 @@ const Signup: React.FC = () => {
           initial={{ pathLength: 0, opacity: 0 }}
           animate={{ pathLength: 1, opacity: 1 }}
           transition={{
-            pathLength: { duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 },
+            pathLength: { duration: 4, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const, delay: 1 },
             opacity: { duration: 1, delay: 0.5 }
           }}
         />
@@ -250,7 +250,7 @@ const Signup: React.FC = () => {
       transition={{
         duration: 12 + Math.random() * 6,
         repeat: Infinity,
-        ease: "easeInOut",
+        ease: [0.42, 0, 0.58, 1] as const,
         delay: animationDelay
       }}
       whileHover={{
@@ -323,7 +323,7 @@ const Signup: React.FC = () => {
           transition={{
             duration: 22,
             repeat: Infinity,
-            ease: "linear"
+            ease: [0, 0, 1, 1] as const
           }}
           style={{
             backgroundImage: `
@@ -343,7 +343,7 @@ const Signup: React.FC = () => {
           transition={{
             duration: 28,
             repeat: Infinity,
-            ease: "linear"
+            ease: [0, 0, 1, 1] as const
           }}
           style={{
             backgroundImage: `repeating-linear-gradient(
@@ -366,9 +366,9 @@ const Signup: React.FC = () => {
               borderColor: ['rgba(16, 185, 129, 0.3)', 'rgba(16, 185, 129, 0.6)', 'rgba(16, 185, 129, 0.3)']
             }}
             transition={{ 
-              rotate: { duration: 25, repeat: Infinity, ease: "linear" },
-              scale: { duration: 5, repeat: Infinity, ease: "easeInOut" },
-              borderColor: { duration: 4, repeat: Infinity, ease: "easeInOut" }
+              rotate: { duration: 25, repeat: Infinity, ease: [0, 0, 1, 1] as const },
+              scale: { duration: 5, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const },
+              borderColor: { duration: 4, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const }
             }}
           />
           <motion.div
@@ -379,9 +379,9 @@ const Signup: React.FC = () => {
               borderColor: ['rgba(20, 184, 166, 0.3)', 'rgba(20, 184, 166, 0.6)', 'rgba(20, 184, 166, 0.3)']
             }}
             transition={{ 
-              rotate: { duration: 30, repeat: Infinity, ease: "linear" },
-              borderRadius: { duration: 6, repeat: Infinity, ease: "easeInOut" },
-              borderColor: { duration: 5, repeat: Infinity, ease: "easeInOut" }
+              rotate: { duration: 30, repeat: Infinity, ease: [0, 0, 1, 1] as const },
+              borderRadius: { duration: 6, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const },
+              borderColor: { duration: 5, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const }
             }}
           />
         </div>
@@ -453,12 +453,12 @@ const Signup: React.FC = () => {
           <motion.div
             className="absolute top-16 right-16 w-24 h-24 border-2 border-emerald-400/30 rounded-full"
             animate={{ rotate: 360 }}
-            transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+            transition={{ duration: 25, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
           />
           <motion.div
             className="absolute bottom-28 left-12 w-18 h-18 border-2 border-teal-400/30 rounded-lg"
             animate={{ rotate: -360 }}
-            transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+            transition={{ duration: 30, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
           />
           <motion.div
             className="absolute top-1/3 left-6 w-14 h-14 bg-gradient-to-r from-emerald-400/20 to-cyan-400/20 rounded-full blur-sm"
@@ -466,7 +466,7 @@ const Signup: React.FC = () => {
               scale: [1, 1.6, 1],
               opacity: [0.2, 0.7, 0.2]
             }}
-            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+            transition={{ duration: 5, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const }}
           />
           <motion.div
             className="absolute bottom-1/4 right-8 w-10 h-10 bg-gradient-to-r from-teal-400/25 to-blue-400/25 rounded-full blur-sm"
@@ -474,7 +474,7 @@ const Signup: React.FC = () => {
               scale: [1, 1.4, 1],
               opacity: [0.25, 0.6, 0.25]
             }}
-            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+            transition={{ duration: 6, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const, delay: 2 }}
           />
         </div>
 
@@ -754,7 +754,7 @@ const Signup: React.FC = () => {
                           <motion.div
                             className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full mr-2"
                             animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                           />
                           {t('auth.signup.creatingAccount')}
                         </div>

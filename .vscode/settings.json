@@ -1,3 +1,6 @@
 {
-    "java.compile.nullAnalysis.mode": "automatic"
+    "java.compile.nullAnalysis.mode": "automatic",
+    "i18n-ally.localesPaths": [
+        "src/utils/locales"
+    ]
 }

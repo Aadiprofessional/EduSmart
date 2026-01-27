@@ -2,15 +2,13 @@ import React, { useState, useEffect, useRef, useContext, useMemo, useCallback } 
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-// @ts-ignore
-import rehypeRaw from 'rehype-raw';
 
 import DOMPurify from 'dompurify';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-
+import rehypeRaw from 'rehype-raw';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import { 
@@ -21,38 +19,38 @@ import {
   FiMenu, FiHome, FiMic, FiFileText, FiVideo, FiZap, FiTrendingUp, FiTarget, FiSquare,
   FiVolume, FiFile, FiPaperclip, FiSidebar, FiAlertCircle, FiRefreshCw, FiSearch, FiGlobe
 } from 'react-icons/fi';
-import { ThemeContext } from '../contexts/MockThemeContext';
-import { useAuth, User as AuthUser } from '../utils/AuthContext';
-import { useUser } from '../contexts/UserContext';
-import { supabase } from '../utils/supabase';
-import { userService } from '../services/mockServices';
+import { ThemeContext } from '../context/ThemeContext';
+import { useAuth, User } from '../context/AuthContext';
+import { useUser } from '../context/UserContext';
+import { supabase } from '../supabaseClient';
+import { userService } from '../services/userService';
 import { getNewUserChats, getNewUserChatsPaginated, getNewChatMessages, getChatMessagesLazy, getLatestChatMessages, supabaseMessageToFrontend, SupabaseChat, createNewChat, addUserMessage, addUserMessageWithAttachment, deleteNewChat, FrontendMessage } from '../services/chatService';
-import { ProFeatureAlert, ImageSkeleton, IntelligentImageGeneration, IntelligentImageThinking } from '../components/ChatComponents';
-import { AuthRequiredButton } from '../components/ChatComponents';
-import { ThinkingIndicator } from '../components/ChatComponents';
-import { ChartGenerationBox } from '../components/ChatComponents';
-import { LinkCirclesButton, LinkCitationsPanel } from '../components/ChatComponents';
+import { ProFeatureAlert, ImageSkeleton, IntelligentImageGeneration, IntelligentImageThinking } from '../components';
+import AuthRequiredButton from '../components/AuthRequiredButton';
+import ThinkingIndicator from '../components/ThinkingIndicator';
+import ChartGenerationBox from '../components/ChartGenerationBox';
+import { LinkCirclesButton, LinkCitationsPanel } from '../components/LinkDisplay';
 
-import { intelligentImageStorage } from '../services/mockServices';
-import { streamingImageService, StreamChunk } from '../services/mockServices';
-import { imageReplacementService } from '../services/mockServices';
-import { documentProcessingService } from '../services/mockServices';
-import { useAlert } from '../contexts/MockAlertContext';
-import { FilePreviewModal } from '../components/ChatComponents';
-import { FileUploadPopup } from '../components/ChatComponents';
-import { uploadFileToStorage, FileUploadResult, validateFile, formatFileSize, getFileIcon } from '../utils/chatUtils';
-import { extractPlainTextFromHTML, extractTextForSharing } from '../utils/chatUtils';
-import { CodeBlock } from '../components/ChatComponents';
-import { extractLinksFromText } from '../utils/chatUtils';
-import { UserMessageAttachments } from '../components/ChatComponents';
-import { BotMessageAttachments } from '../components/ChatComponents';
-import { chartService, ChartConfig } from '../services/mockServices';
-import { getCurrentLocalTimeFormatted } from '../utils/chatUtils';
-import coinIcon from '../assets/Logo.png';
-import matrixLogo from '../assets/matrixedu-logo.svg';
-
-import { AIImageStrip } from '../components/ChatComponents';
-import { ChargeModal } from '../components/ChatComponents';
+import { intelligentImageStorage } from '../services/intelligentImageStorage';
+import { streamingImageService, StreamChunk } from '../services/streamingImageService';
+import { imageReplacementService } from '../services/imageReplacementService';
+import { documentProcessingService } from '../services/documentProcessingService';
+import { useAlert } from '../context/AlertContext';
+import FilePreviewModal from '../components/FilePreviewModal';
+import FileUploadPopup from '../components/FileUploadPopup';
+import { uploadFileToStorage, FileUploadResult, validateFile, formatFileSize, getFileIcon } from '../utils/fileUpload';
+import { extractPlainTextFromHTML, extractTextForSharing } from '../utils/textExtractor';
+import CodeBlock from '../components/CodeBlock';
+import { extractLinksFromText } from '../utils/linkExtractor';
+import { UserMessageAttachments } from '../components/UserMessageAttachments';
+import { BotMessageAttachments } from '../components/BotMessageAttachments';
+import { chartService, ChartConfig } from '../services/chartService';
+import { getCurrentLocalTimeFormatted } from '../utils/timeUtils';
+import coinIcon from '../assets/coin.png';
+import matrixLogo from '../assets/matrix.svg';
+import './ChatPage.css';
+import AIImageStrip from '../components/AIImageStrip';
+import ChargeModal from '../components/ChargeModal';
 
 // HTML text formatting will be implemented from scratch
 
@@ -955,7 +953,7 @@ const TextWithCharts: React.FC<{
       if (olderMessages.length > 0) {
         // Convert to frontend format
         const processedMessages = olderMessages.map((msg: any) => {
-          return supabaseMessageToFrontend(msg) as unknown as Message;
+          return supabaseMessageToFrontend(msg);
         }).filter((msg): msg is Message => Boolean(msg));
         
         // Prepend older messages to the beginning
@@ -1003,7 +1001,7 @@ const TextWithCharts: React.FC<{
       setIsLoadingMoreChats(true);
 
       // Resolve user id from context or session
-      let userId = user?.id;
+      let userId = user?.uid;
       if (!userId) {
         const { data: { session } } = await supabase.auth.getSession();
         userId = session?.user?.id || undefined;
@@ -1826,14 +1824,14 @@ const TextWithCharts: React.FC<{
       setIsLoadingChatsDebug(true);
       
       // First check if we have a user from AuthContext
-      if (user && user.id) {
-        console.log('✅ Using authenticated user from AuthContext:', user.id);
+      if (user && user.uid) {
+        console.log('✅ Using authenticated user from AuthContext:', user.uid);
         console.log('User object:', JSON.stringify(user, null, 2));
         
         // Use new chat service to get user chats
-        console.log('🔍 Fetching chats using new chat service for user:', user.id);
+        console.log('🔍 Fetching chats using new chat service for user:', user.uid);
         
-        const userChats = await getNewUserChatsPaginated(user.id, CHAT_LIST_PAGE_SIZE, 0);
+        const userChats = await getNewUserChatsPaginated(user.uid, CHAT_LIST_PAGE_SIZE, 0);
         
         console.log('📊 Fetched chats count from new service:', userChats?.length || 0);
         console.log('📋 Raw chats data:', JSON.stringify(userChats, null, 2));
@@ -1847,8 +1845,8 @@ const TextWithCharts: React.FC<{
             title: chat.title || 'New Chat',
             messages: [],
             role: chat.role || 'general',
-            roleDescription: (chat.metadata as any)?.roleDescription || '',
-            description: (chat.metadata as any)?.description || ''
+            roleDescription: chat.metadata?.roleDescription || '',
+            description: chat.metadata?.description || ''
           }));
           
           // Convert FrontendMessage to Message format for UI compatibility
@@ -2165,7 +2163,7 @@ const TextWithCharts: React.FC<{
         }]);
       setIsInitialRouteResolving(false);
     }
-  }, [routeChatId, user?.id]);
+  }, [routeChatId, user?.uid]);
 
   // Save chat message to database using new chat service
   // Function to update chat title with first 2-3 words of user's first message
@@ -2220,12 +2218,12 @@ const TextWithCharts: React.FC<{
         return;
       }
       // Use AuthContext user for database operations
-      if (!user?.id) {
+      if (!user?.uid) {
         console.log('No authenticated user, skipping database save');
         return;
       }
       
-      const userId = user.id;
+      const userId = user.uid;
       console.log('Using AuthContext user ID for database save:', userId);
       
       // Handle both string and structured message formats
@@ -2605,7 +2603,7 @@ const TextWithCharts: React.FC<{
   // Fetch chats on component mount and handle default navigation
   useEffect(() => {
     console.log('🔍 DEBUG: useEffect for fetchUserChats triggered!');
-    console.log('🔍 DEBUG: Dependencies - user?.id:', user?.id);
+    console.log('🔍 DEBUG: Dependencies - user?.uid:', user?.uid);
 
     const handleInitialNavigation = async () => {
       if (!initialLoadDoneRef.current) {
@@ -2645,13 +2643,13 @@ const TextWithCharts: React.FC<{
       .subscribe();
 
     // Setup real-time subscription with specific uid filter
-    const specificUserSubscription = user?.id ? supabase
+    const specificUserSubscription = user?.uid ? supabase
       .channel('specific_user_channel')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'users',
-        filter: `uid=eq.${user.id}`
+        filter: `uid=eq.${user.uid}`
       }, (payload) => {
         console.log('Specific user real-time update received:', payload);
         // Handle specific user updates here
@@ -2670,7 +2668,7 @@ const TextWithCharts: React.FC<{
       specificUserSubscription?.unsubscribe();
       stopSpeech();
     };
-  }, [user?.id]);
+  }, [user?.uid]);
 
   // Auto-stop speaking when navigating away
   useEffect(() => {
@@ -2848,7 +2846,7 @@ const TextWithCharts: React.FC<{
         ws.onopen = () => {
           const base = typeof input === 'string' ? { content: input, type: 'text' } : input;
           const message: any = {
-            uid: user?.id || 'anonymous',
+            uid: user?.uid || 'anonymous',
             type: (base as any).type || 'text',
             text: { body: base.content },
             body: base.content,
@@ -3148,9 +3146,9 @@ const TextWithCharts: React.FC<{
               userMessageAdded = true;
               
               setSelectedFile(null);
-              if (!hadUserMessagesBefore && user?.id && chatId) {
+              if (!hadUserMessagesBefore && user?.uid && chatId) {
                 const titleSource = messageText.trim().length > 0 ? messageText : selectedFile.name;
-                await updateChatTitleFromMessage(titleSource, chatId, user.id);
+                await updateChatTitleFromMessage(titleSource, chatId, user.uid);
               }
               
 
@@ -3385,9 +3383,9 @@ const TextWithCharts: React.FC<{
               
               // Mark that user message has been added to prevent duplicates
               userMessageAdded = true;
-              if (!hadUserMessagesBefore && user?.id && chatId) {
+              if (!hadUserMessagesBefore && user?.uid && chatId) {
                 const titleSource = messageText.trim().length > 0 ? messageText : selectedFile.name;
-                await updateChatTitleFromMessage(titleSource, chatId, user.id);
+                await updateChatTitleFromMessage(titleSource, chatId, user.uid);
               }
               
               // Save user message with attachment to database
@@ -3506,16 +3504,16 @@ const TextWithCharts: React.FC<{
              
               // Mark that user message has been added
               userMessageAdded = true;
-            if (!hadUserMessagesBefore && user?.id && chatId && attachments.length === 0) {
-              await updateChatTitleFromMessage(messageText, chatId, user.id);
+            if (!hadUserMessagesBefore && user?.uid && chatId && attachments.length === 0) {
+              await updateChatTitleFromMessage(messageText, chatId, user.uid);
             }
-            if (!hadUserMessagesBefore && user?.id && chatId && attachments.length > 0) {
+            if (!hadUserMessagesBefore && user?.uid && chatId && attachments.length > 0) {
               const titleSource = messageText.trim().length > 0 ? messageText : (attachments[0]?.fileName || '');
-              await updateChatTitleFromMessage(titleSource, chatId, user.id);
+              await updateChatTitleFromMessage(titleSource, chatId, user.uid);
             }
-            if (pendingPdfSnapshot && !hadUserMessagesBefore && user?.id && chatId) {
+            if (pendingPdfSnapshot && !hadUserMessagesBefore && user?.uid && chatId) {
               const titleSource = messageText.trim().length > 0 ? messageText : (pendingPdfSnapshot.pdfVisionData?.original_filename || pendingPdfSnapshot.originalName || 'PDF');
-              await updateChatTitleFromMessage(titleSource, chatId, user.id);
+              await updateChatTitleFromMessage(titleSource, chatId, user.uid);
             }
             if (pendingPdfSnapshot) {
               setPendingPdfFile(null);
@@ -3788,8 +3786,8 @@ const TextWithCharts: React.FC<{
         return;
       }
       // Use AuthContext user for consistency
-      if (user?.id) {
-        const userId = user.id;
+      if (user?.uid) {
+        const userId = user.uid;
         const timestamp = new Date().toISOString();
         
         // Import updateChatRole from chatService
@@ -3974,14 +3972,14 @@ const TextWithCharts: React.FC<{
   const handleDeleteChat = async (chatIdToDelete: string, event: React.MouseEvent) => {
     event.stopPropagation(); // Prevent chat selection when clicking delete
     
-    if (!user?.id) {
+    if (!user?.uid) {
       showError('You must be logged in to delete chats');
       return;
     }
 
     try {
       // Delete from Supabase using new service
-      const success = await deleteNewChat(chatIdToDelete, user.id);
+      const success = await deleteNewChat(chatIdToDelete, user.uid);
 
       if (!success) {
         console.error('Error deleting chat: deleteNewChat returned false');
@@ -4110,9 +4108,9 @@ const TextWithCharts: React.FC<{
         
         // Render page to canvas
         await page.render({
-          canvas,
           canvasContext: context,
-          viewport
+          viewport: viewport,
+          canvas: canvas
         }).promise;
         
         // Convert canvas to blob and then to File
@@ -4240,13 +4238,13 @@ const TextWithCharts: React.FC<{
     
     try {
       // Use AuthContext user for database operations
-      if (!user?.id) {
+      if (!user?.uid) {
         console.log('⚠️ No AuthContext user found, skipping database creation');
         console.log('📝 Chat will work in local mode until user authenticates');
         return;
       }
       
-      const userId = user.id;
+      const userId = user.uid;
       console.log('✅ Using AuthContext user ID for new chat:', userId);
       
       // Create empty chat in database using direct database insert
@@ -4351,7 +4349,7 @@ const TextWithCharts: React.FC<{
     
     try {
       // Use AuthContext user instead of Supabase session
-      if (!user?.id) {
+      if (!user?.uid) {
         console.log('⚠️ No AuthContext user found, using local chat');
         return;
       }
@@ -4570,7 +4568,7 @@ const TextWithCharts: React.FC<{
 
   const getUserInitial = () => {
     if (userData && userData.name) {
-      return userData.name.split(' ').map((word: string) => word[0]).join('').toUpperCase();
+      return userData.name.split(' ').map(word => word[0]).join('').toUpperCase();
     }
     return '';
   };
@@ -6135,7 +6133,7 @@ const TextWithCharts: React.FC<{
                                 {currentUploadedFile.originalName}
                               </div>
                               <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                                {currentUploadedFile.fileType === 'image' ? 'Image' : 'Document'} • {formatFileSize(currentUploadedFile.size || 0)}
+                                {currentUploadedFile.fileType === 'image' ? 'Image' : 'Document'} • {formatFileSize(currentUploadedFile.size)}
                               </div>
                             </div>
                           </div>
@@ -6489,7 +6487,7 @@ const TextWithCharts: React.FC<{
           isOpen={isFileUploadPopupOpen}
           onClose={handleCloseFileUploadPopup}
           initialDroppedFile={initialDroppedFile || undefined}
-          onFileSelect={async (uploadedFile: any, type: any) => {
+          onFileSelect={async (uploadedFile, type) => {
             try {
               setIsFileUploadPopupOpen(false);
               setInitialDroppedFile(null);

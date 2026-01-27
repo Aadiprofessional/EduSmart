@@ -114,7 +114,7 @@ const FeaturedCourses3D: React.FC = () => {
           <div className="text-center">
             <motion.div
               animate={{ rotate: 360 }}
-              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              transition={{ duration: 2, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
               className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full mx-auto mb-4"
             />
             <p className="text-slate-400 text-lg">{t('home.featuredCourses.loadingCourses')}</p>

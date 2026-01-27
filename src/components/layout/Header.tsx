@@ -203,6 +203,7 @@ const Header: React.FC = () => {
 
   const navigation = [
     { name: t('nav.home'), href: '/', icon: AiOutlineHome },
+    { name: t('aiStudy.aiTutor'), href: '/ai-tutor', icon: AiOutlineRobot },
     { name: t('nav.aiStudy'), href: '/ai-study', icon: AiOutlineBulb },
     { name: t('nav.database'), href: '/database', icon: AiOutlineDatabase },
     { name: t('nav.resources'), href: '/resources', icon: AiOutlineBook },
@@ -214,18 +215,17 @@ const Header: React.FC = () => {
     '/',
     '/database',
     '/case-studies',
+    '/courses',
     '/ai-courses',
-   
     '/ai-study',
+    '/ai-tutor',
     '/resources',
     '/blog',
+    '/scholarships',
     '/profile',
     '/subscription',
     '/dashboard',
     '/application-tracker',
- 
-    
-  
   ];
 
   // Check if device is mobile and handle scroll
@@ -242,7 +242,7 @@ const Header: React.FC = () => {
     
     // Force header positioning with lower z-index than magnetic cursor
     const enforceHeaderPosition = () => {
-      const header = document.querySelector('header');
+      const header = document.getElementById('global-main-header');
       if (header) {
         header.style.position = 'fixed';
         header.style.top = '0px';
@@ -466,13 +466,16 @@ const Header: React.FC = () => {
     }
   }, [isNotificationMenuOpen]);
 
-  // Check if header should be visible on current page
-  const shouldShowHeader = headerVisiblePages.some(page => 
+    // Check if header should be visible on current page
+    const shouldShowHeader = headerVisiblePages.some(page => 
     location.pathname === page || 
     location.pathname.startsWith(page + '/') ||
     (page === '/courses' && location.pathname.includes('/course/')) ||
     (page === '/blog' && location.pathname.includes('/blog/'))
   );
+
+  // Check if header should be opaque (scrolled, mobile, or specific pages like AI Tutor)
+  const isHeaderOpaque = scrolled || isMobile || location.pathname === '/ai-tutor';
 
   // Don't render header if it shouldn't be visible
   if (!shouldShowHeader) {
@@ -675,18 +678,18 @@ const Header: React.FC = () => {
         margin: 0,
         padding: 0,
         boxSizing: 'border-box',
-        backgroundColor: (scrolled || isMobile) ? 'rgba(0, 0, 0, 0.95)' : 'transparent',
-        background: (scrolled || isMobile)
+        backgroundColor: isHeaderOpaque ? 'rgba(0, 0, 0, 0.95)' : 'transparent',
+        background: isHeaderOpaque
           ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(30, 41, 59, 0.98) 25%, rgba(51, 65, 85, 0.98) 50%, rgba(71, 85, 105, 0.98) 75%, rgba(15, 23, 42, 0.98) 100%)' 
           : 'transparent',
-        backdropFilter: (scrolled || isMobile) ? 'blur(20px) saturate(200%)' : 'none',
-        boxShadow: (scrolled || isMobile)
+        backdropFilter: isHeaderOpaque ? 'blur(20px) saturate(200%)' : 'none',
+        boxShadow: isHeaderOpaque
           ? '0 8px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1) inset' 
           : 'none',
-        borderBottom: (scrolled || isMobile) ? '1px solid rgba(255, 255, 255, 0.15)' : 'none',
-        WebkitBackdropFilter: (scrolled || isMobile) ? 'blur(20px) saturate(200%)' : 'none',
-        backgroundSize: (scrolled || isMobile) ? '300% 300%' : '100% 100%',
-        animation: (scrolled || isMobile) ? 'header-gradient 15s ease infinite' : 'none',
+        borderBottom: isHeaderOpaque ? '1px solid rgba(255, 255, 255, 0.15)' : 'none',
+        WebkitBackdropFilter: isHeaderOpaque ? 'blur(20px) saturate(200%)' : 'none',
+        backgroundSize: isHeaderOpaque ? '300% 300%' : '100% 100%',
+        animation: isHeaderOpaque ? 'header-gradient 15s ease infinite' : 'none',
       }}
     >
       <div className="w-full max-w-none px-3 sm:px-4 lg:px-6">

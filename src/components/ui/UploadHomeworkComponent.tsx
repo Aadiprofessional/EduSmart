@@ -1711,7 +1711,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
                                     <motion.div
                                       className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full mr-2"
                                       animate={{ rotate: 360 }}
-                                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                      transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                                     />
                                     <span className="text-sm">{t('processing')}</span>
                                   </div>
@@ -1788,7 +1788,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
                                 <motion.div
                                   className="w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full mr-3"
                                   animate={{ rotate: 360 }}
-                                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                  transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                                 />
                                 <span className="text-slate-300">{t('generatingSolutionForThisPage')}</span>
                               </div>
@@ -1842,7 +1842,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
                 <motion.div
                   className="w-16 h-16 border-4 border-cyan-500 border-t-transparent rounded-full mb-4"
                   animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                 />
                 <p className="text-center text-slate-300">{processingStatus || 'Analyzing your homework...'}</p>
               </div>
@@ -1866,7 +1866,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
                           <motion.div
                             className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full mr-2"
                             animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                           />
                           <span className="text-sm">{t('processing')}</span>
                         </div>
@@ -1943,7 +1943,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
                       <motion.div
                         className="w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full mr-3"
                         animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                       />
                       <span className="text-slate-300">{t('generatingSolutionForThisPage')}</span>
                     </div>
@@ -2460,7 +2460,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
                 <motion.div
                   className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mr-3"
                   animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                 />
                 <span className="text-slate-300">{t('loadingKnowledgePoints')}</span>
               </div>
@@ -2501,7 +2501,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
                     <motion.div
                       className="w-6 h-6 border-3 border-purple-500 border-t-transparent rounded-full mr-2"
                       animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                     />
                     <span className="text-slate-400 text-sm">Generating more content...</span>
                   </div>

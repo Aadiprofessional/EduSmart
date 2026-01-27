@@ -91,12 +91,12 @@ const PageHeader: React.FC<PageHeaderProps> = ({
       <motion.div
         className="absolute top-2 right-2 sm:top-6 sm:right-8 lg:top-10 lg:right-10 w-8 h-8 sm:w-12 sm:h-12 lg:w-20 lg:h-20 border border-white/20 sm:border-2 rounded-full"
         animate={{ rotate: 360 }}
-        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+        transition={{ duration: 20, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
       />
       <motion.div
         className="absolute bottom-2 left-2 sm:bottom-6 sm:left-8 lg:bottom-10 lg:left-10 w-6 h-6 sm:w-10 sm:h-10 lg:w-16 lg:h-16 border border-white/20 sm:border-2 rotate-45"
         animate={{ rotate: [45, 405] }}
-        transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+        transition={{ duration: 15, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
       />
       <motion.div
         className="absolute top-1/2 left-1/4 w-4 h-4 sm:w-8 sm:h-8 lg:w-12 lg:h-12 bg-white/10 rounded-lg"

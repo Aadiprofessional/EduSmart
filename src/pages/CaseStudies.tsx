@@ -104,7 +104,7 @@ const CaseStudies: React.FC = () => {
       transition: {
         duration: 0.5,
         delay: delay,
-        ease: "easeOut",
+        ease: [0, 0, 0.58, 1] as const,
       },
     },
   });

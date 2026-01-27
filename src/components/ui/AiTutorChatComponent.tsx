@@ -277,7 +277,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
       if (chat) {
         // Load files for each message
         const chatDataWithFiles = await Promise.all(
-          chat.chat_data.map(async (message, index) => {
+          chat.chat_data.map(async (message: ChatMessage, index: number) => {
             const files = await chatService.getMessageFiles(currentChatId, index);
             return {
               ...message,
@@ -475,7 +475,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
   const regenerateResponse = async (messageId: string) => {
     if (!currentChat) return;
     
-    const messageIndex = currentChat.chat_data.findIndex(msg => msg.id === messageId);
+    const messageIndex = currentChat.chat_data.findIndex((msg: ChatMessage) => msg.id === messageId);
     if (messageIndex === -1 || messageIndex === 0) return;
     
     const previousUserMessage = currentChat.chat_data[messageIndex - 1];
@@ -490,7 +490,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
       // Reset the message content for streaming
       let updatedChatData = [...currentChat.chat_data];
       updatedChatData[messageIndex] = { ...updatedChatData[messageIndex], content: '' };
-      setCurrentChat(prev => prev ? { ...prev, chat_data: updatedChatData } : null);
+      setCurrentChat((prev: ChatSession | null) => prev ? { ...prev, chat_data: updatedChatData } : null);
       
       let aiResponse = '';
       await sendMessageToAI(
@@ -501,7 +501,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
           aiResponse += chunk;
           updatedChatData = [...currentChat.chat_data];
           updatedChatData[messageIndex] = { ...updatedChatData[messageIndex], content: aiResponse };
-          setCurrentChat(prev => prev ? { ...prev, chat_data: updatedChatData } : null);
+          setCurrentChat((prev: ChatSession | null) => prev ? { ...prev, chat_data: updatedChatData } : null);
         }
       );
 
@@ -546,7 +546,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
   const downloadChat = () => {
     if (!currentChat) return;
     
-    const chatText = currentChat.chat_data.map(msg => 
+    const chatText = currentChat.chat_data.map((msg: ChatMessage) => 
       `[${new Date(msg.timestamp).toLocaleString()}] ${msg.role === 'user' ? 'You' : 'AI Tutor'}: ${msg.content}`
     ).join('\n\n');
     
@@ -783,9 +783,9 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
     if (!currentChat) return;
     
     try {
-      const updatedChatData = currentChat.chat_data.filter(msg => msg.id !== messageId);
+      const updatedChatData = currentChat.chat_data.filter((msg: ChatMessage) => msg.id !== messageId);
       await chatService.updateChatData(currentChatId!, updatedChatData);
-      setCurrentChat(prev => prev ? { ...prev, chat_data: updatedChatData } : null);
+      setCurrentChat((prev: ChatSession | null) => prev ? { ...prev, chat_data: updatedChatData } : null);
       showSuccess('Message deleted');
     } catch (error) {
       console.error('Error deleting message:', error);
@@ -1070,7 +1070,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
           : session
       ));
       if (currentChat && currentChat.id === chatId) {
-        setCurrentChat(prev => prev ? { ...prev, title: newTitle } : null);
+        setCurrentChat((prev: ChatSession | null) => prev ? { ...prev, title: newTitle } : null);
       }
     } catch (error) {
       console.error('Error updating chat title:', error);
@@ -1181,7 +1181,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
           <motion.div
             className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full mx-auto mb-4"
             animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
           />
           <p className="text-slate-400">{t('common.loading')}...</p>
         </div>
@@ -1292,7 +1292,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
             >
               {/* Chat Messages */}
               <AnimatePresence>
-                {chatMessages.map((message, index) => (
+                {chatMessages.map((message: ChatMessage, index: number) => (
                   <motion.div
                     key={message.id}
                     className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} mb-6`}
@@ -1377,7 +1377,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
                                 <motion.div
                                   className="inline-block w-2 h-5 bg-slate-400 rounded-sm"
                                   animate={{ opacity: [1, 0, 1] }}
-                                  transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+                                  transition={{ duration: 1, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const }}
                                 />
                               )
                             )}
@@ -1387,7 +1387,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
                         {/* Show attached files */}
                         {message.files && message.files.length > 0 && (
                           <div className="mt-3 space-y-2">
-                            {message.files.map((file) => (
+                            {message.files.map((file: ChatFile) => (
                               <div key={file.id} className="flex items-center space-x-3 p-3 bg-slate-700/30 rounded border border-white/10">
                                 {file.fileType.startsWith('image/') ? (
                                   <div className="relative">
@@ -1410,7 +1410,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
                                         <motion.div
                                           className="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full"
                                           animate={{ rotate: 360 }}
-                                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                          transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                                         />
                                       </div>
                                     )}
@@ -1433,7 +1433,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
                                         <motion.div
                                           className="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full"
                                           animate={{ rotate: 360 }}
-                                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                          transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                                         />
                                       </div>
                                     )}
@@ -1521,7 +1521,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
                       <motion.div
                         className="inline-block w-2 h-5 bg-slate-400 rounded-sm"
                         animate={{ opacity: [1, 0, 1] }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+                        transition={{ duration: 1, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const }}
                       />
                     </div>
                   </div>
@@ -1616,7 +1616,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
                         <motion.div
                           className="w-5 h-5"
                           animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                         >
                           <IconComponent icon={AiOutlineLoading3Quarters} className="h-5 w-5" />
                         </motion.div>
@@ -1638,7 +1638,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
                         <motion.div
                           className="w-5 h-5"
                           animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                         >
                           <IconComponent icon={AiOutlineLoading3Quarters} className="h-5 w-5" />
                         </motion.div>
@@ -1823,7 +1823,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
             >
               {/* Chat Messages */}
               <AnimatePresence>
-                {chatMessages.map((message, index) => (
+                {chatMessages.map((message: ChatMessage, index: number) => (
                   <motion.div
                     key={message.id}
                     className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} mb-6`}
@@ -1908,7 +1908,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
                                 <motion.div
                                   className="inline-block w-2 h-5 bg-slate-400 rounded-sm"
                                   animate={{ opacity: [1, 0, 1] }}
-                                  transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+                                  transition={{ duration: 1, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const }}
                                 />
                               )
                             )}
@@ -1941,7 +1941,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
                                         <motion.div
                                           className="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full"
                                           animate={{ rotate: 360 }}
-                                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                          transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                                         />
                                       </div>
                                     )}
@@ -1964,7 +1964,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
                                         <motion.div
                                           className="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full"
                                           animate={{ rotate: 360 }}
-                                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                          transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                                         />
                                       </div>
                                     )}
@@ -2052,7 +2052,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
                       <motion.div
                         className="inline-block w-2 h-5 bg-slate-400 rounded-sm"
                         animate={{ opacity: [1, 0, 1] }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+                        transition={{ duration: 1, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const }}
                       />
                     </div>
                   </div>
@@ -2147,7 +2147,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
                         <motion.div
                           className="w-5 h-5"
                           animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                         >
                           <IconComponent icon={AiOutlineLoading3Quarters} className="h-5 w-5" />
                         </motion.div>
@@ -2169,7 +2169,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
                         <motion.div
                           className="w-5 h-5"
                           animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                         >
                           <IconComponent icon={AiOutlineLoading3Quarters} className="h-5 w-5" />
                         </motion.div>

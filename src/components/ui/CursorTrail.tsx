@@ -62,7 +62,7 @@ const CursorTrail: React.FC = () => {
           }}
           transition={{ 
             duration: 0.8,
-            ease: "easeOut"
+            ease: [0, 0, 0.58, 1] as const
           }}
         />
       ))}

@@ -808,7 +808,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({
         <motion.div
           className="w-8 h-8 mr-3"
           animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
         >
           <IconComponent icon={AiOutlineLoading3Quarters} className="h-8 w-8 text-cyan-400" />
         </motion.div>
@@ -978,7 +978,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({
                           }`}
                           initial={{ width: 0 }}
                           animate={{ width: `${stats.percentage}%` }}
-                          transition={{ duration: 0.8, ease: "easeOut" }}
+                          transition={{ duration: 0.8, ease: [0, 0, 0.58, 1] as const }}
                         />
                         
                         {/* Progress Shine Effect */}
@@ -987,7 +987,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({
                             className="absolute top-0 left-0 h-full w-8 bg-gradient-to-r from-transparent via-white/20 to-transparent"
                             initial={{ x: '-100%' }}
                             animate={{ x: '400%' }}
-                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                            transition={{ duration: 2, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const }}
                           />
                         )}
                       </div>
@@ -1218,7 +1218,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({
                   <motion.div
                     className="w-4 h-4 sm:w-5 sm:h-5 mr-2"
                     animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                   >
                     <IconComponent icon={AiOutlineLoading3Quarters} className="h-4 w-4 sm:h-5 sm:w-5" />
                   </motion.div>
@@ -1239,7 +1239,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({
                   <motion.div
                     className="w-4 h-4 sm:w-5 sm:h-5 mr-2"
                     animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                   >
                     <IconComponent icon={AiOutlineLoading3Quarters} className="h-4 w-4 sm:h-5 sm:w-5" />
                   </motion.div>
@@ -1470,7 +1470,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({
                 <motion.div
                   className="w-4 h-4 sm:w-5 sm:h-5 mr-2"
                   animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                 >
                   <IconComponent icon={AiOutlineLoading3Quarters} className="h-4 w-4 sm:h-5 sm:w-5" />
                 </motion.div>
