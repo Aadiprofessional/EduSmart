@@ -50,7 +50,7 @@ const CourseSearch: React.FC = () => {
         style={{ filter: 'blur(40px)', top: '-20px', left: '10%' }}
       />
       <motion.div 
-        className="absolute bottom-0 right-0 w-80 h-80 bg-orange-500 rounded-full opacity-10" 
+        className="absolute bottom-0 right-0 w-80 h-80 bg-indigo-500 rounded-full opacity-10" 
         animate={{
           x: [0, -30, 0],
           y: [0, -20, 0],
@@ -147,7 +147,7 @@ const CourseSearch: React.FC = () => {
               <div className="mt-6">
                 <motion.button
                   type="submit"
-                  className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 px-6 rounded-md transition-colors flex items-center justify-center font-medium"
+                  className="w-full bg-indigo-500 hover:bg-indigo-600 text-white py-3 px-6 rounded-md transition-colors flex items-center justify-center font-medium"
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.98 }}
                 >

@@ -135,7 +135,7 @@ const PortalModal: React.FC<PortalModalProps> = ({ isOpen, onClose, children, cl
   return ReactDOM.createPortal(
     <AnimatePresence>
       <motion.div 
-        className="bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+        className="bg-[#0f172a]/80 backdrop-blur-md flex items-center justify-center p-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -1851,9 +1851,9 @@ Please provide a well-structured summary using proper markdown formatting.`
   // Early return if user is not authenticated (after all hooks)
   if (!authLoading && !isAuthenticated) {
     return (
-      <div className={className}>
-        <motion.div 
-          className="bg-gradient-to-br from-slate-600/20 to-slate-700/20 backdrop-blur-sm border border-orange-500/20 rounded-xl p-8 text-center shadow-xl"
+    <div className={`bg-[#0f172a]/60 backdrop-blur-md border border-white/10 rounded-xl shadow-lg overflow-hidden p-4 sm:p-6 ${className || ''}`}>
+      <motion.div 
+          className="bg-[#0f172a]/60 backdrop-blur-md border border-indigo-500/20 rounded-xl p-8 text-center shadow-xl"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -1862,23 +1862,23 @@ Please provide a well-structured summary using proper markdown formatting.`
             animate={{ scale: [1, 1.1, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
           >
-            <IconComponent icon={AiOutlineRobot} className="h-16 w-16 mx-auto mb-4 text-orange-400" />
+            <IconComponent icon={AiOutlineRobot} className="h-16 w-16 mx-auto mb-4 text-indigo-400" />
           </motion.div>
-          <h2 className="text-2xl font-bold text-orange-400 mb-4">Authentication Required</h2>
+          <h2 className="text-2xl font-bold text-indigo-400 mb-4">Authentication Required</h2>
           <p className="text-slate-300 mb-6 text-lg leading-relaxed">
             Please sign in to your account to use the Document Summarizer. This feature requires authentication to save your summaries and provide personalized assistance.
           </p>
           <div className="space-y-4">
             <motion.button
               onClick={() => window.location.href = '/login'}
-              className="px-8 py-3 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 mx-auto block"
+              className="px-8 py-3 bg-gradient-to-r from-indigo-500 to-red-500 rounded-xl text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 mx-auto block"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
               Sign In to Continue
             </motion.button>
             <p className="text-slate-400 text-sm">
-              Don't have an account? <a href="/signup" className="text-orange-400 hover:text-orange-300 underline">Sign up here</a>
+              Don't have an account? <a href="/signup" className="text-indigo-400 hover:text-indigo-300 underline">Sign up here</a>
             </p>
           </div>
         </motion.div>
@@ -1891,7 +1891,7 @@ Please provide a well-structured summary using proper markdown formatting.`
     return (
       <div className={className}>
         <motion.div 
-          className="bg-gradient-to-br from-slate-600/20 to-slate-700/20 backdrop-blur-sm border border-cyan-500/20 rounded-xl p-8 text-center shadow-xl"
+          className="bg-[#0f172a]/60 backdrop-blur-md border border-cyan-500/20 rounded-xl p-8 text-center shadow-xl"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
@@ -1907,7 +1907,7 @@ Please provide a well-structured summary using proper markdown formatting.`
   }
 
   return (
-    <div className={className}>
+    <div className={`bg-[#0f172a]/60 backdrop-blur-md border border-white/10 rounded-xl shadow-lg overflow-hidden p-4 sm:p-6 ${className || ''}`}>
       <motion.div 
         className="grid grid-cols-1 lg:grid-cols-2 gap-8"
         variants={{
@@ -1930,7 +1930,6 @@ Please provide a well-structured summary using proper markdown formatting.`
               <IconComponent icon={AiOutlineBulb} className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-cyan-400">{t('aiStudy.documentSummarizer')}</h2>
               <p className="text-cyan-300 text-sm mt-1 font-medium">{t('aiStudy.documentSummarizerDescription')}</p>
             </div>
           </div>
@@ -1956,12 +1955,8 @@ Please provide a well-structured summary using proper markdown formatting.`
           
           {/* Enhanced File Upload */}
           <div className="mb-6">
-            <label className="block text-slate-300 mb-3 font-medium flex items-center">
-              <IconComponent icon={AiOutlineUpload} className="h-5 w-5 mr-2 text-cyan-400" />
-              {t('aiStudy.uploadDocument')}
-            </label>
             <div 
-              className="border-2 border-dashed border-cyan-500/30 rounded-xl p-8 text-center hover:border-cyan-400/50 cursor-pointer transition-all duration-300 relative bg-gradient-to-br from-slate-600/20 to-slate-700/20 backdrop-blur-sm hover:from-slate-600/30 hover:to-slate-700/30"
+              className="border-2 border-dashed border-cyan-500/30 rounded-xl p-8 text-center hover:border-cyan-400/50 cursor-pointer transition-all duration-300 relative bg-black/20 backdrop-blur-sm hover:bg-black/30"
               onClick={() => !file && fileInputRef.current?.click()}
             >
               <input 
@@ -2068,7 +2063,7 @@ Please provide a well-structured summary using proper markdown formatting.`
               <textarea
                 value={textInput}
                 onChange={(e) => setTextInput(e.target.value)}
-                className="w-full p-4 bg-slate-600/30 backdrop-blur-sm border border-cyan-500/20 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none h-64 text-slate-200 placeholder-slate-400 transition-all duration-300"
+                className="w-full p-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none h-64 text-slate-200 placeholder-slate-400 transition-all duration-300"
                 placeholder={documentPages.length > 0 ? 
                   t('aiStudy.addContextPlaceholder') : 
                   t('aiStudy.pasteTextPlaceholder')
@@ -2085,7 +2080,7 @@ Please provide a well-structured summary using proper markdown formatting.`
             <div className="flex items-center space-x-3">
               <motion.button
                 type="button"
-                className="flex items-center justify-center px-4 py-2 bg-slate-600/40 backdrop-blur-sm border border-slate-500/30 rounded-lg text-slate-300 font-medium hover:bg-slate-500/40 transition-all duration-300"
+                className="flex items-center justify-center px-4 py-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 font-medium hover:bg-white/10 transition-all duration-300"
                 variants={buttonVariants}
                 whileHover="hover"
                 whileTap="tap"
@@ -2097,7 +2092,7 @@ Please provide a well-structured summary using proper markdown formatting.`
               
               <motion.button
                 type="button"
-                className="flex items-center justify-center px-4 py-2 bg-red-600/40 backdrop-blur-sm border border-red-500/30 rounded-lg text-red-300 font-medium hover:bg-red-500/40 transition-all duration-300"
+                className="flex items-center justify-center px-4 py-2 bg-red-500/10 backdrop-blur-sm border border-red-500/20 rounded-lg text-red-300 font-medium hover:bg-red-500/20 transition-all duration-300"
                 variants={buttonVariants}
                 whileHover="hover"
                 whileTap="tap"
@@ -2211,7 +2206,7 @@ Please provide a well-structured summary using proper markdown formatting.`
           </div>
           
           <motion.div
-            className="bg-gradient-to-br from-slate-600/20 to-slate-700/20 backdrop-blur-sm border border-cyan-500/20 rounded-xl p-6 overflow-y-auto h-[660px] shadow-xl"
+            className="bg-[#0f172a]/60 backdrop-blur-md border border-cyan-500/20 rounded-xl p-6 overflow-y-auto h-[660px] shadow-xl"
             variants={itemVariants}
             ref={summaryContainerRef} // Move ref to the scrollable container
           >
@@ -2501,7 +2496,7 @@ Please provide a well-structured summary using proper markdown formatting.`
       <AnimatePresence>
         {showHistory && (
           <motion.div 
-            className="mt-8 bg-gradient-to-br from-slate-600/20 to-slate-700/20 backdrop-blur-sm border border-cyan-500/20 rounded-xl p-6 shadow-xl"
+            className="mt-8 bg-[#0f172a]/60 backdrop-blur-md border border-cyan-500/20 rounded-xl p-6 shadow-xl"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
@@ -2561,7 +2556,7 @@ Please provide a well-structured summary using proper markdown formatting.`
                 summaryHistory.map((item, index) => (
                   <motion.div
                     key={item.id}
-                    className="p-5 bg-gradient-to-r from-slate-600/30 to-slate-700/30 backdrop-blur-sm rounded-xl cursor-pointer hover:from-slate-600/40 hover:to-slate-700/40 transition-all duration-300 group border border-cyan-500/10 hover:border-cyan-500/30"
+                    className="p-5 bg-black/20 backdrop-blur-sm rounded-xl cursor-pointer hover:bg-black/30 transition-all duration-300 group border border-cyan-500/10 hover:border-cyan-500/30"
                     onClick={() => loadFromHistory(item)}
                     whileHover={{ scale: 1.02, y: -2 }}
                     whileTap={{ scale: 0.98 }}
@@ -2653,7 +2648,7 @@ Please provide a well-structured summary using proper markdown formatting.`
       <PortalModal 
         isOpen={!!fullScreenView}
         onClose={() => setFullScreenView(null)}
-        className="bg-gradient-to-br from-slate-700/98 via-slate-800/98 to-slate-900/98 backdrop-blur-xl border-2 border-cyan-500/40 rounded-2xl w-full h-full flex flex-col shadow-2xl"
+        className="bg-[#0f172a] backdrop-blur-xl border border-white/10 rounded-2xl w-full h-full flex flex-col shadow-2xl"
         style={{ margin: 0 }}
       >
         <div className="flex items-center justify-between p-6 border-b border-cyan-500/20 flex-shrink-0">
@@ -2714,7 +2709,7 @@ Please provide a well-structured summary using proper markdown formatting.`
         
         <div className="flex-1 p-6 overflow-hidden">
           {fullScreenView === 'mindmap' && mindmapData ? (
-            <div className="h-full bg-gradient-to-br from-slate-600/30 via-slate-700/30 to-slate-800/30 rounded-2xl border-2 border-cyan-500/30 shadow-inner">
+            <div className="h-full bg-black/20 rounded-2xl border border-white/10 shadow-inner">
               <div className="p-3 border-b border-white/10 bg-slate-600/30 rounded-t-2xl">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-medium text-cyan-400">Interactive Mind Map</h3>

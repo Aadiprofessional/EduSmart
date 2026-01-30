@@ -45,7 +45,7 @@ const PortalModal: React.FC<PortalModalProps> = ({ isOpen, onClose, children, cl
   return ReactDOM.createPortal(
     <AnimatePresence>
       <motion.div 
-        className="bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+        className="bg-[#0f172a]/80 backdrop-blur-md flex items-center justify-center p-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -336,7 +336,7 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
     }
 
     return (
-      <div className="bg-slate-700/30 backdrop-blur-sm rounded-xl border border-white/10 p-4">
+      <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-4">
         {/* Calendar Header */}
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-bold text-cyan-400">
@@ -345,7 +345,7 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
           <div className="flex items-center space-x-2">
             <motion.button
               onClick={() => navigateMonth('prev')}
-              className="p-2 bg-slate-600/50 hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors"
+              className="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-slate-300 transition-colors"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -361,7 +361,7 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
             </motion.button>
             <motion.button
               onClick={() => navigateMonth('next')}
-              className="p-2 bg-slate-600/50 hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors"
+              className="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-slate-300 transition-colors"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -1453,17 +1453,15 @@ Remember: Return ONLY the XML structure. No additional text.`
 
   return (
     <motion.div
-      className={`bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl shadow-lg overflow-hidden ${className}`}
+      className={`bg-[#0f172a]/60 backdrop-blur-md border border-white/10 rounded-xl shadow-lg overflow-hidden ${className}`}
       variants={containerVariants}
       initial="hidden"
       animate="visible"
     >
       {/* Header */}
-      <div className="bg-slate-700/50 backdrop-blur-sm px-6 py-4 border-b border-white/10">
+      <div className="bg-[#0f172a]/60 backdrop-blur-md px-6 py-4 border-b border-white/10">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <IconComponent icon={FiCalendar} className="h-6 w-6 text-cyan-400" />
-            <h2 className="text-xl font-bold text-cyan-400">{t('aiStudy.studyPlanner')}</h2>
           </div>
           <div className="flex items-center space-x-3">
             <motion.button
@@ -1505,7 +1503,7 @@ Remember: Return ONLY the XML structure. No additional text.`
       {/* Add Task Form */}
       {showAddForm && (
         <motion.div
-          className="p-6 border-b border-white/10 bg-slate-700/30 backdrop-blur-sm"
+          className="p-6 border-b border-white/10 bg-[#0f172a]/60 backdrop-blur-md"
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
@@ -1530,7 +1528,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                   type="text"
                   value={newTask.subject}
                   onChange={(e) => setNewTask({...newTask, subject: e.target.value})}
-                  className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 placeholder-slate-400 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  className="w-full px-3 py-2 bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 placeholder-slate-400 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                   placeholder={t('aiStudy.enterSubject')}
                   required
                 />
@@ -1542,7 +1540,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                   type="date"
                   value={newTask.date}
                   onChange={(e) => setNewTask({...newTask, date: e.target.value})}
-                  className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  className="w-full px-3 py-2 bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                   required
                 />
               </div>
@@ -1552,7 +1550,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                 <select
                   value={newTask.priority}
                   onChange={(e) => setNewTask({...newTask, priority: e.target.value as 'low' | 'medium' | 'high'})}
-                  className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  className="w-full px-3 py-2 bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                 >
                   <option value="low">{t('aiStudy.lowPriority')}</option>
                   <option value="medium">{t('aiStudy.mediumPriority')}</option>
@@ -1568,7 +1566,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                   max="24"
                   value={newTask.estimatedHours}
                   onChange={(e) => setNewTask({...newTask, estimatedHours: parseInt(e.target.value)})}
-                  className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  className="w-full px-3 py-2 bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                 />
               </div>
             </div>
@@ -1666,7 +1664,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                     type="date"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                    className="w-full px-3 py-2 bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                   />
                 </div>
 
@@ -1675,7 +1673,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                   <select
                     value={filterPriority}
                     onChange={(e) => setFilterPriority(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                    className="w-full px-3 py-2 bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                   >
                     <option value="all">{t('aiStudy.allPriorities')}</option>
                     <option value="high">{t('aiStudy.highPriority')}</option>
@@ -1724,7 +1722,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                 {filteredTasks.map((task, index) => (
                   <motion.div
                     key={task.id}
-                    className={`p-4 bg-slate-700/30 backdrop-blur-sm rounded-lg border border-white/10 transition-all ${
+                    className={`p-4 bg-black/20 backdrop-blur-md rounded-lg border border-white/10 transition-all ${
                       task.completed ? 'opacity-75' : ''
                     }`}
                     variants={itemVariants}
@@ -2245,7 +2243,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                                       </div>
                                       <div className="flex justify-between">
                                         <span className="text-xs text-slate-400">Upcoming Deadlines:</span>
-                                        <span className="text-xs font-medium text-orange-400">{upcomingDeadlines}</span>
+                                        <span className="text-xs font-medium text-indigo-400">{upcomingDeadlines}</span>
                                       </div>
                                     </div>
                                   </div>
@@ -2537,7 +2535,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                                     <h5 className="text-xs font-medium text-slate-300">{t('aiStudy.week')} {week.week}</h5>
                                     <div className="flex space-x-2">
                                       <span className="text-xs text-blue-400">{t('aiStudy.study')}: {week.studyHours}h</span>
-                                      <span className="text-xs text-orange-400">{t('aiStudy.apps')}: {week.applicationHours}h</span>
+                                      <span className="text-xs text-indigo-400">{t('aiStudy.apps')}: {week.applicationHours}h</span>
                                     </div>
                                   </div>
                                   <ul className="text-xs text-slate-500 space-y-1">
@@ -2577,7 +2575,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                                   <ul className="text-xs text-slate-500 space-y-1">
                                     {risk.mitigation.map((mitigation, mitigationIdx) => (
                                       <li key={mitigationIdx} className="flex items-start">
-                                        <span className="text-orange-400 mr-2">🛡️</span>
+                                        <span className="text-indigo-400 mr-2">🛡️</span>
                                         {mitigation}
                                       </li>
                                     ))}

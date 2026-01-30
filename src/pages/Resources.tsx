@@ -306,7 +306,7 @@ const Resources: React.FC = () => {
       case 'study':
         return <IconComponent icon={FaBook} className="text-blue-600" />;
       case 'test-prep':
-        return <IconComponent icon={FaGraduationCap} className="text-orange-600" />;
+        return <IconComponent icon={FaGraduationCap} className="text-indigo-600" />;
       case 'career':
         return <IconComponent icon={FaBriefcase} className="text-purple-600" />;
       default:
@@ -796,7 +796,7 @@ const Resources: React.FC = () => {
                                   {resource.downloads.toLocaleString()}
                                 </div>
                                 {resource.featured && (
-                                  <div className="absolute top-3 left-3 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+                                  <div className="absolute top-3 left-3 bg-gradient-to-r from-indigo-500 to-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
                                     Featured
                                   </div>
                                 )}
@@ -874,7 +874,7 @@ const Resources: React.FC = () => {
                                   className="w-full h-48 lg:h-full object-cover group-hover:scale-110 transition-transform duration-300"
                                 />
                                 {resource.featured && (
-                                  <div className="absolute top-3 left-3 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+                                  <div className="absolute top-3 left-3 bg-gradient-to-r from-indigo-500 to-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
                                     Featured
                                   </div>
                                 )}
@@ -993,7 +993,7 @@ const Resources: React.FC = () => {
                                 {resource.downloads.toLocaleString()}
                               </div>
                               {resource.featured && (
-                                <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full">
+                                <div className="absolute top-2 left-2 bg-indigo-500 text-white text-xs px-2 py-1 rounded-full">
                                   ★
                                 </div>
                               )}
@@ -1044,7 +1044,7 @@ const Resources: React.FC = () => {
                                   className="w-14 h-14 object-cover rounded-md"
                                 />
                                 {resource.featured && (
-                                  <div className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs px-1 py-0.5 rounded-full">
+                                  <div className="absolute -top-1 -right-1 bg-indigo-500 text-white text-xs px-1 py-0.5 rounded-full">
                                     ★
                                   </div>
                                 )}

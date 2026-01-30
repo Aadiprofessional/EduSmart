@@ -52,7 +52,7 @@ const AboutSection: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7, duration: 0.8 }}
-              className="absolute -top-6 -right-6 w-32 h-32 bg-orange-400 rounded-full z-[-1]"
+              className="absolute -top-6 -right-6 w-32 h-32 bg-indigo-400 rounded-full z-[-1]"
             />
           </motion.div>
 
@@ -91,7 +91,7 @@ const AboutSection: React.FC = () => {
               {stats.map((stat, index) => (
                 <AnimatedSection key={index} direction="up" delay={0.5 + index * 0.1}>
                   <div className="text-center hover-float">
-                    <h3 className="text-3xl font-bold text-orange-500 mb-2">{stat.number}</h3>
+                    <h3 className="text-3xl font-bold text-indigo-500 mb-2">{stat.number}</h3>
                     <p className="text-gray-500">{stat.label}</p>
                   </div>
                 </AnimatedSection>

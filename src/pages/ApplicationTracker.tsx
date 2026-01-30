@@ -529,7 +529,7 @@ const ApplicationTracker: React.FC = () => {
                 label: t('applicationTracker.pending') || 'Pending',
                 value: applications.filter(app => ['planning', 'in-progress'].includes(app.status)).length,
                 icon: FaClock,
-                color: 'from-yellow-500 to-orange-500'
+                color: 'from-yellow-500 to-indigo-500'
               }
             ].map((stat, index) => (
               <motion.div
@@ -665,7 +665,7 @@ const ApplicationTracker: React.FC = () => {
                     </div>
                     
                     <div className="flex items-center text-sm text-slate-400">
-                      <IconComponent icon={FaCalendarAlt} className="mr-2 text-orange-400" />
+                      <IconComponent icon={FaCalendarAlt} className="mr-2 text-indigo-400" />
                       Deadline: {formatDate(app.deadline)}
                     </div>
                     
@@ -1197,7 +1197,7 @@ const ApplicationTracker: React.FC = () => {
                   
                   <motion.button
                     onClick={handleSetReminder}
-                    className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white px-6 py-3 rounded-lg font-medium transition-all"
+                    className="bg-gradient-to-r from-yellow-500 to-indigo-500 hover:from-yellow-600 hover:to-indigo-600 text-white px-6 py-3 rounded-lg font-medium transition-all"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >

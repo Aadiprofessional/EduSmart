@@ -123,8 +123,8 @@ const Dashboard: React.FC = () => {
       'text_analyzer': { 
         icon: FaBrain, 
         name: 'Text Analyzer', 
-        color: 'text-orange-400',
-        bgColor: 'bg-orange-500/20'
+        color: 'text-indigo-400',
+        bgColor: 'bg-indigo-500/20'
       },
       'language_translator': { 
         icon: FaLanguage, 
@@ -293,7 +293,7 @@ const Dashboard: React.FC = () => {
             <p className="text-gray-400 mb-8">Upgrade to Pro to access your dashboard</p>
             <button
               onClick={() => window.location.href = '/subscription'}
-              className="px-8 py-4 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-xl font-bold hover:from-yellow-600 hover:to-orange-700 transition-all duration-300"
+              className="px-8 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-bold hover:from-indigo-600 hover:to-purple-700 transition-all duration-300"
             >
               Upgrade to Pro
             </button>
@@ -322,7 +322,7 @@ const Dashboard: React.FC = () => {
           >
             <div className="flex justify-center mb-6">
               <motion.div
-                className="bg-gradient-to-r from-yellow-400 to-orange-500 p-4 rounded-full"
+                className="bg-gradient-to-r from-indigo-400 to-purple-500 p-4 rounded-full"
                 animate={{
                   rotate: [0, 5, -5, 0],
                   scale: [1, 1.1, 1]
@@ -336,7 +336,7 @@ const Dashboard: React.FC = () => {
                 <IconComponent icon={FaCrown} className="w-12 h-12 text-white" />
               </motion.div>
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent mb-4">
+            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-400 via-purple-500 to-pink-500 bg-clip-text text-transparent mb-4">
               Pro Dashboard
             </h1>
             <p className="text-xl text-gray-300">
@@ -902,7 +902,7 @@ const Dashboard: React.FC = () => {
                             <div className="flex-1 max-w-32 ml-6">
                               <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
                                 <div 
-                                  className="h-full bg-gradient-to-r from-red-500 to-orange-500 rounded-full transition-all duration-300"
+                                  className="h-full bg-gradient-to-r from-red-500 to-indigo-500 rounded-full transition-all duration-300"
                                   style={{ 
                                     width: `${Math.min((log.responses_count / (log.remaining_responses + log.responses_count)) * 100, 100)}%` 
                                   }}
@@ -1142,7 +1142,7 @@ const Dashboard: React.FC = () => {
                             {selectedItem.query_data.difficulty && (
                               <div>
                                 <p className="text-gray-400 text-sm mb-1">Difficulty</p>
-                                <span className="px-3 py-1 bg-orange-500/20 text-orange-400 rounded-full text-sm font-medium">
+                                <span className="px-3 py-1 bg-indigo-500/20 text-indigo-400 rounded-full text-sm font-medium">
                                   {selectedItem.query_data.difficulty}
                                 </span>
                               </div>
@@ -1179,14 +1179,14 @@ const Dashboard: React.FC = () => {
                   {activeTab === 'logs' && (
                     <div className="space-y-6">
                       {/* Header */}
-                      <div className="flex items-center justify-between p-6 bg-gradient-to-r from-orange-500/20 to-red-500/20 rounded-xl border border-orange-500/30">
+                      <div className="flex items-center justify-between p-6 bg-gradient-to-r from-indigo-500/20 to-red-500/20 rounded-xl border border-indigo-500/30">
                         <div className="flex items-center">
-                          <div className="p-3 bg-orange-500/20 rounded-xl mr-4">
-                            <IconComponent icon={FaHistory} className="w-6 h-6 text-orange-400" />
+                          <div className="p-3 bg-indigo-500/20 rounded-xl mr-4">
+                            <IconComponent icon={FaHistory} className="w-6 h-6 text-indigo-400" />
                           </div>
                           <div>
                             <h4 className="text-xl font-bold text-white">{selectedItem.action}</h4>
-                            <p className="text-orange-400 font-medium">Usage Activity</p>
+                            <p className="text-indigo-400 font-medium">Usage Activity</p>
                           </div>
                         </div>
                         <div className="text-right">
@@ -1231,7 +1231,7 @@ const Dashboard: React.FC = () => {
                           <div className="flex-1 mx-4">
                             <div className="relative">
                               <div className="h-2 bg-gray-700 rounded-full"></div>
-                              <div className="absolute top-0 left-0 h-2 bg-gradient-to-r from-red-500 to-orange-500 rounded-full"
+                              <div className="absolute top-0 left-0 h-2 bg-gradient-to-r from-red-500 to-indigo-500 rounded-full"
                                    style={{ width: `${(selectedItem.responses_count / (selectedItem.remaining_responses + selectedItem.responses_count)) * 100}%` }}>
                               </div>
                             </div>

@@ -263,7 +263,7 @@ const Login: React.FC = () => {
         <div className="hidden lg:block">
           <InteractiveOrb 
             size="w-64 h-64" 
-            color="bg-gradient-to-r from-yellow-500/15 to-orange-500/15" 
+            color="bg-gradient-to-r from-yellow-500/15 to-indigo-500/15" 
             position={{ bottom: '20%', right: '25%' }}
             animationDelay={6}
           />
@@ -542,7 +542,7 @@ const Login: React.FC = () => {
                     whileHover={{ y: -2, scale: 1.02 }}
                     whileTap={{ y: 0, scale: 0.98 }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <IconComponent icon={FaGoogle} className="text-red-400 relative z-10 text-sm sm:text-base" />
                     <span className="font-medium relative z-10">Google</span>
                   </motion.button>

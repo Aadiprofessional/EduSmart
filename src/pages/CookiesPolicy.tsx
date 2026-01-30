@@ -326,7 +326,7 @@ Contact Information:
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-900 via-red-900 to-pink-900">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-red-900 to-pink-900">
       <Header />
       
       {/* Hero Section */}
@@ -336,7 +336,7 @@ Contact Information:
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-orange-600/20 to-pink-600/20"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/20 to-pink-600/20"></div>
         <div className="container mx-auto text-center relative z-10">
           <motion.div
             initial={{ y: 30, opacity: 0 }}
@@ -344,9 +344,9 @@ Contact Information:
             transition={{ duration: 0.8, delay: 0.2 }}
             className="mb-8"
           >
-            <IconComponent icon={FaCookie} className="text-6xl text-orange-400 mb-6 mx-auto" />
+            <IconComponent icon={FaCookie} className="text-6xl text-indigo-400 mb-6 mx-auto" />
             <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
-              Cookies <span className="bg-gradient-to-r from-orange-400 to-pink-500 bg-clip-text text-transparent">Policy</span>
+              Cookies <span className="bg-gradient-to-r from-indigo-400 to-pink-500 bg-clip-text text-transparent">Policy</span>
             </h1>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
               Understanding how MatrixAi Global uses cookies to enhance your educational experience
@@ -391,12 +391,12 @@ Contact Information:
                 <div key={type.id} className="bg-white/5 rounded-xl p-6 border border-white/10">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-pink-600 rounded-lg flex items-center justify-center">
+                      <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 to-pink-600 rounded-lg flex items-center justify-center">
                         <IconComponent icon={type.icon} className="text-xl text-white" />
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold text-white">{type.name}</h3>
-                        {type.required && <span className="text-xs text-orange-400">Required</span>}
+                        {type.required && <span className="text-xs text-indigo-400">Required</span>}
                       </div>
                     </div>
                     
@@ -428,13 +428,13 @@ Contact Information:
                   </div>
                   
                   <details className="mt-4">
-                    <summary className="text-sm text-orange-400 cursor-pointer hover:text-orange-300">
+                    <summary className="text-sm text-indigo-400 cursor-pointer hover:text-indigo-300">
                       Examples of use
                     </summary>
                     <ul className="mt-2 space-y-1">
                       {type.examples.map((example, index) => (
                         <li key={index} className="text-xs text-gray-400 flex items-start gap-2">
-                          <span className="text-orange-400 mt-1">•</span>
+                          <span className="text-indigo-400 mt-1">•</span>
                           {example}
                         </li>
                       ))}
@@ -445,7 +445,7 @@ Contact Information:
             </div>
             
             <div className="flex justify-center gap-4 mt-8">
-              <button className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-300">
+              <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-300">
                 Save Preferences
               </button>
               <button className="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-300 border border-white/20">
@@ -489,12 +489,12 @@ Contact Information:
           {/* Additional Information */}
           <motion.div
             variants={itemVariants}
-            className="mt-16 bg-gradient-to-r from-orange-600/20 to-pink-600/20 backdrop-blur-sm rounded-2xl p-8 border border-white/20"
+            className="mt-16 bg-gradient-to-r from-indigo-600/20 to-pink-600/20 backdrop-blur-sm rounded-2xl p-8 border border-white/20"
           >
             <h2 className="text-2xl font-bold text-white mb-6 text-center">Cookie Management Resources</h2>
             <div className="grid md:grid-cols-3 gap-8">
               <div>
-                <h3 className="text-xl font-semibold text-orange-400 mb-4">Browser Guides</h3>
+                <h3 className="text-xl font-semibold text-indigo-400 mb-4">Browser Guides</h3>
                 <div className="space-y-2 text-gray-300">
                   <p><a href="#" className="hover:text-white transition-colors">Chrome Cookie Settings</a></p>
                   <p><a href="#" className="hover:text-white transition-colors">Firefox Cookie Management</a></p>
@@ -529,7 +529,7 @@ Contact Information:
               <p className="text-gray-300 mb-4">
                 Our support team is available to help you manage your privacy preferences and understand our cookie practices.
               </p>
-              <button className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-300">
+              <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-300">
                 Contact Privacy Team
               </button>
             </div>

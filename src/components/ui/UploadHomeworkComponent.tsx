@@ -1455,7 +1455,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
   };
 
   return (
-    <div className={className}>
+    <div className={`bg-[#0f172a]/60 backdrop-blur-md border border-white/10 rounded-xl shadow-lg overflow-hidden p-4 sm:p-6 ${className || ''}`}>
       <motion.div 
         className="grid grid-cols-1 md:grid-cols-2 gap-8"
         variants={{
@@ -1473,27 +1473,26 @@ please give small bullet points of what knowlegde is needed to solve the problem
       >
         {/* Input Section */}
         <motion.div variants={itemVariants}>
-          <h2 className="text-2xl font-semibold text-cyan-400 mb-6">{t('submitYourQuestion')}</h2>
           
           <form onSubmit={handleSubmit}>
             <div className="mb-6">
-              <label className="block text-slate-300 mb-2 font-medium">
+              <label className="block text-slate-400 mb-2 font-medium text-sm uppercase tracking-wider">
                 {t('describeYourQuestionOrProblem')}
               </label>
               <textarea
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
-                className="w-full p-4 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none h-40 text-slate-200 placeholder-slate-400"
+                className="w-full p-4 bg-[#0f172a]/60 backdrop-blur-md border border-white/10 rounded-2xl focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 resize-none h-40 text-slate-200 placeholder-slate-500 transition-all duration-300"
                 placeholder={t('typeYourQuestionOrProblemHere')}
               />
             </div>
             
             <div className="mb-6">
-              <label className="block text-slate-300 mb-2 font-medium">
+              <label className="block text-slate-400 mb-2 font-medium text-sm uppercase tracking-wider">
                 {t('orUploadYourQuestion')}
               </label>
               <div 
-                className="border-2 border-dashed border-white/20 rounded-lg p-8 text-center hover:border-cyan-500/50 cursor-pointer transition-colors relative bg-slate-600/30 backdrop-blur-sm"
+                className="border-2 border-dashed border-white/10 rounded-2xl p-8 text-center hover:border-indigo-500/50 hover:bg-white/[0.02] cursor-pointer transition-all duration-300 relative bg-[#0f172a]/30 group"
                 onClick={() => !file && fileInputRef.current?.click()}
               >
                 <input 
@@ -1511,7 +1510,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
                         e.stopPropagation();
                         handleRemoveFile();
                       }}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                      className="absolute -top-4 -right-4 bg-red-500/20 text-red-400 border border-red-500/30 rounded-full p-2 hover:bg-red-500 hover:text-white transition-all duration-300"
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                     >
@@ -1519,42 +1518,46 @@ please give small bullet points of what knowlegde is needed to solve the problem
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     </motion.button>
-                    <IconComponent icon={AiOutlineFileText} className="h-8 w-8 mx-auto mb-2 text-cyan-400" />
-                    <p className="font-medium">{file.name}</p>
-                    <p className="text-sm text-slate-400">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <div className="w-16 h-16 mx-auto bg-indigo-500/20 rounded-2xl flex items-center justify-center mb-3 text-indigo-400">
+                        <IconComponent icon={AiOutlineFileText} className="h-8 w-8" />
+                    </div>
+                    <p className="font-medium text-white">{file.name}</p>
+                    <p className="text-sm text-slate-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
                   </div>
                 ) : (
-                  <div className="text-slate-400">
-                    <IconComponent icon={AiOutlineUpload} className="h-8 w-8 mx-auto mb-2" />
-                    <p>{t('dragAndDropYourFileHereOrClickToBrowse')}</p>
-                    <p className="text-sm mt-1">{t('supportsPDFWordAndImages')}</p>
+                  <div className="text-slate-400 group-hover:text-slate-300 transition-colors">
+                    <div className="w-16 h-16 mx-auto bg-white/[0.05] rounded-2xl flex items-center justify-center mb-3 group-hover:bg-indigo-500/20 group-hover:text-indigo-400 transition-all duration-300">
+                        <IconComponent icon={AiOutlineUpload} className="h-8 w-8" />
+                    </div>
+                    <p className="font-medium">{t('dragAndDropYourFileHereOrClickToBrowse')}</p>
+                    <p className="text-sm mt-1 text-slate-500">{t('supportsPDFWordAndImages')}</p>
                   </div>
                 )}
               </div>
             </div>
             
-            <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center justify-between flex-wrap gap-3">
               <motion.button
                 type="button"
-                className="flex items-center justify-center px-4 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 font-medium hover:bg-slate-500/50"
+                className="flex items-center justify-center px-5 py-2.5 bg-white/[0.05] border border-white/10 rounded-xl text-slate-300 font-medium hover:bg-white/[0.1] hover:text-white transition-all duration-300"
                 variants={buttonVariants}
                 whileHover="hover"
                 whileTap="tap"
                 onClick={() => setShowHistory(!showHistory)}
               >
-                <IconComponent icon={AiOutlineHistory} className="h-5 w-5 mr-2" />
+                <IconComponent icon={AiOutlineHistory} className="h-5 w-5 mr-2 text-indigo-400" />
                 {t('aiStudy.history')} ({homeworkHistory.length})
               </motion.button>
               
               <motion.button
                 type="button"
-                className="flex items-center justify-center px-4 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 font-medium hover:bg-slate-500/50"
+                className="flex items-center justify-center px-5 py-2.5 bg-white/[0.05] border border-white/10 rounded-xl text-slate-300 font-medium hover:bg-white/[0.1] hover:text-white transition-all duration-300"
                 variants={buttonVariants}
                 whileHover="hover"
                 whileTap="tap"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <IconComponent icon={AiOutlineCamera} className="h-5 w-5 mr-2" />
+                <IconComponent icon={AiOutlineCamera} className="h-5 w-5 mr-2 text-indigo-400" />
                 {t('takePhoto')}
               </motion.button>
               
@@ -1562,7 +1565,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
               {showGetAnswerButton || (question.trim() && !documentPages.length) ? (
                 <motion.button
                   type="button"
-                  className="flex items-center justify-center px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg text-white font-medium shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center justify-center px-8 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-xl text-white font-bold shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex-1 md:flex-none"
                   variants={buttonVariants}
                   whileHover={!loading && !isProcessingStarted ? "hover" : {}}
                   whileTap={!loading && !isProcessingStarted ? "tap" : {}}
@@ -1575,7 +1578,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
               ) : (
                 <motion.button
                   type="submit"
-                  className="flex items-center justify-center px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg text-white font-medium shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center justify-center px-8 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-xl text-white font-bold shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex-1 md:flex-none"
                   variants={buttonVariants}
                   whileHover={!loading && !isProcessingStarted ? "hover" : {}}
                   whileTap={!loading && !isProcessingStarted ? "tap" : {}}
@@ -1592,7 +1595,10 @@ please give small bullet points of what knowlegde is needed to solve the problem
         {/* Results Section */}
         <motion.div variants={itemVariants}>
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-semibold text-cyan-400">{t('aiStudy.solution')}</h2>
+            <h2 className="text-2xl font-semibold text-white flex items-center gap-2">
+                <span className="w-1 h-8 bg-emerald-500 rounded-full"></span>
+                {t('aiStudy.solution')}
+            </h2>
             <div className="flex items-center space-x-3">
               {/* Related Knowledge Button - appears after answer is complete */}
               {((answer && !loading) || (pageSolutions.length > 0 && pageSolutions.some(ps => ps.isComplete && !ps.error))) && (
@@ -1602,7 +1608,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
                   whileTap="tap"
                   onClick={handleRelatedKnowledge}
                   disabled={loadingKnowledge}
-                  className="flex items-center px-4 py-2 bg-purple-600/50 backdrop-blur-sm border border-purple-500/30 rounded-lg text-purple-200 font-medium hover:bg-purple-500/50 transition-colors"
+                  className="flex items-center px-4 py-2 bg-purple-500/10 backdrop-blur-sm border border-purple-500/20 rounded-xl text-purple-300 font-medium hover:bg-purple-500/20 transition-colors"
                 >
                   <IconComponent icon={AiOutlineBulb} className="h-4 w-4 mr-2" />
                   {loadingKnowledge ? t('aiStudy.loadingRelatedKnowledge') : t('aiStudy.relatedKnowledgeButton')}
@@ -1615,26 +1621,25 @@ please give small bullet points of what knowlegde is needed to solve the problem
                   whileHover="hover"
                   whileTap="tap"
                   onClick={() => setFullScreenSolution(!fullScreenSolution)}
-                  className="flex items-center text-cyan-400 font-medium hover:text-cyan-300"
+                  className="flex items-center text-slate-400 font-medium hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5"
                 >
                   <IconComponent 
                     icon={AiOutlineFullscreen} 
-                    className="h-5 w-5 mr-1" 
+                    className="h-5 w-5" 
                   />
-                  {fullScreenSolution ? t('aiStudy.exitFullscreen') : t('aiStudy.fullscreen')}
                 </motion.button>
               )}
             </div>
           </div>
           
           <motion.div
-            className={`bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl p-6 overflow-y-auto transition-all duration-300 ${
+            className={`bg-[#0f172a]/40 backdrop-blur-md border border-white/10 rounded-3xl p-6 overflow-y-auto transition-all duration-300 custom-scrollbar ${
               fullScreenSolution ? 
-                "fixed top-0 left-0 right-0 bottom-0 z-50 rounded-none bg-slate-900" : 
+                "fixed top-0 left-0 right-0 bottom-0 z-50 rounded-none bg-[#030712]" : 
                 "h-[450px]"
             }`}
             variants={itemVariants}
-            animate={(answer || pageSolutions.length > 0) ? { boxShadow: "0 4px 20px rgba(6, 182, 212, 0.1)" } : {}}
+            animate={(answer || pageSolutions.length > 0) ? { boxShadow: "0 0 0 1px rgba(255,255,255,0.05), 0 10px 30px -10px rgba(0,0,0,0.5)" } : {}}
             ref={!fullScreenSolution ? solutionContainerRef : undefined}
           >
             {fullScreenSolution ? (

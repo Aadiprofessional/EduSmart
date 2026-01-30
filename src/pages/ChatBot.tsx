@@ -6288,25 +6288,25 @@ const TextWithCharts: React.FC<{
                     )}
 
                     {pendingPdfFile && (
-                      <div className={`mb-2 p-2 rounded-lg border-2 border-dashed ${darkMode ? 'bg-orange-900/20 border-orange-500/50' : 'bg-orange-50 border-orange-300'}`}>
+                      <div className={`mb-2 p-2 rounded-lg border-2 border-dashed ${darkMode ? 'bg-indigo-900/20 border-indigo-500/50' : 'bg-indigo-50 border-indigo-300'}`}>
                         <div className="flex items-center space-x-2 mb-2">
-                          <FiFileText className={`${darkMode ? 'text-orange-400' : 'text-orange-600'} w-4 h-4`} />
-                          <span className="text-xs sm:text-sm font-medium text-orange-600 dark:text-orange-400">PDF ready for analysis</span>
+                          <FiFileText className={`${darkMode ? 'text-indigo-400' : 'text-indigo-600'} w-4 h-4`} />
+                          <span className="text-xs sm:text-sm font-medium text-indigo-600 dark:text-indigo-400">PDF ready for analysis</span>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <FiFileText className={`${darkMode ? 'text-orange-400' : 'text-orange-600'} w-3 h-3`} />
+                          <FiFileText className={`${darkMode ? 'text-indigo-400' : 'text-indigo-600'} w-3 h-3`} />
                           <span className="text-xs truncate flex-1">{pendingPdfFile.pdfVisionData?.original_filename}</span>
-                          <span className="text-xs text-orange-600 dark:text-orange-400">
+                          <span className="text-xs text-indigo-600 dark:text-indigo-400">
                             {pendingPdfFile.pdfVisionData?.page_count} pages
                           </span>
                           <AuthRequiredButton 
                             onClick={() => setPendingPdfFile(null)}
-                            className={`p-0.5 rounded-full ${darkMode ? 'hover:bg-orange-800 text-orange-400' : 'hover:bg-orange-200 text-orange-600'}`}
+                            className={`p-0.5 rounded-full ${darkMode ? 'hover:bg-indigo-800 text-indigo-400' : 'hover:bg-indigo-200 text-indigo-600'}`}
                           >
                             <FiX size={12} />
                           </AuthRequiredButton>
                         </div>
-                        <div className="mt-1 text-xs text-orange-600 dark:text-orange-400">
+                        <div className="mt-1 text-xs text-indigo-600 dark:text-indigo-400">
                           Type your message to analyze this PDF
                         </div>
                       </div>
@@ -6428,7 +6428,7 @@ const TextWithCharts: React.FC<{
                                 <FiSend className="w-4 h-4 sm:w-5 sm:h-5" />
                               )}
                               {!isStreaming && !isMessageLimitReached && (((inputMessage.trim() || selectedFile || selectedGenerationType || uploadedFiles.length > 0)) || isSearchActive) && (
-                                <span className="ml-1 text-xs bg-orange-500/20 px-1.5 py-0.5 rounded-full flex items-center">
+                                <span className="ml-1 text-xs bg-indigo-500/20 px-1.5 py-0.5 rounded-full flex items-center">
                                   -{isSearchActive ? 2 : calculateCoinCost()}
                                   <img src={coinIcon} alt="coin" className="w-3 h-3 ml-1" />
                                 </span>

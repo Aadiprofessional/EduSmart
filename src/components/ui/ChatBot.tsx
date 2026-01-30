@@ -194,7 +194,7 @@ const ChatBot: React.FC = () => {
         text: 'Upgrade to Pro',
         action: () => navigate('/subscription'),
         icon: <IconWrapper icon={FaCrown} size={14} />,
-        color: 'from-yellow-500 to-orange-500'
+        color: 'from-yellow-500 to-indigo-500'
       });
     }
 
@@ -502,7 +502,7 @@ const ChatBot: React.FC = () => {
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2">
           {(question.requiresAuth && !user) || (question.requiresPro && !isProUser) ? (
-            <span className="text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 bg-orange-500/20 text-orange-300 rounded-full">
+            <span className="text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 bg-indigo-500/20 text-indigo-300 rounded-full">
               {question.requiresPro ? 'Pro' : 'Login'}
             </span>
           ) : null}

@@ -187,7 +187,7 @@ const ThankYou: React.FC = () => {
           >
             <div className="flex items-center justify-center mb-6">
               <motion.div
-                className="bg-gradient-to-r from-yellow-400 to-orange-500 p-3 rounded-full mr-4"
+                className="bg-gradient-to-r from-yellow-400 to-indigo-500 p-3 rounded-full mr-4"
                 animate={{ rotate: [0, 5, -5, 0] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >

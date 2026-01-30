@@ -44,16 +44,7 @@ const Footer: React.FC = () => {
   };
 
   return (
-    <footer className={`relative ${theme.footerBg} text-white overflow-hidden`}>
-      {/* Background Effects */}
-      <div className="absolute inset-0 opacity-20">
-        <div className={`absolute top-10 left-10 w-96 h-96 ${theme.footerAccent} rounded-full mix-blend-multiply filter blur-3xl animate-pulse`}></div>
-        <div className={`absolute bottom-10 right-10 w-96 h-96 ${theme.footerSecondary} rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-1000`}></div>
-        <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 ${theme.footerAccent} rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-500`}></div>
-      </div>
-      
-      {/* Glassmorphism overlay */}
-      <div className="absolute inset-0 bg-black/20 backdrop-blur-sm"></div>
+    <footer className="relative text-white overflow-hidden bg-[#0a0a0a] border-t border-white/10">
       
       <div className="container mx-auto px-4 py-8 sm:py-12 lg:py-16 relative z-10">
         {/* Mobile Layout */}
@@ -67,10 +58,10 @@ const Footer: React.FC = () => {
           >
             {/* Logo */}
             <motion.div variants={itemVariants} className="mb-6">
-              <h3 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent mb-3">
+              <h3 className="text-2xl sm:text-3xl font-bold text-white mb-3 tracking-tight">
                 MatrixEdu
               </h3>
-              <p className="text-gray-300 text-sm leading-relaxed max-w-sm mx-auto">
+              <p className="text-gray-400 text-sm leading-relaxed max-w-sm mx-auto">
                 {t('footer.aiEducation')}
               </p>
             </motion.div>
@@ -78,16 +69,16 @@ const Footer: React.FC = () => {
             {/* Social Media */}
             <motion.div variants={itemVariants} className="flex justify-center space-x-4 mb-8">
               {[
-                { icon: FaFacebook, href: "#", color: "text-blue-400" },
-                { icon: FaTwitter, href: "#", color: "text-sky-400" },
-                { icon: FaInstagram, href: "#", color: "text-pink-400" },
-                { icon: FaLinkedin, href: "#", color: "text-blue-500" },
-                { icon: FaYoutube, href: "#", color: "text-red-500" }
+                { icon: FaFacebook, href: "#", color: "text-gray-400 hover:text-white" },
+                { icon: FaTwitter, href: "#", color: "text-gray-400 hover:text-white" },
+                { icon: FaInstagram, href: "#", color: "text-gray-400 hover:text-white" },
+                { icon: FaLinkedin, href: "#", color: "text-gray-400 hover:text-white" },
+                { icon: FaYoutube, href: "#", color: "text-gray-400 hover:text-white" }
               ].map((social, index) => (
                 <motion.a 
                   key={index}
                   href={social.href} 
-                  className={`p-2 bg-white/5 backdrop-blur-sm rounded-full border border-white/10 ${social.color} transition-all duration-300 hover:border-white/30 hover:bg-white/10`}
+                  className={`p-2 bg-white/5 rounded-full border border-white/10 ${social.color} transition-all duration-300 hover:border-white/30 hover:bg-white/10`}
                   variants={socialVariants} 
                   whileHover="hover"
                 >
@@ -100,13 +91,13 @@ const Footer: React.FC = () => {
             <motion.div variants={itemVariants} className="grid grid-cols-2 gap-4 mb-8">
               <Link 
                 to="/courses" 
-                className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 hover:scale-105"
+                className="bg-white text-black px-4 py-3 rounded-lg font-bold text-sm transition-all duration-300 hover:bg-gray-200"
               >
                 {t('footer.browseCourses')}
               </Link>
               <Link 
                 to="/scholarships" 
-                className="bg-gradient-to-r from-purple-500 to-pink-600 text-white px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 hover:scale-105"
+                className="bg-[#1a1a1a] text-white border border-white/10 px-4 py-3 rounded-lg font-bold text-sm transition-all duration-300 hover:bg-white/10"
               >
                 {t('footer.findScholarships')}
               </Link>
@@ -155,7 +146,7 @@ const Footer: React.FC = () => {
           </motion.div>
         </div>
 
-        {/* Desktop Layout */}
+          {/* Desktop Layout */}
         <motion.div 
           className="hidden lg:grid lg:grid-cols-4 gap-8"
           variants={containerVariants}
@@ -166,26 +157,26 @@ const Footer: React.FC = () => {
           {/* About */}
           <motion.div variants={itemVariants}>
             <div className="mb-6">
-              <h3 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent mb-4">
+              <h3 className="text-3xl font-bold text-white mb-4 tracking-tight">
                 MatrixEdu
               </h3>
-              <p className="text-gray-300 mb-6 leading-relaxed">
+              <p className="text-gray-400 mb-6 leading-relaxed">
                 {t('footer.about')}
               </p>
             </div>
             
             <div className="flex space-x-4">
               {[
-                { icon: FaFacebook, href: "#", color: "hover:text-blue-400" },
-                { icon: FaTwitter, href: "#", color: "hover:text-sky-400" },
-                { icon: FaInstagram, href: "#", color: "hover:text-pink-400" },
-                { icon: FaLinkedin, href: "#", color: "hover:text-blue-500" },
-                { icon: FaYoutube, href: "#", color: "hover:text-red-500" }
+                { icon: FaFacebook, href: "#", color: "hover:text-white" },
+                { icon: FaTwitter, href: "#", color: "hover:text-white" },
+                { icon: FaInstagram, href: "#", color: "hover:text-white" },
+                { icon: FaLinkedin, href: "#", color: "hover:text-white" },
+                { icon: FaYoutube, href: "#", color: "hover:text-white" }
               ].map((social, index) => (
                 <motion.a 
                   key={index}
                   href={social.href} 
-                  className={`p-3 bg-white/5 backdrop-blur-sm rounded-full border border-white/10 text-gray-400 ${social.color} transition-all duration-300 hover:border-white/30 hover:bg-white/10`}
+                  className={`p-3 bg-white/5 rounded-full border border-white/10 text-gray-400 ${social.color} transition-all duration-300 hover:border-white/30 hover:bg-white/10`}
                   variants={socialVariants} 
                   whileHover="hover"
                   data-magnetic

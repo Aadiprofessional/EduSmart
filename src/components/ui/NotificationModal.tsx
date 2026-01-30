@@ -52,7 +52,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
       case 'warning':
         return {
           icon: FaExclamationTriangle,
-          bgColor: 'from-yellow-500 to-orange-500',
+          bgColor: 'from-yellow-500 to-indigo-500',
           borderColor: 'border-yellow-500/30',
           iconColor: 'text-yellow-400',
           titleColor: 'text-yellow-400'

@@ -293,7 +293,7 @@ const Blog: React.FC = () => {
       case 'study abroad':
         return <IconComponent icon={FaGlobe} className="text-indigo-500" />;
       case 'career':
-        return <IconComponent icon={FaChartLine} className="text-orange-500" />;
+        return <IconComponent icon={FaChartLine} className="text-indigo-500" />;
       default:
         return <IconComponent icon={FaGraduationCap} className="text-gray-500" />;
     }
@@ -764,7 +764,7 @@ const Blog: React.FC = () => {
                                   {post.read_time || calculateReadTime(post.content || '')} min
                                 </div>
                                 {post.featured && (
-                                  <div className="absolute top-3 left-3 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+                                  <div className="absolute top-3 left-3 bg-gradient-to-r from-indigo-500 to-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
                                     Featured
                                   </div>
                                 )}
@@ -833,7 +833,7 @@ const Blog: React.FC = () => {
                                   className="w-full h-48 lg:h-full object-cover group-hover:scale-110 transition-transform duration-300"
                                 />
                                 {post.featured && (
-                                  <div className="absolute top-3 left-3 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+                                  <div className="absolute top-3 left-3 bg-gradient-to-r from-indigo-500 to-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
                                     Featured
                                   </div>
                                 )}
@@ -931,7 +931,7 @@ const Blog: React.FC = () => {
                                 className="w-full h-28 sm:h-32 object-cover"
                               />
                               {post.featured && (
-                                <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs px-1 py-0.5 rounded-full">
+                                <div className="absolute top-2 left-2 bg-indigo-500 text-white text-xs px-1 py-0.5 rounded-full">
                                   ★
                                 </div>
                               )}
@@ -983,7 +983,7 @@ const Blog: React.FC = () => {
                                   className="w-14 h-14 object-cover rounded-md"
                                 />
                                 {post.featured && (
-                                  <div className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs px-1 py-0.5 rounded-full">
+                                  <div className="absolute -top-1 -right-1 bg-indigo-500 text-white text-xs px-1 py-0.5 rounded-full">
                                     ★
                                   </div>
                                 )}

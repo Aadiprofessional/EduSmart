@@ -365,7 +365,7 @@ const About: React.FC = () => {
                     icon: FaCode,
                     title: "Document Analysis",
                     description: "Advanced OCR and grammar checking system that analyzes documents for errors and provides intelligent corrections.",
-                    color: "from-yellow-400 to-orange-500"
+                    color: "from-yellow-400 to-indigo-500"
                   },
                   {
                     icon: FaLock,

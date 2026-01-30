@@ -2033,7 +2033,7 @@ Please provide a helpful, well-structured educational response using the markdow
             
             {/* Current Time Display */}
             {currentLecture?.lecture_type === 'video' && (
-              <div className="mb-3 p-3 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-xl border border-yellow-500/20">
+              <div className="mb-3 p-3 bg-gradient-to-r from-yellow-500/10 to-indigo-500/10 rounded-xl border border-yellow-500/20">
                 <div className="flex items-center gap-2 text-yellow-400 text-sm font-medium">
                   <IconWrapper icon={FaClock} size={12} />
                   <span>Current: {formatTime(currentTime)}</span>
@@ -2055,7 +2055,7 @@ Please provide a helpful, well-structured educational response using the markdow
                 disabled={!newNote.trim()}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full py-2 px-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg font-medium text-sm hover:from-yellow-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg"
+                className="w-full py-2 px-4 bg-gradient-to-r from-yellow-500 to-indigo-500 text-white rounded-lg font-medium text-sm hover:from-yellow-600 hover:to-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg"
               >
                 <div className="flex items-center justify-center gap-2">
                   <IconWrapper icon={FaStickyNote} size={14} />
@@ -2353,7 +2353,7 @@ Please provide a helpful, well-structured educational response using the markdow
             <div className="p-6 border-b border-gray-700/50 bg-gradient-to-r from-gray-800/60 to-gray-700/60">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center">
+                  <div className="w-10 h-10 bg-gradient-to-r from-yellow-500 to-indigo-500 rounded-xl flex items-center justify-center">
                     <IconWrapper icon={FaStickyNote} className="text-white" size={20} />
                   </div>
                   <div>
@@ -2433,7 +2433,7 @@ Please provide a helpful, well-structured educational response using the markdow
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         disabled={!noteEditState.content.trim()}
-                        className="px-6 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg font-medium hover:from-yellow-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
+                        className="px-6 py-2 bg-gradient-to-r from-yellow-500 to-indigo-500 text-white rounded-lg font-medium hover:from-yellow-600 hover:to-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
                       >
                         Save Changes
                       </motion.button>

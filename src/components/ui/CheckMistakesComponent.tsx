@@ -2840,7 +2840,7 @@ Be thorough and fair in your assessment.`
 
   // After file upload, show split view with document on left and mistakes on right
   return (
-    <div className={className}>
+    <div className={`bg-[#0f172a]/60 backdrop-blur-md border border-white/10 rounded-xl shadow-lg overflow-hidden p-4 sm:p-6 ${className || ''}`}>
       {/* Mobile-Responsive Header */}
       <div className="mb-6">
         {/* Desktop Header */}
@@ -2858,9 +2858,6 @@ Be thorough and fair in your assessment.`
               </motion.button>
               <div className="border-l border-white/20 h-8"></div>
               <div>
-                <h1 className="text-lg font-bold text-cyan-400">
-                  Mistake Checker
-                </h1>
                 <p className="text-slate-300 text-sm truncate max-w-[300px]">{file?.name}</p>
               </div>
             </div>
@@ -2940,7 +2937,7 @@ Be thorough and fair in your assessment.`
           <div className="flex items-center justify-between mb-4">
             <motion.button
               onClick={handleRemoveFile}
-              className="flex items-center px-3 py-2 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10"
+              className="flex items-center px-3 py-2 bg-black/20 backdrop-blur-sm hover:bg-black/30 rounded-lg text-slate-300 transition-colors border border-white/10"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -2963,9 +2960,6 @@ Be thorough and fair in your assessment.`
           </div>
 
           <div className="mb-4">
-            <h1 className="text-xl font-bold text-cyan-400 mb-1">
-              Check Mistakes & Assessment
-            </h1>
             <p className="text-slate-300 text-sm truncate">{file?.name}</p>
             <p className="text-xs text-slate-400">
               Using {MARKING_STANDARDS.find(s => s.id === selectedMarkingStandard)?.name} standard
@@ -3079,8 +3073,8 @@ Be thorough and fair in your assessment.`
       {/* Mobile-Responsive Split View: Document and Content */}
       <div className="flex flex-col lg:grid lg:grid-cols-2 gap-6 min-h-[calc(100vh-200px)]">
         {/* Left Side - Document (Full width on mobile, half on desktop) */}
-        <div className="bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl shadow-lg overflow-hidden order-2 lg:order-1">
-          <div className="bg-slate-700/50 backdrop-blur-sm px-4 lg:px-6 py-3 lg:py-4 border-b border-white/10 flex items-center justify-between">
+        <div className="bg-[#0f172a]/60 backdrop-blur-md border border-white/10 rounded-xl shadow-lg overflow-hidden order-2 lg:order-1">
+          <div className="bg-[#0f172a]/60 backdrop-blur-md px-4 lg:px-6 py-3 lg:py-4 border-b border-white/10 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-cyan-400">Document</h2>
             
             {/* Desktop Text Toggle */}
@@ -3133,7 +3127,7 @@ Be thorough and fair in your assessment.`
           )}
           
           <div className="h-64 lg:h-full p-4 relative">
-            <div className="w-full h-full bg-slate-700/30 backdrop-blur-sm rounded-lg overflow-hidden border border-white/10 relative">
+            <div className="w-full h-full bg-black/20 backdrop-blur-md rounded-lg overflow-hidden border border-white/10 relative">
               {textOnlyMode ? (
                 /* Direct Text Display */
                 <div className="w-full h-full overflow-auto p-4">
@@ -3158,7 +3152,7 @@ Be thorough and fair in your assessment.`
                                 part.mistakeType === 'grammar' ? 'bg-red-500/30 border-b-2 border-red-500' :
                                 part.mistakeType === 'spelling' ? 'bg-yellow-500/30 border-b-2 border-yellow-500' :
                                 part.mistakeType === 'punctuation' ? 'bg-blue-500/30 border-b-2 border-blue-500' :
-                                'bg-orange-500/30 border-b-2 border-orange-500'
+                                'bg-indigo-500/30 border-b-2 border-indigo-500'
                               } ${
                                 part.isSelected ? 'ring-2 ring-cyan-400 bg-cyan-500/20 shadow-lg animate-pulse' : ''
                               } rounded px-1 cursor-help transition-all hover:bg-opacity-50`}
@@ -3239,7 +3233,7 @@ Be thorough and fair in your assessment.`
                                     part.mistakeType === 'grammar' ? 'bg-red-500/50 border-b-2 border-red-400' :
                                     part.mistakeType === 'spelling' ? 'bg-yellow-500/50 border-b-2 border-yellow-400' :
                                     part.mistakeType === 'punctuation' ? 'bg-blue-500/50 border-b-2 border-blue-400' :
-                                    'bg-orange-500/50 border-b-2 border-orange-400'
+                                    'bg-indigo-500/50 border-b-2 border-indigo-400'
                                   } ${
                                     part.isSelected ? 'ring-2 ring-cyan-400 bg-cyan-500/30 shadow-lg animate-pulse' : ''
                                   } rounded px-1 cursor-help transition-all hover:bg-opacity-70`}
@@ -3281,7 +3275,7 @@ Be thorough and fair in your assessment.`
                                 <span className="text-slate-200 font-medium">Punctuation</span>
                               </div>
                               <div className="flex items-center">
-                                <div className="w-4 h-4 bg-orange-500/60 border-b-2 border-orange-400 rounded mr-3"></div>
+                                <div className="w-4 h-4 bg-indigo-500/60 border-b-2 border-indigo-400 rounded mr-3"></div>
                                 <span className="text-slate-200 font-medium">Other Issues</span>
                               </div>
                             </div>
@@ -3609,15 +3603,15 @@ Be thorough and fair in your assessment.`
 
               {/* Areas for Improvement */}
               {markingSummary.weaknesses.length > 0 && (
-                <div className="bg-orange-500/10 rounded-lg p-4 border border-orange-500/20">
-                  <h4 className="text-orange-400 font-semibold mb-3 flex items-center">
-                    <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
+                <div className="bg-indigo-500/10 rounded-lg p-4 border border-indigo-500/20">
+                  <h4 className="text-indigo-400 font-semibold mb-3 flex items-center">
+                    <span className="w-2 h-2 bg-indigo-500 rounded-full mr-2"></span>
                     Areas for Improvement
                   </h4>
                   <ul className="space-y-2">
                     {markingSummary.weaknesses.slice(0, 2).map((weakness, index) => (
                       <li key={index} className="text-sm text-slate-300 flex items-start">
-                        <span className="text-orange-400 mr-2">•</span>
+                        <span className="text-indigo-400 mr-2">•</span>
                         {weakness}
                       </li>
                     ))}
@@ -3736,21 +3730,21 @@ Be thorough and fair in your assessment.`
                 </div>
 
                 {/* Areas for Improvement */}
-                <div className="bg-orange-50 rounded-xl p-6 border border-orange-200">
-                  <h3 className="text-xl font-semibold text-orange-800 mb-4 flex items-center">
-                    <span className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-white mr-2">!</span>
+                <div className="bg-indigo-50 rounded-xl p-6 border border-indigo-200">
+                  <h3 className="text-xl font-semibold text-indigo-800 mb-4 flex items-center">
+                    <span className="w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center text-white mr-2">!</span>
                     Areas for Improvement
                   </h3>
                   <ul className="space-y-3">
                     {markingSummary.weaknesses.length > 0 ? (
                       markingSummary.weaknesses.map((weakness, index) => (
-                        <li key={index} className="text-orange-700 flex items-start">
-                          <span className="w-2 h-2 bg-orange-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                        <li key={index} className="text-indigo-700 flex items-start">
+                          <span className="w-2 h-2 bg-indigo-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
                           {weakness}
                         </li>
                       ))
                     ) : (
-                      <li className="text-orange-700">No major areas of concern identified</li>
+                      <li className="text-indigo-700">No major areas of concern identified</li>
                     )}
                   </ul>
                 </div>

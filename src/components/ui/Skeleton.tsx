@@ -321,15 +321,15 @@ export const AIAnalysisSkeleton: React.FC = () => {
       </div>
 
       {/* Recommended Regions Card */}
-      <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 sm:p-6">
+      <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl p-4 sm:p-6">
         <div className="flex items-center mb-4">
-          <div className="h-6 w-6 bg-orange-300 animate-skeleton-shimmer rounded mr-2"></div>
-          <div className="h-5 bg-orange-300 animate-skeleton-shimmer rounded w-36"></div>
+          <div className="h-6 w-6 bg-indigo-300 animate-skeleton-shimmer rounded mr-2"></div>
+          <div className="h-5 bg-indigo-300 animate-skeleton-shimmer rounded w-36"></div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <div className="h-6 w-20 bg-orange-300 animate-skeleton-shimmer rounded-full"></div>
-          <div className="h-6 w-16 bg-orange-300 animate-skeleton-shimmer rounded-full"></div>
-          <div className="h-6 w-24 bg-orange-300 animate-skeleton-shimmer rounded-full"></div>
+          <div className="h-6 w-20 bg-indigo-300 animate-skeleton-shimmer rounded-full"></div>
+          <div className="h-6 w-16 bg-indigo-300 animate-skeleton-shimmer rounded-full"></div>
+          <div className="h-6 w-24 bg-indigo-300 animate-skeleton-shimmer rounded-full"></div>
         </div>
       </div>
 
@@ -514,7 +514,7 @@ export const FeaturedSuccessStoriesSkeleton: React.FC = () => {
 // Featured Scholarships Skeleton
 export const FeaturedScholarshipsSkeleton: React.FC = () => {
   return (
-    <section className="py-20 bg-gradient-to-br from-yellow-900 via-orange-900 to-red-900">
+    <section className="py-20 bg-gradient-to-br from-yellow-900 via-indigo-900 to-red-900">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <div className="h-12 bg-white/20 animate-skeleton-shimmer rounded-lg mb-4 mx-auto w-1/2"></div>

@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class',
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
   ],
@@ -11,8 +12,8 @@ module.exports = {
           light: '#14B8A6', // Lighter teal
         },
         secondary: {
-          DEFAULT: '#F97316', // Orange from the image
-          light: '#FB923C', // Lighter orange
+          DEFAULT: '#6366f1', // Indigo-500
+          light: '#818cf8', // Indigo-400
         },
         lavender: {
           50: '#faf5ff',

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { jsPDF } from 'jspdf';
 import { Document, Paragraph, TextRun, Packer } from 'docx';
-import { FiEdit, FiDownload, FiShare2, FiSave, FiSettings, FiRotateCw, FiRefreshCw, FiCopy, FiTrash, FiBook, FiFileText, FiMail, FiClipboard, FiX, FiPlus, FiMinus } from 'react-icons/fi';
+import { FiEdit, FiDownload, FiShare2, FiSave, FiSettings, FiRotateCw, FiRefreshCw, FiCopy, FiTrash, FiBook, FiFileText, FiMail, FiClipboard, FiX, FiPlus, FiMinus, FiPenTool } from 'react-icons/fi';
 import { AiOutlineFontSize, AiOutlineHighlight, AiOutlineAlignLeft, AiOutlineAlignCenter, AiOutlineAlignRight, AiOutlineBold, AiOutlineItalic, AiOutlineUnderline, AiOutlineOrderedList, AiOutlineUnorderedList, AiOutlineLink, AiOutlineRobot, AiOutlineBulb, AiOutlineHistory, AiOutlineLoading3Quarters, AiOutlinePlus, AiOutlineMinus } from 'react-icons/ai';
 import { BsQuote } from 'react-icons/bs';
 import IconComponent from './IconComponent';
@@ -194,7 +194,11 @@ const PortalModal: React.FC<PortalModalProps> = ({ isOpen, onClose, children, cl
   );
 };
 
-const ContentWriterComponent: React.FC = () => {
+interface ContentWriterComponentProps {
+  className?: string;
+}
+
+const ContentWriterComponent: React.FC<ContentWriterComponentProps> = ({ className = '' }) => {
   const { t } = useLanguage();
   const { user, session } = useAuth();
   
@@ -1426,28 +1430,17 @@ ${prompt}`
       initial="hidden"
       animate="visible"
       variants={containerVariants}
-      className="bg-gradient-to-br from-slate-900 via-blue-900 to-teal-900 p-4 min-h-screen"
+      className={`bg-[#0f172a]/60 backdrop-blur-md border border-white/10 rounded-xl shadow-lg overflow-hidden p-4 sm:p-6 ${className || ''}`}
     >
-      <div className="container mx-auto">
-        {/* Header Section */}
-        <motion.div variants={itemVariants} className="mb-6">
-          <h1 className="text-3xl font-bold text-cyan-400">
-            {t('aiStudy.aiContentWriter')}
-            <span className="ml-2 text-lg font-normal text-slate-300">{t('aiStudy.forStudents')}</span>
-          </h1>
-          <p className="text-slate-400 mt-1">
-            {t('aiStudy.generateProfessionalContentForApplicationsEssaysLettersAndMore')}
-          </p>
-        </motion.div>
-
-        <div className="flex flex-col lg:flex-row gap-6">
+      <div className="w-full">
+        <div className="flex flex-col xl:flex-row gap-8">
           {/* Left Panel - Template Selection & Input */}
-          <motion.div variants={itemVariants} className="w-full lg:w-1/3">
-            <div className="bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl shadow-lg p-6 mb-6">
-              <h2 className="text-xl font-bold text-cyan-400 mb-4 flex items-center">
-                <IconComponent icon={FiFileText} className="mr-2" /> Templates
+          <motion.div variants={itemVariants} className="w-full xl:w-1/3 space-y-6">
+            <div className="bg-[#0f172a]/60 backdrop-blur-md border border-white/10 rounded-3xl p-6 shadow-xl">
+              <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center">
+                <IconComponent icon={FiFileText} className="mr-2 text-indigo-400" /> Templates
               </h2>
-              <div className="grid grid-cols-2 gap-3 mb-6">
+              <div className="grid grid-cols-2 gap-3 mb-8">
                 {templates.map((template) => (
                   <motion.button
                     key={template.id}
@@ -1455,39 +1448,40 @@ ${prompt}`
                     whileHover="hover"
                     whileTap="tap"
                     onClick={() => selectTemplate(template.id)}
-                    className={`flex flex-col items-center justify-center p-4 rounded-lg transition-colors border ${
+                    className={`flex flex-col items-center justify-center p-4 rounded-2xl transition-all duration-300 border ${
                       activeTemplate === template.id 
-                        ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-md border-cyan-500/30' 
-                        : 'bg-slate-600/30 backdrop-blur-sm text-slate-300 hover:bg-slate-500/30 border-white/10'
+                        ? 'bg-indigo-600/20 text-white shadow-lg shadow-indigo-900/20 border-indigo-500/30' 
+                        : 'bg-white/[0.03] text-slate-400 hover:bg-white/[0.05] hover:text-slate-200 border-transparent'
                     }`}
                   >
-                    <IconComponent icon={template.icon} className="text-2xl mb-2" />
-                    <span className="text-sm text-center">{template.name}</span>
+                    <IconComponent icon={template.icon} className={`text-2xl mb-2 ${activeTemplate === template.id ? 'text-indigo-400' : 'text-slate-500'}`} />
+                    <span className="text-xs font-medium text-center">{template.name}</span>
                   </motion.button>
                 ))}
               </div>
 
-              <h2 className="text-xl font-bold text-cyan-400 mb-4 flex items-center">
-                <IconComponent icon={AiOutlineRobot} className="mr-2" /> Prompt
+              <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center">
+                <IconComponent icon={AiOutlineRobot} className="mr-2 text-indigo-400" /> Prompt
               </h2>
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder={t('aiStudy.contentWriterPlaceholder')}
-                className="w-full h-40 p-4 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 placeholder-slate-400 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none"
+                className="w-full h-40 p-4 bg-[#0f172a]/60 backdrop-blur-sm border border-white/10 rounded-2xl text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 resize-none transition-all"
               />
               
               {/* Content Settings */}
-              <div className="mt-4 space-y-4">
-                <h3 className="text-lg font-semibold text-cyan-400 flex items-center">
-                  <IconComponent icon={FiSettings} className="mr-2" /> Content Settings
+              <div className="mt-6 space-y-5">
+                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center border-t border-white/5 pt-5">
+                  <IconComponent icon={FiSettings} className="mr-2 text-indigo-400" /> Settings
                 </h3>
                 
                 {/* Word Count */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Word Count: {wordCount} words
-                  </label>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-sm font-medium text-slate-300">Word Count</label>
+                    <span className="text-xs text-indigo-400 font-mono bg-indigo-500/10 px-2 py-0.5 rounded">{wordCount}</span>
+                  </div>
                   <div className="flex items-center space-x-3">
                     <input
                       type="range"
@@ -1496,52 +1490,56 @@ ${prompt}`
                       step="50"
                       value={wordCount}
                       onChange={(e) => setWordCount(parseInt(e.target.value))}
-                      className="flex-1 h-2 bg-slate-600/50 rounded-lg appearance-none cursor-pointer slider"
-                    />
-                    <input
-                      type="number"
-                      min="50"
-                      max="2000"
-                      value={wordCount}
-                      onChange={(e) => setWordCount(Math.max(50, Math.min(2000, parseInt(e.target.value) || 100)))}
-                      className="w-20 px-2 py-1 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded text-slate-300 text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                      className="flex-1 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer slider accent-indigo-500"
                     />
                   </div>
                 </div>
                 
-                {/* Content Type */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Content Type</label>
-                  <select
-                    value={contentType}
-                    onChange={(e) => setContentType(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                  >
-                    <option value="essay">Essay</option>
-                    <option value="article">Article</option>
-                    <option value="blog">Blog Post</option>
-                    <option value="report">Report</option>
-                    <option value="summary">Summary</option>
-                    <option value="outline">Outline</option>
-                  </select>
-                </div>
-                
-                {/* Tone */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Tone</label>
-                  <select
-                    value={tone}
-                    onChange={(e) => setTone(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                  >
-                    <option value="academic">Academic</option>
-                    <option value="professional">Professional</option>
-                    <option value="casual">Casual</option>
-                    <option value="formal">Formal</option>
-                    <option value="conversational">Conversational</option>
-                    <option value="persuasive">Persuasive</option>
-                    <option value="creative">Creative</option>
-                  </select>
+                <div className="grid grid-cols-2 gap-4">
+                    {/* Content Type */}
+                    <div>
+                      <label className="block text-xs font-medium text-slate-400 mb-2 uppercase">Type</label>
+                      <div className="relative">
+                        <select
+                            value={contentType}
+                            onChange={(e) => setContentType(e.target.value)}
+                            className="w-full px-3 py-2.5 bg-[#0f172a]/60 backdrop-blur-sm border border-white/10 rounded-xl text-slate-300 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 appearance-none text-sm"
+                        >
+                            <option value="essay">Essay</option>
+                            <option value="article">Article</option>
+                            <option value="blog">Blog Post</option>
+                            <option value="report">Report</option>
+                            <option value="summary">Summary</option>
+                            <option value="outline">Outline</option>
+                        </select>
+                        <div className="absolute right-3 top-3 pointer-events-none text-slate-500">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Tone */}
+                    <div>
+                      <label className="block text-xs font-medium text-slate-400 mb-2 uppercase">Tone</label>
+                      <div className="relative">
+                        <select
+                            value={tone}
+                            onChange={(e) => setTone(e.target.value)}
+                            className="w-full px-3 py-2.5 bg-[#0f172a]/60 backdrop-blur-sm border border-white/10 rounded-xl text-slate-300 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 appearance-none text-sm"
+                        >
+                            <option value="academic">Academic</option>
+                            <option value="professional">Professional</option>
+                            <option value="casual">Casual</option>
+                            <option value="formal">Formal</option>
+                            <option value="conversational">Conversational</option>
+                            <option value="persuasive">Persuasive</option>
+                            <option value="creative">Creative</option>
+                        </select>
+                        <div className="absolute right-3 top-3 pointer-events-none text-slate-500">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                      </div>
+                    </div>
                 </div>
               </div>
               
@@ -1551,7 +1549,7 @@ ${prompt}`
                 whileTap="tap"
                 onClick={handleGenerateContent}
                 disabled={isGenerating}
-                className="mt-4 w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:shadow-lg text-white font-medium py-3 px-6 rounded-lg flex items-center justify-center transition-all disabled:opacity-50"
+                className="mt-8 w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 shadow-lg shadow-indigo-500/25 text-white font-bold py-3.5 px-6 rounded-xl flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isGenerating ? (
                   <>
@@ -1572,7 +1570,7 @@ ${prompt}`
                 whileHover="hover"
                 whileTap="tap"
                 onClick={() => setShowHistory(!showHistory)}
-                className="mt-3 w-full bg-slate-600/50 backdrop-blur-sm border border-white/10 text-slate-300 font-medium py-2 px-6 rounded-lg flex items-center justify-center hover:bg-slate-500/50 transition-colors"
+                className="mt-3 w-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 text-slate-300 font-medium py-2.5 px-6 rounded-xl flex items-center justify-center transition-all"
               >
                 <IconComponent icon={AiOutlineHistory} className="mr-2" /> 
                 {t('aiStudy.viewHistory')} ({contentHistory.length})
@@ -1580,42 +1578,38 @@ ${prompt}`
             </div>
 
             {/* Tips Section */}
-            <motion.div variants={itemVariants} className="bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl shadow-lg p-6">
-              <h2 className="text-xl font-bold text-cyan-400 mb-4 flex items-center">
+            <motion.div variants={itemVariants} className="bg-gradient-to-br from-indigo-900/20 to-purple-900/20 border border-indigo-500/10 rounded-3xl p-6">
+              <h2 className="text-sm font-bold text-indigo-300 uppercase tracking-wider mb-4 flex items-center">
                 <IconComponent icon={FiBook} className="mr-2" /> Tips
               </h2>
-              <ul className="space-y-3 text-slate-300">
+              <ul className="space-y-3 text-slate-400 text-sm">
                 <li className="flex items-start">
-                  <span className="bg-teal-500/20 text-teal-400 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 text-xs border border-teal-500/30">1</span>
+                  <span className="bg-indigo-500/20 text-indigo-400 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 text-[10px] border border-indigo-500/30">1</span>
                   <span>{t('aiStudy.beSpecificInYourPromptForBetterResults')}</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="bg-teal-500/20 text-teal-400 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 text-xs border border-teal-500/30">2</span>
+                  <span className="bg-indigo-500/20 text-indigo-400 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 text-[10px] border border-indigo-500/30">2</span>
                   <span>{t('aiStudy.editTheGeneratedContentToPersonalizeIt')}</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="bg-teal-500/20 text-teal-400 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 text-xs border border-teal-500/30">3</span>
+                  <span className="bg-indigo-500/20 text-indigo-400 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 text-[10px] border border-indigo-500/30">3</span>
                   <span>{t('aiStudy.useFormattingToolsToImproveReadability')}</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="bg-teal-500/20 text-teal-400 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 text-xs border border-teal-500/30">4</span>
-                  <span>{t('aiStudy.alwaysReviewAndPersonalizeAIGeneratedContent')}</span>
                 </li>
               </ul>
             </motion.div>
           </motion.div>
 
           {/* Right Panel - Editor */}
-          <motion.div variants={itemVariants} className="w-full lg:w-2/3">
-            <div className="bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl shadow-lg overflow-hidden">
+          <motion.div variants={itemVariants} className="w-full xl:w-2/3">
+            <div className="bg-[#0f172a]/40 backdrop-blur-md border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[800px]">
               {/* Toolbar */}
-              <div className="bg-slate-700/50 backdrop-blur-sm p-3 border-b border-white/10 flex flex-wrap items-center gap-2">
+              <div className="bg-white/[0.03] p-3 border-b border-white/5 flex flex-wrap items-center gap-1">
                 <motion.button
                   variants={buttonVariants}
                   whileHover="hover"
                   whileTap="tap"
                   onClick={() => applyFormatting('bold')}
-                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
+                  className="p-2 rounded-lg hover:bg-white/[0.05] text-slate-400 hover:text-white transition-colors"
                   title={t('aiStudy.bold')}
                 >
                   <IconComponent icon={AiOutlineBold} />
@@ -1625,7 +1619,7 @@ ${prompt}`
                   whileHover="hover"
                   whileTap="tap"
                   onClick={() => applyFormatting('italic')}
-                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
+                  className="p-2 rounded-lg hover:bg-white/[0.05] text-slate-400 hover:text-white transition-colors"
                   title={t('aiStudy.italic')}
                 >
                   <IconComponent icon={AiOutlineItalic} />
@@ -1635,18 +1629,18 @@ ${prompt}`
                   whileHover="hover"
                   whileTap="tap"
                   onClick={() => applyFormatting('underline')}
-                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
+                  className="p-2 rounded-lg hover:bg-white/[0.05] text-slate-400 hover:text-white transition-colors"
                   title={t('aiStudy.underline')}
                 >
                   <IconComponent icon={AiOutlineUnderline} />
                 </motion.button>
-                <div className="h-6 w-px bg-white/20 mx-1"></div>
+                <div className="h-6 w-px bg-white/10 mx-2"></div>
                 <motion.button
                   variants={buttonVariants}
                   whileHover="hover"
                   whileTap="tap"
                   onClick={() => applyFormatting('list-ordered')}
-                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
+                  className="p-2 rounded-lg hover:bg-white/[0.05] text-slate-400 hover:text-white transition-colors"
                   title={t('aiStudy.orderedList')}
                 >
                   <IconComponent icon={AiOutlineOrderedList} />
@@ -1656,7 +1650,7 @@ ${prompt}`
                   whileHover="hover"
                   whileTap="tap"
                   onClick={() => applyFormatting('list-unordered')}
-                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
+                  className="p-2 rounded-lg hover:bg-white/[0.05] text-slate-400 hover:text-white transition-colors"
                   title={t('aiStudy.unorderedList')}
                 >
                   <IconComponent icon={AiOutlineUnorderedList} />
@@ -1666,18 +1660,18 @@ ${prompt}`
                   whileHover="hover"
                   whileTap="tap"
                   onClick={() => applyFormatting('quote')}
-                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
+                  className="p-2 rounded-lg hover:bg-white/[0.05] text-slate-400 hover:text-white transition-colors"
                   title={t('aiStudy.quote')}
                 >
                   <IconComponent icon={BsQuote} />
                 </motion.button>
-                <div className="h-6 w-px bg-white/20 mx-1"></div>
+                <div className="h-6 w-px bg-white/10 mx-2"></div>
                 <motion.button
                   variants={buttonVariants}
                   whileHover="hover"
                   whileTap="tap"
                   onClick={() => changeFontSize(2)}
-                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
+                  className="p-2 rounded-lg hover:bg-white/[0.05] text-slate-400 hover:text-white transition-colors"
                   title={t('aiStudy.increaseFontSize')}
                 >
                   <IconComponent icon={AiOutlinePlus} />
@@ -1687,18 +1681,18 @@ ${prompt}`
                   whileHover="hover"
                   whileTap="tap"
                   onClick={() => changeFontSize(-2)}
-                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
+                  className="p-2 rounded-lg hover:bg-white/[0.05] text-slate-400 hover:text-white transition-colors"
                   title={t('aiStudy.decreaseFontSize')}
                 >
                   <IconComponent icon={AiOutlineMinus} />
                 </motion.button>
-                <div className="h-6 w-px bg-white/20 mx-1"></div>
+                <div className="h-6 w-px bg-white/10 mx-2"></div>
                 <motion.button
                   variants={buttonVariants}
                   whileHover="hover"
                   whileTap="tap"
                   onClick={handleCopyContent}
-                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
+                  className="p-2 rounded-lg hover:bg-white/[0.05] text-slate-400 hover:text-white transition-colors"
                   title={t('aiStudy.copyContent')}
                 >
                   <IconComponent icon={FiCopy} />
@@ -1709,7 +1703,7 @@ ${prompt}`
                   whileTap="tap"
                   onClick={handleManualSave}
                   disabled={isSaving || !editedContent.trim()}
-                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-2 rounded-lg hover:bg-white/[0.05] text-slate-400 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Save Content"
                 >
                   {isSaving ? (
@@ -1723,7 +1717,7 @@ ${prompt}`
                   whileHover="hover"
                   whileTap="tap"
                   onClick={() => handleDownloadContent('txt')}
-                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
+                  className="p-2 rounded-lg hover:bg-white/[0.05] text-slate-400 hover:text-white transition-colors"
                   title={t('aiStudy.download')}
                 >
                   <IconComponent icon={FiDownload} />
@@ -1733,7 +1727,7 @@ ${prompt}`
                   whileHover="hover"
                   whileTap="tap"
                   onClick={handleShareContent}
-                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
+                  className="p-2 rounded-lg hover:bg-white/[0.05] text-slate-400 hover:text-white transition-colors"
                   title={t('aiStudy.share')}
                 >
                   <IconComponent icon={FiShare2} />
@@ -1748,14 +1742,14 @@ ${prompt}`
                     <motion.button
                       onClick={handleAskAIForSelection}
                       data-ask-ai-button="true"
-                      className="flex items-center px-3 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg shadow-lg hover:shadow-xl transition-all text-sm font-medium space-x-2"
+                      className="flex items-center px-3 py-1.5 bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-lg shadow-lg hover:shadow-xl transition-all text-xs font-bold space-x-2 border border-white/10"
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.8 }}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
-                      <IconComponent icon={AiOutlineRobot} className="h-4 w-4" />
+                      <IconComponent icon={AiOutlineRobot} className="h-3 w-3" />
                       <span>{t('aiStudy.askAI')}</span>
                     </motion.button>
                   </AnimatePresence>
@@ -1763,9 +1757,9 @@ ${prompt}`
               </div>
 
               {/* Editor Content */}
-              <div className="flex h-[600px]">
+              <div className="flex flex-1 overflow-hidden">
                 {/* Editor */}
-                <div className="w-1/2 border-r border-white/10">
+                <div className="w-1/2 border-r border-white/5 bg-[#0f172a]/20">
                   <div className="h-full relative">
                     <textarea
                       ref={editorRef}
@@ -1773,16 +1767,16 @@ ${prompt}`
                       onChange={(e) => setEditedContent(e.target.value)}
                       onFocus={handleEditorFocus}
                       placeholder={t('aiStudy.startWritingOrGenerateContentUsingAI')}
-                      className="w-full h-full p-6 bg-slate-700/30 backdrop-blur-sm text-slate-300 placeholder-slate-400 resize-none focus:outline-none border-none"
-                      style={{ fontSize: `${fontSize}px`, lineHeight: '1.6' }}
+                      className="w-full h-full p-8 bg-transparent text-slate-300 placeholder-slate-600 resize-none focus:outline-none border-none custom-scrollbar"
+                      style={{ fontSize: `${fontSize}px`, lineHeight: '1.8' }}
                     />
                   </div>
                 </div>
 
                 {/* Preview */}
-                <div className="w-1/2 bg-slate-700/20 backdrop-blur-sm overflow-y-auto">
-                  <div className="p-6">
-                    <div className="prose prose-invert max-w-none">
+                <div className="w-1/2 bg-white/[0.01] overflow-y-auto custom-scrollbar">
+                  <div className="p-8">
+                    <div className="prose prose-invert max-w-none prose-p:text-slate-300 prose-headings:text-white prose-strong:text-white prose-a:text-indigo-400">
                       <ReactMarkdown
                         remarkPlugins={[remarkMath, remarkGfm]}
                         rehypePlugins={[rehypeKatex]}
@@ -1796,16 +1790,16 @@ ${prompt}`
               </div>
 
               {/* Footer */}
-              <div className="bg-slate-700/50 backdrop-blur-sm px-6 py-3 border-t border-white/10 flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <span className="text-sm text-slate-400">
-                    Words: {editedContent.split(/\s+/).filter(word => word.length > 0).length}
+              <div className="bg-white/[0.03] px-6 py-3 border-t border-white/5 flex items-center justify-between">
+                <div className="flex items-center space-x-6">
+                  <span className="text-xs text-slate-500 font-medium">
+                    WORDS: <span className="text-slate-300">{editedContent.split(/\s+/).filter(word => word.length > 0).length}</span>
                   </span>
-                  <span className="text-sm text-slate-400">
-                    Characters: {editedContent.length}
+                  <span className="text-xs text-slate-500 font-medium">
+                    CHARS: <span className="text-slate-300">{editedContent.length}</span>
                   </span>
-                  <span className="text-sm text-slate-400">
-                    Pages: {calculateTotalPages()}
+                  <span className="text-xs text-slate-500 font-medium">
+                    PAGES: <span className="text-slate-300">{calculateTotalPages()}</span>
                   </span>
                 </div>
                 
@@ -1815,19 +1809,19 @@ ${prompt}`
                       <motion.button
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                         disabled={currentPage === 1}
-                        className="px-3 py-1 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded text-slate-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-white/10"
+                        className="px-3 py-1 bg-white/5 hover:bg-white/10 rounded-lg text-slate-300 text-xs disabled:opacity-30 disabled:cursor-not-allowed transition-colors border border-white/5"
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                       >
                         {t('aiStudy.previous')}
                       </motion.button>
-                      <span className="text-sm text-slate-400">
-                        {t('aiStudy.page')} {currentPage} {t('aiStudy.of')} {calculateTotalPages()}
+                      <span className="text-xs text-slate-400 font-medium">
+                        {currentPage} / {calculateTotalPages()}
                       </span>
                       <motion.button
                         onClick={() => setCurrentPage(p => Math.min(calculateTotalPages(), p + 1))}
                         disabled={currentPage === calculateTotalPages()}
-                        className="px-3 py-1 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded text-slate-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-white/10"
+                        className="px-3 py-1 bg-white/5 hover:bg-white/10 rounded-lg text-slate-300 text-xs disabled:opacity-30 disabled:cursor-not-allowed transition-colors border border-white/5"
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                       >

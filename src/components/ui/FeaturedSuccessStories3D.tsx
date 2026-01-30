@@ -146,10 +146,10 @@ const FeaturedSuccessStories3D: React.FC = () => {
 
   if (loading) {
     return (
-      <section ref={containerRef} className="py-20 bg-gradient-to-br from-purple-900 via-indigo-900 to-purple-900 relative overflow-hidden">
+      <section ref={containerRef} className="py-20 bg-transparent relative overflow-hidden">
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-500 mx-auto"></div>
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-white mx-auto"></div>
             <p className="text-white mt-4">{t('home.featuredSuccessStories.loadingStories')}</p>
           </div>
         </div>
@@ -159,7 +159,7 @@ const FeaturedSuccessStories3D: React.FC = () => {
 
   if (error) {
     return (
-      <section ref={containerRef} className="py-20 bg-gradient-to-br from-purple-900 via-indigo-900 to-purple-900 relative overflow-hidden">
+      <section ref={containerRef} className="py-20 bg-transparent relative overflow-hidden">
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center text-red-400">
             <p>{t('home.featuredSuccessStories.errorLoading')}: {error}</p>
@@ -170,14 +170,7 @@ const FeaturedSuccessStories3D: React.FC = () => {
   }
 
   return (
-    <section ref={containerRef} className="py-20 bg-gradient-to-br from-purple-900 via-indigo-900 to-purple-900 relative overflow-hidden">
-      {/* Background Effects */}
-      <div className="absolute inset-0 opacity-20">
-        <div className="absolute top-20 left-10 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-2000"></div>
-      </div>
-
+    <section ref={containerRef} className="py-20 bg-transparent relative overflow-hidden">
       <motion.div 
         className="container mx-auto px-4 relative z-10"
         style={{ y }}
@@ -190,11 +183,11 @@ const FeaturedSuccessStories3D: React.FC = () => {
           className="text-center mb-16"
         >
           <div className="relative">
-            <h2 className="text-3xl sm:text-5xl md:text-6xl font-bold text-white mb-4 sm:mb-6 bg-gradient-to-r from-purple-400 via-pink-500 to-indigo-500 bg-clip-text text-transparent">
+            <h2 className="text-3xl sm:text-5xl md:text-6xl font-bold text-white mb-4 sm:mb-6">
               {t('home.featuredSuccessStories.title')}
             </h2>
           </div>
-          <p className="text-sm sm:text-xl text-gray-300 max-w-3xl mx-auto">
+          <p className="text-sm sm:text-xl text-gray-400 max-w-3xl mx-auto">
             {t('home.featuredSuccessStories.subtitle')}
           </p>
         </motion.div>
@@ -204,54 +197,55 @@ const FeaturedSuccessStories3D: React.FC = () => {
           {stories.map((story, index) => (
             <motion.div
               key={story.id}
-              variants={itemVariants}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              viewport={{ once: true, amount: 0.1 }}
               whileHover={{ 
-                y: -10,
-                rotateY: 5,
-                scale: 1.02
+                y: -5,
               }}
-              className="group relative bg-white/10 backdrop-blur-lg rounded-2xl overflow-hidden border border-white/20 hover:border-white/40 transition-all duration-500 h-full flex flex-col"
+              className="group relative bg-[#121212] rounded-xl overflow-hidden border border-white/10 hover:border-white/30 transition-all duration-300 h-full flex flex-col shadow-lg"
             >
               {/* Story Image */}
-              <div className="relative overflow-hidden">
+              <div className="relative overflow-hidden h-40">
                 <img
                   src={story.image}
                   alt={story.name}
-                  className="w-full h-32 sm:h-36 lg:h-40 object-cover group-hover:scale-110 transition-transform duration-500"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                <div className="absolute inset-0 bg-black/20"></div>
                 
                 {/* Quote Icon */}
-                <div className="absolute top-2 left-2 bg-white/20 backdrop-blur-sm rounded-full p-2">
-                  <IconComponent icon={FaQuoteLeft} className="text-white text-xs sm:text-sm" />
+                <div className="absolute top-2 left-2 bg-black/50 backdrop-blur-md rounded-full p-2 border border-white/10">
+                  <IconComponent icon={FaQuoteLeft} className="text-white text-xs" />
                 </div>
               </div>
 
               {/* Story Content */}
-              <div className="p-3 sm:p-4 lg:p-6 flex flex-col flex-grow">
-                <h3 className="text-sm sm:text-lg lg:text-xl font-bold text-white mb-2 group-hover:text-purple-300 transition-colors line-clamp-2">
+              <div className="p-4 flex flex-col flex-grow">
+                <h3 className="text-lg font-bold text-white mb-1 group-hover:text-white/80 transition-colors line-clamp-1">
                   {story.name}
                 </h3>
                 
-                <div className="bg-gradient-to-r from-purple-500/20 to-indigo-500/20 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4">
-                  <p className="text-purple-200 font-semibold text-xs sm:text-sm lg:text-base">{story.achievement}</p>
+                <div className="mb-3">
+                  <p className="text-gray-400 font-medium text-sm">{story.achievement}</p>
                 </div>
 
-                <p className="text-gray-300 mb-3 sm:mb-4 line-clamp-3 text-xs sm:text-sm lg:text-base leading-relaxed flex-grow">
+                <p className="text-gray-500 mb-4 line-clamp-3 text-sm leading-relaxed flex-grow">
                   "{story.story.length > 60 ? story.story.substring(0, 60) + '...' : story.story}"
                 </p>
 
                 {/* Details */}
-                <div className="space-y-1 mb-3 sm:mb-4">
+                <div className="space-y-2 mb-4 pt-3 border-t border-white/5">
                   {story.university && (
                     <div className="flex items-center text-xs text-gray-400">
-                      <IconComponent icon={FaGraduationCap} className="mr-1 sm:mr-2 text-purple-400 flex-shrink-0" />
+                      <IconComponent icon={FaGraduationCap} className="mr-2 text-white/60 flex-shrink-0" />
                       <span className="truncate">{story.university}</span>
                     </div>
                   )}
                   {story.course && (
                     <div className="text-xs text-gray-400 hidden sm:block">
-                      {t('home.featuredSuccessStories.course')}: <span className="text-indigo-300">{story.course}</span>
+                      {t('home.featuredSuccessStories.course')}: <span className="text-gray-300">{story.course}</span>
                     </div>
                   )}
                 </div>
@@ -259,13 +253,10 @@ const FeaturedSuccessStories3D: React.FC = () => {
                 {/* Rating - Fixed at bottom */}
                 <div className="flex items-center mt-auto">
                   {[...Array(story.rating)].map((_, i) => (
-                    <IconComponent key={i} icon={FaStar} className="text-yellow-400 text-xs mr-1" />
+                    <IconComponent key={i} icon={FaStar} className="text-white text-xs mr-1" />
                   ))}
-                  <span className="text-gray-400 text-xs ml-1 sm:ml-2">({story.rating}/5)</span>
+                  <span className="text-gray-500 text-xs ml-2">({story.rating}/5)</span>
                 </div>
-
-                {/* Hover Glow Effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-all duration-500 pointer-events-none rounded-2xl"></div>
               </div>
             </motion.div>
           ))}
@@ -280,12 +271,9 @@ const FeaturedSuccessStories3D: React.FC = () => {
           className="text-center"
         >
           <motion.button
-            className="group px-8 py-4 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full text-white font-semibold text-lg shadow-2xl hover:shadow-purple-500/25 transition-all duration-300 flex items-center mx-auto"
-            whileHover={{ 
-              scale: 1.05,
-              boxShadow: "0 20px 40px rgba(147, 51, 234, 0.3)"
-            }}
-            whileTap={{ scale: 0.95 }}
+            className="group bg-transparent border border-white/20 text-white px-8 py-3 rounded-lg font-semibold hover:bg-white/10 transition-all duration-300 flex items-center mx-auto"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={handleViewAllStories}
           >
             {t('home.featuredSuccessStories.viewAllStories')}

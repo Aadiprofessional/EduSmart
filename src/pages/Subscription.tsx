@@ -123,7 +123,7 @@ const Subscription: React.FC = () => {
           >
             <div className="flex justify-center mb-6">
               <motion.div
-                className="bg-gradient-to-r from-yellow-400 to-orange-500 p-4 rounded-full"
+                className="bg-gradient-to-r from-yellow-400 to-indigo-500 p-4 rounded-full"
                 animate={{
                   rotate: [0, 5, -5, 0],
                   scale: [1, 1.1, 1]

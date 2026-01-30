@@ -522,7 +522,7 @@ const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
                         <span className="text-lg">{questionData.icon}</span>
                         <span className="flex-1">{questionData.text}</span>
                         {(questionData.requiresAuth && !user) || (questionData.requiresPro && !isProUser) ? (
-                          <span className="text-xs px-2 py-1 bg-orange-500/20 text-orange-300 rounded-full">
+                          <span className="text-xs px-2 py-1 bg-indigo-500/20 text-indigo-300 rounded-full">
                             {questionData.requiresPro ? 'Pro' : 'Login'}
                           </span>
                         ) : questionData.followUpQuestions ? (

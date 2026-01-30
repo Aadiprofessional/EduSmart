@@ -27,7 +27,7 @@ const NotFound: React.FC = () => {
           }}
         />
         <motion.div 
-          className="absolute w-64 h-64 bg-orange-500 rounded-full opacity-5" 
+          className="absolute w-64 h-64 bg-indigo-500 rounded-full opacity-5" 
           style={{ filter: 'blur(60px)', bottom: '10%', left: '10%' }}
           animate={{
             scale: [1, 1.1, 1],
@@ -106,7 +106,7 @@ const NotFound: React.FC = () => {
           }}
         />
         <motion.div
-          className="absolute w-5 h-5 rounded-full bg-orange-300 opacity-70"
+          className="absolute w-5 h-5 rounded-full bg-indigo-300 opacity-70"
           style={{ bottom: '25%', right: '20%' }}
           animate={{
             y: [0, 20, 0],

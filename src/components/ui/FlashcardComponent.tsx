@@ -66,7 +66,7 @@ const PortalModal: React.FC<PortalModalProps> = ({ isOpen, onClose, children, cl
   return ReactDOM.createPortal(
     <AnimatePresence>
       <motion.div 
-        className="bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+        className="bg-[#0f172a]/80 backdrop-blur-md flex items-center justify-center p-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -818,10 +818,9 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({
   }
 
   return (
-    <>
+    <div className={`bg-[#0f172a]/60 backdrop-blur-md border border-white/10 rounded-xl shadow-lg overflow-hidden p-4 sm:p-6 ${className || ''}`}>
       {/* Header - Mobile Responsive */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 space-y-3 sm:space-y-0">
-        <h2 className="text-xl sm:text-2xl font-semibold text-cyan-400">{t('aiStudy.flashcards')}</h2>
         <div className="flex items-center space-x-2">
           <motion.button
             onClick={() => setShowProgressSidebar(!showProgressSidebar)}
@@ -854,7 +853,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({
       <AnimatePresence>
         {showProgressSidebar && (
           <motion.div
-            className="mb-6 bg-slate-700/50 backdrop-blur-sm border border-white/10 rounded-xl p-4 sm:p-6 shadow-sm"
+            className="mb-6 bg-[#0f172a]/60 backdrop-blur-md border border-white/10 rounded-xl p-4 sm:p-6 shadow-sm"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
@@ -879,7 +878,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({
 
             {/* Overall Statistics */}
             {flashcardSets.length > 0 && (
-              <div className="mb-4 p-3 bg-slate-600/30 rounded-lg border border-white/10">
+              <div className="mb-4 p-3 bg-white/5 rounded-lg border border-white/10">
                 <h4 className="text-sm font-medium text-slate-300 mb-2">Overall Progress</h4>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
                   <div>
@@ -901,7 +900,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({
                     <div className="text-xs text-slate-400">Mastered</div>
                   </div>
                   <div>
-                    <div className="text-lg font-bold text-orange-400">
+                    <div className="text-lg font-bold text-indigo-400">
                       {flashcardSets.reduce((total, set) => total + set.flashcards.filter(card => !card.mastered).length, 0)}
                     </div>
                     <div className="text-xs text-slate-400">Remaining</div>
@@ -930,7 +929,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({
                       className={`p-3 rounded-lg border cursor-pointer transition-all ${
                         set.id === activeSetId
                           ? 'bg-cyan-500/20 border-cyan-500/30'
-                          : 'bg-slate-600/30 border-white/10 hover:bg-slate-600/50'
+                          : 'bg-white/5 border-white/10 hover:bg-white/10'
                       }`}
                       onClick={() => {
                         setActiveSetId(set.id);
@@ -955,7 +954,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({
                             stats.percentage === 100 ? 'text-emerald-400' :
                             stats.percentage >= 75 ? 'text-green-400' :
                             stats.percentage >= 50 ? 'text-yellow-400' :
-                            stats.percentage >= 25 ? 'text-orange-400' :
+                            stats.percentage >= 25 ? 'text-indigo-400' :
                             'text-red-400'
                           }`}>
                             {stats.percentage}%
@@ -972,8 +971,8 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({
                           className={`h-full rounded-full ${
                             stats.percentage === 100 ? 'bg-gradient-to-r from-emerald-500 to-green-500' :
                             stats.percentage >= 75 ? 'bg-gradient-to-r from-green-500 to-lime-500' :
-                            stats.percentage >= 50 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
-                            stats.percentage >= 25 ? 'bg-gradient-to-r from-orange-500 to-red-500' :
+                            stats.percentage >= 50 ? 'bg-gradient-to-r from-yellow-500 to-indigo-500' :
+                            stats.percentage >= 25 ? 'bg-gradient-to-r from-indigo-500 to-red-500' :
                             'bg-gradient-to-r from-red-500 to-pink-500'
                           }`}
                           initial={{ width: 0 }}
@@ -998,7 +997,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({
                           ✓ {stats.mastered} mastered
                         </span>
                         {stats.remaining > 0 && (
-                          <span className="text-orange-400">
+                          <span className="text-indigo-400">
                             {stats.remaining} to study
                           </span>
                         )}
@@ -1022,7 +1021,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({
         {/* Flashcard Viewer - Full width on mobile, no container on mobile */}
         <div className="order-1">
           {/* Mobile: No container, Desktop: Container */}
-          <div className="sm:bg-slate-700/50 sm:backdrop-blur-sm sm:border sm:border-white/10 sm:rounded-xl p-0 sm:p-6 sm:shadow-sm">
+          <div className="sm:bg-[#0f172a]/60 sm:backdrop-blur-md sm:border sm:border-white/10 sm:rounded-xl p-0 sm:p-6 sm:shadow-sm">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <h3 className="text-base sm:text-lg font-medium text-blue-400 flex items-center">
                 <IconComponent icon={FiLayers} className="mr-2 h-4 w-4 sm:h-5 sm:w-5" /> {t('aiStudy.studyCards')}
@@ -1069,7 +1068,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({
             {flashcards.length > 0 ? (
               <div className="space-y-3 sm:space-y-4">
                 {/* Flashcard Display - No additional container on mobile */}
-                <div className="bg-gradient-to-br from-blue-900/30 to-teal-900/30 backdrop-blur-sm rounded-xl p-4 sm:p-6 min-h-[200px] sm:min-h-[250px] flex flex-col justify-center border border-white/10">
+                <div className="bg-black/20 backdrop-blur-md rounded-xl p-4 sm:p-6 min-h-[200px] sm:min-h-[250px] flex flex-col justify-center border border-white/10">
                   <div className="text-center">
                     {/* Card Counter */}
                     <div className="mb-3 sm:mb-4">
@@ -1123,7 +1122,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({
                             onClick={toggleFlashcardMastery}
                             className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-sm sm:text-base ${
                               flashcards[currentFlashcard]?.mastered
-                                ? 'bg-slate-600/50 text-slate-300 border border-white/10'
+                                ? 'bg-white/10 text-slate-300 border border-white/10'
                                 : 'bg-gradient-to-r from-emerald-500 to-green-500 text-white'
                             }`}
                           >
@@ -1135,7 +1134,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({
                             whileHover="hover"
                             whileTap="tap"
                             onClick={() => setShowAnswer(false)}
-                            className="bg-slate-600/50 text-slate-300 px-3 sm:px-4 py-2 rounded-lg font-medium border border-white/10 text-sm sm:text-base"
+                            className="bg-white/10 text-slate-300 px-3 sm:px-4 py-2 rounded-lg font-medium border border-white/10 text-sm sm:text-base"
                           >
                             {t('aiStudy.hideAnswer')}
                           </motion.button>
@@ -1200,7 +1199,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({
         {/* Create New Flashcards - Mobile Optimized, no container on mobile */}
         <div className="order-2">
           {/* Mobile: No container, Desktop: Container */}
-          <div className="sm:bg-slate-700/50 sm:backdrop-blur-sm sm:border sm:border-white/10 sm:rounded-xl p-0 sm:p-6 sm:shadow-sm">
+          <div className="sm:bg-[#0f172a]/60 sm:backdrop-blur-md sm:border sm:border-white/10 sm:rounded-xl p-0 sm:p-6 sm:shadow-sm">
             <h3 className="text-base sm:text-lg font-medium text-blue-400 mb-3 sm:mb-4 flex items-center">
               <IconComponent icon={FiBookmark} className="mr-2 h-4 w-4 sm:h-5 sm:w-5" /> {t('aiStudy.createFlashcards')}
             </h3>
@@ -1274,7 +1273,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({
                   {t('aiStudy.question')}
                 </label>
                 <textarea
-                  className="w-full p-2 sm:p-3 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none h-16 sm:h-20 text-slate-200 placeholder-slate-400 text-sm sm:text-base"
+                  className="w-full p-2 sm:p-3 bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none h-16 sm:h-20 text-slate-200 placeholder-slate-400 text-sm sm:text-base"
                   placeholder={t('aiStudy.enterYourQuestionHere')}
                   value={newFlashcard.question}
                   onChange={(e) => setNewFlashcard({...newFlashcard, question: e.target.value})}
@@ -1361,7 +1360,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({
       <PortalModal 
         isOpen={showCreateSet}
         onClose={() => setShowCreateSet(false)}
-        className="bg-slate-800 rounded-xl p-4 sm:p-6 max-w-md w-full mx-4 border border-white/10"
+        className="bg-[#0f172a] rounded-xl p-4 sm:p-6 max-w-md w-full mx-4 border border-white/10 shadow-2xl"
       >
         <h3 className="text-lg sm:text-xl font-semibold text-cyan-400 mb-3 sm:mb-4">{t('aiStudy.createNewFlashcardSet')}</h3>
         
@@ -1421,7 +1420,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({
           setShowAIModal(false);
           setAiPrompt('');
         }}
-        className="bg-slate-800 rounded-xl p-4 sm:p-6 max-w-2xl w-full mx-4 border border-white/10"
+        className="bg-[#0f172a] rounded-xl p-4 sm:p-6 max-w-2xl w-full mx-4 border border-white/10 shadow-2xl"
       >
         <h3 className="text-lg sm:text-xl font-semibold text-cyan-400 mb-3 sm:mb-4 flex items-center">
           <IconComponent icon={AiOutlineBulb} className="mr-2 h-5 w-5" />
@@ -1499,9 +1498,9 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({
       <PortalModal 
         isOpen={isFullscreen}
         onClose={() => setIsFullscreen(false)}
-        className="bg-gradient-to-br from-slate-800/98 via-blue-900/98 to-teal-900/98 backdrop-blur-xl border-2 border-cyan-500/40 rounded-2xl w-full h-full flex flex-col shadow-2xl"
+        className="bg-[#0f172a] backdrop-blur-xl border border-white/10 rounded-2xl w-full h-full flex flex-col shadow-2xl"
       >
-        <div className="bg-slate-700/50 backdrop-blur-sm px-6 py-4 border-b border-white/10 flex items-center justify-between flex-shrink-0">
+        <div className="bg-[#0f172a]/60 backdrop-blur-md px-6 py-4 border-b border-white/10 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
               <IconComponent icon={FiLayers} className="h-6 w-6 text-white" />
@@ -1527,7 +1526,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({
           {flashcards.length > 0 ? (
             <div className="max-w-4xl w-full">
               {/* Large Flashcard Display */}
-              <div className="bg-gradient-to-br from-blue-900/30 to-teal-900/30 backdrop-blur-sm rounded-2xl p-8 min-h-[400px] flex flex-col justify-center border border-white/10 shadow-2xl">
+              <div className="bg-black/20 backdrop-blur-md rounded-2xl p-8 min-h-[400px] flex flex-col justify-center border border-white/10 shadow-2xl">
                 <div className="text-center">
                   {/* Card Counter */}
                   <div className="mb-6">
@@ -1661,7 +1660,7 @@ const FlashcardComponent: React.FC<FlashcardComponentProps> = ({
         onClose={() => setShowUpgradeModal(false)}
         message={upgradeMessage}
       />
-    </>
+    </div>
   );
 };
 

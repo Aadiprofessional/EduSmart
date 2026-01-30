@@ -29,7 +29,7 @@ export const pageThemes: Record<string, PageTheme> = {
     gradient: 'bg-gradient-to-br from-blue-400 via-teal-500 to-cyan-600',
     footerBg: 'bg-gradient-to-br from-blue-900 via-teal-900 to-cyan-900',
     footerAccent: 'bg-blue-800',
-    footerSecondary: 'bg-orange-500',
+    footerSecondary: 'bg-indigo-500',
     animationClass: 'animate-gradient-radial'
   },
   '/ai-courses': {
@@ -50,8 +50,8 @@ export const pageThemes: Record<string, PageTheme> = {
   },
   '/resources': {
     name: 'Resources',
-    gradient: 'bg-gradient-to-br from-amber-400 via-orange-500 to-red-600',
-    footerBg: 'bg-gradient-to-br from-amber-900 via-orange-900 to-red-900',
+    gradient: 'bg-gradient-to-br from-amber-400 via-indigo-500 to-red-600',
+    footerBg: 'bg-gradient-to-br from-amber-900 via-indigo-900 to-red-900',
     footerAccent: 'bg-amber-800',
     footerSecondary: 'bg-blue-500',
     animationClass: 'animate-gradient-diagonal'
@@ -74,8 +74,8 @@ export const pageThemes: Record<string, PageTheme> = {
   },
   '/scholarships': {
     name: 'Scholarships',
-    gradient: 'bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-600',
-    footerBg: 'bg-gradient-to-br from-yellow-900 via-amber-900 to-orange-900',
+    gradient: 'bg-gradient-to-br from-yellow-400 via-amber-500 to-indigo-600',
+    footerBg: 'bg-gradient-to-br from-yellow-900 via-amber-900 to-indigo-900',
     footerAccent: 'bg-yellow-800',
     footerSecondary: 'bg-red-500',
     animationClass: 'animate-gradient-float'
@@ -93,7 +93,7 @@ export const pageThemes: Record<string, PageTheme> = {
     gradient: 'bg-gradient-to-br from-teal-400 via-cyan-500 to-blue-600',
     footerBg: 'bg-gradient-to-br from-teal-900 via-cyan-900 to-blue-900',
     footerAccent: 'bg-teal-800',
-    footerSecondary: 'bg-orange-500',
+    footerSecondary: 'bg-indigo-500',
     animationClass: 'animate-gradient-flow'
   }
 };

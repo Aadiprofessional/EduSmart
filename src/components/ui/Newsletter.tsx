@@ -46,7 +46,7 @@ const Newsletter: React.FC = () => {
         }}
       />
       <motion.div 
-        className="absolute w-64 h-64 bg-orange-500 rounded-full opacity-10" 
+        className="absolute w-64 h-64 bg-indigo-500 rounded-full opacity-10" 
         style={{ filter: 'blur(60px)', bottom: '-10%', left: '-5%' }}
         animate={{
           scale: [1, 1.1, 1],
@@ -105,7 +105,7 @@ const Newsletter: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full pl-10 pr-4 py-3 text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-3 text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 placeholder={t('newsletter.emailPlaceholder')}
               />
             </div>
@@ -113,7 +113,7 @@ const Newsletter: React.FC = () => {
             <motion.button
               type="submit"
               disabled={isSubmitting || !email}
-              className="bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >

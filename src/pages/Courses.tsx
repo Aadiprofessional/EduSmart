@@ -863,7 +863,7 @@ const Courses: React.FC = () => {
                       />
                       
                       {course.featured && (
-                        <div className="absolute top-3 left-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                        <div className="absolute top-3 left-3 bg-gradient-to-r from-yellow-400 to-indigo-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
                           Featured
                         </div>
                       )}
@@ -958,7 +958,7 @@ const Courses: React.FC = () => {
                       />
                       
                       {course.featured && (
-                        <div className="absolute top-3 left-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                        <div className="absolute top-3 left-3 bg-gradient-to-r from-yellow-400 to-indigo-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
                           Featured
                         </div>
                       )}

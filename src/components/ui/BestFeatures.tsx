@@ -55,7 +55,7 @@ const BestFeatures: React.FC = () => {
               whileHover={{ y: -5 }}
             >
               <motion.div 
-                className="inline-flex items-center justify-center w-16 h-16 bg-orange-100 text-orange-500 rounded-full mb-4"
+                className="inline-flex items-center justify-center w-16 h-16 bg-indigo-100 text-indigo-500 rounded-full mb-4"
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 transition={{ type: "spring", stiffness: 300 }}
               >

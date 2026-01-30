@@ -81,7 +81,7 @@ const ClientFeedback: React.FC = () => {
                   <div>
                     <h4 className="font-bold text-teal-700">{testimonial.name}</h4>
                     <p className="text-sm text-gray-600">{testimonial.program}</p>
-                    <p className="text-sm text-orange-500 font-medium">{testimonial.university}</p>
+                    <p className="text-sm text-indigo-500 font-medium">{testimonial.university}</p>
                   </div>
                 </div>
                 

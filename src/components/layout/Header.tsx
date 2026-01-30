@@ -670,7 +670,7 @@ const Header: React.FC = () => {
         right: 0,
         width: '100vw',
         maxWidth: '100vw',
-        zIndex: 999999, // Consistent z-index - below magnetic cursor but above content
+        zIndex: 999999,
         transform: 'translate3d(0, 0, 0)',
         WebkitTransform: 'translate3d(0, 0, 0)',
         backfaceVisibility: 'hidden',
@@ -678,18 +678,10 @@ const Header: React.FC = () => {
         margin: 0,
         padding: 0,
         boxSizing: 'border-box',
-        backgroundColor: isHeaderOpaque ? 'rgba(0, 0, 0, 0.95)' : 'transparent',
-        background: isHeaderOpaque
-          ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(30, 41, 59, 0.98) 25%, rgba(51, 65, 85, 0.98) 50%, rgba(71, 85, 105, 0.98) 75%, rgba(15, 23, 42, 0.98) 100%)' 
-          : 'transparent',
-        backdropFilter: isHeaderOpaque ? 'blur(20px) saturate(200%)' : 'none',
-        boxShadow: isHeaderOpaque
-          ? '0 8px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1) inset' 
-          : 'none',
-        borderBottom: isHeaderOpaque ? '1px solid rgba(255, 255, 255, 0.15)' : 'none',
-        WebkitBackdropFilter: isHeaderOpaque ? 'blur(20px) saturate(200%)' : 'none',
-        backgroundSize: isHeaderOpaque ? '300% 300%' : '100% 100%',
-        animation: isHeaderOpaque ? 'header-gradient 15s ease infinite' : 'none',
+        backgroundColor: isHeaderOpaque ? 'rgba(0, 0, 0, 0.9)' : 'transparent',
+        backdropFilter: isHeaderOpaque ? 'blur(10px)' : 'none',
+        borderBottom: isHeaderOpaque ? '1px solid rgba(255, 255, 255, 0.05)' : 'none',
+        WebkitBackdropFilter: isHeaderOpaque ? 'blur(10px)' : 'none',
       }}
     >
       <div className="w-full max-w-none px-3 sm:px-4 lg:px-6">
@@ -724,12 +716,12 @@ const Header: React.FC = () => {
                 data-magnetic
               >
                 <Link to="/" className="flex items-center min-w-0">
-                  <span className="font-bold text-lg sm:text-xl bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent whitespace-nowrap relative">
+                  <span className="font-bold text-lg sm:text-xl text-white whitespace-nowrap relative tracking-tight">
                     ME
                   </span>
                   {isProUser && (
                     <motion.div
-                      className="ml-1 sm:ml-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full flex items-center flex-shrink-0"
+                      className="ml-1 sm:ml-2 bg-white text-black text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded flex items-center flex-shrink-0"
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ delay: 0.5, type: "spring" }}
@@ -787,12 +779,12 @@ const Header: React.FC = () => {
               data-magnetic
             >
               <Link to="/" className="flex items-center min-w-0">
-                <span className="font-bold text-xl lg:text-2xl xl:text-3xl bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent whitespace-nowrap relative">
+                <span className="font-bold text-xl lg:text-2xl xl:text-3xl text-white whitespace-nowrap relative tracking-tight">
                   MatrixEdu
                 </span>
                 {isProUser && (
                   <motion.div
-                    className="ml-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold px-2 py-1 rounded-full flex items-center flex-shrink-0"
+                    className="ml-2 bg-gradient-to-r from-yellow-400 to-indigo-500 text-black text-xs font-bold px-2 py-1 rounded-full flex items-center flex-shrink-0"
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.5, type: "spring" }}
@@ -819,8 +811,8 @@ const Header: React.FC = () => {
                       to={item.href}
                       className={`flex items-center space-x-1 px-1 lg:px-1.5 xl:px-2 py-1 lg:py-1.5 rounded-lg xl:rounded-xl text-xs lg:text-xs xl:text-sm font-medium transition-all duration-300 whitespace-nowrap ${
                         isActive(item.href)
-                          ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border border-blue-500/40 shadow-lg shadow-blue-500/25 backdrop-blur-sm'
-                          : 'text-gray-300 hover:text-white hover:bg-white/5 hover:backdrop-blur-sm'
+                          ? 'text-white bg-white/10'
+                          : 'text-gray-400 hover:text-white hover:bg-white/5'
                       }`}
                     >
                       <IconComponent icon={item.icon} className="h-3 w-3 lg:h-4 lg:w-4 xl:h-4 xl:w-4 flex-shrink-0" />
@@ -845,7 +837,7 @@ const Header: React.FC = () => {
                     <div className="flex items-center space-x-1 flex-shrink-0">
                       {/* Response Counter */}
                       <motion.div
-                        className="flex items-center px-1 xl:px-1.5 py-0.5 xl:py-1 bg-gradient-to-r from-green-500/10 to-blue-500/10 backdrop-blur-sm rounded-full border border-green-500/30 text-green-400 flex-shrink-0"
+                        className="flex items-center px-1 xl:px-1.5 xl:0x- xl:py-11.5-gradient-to-r from py-0.-500/10 to-blue5 xl:py backdrop-blur-sm-1 bg-gradient-to-r from-green-500/10 to-blue-500/10 backdrop-blur-sm rounded-full border border-green-500/30 text-green-400 flex-shrink-0"
                         variants={buttonVariants}
                         whileHover="hover"
                         data-magnetic
@@ -861,7 +853,7 @@ const Header: React.FC = () => {
                         <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap" className="flex-shrink-0">
                           <Link
                             to="/subscription"
-                            className="flex items-center px-1 xl:px-1.5 py-0.5 xl:py-1 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-full font-medium shadow-lg hover:shadow-orange-500/25 transition-all duration-300 text-xs xl:text-sm whitespace-nowrap"
+                            className="flex items-center px-1 xl:px-1.5 py-0.5 xl:py-1 bg-gradient-to-r from-indigo-500 to-red-600 text-white rounded-full font-medium shadow-lg hover:shadow-indigo-500/25 transition-all duration-300 text-xs xl:text-sm whitespace-nowrap"
                             data-magnetic
                           >
                             <span className="hidden xl:inline">Buy More</span>
@@ -874,7 +866,7 @@ const Header: React.FC = () => {
                     <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap" className="flex-shrink-0">
                       <Link
                         to="/subscription"
-                        className="flex items-center px-1 xl:px-1.5 py-0.5 xl:py-1 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-full font-medium shadow-lg hover:shadow-orange-500/25 transition-all duration-300 text-xs xl:text-sm whitespace-nowrap"
+                        className="flex items-center px-3 py-1.5 bg-white text-black rounded-lg font-bold hover:bg-gray-200 transition-all duration-300 text-xs xl:text-sm whitespace-nowrap"
                         data-magnetic
                       >
                         <IconComponent icon={AiOutlineCrown} className="h-3 w-3 xl:h-4 xl:w-4 mr-1 xl:mr-1.5 flex-shrink-0" />
@@ -889,10 +881,10 @@ const Header: React.FC = () => {
                     <motion.button
                       ref={notificationButtonRef}
                       onClick={handleNotificationMenuToggle}
-                      className={`notification-menu-button relative flex items-center px-1 xl:px-1.5 py-0.5 xl:py-1 backdrop-blur-sm rounded-full border transition-all duration-300 ${
+                      className={`notification-menu-button relative flex items-center px-2 py-1.5 rounded-full border transition-all duration-300 ${
                         hasNotifications 
-                          ? 'bg-gradient-to-r from-red-500/20 to-orange-500/20 border-red-500/30 text-red-400 hover:border-red-500/50' 
-                          : 'bg-gradient-to-r from-slate-500/10 to-gray-500/10 border-white/10 text-gray-400 hover:border-white/30 hover:text-white'
+                          ? 'bg-red-500/10 border-red-500/30 text-red-400' 
+                          : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'
                       }`}
                       variants={buttonVariants}
                       whileHover="hover"
@@ -914,7 +906,7 @@ const Header: React.FC = () => {
                     <motion.button
                       ref={userMenuButtonRef}
                       onClick={handleUserMenuToggle}
-                      className="user-menu-button flex items-center px-1 xl:px-1.5 py-0.5 xl:py-1 bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-sm rounded-full border border-white/10 text-white hover:border-white/30 transition-all duration-300 min-w-0"
+                      className="user-menu-button flex items-center px-1 xl:px-1.5 py-0.5 xl:py-1 bg-white/5 rounded-full border border-white/10 text-white hover:bg-white/10 transition-all duration-300 min-w-0"
                       variants={buttonVariants}
                       whileHover="hover"
                       whileTap="tap"
@@ -941,7 +933,7 @@ const Header: React.FC = () => {
                   <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap">
                     <Link
                       to="/signup"
-                      className="px-1 xl:px-1.5 2xl:px-2 py-0.5 xl:py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full font-medium shadow-lg hover:shadow-blue-500/25 transition-all duration-300 text-xs xl:text-sm whitespace-nowrap"
+                      className="px-4 py-1.5 bg-white text-black rounded-lg font-bold hover:bg-gray-200 transition-all duration-300 text-xs xl:text-sm whitespace-nowrap"
                       data-magnetic
                     >
                       {t('nav.signup')}
@@ -957,7 +949,7 @@ const Header: React.FC = () => {
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
-              className="lg:hidden bg-black/98 backdrop-blur-xl rounded-2xl border border-white/20 mt-3 overflow-hidden shadow-2xl"
+              className="lg:hidden bg-[#0a0a0a] border border-white/10 mt-3 overflow-hidden rounded-xl"
               variants={mobileMenuVariants}
               initial="hidden"
               animate="visible"
@@ -978,7 +970,7 @@ const Header: React.FC = () => {
                         to={item.href}
                         className={`flex items-center px-4 py-3 rounded-xl transition-all duration-300 ${
                           isActive(item.href)
-                            ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border border-blue-500/30'
+                            ? 'bg-white/10 text-white'
                             : 'text-gray-300 hover:text-white hover:bg-white/5'
                         }`}
                         onClick={() => setIsMobileMenuOpen(false)}
@@ -1018,7 +1010,7 @@ const Header: React.FC = () => {
                         {responsesRemaining < 50 && (
                           <Link
                             to="/subscription"
-                            className="flex items-center justify-center px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl font-medium transition-all duration-200 hover:shadow-lg"
+                            className="flex items-center justify-center px-4 py-3 bg-gradient-to-r from-indigo-500 to-red-600 text-white rounded-xl font-medium transition-all duration-200 hover:shadow-lg"
                             onClick={() => setIsMobileMenuOpen(false)}
                           >
                             <IconComponent icon={AiOutlineCrown} className="h-5 w-5 mr-3 flex-shrink-0" />
@@ -1029,7 +1021,7 @@ const Header: React.FC = () => {
                     ) : (
                       <Link
                         to="/subscription"
-                        className="flex items-center justify-center px-4 py-3 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-xl font-medium transition-all duration-200 hover:shadow-lg"
+                        className="flex items-center justify-center px-4 py-3 bg-white text-black rounded-xl font-bold transition-all duration-200"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <IconComponent icon={AiOutlineCrown} className="h-5 w-5 mr-3 flex-shrink-0" />
@@ -1160,7 +1152,7 @@ const Header: React.FC = () => {
                     switch (type) {
                       case 'overdue': return 'text-red-400 bg-red-500/10 border-red-500/20';
                       case 'deadline': 
-                        return priority === 'high' ? 'text-orange-400 bg-orange-500/10 border-orange-500/20' : 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20';
+                        return priority === 'high' ? 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' : 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20';
                       case 'reminder': return 'text-blue-400 bg-blue-500/10 border-blue-500/20';
                       default: return 'text-gray-400 bg-gray-500/10 border-gray-500/20';
                     }

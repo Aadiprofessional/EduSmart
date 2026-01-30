@@ -199,7 +199,7 @@ const BlogSection: React.FC = () => {
       case 'study':
         return <IconComponent icon={FaBook} className="text-blue-600" />;
       case 'test-prep':
-        return <IconComponent icon={FaGraduationCap} className="text-orange-600" />;
+        return <IconComponent icon={FaGraduationCap} className="text-indigo-600" />;
       case 'career':
         return <IconComponent icon={FaBriefcase} className="text-purple-600" />;
       default:
@@ -312,7 +312,7 @@ const BlogSection: React.FC = () => {
                       alt={post.title}
                       className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
                     />
-                    <div className="absolute top-4 left-4 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                    <div className="absolute top-4 left-4 bg-gradient-to-r from-indigo-500 to-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
                       Featured
                     </div>
                     <div className="absolute top-4 right-4 bg-white bg-opacity-90 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium text-gray-700 flex items-center">

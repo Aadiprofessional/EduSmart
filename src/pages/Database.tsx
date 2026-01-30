@@ -2824,8 +2824,8 @@ Consider factors like academic fit, budget compatibility, location preferences, 
         onClick={(e) => e.stopPropagation()}
       >
         <div className="text-center">
-          <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <IconComponent icon={FaUser} className="text-orange-500 text-2xl" />
+          <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <IconComponent icon={FaUser} className="text-indigo-500 text-2xl" />
           </div>
           <h3 className="text-xl font-bold text-gray-800 mb-2">Complete Your Profile</h3>
           <p className="text-gray-600 mb-6">
@@ -2838,7 +2838,7 @@ Consider factors like academic fit, budget compatibility, location preferences, 
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div 
-                className="bg-gradient-to-r from-orange-400 to-orange-600 h-2 rounded-full transition-all duration-300"
+                className="bg-gradient-to-r from-indigo-400 to-indigo-600 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${userProfileCompletion}%` }}
               ></div>
             </div>
@@ -2857,7 +2857,7 @@ Consider factors like academic fit, budget compatibility, location preferences, 
                 onClose();
                 window.location.href = '/profile';
               }}
-              className="flex-1 px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all"
+              className="flex-1 px-4 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg hover:from-indigo-600 hover:to-indigo-700 transition-all"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -3513,7 +3513,7 @@ Please provide realistic cost estimates based on the university's location and t
                          {/* Ranking Filters - Moved to top */}
                          <div className="mb-6">
                     <h4 className="text-md font-semibold text-gray-700 mb-3 flex items-center">
-                      <IconComponent icon={FaTrophy} className="mr-2 text-orange-600" />
+                      <IconComponent icon={FaTrophy} className="mr-2 text-indigo-600" />
                       Ranking Types
                     </h4>
                     <div className="space-y-2">
@@ -3653,8 +3653,8 @@ Please provide realistic cost estimates based on the university's location and t
                   </div>
 
                   {/* Additional Features */}
-                  <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6">
-                    <h3 className="text-lg font-bold text-orange-800 mb-4 flex items-center">
+                  <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl p-6">
+                    <h3 className="text-lg font-bold text-indigo-800 mb-4 flex items-center">
                       <IconComponent icon={FaStar} className="mr-2" /> Additional Features
                     </h3>
                     <div className="space-y-3">
@@ -4205,13 +4205,13 @@ Please provide realistic cost estimates based on the university's location and t
                     </div>
                   </div>
 
-                  <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 sm:p-6">
-                    <h3 className="text-base sm:text-lg font-bold text-orange-800 mb-3 sm:mb-4 flex items-center">
+                  <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-bold text-indigo-800 mb-3 sm:mb-4 flex items-center">
                       <IconComponent icon={FaGlobe} className="mr-2" /> {t('database.recommendedRegions')}
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {aiAnalysisData.recommendedRegions.map((region: string, index: number) => (
-                        <span key={index} className="bg-orange-200 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
+                        <span key={index} className="bg-indigo-200 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">
                           {region}
                         </span>
                       ))}
@@ -4748,8 +4748,8 @@ Please provide realistic cost estimates based on the university's location and t
                 </div>
 
                 {/* Additional Features */}
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6">
-                  <h3 className="text-lg font-bold text-orange-800 mb-4 flex items-center">
+                <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-indigo-800 mb-4 flex items-center">
                     <IconComponent icon={FaStar} className="mr-2" /> {t('database.additionalFeatures')}
                   </h3>
                   <div className="space-y-3">
@@ -5131,22 +5131,22 @@ Please provide realistic cost estimates based on the university's location and t
                     </div>
 
                     {/* Visa & Travel Costs */}
-                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 sm:p-6">
-                      <h4 className="text-lg font-bold text-orange-800 mb-4 flex items-center">
+                    <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl p-4 sm:p-6">
+                      <h4 className="text-lg font-bold text-indigo-800 mb-4 flex items-center">
                         <IconComponent icon={FaGlobe} className="mr-2" /> Visa & Travel
                       </h4>
                       <div className="space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-orange-700">F-1 Visa Fee:</span>
-                          <span className="font-semibold text-orange-800">${costEstimationData.visaFees.f1VisaFee}</span>
+                          <span className="text-indigo-700">F-1 Visa Fee:</span>
+                          <span className="font-semibold text-indigo-800">${costEstimationData.visaFees.f1VisaFee}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-orange-700">SEVIS Fee:</span>
-                          <span className="font-semibold text-orange-800">${costEstimationData.visaFees.sevisFee}</span>
+                          <span className="text-indigo-700">SEVIS Fee:</span>
+                          <span className="font-semibold text-indigo-800">${costEstimationData.visaFees.sevisFee}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-orange-700">Round Trip Airfare:</span>
-                          <span className="font-semibold text-orange-800">${costEstimationData.travelCosts.roundTripAirfare.toLocaleString()}</span>
+                          <span className="text-indigo-700">Round Trip Airfare:</span>
+                          <span className="font-semibold text-indigo-800">${costEstimationData.travelCosts.roundTripAirfare.toLocaleString()}</span>
                         </div>
                       </div>
                     </div>

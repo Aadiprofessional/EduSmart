@@ -194,7 +194,11 @@ const PortalModal: React.FC<PortalModalProps> = ({ isOpen, onClose, children, cl
   );
 };
 
-const HumanizerComponent: React.FC = () => {
+interface HumanizerComponentProps {
+  className?: string;
+}
+
+const HumanizerComponent: React.FC<HumanizerComponentProps> = ({ className = '' }) => {
   const { t } = useLanguage();
   const { user, session } = useAuth();
   
@@ -1387,26 +1391,15 @@ ${prompt}`
       initial="hidden"
       animate="visible"
       variants={containerVariants}
-      className="bg-gradient-to-br from-slate-900 via-blue-900 to-teal-900 p-4 min-h-screen"
+      className={`bg-[#0f172a]/60 backdrop-blur-md border border-white/10 rounded-xl shadow-lg overflow-hidden p-4 sm:p-6 ${className || ''}`}
     >
       <div className="container mx-auto">
-        {/* Header Section */}
-        <motion.div variants={itemVariants} className="mb-6">
-          <h1 className="text-3xl font-bold text-cyan-400">
-            Humanizer
-            <span className="ml-2 text-lg font-normal text-slate-300">for Students</span>
-          </h1>
-          <p className="text-slate-400 mt-1">
-            Rewrite your content to sound more natural, engaging, and human-like.
-          </p>
-        </motion.div>
-
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Left Panel - Template Selection & Input */}
           <motion.div variants={itemVariants} className="w-full lg:w-1/3">
-            <div className="bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl shadow-lg p-6 mb-6">
-              <h2 className="text-xl font-bold text-cyan-400 mb-4 flex items-center">
-                <IconComponent icon={FiSettings} className="mr-2" /> Humanizer Modes
+            <div className="bg-[#0f172a]/60 backdrop-blur-md border border-white/10 rounded-2xl p-6 mb-6 shadow-xl">
+              <h2 className="text-xl font-bold text-white mb-4 flex items-center">
+                <IconComponent icon={FiSettings} className="mr-2 text-indigo-400" /> Humanizer Modes
               </h2>
               <div className="grid grid-cols-2 gap-3 mb-6">
                 {templates.map((template) => (
@@ -1416,38 +1409,38 @@ ${prompt}`
                     whileHover="hover"
                     whileTap="tap"
                     onClick={() => selectTemplate(template.id)}
-                    className={`flex flex-col items-center justify-center p-4 rounded-lg transition-colors border ${
+                    className={`flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-200 border ${
                       activeTemplate === template.id 
-                        ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-md border-cyan-500/30' 
-                        : 'bg-slate-600/30 backdrop-blur-sm text-slate-300 hover:bg-slate-500/30 border-white/10'
+                        ? 'bg-indigo-600/20 text-white border-indigo-500/50 shadow-lg shadow-indigo-500/10' 
+                        : 'bg-white/5 text-slate-400 hover:bg-white/10 border-white/5 hover:text-slate-200'
                     }`}
                   >
-                    <IconComponent icon={template.icon} className="text-2xl mb-2" />
-                    <span className="text-sm text-center">{template.name}</span>
+                    <IconComponent icon={template.icon} className={`text-2xl mb-2 ${activeTemplate === template.id ? 'text-indigo-400' : 'text-slate-500'}`} />
+                    <span className="text-sm text-center font-medium">{template.name}</span>
                   </motion.button>
                 ))}
               </div>
 
-              <h2 className="text-xl font-bold text-cyan-400 mb-4 flex items-center">
-                <IconComponent icon={AiOutlineRobot} className="mr-2" /> Text to Humanize
+              <h2 className="text-xl font-bold text-white mb-4 flex items-center">
+                <IconComponent icon={AiOutlineRobot} className="mr-2 text-indigo-400" /> Text to Humanize
               </h2>
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Paste the text you want to humanize here... (You can also add specific instructions like 'Make it more casual' or 'Keep it professional')"
-                className="w-full h-40 p-4 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 placeholder-slate-400 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none"
+                className="w-full h-40 p-4 bg-slate-900/50 backdrop-blur-sm border border-white/10 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none transition-all"
               />
               
               {/* Content Settings */}
-              <div className="mt-4 space-y-4">
-                <h3 className="text-lg font-semibold text-cyan-400 flex items-center">
-                  <IconComponent icon={FiSettings} className="mr-2" /> Content Settings
+              <div className="mt-6 space-y-4">
+                <h3 className="text-lg font-semibold text-white flex items-center">
+                  <IconComponent icon={FiSettings} className="mr-2 text-indigo-400" /> Content Settings
                 </h3>
                 
                 {/* Word Count */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Word Count: {wordCount} words
+                  <label className="block text-sm font-medium text-slate-400 mb-2">
+                    Word Count: <span className="text-indigo-400">{wordCount}</span> words
                   </label>
                   <div className="flex items-center space-x-3">
                     <input
@@ -1457,7 +1450,7 @@ ${prompt}`
                       step="50"
                       value={wordCount}
                       onChange={(e) => setWordCount(parseInt(e.target.value))}
-                      className="flex-1 h-2 bg-slate-600/50 rounded-lg appearance-none cursor-pointer slider"
+                      className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
                     />
                     <input
                       type="number"
@@ -1465,18 +1458,18 @@ ${prompt}`
                       max="2000"
                       value={wordCount}
                       onChange={(e) => setWordCount(Math.max(50, Math.min(2000, parseInt(e.target.value) || 100)))}
-                      className="w-20 px-2 py-1 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded text-slate-300 text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                      className="w-20 px-2 py-1 bg-slate-900/50 border border-white/10 rounded-lg text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-center"
                     />
                   </div>
                 </div>
                 
                 {/* Content Type */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Content Type</label>
+                  <label className="block text-sm font-medium text-slate-400 mb-2">Content Type</label>
                   <select
                     value={contentType}
                     onChange={(e) => setContentType(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                    className="w-full px-3 py-2.5 bg-slate-900/50 backdrop-blur-sm border border-white/10 rounded-xl text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 appearance-none"
                   >
                     <option value="essay">Essay</option>
                     <option value="article">Article</option>
@@ -1489,11 +1482,11 @@ ${prompt}`
                 
                 {/* Tone */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Tone</label>
+                  <label className="block text-sm font-medium text-slate-400 mb-2">Tone</label>
                   <select
                     value={tone}
                     onChange={(e) => setTone(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                    className="w-full px-3 py-2.5 bg-slate-900/50 backdrop-blur-sm border border-white/10 rounded-xl text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 appearance-none"
                   >
                     <option value="academic">Academic</option>
                     <option value="professional">Professional</option>
@@ -1512,7 +1505,7 @@ ${prompt}`
                 whileTap="tap"
                 onClick={handleGenerateContent}
                 disabled={isGenerating}
-                className="mt-4 w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:shadow-lg text-white font-medium py-3 px-6 rounded-lg flex items-center justify-center transition-all disabled:opacity-50"
+                className="mt-6 w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold py-3.5 px-6 rounded-xl flex items-center justify-center transition-all shadow-lg shadow-indigo-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isGenerating ? (
                   <>
@@ -1533,7 +1526,7 @@ ${prompt}`
                 whileHover="hover"
                 whileTap="tap"
                 onClick={() => setShowHistory(!showHistory)}
-                className="mt-3 w-full bg-slate-600/50 backdrop-blur-sm border border-white/10 text-slate-300 font-medium py-2 px-6 rounded-lg flex items-center justify-center hover:bg-slate-500/50 transition-colors"
+                className="mt-3 w-full bg-white/5 border border-white/10 text-slate-300 font-medium py-2.5 px-6 rounded-xl flex items-center justify-center hover:bg-white/10 transition-colors"
               >
                 <IconComponent icon={AiOutlineHistory} className="mr-2" /> 
                 {t('aiStudy.viewHistory')} ({contentHistory.length})
@@ -1541,25 +1534,25 @@ ${prompt}`
             </div>
 
             {/* Tips Section */}
-            <motion.div variants={itemVariants} className="bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl shadow-lg p-6">
-              <h2 className="text-xl font-bold text-cyan-400 mb-4 flex items-center">
-                <IconComponent icon={FiBook} className="mr-2" /> Tips
+            <motion.div variants={itemVariants} className="bg-[#0f172a]/60 backdrop-blur-md border border-white/10 rounded-2xl p-6 shadow-xl">
+              <h2 className="text-xl font-bold text-white mb-4 flex items-center">
+                <IconComponent icon={FiBook} className="mr-2 text-indigo-400" /> Tips
               </h2>
-              <ul className="space-y-3 text-slate-300">
+              <ul className="space-y-3 text-slate-400">
                 <li className="flex items-start">
-                  <span className="bg-teal-500/20 text-teal-400 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 text-xs border border-teal-500/30">1</span>
+                  <span className="bg-indigo-500/20 text-indigo-400 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 text-xs border border-indigo-500/30">1</span>
                   <span>{t('aiStudy.beSpecificInYourPromptForBetterResults')}</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="bg-teal-500/20 text-teal-400 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 text-xs border border-teal-500/30">2</span>
+                  <span className="bg-indigo-500/20 text-indigo-400 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 text-xs border border-indigo-500/30">2</span>
                   <span>{t('aiStudy.editTheGeneratedContentToPersonalizeIt')}</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="bg-teal-500/20 text-teal-400 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 text-xs border border-teal-500/30">3</span>
+                  <span className="bg-indigo-500/20 text-indigo-400 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 text-xs border border-indigo-500/30">3</span>
                   <span>{t('aiStudy.useFormattingToolsToImproveReadability')}</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="bg-teal-500/20 text-teal-400 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 text-xs border border-teal-500/30">4</span>
+                  <span className="bg-indigo-500/20 text-indigo-400 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 text-xs border border-indigo-500/30">4</span>
                   <span>{t('aiStudy.alwaysReviewAndPersonalizeAIGeneratedContent')}</span>
                 </li>
               </ul>
@@ -1568,15 +1561,15 @@ ${prompt}`
 
           {/* Right Panel - Editor */}
           <motion.div variants={itemVariants} className="w-full lg:w-2/3">
-            <div className="bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl shadow-lg overflow-hidden">
+            <div className="bg-[#0f172a]/60 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl overflow-hidden flex flex-col h-full min-h-[800px]">
               {/* Toolbar */}
-              <div className="bg-slate-700/50 backdrop-blur-sm p-3 border-b border-white/10 flex flex-wrap items-center gap-2">
+              <div className="bg-white/5 backdrop-blur-md p-3 border-b border-white/10 flex flex-wrap items-center gap-2">
                 <motion.button
                   variants={buttonVariants}
                   whileHover="hover"
                   whileTap="tap"
                   onClick={() => applyFormatting('bold')}
-                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
+                  className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
                   title={t('aiStudy.bold')}
                 >
                   <IconComponent icon={AiOutlineBold} />
@@ -1586,7 +1579,7 @@ ${prompt}`
                   whileHover="hover"
                   whileTap="tap"
                   onClick={() => applyFormatting('italic')}
-                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
+                  className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
                   title={t('aiStudy.italic')}
                 >
                   <IconComponent icon={AiOutlineItalic} />
@@ -1596,18 +1589,18 @@ ${prompt}`
                   whileHover="hover"
                   whileTap="tap"
                   onClick={() => applyFormatting('underline')}
-                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
+                  className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
                   title={t('aiStudy.underline')}
                 >
                   <IconComponent icon={AiOutlineUnderline} />
                 </motion.button>
-                <div className="h-6 w-px bg-white/20 mx-1"></div>
+                <div className="h-6 w-px bg-white/10 mx-1"></div>
                 <motion.button
                   variants={buttonVariants}
                   whileHover="hover"
                   whileTap="tap"
                   onClick={() => applyFormatting('list-ordered')}
-                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
+                  className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
                   title={t('aiStudy.orderedList')}
                 >
                   <IconComponent icon={AiOutlineOrderedList} />
@@ -1617,7 +1610,7 @@ ${prompt}`
                   whileHover="hover"
                   whileTap="tap"
                   onClick={() => applyFormatting('list-unordered')}
-                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
+                  className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
                   title={t('aiStudy.unorderedList')}
                 >
                   <IconComponent icon={AiOutlineUnorderedList} />
@@ -1627,18 +1620,18 @@ ${prompt}`
                   whileHover="hover"
                   whileTap="tap"
                   onClick={() => applyFormatting('quote')}
-                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
+                  className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
                   title={t('aiStudy.quote')}
                 >
                   <IconComponent icon={BsQuote} />
                 </motion.button>
-                <div className="h-6 w-px bg-white/20 mx-1"></div>
+                <div className="h-6 w-px bg-white/10 mx-1"></div>
                 <motion.button
                   variants={buttonVariants}
                   whileHover="hover"
                   whileTap="tap"
                   onClick={() => changeFontSize(2)}
-                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
+                  className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
                   title={t('aiStudy.increaseFontSize')}
                 >
                   <IconComponent icon={AiOutlinePlus} />
@@ -1648,18 +1641,18 @@ ${prompt}`
                   whileHover="hover"
                   whileTap="tap"
                   onClick={() => changeFontSize(-2)}
-                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
+                  className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
                   title={t('aiStudy.decreaseFontSize')}
                 >
                   <IconComponent icon={AiOutlineMinus} />
                 </motion.button>
-                <div className="h-6 w-px bg-white/20 mx-1"></div>
+                <div className="h-6 w-px bg-white/10 mx-1"></div>
                 <motion.button
                   variants={buttonVariants}
                   whileHover="hover"
                   whileTap="tap"
                   onClick={handleCopyContent}
-                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
+                  className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
                   title={t('aiStudy.copyContent')}
                 >
                   <IconComponent icon={FiCopy} />
@@ -1670,7 +1663,7 @@ ${prompt}`
                   whileTap="tap"
                   onClick={handleManualSave}
                   disabled={isSaving || !editedContent.trim()}
-                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Save Content"
                 >
                   {isSaving ? (
@@ -1684,7 +1677,7 @@ ${prompt}`
                   whileHover="hover"
                   whileTap="tap"
                   onClick={() => handleDownloadContent('txt')}
-                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
+                  className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
                   title={t('aiStudy.download')}
                 >
                   <IconComponent icon={FiDownload} />
@@ -1694,7 +1687,7 @@ ${prompt}`
                   whileHover="hover"
                   whileTap="tap"
                   onClick={handleShareContent}
-                  className="p-2 rounded hover:bg-slate-600/50 text-slate-300 transition-colors"
+                  className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
                   title={t('aiStudy.share')}
                 >
                   <IconComponent icon={FiShare2} />
@@ -1709,7 +1702,7 @@ ${prompt}`
                     <motion.button
                       onClick={handleAskAIForSelection}
                       data-ask-ai-button="true"
-                      className="flex items-center px-3 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg shadow-lg hover:shadow-xl transition-all text-sm font-medium space-x-2"
+                      className="flex items-center px-3 py-1.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg shadow-lg hover:shadow-xl transition-all text-sm font-medium space-x-2"
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.8 }}
@@ -1724,26 +1717,26 @@ ${prompt}`
               </div>
 
               {/* Editor Content */}
-              <div className="flex h-[600px]">
+              <div className="flex flex-1 min-h-0">
                 {/* Editor */}
-                <div className="w-1/2 border-r border-white/10">
-                  <div className="h-full relative">
+                <div className="w-1/2 border-r border-white/10 flex flex-col">
+                  <div className="flex-1 relative">
                     <textarea
                       ref={editorRef}
                       value={editedContent}
                       onChange={(e) => setEditedContent(e.target.value)}
                       onFocus={handleEditorFocus}
                       placeholder={t('aiStudy.startWritingOrGenerateContentUsingAI')}
-                      className="w-full h-full p-6 bg-slate-700/30 backdrop-blur-sm text-slate-300 placeholder-slate-400 resize-none focus:outline-none border-none"
+                      className="w-full h-full p-6 bg-transparent text-slate-200 placeholder-slate-500 resize-none focus:outline-none border-none custom-scrollbar"
                       style={{ fontSize: `${fontSize}px`, lineHeight: '1.6' }}
                     />
                   </div>
                 </div>
 
                 {/* Preview */}
-                <div className="w-1/2 bg-slate-700/20 backdrop-blur-sm overflow-y-auto">
+                <div className="w-1/2 bg-black/20 overflow-y-auto custom-scrollbar">
                   <div className="p-6">
-                    <div className="prose prose-invert max-w-none">
+                    <div className="prose prose-invert max-w-none prose-headings:text-indigo-400 prose-a:text-indigo-400 hover:prose-a:text-indigo-300 prose-strong:text-white prose-code:text-indigo-300 prose-blockquote:border-indigo-500">
                       <ReactMarkdown
                         remarkPlugins={[remarkMath, remarkGfm]}
                         rehypePlugins={[rehypeKatex]}
@@ -1757,16 +1750,16 @@ ${prompt}`
               </div>
 
               {/* Footer */}
-              <div className="bg-slate-700/50 backdrop-blur-sm px-6 py-3 border-t border-white/10 flex items-center justify-between">
+              <div className="bg-white/5 backdrop-blur-md px-6 py-3 border-t border-white/10 flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <span className="text-sm text-slate-400">
-                    Words: {editedContent.split(/\s+/).filter(word => word.length > 0).length}
+                  <span className="text-xs font-medium text-slate-400 bg-white/5 px-2 py-1 rounded-md">
+                    Words: <span className="text-indigo-400">{editedContent.split(/\s+/).filter(word => word.length > 0).length}</span>
                   </span>
-                  <span className="text-sm text-slate-400">
-                    Characters: {editedContent.length}
+                  <span className="text-xs font-medium text-slate-400 bg-white/5 px-2 py-1 rounded-md">
+                    Chars: <span className="text-indigo-400">{editedContent.length}</span>
                   </span>
-                  <span className="text-sm text-slate-400">
-                    Pages: {calculateTotalPages()}
+                  <span className="text-xs font-medium text-slate-400 bg-white/5 px-2 py-1 rounded-md">
+                    Pages: <span className="text-indigo-400">{calculateTotalPages()}</span>
                   </span>
                 </div>
                 
@@ -1776,19 +1769,19 @@ ${prompt}`
                       <motion.button
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                         disabled={currentPage === 1}
-                        className="px-3 py-1 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded text-slate-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-white/10"
+                        className="px-3 py-1 bg-white/5 hover:bg-white/10 rounded-lg text-slate-300 text-xs disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-white/10"
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                       >
                         {t('aiStudy.previous')}
                       </motion.button>
-                      <span className="text-sm text-slate-400">
+                      <span className="text-xs text-slate-400 font-medium">
                         {t('aiStudy.page')} {currentPage} {t('aiStudy.of')} {calculateTotalPages()}
                       </span>
                       <motion.button
                         onClick={() => setCurrentPage(p => Math.min(calculateTotalPages(), p + 1))}
                         disabled={currentPage === calculateTotalPages()}
-                        className="px-3 py-1 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded text-slate-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-white/10"
+                        className="px-3 py-1 bg-white/5 hover:bg-white/10 rounded-lg text-slate-300 text-xs disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-white/10"
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                       >

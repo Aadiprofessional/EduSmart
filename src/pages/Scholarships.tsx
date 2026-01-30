@@ -377,7 +377,7 @@ const Scholarships: React.FC = () => {
           {/* Background Effects */}
           <div className="absolute inset-0 opacity-20">
             <div className="absolute top-10 left-10 w-96 h-96 bg-yellow-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
-            <div className="absolute bottom-10 right-10 w-96 h-96 bg-orange-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-1000"></div>
+            <div className="absolute bottom-10 right-10 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-1000"></div>
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-amber-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-500"></div>
           </div>
 
@@ -388,7 +388,7 @@ const Scholarships: React.FC = () => {
               transition={{ duration: 0.8 }}
               className="text-center mb-16"
             >
-              <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent">
+              <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 bg-gradient-to-r from-yellow-400 via-indigo-500 to-red-500 bg-clip-text text-transparent">
                 {t('scholarships.title') || 'Future-Ready Scholarship Portal'}
               </h1>
               <p className="text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto mb-12">
@@ -545,7 +545,7 @@ const Scholarships: React.FC = () => {
                         whileHover="hover"
                         className={`relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-500 border border-slate-700/50 overflow-hidden group ${
                           viewMode === 'list' ? 'flex' : ''
-                        } ${isUrgent ? 'ring-2 ring-orange-400/60 shadow-orange-400/20' : ''} ${isExpired ? 'opacity-70' : ''}`}
+                        } ${isUrgent ? 'ring-2 ring-indigo-400/60 shadow-indigo-400/20' : ''} ${isExpired ? 'opacity-70' : ''}`}
                       >
                         {/* Enhanced Background Gradient */}
                         <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-blue-600/5 to-purple-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -560,7 +560,7 @@ const Scholarships: React.FC = () => {
                             animate={{ scale: [1, 1.05, 1] }}
                             transition={{ duration: 2, repeat: Infinity }}
                           >
-                            <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-full text-xs font-bold flex items-center shadow-lg border border-orange-400/30">
+                            <div className="bg-gradient-to-r from-indigo-500 to-red-500 text-white px-4 py-2 rounded-full text-xs font-bold flex items-center shadow-lg border border-indigo-400/30">
                               <IconComponent icon={FaBolt} className="mr-1" />
                               URGENT
                             </div>
@@ -653,7 +653,7 @@ const Scholarships: React.FC = () => {
                               <IconComponent icon={FaCalendarAlt} className="mr-3 text-cyan-400 text-base" />
                               <div className="flex items-center justify-between w-full">
                                 <span className={`font-medium ${
-                                  isUrgent ? 'text-orange-400' : isExpired ? 'text-red-400' : 'text-slate-300'
+                                  isUrgent ? 'text-indigo-400' : isExpired ? 'text-red-400' : 'text-slate-300'
                                 }`}>
                                   {formatDate(scholarship.deadline)}
                                 </span>

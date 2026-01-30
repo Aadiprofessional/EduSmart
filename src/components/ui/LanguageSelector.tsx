@@ -160,7 +160,7 @@ const LanguageSelector: React.FC = () => {
             }}
             className={`w-full flex items-center justify-between px-4 py-3 text-sm hover:bg-white/5 transition-all duration-200 rounded-xl mx-2 ${
               language === option.code
-                ? 'text-orange-400 bg-white/5'
+                ? 'text-indigo-400 bg-white/5'
                 : 'text-gray-300 hover:text-white'
             } ${isMobile ? 'py-4' : ''}`} // Larger touch targets on mobile
           >
@@ -176,7 +176,7 @@ const LanguageSelector: React.FC = () => {
               )}
             </div>
             {language === option.code && (
-              <div className={`bg-orange-400 rounded-full ${isMobile ? 'w-3 h-3' : 'w-2 h-2'}`} />
+              <div className={`bg-indigo-400 rounded-full ${isMobile ? 'w-3 h-3' : 'w-2 h-2'}`} />
             )}
           </button>
         ))}
@@ -192,7 +192,7 @@ const LanguageSelector: React.FC = () => {
         onMouseDown={(e) => {
           e.stopPropagation(); // Prevent header click handlers
         }}
-        className={`flex items-center space-x-2 text-white hover:text-orange-400 transition-all duration-200 rounded-lg hover:bg-white/10 ${
+        className={`flex items-center space-x-2 text-white hover:text-indigo-400 transition-all duration-200 rounded-lg hover:bg-white/10 ${
           isMobile 
             ? 'px-3 py-2.5 text-base' // Larger touch target on mobile
             : 'px-2 py-1.5 text-sm'

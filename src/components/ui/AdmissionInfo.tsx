@@ -33,7 +33,7 @@ const AdmissionInfo: React.FC = () => {
                   whileHover={{ y: 0, opacity: 1 }}
                   transition={{ duration: 0.3, delay: 0.1 }}
                 >
-                  <IconComponent icon={FaGraduationCap} className="text-5xl mb-4 mx-auto text-orange-400" />
+                  <IconComponent icon={FaGraduationCap} className="text-5xl mb-4 mx-auto text-indigo-400" />
                   <h3 className="text-2xl font-bold mb-2">Success Awaits</h3>
                   <p className="text-white/80">Let us guide you through the admission journey</p>
                 </motion.div>
@@ -75,8 +75,8 @@ const AdmissionInfo: React.FC = () => {
                   whileHover={{ y: -5, backgroundColor: "#fff7ed" }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
-                  <div className="bg-orange-100 p-2 rounded-full mr-3">
-                    <IconComponent icon={FaMoneyBillWave} className="text-orange-500 text-xl" />
+                  <div className="bg-indigo-100 p-2 rounded-full mr-3">
+                    <IconComponent icon={FaMoneyBillWave} className="text-indigo-500 text-xl" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-teal-800">5,000+</h3>
@@ -103,8 +103,8 @@ const AdmissionInfo: React.FC = () => {
                   whileHover={{ y: -5, backgroundColor: "#fff7ed" }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
-                  <div className="bg-orange-100 p-2 rounded-full mr-3">
-                    <IconComponent icon={FaGlobeAmericas} className="text-orange-500 text-xl" />
+                  <div className="bg-indigo-100 p-2 rounded-full mr-3">
+                    <IconComponent icon={FaGlobeAmericas} className="text-indigo-500 text-xl" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-teal-800">95+</h3>

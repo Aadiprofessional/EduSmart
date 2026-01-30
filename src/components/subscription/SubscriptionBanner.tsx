@@ -77,7 +77,7 @@ const SubscriptionBanner: React.FC = () => {
         >
           <div className="flex justify-center mb-6">
             <motion.div
-              className="bg-gradient-to-r from-yellow-400 to-orange-500 p-4 rounded-full"
+              className="bg-gradient-to-r from-yellow-400 to-indigo-500 p-4 rounded-full"
               animate={{
                 rotate: [0, 5, -5, 0],
                 scale: [1, 1.1, 1]
@@ -91,7 +91,7 @@ const SubscriptionBanner: React.FC = () => {
               <IconComponent icon={FaCrown} className="w-12 h-12 text-white" />
             </motion.div>
           </div>
-          <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent mb-6">
+          <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-yellow-400 via-indigo-500 to-red-500 bg-clip-text text-transparent mb-6">
             {showAddonBanner ? 'Running Low on Responses?' : 'Unlock Your Learning Potential'}
           </h2>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-8">
@@ -122,7 +122,7 @@ const SubscriptionBanner: React.FC = () => {
             </div>
             
             <motion.div
-              className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 backdrop-blur-xl rounded-2xl border border-yellow-500/30 px-6 py-4"
+              className="bg-gradient-to-r from-yellow-500/20 to-indigo-500/20 backdrop-blur-xl rounded-2xl border border-yellow-500/30 px-6 py-4"
               whileHover={{ scale: 1.05 }}
             >
               <div className="flex items-center">
@@ -168,7 +168,7 @@ const SubscriptionBanner: React.FC = () => {
             // Addon Pricing for Pro Users
             <div className="text-center">
               <h3 className="text-3xl font-bold text-white mb-6">Get More Responses</h3>
-              <div className="bg-gradient-to-r from-orange-500/20 to-red-500/20 backdrop-blur-xl rounded-2xl border border-orange-500/30 p-6">
+              <div className="bg-gradient-to-r from-indigo-500/20 to-red-500/20 backdrop-blur-xl rounded-2xl border border-indigo-500/30 p-6">
                 <div className="flex items-center justify-center mb-4">
                   <span className="text-4xl font-bold text-white">$4.99</span>
                   <span className="text-gray-400 ml-2">one-time</span>
@@ -258,10 +258,10 @@ const SubscriptionBanner: React.FC = () => {
               to="/subscription"
               className={`inline-flex items-center px-8 py-4 ${
                 showAddonBanner 
-                  ? 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600' 
+                  ? 'bg-gradient-to-r from-indigo-500 to-red-500 hover:from-indigo-600 hover:to-red-600' 
                   : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600'
               } text-white rounded-2xl font-bold text-lg transition-all duration-300 shadow-lg ${
-                showAddonBanner ? 'hover:shadow-orange-500/25' : 'hover:shadow-purple-500/25'
+                showAddonBanner ? 'hover:shadow-indigo-500/25' : 'hover:shadow-purple-500/25'
               }`}
             >
               <IconComponent icon={FaCrown} className="w-6 h-6 mr-3" />

@@ -24,6 +24,11 @@ import Profile from './pages/Profile';
 import Subscription from './pages/Subscription';
 import Payment from './pages/Payment';
 import Dashboard from './pages/Dashboard';
+import MatrixEduDashboard from './pages/MatrixEduDashboard';
+import SolvePage from './pages/SolvePage';
+import GradePage from './pages/GradePage';
+import StudyMaterialPage from './pages/StudyMaterialPage';
+import MethodSelectionPage from './pages/MethodSelectionPage';
 import ThankYou from './pages/ThankYou';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -43,6 +48,7 @@ import ProtectedRoute from './utils/ProtectedRoute';
 import { useSmoothScroll } from './utils/scrollUtils';
 import { AuthProvider } from './utils/AuthContext';
 import { LanguageProvider } from './utils/LanguageContext';
+import { ThemeProvider } from './utils/ThemeContext';
 import { SubscriptionProvider } from './utils/SubscriptionContext';
 import { ProStatusProvider } from './utils/proStatusUtils';
 import { NotificationProvider } from './utils/NotificationContext';
@@ -62,24 +68,26 @@ function App() {
           <SubscriptionProvider>
             <ProStatusProvider>
               <LanguageProvider>
-                <NotificationProvider>
-                  <AppDataProvider>
-                    <Router
-                      future={{
-                        v7_startTransition: true,
-                        v7_relativeSplatPath: true,
-                      }}
-                    >
-                      {/* Global Error Notification */}
-                      <ErrorNotification />
-                      
-                      {/* Global Magnetic Cursor */}
-                      <CursorTrail/>
-                      
-                      {/* Scroll to top on route change */}
-                        <ScrollToTop />
-                    
-                    <Routes>
+                <ThemeProvider>
+                  <NotificationProvider>
+                    <AppDataProvider>
+                      <Router
+                        future={{
+                          v7_startTransition: true,
+                          v7_relativeSplatPath: true,
+                        }}
+                      >
+                        <div className="App dark:bg-[#111111] bg-gray-50 min-h-screen text-gray-900 dark:text-white transition-colors duration-200">
+                          {/* Global Error Notification */}
+                          <ErrorNotification />
+                          
+                          {/* Global Magnetic Cursor - Commented out for cleaner UI like matrixedu.ai */}
+                          {/* <CursorTrail/> */}
+                          
+                          {/* Scroll to top on route change */}
+                            <ScrollToTop />
+                        
+                        <Routes>
                       <Route path="/" element={<Home />} />
                       <Route path="/login" element={<Login />} />
                       <Route path="/signup" element={<Signup />} />
@@ -129,7 +137,27 @@ function App() {
                       } />
                       <Route path="/dashboard" element={
                         <ProtectedRoute>
-                          <Dashboard />
+                          <MatrixEduDashboard />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/solve" element={
+                        <ProtectedRoute>
+                          <SolvePage />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/paper-grader" element={
+                        <ProtectedRoute>
+                          <GradePage />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/study-set/:id" element={
+                        <ProtectedRoute>
+                          <StudyMaterialPage />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/study-set/:id/selection" element={
+                        <ProtectedRoute>
+                          <MethodSelectionPage />
                         </ProtectedRoute>
                       } />
                       <Route path="/profile" element={
@@ -153,13 +181,15 @@ function App() {
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                     
-                    {/* ChatBot component visible on all pages */}
-                    <ChatBot />
-                  </Router>
-                </AppDataProvider>
-              </NotificationProvider>
-            </LanguageProvider>
-          </ProStatusProvider>
+                          {/* ChatBot component visible on all pages */}
+                          <ChatBot />
+                        </div>
+                      </Router>
+                    </AppDataProvider>
+                  </NotificationProvider>
+                </ThemeProvider>
+              </LanguageProvider>
+            </ProStatusProvider>
         </SubscriptionProvider>
       </UserProvider>
     </AuthProvider>

@@ -109,13 +109,13 @@ const FeaturedCourses3D: React.FC = () => {
 
   if (loading) {
     return (
-      <section ref={containerRef} className="py-20 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden">
+      <section ref={containerRef} className="py-20 bg-transparent relative overflow-hidden">
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center">
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 2, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
-              className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full mx-auto mb-4"
+              className="w-12 h-12 border-4 border-white border-t-transparent rounded-full mx-auto mb-4"
             />
             <p className="text-slate-400 text-lg">{t('home.featuredCourses.loadingCourses')}</p>
           </div>
@@ -126,7 +126,7 @@ const FeaturedCourses3D: React.FC = () => {
 
   if (error) {
     return (
-      <section ref={containerRef} className="py-20 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden">
+      <section ref={containerRef} className="py-20 bg-transparent relative overflow-hidden">
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center">
             <IconComponent icon={FiAlertCircle} className="w-12 h-12 text-red-500 mx-auto mb-4" />
@@ -138,14 +138,7 @@ const FeaturedCourses3D: React.FC = () => {
   }
 
   return (
-    <section ref={containerRef} className="py-20 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden">
-      {/* Background Effects */}
-      <div className="absolute inset-0 opacity-20">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
-        <div className="absolute top-40 right-10 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse delay-1000"></div>
-        <div className="absolute bottom-20 left-1/2 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse delay-2000"></div>
-      </div>
-
+    <section ref={containerRef} className="py-20 bg-transparent relative overflow-hidden">
       <motion.div 
         className="container mx-auto px-4 relative z-10"
         style={{ y }}
@@ -158,114 +151,99 @@ const FeaturedCourses3D: React.FC = () => {
           className="text-center mb-16"
         >
           <div className="relative">
-            <h2 className="text-3xl sm:text-5xl md:text-6xl font-bold text-white mb-4 sm:mb-6 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+            <h2 className="text-3xl sm:text-5xl md:text-6xl font-bold text-white mb-4 sm:mb-6 tracking-tight">
               {t('home.featuredCourses.title')}
             </h2>
           </div>
-          <p className="text-sm sm:text-xl text-gray-300 max-w-3xl mx-auto">
+          <p className="text-sm sm:text-xl text-slate-400 max-w-3xl mx-auto font-light">
             {t('home.featuredCourses.subtitle')}
           </p>
         </motion.div>
 
         {/* Course Cards Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
           <AnimatePresence>
             {courses.map((course, index) => (
               <motion.div
                 key={course.id}
-                initial={{ opacity: 0, y: 50 }}
+                initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.2 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
                 viewport={{ once: true, amount: 0.1 }}
                 whileHover={{ 
-                  y: -10,
-                  rotateY: 5,
-                  scale: 1.02
+                  y: -5,
                 }}
-                className="group relative bg-white/10 backdrop-blur-lg rounded-2xl overflow-hidden border border-white/20 hover:border-white/40 transition-all duration-500 h-full flex flex-col"
+                className="group relative bg-[#121212] rounded-xl overflow-hidden border border-white/10 hover:border-white/30 transition-all duration-300 h-full flex flex-col shadow-lg"
               >
                 {/* Course Image */}
                 <div className="relative overflow-hidden">
                   <img
                     src={course.thumbnail_image || 'https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=400'}
                     alt={course.title}
-                    className="w-full h-32 sm:h-36 lg:h-40 object-cover group-hover:scale-110 transition-transform duration-500"
+                    className="w-full h-32 sm:h-40 lg:h-48 object-cover transition-transform duration-500 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors duration-300"></div>
                   
                   {/* Featured Badge */}
                   {course.featured && (
-                    <div className="absolute top-2 left-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                      <span className="hidden sm:inline">Featured</span>
-                      <span className="sm:hidden">★</span>
+                    <div className="absolute top-3 left-3 bg-blue-600 text-white px-2 py-1 rounded text-xs font-semibold uppercase tracking-wider">
+                      Featured
                     </div>
                   )}
 
                   {/* Play Button */}
-                  <motion.div
-                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    <div className="bg-white/20 backdrop-blur-sm rounded-full p-2 sm:p-3 border border-white/30">
-                      <IconComponent icon={FaPlay} className="text-white text-sm sm:text-lg lg:text-xl" />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="bg-white/90 rounded-full p-3 shadow-lg">
+                      <IconComponent icon={FaPlay} className="text-black text-sm" />
                     </div>
-                  </motion.div>
+                  </div>
                 </div>
 
                 {/* Course Content */}
-                <div className="p-3 sm:p-4 lg:p-6 flex flex-col flex-grow">
-                  <h3 className="text-sm sm:text-lg lg:text-xl font-bold text-white mb-2 group-hover:text-blue-300 transition-colors line-clamp-2">
+                <div className="p-5 flex flex-col flex-grow">
+                  <h3 className="text-base sm:text-lg font-semibold text-white mb-2 line-clamp-2">
                     {course.title}
                   </h3>
-                  <p className="text-gray-300 text-xs sm:text-sm mb-3 sm:mb-4 line-clamp-2 flex-grow">
+                  <p className="text-slate-400 text-xs sm:text-sm mb-4 line-clamp-2 flex-grow">
                     {course.description}
                   </p>
 
                   {/* Course Stats */}
-                  <div className="flex items-center flex-wrap gap-1 sm:gap-2 lg:gap-4 mb-3 sm:mb-4 text-xs text-gray-400">
-                    <div className="flex items-center gap-1">
-                      <IconComponent icon={FaStar} className="text-yellow-400" />
+                  <div className="flex items-center gap-4 mb-4 text-xs text-slate-500 font-medium">
+                    <div className="flex items-center gap-1.5">
+                      <IconComponent icon={FaStar} className="text-yellow-500" />
                       <span>{course.rating || 0}</span>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
                       <IconComponent icon={FaUsers} />
                       <span className="hidden sm:inline">{t('home.featuredCourses.students')}</span>
-                      <span className="sm:hidden">👥</span>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
                       <IconComponent icon={FaClock} />
                       <span className="hidden sm:inline">{course.level}</span>
-                      <span className="sm:hidden">{course.level.slice(0, 3)}</span>
                     </div>
                   </div>
 
                   {/* Instructor and Price */}
-                  <div className="flex items-center justify-between mb-3 sm:mb-4">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs text-gray-400 hidden sm:block">{t('home.featuredCourses.instructor')}</p>
-                      <p className="text-xs sm:text-sm text-white font-medium truncate">{course.instructor_name}</p>
+                  <div className="flex items-center justify-between mb-4 pt-4 border-t border-white/5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-xs text-white">
+                        {course.instructor_name.charAt(0)}
+                      </div>
+                      <p className="text-xs text-slate-400 truncate max-w-[100px]">{course.instructor_name}</p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xs text-gray-400 hidden sm:block">{t('home.featuredCourses.price')}</p>
-                      <p className="text-sm sm:text-lg lg:text-xl font-bold text-green-400">${course.price}</p>
-                    </div>
+                    <p className="text-sm font-bold text-white">${course.price}</p>
                   </div>
 
-                  {/* Enroll Button - Fixed at bottom */}
+                  {/* Enroll Button */}
                   <motion.button
-                    className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-2 sm:py-3 px-4 rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 text-xs sm:text-sm lg:text-base mt-auto"
-                    whileHover={{ scale: 1.02 }}
+                    className="w-full bg-white text-black font-semibold py-3 px-4 rounded-lg hover:bg-slate-200 transition-colors duration-300 text-sm mt-auto"
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handleEnrollNow(course.id)}
                   >
-                    <span className="hidden sm:inline">{t('home.featuredCourses.enrollNow')}</span>
-                    <span className="sm:hidden">{t('home.featuredCourses.enroll')}</span>
+                    {t('home.featuredCourses.enrollNow')}
                   </motion.button>
                 </div>
-
-                {/* Hover Glow Effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-all duration-500 pointer-events-none rounded-2xl"></div>
               </motion.div>
             ))}
           </AnimatePresence>
@@ -277,22 +255,17 @@ const FeaturedCourses3D: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.8 }}
-          className="text-center mt-8 sm:mt-12"
+          className="text-center mt-12 sm:mt-16"
         >
           <motion.button
             onClick={handleViewAllCourses}
-            className="group bg-gradient-to-r from-slate-800 to-slate-900 border border-white/20 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-2xl font-semibold hover:from-blue-600 hover:to-purple-600 hover:border-blue-400 transition-all duration-300 shadow-lg hover:shadow-2xl"
-            whileHover={{ scale: 1.05, y: -5 }}
-            whileTap={{ scale: 0.95 }}
+            className="group bg-transparent border border-white/20 text-white px-8 py-3 rounded-lg font-semibold hover:bg-white/10 transition-all duration-300"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
-            <span className="flex items-center">
-              <span className="mr-2 sm:mr-3">{t('home.featuredCourses.viewAllCourses')}</span>
-              <motion.div
-                className="group-hover:translate-x-2 transition-transform"
-                whileHover={{ x: 5 }}
-              >
-                →
-              </motion.div>
+            <span className="flex items-center gap-2">
+              <span>{t('home.featuredCourses.viewAllCourses')}</span>
+              <IconComponent icon={FiArrowRight} className="group-hover:translate-x-1 transition-transform" />
             </span>
           </motion.button>
         </motion.div>

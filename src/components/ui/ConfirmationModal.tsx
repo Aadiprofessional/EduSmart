@@ -35,9 +35,9 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         };
       case 'warning':
         return {
-          bgColor: 'from-yellow-500 to-orange-500',
+          bgColor: 'from-yellow-500 to-indigo-500',
           borderColor: 'border-yellow-500/30',
-          confirmButtonColor: 'from-yellow-500 to-orange-500',
+          confirmButtonColor: 'from-yellow-500 to-indigo-500',
           cancelButtonColor: 'from-gray-600 to-gray-700'
         };
       case 'info':
@@ -49,9 +49,9 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         };
       default:
         return {
-          bgColor: 'from-yellow-500 to-orange-500',
+          bgColor: 'from-yellow-500 to-indigo-500',
           borderColor: 'border-yellow-500/30',
-          confirmButtonColor: 'from-yellow-500 to-orange-500',
+          confirmButtonColor: 'from-yellow-500 to-indigo-500',
           cancelButtonColor: 'from-gray-600 to-gray-700'
         };
     }

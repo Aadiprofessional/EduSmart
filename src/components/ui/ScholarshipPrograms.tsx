@@ -72,7 +72,7 @@ const ScholarshipPrograms: React.FC = () => {
                 <div className="p-6">
                   <p className="text-gray-600 mb-6">{scholarship.description}</p>
                   <motion.button
-                    className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                    className="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
