@@ -1,60 +1,161 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as echarts from 'echarts';
-import { FaProjectDiagram, FaPlus, FaMinus, FaDownload } from 'react-icons/fa';
+import { useParams } from 'react-router-dom';
+import { useAuth } from '../../utils/AuthContext';
+import { supabase } from '../../utils/supabase';
+import { FaProjectDiagram, FaPlus, FaMinus, FaDownload, FaMagic } from 'react-icons/fa';
+
+const parseXMLToMindmap = (xmlString: string) => {
+    try {
+        // Remove markdown code blocks and trim
+        let cleanXml = xmlString.replace(/```xml/g, '').replace(/```/g, '').trim();
+        
+        // Escape special characters that might break XML parsing
+        // Replace & with &amp; if it's not already part of an entity
+        cleanXml = cleanXml.replace(/&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[a-f\d]+);)/gi, '&amp;');
+
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(cleanXml, "text/xml");
+        
+        const errorNode = xmlDoc.querySelector('parsererror');
+        if (errorNode) {
+            console.error('XML Parsing Error:', errorNode.textContent);
+            return null;
+        }
+
+        const root = xmlDoc.documentElement;
+
+        const processNode = (node: Element): any => {
+            const name = node.getAttribute('name') || node.tagName;
+            const cleanName = name === 'meeting' ? 'Study Plan' : name;
+            
+            const result: any = { name: cleanName };
+            const children: any[] = [];
+            
+            Array.from(node.children).forEach(child => {
+                if (child.tagName === 'description') {
+                    result.value = child.textContent?.trim();
+                } else if (child.tagName === 'action_items') {
+                    Array.from(child.children).forEach(item => {
+                        if (item.tagName === 'item') {
+                            children.push({
+                                name: item.textContent?.trim(),
+                                itemStyle: { color: '#e6a23c', borderColor: '#e6a23c' },
+                                label: { color: '#ffecb3' }
+                            });
+                        }
+                    });
+                } else if (child.tagName === 'subtopic' || child.tagName === 'topic') {
+                    children.push(processNode(child));
+                }
+            });
+
+            if (children.length > 0) {
+                result.children = children;
+            }
+            return result;
+        };
+
+        return processNode(root);
+    } catch (e) {
+        console.error("Error parsing XML mindmap:", e);
+        return null;
+    }
+};
 
 const StudyMindmap: React.FC = () => {
+    const { id } = useParams<{ id: string }>();
+    const { user } = useAuth();
     const chartRef = useRef<HTMLDivElement>(null);
+    const [mindmapData, setMindmapData] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [isGenerating, setIsGenerating] = useState(false);
 
     useEffect(() => {
-        if (chartRef.current) {
+        let intervalId: NodeJS.Timeout;
+        let isMounted = true;
+
+        const fetchData = async () => {
+            if (!id || !user) return;
+
+            try {
+                const { data, error } = await supabase
+                    .from('mindmaps')
+                    .select('mindmap_data')
+                    .eq('document_id', id)
+                    .eq('uid', user.id)
+                    .single();
+
+                if (error && error.code !== 'PGRST116') {
+                    console.error('Error fetching data:', error);
+                }
+
+                if (isMounted) {
+                    if (data && data.mindmap_data) {
+                        let processedData = data.mindmap_data;
+                        
+                        if (typeof processedData === 'string') {
+                            if (processedData.includes('```xml') || processedData.trim().startsWith('<')) {
+                                const parsed = parseXMLToMindmap(processedData);
+                                processedData = parsed || { name: 'Error parsing data', children: [] };
+                            }
+                        }
+
+                        setMindmapData(processedData);
+                        setLoading(false);
+                        setIsGenerating(false);
+                        if (intervalId) clearInterval(intervalId);
+                    } else {
+                        // Data not ready yet, keep polling
+                        setIsGenerating(true);
+                        setLoading(false);
+                    }
+                }
+            } catch (err) {
+                console.error('Unexpected error:', err);
+            }
+        };
+
+        fetchData();
+        intervalId = setInterval(fetchData, 3000);
+
+        return () => {
+            isMounted = false;
+            clearInterval(intervalId);
+        };
+    }, [id, user]);
+
+    useEffect(() => {
+        if (chartRef.current && !isGenerating && !loading) {
             const chartInstance = echarts.init(chartRef.current);
             
+            const defaultData = [{
+                name: 'No Data Available',
+                children: []
+            }];
+
+            const chartData = mindmapData || defaultData;
+
             const option: any = {
                 backgroundColor: '#111111',
                 tooltip: {
                     trigger: 'item',
-                    triggerOn: 'mousemove'
+                    triggerOn: 'mousemove',
+                    formatter: function (params: any) {
+                        const description = params.value;
+                        if (description) {
+                            return `<div style="text-align: left;">
+                                <div style="font-weight: bold; margin-bottom: 5px;">${params.name}</div>
+                                <div style="max-width: 300px; white-space: normal; font-size: 12px; opacity: 0.9;">${description}</div>
+                            </div>`;
+                        }
+                        return params.name;
+                    }
                 },
                 series: [
                     {
                         type: 'tree',
-                        data: [{
-                            name: 'AI System Architecture',
-                            children: [
-                                {
-                                    name: 'Frontend',
-                                    children: [
-                                        { name: 'React App' },
-                                        { name: 'Mobile App' },
-                                        { name: 'Web Socket Client' }
-                                    ]
-                                },
-                                {
-                                    name: 'Backend',
-                                    children: [
-                                        { name: 'API Gateway' },
-                                        { name: 'Auth Service' },
-                                        { name: 'Data Processing' }
-                                    ]
-                                },
-                                {
-                                    name: 'AI Models',
-                                    children: [
-                                        { name: 'NLP Engine' },
-                                        { name: 'Image Gen' },
-                                        { name: 'Speech to Text' }
-                                    ]
-                                },
-                                {
-                                    name: 'Database',
-                                    children: [
-                                        { name: 'User Data' },
-                                        { name: 'Content Store' },
-                                        { name: 'Vector DB' }
-                                    ]
-                                }
-                            ]
-                        }],
+                        data: Array.isArray(chartData) ? chartData : [chartData],
                         top: '5%',
                         left: '10%',
                         bottom: '5%',
@@ -105,7 +206,22 @@ const StudyMindmap: React.FC = () => {
                 chartInstance.dispose();
             };
         }
-    }, []);
+    }, [mindmapData, isGenerating, loading]);
+
+    if (isGenerating) {
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center h-full bg-[#111111]">
+                <div className="relative">
+                    <div className="absolute inset-0 bg-indigo-500 blur-xl opacity-20 rounded-full animate-pulse"></div>
+                    <FaMagic className="relative text-5xl text-indigo-400 mb-6 animate-bounce" />
+                </div>
+                <h2 className="text-2xl font-bold text-white mb-2">Generating with AI magic...</h2>
+                <p className="text-gray-400 max-w-md text-center">
+                    We're structuring your knowledge into a mind map. This usually takes just a moment!
+                </p>
+            </div>
+        );
+    }
 
     return (
         <div className="h-full relative flex flex-col bg-[#111111]">
@@ -131,7 +247,7 @@ const StudyMindmap: React.FC = () => {
                     <span className="font-bold">Mindmap View</span>
                 </div>
                 <p className="text-sm text-gray-400">
-                    Visual representation of the AI System Architecture. Click on nodes to expand or collapse branches.
+                    Visual representation of your study material. Click on nodes to expand or collapse branches.
                 </p>
             </div>
         </div>

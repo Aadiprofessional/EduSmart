@@ -1,53 +1,194 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams } from 'react-router-dom';
+import { useAuth } from '../../utils/AuthContext';
+import { supabase } from '../../utils/supabase';
 import { 
     FaPlay, FaPause, FaStepBackward, FaStepForward, 
-    FaVolumeUp, FaDownload, FaHandPaper 
+    FaVolumeUp, FaDownload, FaHandPaper, FaMagic, FaRedo 
 } from 'react-icons/fa';
 
-const StudyPodcast: React.FC = () => {
-    const [isPlaying, setIsPlaying] = useState(false);
+interface PodcastSegment {
+    text: string;
+    speaker: string;
+    end_seconds: number;
+    start_seconds: number;
+    end_time_formatted: string;
+    start_time_formatted: string;
+}
 
-    const transcript = [
-        {
-            speaker: "Michael",
-            avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Michael", // Placeholder or generic avatar
-            text: "Hey Simon, I was looking at this system architecture diagram, and it's quite impressive. It outlines a really comprehensive AI-powered application. We should definitely talk about it today.",
-            align: "left"
-        },
-        {
-            speaker: "Simon",
-            avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Simon",
-            text: "Absolutely, Michael. It looks like a well-thought-out system. The front-end, in particular, caught my eye, with the React App serving as the core user interface, supporting both web and mobile, which is essential for broad accessibility these days.",
-            align: "right"
-        },
-        {
-            speaker: "Michael",
-            avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Michael",
-            text: "Definitely. And it's not just a generic app; they've got specific pages like an AI Chat Page, which likely leverages the Web Socket Client for real-time interaction, and even dedicated pages for Speech/Video to Text, Image Generation, and Video Generation. That's a lot of functionality packed into one interface.",
-            align: "left"
-        },
-        {
-            speaker: "Simon",
-            avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Simon",
-            text: "It really is. The App Router and Global Context Providers indicate a robust framework for navigation and state management, which is crucial for such a feature-rich application. Plus, they've included standard features like Profile and Dashboard, and even Stripe Billing for monetization.",
-            align: "right"
+const StudyPodcast: React.FC = () => {
+    const { id } = useParams<{ id: string }>();
+    const { user } = useAuth();
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [currentTime, setCurrentTime] = useState(0);
+    const [duration, setDuration] = useState(0);
+    const [volume, setVolume] = useState(1);
+    const [transcript, setTranscript] = useState<PodcastSegment[]>([]);
+    const [audioUrl, setAudioUrl] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [isGenerating, setIsGenerating] = useState(false);
+    const audioRef = useRef<HTMLAudioElement>(null);
+    const scrollRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        let intervalId: NodeJS.Timeout;
+        let isMounted = true;
+
+        const fetchData = async () => {
+            if (!id || !user) return;
+
+            try {
+                const { data, error } = await supabase
+                    .from('podcast_documents')
+                    .select('podcast_data, audio_url')
+                    .eq('document_id', id)
+                    .eq('uid', user.id)
+                    .single();
+
+                if (error && error.code !== 'PGRST116') {
+                    console.error('Error fetching data:', error);
+                }
+
+                if (isMounted) {
+                    if (data && data.podcast_data && Array.isArray(data.podcast_data) && data.podcast_data.length > 0) {
+                        setTranscript(data.podcast_data);
+                        if (data.audio_url) {
+                            setAudioUrl(data.audio_url);
+                        }
+                        setLoading(false);
+                        setIsGenerating(false);
+                        if (intervalId) clearInterval(intervalId);
+                    } else {
+                        // Data not ready yet, keep polling
+                        setIsGenerating(true);
+                        setLoading(false);
+                    }
+                }
+            } catch (err) {
+                console.error('Unexpected error:', err);
+            }
+        };
+
+        fetchData();
+        intervalId = setInterval(fetchData, 10000); // Retry every 10 seconds
+
+        return () => {
+            isMounted = false;
+            clearInterval(intervalId);
+        };
+    }, [id, user]);
+
+    const togglePlay = () => {
+        if (audioRef.current) {
+            if (isPlaying) {
+                audioRef.current.pause();
+            } else {
+                audioRef.current.play();
+            }
+            setIsPlaying(!isPlaying);
         }
-    ];
+    };
+
+    const handleTimeUpdate = () => {
+        if (audioRef.current) {
+            setCurrentTime(audioRef.current.currentTime);
+        }
+    };
+
+    const handleLoadedMetadata = () => {
+        if (audioRef.current) {
+            setDuration(audioRef.current.duration);
+        }
+    };
+
+    const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const time = parseFloat(e.target.value);
+        if (audioRef.current) {
+            audioRef.current.currentTime = time;
+            setCurrentTime(time);
+        }
+    };
+
+    const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const vol = parseFloat(e.target.value);
+        setVolume(vol);
+        if (audioRef.current) {
+            audioRef.current.volume = vol;
+        }
+    };
+
+    const handleSkip = (seconds: number) => {
+        if (audioRef.current) {
+            audioRef.current.currentTime += seconds;
+        }
+    };
+
+    const formatTime = (time: number) => {
+        const minutes = Math.floor(time / 60);
+        const seconds = Math.floor(time % 60);
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    };
+
+    // Auto-scroll to active segment
+    useEffect(() => {
+        const activeSegment = transcript.findIndex(
+            (seg) => currentTime >= seg.start_seconds && currentTime < seg.end_seconds
+        );
+        
+        if (activeSegment !== -1 && scrollRef.current) {
+            const activeElement = scrollRef.current.children[activeSegment] as HTMLElement;
+            if (activeElement) {
+                activeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    }, [currentTime, transcript]);
+
+    if (isGenerating) {
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center h-full">
+                <div className="relative">
+                    <div className="absolute inset-0 bg-indigo-500 blur-xl opacity-20 rounded-full animate-pulse"></div>
+                    <FaMagic className="relative text-5xl text-indigo-400 mb-6 animate-bounce" />
+                </div>
+                <h2 className="text-2xl font-bold text-white mb-2">Generating Podcast...</h2>
+                <p className="text-gray-400 max-w-md text-center">
+                    We're converting your document into an engaging audio discussion. This might take a few minutes!
+                </p>
+            </div>
+        );
+    }
+
+    if (!audioUrl && !loading) {
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center h-full">
+                <p className="text-gray-400">Podcast generation failed or audio not available.</p>
+            </div>
+        );
+    }
 
     return (
-        <div className="max-w-4xl mx-auto w-full h-full flex flex-col px-4">
-            {/* Audio Player Card */}
-            <div className="bg-[#111] border border-white/10 rounded-2xl p-6 mb-8 sticky top-0 z-10 shadow-xl">
-                <div className="flex items-start justify-between mb-6">
+        <div className="max-w-4xl mx-auto w-full h-full relative overflow-hidden">
+            <audio
+                ref={audioRef}
+                src={audioUrl || ''}
+                onTimeUpdate={handleTimeUpdate}
+                onLoadedMetadata={handleLoadedMetadata}
+                onEnded={() => setIsPlaying(false)}
+            />
+
+            {/* Audio Player Card - Fixed Top */}
+            <div className="absolute top-0 left-0 right-0 z-20 p-4">
+                <div className="backdrop-blur-md bg-black/40 border border-white/10 rounded-2xl p-6 shadow-xl">
+                    <div className="flex items-start justify-between mb-6">
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center overflow-hidden">
-                            {/* Podcast Cover Art Placeholder */}
                             <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Podcast" alt="Podcast" className="w-full h-full object-cover opacity-80" />
                         </div>
                         <div>
-                            <h3 className="font-bold text-white text-lg">System Architecture Diagram</h3>
+                            <h3 className="font-bold text-white text-lg">Study Podcast</h3>
                             <div className="flex items-center gap-2 text-xs text-gray-400">
-                                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> 0:00
+                                {isPlaying && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>}
+                                {formatTime(currentTime)} / {formatTime(duration)}
                             </div>
                         </div>
                     </div>
@@ -59,34 +200,44 @@ const StudyPodcast: React.FC = () => {
                 </div>
 
                 {/* Progress Bar */}
-                <div className="mb-4">
-                    <div className="flex justify-between text-xs text-gray-500 mb-1">
-                        <span>0:00</span>
-                        <span>-0:00</span>
-                    </div>
-                    <div className="w-full h-1 bg-gray-800 rounded-full overflow-hidden cursor-pointer group">
-                        <div className="h-full bg-white w-0 group-hover:bg-indigo-500 transition-colors"></div>
-                    </div>
+                <div className="mb-4 group">
+                    <input
+                        type="range"
+                        min="0"
+                        max={duration || 100}
+                        value={currentTime}
+                        onChange={handleSeek}
+                        className="w-full h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:bg-indigo-500 transition-all"
+                        style={{
+                            backgroundImage: `linear-gradient(to right, #6366f1 ${(currentTime / duration) * 100}%, #1f2937 ${(currentTime / duration) * 100}%)`
+                        }}
+                    />
                 </div>
 
                 {/* Controls */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 text-gray-400">
                         <FaVolumeUp size={14} />
-                        <div className="w-20 h-1 bg-gray-800 rounded-full overflow-hidden">
-                            <div className="h-full bg-gray-400 w-1/2"></div>
-                        </div>
+                        <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.01"
+                            value={volume}
+                            onChange={handleVolumeChange}
+                            className="w-20 h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-gray-400 [&::-webkit-slider-thumb]:rounded-full"
+                        />
                     </div>
 
                     <div className="flex items-center gap-6">
-                        <button className="text-gray-400 hover:text-white transition-colors"><FaStepBackward /></button>
+                        <button onClick={() => handleSkip(-10)} className="text-gray-400 hover:text-white transition-colors"><FaRedo className="transform -scale-x-100" /></button>
                         <button 
-                            onClick={() => setIsPlaying(!isPlaying)}
+                            onClick={togglePlay}
                             className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-black hover:scale-105 transition-transform"
                         >
                             {isPlaying ? <FaPause /> : <FaPlay className="ml-1" />}
                         </button>
-                        <button className="text-gray-400 hover:text-white transition-colors"><FaStepForward /></button>
+                        <button onClick={() => handleSkip(10)} className="text-gray-400 hover:text-white transition-colors"><FaRedo /></button>
                     </div>
 
                     <div className="flex items-center gap-4 text-gray-400 text-sm">
@@ -95,24 +246,48 @@ const StudyPodcast: React.FC = () => {
                     </div>
                 </div>
             </div>
+            </div>
 
             {/* Transcript */}
-            <div className="space-y-6 pb-8">
-                {transcript.map((item, index) => (
-                    <div key={index} className={`flex gap-4 ${item.align === 'right' ? 'flex-row-reverse' : ''}`}>
-                        <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-800 flex-shrink-0 border border-white/10">
-                            <img src={item.avatar} alt={item.speaker} className="w-full h-full object-cover" />
-                        </div>
-                        <div className={`max-w-[80%] ${item.align === 'right' ? 'items-end' : 'items-start'} flex flex-col`}>
-                            <span className="text-xs text-gray-500 mb-1 px-1">{item.speaker}</span>
-                            <div className={`p-4 rounded-2xl border border-white/10 text-gray-300 text-sm leading-relaxed ${
-                                item.align === 'right' ? 'bg-[#1a1a1a] rounded-tr-none' : 'bg-[#1a1a1a] rounded-tl-none'
-                            }`}>
-                                {item.text}
+            <div ref={scrollRef} className="absolute inset-0 overflow-y-auto custom-scrollbar px-4 pt-[280px] pb-8">
+                {transcript.map((item, index) => {
+                    const isActive = currentTime >= item.start_seconds && currentTime < item.end_seconds;
+                    return (
+                        <div 
+                            key={index} 
+                            className={`flex gap-4 transition-opacity duration-300 ${item.speaker === 'Sam' ? 'flex-row-reverse' : ''} ${isActive ? 'opacity-100 scale-[1.02]' : 'opacity-50 hover:opacity-80'}`}
+                        >
+                            <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-800 flex-shrink-0 border border-white/10">
+                                <img 
+                                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${item.speaker}`} 
+                                    alt={item.speaker} 
+                                    className="w-full h-full object-cover" 
+                                />
+                            </div>
+                            <div className={`max-w-[80%] ${item.speaker === 'Sam' ? 'items-end' : 'items-start'} flex flex-col`}>
+                                <span className="text-xs text-gray-500 mb-1 px-1">{item.speaker}</span>
+                                <div 
+                                    className={`p-4 rounded-2xl border text-sm leading-relaxed transition-colors duration-300 cursor-pointer ${
+                                        item.speaker === 'Sam' ? 'rounded-tr-none' : 'rounded-tl-none'
+                                    } ${
+                                        isActive 
+                                            ? 'bg-indigo-900/30 border-indigo-500/50 text-white shadow-[0_0_15px_rgba(99,102,241,0.2)]' 
+                                            : 'bg-[#1a1a1a] border-white/10 text-gray-300 hover:bg-[#252525]'
+                                    }`}
+                                    onClick={() => {
+                                        if (audioRef.current) {
+                                            audioRef.current.currentTime = item.start_seconds;
+                                            audioRef.current.play();
+                                            setIsPlaying(true);
+                                        }
+                                    }}
+                                >
+                                    {item.text}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );

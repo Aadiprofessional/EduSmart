@@ -1,21 +1,94 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
+import { useAuth } from '../../utils/AuthContext';
+import { supabase } from '../../utils/supabase';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { 
   FaChevronDown, FaBold, FaItalic, FaUnderline, FaStrikethrough, 
   FaListUl, FaListOl, FaQuoteRight, FaCode, FaMinus, FaImage, FaEraser,
   FaFilePdf, FaAlignLeft, FaAlignCenter, FaAlignRight, FaLink, FaHighlighter,
-  FaSuperscript, FaSubscript
+  FaSuperscript, FaSubscript, FaMagic
 } from 'react-icons/fa';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
 const StudyNotes: React.FC = () => {
+    const { id } = useParams<{ id: string }>();
+    const { user } = useAuth();
     const location = useLocation();
     const studySetData = location.state?.studySetData;
     const editorRef = useRef<HTMLDivElement>(null);
     const [activePopup, setActivePopup] = React.useState<'link' | 'image' | null>(null);
     const [popupValue, setPopupValue] = React.useState('');
     const savedSelection = useRef<Range | null>(null);
+
+    const [notesContent, setNotesContent] = useState<string>('');
+    const [loading, setLoading] = useState(true);
+    const [isGenerating, setIsGenerating] = useState(false);
+
+    useEffect(() => {
+        // We prioritize fetching fresh data from Supabase over navigation state
+        // if (studySetData?.document_text) {
+        //     setNotesContent(studySetData.document_text);
+        //     setLoading(false);
+        //     return;
+        // }
+
+        let intervalId: NodeJS.Timeout;
+        let isMounted = true;
+
+        const fetchData = async () => {
+            if (!id || !user) return;
+
+            try {
+                const { data, error } = await supabase
+                    .from('notes_tools')
+                    .select('notes_data')
+                    .eq('document_id', id)
+                    .eq('uid', user.id)
+                    .single();
+
+                if (error && error.code !== 'PGRST116') {
+                    console.error('Error fetching data:', error);
+                }
+
+                if (isMounted) {
+                    if (data && data.notes_data) {
+                        // Handle if notes_data is a string or an object with content
+                        let content = typeof data.notes_data === 'string' 
+                            ? data.notes_data 
+                            : (data.notes_data.content || data.notes_data.note || JSON.stringify(data.notes_data));
+                        
+                        // Parse Markdown if it looks like markdown
+                        // if (typeof content === 'string' && (content.includes('#') || content.includes('**') || content.includes('- '))) {
+                        //     content = simpleMarkdownToHtml(content);
+                        // }
+
+                        setNotesContent(content);
+                        setLoading(false);
+                        setIsGenerating(false);
+                        if (intervalId) clearInterval(intervalId);
+                    } else {
+                        // Data not ready yet, keep polling
+                        setIsGenerating(true);
+                        setLoading(false);
+                    }
+                }
+            } catch (err) {
+                console.error('Unexpected error:', err);
+            }
+        };
+
+        fetchData();
+        intervalId = setInterval(fetchData, 3000);
+
+        return () => {
+            isMounted = false;
+            clearInterval(intervalId);
+        };
+    }, [id, user]);
 
     const execCmd = (command: string, value: string | undefined = undefined) => {
         document.execCommand(command, false, value);
@@ -194,23 +267,62 @@ const StudyNotes: React.FC = () => {
             {/* Scrollable Content */}
             <div className="h-full overflow-y-auto px-8 pb-8 pt-24 scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent">
                 <div className="max-w-3xl mx-auto w-full min-h-full">
-                    <div 
-                        ref={editorRef}
-                        className="prose prose-invert max-w-none focus:outline-none pb-20"
-                        contentEditable
-                        suppressContentEditableWarning
-                    >
-                        {studySetData?.document_text ? (
-                            <>
-                                <div className="whitespace-pre-wrap text-gray-300 leading-relaxed">
-                                    {studySetData.document_text}
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                <h1 className="flex items-center gap-3 text-3xl font-bold mb-6">
-                                    <span className="text-4xl">🧠</span> AI System Architecture Overview
-                                </h1>
+                    {isGenerating ? (
+                        <div className="flex flex-col items-center justify-center h-full pt-20">
+                            <div className="relative">
+                                <div className="absolute inset-0 bg-indigo-500 blur-xl opacity-20 rounded-full animate-pulse"></div>
+                                <FaMagic className="relative text-5xl text-indigo-400 mb-6 animate-bounce" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-white mb-2">Generating with AI magic...</h2>
+                            <p className="text-gray-400 max-w-md text-center">
+                                We're crafting your study notes. This usually takes just a moment!
+                            </p>
+                        </div>
+                    ) : (
+                        <div 
+                            ref={editorRef}
+                            className="prose prose-invert max-w-none focus:outline-none pb-20"
+                            // contentEditable
+                            // suppressContentEditableWarning
+                        >
+                            {notesContent ? (
+                                <ReactMarkdown 
+                                    remarkPlugins={[remarkGfm]} 
+                                    rehypePlugins={[rehypeRaw]}
+                                    components={{
+                                        h1: ({node, ...props}) => <h1 className="text-3xl font-bold text-white mb-4 mt-6 border-b border-gray-700 pb-2" {...props} />,
+                                        h2: ({node, ...props}) => <h2 className="text-2xl font-semibold text-white mb-3 mt-5" {...props} />,
+                                        h3: ({node, ...props}) => <h3 className="text-xl font-medium text-gray-200 mb-2 mt-4" {...props} />,
+                                        ul: ({node, ...props}) => <ul className="list-disc pl-6 space-y-2 text-gray-300" {...props} />,
+                                        ol: ({node, ...props}) => <ol className="list-decimal pl-6 space-y-2 text-gray-300" {...props} />,
+                                        li: ({node, ...props}) => <li className="pl-1" {...props} />,
+                                        blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-indigo-500 pl-4 italic text-gray-400 my-4" {...props} />,
+                                        table: ({node, ...props}) => <div className="overflow-x-auto my-6"><table className="min-w-full divide-y divide-gray-700 border border-gray-700 rounded-lg" {...props} /></div>,
+                                        thead: ({node, ...props}) => <thead className="bg-gray-800" {...props} />,
+                                        th: ({node, ...props}) => <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-b border-gray-700" {...props} />,
+                                        td: ({node, ...props}) => <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300 border-b border-gray-700" {...props} />,
+                                        a: ({node, ...props}) => <a className="text-blue-400 hover:text-blue-300 underline" {...props} />,
+                                        code: ({node, className, children, ...props}) => {
+                                            const match = /language-(\w+)/.exec(className || '');
+                                            return !match ? (
+                                                <code className="bg-gray-800 px-1 py-0.5 rounded text-sm text-indigo-300" {...props}>
+                                                    {children}
+                                                </code>
+                                            ) : (
+                                                <code className={className} {...props}>
+                                                    {children}
+                                                </code>
+                                            );
+                                        }
+                                    }}
+                                >
+                                    {notesContent}
+                                </ReactMarkdown>
+                            ) : (
+                                <>
+                                    <h1 className="flex items-center gap-3 text-3xl font-bold mb-6">
+                                        <span className="text-4xl">🧠</span> AI System Architecture Overview
+                                    </h1>
                                 <p className="text-gray-300 leading-relaxed mb-6">
                                     This document outlines the comprehensive system architecture of an advanced AI-powered application, detailing its various components, their interconnections, and the overall flow of data and functionality. The system leverages a <span className="text-blue-400 cursor-pointer hover:underline">React frontend</span>, a robust <span className="text-blue-400 cursor-pointer hover:underline">backend with core logic</span>, advanced <span className="text-blue-400 cursor-pointer hover:underline">AI/Deep Learning models</span>, and integrated <span className="text-blue-400 cursor-pointer hover:underline">data storage/external services</span> to deliver a wide range of AI features.
                                 </p>
@@ -241,6 +353,7 @@ const StudyNotes: React.FC = () => {
                             </>
                         )}
                     </div>
+                    )}
                 </div>
             </div>
         </div>

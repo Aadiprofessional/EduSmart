@@ -240,7 +240,7 @@ const StudyMaterialPage: React.FC = () => {
                 </div>
             </main>
 
-            <StudyRightPanel />
+            <StudyRightPanel activeMethod={activeMethod} />
         </div>
     );
 };

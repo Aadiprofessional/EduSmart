@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FaBook, FaArrowLeft } from 'react-icons/fa';
+import StudyContent from './StudyContent';
+import StudyNotes from './StudyNotes';
 
 // --- Sub-components for Right Panel ---
 
@@ -29,34 +31,14 @@ const ChatPanel: React.FC = () => {
     );
 };
 
-const ContentPanel: React.FC = () => {
-    return (
-        <div className="w-full h-full p-4 overflow-y-auto">
-            <div className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3">
-                <h4 className="text-white text-sm font-bold mb-2">Content Overview</h4>
-                <div className="flex items-center gap-3 p-2 hover:bg-white/5 rounded transition-colors cursor-pointer">
-                    <div className="w-8 h-8 bg-blue-500/20 text-blue-400 rounded flex items-center justify-center font-bold">1</div>
-                    <div>
-                        <p className="text-sm text-gray-300">Introduction</p>
-                        <p className="text-xs text-gray-600">Page 1</p>
-                    </div>
-                </div>
-                <div className="flex items-center gap-3 p-2 hover:bg-white/5 rounded transition-colors cursor-pointer">
-                    <div className="w-8 h-8 bg-blue-500/20 text-blue-400 rounded flex items-center justify-center font-bold">2</div>
-                    <div>
-                        <p className="text-sm text-gray-300">System Architecture</p>
-                        <p className="text-xs text-gray-600">Page 3</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
 // --- Main Right Panel Component ---
 
-const StudyRightPanel: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'chat' | 'content'>('chat');
+interface StudyRightPanelProps {
+    activeMethod?: string;
+}
+
+const StudyRightPanel: React.FC<StudyRightPanelProps> = ({ activeMethod }) => {
+    const [activeTab, setActiveTab] = useState<'chat' | 'content' | 'notes'>('chat');
     const [width, setWidth] = useState(320);
     const [isResizing, setIsResizing] = useState(false);
     const sidebarRef = useRef<HTMLDivElement>(null);
@@ -89,6 +71,26 @@ const StudyRightPanel: React.FC = () => {
         };
     }, [isResizing]);
 
+    // Handle tab switching logic based on activeMethod
+    useEffect(() => {
+        // If the current tab becomes invalid for the new method, switch it
+        if (activeMethod === 'content' && activeTab === 'content') {
+            setActiveTab('notes');
+        } else if (activeMethod !== 'content' && activeTab === 'notes') {
+            setActiveTab('content');
+        }
+    }, [activeMethod, activeTab]);
+
+    const handleSecondTabClick = () => {
+        if (activeMethod === 'content') {
+            setActiveTab('notes');
+        } else {
+            setActiveTab('content');
+        }
+    };
+
+    const isSecondTabActive = activeTab === 'content' || activeTab === 'notes';
+
     return (
         <aside 
             ref={sidebarRef}
@@ -112,16 +114,28 @@ const StudyRightPanel: React.FC = () => {
                     Chat
                 </button>
                 <button 
-                   onClick={() => setActiveTab('content')}
-                   className={`flex-1 py-1.5 rounded text-sm font-medium transition-colors ${activeTab === 'content' ? 'bg-[#1a1a1a] text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                   onClick={handleSecondTabClick}
+                   className={`flex-1 py-1.5 rounded text-sm font-medium transition-colors ${isSecondTabActive ? 'bg-[#1a1a1a] text-white' : 'text-gray-500 hover:text-gray-300'}`}
                 >
-                    Content
+                    {activeMethod === 'content' ? 'Notes' : 'Content'}
                 </button>
             </div>
 
             {/* Content */}
             <div className="flex-1 overflow-hidden relative">
-                {activeTab === 'chat' ? <ChatPanel /> : <ContentPanel />}
+                {activeTab === 'chat' && <ChatPanel />}
+                
+                {activeTab === 'content' && (
+                    <div className="w-full h-full overflow-y-auto">
+                        <StudyContent />
+                    </div>
+                )}
+                
+                {activeTab === 'notes' && (
+                    <div className="w-full h-full overflow-y-auto">
+                        <StudyNotes />
+                    </div>
+                )}
             </div>
         </aside>
     );
