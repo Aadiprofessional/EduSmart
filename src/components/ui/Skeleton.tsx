@@ -6,6 +6,7 @@ interface SkeletonProps {
   width?: string | number;
   height?: string | number;
   animation?: 'pulse' | 'shimmer' | 'wave';
+  dark?: boolean;
 }
 
 export const Skeleton: React.FC<SkeletonProps> = ({
@@ -13,9 +14,10 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   variant = 'default',
   width,
   height,
-  animation = 'shimmer'
+  animation = 'shimmer',
+  dark = false
 }) => {
-  const baseClasses = 'bg-gray-200';
+  const baseClasses = dark ? 'bg-white/5' : 'bg-gray-200';
   
   const variantClasses = {
     default: 'rounded',
@@ -26,8 +28,8 @@ export const Skeleton: React.FC<SkeletonProps> = ({
 
   const animationClasses = {
     pulse: 'animate-skeleton-pulse',
-    shimmer: 'animate-skeleton-shimmer',
-    wave: 'animate-skeleton-shimmer'
+    shimmer: dark ? 'animate-skeleton-shimmer-dark' : 'animate-skeleton-shimmer',
+    wave: dark ? 'animate-skeleton-shimmer-dark' : 'animate-skeleton-shimmer'
   };
 
   const style = {

@@ -39,7 +39,7 @@ interface StudyRightPanelProps {
 
 const StudyRightPanel: React.FC<StudyRightPanelProps> = ({ activeMethod }) => {
     const [activeTab, setActiveTab] = useState<'chat' | 'content' | 'notes'>('chat');
-    const [width, setWidth] = useState(320);
+    const [width, setWidth] = useState(450);
     const [isResizing, setIsResizing] = useState(false);
     const sidebarRef = useRef<HTMLDivElement>(null);
 

@@ -1,15 +1,48 @@
-import React from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useLocation, useParams } from 'react-router-dom';
+import { useAuth } from '../../utils/AuthContext';
+import { supabase } from '../../utils/supabase';
 import PDFViewer from './PDFViewer';
+import { Skeleton } from '../ui/Skeleton';
 
 const StudyContent: React.FC = () => {
     const location = useLocation();
-    const studySetData = location.state?.studySetData;
+    const { id } = useParams<{ id: string }>();
+    const { user } = useAuth();
     
-    // Determine content type and source
-    const documentType = studySetData?.document_type;
-    const documentUrl = studySetData?.document_url;
-    const documentText = studySetData?.document_text;
+    const [contentData, setContentData] = useState<any>(location.state?.studySetData || null);
+    const [loading, setLoading] = useState(!location.state?.studySetData);
+
+    useEffect(() => {
+        if (contentData) return;
+        if (!id || !user) return;
+
+        const fetchData = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('documents')
+                    .select('document_text, document_url, document_type')
+                    .eq('id', id)
+                    .single();
+
+                if (error) {
+                    console.error('Error fetching content:', error);
+                } else {
+                    setContentData(data);
+                }
+            } catch (err) {
+                console.error('Unexpected error:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [id, user, contentData]);
+
+    const documentType = contentData?.document_type;
+    const documentUrl = contentData?.document_url;
+    const documentText = contentData?.document_text;
 
     // Helper to determine file type from URL extension if documentType is generic 'url' or missing
     const getFileType = (url: string) => {
@@ -20,6 +53,21 @@ const StudyContent: React.FC = () => {
         if (['pdf'].includes(extension || '')) return 'pdf';
         return 'text';
     };
+
+    if (loading) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full w-full p-6 overflow-hidden">
+                <div className="w-full max-w-4xl mx-auto space-y-4">
+                     <Skeleton dark width="100%" height={400} className="rounded-xl" />
+                     <div className="space-y-2 mt-4">
+                        <Skeleton dark width="80%" height={20} />
+                        <Skeleton dark width="90%" height={20} />
+                        <Skeleton dark width="60%" height={20} />
+                     </div>
+                </div>
+            </div>
+        );
+    }
 
     const renderContent = () => {
         if (!documentUrl && documentText) {

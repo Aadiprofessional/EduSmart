@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
 import { FaChevronLeft, FaChevronRight, FaMagic, FaCheckCircle, FaTimesCircle, FaSpinner } from 'react-icons/fa';
+import { Skeleton } from '../ui/Skeleton';
 
 interface BlankQuestion {
     before_blank: string;
@@ -100,9 +101,24 @@ const StudyFillInBlanks: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="flex-1 flex flex-col items-center justify-center h-full">
-                <FaSpinner className="animate-spin text-4xl text-indigo-500 mb-4" />
-                <p className="text-gray-400">Loading study session...</p>
+            <div className="flex-1 flex flex-col items-center justify-center h-full max-w-4xl mx-auto w-full px-4">
+                {/* Stats Pills */}
+                <div className="flex flex-wrap justify-center gap-2 mb-12">
+                    <Skeleton dark width={140} height={32} className="rounded-full" />
+                </div>
+
+                {/* Question Card */}
+                <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl p-8 md:p-12 w-full max-w-2xl flex flex-col items-center shadow-lg mb-8">
+                    <Skeleton dark width="90%" height={32} className="mb-8" />
+                    
+                    <div className="w-full max-w-md space-y-4">
+                        <Skeleton dark width="100%" height={50} className="rounded-lg" />
+                        <div className="flex items-center justify-between pt-2">
+                             <Skeleton dark width={100} height={24} />
+                             <Skeleton dark width={140} height={40} className="rounded-lg" />
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }

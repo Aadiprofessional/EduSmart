@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
 import { FaChevronLeft, FaChevronRight, FaMagic, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { Skeleton } from '../ui/Skeleton';
 
 interface MultipleChoiceQuestion {
     question: string;
@@ -96,6 +97,35 @@ const StudyMultipleChoice: React.FC = () => {
             setShowResult(false);
         }
     };
+
+    if (loading) {
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center h-full max-w-5xl mx-auto w-full px-4">
+                {/* Stats Pills Skeleton */}
+                <div className="flex flex-wrap justify-center gap-2 mb-12">
+                    {[1, 2, 3, 4].map((i) => (
+                        <Skeleton key={i} dark width={120} height={32} className="rounded-full" />
+                    ))}
+                </div>
+
+                {/* Question Skeleton */}
+                <div className="w-full max-w-3xl mb-12 flex flex-col items-center gap-3">
+                    <Skeleton dark width="90%" height={32} />
+                    <Skeleton dark width="60%" height={32} />
+                </div>
+
+                {/* Options Grid Skeleton */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mb-12">
+                    {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="bg-[#1a1a1a] border border-white/10 rounded-xl p-4 flex items-center gap-4">
+                            <Skeleton dark width={32} height={32} className="rounded flex-shrink-0" />
+                            <Skeleton dark width="70%" height={24} />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
     if (isGenerating) {
         return (

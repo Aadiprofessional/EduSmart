@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { FaChevronLeft, FaChevronRight, FaMagic } from 'react-icons/fa';
+import { Skeleton } from '../ui/Skeleton';
 import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
 
@@ -90,7 +91,39 @@ const StudyWrittenTest: React.FC = () => {
         });
     };
 
-    if (loading || isGenerating) {
+    if (loading) {
+        return (
+             <div className="flex-1 flex flex-col items-center justify-center h-full max-w-4xl mx-auto w-full px-4 py-8">
+                {/* Stats Pills */}
+                <div className="flex flex-wrap justify-center gap-2 mb-12">
+                     <Skeleton dark width={120} height={32} className="rounded-full" />
+                     <Skeleton dark width={120} height={32} className="rounded-full" />
+                </div>
+
+                {/* Question Card */}
+                <div className="w-full max-w-3xl mb-8">
+                     <Skeleton dark width="90%" height={32} className="mx-auto mb-4" />
+                     <Skeleton dark width="80%" height={32} className="mx-auto mb-8" />
+                     
+                     <div className="w-full space-y-4">
+                        <Skeleton dark width="100%" height={192} className="rounded-xl" />
+                        <div className="flex justify-end">
+                             <Skeleton dark width={120} height={40} className="rounded-lg" />
+                        </div>
+                     </div>
+                </div>
+
+                {/* Navigation */}
+                <div className="flex items-center gap-6">
+                    <Skeleton dark width={48} height={48} className="rounded-full" />
+                    <Skeleton dark width={60} height={24} />
+                    <Skeleton dark width={48} height={48} className="rounded-full" />
+                </div>
+             </div>
+        );
+    }
+
+    if (isGenerating) {
         return (
             <div className="flex flex-col items-center justify-center h-full pt-20">
                 <div className="relative">

@@ -9,10 +9,11 @@ import {
   FaChevronDown, FaBold, FaItalic, FaUnderline, FaStrikethrough, 
   FaListUl, FaListOl, FaQuoteRight, FaCode, FaMinus, FaImage, FaEraser,
   FaFilePdf, FaAlignLeft, FaAlignCenter, FaAlignRight, FaLink, FaHighlighter,
-  FaSuperscript, FaSubscript, FaMagic
+  FaSuperscript, FaSubscript, FaMagic, FaBook
 } from 'react-icons/fa';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { Skeleton } from '../ui/Skeleton';
 
 const StudyNotes: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -278,6 +279,29 @@ const StudyNotes: React.FC = () => {
                                 We're crafting your study notes. This usually takes just a moment!
                             </p>
                         </div>
+                    ) : loading ? (
+                        <div className="space-y-6 pt-6">
+                            <Skeleton dark width="60%" height={48} className="mb-8" />
+                            <div className="space-y-3">
+                                <Skeleton dark width="100%" height={20} />
+                                <Skeleton dark width="100%" height={20} />
+                                <Skeleton dark width="90%" height={20} />
+                            </div>
+                            <Skeleton dark width="40%" height={32} className="mt-8 mb-4" />
+                            <div className="space-y-3">
+                                <Skeleton dark width="100%" height={20} />
+                                <Skeleton dark width="95%" height={20} />
+                                <Skeleton dark width="98%" height={20} />
+                            </div>
+                            <div className="space-y-4 mt-8">
+                                <Skeleton dark width="100%" height={20} />
+                                <div className="pl-6 space-y-2">
+                                    <Skeleton dark width="80%" height={20} />
+                                    <Skeleton dark width="75%" height={20} />
+                                    <Skeleton dark width="85%" height={20} />
+                                </div>
+                            </div>
+                        </div>
                     ) : (
                         <div 
                             ref={editorRef}
@@ -319,40 +343,12 @@ const StudyNotes: React.FC = () => {
                                     {notesContent}
                                 </ReactMarkdown>
                             ) : (
-                                <>
-                                    <h1 className="flex items-center gap-3 text-3xl font-bold mb-6">
-                                        <span className="text-4xl">🧠</span> AI System Architecture Overview
-                                    </h1>
-                                <p className="text-gray-300 leading-relaxed mb-6">
-                                    This document outlines the comprehensive system architecture of an advanced AI-powered application, detailing its various components, their interconnections, and the overall flow of data and functionality. The system leverages a <span className="text-blue-400 cursor-pointer hover:underline">React frontend</span>, a robust <span className="text-blue-400 cursor-pointer hover:underline">backend with core logic</span>, advanced <span className="text-blue-400 cursor-pointer hover:underline">AI/Deep Learning models</span>, and integrated <span className="text-blue-400 cursor-pointer hover:underline">data storage/external services</span> to deliver a wide range of AI features.
-                                </p>
-
-                                <h2 className="flex items-center gap-3 text-2xl font-bold mb-4 mt-8">
-                                    <span className="text-3xl">🚀</span> User Interface / Frontend Components
-                                </h2>
-                                <p className="text-gray-300 leading-relaxed mb-4">
-                                    The frontend serves as the primary <span className="text-blue-400 cursor-pointer hover:underline">point of interaction</span> for end-users, built for both web and mobile platforms.
-                                </p>
-                                <ul className="list-disc pl-6 space-y-3 text-gray-300">
-                                    <li><strong className="text-blue-400">User:</strong> Represents the <strong className="text-blue-400">end-user</strong> who interacts with the system.</li>
-                                    <li><strong className="text-blue-400">React App (Web / Mobile):</strong> The core application interface, providing access to all features.
-                                        <ul className="list-disc pl-6 mt-2 space-y-2">
-                                            <li><strong className="text-blue-400">AI Chat Page:</strong> A dedicated interface within the React App for <strong className="text-blue-400">real-time AI chat</strong> functionalities.</li>
-                                            <li><strong className="text-blue-400">Web Socket Client:</strong> Facilitates <strong className="text-blue-400">real-time communication</strong> with the backend WebSocket server, crucial for interactive features like chat.</li>
-                                            <li><strong className="text-blue-400">App Router:</strong> Manages <strong className="text-blue-400">navigation and routing</strong> across different sections and pages of the application.</li>
-                                            <li><strong className="text-blue-400">Global Context Providers:</strong> Ensures <strong className="text-blue-400">shared data and state</strong> are accessible across various components, promoting efficient state management.</li>
-                                            <li><strong className="text-blue-400">Application Pages:</strong> A collection of specialized pages offering diverse functionalities:
-                                                <ul className="list-disc pl-6 mt-2 space-y-2">
-                                                    <li><strong className="text-blue-400">Speech / Video -{'>'} Text:</strong> Feature for <strong className="text-blue-400">converting spoken language or video dialogue into text</strong>.</li>
-                                                    <li><strong className="text-blue-400">Image Generator:</strong> Enables users to <strong className="text-blue-400">generate images</strong> based on prompts or inputs.</li>
-                                                </ul>
-                                            </li>
-                                        </ul>
-                                    </li>
-                                </ul>
-                            </>
-                        )}
-                    </div>
+                                <div className="flex flex-col items-center justify-center py-20 text-gray-500">
+                                    <FaBook className="text-4xl mb-4 opacity-50" />
+                                    <p className="text-lg">No notes content available.</p>
+                                </div>
+                            )}
+                        </div>
                     )}
                 </div>
             </div>

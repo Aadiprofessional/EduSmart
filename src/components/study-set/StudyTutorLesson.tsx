@@ -6,6 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { FaMagic } from 'react-icons/fa';
+import { Skeleton } from '../ui/Skeleton';
 
 const StudyTutorLesson: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -66,16 +67,26 @@ const StudyTutorLesson: React.FC = () => {
             {/* Scrollable Content */}
             <div className="h-full overflow-y-auto px-8 pb-8 pt-8 scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent">
                 <div className="max-w-3xl mx-auto w-full min-h-full">
-                    {isGenerating ? (
-                        <div className="flex flex-col items-center justify-center h-full pt-20">
-                            <div className="relative">
-                                <div className="absolute inset-0 bg-indigo-500 blur-xl opacity-20 rounded-full animate-pulse"></div>
-                                <FaMagic className="relative text-5xl text-indigo-400 mb-6 animate-bounce" />
+                    {loading || isGenerating ? (
+                        <div className="space-y-6">
+                            <Skeleton dark width="60%" height={48} className="mb-8" />
+                            <div className="space-y-4">
+                                <Skeleton dark width="100%" height={20} />
+                                <Skeleton dark width="100%" height={20} />
+                                <Skeleton dark width="90%" height={20} />
+                                <Skeleton dark width="95%" height={20} />
                             </div>
-                            <h2 className="text-2xl font-bold text-white mb-2">Generating Lesson...</h2>
-                            <p className="text-gray-400 max-w-md text-center">
-                                We're crafting your personalized lesson. This usually takes just a moment!
-                            </p>
+                            <div className="space-y-4 mt-8">
+                                <Skeleton dark width="40%" height={32} className="mb-4" />
+                                <Skeleton dark width="100%" height={20} />
+                                <Skeleton dark width="100%" height={20} />
+                                <Skeleton dark width="85%" height={20} />
+                            </div>
+                             <div className="space-y-4 mt-8">
+                                <Skeleton dark width="100%" height={20} />
+                                <Skeleton dark width="90%" height={20} />
+                                <Skeleton dark width="95%" height={20} />
+                            </div>
                         </div>
                     ) : (
                         <div className="prose prose-invert max-w-none focus:outline-none pb-20">

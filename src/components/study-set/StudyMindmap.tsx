@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
 import { FaProjectDiagram, FaPlus, FaMinus, FaDownload, FaMagic } from 'react-icons/fa';
+import { Skeleton } from '../ui/Skeleton';
 
 const parseXMLToMindmap = (xmlString: string) => {
     try {
@@ -207,6 +208,32 @@ const StudyMindmap: React.FC = () => {
             };
         }
     }, [mindmapData, isGenerating, loading]);
+
+    if (loading) {
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center h-full bg-[#111111] relative overflow-hidden">
+                {/* Central Node */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-8">
+                     {/* Left Branch */}
+                     <div className="flex flex-col gap-8 items-end">
+                        <Skeleton dark width={120} height={40} className="rounded-lg" />
+                        <Skeleton dark width={140} height={40} className="rounded-lg" />
+                        <Skeleton dark width={100} height={40} className="rounded-lg" />
+                     </div>
+                     
+                     {/* Center */}
+                     <Skeleton dark width={160} height={60} className="rounded-xl border-4 border-white/10" />
+
+                     {/* Right Branch */}
+                     <div className="flex flex-col gap-8">
+                        <Skeleton dark width={130} height={40} className="rounded-lg" />
+                        <Skeleton dark width={110} height={40} className="rounded-lg" />
+                        <Skeleton dark width={150} height={40} className="rounded-lg" />
+                     </div>
+                </div>
+            </div>
+        );
+    }
 
     if (isGenerating) {
         return (

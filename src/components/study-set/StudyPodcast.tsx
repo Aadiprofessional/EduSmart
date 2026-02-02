@@ -6,6 +6,7 @@ import {
     FaPlay, FaPause, FaStepBackward, FaStepForward, 
     FaVolumeUp, FaDownload, FaHandPaper, FaMagic, FaRedo 
 } from 'react-icons/fa';
+import { Skeleton } from '../ui/Skeleton';
 
 interface PodcastSegment {
     text: string;
@@ -142,6 +143,63 @@ const StudyPodcast: React.FC = () => {
             }
         }
     }, [currentTime, transcript]);
+
+    if (loading) {
+        return (
+             <div className="max-w-4xl mx-auto w-full h-full relative overflow-hidden">
+                {/* Player Card Skeleton */}
+                <div className="absolute top-0 left-0 right-0 z-20 p-4">
+                    <div className="backdrop-blur-md bg-black/40 border border-white/10 rounded-2xl p-6 shadow-xl">
+                        <div className="flex items-start justify-between mb-6">
+                             <div className="flex items-center gap-4">
+                                <Skeleton dark width={48} height={48} className="rounded-full" />
+                                <div>
+                                    <Skeleton dark width={120} height={24} className="mb-2" />
+                                    <Skeleton dark width={80} height={16} />
+                                </div>
+                             </div>
+                             <Skeleton dark width={100} height={36} className="rounded-lg" />
+                        </div>
+                        {/* Progress and Controls */}
+                         <div className="space-y-4">
+                            <Skeleton dark width="100%" height={8} className="rounded-full" />
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <Skeleton dark width={24} height={24} className="rounded-full" />
+                                    <Skeleton dark width={24} height={24} className="rounded-full" />
+                                    <Skeleton dark width={32} height={32} className="rounded-full" />
+                                    <Skeleton dark width={24} height={24} className="rounded-full" />
+                                    <Skeleton dark width={24} height={24} className="rounded-full" />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                     <Skeleton dark width={24} height={24} />
+                                     <Skeleton dark width={64} height={8} className="rounded-full" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {/* Transcript Skeleton */}
+                 <div className="h-full overflow-y-auto pt-[220px] pb-32 px-4 space-y-6">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                        <div key={i} className="flex gap-4">
+                            <Skeleton dark width={40} height={40} className="rounded-full flex-shrink-0" />
+                            <div className="flex-1 space-y-2">
+                                <div className="flex justify-between">
+                                    <Skeleton dark width={100} height={20} />
+                                    <Skeleton dark width={40} height={16} />
+                                </div>
+                                <Skeleton dark width="100%" height={16} />
+                                <Skeleton dark width="95%" height={16} />
+                                <Skeleton dark width="90%" height={16} />
+                            </div>
+                        </div>
+                    ))}
+                 </div>
+             </div>
+        );
+    }
 
     if (isGenerating) {
         return (

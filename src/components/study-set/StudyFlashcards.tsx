@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
 import { FaChevronLeft, FaChevronRight, FaImage, FaMagic } from 'react-icons/fa';
+import { Skeleton } from '../ui/Skeleton';
 
 interface Flashcard {
     question: string;
@@ -85,6 +86,31 @@ const StudyFlashcards: React.FC = () => {
             setTimeout(() => setCurrentIndex(prev => prev - 1), 300);
         }
     };
+
+    if (loading) {
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center h-full max-w-4xl mx-auto w-full px-4">
+                {/* Stats Pills Skeleton */}
+                <div className="flex flex-wrap justify-center gap-2 mb-8">
+                    {[1, 2, 3, 4].map((i) => (
+                        <Skeleton key={i} dark width={100} height={32} className="rounded-full" />
+                    ))}
+                </div>
+
+                {/* Flashcard Skeleton */}
+                <div className="w-full aspect-[16/9] mb-8">
+                     <Skeleton dark width="100%" height="100%" className="rounded-2xl" />
+                </div>
+
+                {/* Controls Skeleton */}
+                <div className="flex items-center gap-6">
+                    <Skeleton dark width={48} height={48} className="rounded-full" />
+                    <Skeleton dark width={60} height={24} />
+                    <Skeleton dark width={48} height={48} className="rounded-full" />
+                </div>
+            </div>
+        );
+    }
 
     if (isGenerating) {
         return (
