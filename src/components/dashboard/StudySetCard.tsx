@@ -6,7 +6,15 @@ import {
   FaTrash, 
   FaPen, 
   FaFileAlt, 
-  FaHeadphones 
+  FaHeadphones,
+  FaBook,
+  FaListUl,
+  FaPodcast,
+  FaMicrophone,
+  FaProjectDiagram,
+  FaEdit,
+  FaPencilAlt,
+  FaGraduationCap
 } from 'react-icons/fa';
 
 export interface StudySet {
@@ -20,17 +28,52 @@ export interface StudySet {
   };
   progress: number;
   totalCards: number;
+  // Add optional boolean flags matching the database columns
+  mindmap?: boolean;
+  notes?: boolean;
+  multiple_choice?: boolean;
+  flashcards?: boolean;
+  podcast?: boolean;
+  tutor_lesson?: boolean;
+  written_tests?: boolean;
+  fill_in_the_blanks?: boolean;
+  speech_to_text?: boolean;
+  mindmap_col?: boolean;
+  [key: string]: any;
 }
 
 interface StudySetCardProps {
   set: StudySet;
   viewMode?: 'grid' | 'list';
+  onClick?: () => void;
 }
 
-const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid' }) => {
+const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid', onClick }) => {
+
+  const renderActionButtons = (size: number = 14) => {
+      return (
+          <>
+            {set.notes && <ActionButton icon={<FaBook size={size} />} />}
+            {set.multiple_choice && <ActionButton icon={<FaListUl size={size} />} />}
+            {set.flashcards && <ActionButton icon={<FaLayerGroup size={size} />} />}
+            {set.podcast && <ActionButton icon={<FaPodcast size={size} />} />}
+            {set.speech_to_text && <ActionButton icon={<FaMicrophone size={size} />} />}
+            {set.mindmap && <ActionButton icon={<FaProjectDiagram size={size} />} />}
+            {set.fill_in_the_blanks && <ActionButton icon={<FaEdit size={size} />} />}
+            {set.written_tests && <ActionButton icon={<FaPencilAlt size={size} />} />}
+            {set.tutor_lesson && <ActionButton icon={<FaGraduationCap size={size} />} />}
+            {/* Always show content icon as fallback or standard */}
+            <ActionButton icon={<FaFileAlt size={size} />} />
+          </>
+      );
+  };
+
   if (viewMode === 'list') {
       return (
-        <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl p-4 hover:border-gray-300 dark:hover:border-white/20 transition-colors group flex flex-col md:flex-row items-center gap-6 shadow-sm dark:shadow-none">
+        <div 
+            onClick={onClick}
+            className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl p-4 hover:border-gray-300 dark:hover:border-white/20 transition-colors group flex flex-col md:flex-row items-center gap-6 shadow-sm dark:shadow-none cursor-pointer"
+        >
             <div className="flex-1 min-w-0 w-full md:w-auto">
                 <div className="flex justify-between items-center mb-2 md:mb-1">
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white truncate">{set.title}</h3>
@@ -54,12 +97,7 @@ const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid' }) =
             </div>
 
             <div className="flex gap-2 text-gray-400 dark:text-gray-500 ml-auto">
-                <ActionButton icon={<FaLayerGroup size={14} />} />
-                <ActionButton icon={<FaList size={14} />} />
-                <ActionButton icon={<FaTrash size={14} />} />
-                <ActionButton icon={<FaPen size={14} />} />
-                <ActionButton icon={<FaFileAlt size={14} />} />
-                <ActionButton icon={<FaHeadphones size={14} />} />
+                {renderActionButtons(14)}
                 <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded hover:text-gray-900 dark:hover:text-white transition-colors ml-2">
                     <FaEllipsisH />
                 </button>
@@ -69,7 +107,10 @@ const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid' }) =
   }
 
   return (
-    <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl p-6 hover:border-gray-300 dark:hover:border-white/20 transition-colors group shadow-sm dark:shadow-none">
+    <div 
+        onClick={onClick}
+        className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl p-6 hover:border-gray-300 dark:hover:border-white/20 transition-colors group shadow-sm dark:shadow-none cursor-pointer"
+    >
         <div className="flex justify-between items-start mb-6">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">{set.title}</h3>
             <button className="text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white"><FaEllipsisH /></button>
@@ -96,12 +137,7 @@ const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid' }) =
                 <span className="text-xs font-bold text-gray-900 dark:text-white">{set.progress}%</span>
                 
                 <div className="flex gap-2 text-gray-400 dark:text-gray-500">
-                    <ActionButton icon={<FaLayerGroup size={12} />} />
-                    <ActionButton icon={<FaList size={12} />} />
-                    <ActionButton icon={<FaTrash size={12} />} />
-                    <ActionButton icon={<FaPen size={12} />} />
-                    <ActionButton icon={<FaFileAlt size={12} />} />
-                    <ActionButton icon={<FaHeadphones size={12} />} />
+                    {renderActionButtons(12)}
                 </div>
             </div>
         </div>

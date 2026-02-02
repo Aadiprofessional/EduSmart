@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SidebarLeft from '../components/dashboard/SidebarLeft';
 import SidebarRight from '../components/dashboard/SidebarRight';
@@ -7,6 +7,8 @@ import StudySetList from '../components/dashboard/StudySetList';
 import { UploadModal, PasteModal, RecordModal, CreateFolderModal } from '../components/dashboard/DashboardModals';
 import { useAuth } from '../utils/AuthContext';
 import { FaBars, FaFolder } from 'react-icons/fa';
+import { supabase } from '../utils/supabase';
+import { StudySet } from '../components/dashboard/StudySetCard';
 
 const MatrixEduDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -27,20 +29,58 @@ const MatrixEduDashboard: React.FC = () => {
   
   const [folders, setFolders] = useState<Folder[]>([]);
 
-  const [studySets] = useState([
-    {
-      id: 1,
-      title: "System Architecture Diagram",
-      stats: {
-        unfamiliar: 100,
-        learning: 0,
-        familiar: 0,
-        mastered: 0
-      },
-      progress: 0,
-      totalCards: 100
-    }
-  ]);
+  const [studySets, setStudySets] = useState<StudySet[]>([]);
+
+  useEffect(() => {
+    const fetchStudySets = async () => {
+        // We fetch even if user is not fully loaded? Usually user is null initially.
+        // Assuming user object has id or uid.
+        // The auth context might provide user.id or user.sub depending on provider.
+        // Let's assume user.id works as per other files.
+        // If user is null, we can't fetch user specific docs.
+        
+        // However, for testing purpose if user is not logged in, we might want to skip or show empty.
+        // The auth context provides 'user' which is Supabase user usually.
+        
+        if (!user) return;
+        
+        try {
+            const { data, error } = await supabase
+                .from('upload_document')
+                .select('*')
+                // .eq('uid', user.id) // Filter by user if needed. User requested "show all the items from the table" but implied context. 
+                                      // Usually we only show user's items. 
+                                      // The response example has "uid": "5f21c714-a255-4bab-864e-a36c63466a95".
+                                      // I will filter by user.id if available, otherwise fetch all (or limit).
+                                      // To be safe and follow standard practice, I'll filter by user.id.
+                .eq('uid', user.id) 
+                .order('created_at', { ascending: false });
+                
+            if (error) throw error;
+            
+            if (data) {
+                const mappedSets: StudySet[] = data.map((doc: any) => ({
+                    id: doc.document_id,
+                    title: doc.document_type ? doc.document_type.charAt(0).toUpperCase() + doc.document_type.slice(1) : (doc.title || 'Untitled Study Set'),
+                    stats: {
+                        unfamiliar: 0,
+                        learning: 0,
+                        familiar: 0,
+                        mastered: 0
+                    },
+                    progress: 0,
+                    totalCards: 0,
+                    ...doc // Keep original fields
+                }));
+                setStudySets(mappedSets);
+            }
+        } catch (error) {
+            console.error('Error fetching study sets:', error);
+        }
+    };
+    
+    fetchStudySets();
+  }, [user]);
 
   const handleCreateFolder = (name: string, color: string) => {
       setFolders([...folders, { id: Date.now().toString(), name, count: 0, color }]);
@@ -93,7 +133,12 @@ const MatrixEduDashboard: React.FC = () => {
         {/* Scrollable Study Sets Section */}
         <div className="flex-1 overflow-y-auto px-8 lg:px-12 pb-12 custom-scrollbar">
             <div className="max-w-4xl mx-auto">
-                <StudySetList studySets={studySets} />
+                <StudySetList 
+                    studySets={studySets} 
+                    onSetClick={(set: any) => {
+                        navigate(`/study-set/${set.id}`, { state: { studySetData: set } });
+                    }}
+                />
             </div>
         </div>
       </main>
@@ -110,25 +155,25 @@ const MatrixEduDashboard: React.FC = () => {
       <UploadModal 
          isOpen={activeModal === 'upload'} 
          onClose={() => setActiveModal(null)} 
-         onNext={() => {
+         onNext={(payload) => {
             setActiveModal(null);
-            navigate('/study-set/1/selection');
+            navigate('/study-set/1/selection', { state: { uploadPayload: payload } });
          }}
       />
       <PasteModal 
          isOpen={activeModal === 'paste'} 
          onClose={() => setActiveModal(null)} 
-         onNext={() => {
+         onNext={(payload) => {
             setActiveModal(null);
-            navigate('/study-set/1/selection');
+            navigate('/study-set/1/selection', { state: { uploadPayload: payload } });
          }}
       />
       <RecordModal 
          isOpen={activeModal === 'record'} 
          onClose={() => setActiveModal(null)} 
-         onNext={() => {
+         onNext={(payload) => {
             setActiveModal(null);
-            navigate('/study-set/1/selection');
+            navigate('/study-set/1/selection', { state: { uploadPayload: payload } });
          }}
       />
       <CreateFolderModal 

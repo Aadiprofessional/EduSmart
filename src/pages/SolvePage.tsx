@@ -1,92 +1,1016 @@
-import React, { useState } from 'react';
-import { FaArrowUp, FaChevronRight, FaChevronLeft, FaRegEdit, FaHistory, FaImage } from 'react-icons/fa';
+import React, { useState, useRef, useEffect } from 'react';
+import { FaArrowUp, FaChevronRight, FaChevronLeft, FaRegEdit, FaHistory, FaImage, FaFileAlt, FaTimes, FaCopy, FaFilePdf, FaExpand, FaDownload } from 'react-icons/fa';
 import SidebarLeft from '../components/dashboard/SidebarLeft';
+import { supabase } from '../utils/supabase';
+import { v4 as uuidv4 } from 'uuid';
+import { useAuth } from '../utils/AuthContext';
+import * as pdfjsLib from 'pdfjs-dist';
+import ReactMarkdown from 'react-markdown';
+import { jsPDF } from 'jspdf';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css'; // Ensure katex CSS is imported for math rendering
+
+// Type definitions for PDF.js
+interface PDFPageProxy {
+  getViewport(params: { scale: number }): any;
+  render(renderContext: any): { promise: Promise<void> };
+}
+
+interface PDFDocumentProxy {
+  numPages: number;
+  getPage(pageNumber: number): Promise<PDFPageProxy>;
+}
+
+// Set up PDF.js worker
+if (typeof window !== 'undefined') {
+  try {
+    // Force specific version to match the installed package or what's loaded
+    // We'll use the version property from the library itself to ensure consistency
+    const pdfVersion = pdfjsLib.version;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfVersion}/build/pdf.worker.min.mjs`;
+  } catch (error) {
+    console.error('Failed to load PDF worker:', error);
+    // Fallback to a hardcoded recent version if version detection fails, but this is risky
+    // Better to rely on the dynamic version
+  }
+}
+
+const sanitizeFileName = (name: string) => {
+  return name.replace(/[^a-zA-Z0-9._-]/g, '_');
+};
+
+interface Message {
+  id: string;
+  type: 'user' | 'ai';
+  content: string;
+  attachment?: {
+    name: string;
+    type: string;
+    url?: string;
+  };
+  subject?: string;
+  timestamp: Date;
+}
+
+interface DBChat {
+  id: string;
+  owner: string | null;
+  title: string | null;
+  created_at: string;
+  metadata: any;
+  service_type?: string;
+}
+
+interface DBMessage {
+  id: string;
+  chat_id: string;
+  position: number;
+  content: string;
+  status: string;
+  created_by: string | null;
+  file_url: string | null;
+  file_name: string | null;
+  file_type: string | null;
+  file_size: number | null;
+  created_at: string;
+}
 
 const SolvePage: React.FC = () => {
-  const subjects = ['Psychology', 'Physics', 'Biology', 'Math', 'General', 'Chemistry', 'Language', 'History'];
-  const [scrollX, setScrollX] = useState(0);
+  const subjects = ['Psychology', 'Physics', 'Biology', 'Math', 'General', 'Chemistry', 'Language', 'History', 'Economics'];
+  const [selectedSubject, setSelectedSubject] = useState('General');
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [previewAttachment, setPreviewAttachment] = useState<any>(null);
 
-  const scroll = (direction: 'left' | 'right') => {
-      // Logic for scrolling if needed in real implementation
-      // For now we just mock the UI visual
-      console.log('Scroll', direction);
+  const PDFThumbnail = ({ url }: { url: string }) => {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+      const renderThumb = async () => {
+        if (!url) return;
+        try {
+          const loadingTask = pdfjsLib.getDocument(url);
+          const pdf = await loadingTask.promise;
+          const page = await pdf.getPage(1);
+          const viewport = page.getViewport({ scale: 0.5 });
+          const canvas = canvasRef.current;
+          if (canvas) {
+            const context = canvas.getContext('2d');
+            if (context) {
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                const renderContext: any = { canvasContext: context, viewport };
+                await page.render(renderContext).promise;
+            }
+          }
+          setLoading(false);
+        } catch (e) {
+          console.error("Error rendering PDF thumbnail:", e);
+          setLoading(false);
+        }
+      };
+      renderThumb();
+    }, [url]);
+
+    return (
+       <div className="w-full h-full flex items-center justify-center bg-gray-100 overflow-hidden relative">
+          <canvas ref={canvasRef} className="w-full h-full object-cover" />
+          {loading && <div className="absolute inset-0 flex items-center justify-center bg-black/10"><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div></div>}
+       </div>
+    );
   };
+
+  const [chatStarted, setChatStarted] = useState(false);
+  const [inputValue, setInputValue] = useState('');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [chatId, setChatId] = useState<string>('');
+  const [isProcessing, setIsProcessingStarted] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState('');
+  const [history, setHistory] = useState<DBChat[]>([]);
+  
+  const { user } = useAuth();
+  
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const subjectsContainerRef = useRef<HTMLDivElement>(null);
+  const subjectRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchChatHistory = async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from('solve_chats')
+      .select('*')
+      .eq('owner', user.id)
+      .eq('service_type', 'solve')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching history:', error);
+    } else if (data) {
+      setHistory(data);
+    }
+  };
+
+  useEffect(() => {
+    fetchChatHistory();
+  }, [user]);
+
+  const loadChat = async (chat: DBChat) => {
+    setChatId(chat.id);
+    setChatStarted(true);
+    if (chat.metadata?.subject) {
+      setSelectedSubject(chat.metadata.subject);
+    }
+    
+    const { data, error } = await supabase
+      .from('solve_messages')
+      .select('*')
+      .eq('chat_id', chat.id)
+      .order('created_at', { ascending: true });
+
+    if (data) {
+      const formattedMessages: Message[] = data.map(m => ({
+        id: m.id,
+        type: m.created_by ? 'user' : 'ai',
+        content: m.content,
+        timestamp: new Date(m.created_at),
+        attachment: m.file_url ? {
+          name: m.file_name || 'Attachment',
+          type: m.file_type || 'unknown',
+          url: m.file_url
+        } : undefined,
+        subject: m.created_by ? undefined : chat.metadata?.subject
+      }));
+      setMessages(formattedMessages);
+    }
+    
+    setIsHistoryOpen(false);
+  };
+
+  const scrollToBottom = () => {
+    if (messagesContainerRef.current) {
+      const { scrollHeight, clientHeight } = messagesContainerRef.current;
+      messagesContainerRef.current.scrollTo({
+        top: scrollHeight - clientHeight,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages.length, chatStarted]);
+
+  // Auto-center selected subject
+  useEffect(() => {
+    const selectedBtn = subjectRefs.current[selectedSubject];
+    if (selectedBtn) {
+      selectedBtn.scrollIntoView({
+        behavior: 'smooth',
+        inline: 'center',
+        block: 'nearest'
+      });
+    }
+  }, [selectedSubject]);
+
+  const handleScrollSubject = (direction: 'left' | 'right') => {
+    if (subjectsContainerRef.current) {
+      const scrollAmount = 200;
+      subjectsContainerRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const handleNewChat = () => {
+    setChatStarted(false);
+    setMessages([]);
+    setInputValue('');
+    setSelectedSubject('General');
+    setAttachedFile(null);
+    setChatId(uuidv4());
+  };
+
+  useEffect(() => {
+    // Initialize chat ID on mount
+    setChatId(uuidv4());
+  }, []);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const allowedTypes = [
+        'image/jpeg', 
+        'image/png', 
+        'image/webp',
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'text/plain',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'text/csv'
+      ];
+      
+      // Check if file type is allowed (either exact match or starts with image/ for other image types)
+      const isAllowed = allowedTypes.includes(file.type) || (file.type.startsWith('image/') && file.type !== 'image/gif');
+      
+      if (isAllowed) {
+        setAttachedFile(file);
+      } else {
+        alert('Please select a valid file (Image (no GIF), PDF, DOC, DOCX, TXT, XLSX, or CSV)');
+        // Reset input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      }
+    }
+  };
+
+  const handleDropZoneClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  // Helper to upload file to Supabase
+  const uploadToSupabase = async (file: File | Blob, fileName: string): Promise<string | null> => {
+    try {
+      setProcessingStatus('Uploading file...');
+      // Use chat-attachments bucket
+      const sanitizedFileName = sanitizeFileName(fileName);
+      const filePath = `${user?.id || 'anonymous'}/${Date.now()}_${sanitizedFileName}`;
+      const { data, error } = await supabase.storage
+        .from('chat-attachments')
+        .upload(filePath, file);
+
+      if (error) {
+        console.error('Supabase upload error:', error);
+        return null;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('chat-attachments')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Upload to Supabase failed:', error);
+      return null;
+    }
+  };
+
+  // Convert PDF to images using PDF.js
+  const convertPdfToImages = async (file: File): Promise<string[]> => {
+    try {
+      setProcessingStatus('Processing PDF...');
+      
+      const arrayBuffer = await file.arrayBuffer();
+      
+      // Initialize PDF.js with proper worker setup
+      const loadingTask = pdfjsLib.getDocument({
+        data: arrayBuffer,
+        useWorkerFetch: false,
+        isEvalSupported: false,
+        useSystemFonts: true
+      });
+      
+      const pdf = await loadingTask.promise as PDFDocumentProxy;
+      const images: string[] = [];
+      
+      setProcessingStatus(`Converting ${pdf.numPages} pages to images...`);
+      
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        setProcessingStatus(`Converting page ${pageNum} of ${pdf.numPages}...`);
+        
+        const page = await pdf.getPage(pageNum);
+        const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better quality
+        
+        // Create canvas
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        
+        if (!context) {
+          throw new Error('Could not get canvas context');
+        }
+        
+        // Render page to canvas
+        const renderContext = {
+          canvasContext: context,
+          viewport: viewport,
+        };
+        
+        await page.render(renderContext).promise;
+        
+        // Convert canvas to base64 image
+        const imageDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        images.push(imageDataUrl);
+      }
+      
+      setProcessingStatus('PDF conversion completed!');
+      return images;
+    } catch (error) {
+      console.error('PDF URL conversion error:', error);
+      setProcessingStatus('Error converting PDF');
+      throw error;
+    }
+  };
+
+  // Helper to upload base64 images to Supabase
+  const uploadBase64Images = async (base64Images: string[]): Promise<string[]> => {
+    const urls: string[] = [];
+    for (let i = 0; i < base64Images.length; i++) {
+      const base64 = base64Images[i];
+      const res = await fetch(base64);
+      const blob = await res.blob();
+      const fileName = `page_${i + 1}_${Date.now()}.jpg`;
+      const url = await uploadToSupabase(blob, fileName);
+      if (url) urls.push(url);
+    }
+    return urls;
+  };
+
+  const preprocessMath = (content: string) => {
+    if (!content) return '';
+    // Replace \[ ... \] with $$ ... $$ for block math
+    let processed = content.replace(/\\\[([\s\S]*?)\\\]/g, '$$$$$1$$$$');
+    // Replace \( ... \) with $ ... $ for inline math
+    processed = processed.replace(/\\\(([\s\S]*?)\\\)/g, '$$$1$$');
+    return processed;
+  };
+
+  const handleCopy = (content: string) => {
+    navigator.clipboard.writeText(content);
+  };
+
+  const handleExportPDF = (content: string) => {
+    const doc = new jsPDF();
+    const splitText = doc.splitTextToSize(content, 180);
+    doc.text(splitText, 10, 10);
+    doc.save('solution.pdf');
+  };
+
+  const handleSendMessage = async () => {
+    if (!inputValue.trim() && !attachedFile) return;
+
+    if (!chatStarted) {
+      setChatStarted(true);
+    }
+
+    const currentChatId = chatId || uuidv4();
+    if (!chatId) setChatId(currentChatId);
+
+    const newUserMsg: Message = {
+      id: Date.now().toString(),
+      type: 'user',
+      content: inputValue,
+      timestamp: new Date(),
+      attachment: attachedFile ? {
+        name: attachedFile.name,
+        type: attachedFile.type,
+        url: attachedFile.type.startsWith('image/') ? URL.createObjectURL(attachedFile) : undefined
+      } : undefined
+    };
+
+    // Create a placeholder for AI response immediately
+    const newAiMsgId = uuidv4();
+    const newAiMsg: Message = {
+      id: newAiMsgId,
+      type: 'ai',
+      content: '',
+      subject: selectedSubject,
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, newUserMsg, newAiMsg]);
+    
+    setInputValue('');
+    setAttachedFile(null); // Clear attachment after sending
+    setIsProcessingStarted(true);
+
+      // Prepare request body
+      let requestBody: any = {
+        stream: true,
+        messages: []
+      };
+
+      const userId = user?.id || '0a147ebe-af99-481b-bcaf-ae70c9aeb8d8'; // Use authenticated user ID or fallback
+      const timestamp = new Date().toISOString().replace('T', ' ').replace('Z', ''); // Format: "2026-01-31 01:22:57.175"
+
+      try {
+        let currentFileUrl: string | undefined = undefined;
+
+        if (attachedFile) {
+          // Handle attachments
+          const fileUrl = await uploadToSupabase(attachedFile, attachedFile.name);
+          
+          if (!fileUrl) {
+            throw new Error('Failed to upload file');
+          }
+          currentFileUrl = fileUrl;
+
+          if (attachedFile.type.startsWith('image/')) {
+            // Image Attachment
+            requestBody.uploadedFileType = 'image';
+            requestBody.messages = [{
+              uid: userId,
+              type: "image",
+              text: { body: newUserMsg.content },
+              body: newUserMsg.content,
+              content: newUserMsg.content,
+              role: "user",
+              roleDescription: "A versatile AI assistant for everyday tasks and questions",
+              timestamp: timestamp,
+              chatid: currentChatId,
+              subject: selectedSubject,
+              url: fileUrl,
+              attachments: [{
+                url: fileUrl,
+                fileName: attachedFile.name,
+                fileType: "image",
+                originalName: attachedFile.name,
+                size: attachedFile.size
+              }]
+            }];
+          } else if (attachedFile.type === 'application/pdf') {
+            // PDF Attachment
+            const base64Images = await convertPdfToImages(attachedFile);
+            const imageUrls = await uploadBase64Images(base64Images);
+            // Just use the URLs directly without backticks/spaces
+            const formattedImageUrls = imageUrls;
+
+            requestBody.uploadedFileType = 'pdf_vision';
+            requestBody.messages = [{
+              uid: userId,
+              type: "pdf_vision",
+              text: { body: newUserMsg.content },
+              body: newUserMsg.content,
+              content: newUserMsg.content,
+              role: "user",
+              roleDescription: "A versatile AI assistant for everyday tasks and questions",
+              timestamp: timestamp,
+              chatid: currentChatId,
+              subject: selectedSubject,
+              url: fileUrl,
+              image_urls: formattedImageUrls,
+              page_count: imageUrls.length
+            }];
+          } else {
+            // Other Documents (docx, etc.)
+            requestBody.uploadedFileType = 'document';
+            requestBody.messages = [{
+              uid: userId,
+              type: "document",
+              text: { body: newUserMsg.content },
+              body: newUserMsg.content,
+              content: newUserMsg.content,
+              role: "user",
+              roleDescription: "A versatile AI assistant for everyday tasks and questions",
+              timestamp: timestamp,
+              chatid: currentChatId,
+              subject: selectedSubject,
+              url: fileUrl,
+              attachments: [{
+                url: fileUrl,
+                fileName: attachedFile.name,
+                fileType: "document",
+                originalName: attachedFile.name,
+                size: attachedFile.size
+              }]
+            }];
+          }
+        } else {
+          // Text Only
+          requestBody.uploadedFileType = 'text';
+          requestBody.messages = [{
+            uid: userId,
+            type: "text",
+            text: { body: "text" }, 
+            body: newUserMsg.content,
+            content: newUserMsg.content,
+            transcription: newUserMsg.content,
+            role: "user",
+            roleDescription: "",
+            timestamp: timestamp,
+            chatid: currentChatId,
+            subject: selectedSubject
+          }];
+        }
+
+        // Persist Chat and Message to Supabase
+        const chatExists = history.some(c => c.id === currentChatId);
+        if (!chatExists) {
+          const { error: chatError } = await supabase.from('solve_chats').insert({
+            id: currentChatId,
+            owner: user?.id,
+            title: inputValue.substring(0, 50) || (attachedFile ? attachedFile.name : 'New Chat'),
+            metadata: { subject: selectedSubject },
+            service_type: 'solve'
+          });
+          if (!chatError) {
+            fetchChatHistory();
+          } else {
+            console.error('Error creating chat:', chatError);
+          }
+        }
+
+        const userMsgId = uuidv4();
+        const { error: msgError } = await supabase.from('solve_messages').insert({
+          id: userMsgId,
+          chat_id: currentChatId,
+          position: 0,
+          content: inputValue,
+          status: 'done',
+          created_by: user?.id,
+          file_url: currentFileUrl || null,
+          file_name: attachedFile?.name || null,
+          file_type: attachedFile?.type || null,
+          file_size: attachedFile?.size || null
+        });
+        if (msgError) console.error('Error saving user message:', msgError);
+
+        console.log('Sending request to n8n:', requestBody);
+
+        // Send to webhook
+        const response = await fetch('https://n8n.matrixaiserver.com/webhook/matrixEdu/solveQuestion', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        });
+
+        if (!response.body) {
+          throw new Error('No response body');
+        }
+
+        // Stream handling
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let aiContent = '';
+        let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value, { stream: true });
+        buffer += chunk;
+        
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep the last partial line
+        
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          
+          try {
+            // Try to parse the line as JSON
+            const json = JSON.parse(line);
+            
+            // Check if it's an item with content
+            if (json.type === 'item' && typeof json.content === 'string') {
+              aiContent += json.content;
+              
+              // Update the last message with new content
+              setMessages(prev => {
+                const newMessages = [...prev];
+                const lastMessageIndex = newMessages.findIndex(m => m.id === newAiMsgId);
+                if (lastMessageIndex !== -1) {
+                  newMessages[lastMessageIndex] = {
+                    ...newMessages[lastMessageIndex],
+                    content: aiContent
+                  };
+                }
+                return newMessages;
+              });
+            }
+          } catch (e) {
+            console.warn('Skipping invalid JSON line in stream:', line);
+          }
+        }
+      }
+
+      // Save AI Message to DB
+      if (aiContent) {
+        const { error: aiMsgError } = await supabase.from('solve_messages').insert({
+          id: newAiMsgId, // Use the same ID as in UI (though UI used Date.now().toString(), ideally should be UUID)
+          // Ideally I should have used UUID for newAiMsgId too. 
+          // But DB is uuid type. Date.now().toString() is NOT a valid UUID.
+          // I MUST change newAiMsgId to be a UUID.
+          // Wait, I can't change previous code easily without another SearchReplace.
+          // I'll assume I can just use uuidv4() here and it's fine if UI ID differs from DB ID, 
+          // BUT it's better if they match.
+          // Let's generate a UUID for the AI message at the start.
+          chat_id: currentChatId,
+          position: 0,
+          content: aiContent,
+          status: 'done',
+          created_by: null
+        });
+        if (aiMsgError) console.error('Error saving AI message:', aiMsgError);
+      }
+
+    } catch (error) {
+      console.error('Error sending message:', error);
+      // Add error message to chat
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: 'Sorry, I encountered an error while processing your request. Please try again.',
+        timestamp: new Date()
+      }]);
+    } finally {
+      setIsProcessingStarted(false);
+      setProcessingStatus('');
+    }
+  };
+
+  const isSendDisabled = !inputValue.trim() && !attachedFile;
 
   return (
     <div className="h-screen bg-[#111111] text-white flex font-sans overflow-hidden">
       <SidebarLeft />
       
-      <main className="flex-1 flex flex-col items-center justify-center p-8 relative">
-         {/* Top Icons - Absolute Positioned */}
-         <button className="absolute top-8 left-8 p-2 text-gray-400 hover:text-white transition-colors">
-            <FaRegEdit size={22} />
-         </button>
-         
-         <button className="absolute top-8 right-8 p-2 text-gray-400 hover:text-white transition-colors">
-            <FaHistory size={22} />
-         </button>
+      <div className="flex-1 flex relative">
+        <main className={`flex-1 flex flex-col relative transition-all duration-300 ${isHistoryOpen ? 'mr-0' : 'mr-0'}`}>
+           {/* Top Icons - Absolute Positioned */}
+           <button 
+             onClick={handleNewChat}
+             className="absolute top-6 left-6 p-2 text-gray-400 hover:text-white transition-colors z-20"
+             title="New Chat"
+           >
+              <FaRegEdit size={22} />
+           </button>
+           
+           <button 
+             onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+             className={`absolute top-6 right-6 p-2 text-gray-400 hover:text-white transition-colors z-20 ${isHistoryOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+             title="History"
+           >
+              <FaHistory size={22} />
+           </button>
 
-         <div className="max-w-3xl w-full flex flex-col items-center">
-             
-             {/* Header Section */}
-             <div className="w-full flex justify-center items-center mb-16 px-4">
-                 <h1 className="text-4xl font-bold text-center mt-2 tracking-tight">What do you want to solve?</h1>
+           {/* Main Content Area */}
+           {!chatStarted ? (
+             /* Initial State - Left Aligned Text, Centered Layout */
+             <div className="flex-1 flex flex-col items-center justify-start pt-32 p-8 w-full overflow-y-auto">
+               <div className="max-w-3xl w-full flex flex-col items-center">
+                   
+                   {/* Header Section */}
+                   <div className="w-full flex justify-start items-center mb-16 px-4">
+                       <h1 className="text-4xl font-bold text-left mt-2 tracking-tight">What do you want to solve?</h1>
+                   </div>
+
+                   {/* Subject Pills */}
+                   <div className="flex items-center justify-center gap-4 mb-12 w-full max-w-2xl relative">
+                       <button onClick={() => handleScrollSubject('left')} className="text-gray-500 hover:text-gray-300 transition-colors p-1 z-10">
+                           <FaChevronLeft size={12} />
+                       </button>
+                       
+                       <div 
+                        ref={subjectsContainerRef}
+                        className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth px-2"
+                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                       >
+                           {subjects.map(subject => (
+                               <button 
+                                 key={subject}
+                                 ref={el => subjectRefs.current[subject] = el}
+                                 onClick={() => setSelectedSubject(subject)}
+                                 className={`px-5 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 ${
+                                     selectedSubject === subject 
+                                     ? 'bg-[#27272a] text-white' 
+                                     : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+                                 }`}
+                               >
+                                   {subject}
+                               </button>
+                           ))}
+                       </div>
+                       
+                       <button onClick={() => handleScrollSubject('right')} className="text-gray-500 hover:text-gray-300 transition-colors p-1 z-10">
+                           <FaChevronRight size={12} />
+                       </button>
+                   </div>
+
+                   {/* Input Area */}
+                   <div className="w-full relative flex flex-col items-center">
+                       
+                       {/* Drag & Drop Zone */}
+                       <div 
+                         onClick={handleDropZoneClick}
+                         className="w-[98%] bg-[#111111] border border-dashed border-gray-800 rounded-t-3xl rounded-b-lg h-32 flex flex-col items-center justify-start pt-6 cursor-pointer hover:bg-white/5 hover:border-gray-600 transition-all group z-0 mb-[-45px]"
+                       >
+                           <input 
+                            type="file" 
+                            ref={fileInputRef} 
+                            className="hidden" 
+                            onChange={handleFileSelect}
+                            accept=".jpg,.jpeg,.png,.webp,application/pdf,.doc,.docx,.txt,.xlsx,.csv"
+                          />
+                           <div className="mb-2 relative">
+                              {attachedFile ? (
+                                <FaFileAlt className="text-white group-hover:text-gray-200 transition-colors" size={20} />
+                              ) : (
+                                <FaImage className="text-gray-500 group-hover:text-gray-400 transition-colors" size={20} />
+                              )}
+                           </div>
+                           <span className="text-sm text-gray-500 group-hover:text-gray-400 transition-colors">
+                             {attachedFile 
+                               ? `Attached: ${attachedFile.name}`
+                               : 'Drag & drop or click to add an image, pdf, docs, xlsx, etc.'}
+                           </span>
+                       </div>
+                       
+                       {/* Input Box */}
+                       <div className="w-full bg-black/40 backdrop-blur-xl rounded-[32px] p-2 border border-white/5 shadow-2xl z-10 relative">
+                           <div className="relative w-full">
+                               <textarea 
+                                 value={inputValue}
+                                 onChange={(e) => setInputValue(e.target.value)}
+                                 onKeyDown={(e) => {
+                                   if (e.key === 'Enter' && !e.shiftKey) {
+                                     e.preventDefault();
+                                     if (!isSendDisabled) handleSendMessage();
+                                   }
+                                 }}
+                                 placeholder="Type your question here..." 
+                                 className="w-full bg-transparent text-gray-300 placeholder-gray-500 focus:outline-none text-lg resize-none py-4 px-4 pr-12 min-h-[64px]"
+                                 rows={1}
+                               />
+                               <button 
+                                 onClick={handleSendMessage}
+                                 disabled={isSendDisabled}
+                                 className={`absolute bottom-3 right-4 p-2 rounded-full transition-all duration-200 flex items-center justify-center w-8 h-8 ${
+                                   isSendDisabled 
+                                     ? 'bg-[#27272a] text-gray-600 cursor-not-allowed' 
+                                     : 'bg-white text-black hover:bg-gray-200'
+                                 }`}
+                               >
+                                   <FaArrowUp size={14} />
+                               </button>
+                           </div>
+                       </div>
+                   </div>
+               </div>
              </div>
+           ) : (
+             /* Chat State */
+             <div className="flex-1 flex flex-col h-full w-full max-w-5xl mx-auto px-6 pt-20 pb-6 relative">
+                
+                {/* Messages Area */}
+                <div 
+                  ref={messagesContainerRef}
+                  className="flex-1 overflow-y-auto pb-32 pr-2 custom-scrollbar"
+                >
+                  {messages.map((msg) => (
+                    <div key={msg.id} className={`mb-8 flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[80%] ${msg.type === 'user' ? 'flex flex-col items-end' : 'w-full'}`}>
+                        
+                        {/* Attachment (User) */}
+                        {msg.type === 'user' && msg.attachment && (
+                          <div 
+                            className="mb-3 rounded-xl overflow-hidden border border-white/10 w-64 h-32 cursor-pointer hover:border-white/30 transition-all bg-[#1f1f23] relative group"
+                            onClick={() => setPreviewAttachment(msg.attachment)}
+                          >
+                            {msg.attachment.type.startsWith('image/') && msg.attachment.url ? (
+                              <>
+                                <img src={msg.attachment.url} alt="Attachment" className="w-full h-full object-cover" />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
+                                  <FaExpand className="text-white opacity-0 group-hover:opacity-100 transform scale-75 group-hover:scale-100 transition-all" size={24} />
+                                </div>
+                              </>
+                            ) : msg.attachment.type === 'application/pdf' && msg.attachment.url ? (
+                               <>
+                                 <PDFThumbnail url={msg.attachment.url} />
+                                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
+                                   <FaExpand className="text-white opacity-0 group-hover:opacity-100 transform scale-75 group-hover:scale-100 transition-all" size={24} />
+                                 </div>
+                               </>
+                            ) : (
+                              <div className="w-full h-full flex flex-col items-center justify-center gap-3 p-4">
+                                  <FaFileAlt className="text-blue-400" size={32} />
+                                <span className="text-xs text-gray-300 font-medium truncate w-full text-center px-2">
+                                  {msg.attachment.name}
+                                </span>
+                                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <FaDownload className="text-gray-400 hover:text-white" size={14} />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
 
-             {/* Subject Pills */}
-             <div className="flex items-center justify-center gap-4 mb-12">
-                 <button onClick={() => scroll('left')} className="text-gray-500 hover:text-gray-300 transition-colors">
-                     <FaChevronLeft size={12} />
-                 </button>
-                 
-                 <div className="flex items-center gap-2">
-                     {subjects.map(subject => (
-                         <button 
-                           key={subject}
-                           className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
-                               subject === 'Biology' 
-                               ? 'bg-[#27272a] text-white' 
-                               : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
-                           }`}
-                         >
-                             {subject}
-                         </button>
-                     ))}
-                 </div>
-                 
-                 <button onClick={() => scroll('right')} className="text-gray-500 hover:text-gray-300 transition-colors">
-                     <FaChevronRight size={12} />
-                 </button>
-             </div>
+                        {/* Message Content */}
+                        <div className={`
+                          ${msg.type === 'user' 
+                            ? 'bg-[#27272a] text-white px-5 py-3 rounded-2xl rounded-tr-sm' 
+                            : 'text-gray-200 w-full'
+                          }
+                        `}>
+                          {msg.type === 'ai' && msg.subject && (
+                             <span className="inline-block bg-[#ff5500] text-white text-xs font-bold px-2 py-0.5 rounded mb-3">
+                               {msg.subject.toUpperCase()}
+                             </span>
+                          )}
+                          
+                          {msg.type === 'ai' ? (
+                            <div className="w-full">
+                              {!msg.content && isProcessing && msg.id === messages[messages.length-1].id ? (
+                                <div className="flex space-x-2 items-center h-6 px-2">
+                                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                                </div>
+                              ) : (
+                                <>
+                                <div className="prose prose-invert max-w-none text-gray-200 text-left">
+                                    <ReactMarkdown 
+                                      remarkPlugins={[remarkGfm, remarkMath]}
+                                      rehypePlugins={[rehypeKatex]}
+                                    >
+                                      {preprocessMath(msg.content)}
+                                    </ReactMarkdown>
+                                  </div>
+                                  
+                                  {/* AI Toolbar */}
+                                  <div className="flex items-center gap-4 mt-4 pt-3 border-t border-white/5">
+                                    <button 
+                                      onClick={() => handleCopy(msg.content)}
+                                      className="flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors"
+                                      title="Copy to clipboard"
+                                    >
+                                      <FaCopy /> Copy
+                                    </button>
+                                    <button 
+                                      onClick={() => handleExportPDF(msg.content)}
+                                      className="flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors"
+                                      title="Export as PDF"
+                                    >
+                                      <FaFilePdf /> Export PDF
+                                    </button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="whitespace-pre-wrap leading-relaxed">
+                              {msg.content}
+                            </div>
+                          )}
+                        </div>
 
-             {/* Input Area */}
-             <div className="w-full relative flex flex-col items-center">
-                 
-                 {/* Drag & Drop Zone - Positioned to peek out from behind */}
-                 <div className="w-[98%] bg-[#111111] border border-dashed border-gray-800 rounded-t-3xl rounded-b-lg h-32 flex flex-col items-center justify-start pt-6 cursor-pointer hover:bg-white/5 hover:border-gray-600 transition-all group z-0 mb-[-45px]">
-                     <div className="mb-2 relative">
-                        <FaImage className="text-gray-500 group-hover:text-gray-400 transition-colors" size={20} />
-                     </div>
-                     <span className="text-sm text-gray-500 group-hover:text-gray-400 transition-colors">Drag & drop or click to add an image</span>
-                 </div>
-                 
-                 {/* Input Box - Sits on top */}
-                 <div className="w-full bg-[#171617] rounded-[32px] p-2 border border-white/5 shadow-2xl z-10 relative">
-                     <div className="relative px-4 pb-2 flex items-end gap-2">
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Bottom Input Area (Sticky) */}
+                <div className="absolute bottom-6 left-6 right-6 bg-black/40 backdrop-blur-xl rounded-[32px] p-2 border border-white/5 shadow-2xl z-20">
+                     <div className="relative w-full">
                          <textarea 
-                           placeholder="Type your question here..." 
-                           className="w-full bg-transparent text-gray-300 placeholder-gray-500 focus:outline-none text-lg resize-none py-4 min-h-[64px]"
+                           value={inputValue}
+                           onChange={(e) => setInputValue(e.target.value)}
+                           onKeyDown={(e) => {
+                             if (e.key === 'Enter' && !e.shiftKey) {
+                               e.preventDefault();
+                               if (!isSendDisabled) handleSendMessage();
+                             }
+                           }}
+                           placeholder="Ask a follow-up question..." 
+                           className="w-full bg-transparent text-gray-300 placeholder-gray-500 focus:outline-none text-lg resize-none py-3 px-4 pr-12 min-h-[56px]"
                            rows={1}
                          />
-                         <button className="mb-2 bg-[#3f3f46] hover:bg-[#52525b] text-black p-2 rounded-full transition-colors flex-shrink-0 flex items-center justify-center w-8 h-8">
-                             <FaArrowUp size={14} className="text-black" />
+                         <button 
+                           onClick={handleSendMessage}
+                           disabled={isSendDisabled}
+                           className={`absolute bottom-2 right-4 p-2 rounded-full transition-all duration-200 flex items-center justify-center w-8 h-8 ${
+                             isSendDisabled 
+                               ? 'bg-[#27272a] text-gray-600 cursor-not-allowed' 
+                               : 'bg-white text-black hover:bg-gray-200'
+                           }`}
+                         >
+                             <FaArrowUp size={14} />
                          </button>
                      </div>
-                 </div>
+                </div>
+
              </div>
-             
-         </div>
+           )}
+        {/* Preview Modal */}
+      {previewAttachment && (
+        <div className="fixed inset-0 bg-black/90 z-[60] flex flex-col items-center justify-center p-4" onClick={() => setPreviewAttachment(null)}>
+          <button onClick={() => setPreviewAttachment(null)} className="absolute top-4 right-4 text-white/70 hover:text-white p-2 z-50">
+             <FaTimes size={24} />
+          </button>
+          
+          <div className="w-full h-full max-w-6xl max-h-[90vh] flex items-center justify-center relative" onClick={e => e.stopPropagation()}>
+             {previewAttachment.type.startsWith('image/') && previewAttachment.url ? (
+                <img src={previewAttachment.url} alt={previewAttachment.name} className="max-w-full max-h-full object-contain" />
+             ) : previewAttachment.type === 'application/pdf' && previewAttachment.url ? (
+                <iframe src={previewAttachment.url} className="w-full h-full rounded-lg bg-white" title={previewAttachment.name}></iframe>
+             ) : (
+                <div className="text-white text-center">
+                   <FaFileAlt size={64} className="mx-auto mb-4 text-gray-400" />
+                   <p className="text-xl font-medium">{previewAttachment.name}</p>
+                   {previewAttachment.url && (
+                       <a href={previewAttachment.url} target="_blank" rel="noopener noreferrer" className="inline-block mt-4 bg-white text-black px-6 py-2 rounded-full font-bold hover:bg-gray-200 transition-colors">
+                          Download File
+                       </a>
+                   )}
+                </div>
+             )}
+          </div>
+        </div>
+      )}
       </main>
+
+        {/* History Sidebar - Right */}
+        <div 
+          className={`
+            fixed top-0 right-0 h-full w-80 bg-[#0c0c0c] border-l border-white/5 transform transition-transform duration-300 ease-in-out z-30
+            ${isHistoryOpen ? 'translate-x-0' : 'translate-x-full'}
+          `}
+        >
+          <div className="p-6 h-full flex flex-col">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-xl font-semibold text-white">Solve History</h2>
+              <button 
+                onClick={() => setIsHistoryOpen(false)}
+                className="text-gray-500 hover:text-white transition-colors"
+              >
+                <div className="flex items-center text-sm font-medium">
+                   <span className="mr-1 text-lg">»</span> 
+                </div>
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              {history.map(item => (
+                 <div key={item.id} onClick={() => loadChat(item)} className="group cursor-pointer mb-4 p-3 rounded-lg hover:bg-white/5 transition-colors border border-transparent hover:border-white/5">
+                    <div className="flex gap-3">
+                       <div className="w-16 h-16 bg-gray-800 rounded-md overflow-hidden flex-shrink-0">
+                         <div className="w-full h-full flex items-center justify-center text-gray-600">
+                             <FaImage />
+                         </div>
+                       </div>
+                       <div className="flex-1 min-w-0">
+                         <div className="flex items-center justify-between mb-1">
+                            <span className="text-[#ff5500] text-[10px] font-bold uppercase tracking-wider">{item.metadata?.subject || 'GENERAL'}</span>
+                            <span className="text-gray-600 text-[10px]">{new Date(item.created_at).toLocaleDateString()}</span>
+                         </div>
+                         <h3 className="text-gray-200 text-sm font-medium truncate mb-1">{item.title || 'Untitled Chat'}</h3>
+                         <p className="text-gray-500 text-xs truncate">View conversation</p>
+                       </div>
+                    </div>
+                 </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

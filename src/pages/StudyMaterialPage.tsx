@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
   FaArrowLeft, 
   FaBook, 
@@ -13,7 +13,9 @@ import {
   FaChevronDown,
   FaChevronRight,
   FaChevronLeft,
-  FaGraduationCap
+  FaGraduationCap,
+  FaMicrophone,
+  FaProjectDiagram
 } from 'react-icons/fa';
 import { useAuth } from '../utils/AuthContext';
 
@@ -26,23 +28,40 @@ import StudyFillInBlanks from '../components/study-set/StudyFillInBlanks';
 import StudyWrittenTest from '../components/study-set/StudyWrittenTest';
 import StudyTutorLesson from '../components/study-set/StudyTutorLesson';
 import StudyContent from '../components/study-set/StudyContent';
+import StudyRightPanel from '../components/study-set/StudyRightPanel';
+import StudyMindmap from '../components/study-set/StudyMindmap';
+import StudySpeechToText from '../components/study-set/StudySpeechToText';
 
 // --- Components ---
 
-const StudySidebar: React.FC<{ activeMethod: string; onSelectMethod: (id: string) => void }> = ({ activeMethod, onSelectMethod }) => {
+interface StudySidebarProps {
+    activeMethod: string;
+    onSelectMethod: (id: string) => void;
+    allowedMethods?: Record<string, boolean>;
+}
+
+const StudySidebar: React.FC<StudySidebarProps> = ({ activeMethod, onSelectMethod, allowedMethods }) => {
     const navigate = useNavigate();
     const { user } = useAuth();
 
-    const methods = [
-        { id: 'notes', label: 'Notes', icon: <FaBook /> },
-        { id: 'multiple-choice', label: 'Multiple Choice', icon: <FaListUl /> },
-        { id: 'flashcards', label: 'Flashcards', icon: <FaLayerGroup /> },
-        { id: 'podcast', label: 'Podcast', icon: <FaPodcast /> },
-        { id: 'fill-blanks', label: 'Fill in the Blanks', icon: <FaEdit /> },
-        { id: 'written-tests', label: 'Written Test', icon: <FaPencilAlt /> },
-        { id: 'tutor-lesson', label: 'Tutor Lesson', icon: <FaGraduationCap /> },
-        { id: 'content', label: 'Content', icon: <FaFileAlt /> },
+    const allMethods = [
+        { id: 'notes', label: 'Notes', icon: <FaBook />, key: 'notes' },
+        { id: 'multiple-choice', label: 'Multiple Choice', icon: <FaListUl />, key: 'multiple_choice' },
+        { id: 'flashcards', label: 'Flashcards', icon: <FaLayerGroup />, key: 'flashcards' },
+        { id: 'podcast', label: 'Podcast', icon: <FaPodcast />, key: 'podcast' },
+        { id: 'speech-to-text', label: 'Speech to Text', icon: <FaMicrophone />, key: 'speech_to_text' },
+        { id: 'mindmap', label: 'Mindmap', icon: <FaProjectDiagram />, key: 'mindmap' },
+        { id: 'fill-blanks', label: 'Fill in the Blanks', icon: <FaEdit />, key: 'fill_in_the_blanks' },
+        { id: 'written-tests', label: 'Written Test', icon: <FaPencilAlt />, key: 'written_tests' },
+        { id: 'tutor-lesson', label: 'Tutor Lesson', icon: <FaGraduationCap />, key: 'tutor_lesson' },
+        { id: 'content', label: 'Content', icon: <FaFileAlt />, key: 'content' }, // Assuming content is always true or has a key
     ];
+
+    const methods = allMethods.filter(method => {
+        if (!allowedMethods) return true; // Show all if no config provided (legacy/direct access)
+        if (method.id === 'content') return true; // Always show content? Or check key? User listed Content.
+        return allowedMethods[method.key];
+    });
 
     return (
         <aside className="w-64 bg-[#111111] border-r border-white/10 flex flex-col h-screen flex-shrink-0">
@@ -88,70 +107,14 @@ const StudySidebar: React.FC<{ activeMethod: string; onSelectMethod: (id: string
             <div className="p-4 border-t border-white/5">
                 <div className="flex items-center gap-3 px-2 py-2 cursor-pointer hover:bg-white/5 rounded transition-colors">
                     <div className="w-8 h-8 rounded-full bg-cyan-600 flex items-center justify-center text-xs font-bold text-white">
-                       {user?.email?.substring(0, 2).toUpperCase() || 'AI'}
+                        {user?.email?.substring(0, 2).toUpperCase() || 'AI'}
                     </div>
                     <div className="flex-1 overflow-hidden">
-                       <p className="text-sm font-medium truncate text-white">{user?.email?.split('@')[0] || 'User'}</p>
+                        <p className="text-sm font-medium truncate text-white">{user?.email?.split('@')[0] || 'User'}</p>
                     </div>
                     <FaChevronDown size={12} className="text-gray-500" />
                 </div>
             </div>
-        </aside>
-    );
-};
-
-const StudyRightSidebar: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'chat' | 'content'>('chat');
-
-    return (
-        <aside className="w-80 bg-[#111111] border-l border-white/10 flex flex-col h-screen flex-shrink-0 hidden lg:flex">
-             <div className="p-4 border-b border-white/5 flex gap-2">
-                 <button 
-                    onClick={() => setActiveTab('chat')}
-                    className={`flex-1 py-1.5 rounded text-sm font-medium transition-colors ${activeTab === 'chat' ? 'bg-[#1a1a1a] text-white' : 'text-gray-500 hover:text-gray-300'}`}
-                 >
-                     Chat
-                 </button>
-                 <button 
-                    onClick={() => setActiveTab('content')}
-                    className={`flex-1 py-1.5 rounded text-sm font-medium transition-colors ${activeTab === 'content' ? 'bg-[#1a1a1a] text-white' : 'text-gray-500 hover:text-gray-300'}`}
-                 >
-                     Content
-                 </button>
-             </div>
-
-             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-gray-500">
-                 {activeTab === 'chat' ? (
-                     <>
-                        <div className="w-16 h-16 bg-[#1a1a1a] rounded-full flex items-center justify-center mb-4">
-                            <FaBook className="text-gray-600" />
-                        </div>
-                        <p className="text-sm">Ask me anything about the material...</p>
-                     </>
-                 ) : (
-                    <div className="w-full h-full p-4">
-                        <div className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3">
-                            <h4 className="text-white text-sm font-bold mb-2">Content</h4>
-                            <div className="w-8 h-8 bg-blue-500/20 text-blue-400 rounded flex items-center justify-center">?</div>
-                        </div>
-                    </div>
-                 )}
-             </div>
-             
-             {activeTab === 'chat' && (
-                 <div className="p-4 border-t border-white/5">
-                     <div className="relative">
-                         <input 
-                            type="text" 
-                            placeholder="Ask me anything..." 
-                            className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl py-3 pl-4 pr-10 text-white placeholder-gray-600 focus:outline-none focus:border-white/20"
-                         />
-                         <button className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-gray-700 rounded-full flex items-center justify-center text-white hover:bg-gray-600">
-                             <FaArrowLeft size={10} className="rotate-90" />
-                         </button>
-                     </div>
-                 </div>
-             )}
         </aside>
     );
 };
@@ -161,10 +124,50 @@ const StudyRightSidebar: React.FC = () => {
 const StudyMaterialPage: React.FC = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
+    const studySetData = location.state?.studySetData;
     const [activeMethod, setActiveMethod] = useState('notes');
 
     // Mock Content
-    const title = "System Architecture Diagram";
+    const title = studySetData?.title || "System Architecture Diagram"; // Use title from data if available
+
+    // If we have studySetData, ensure the activeMethod is one of the allowed ones
+    useEffect(() => {
+        if (studySetData) {
+            // Mapping of keys to ids
+            const keyToId: Record<string, string> = {
+                'notes': 'notes',
+                'multiple_choice': 'multiple-choice',
+                'flashcards': 'flashcards',
+                'podcast': 'podcast',
+                'speech_to_text': 'speech-to-text',
+                'mindmap': 'mindmap',
+                'fill_in_the_blanks': 'fill-blanks',
+                'written_tests': 'written-tests',
+                'tutor_lesson': 'tutor-lesson',
+                'content': 'content'
+            };
+            
+            // If current active method is not allowed, switch to the first allowed one
+            // This is a bit complex because we need to check if the 'activeMethod' (id) corresponds to a true key
+            // Simplification: just check if the current activeMethod is valid.
+            
+            // Reverse map id to key
+            const idToKey: Record<string, string> = {};
+            Object.entries(keyToId).forEach(([k, v]) => idToKey[v] = k);
+            
+            const currentKey = idToKey[activeMethod];
+            if (currentKey && studySetData[currentKey] === false && activeMethod !== 'content') {
+                 // Find first allowed method
+                 const firstAllowed = Object.entries(keyToId).find(([k, v]) => studySetData[k] === true);
+                 if (firstAllowed) {
+                     setActiveMethod(firstAllowed[1]);
+                 } else {
+                     setActiveMethod('content');
+                 }
+            }
+        }
+    }, [studySetData, activeMethod]);
 
     const renderContent = () => {
         switch (activeMethod) {
@@ -176,6 +179,10 @@ const StudyMaterialPage: React.FC = () => {
                 return <StudyFlashcards />;
             case 'podcast':
                 return <StudyPodcast />;
+            case 'speech-to-text':
+                return <StudySpeechToText />;
+            case 'mindmap':
+                return <StudyMindmap />;
             case 'fill-blanks':
                 return <StudyFillInBlanks />;
             case 'written-tests':
@@ -194,10 +201,14 @@ const StudyMaterialPage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#111111] text-white flex font-sans overflow-hidden">
-            <StudySidebar activeMethod={activeMethod} onSelectMethod={setActiveMethod} />
+        <div className="h-screen bg-[#111111] text-white flex font-sans overflow-hidden">
+            <StudySidebar 
+                activeMethod={activeMethod} 
+                onSelectMethod={setActiveMethod} 
+                allowedMethods={studySetData}
+            />
             
-            <main className="flex-1 flex flex-col min-w-0">
+            <main className="flex-1 flex flex-col min-w-0 h-full">
                 {/* Top Bar */}
                 <div className="h-16 border-b border-white/5 flex items-center justify-between px-8 flex-shrink-0">
                     <div className="flex items-center gap-4">
@@ -224,12 +235,12 @@ const StudyMaterialPage: React.FC = () => {
                 </div>
 
                 {/* Content Area */}
-                <div className="flex-1 overflow-y-auto p-8 relative scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent">
+                <div className={`flex-1 relative ${activeMethod === 'notes' ? 'flex flex-col overflow-hidden' : 'overflow-y-auto p-8 scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent'}`}>
                     {renderContent()}
                 </div>
             </main>
 
-            <StudyRightSidebar />
+            <StudyRightPanel />
         </div>
     );
 };

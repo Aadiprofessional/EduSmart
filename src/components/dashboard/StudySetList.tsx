@@ -4,9 +4,10 @@ import StudySetCard, { StudySet } from './StudySetCard';
 
 interface StudySetListProps {
   studySets: StudySet[];
+  onSetClick?: (set: StudySet) => void;
 }
 
-const StudySetList: React.FC<StudySetListProps> = ({ studySets }) => {
+const StudySetList: React.FC<StudySetListProps> = ({ studySets, onSetClick }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   return (
@@ -35,7 +36,12 @@ const StudySetList: React.FC<StudySetListProps> = ({ studySets }) => {
         {/* Study Set Cards */}
         <div className={`grid gap-6 ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-2' : 'grid-cols-1'}`}>
             {studySets.map(set => (
-                <StudySetCard key={set.id} set={set} viewMode={viewMode} />
+                <StudySetCard 
+                    key={set.id} 
+                    set={set} 
+                    viewMode={viewMode} 
+                    onClick={() => onSetClick?.(set)}
+                />
             ))}
         </div>
     </div>
