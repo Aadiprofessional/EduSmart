@@ -45,7 +45,7 @@ const PortalModal: React.FC<PortalModalProps> = ({ isOpen, onClose, children, cl
   return ReactDOM.createPortal(
     <AnimatePresence>
       <motion.div 
-        className="bg-[#0f172a]/80 backdrop-blur-md flex items-center justify-center p-4"
+        className="bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -281,7 +281,7 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
     // Add empty cells for days before the first day of the month
     for (let i = 0; i < firstDay; i++) {
       days.push(
-        <div key={`empty-${i}`} className="h-24 border border-slate-600/30"></div>
+        <div key={`empty-${i}`} className="h-24 border border-white/5"></div>
       );
     }
 
@@ -295,10 +295,10 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
       days.push(
         <motion.div
           key={day}
-          className={`h-24 border border-slate-600/30 p-1 cursor-pointer transition-all duration-200 ${
-            isToday ? 'bg-cyan-500/20 border-cyan-500/50' : 
-            isSelected ? 'bg-blue-500/20 border-blue-500/50' : 
-            'hover:bg-slate-600/20'
+          className={`h-24 border border-white/5 p-1 cursor-pointer transition-all duration-200 ${
+            isToday ? 'bg-cyan-500/10 border-cyan-500/30' : 
+            isSelected ? 'bg-blue-500/10 border-blue-500/30' : 
+            'hover:bg-white/5'
           }`}
           onClick={() => setSelectedCalendarDate(date)}
           whileHover={{ scale: 1.02 }}
@@ -307,7 +307,7 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
           <div className={`text-sm font-medium mb-1 ${
             isToday ? 'text-cyan-400' : 
             isSelected ? 'text-blue-400' : 
-            'text-slate-300'
+            'text-gray-400'
           }`}>
             {day}
           </div>
@@ -336,16 +336,16 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
     }
 
     return (
-      <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-4">
+      <div className="bg-transparent rounded-2xl p-4">
         {/* Calendar Header */}
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-cyan-400">
+          <h3 className="text-xl font-bold text-white">
             {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
           </h3>
           <div className="flex items-center space-x-2">
             <motion.button
               onClick={() => navigateMonth('prev')}
-              className="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-slate-300 transition-colors"
+              className="p-2 bg-[#27272a] hover:bg-[#3f3f46] rounded-lg text-gray-400 transition-colors"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -353,7 +353,7 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
             </motion.button>
             <motion.button
               onClick={() => setCurrentDate(new Date())}
-              className="px-3 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 rounded-lg text-cyan-400 text-sm font-medium transition-colors"
+              className="px-3 py-2 bg-white text-black hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -361,7 +361,7 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
             </motion.button>
             <motion.button
               onClick={() => navigateMonth('next')}
-              className="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-slate-300 transition-colors"
+              className="p-2 bg-[#27272a] hover:bg-[#3f3f46] rounded-lg text-gray-400 transition-colors"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -373,7 +373,7 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
         {/* Day Names */}
         <div className="grid grid-cols-7 gap-1 mb-2">
           {dayNames.map(day => (
-            <div key={day} className="text-center text-sm font-medium text-slate-400 py-2">
+            <div key={day} className="text-center text-sm font-medium text-gray-500 py-2">
               {day}
             </div>
           ))}
@@ -1453,13 +1453,13 @@ Remember: Return ONLY the XML structure. No additional text.`
 
   return (
     <motion.div
-      className={`bg-[#0f172a]/60 backdrop-blur-md border border-white/10 rounded-xl shadow-lg overflow-hidden ${className}`}
+      className={`bg-black/40 backdrop-blur-xl border border-white/5 rounded-[32px] shadow-2xl overflow-hidden ${className}`}
       variants={containerVariants}
       initial="hidden"
       animate="visible"
     >
       {/* Header */}
-      <div className="bg-[#0f172a]/60 backdrop-blur-md px-6 py-4 border-b border-white/10">
+      <div className="bg-transparent px-6 py-6 border-b border-white/5">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
           </div>
@@ -1503,7 +1503,7 @@ Remember: Return ONLY the XML structure. No additional text.`
       {/* Add Task Form */}
       {showAddForm && (
         <motion.div
-          className="p-6 border-b border-white/10 bg-[#0f172a]/60 backdrop-blur-md"
+          className="p-6 border-b border-white/5 bg-transparent"
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
@@ -1511,46 +1511,46 @@ Remember: Return ONLY the XML structure. No additional text.`
           <form onSubmit={handleAddTask} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-slate-300 text-sm font-medium mb-2">{t('aiStudy.taskDescription')}</label>
+                <label className="block text-gray-300 text-sm font-medium mb-2">{t('aiStudy.taskDescription')}</label>
                 <input
                   type="text"
                   value={newTask.task}
                   onChange={(e) => setNewTask({...newTask, task: e.target.value})}
-                  className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 placeholder-slate-400 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  className="w-full px-3 py-2 bg-[#1f1f23] border border-white/10 rounded-lg text-gray-300 placeholder-gray-500 focus:outline-none focus:border-white/20"
                   placeholder={t('aiStudy.enterTaskDescription')}
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 text-sm font-medium mb-2">{t('aiStudy.subject')}</label>
+                <label className="block text-gray-300 text-sm font-medium mb-2">{t('aiStudy.subject')}</label>
                 <input
                   type="text"
                   value={newTask.subject}
                   onChange={(e) => setNewTask({...newTask, subject: e.target.value})}
-                  className="w-full px-3 py-2 bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 placeholder-slate-400 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  className="w-full px-3 py-2 bg-[#1f1f23] border border-white/10 rounded-lg text-gray-300 placeholder-gray-500 focus:outline-none focus:border-white/20"
                   placeholder={t('aiStudy.enterSubject')}
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 text-sm font-medium mb-2">{t('aiStudy.dueDate')}</label>
+                <label className="block text-gray-300 text-sm font-medium mb-2">{t('aiStudy.dueDate')}</label>
                 <input
                   type="date"
                   value={newTask.date}
                   onChange={(e) => setNewTask({...newTask, date: e.target.value})}
-                  className="w-full px-3 py-2 bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  className="w-full px-3 py-2 bg-[#1f1f23] border border-white/10 rounded-lg text-gray-300 focus:outline-none focus:border-white/20"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 text-sm font-medium mb-2">{t('aiStudy.priority')}</label>
+                <label className="block text-gray-300 text-sm font-medium mb-2">{t('aiStudy.priority')}</label>
                 <select
                   value={newTask.priority}
                   onChange={(e) => setNewTask({...newTask, priority: e.target.value as 'low' | 'medium' | 'high'})}
-                  className="w-full px-3 py-2 bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  className="w-full px-3 py-2 bg-[#1f1f23] border border-white/10 rounded-lg text-gray-300 focus:outline-none focus:border-white/20"
                 >
                   <option value="low">{t('aiStudy.lowPriority')}</option>
                   <option value="medium">{t('aiStudy.mediumPriority')}</option>
@@ -1559,14 +1559,14 @@ Remember: Return ONLY the XML structure. No additional text.`
               </div>
 
               <div>
-                <label className="block text-slate-300 text-sm font-medium mb-2">{t('aiStudy.estimatedHours')}</label>
+                <label className="block text-gray-300 text-sm font-medium mb-2">{t('aiStudy.estimatedHours')}</label>
                 <input
                   type="number"
                   min="1"
                   max="24"
                   value={newTask.estimatedHours}
                   onChange={(e) => setNewTask({...newTask, estimatedHours: parseInt(e.target.value)})}
-                  className="w-full px-3 py-2 bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  className="w-full px-3 py-2 bg-[#1f1f23] border border-white/10 rounded-lg text-gray-300 focus:outline-none focus:border-white/20"
                 />
               </div>
             </div>
@@ -1574,7 +1574,7 @@ Remember: Return ONLY the XML structure. No additional text.`
             <div className="flex items-center space-x-4">
               <motion.button
                 type="submit"
-                className="flex items-center px-6 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg text-white font-medium shadow-md hover:shadow-lg transition-all"
+                className="flex items-center px-6 py-2 bg-white text-black rounded-lg font-medium shadow-md hover:bg-gray-200 transition-all"
                 variants={buttonVariants}
                 whileHover="hover"
                 whileTap="tap"
@@ -1586,7 +1586,7 @@ Remember: Return ONLY the XML structure. No additional text.`
               <motion.button
                 type="button"
                 onClick={() => setShowAddForm(false)}
-                className="px-6 py-2 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10"
+                className="px-6 py-2 bg-[#27272a] hover:bg-[#3f3f46] rounded-lg text-gray-300 transition-colors border border-transparent"
                 variants={buttonVariants}
                 whileHover="hover"
                 whileTap="tap"
@@ -1612,7 +1612,7 @@ Remember: Return ONLY the XML structure. No additional text.`
             <div className="flex flex-wrap items-center gap-4 mb-4">
               <motion.button
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center px-3 py-2 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10"
+                className="flex items-center px-3 py-2 bg-black/20 backdrop-blur-sm hover:bg-black/30 rounded-lg text-gray-300 transition-colors border border-white/10"
                 variants={buttonVariants}
                 whileHover="hover"
                 whileTap="tap"
@@ -1624,7 +1624,7 @@ Remember: Return ONLY the XML structure. No additional text.`
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                className="px-3 py-2 bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg text-gray-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
               >
                 <option value="date">{t('aiStudy.sortByDate')}</option>
                 <option value="date_desc">{t('aiStudy.sortByDateDesc')}</option>
@@ -1653,27 +1653,27 @@ Remember: Return ONLY the XML structure. No additional text.`
 
             {showFilters && (
               <motion.div
-                className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-700/30 backdrop-blur-sm rounded-lg border border-white/10"
+                className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-black/20 backdrop-blur-sm rounded-lg border border-white/10"
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
               >
                 <div>
-                  <label className="block text-slate-300 text-sm font-medium mb-2">{t('aiStudy.filterByDate')}</label>
+                  <label className="block text-gray-300 text-sm font-medium mb-2">{t('aiStudy.filterByDate')}</label>
                   <input
                     type="date"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
-                    className="w-full px-3 py-2 bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                    className="w-full px-3 py-2 bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg text-gray-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 text-sm font-medium mb-2">{t('aiStudy.filterByPriority')}</label>
+                  <label className="block text-gray-300 text-sm font-medium mb-2">{t('aiStudy.filterByPriority')}</label>
                   <select
                     value={filterPriority}
                     onChange={(e) => setFilterPriority(e.target.value)}
-                    className="w-full px-3 py-2 bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                    className="w-full px-3 py-2 bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg text-gray-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                   >
                     <option value="all">{t('aiStudy.allPriorities')}</option>
                     <option value="high">{t('aiStudy.highPriority')}</option>
@@ -1683,11 +1683,11 @@ Remember: Return ONLY the XML structure. No additional text.`
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 text-sm font-medium mb-2">{t('aiStudy.filterBySubject')}</label>
+                  <label className="block text-gray-300 text-sm font-medium mb-2">{t('aiStudy.filterBySubject')}</label>
                   <select
                     value={filterSubject}
                     onChange={(e) => setFilterSubject(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                    className="w-full px-3 py-2 bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg text-gray-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                   >
                     <option value="all">{t('aiStudy.allSubjects')}</option>
                     {getUniqueSubjects().map(subject => (
@@ -1711,9 +1711,9 @@ Remember: Return ONLY the XML structure. No additional text.`
           <div className="flex-1 overflow-y-auto p-6">
             {filteredTasks.length === 0 ? (
               <div className="text-center py-12">
-                <IconComponent icon={AiOutlineBulb} className="h-12 w-12 mx-auto mb-4 text-slate-400" />
-                <h3 className="text-lg font-medium text-slate-300 mb-2">{t('aiStudy.noTasksFound')}</h3>
-                <p className="text-slate-400">
+                <IconComponent icon={AiOutlineBulb} className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                <h3 className="text-lg font-medium text-gray-300 mb-2">{t('aiStudy.noTasksFound')}</h3>
+                <p className="text-gray-400">
                   {selectedCalendarDate ? t('aiStudy.noTasksScheduled') : t('aiStudy.addTaskOrAdjustFilters')}
                 </p>
               </div>
@@ -1722,7 +1722,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                 {filteredTasks.map((task, index) => (
                   <motion.div
                     key={task.id}
-                    className={`p-4 bg-black/20 backdrop-blur-md rounded-lg border border-white/10 transition-all ${
+                    className={`p-4 bg-[#1f1f23] backdrop-blur-md rounded-lg border border-white/10 transition-all ${
                       task.completed ? 'opacity-75' : ''
                     }`}
                     variants={itemVariants}
@@ -1737,7 +1737,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                           className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
                             task.completed
                               ? 'bg-green-500 border-green-500 text-white'
-                              : 'border-slate-400 hover:border-cyan-400'
+                              : 'border-gray-400 hover:border-cyan-400'
                           }`}
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
@@ -1751,7 +1751,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                             value={task.task}
                             onChange={(e) => handleTaskNameChange(task.id, e.target.value)}
                             className={`w-full bg-transparent border-none outline-none font-medium text-sm px-2 py-1 rounded transition-colors ${
-                              task.completed ? 'line-through text-slate-400' : 'text-slate-200 hover:bg-slate-600/30 focus:bg-slate-600/50'
+                              task.completed ? 'line-through text-gray-400' : 'text-gray-200 hover:bg-white/10 focus:bg-white/20'
                             }`}
                             placeholder="Task name"
                           />
@@ -1760,29 +1760,29 @@ Remember: Return ONLY the XML structure. No additional text.`
                               type="text"
                               value={task.subject}
                               onChange={(e) => handleSubjectChange(task.id, e.target.value)}
-                              className="text-sm text-cyan-400 bg-transparent border-none outline-none px-2 py-1 rounded hover:bg-slate-600/30 focus:bg-slate-600/50 w-24"
+                              className="text-sm text-cyan-400 bg-transparent border-none outline-none px-2 py-1 rounded hover:bg-white/10 focus:bg-white/20 w-24"
                               placeholder="Subject"
                             />
                             <div className="flex items-center">
-                              <IconComponent icon={FiCalendar} className="h-3 w-3 mr-1 text-slate-400" />
+                              <IconComponent icon={FiCalendar} className="h-3 w-3 mr-1 text-gray-400" />
                               <input
                                 type="date"
                                 value={task.date}
                                 onChange={(e) => handleDateChange(task.id, e.target.value)}
-                                className="text-sm text-slate-400 bg-transparent border-none outline-none px-2 py-1 rounded hover:bg-slate-600/30 focus:bg-slate-600/50"
+                                className="text-sm text-gray-400 bg-transparent border-none outline-none px-2 py-1 rounded hover:bg-white/10 focus:bg-white/20"
                               />
                             </div>
                             <div className="flex items-center">
-                              <IconComponent icon={FiClock} className="h-3 w-3 mr-1 text-slate-400" />
+                              <IconComponent icon={FiClock} className="h-3 w-3 mr-1 text-gray-400" />
                               <input
                                 type="number"
                                 value={task.estimatedHours}
                                 onChange={(e) => handleEstimatedHoursChange(task.id, parseInt(e.target.value) || 1)}
                                 min="1"
                                 max="24"
-                                className="text-sm text-slate-400 bg-transparent border-none outline-none px-2 py-1 rounded hover:bg-slate-600/30 focus:bg-slate-600/50 w-16"
+                                className="text-sm text-gray-400 bg-transparent border-none outline-none px-2 py-1 rounded hover:bg-white/10 focus:bg-white/20 w-16"
                               />
-                              <span className="text-sm text-slate-400">h</span>
+                              <span className="text-sm text-gray-400">h</span>
                             </div>
                           </div>
                           {task.reminder && task.reminderDate && (
@@ -1810,7 +1810,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                           className={`p-2 rounded-lg transition-colors ${
                             task.reminder 
                               ? 'text-yellow-400 hover:text-yellow-300 bg-yellow-500/10' 
-                              : 'text-slate-400 hover:text-yellow-400 hover:bg-yellow-500/10'
+                              : 'text-gray-400 hover:text-yellow-400 hover:bg-yellow-500/10'
                           }`}
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
@@ -1846,7 +1846,7 @@ Remember: Return ONLY the XML structure. No additional text.`
             className="flex items-center justify-center z-50 p-4"
           >
             <motion.div
-              className="bg-slate-800 rounded-2xl border border-white/10 shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+              className="bg-black/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -1859,14 +1859,14 @@ Remember: Return ONLY the XML structure. No additional text.`
                   </h2>
                   <motion.button
                     onClick={closeAIModal}
-                    className="text-slate-400 hover:text-slate-300 p-2 rounded-lg hover:bg-slate-700/50 transition-colors"
+                    className="text-gray-400 hover:text-gray-300 p-2 rounded-lg hover:bg-white/5 transition-colors"
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                   >
                     <IconComponent icon={FaTimes} className="h-5 w-5" />
                   </motion.button>
                 </div>
-                <p className="text-slate-400 mt-2">
+                <p className="text-gray-400 mt-2">
                   Upload your timetable image or PDF and let AI analyze it to automatically create study tasks with predicted priorities.
                 </p>
               </div>
@@ -1874,7 +1874,7 @@ Remember: Return ONLY the XML structure. No additional text.`
               <div className="p-6">
                 {!uploadedFile ? (
                   <div className="space-y-6">
-                    <div className="border-2 border-dashed border-slate-600 rounded-xl p-8 text-center hover:border-purple-500/50 transition-colors">
+                    <div className="border-2 border-dashed border-white/10 rounded-xl p-8 text-center hover:border-purple-500/50 transition-colors">
                       <input
                         type="file"
                         id="timetable-upload"
@@ -1891,13 +1891,13 @@ Remember: Return ONLY the XML structure. No additional text.`
                           <IconComponent icon={FiUpload} className="h-8 w-8 text-purple-400" />
                         </div>
                         <div>
-                          <p className="text-lg font-medium text-slate-300 mb-2">
+                          <p className="text-lg font-medium text-gray-300 mb-2">
                             {isUploading ? 'Processing...' : 'Upload Timetable Image'}
                           </p>
-                          <p className="text-slate-400 text-sm">
+                          <p className="text-gray-400 text-sm">
                             Drag and drop or click to select an image file
                           </p>
-                          <p className="text-slate-500 text-xs mt-2">
+                          <p className="text-gray-500 text-xs mt-2">
                             Supports: JPG, PNG, GIF (Max 10MB)
                           </p>
                         </div>
@@ -1907,12 +1907,12 @@ Remember: Return ONLY the XML structure. No additional text.`
                 ) : (
                   <div className="space-y-6">
                     {/* File Preview */}
-                    <div className="bg-slate-700/30 rounded-xl p-4 border border-white/10">
+                    <div className="bg-[#1f1f23] rounded-xl p-4 border border-white/10">
                       <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-medium text-slate-300">Uploaded File</h3>
+                        <h3 className="text-lg font-medium text-gray-300">Uploaded File</h3>
                         <motion.button
                           onClick={() => setUploadedFile(null)}
-                          className="text-slate-400 hover:text-red-400 transition-colors"
+                          className="text-gray-400 hover:text-red-400 transition-colors"
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
                         >
@@ -1921,7 +1921,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                       </div>
                       
                       <div className="flex items-center space-x-4">
-                        <div className="w-20 h-20 bg-slate-600/50 rounded-lg flex items-center justify-center overflow-hidden">
+                        <div className="w-20 h-20 bg-black/20 rounded-lg flex items-center justify-center overflow-hidden">
                           {uploadedFile.file.type.startsWith('image/') ? (
                             <img 
                               src={uploadedFile.base64} 
@@ -1929,12 +1929,12 @@ Remember: Return ONLY the XML structure. No additional text.`
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <IconComponent icon={FaCalendarAlt} className="h-8 w-8 text-slate-400" />
+                            <IconComponent icon={FaCalendarAlt} className="h-8 w-8 text-gray-400" />
                           )}
                         </div>
                         <div className="flex-1">
-                          <p className="text-slate-300 font-medium">{uploadedFile.file.name}</p>
-                          <p className="text-slate-400 text-sm">
+                          <p className="text-gray-300 font-medium">{uploadedFile.file.name}</p>
+                          <p className="text-gray-400 text-sm">
                             {(uploadedFile.file.size / 1024 / 1024).toFixed(2)} MB
                           </p>
                           {uploadedFile.extractedText && (
@@ -1948,17 +1948,17 @@ Remember: Return ONLY the XML structure. No additional text.`
 
                     {/* AI Analysis Results */}
                     {aiAnalysisResult && (
-                      <div className="bg-slate-700/30 rounded-xl p-4 border border-white/10">
-                        <h3 className="text-lg font-medium text-slate-300 mb-4 flex items-center">
+                      <div className="bg-[#1f1f23] rounded-xl p-4 border border-white/10">
+                        <h3 className="text-lg font-medium text-gray-300 mb-4 flex items-center">
                           <IconComponent icon={AiOutlineRobot} className="mr-2 text-purple-400" />
                           AI Analysis Results
                         </h3>
                         
                         <div className="space-y-3 max-h-60 overflow-y-auto">
                           {aiAnalysisResult.map((task: any, index: number) => (
-                            <div key={index} className="bg-slate-600/30 rounded-lg p-3 border border-white/5">
+                            <div key={index} className="bg-black/20 rounded-lg p-3 border border-white/5">
                               <div className="flex items-center justify-between mb-2">
-                                <h4 className="font-medium text-slate-200">{task.title}</h4>
+                                <h4 className="font-medium text-gray-200">{task.title}</h4>
                                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                                   task.priority === 'high' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
                                   task.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
@@ -1967,7 +1967,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                                   {task.priority} priority
                                 </span>
                               </div>
-                              <div className="flex items-center space-x-4 text-sm text-slate-400">
+                              <div className="flex items-center space-x-4 text-sm text-gray-400">
                                 <span className="flex items-center">
                                   <IconComponent icon={FiCalendar} className="h-3 w-3 mr-1" />
                                   {task.dueDate}
@@ -2024,7 +2024,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                       
                       <motion.button
                         onClick={closeAIModal}
-                        className="px-6 py-3 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 rounded-lg transition-colors"
+                        className="px-6 py-3 bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg transition-colors"
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                       >
@@ -2048,7 +2048,7 @@ Remember: Return ONLY the XML structure. No additional text.`
             className="flex items-center justify-center z-50 p-4"
           >
             <motion.div
-              className="bg-slate-800 rounded-2xl border border-white/10 shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col"
+              className="bg-black/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col"
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -2061,14 +2061,14 @@ Remember: Return ONLY the XML structure. No additional text.`
                   </h2>
                   <motion.button
                     onClick={closeAISuggestionModal}
-                    className="text-slate-400 hover:text-slate-300 p-2 rounded-lg hover:bg-slate-700/50 transition-colors"
+                    className="text-gray-400 hover:text-gray-300 p-2 rounded-lg hover:bg-white/5 transition-colors"
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                   >
                     <IconComponent icon={FaTimes} className="h-5 w-5" />
                   </motion.button>
                 </div>
-                <p className="text-slate-400 mt-2">
+                <p className="text-gray-400 mt-2">
                   Get AI-powered study roadmaps with task prioritization, time management, and workload division strategies.
                 </p>
               </div>
@@ -2078,8 +2078,8 @@ Remember: Return ONLY the XML structure. No additional text.`
                   {/* Date Range and Prompt in a compact row */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {/* Date Range Selection */}
-                    <div className="bg-slate-700/30 rounded-xl p-4 border border-white/10">
-                      <h3 className="text-sm font-medium text-slate-300 mb-3 flex items-center">
+                    <div className="bg-[#1f1f23] rounded-xl p-4 border border-white/10">
+                      <h3 className="text-sm font-medium text-gray-300 mb-3 flex items-center">
                         <IconComponent icon={FiCalendar} className="mr-2 text-emerald-400" />
                         Date Range (Optional)
                       </h3>
@@ -2089,7 +2089,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                             type="date"
                             value={suggestionDateRange.startDate}
                             onChange={(e) => setSuggestionDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-                            className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            className="w-full px-3 py-2 bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg text-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                           />
                         </div>
                         <div>
@@ -2097,15 +2097,15 @@ Remember: Return ONLY the XML structure. No additional text.`
                             type="date"
                             value={suggestionDateRange.endDate}
                             onChange={(e) => setSuggestionDateRange(prev => ({ ...prev, endDate: e.target.value }))}
-                            className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            className="w-full px-3 py-2 bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg text-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                           />
                         </div>
                       </div>
                     </div>
 
                     {/* Custom Prompt */}
-                    <div className="bg-slate-700/30 rounded-xl p-4 border border-white/10">
-                      <h3 className="text-sm font-medium text-slate-300 mb-3 flex items-center">
+                    <div className="bg-[#1f1f23] rounded-xl p-4 border border-white/10">
+                      <h3 className="text-sm font-medium text-gray-300 mb-3 flex items-center">
                         <IconComponent icon={FiEdit} className="mr-2 text-emerald-400" />
                         Custom Request (Optional)
                       </h3>
@@ -2113,29 +2113,29 @@ Remember: Return ONLY the XML structure. No additional text.`
                         value={customPrompt}
                         onChange={(e) => setCustomPrompt(e.target.value)}
                         placeholder="e.g., 'Focus on exam preparation' or 'Help with time management'"
-                        className="w-full px-3 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 placeholder-slate-400 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"
+                        className="w-full px-3 py-2 bg-black/20 backdrop-blur-sm border border-white/10 rounded-lg text-gray-300 placeholder-gray-500 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"
                         rows={3}
                       />
                     </div>
                   </div>
 
                   {/* Task Analysis Summary */}
-                  <div className="bg-slate-700/30 rounded-xl p-4 border border-white/10">
+                  <div className="bg-[#1f1f23] rounded-xl p-4 border border-white/10">
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-sm font-medium text-slate-300 flex items-center">
+                      <h3 className="text-sm font-medium text-gray-300 flex items-center">
                         <IconComponent icon={FiClock} className="mr-2 text-emerald-400" />
                         Comprehensive Analysis
                       </h3>
                       <div className="flex items-center space-x-2">
                         <motion.button
                           onClick={() => toggleSection('comprehensiveAnalysis')}
-                          className="p-1 rounded-lg hover:bg-slate-600/50 transition-colors"
+                          className="p-1 rounded-lg hover:bg-white/5 transition-colors"
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
                         >
                           <IconComponent 
                             icon={expandedSections.comprehensiveAnalysis ? FiChevronUp : FiChevronDown} 
-                            className="h-4 w-4 text-slate-400" 
+                            className="h-4 w-4 text-gray-400" 
                           />
                         </motion.button>
                       </div>
@@ -2150,7 +2150,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                           transition={{ duration: 0.3 }}
                           className="overflow-hidden"
                         >
-                          <div className="text-slate-400 text-sm space-y-4">
+                          <div className="text-gray-400 text-sm space-y-4">
                             {(() => {
                               // Get all study tasks (including those synced from applications)
                               let allStudyTasks = studyTasks;
@@ -2219,62 +2219,62 @@ Remember: Return ONLY the XML structure. No additional text.`
                                   </div>
 
                                   {/* Application Status */}
-                                  <div className="bg-slate-600/30 rounded-lg p-4 border border-white/5">
+                                  <div className="bg-[#1f1f23] rounded-lg p-4 border border-white/10">
                                     <h4 className="text-xs font-semibold text-purple-400 mb-3 flex items-center">
                                       <IconComponent icon={FiEdit} className="mr-2" />
                                       Application Status
                                     </h4>
                                     <div className="space-y-2">
                                       <div className="flex justify-between">
-                                        <span className="text-xs text-slate-400">Total Apps:</span>
-                                        <span className="text-xs font-medium text-slate-300">{relevantApplications.length}</span>
+                                        <span className="text-xs text-gray-400">Total Apps:</span>
+                                        <span className="text-xs font-medium text-gray-300">{relevantApplications.length}</span>
                                       </div>
                                       <div className="flex justify-between">
-                                        <span className="text-xs text-slate-400">Planning:</span>
+                                        <span className="text-xs text-gray-400">Planning:</span>
                                         <span className="text-xs font-medium text-gray-400">{relevantApplications.filter(a => a.status === 'planning').length}</span>
                                       </div>
                                       <div className="flex justify-between">
-                                        <span className="text-xs text-slate-400">In Progress:</span>
+                                        <span className="text-xs text-gray-400">In Progress:</span>
                                         <span className="text-xs font-medium text-blue-400">{relevantApplications.filter(a => a.status === 'in-progress').length}</span>
                                       </div>
                                       <div className="flex justify-between">
-                                        <span className="text-xs text-slate-400">Submitted:</span>
+                                        <span className="text-xs text-gray-400">Submitted:</span>
                                         <span className="text-xs font-medium text-green-400">{relevantApplications.filter(a => a.status === 'submitted').length}</span>
                                       </div>
                                       <div className="flex justify-between">
-                                        <span className="text-xs text-slate-400">Upcoming Deadlines:</span>
+                                        <span className="text-xs text-gray-400">Upcoming Deadlines:</span>
                                         <span className="text-xs font-medium text-indigo-400">{upcomingDeadlines}</span>
                                       </div>
                                     </div>
                                   </div>
 
                                   {/* Time Management */}
-                                  <div className="bg-slate-600/30 rounded-lg p-4 border border-white/5">
+                                  <div className="bg-[#1f1f23] rounded-lg p-4 border border-white/10">
                                     <h4 className="text-xs font-semibold text-cyan-400 mb-3 flex items-center">
                                       <IconComponent icon={FiClock} className="mr-2" />
                                       Time Management
                                     </h4>
                                     <div className="space-y-2">
                                       <div className="flex justify-between">
-                                        <span className="text-xs text-slate-400">Avg Hours/Task:</span>
-                                        <span className="text-xs font-medium text-slate-300">
+                                        <span className="text-xs text-gray-400">Avg Hours/Task:</span>
+                                        <span className="text-xs font-medium text-gray-300">
                                           {allStudyTasks.length > 0 ? (totalHours / allStudyTasks.length).toFixed(1) : '0'}h
                                         </span>
                                       </div>
                                       <div className="flex justify-between">
-                                        <span className="text-xs text-slate-400">Tasks w/ Reminders:</span>
+                                        <span className="text-xs text-gray-400">Tasks w/ Reminders:</span>
                                         <span className="text-xs font-medium text-blue-400">
                                           {allStudyTasks.filter(t => t.reminder).length}
                                         </span>
                                       </div>
                                       <div className="flex justify-between">
-                                        <span className="text-xs text-slate-400">Study vs App Tasks:</span>
+                                        <span className="text-xs text-gray-400">Study vs App Tasks:</span>
                                         <span className="text-xs font-medium text-purple-400">
                                           {allStudyTasks.filter(t => t.source === 'study').length}:{allStudyTasks.filter(t => t.source === 'application').length}
                                         </span>
                                       </div>
                                       <div className="flex justify-between">
-                                        <span className="text-xs text-slate-400">Completion Rate:</span>
+                                        <span className="text-xs text-gray-400">Completion Rate:</span>
                                         <span className="text-xs font-medium text-green-400">
                                           {allStudyTasks.length > 0 ? Math.round((completedTasks / allStudyTasks.length) * 100) : 0}%
                                         </span>
@@ -2292,9 +2292,9 @@ Remember: Return ONLY the XML structure. No additional text.`
 
                   {/* AI Suggestion Result */}
                   {Object.keys(aiSuggestionResult).length > 0 && (
-                    <div className="bg-slate-700/30 rounded-xl p-4 border border-white/10">
+                    <div className="bg-[#1f1f23] rounded-xl p-4 border border-white/10">
                       <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-sm font-medium text-slate-300 flex items-center">
+                        <h3 className="text-sm font-medium text-gray-300 flex items-center">
                           <IconComponent icon={AiOutlineRobot} className="mr-2 text-emerald-400" />
                           AI Study Roadmap
                         </h3>
@@ -2309,7 +2309,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                           </motion.button>
                           <motion.button
                             onClick={collapseAllSections}
-                            className="px-3 py-1 text-xs bg-slate-500/20 hover:bg-slate-500/30 text-slate-400 rounded-lg transition-colors"
+                            className="px-3 py-1 text-xs bg-white/10 hover:bg-white/20 text-gray-400 rounded-lg transition-colors"
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                           >
@@ -2743,7 +2743,7 @@ Remember: Return ONLY the XML structure. No additional text.`
             className="flex items-center justify-center z-50 p-4"
           >
             <motion.div
-              className="bg-slate-800 rounded-2xl border border-white/10 shadow-2xl w-full max-w-md"
+              className="bg-black/80 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl w-full max-w-md"
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -2761,7 +2761,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                   if (task?.reminder && task?.reminderDate) {
                     const reminderDateTime = new Date(task.reminderDate);
                     return (
-                      <p className="text-sm text-slate-400 mt-2">
+                      <p className="text-sm text-gray-400 mt-2">
                         Current reminder: {reminderDateTime.toLocaleDateString()} at {reminderDateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     );
@@ -2773,26 +2773,26 @@ Remember: Return ONLY the XML structure. No additional text.`
               <div className="p-6">
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
                       Reminder Date
                     </label>
                     <input
                       type="date"
                       value={reminderDate}
                       onChange={(e) => setReminderDate(e.target.value)}
-                      className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-slate-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                      className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
                       Reminder Time
                     </label>
                     <input
                       type="time"
                       value={reminderTime}
                       onChange={(e) => setReminderTime(e.target.value)}
-                      className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-slate-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                      className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                     />
                   </div>
                 </div>
@@ -2802,7 +2802,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                 <div className="flex gap-2">
                   <motion.button
                     onClick={closeReminderModal}
-                    className="bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 px-6 py-3 rounded-lg transition-colors"
+                    className="bg-black/20 hover:bg-black/40 text-gray-300 px-6 py-3 rounded-lg transition-colors"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >

@@ -74,9 +74,18 @@ const apiCall = async (method: string, endpoint: string, data: any = null, sessi
       data: error.response?.data
     });
     
+    let errorMessage = error.message;
+    if (error.response?.data) {
+      if (typeof error.response.data === 'string') {
+        errorMessage = error.response.data;
+      } else if (typeof error.response.data === 'object') {
+        errorMessage = error.response.data.message || error.response.data.error || JSON.stringify(error.response.data);
+      }
+    }
+
     return { 
       success: false, 
-      error: error.response?.data || error.message,
+      error: errorMessage,
       status: error.response?.status 
     };
   }
@@ -86,13 +95,15 @@ const apiCall = async (method: string, endpoint: string, data: any = null, sessi
 export interface SubscriptionPlan {
   id: string;
   name: string;
-  description: string;
+  description?: string;
+  type?: string;
   price: number;
+  coins?: number;
   duration_days: number;
-  response_limit: number;
+  response_limit?: number;
   is_active: boolean;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
 }
 
 export interface AddonPlan {
@@ -109,15 +120,17 @@ export interface AddonPlan {
 export interface UserSubscription {
   id: string;
   user_id: string;
-  plan_id: string;
+  plan_id: string | null;
   status: string;
-  start_date: string;
+  start_date: string | null;
   end_date: string;
-  responses_remaining: number;
-  responses_total: number;
-  responses_used: number;
-  last_response_refresh: string | null;
-  is_pro: boolean;
+  yearly_end_date?: string | null;
+  current_coins?: number;
+  responses_remaining?: number; // Legacy?
+  responses_total?: number; // Legacy?
+  responses_used?: number; // Legacy?
+  last_response_refresh?: string | null;
+  is_pro?: boolean;
   created_at: string;
   updated_at: string;
   subscription_plans?: SubscriptionPlan;
@@ -138,15 +151,20 @@ export interface UserAddon {
 export interface Transaction {
   id: string;
   user_id: string;
-  subscription_id: string;
-  plan_id: string;
-  transaction_type: string;
   amount: number;
-  currency: string;
-  payment_method: string;
-  transaction_id: string;
-  status: string;
+  type?: string; // e.g., 'purchase', 'refund', 'spend'
+  description?: string;
+  transaction_ref_id?: string | null;
   created_at: string;
+  
+  // Legacy fields
+  subscription_id?: string;
+  plan_id?: string;
+  transaction_type?: string;
+  currency?: string;
+  payment_method?: string;
+  transaction_id?: string;
+  status?: string;
   subscription_plans?: {
     name: string;
     description: string;
@@ -188,12 +206,17 @@ export interface SubscriptionStatus {
 // Subscription API functions
 export const subscriptionAPI = {
   // Authenticated endpoints (require session)
-  getPlans: async (session?: Session | null): Promise<{ success: boolean; data?: SubscriptionPlan[]; error?: string }> => {
-    return apiCall('GET', '/api/subscriptions/plans', null, session);
+  getPlans: async (session?: Session | null, uid?: string): Promise<{ success: boolean; data?: SubscriptionPlan[]; error?: string }> => {
+    const queryParams = uid ? `?uid=${uid}` : (session?.user?.id ? `?uid=${session.user.id}` : '');
+    return apiCall('GET', `/api/subscriptions/plans${queryParams}`, null, session);
   },
 
   getAddons: async (session?: Session | null): Promise<{ success: boolean; data?: AddonPlan[]; error?: string }> => {
     return apiCall('GET', '/api/subscriptions/addons', null, session);
+  },
+
+  createCheckoutSession: async (planId: string, session?: Session | null): Promise<{ success: boolean; data?: { checkoutUrl: string }; error?: string }> => {
+    return apiCall('POST', '/api/subscriptions/checkout', { planId }, session);
   },
 
   // Authenticated endpoints
@@ -201,13 +224,15 @@ export const subscriptionAPI = {
     return apiCall('GET', '/api/subscriptions/status', null, session);
   },
 
-  buySubscription: async (planId: string, transactionId: string, amount: number, paymentMethod: string, session?: Session | null): Promise<{ success: boolean; data?: any; error?: string }> => {
-    return apiCall('POST', '/api/subscriptions/buy', {
+  buySubscription: async (planId: string, transactionId: string, amount: number, paymentMethod: string, session?: Session | null, uid?: string): Promise<{ success: boolean; data?: any; error?: string }> => {
+    const requestData = {
       planId,
       transactionId,
       amount,
-      paymentMethod
-    }, session);
+      paymentMethod,
+      ...(uid && { uid }) // Include uid if provided
+    };
+    return apiCall('POST', '/api/subscriptions/buy', requestData, session);
   },
 
   buyAddon: async (addonId: string, transactionId: string, amount: number, paymentMethod: string, session?: Session | null): Promise<{ success: boolean; data?: any; error?: string }> => {
@@ -292,8 +317,9 @@ export const subscriptionAPI = {
     return apiCall('GET', `/api/subscriptions/responses?page=${page}&limit=${limit}`, null, session);
   },
 
-  getTransactionHistory: async (page: number = 1, limit: number = 10, session?: Session | null): Promise<{ success: boolean; data?: { transactions: Transaction[]; pagination: any }; error?: string }> => {
-    return apiCall('GET', `/api/subscriptions/transactions?page=${page}&limit=${limit}`, null, session);
+  getTransactionHistory: async (page: number = 1, limit: number = 10, session?: Session | null, uid?: string): Promise<{ success: boolean; data?: { transactions: Transaction[]; pagination: any }; error?: string }> => {
+    const uidParam = uid ? `&uid=${uid}` : (session?.user?.id ? `&uid=${session.user.id}` : '');
+    return apiCall('GET', `/api/subscriptions/transactions?page=${page}&limit=${limit}${uidParam}`, null, session);
   },
 
   getUsageLogs: async (page: number = 1, limit: number = 10, session?: Session | null): Promise<{ success: boolean; data?: { logs: UsageLog[]; pagination: any }; error?: string }> => {

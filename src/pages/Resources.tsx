@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaGraduationCap, FaBook, FaFileAlt, FaBriefcase, FaSearch, FaRegFileAlt, FaDownload, FaVideo, FaFilter, FaChevronDown, FaTimes, FaSort, FaEye, FaBookmark, FaPlay, FaTh, FaList } from 'react-icons/fa';
-import Header from '../components/layout/Header';
+import { Header } from '../components/layout';
 import Footer from '../components/layout/Footer';
 import PageHeader from '../components/ui/PageHeader';
 import MobileFilterPanel from '../components/ui/MobileFilterPanel';

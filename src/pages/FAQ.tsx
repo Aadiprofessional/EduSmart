@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaQuestionCircle, FaChevronDown, FaChevronUp, FaGraduationCap, FaRobot, FaLock, FaCreditCard, FaUsers, FaSearch } from 'react-icons/fa';
-import Header from '../components/layout/Header';
+import { Header } from '../components/layout';
 import Footer from '../components/layout/Footer';
 import IconComponent from '../components/ui/IconComponent';
 import { useLanguage } from '../utils/LanguageContext';

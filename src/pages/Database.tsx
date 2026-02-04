@@ -12,7 +12,7 @@ import {
 } from 'react-icons/fa';
 import { HiOutlineAcademicCap, HiOutlineLocationMarker } from 'react-icons/hi';
 import { RiArrowDropDownLine, RiArrowDropUpLine } from 'react-icons/ri';
-import Header from '../components/layout/Header';
+import { Header } from '../components/layout';
 import Footer from '../components/layout/Footer';
 import PageHeader from '../components/ui/PageHeader';
 import IconComponent from '../components/ui/IconComponent';

@@ -1,3 +1,4 @@
+import { supabase } from './supabase';
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { subscriptionAPI, SubscriptionStatus } from './subscriptionAPI';
@@ -82,10 +83,10 @@ export const ProStatusProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   };
 
-  // Fetch fresh data from API
+  // Fetch fresh data from Supabase directly (bypassing failing API)
   const fetchProStatus = async (useCache: boolean = true): Promise<void> => {
     // If no user, set defaults and clear cache
-    if (!user || !session) {
+    if (!user) {
       setIsProUser(false);
       setResponsesRemaining(0);
       setSubscriptionStatus(null);
@@ -107,62 +108,82 @@ export const ProStatusProvider: React.FC<{ children: ReactNode }> = ({ children 
 
     try {
       setLoading(true);
-      console.log('Fetching fresh PRO status from API...');
+      console.log('Fetching fresh PRO status from Supabase...');
       
-      const result = await subscriptionAPI.getStatus(session);
-      
-      if (result.success && result.data) {
-        console.log('Raw PRO status from API:', result.data);
-        
-        // Process the API response to calculate correct values
-        const rawData = result.data;
-        
-        // Calculate responses from active addons
-        let totalResponsesFromAddons = 0;
-        const activeAddons = rawData.addons?.filter((addon: any) => addon.status === 'active') || [];
-        
-        activeAddons.forEach((addon: any) => {
-          totalResponsesFromAddons += addon.responses_added || 0;
-        });
-        
-        // Check if user has active subscription or addons
-        const hasActiveSubscription = rawData.subscription?.status === 'active' || activeAddons.length > 0;
-        // Check if user is Pro (either by flag or by plan ID)
-        const isPro = !!(rawData.isPro || (rawData.subscription?.plan_id && PRO_PLAN_IDS.includes(rawData.subscription.plan_id)));
-        
-        // Use only subscription responses for display (don't add addon responses)
-        const subscriptionResponses = rawData.subscription?.responses_remaining || 0;
-        const totalResponses = subscriptionResponses;
-        
-        // Create processed status object
-        const processedStatus: SubscriptionStatus = {
-          hasActiveSubscription,
-          isPro,
-          subscription: rawData.subscription,
-          addons: rawData.addons || [],
-          responsesRemaining: totalResponses,
-          totalResponses: totalResponses
-        };
-        
-        setSubscriptionStatus(processedStatus);
-        setIsProUser(isPro);
-        setResponsesRemaining(totalResponses);
-        
-        // Save to cache
-        saveToCache(isPro, totalResponses);
-        
-        console.log('Updated PRO status:', {
-          isPro: isPro,
-          responsesRemaining: totalResponses
-        });
-      } else {
-        console.error('Failed to fetch subscription status:', result.error);
-        // Fallback to cache if API fails
-        loadFromCache();
+      // 1. Fetch User Subscription
+      const { data: subscriptionData, error: subError } = await supabase
+        .from('user_subscriptions')
+        .select(`
+          *,
+          subscription_plans (*)
+        `)
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (subError && subError.code !== 'PGRST116') {
+        console.error('Error fetching subscription:', subError);
       }
+
+      // 2. Fetch Active Addons
+      const { data: addonsData, error: addonsError } = await supabase
+        .from('user_addons')
+        .select(`
+          *,
+          addon_plans (*)
+        `)
+        .eq('user_id', user.id)
+        .eq('status', 'active');
+
+      if (addonsError) {
+        console.error('Error fetching addons:', addonsError);
+      }
+
+      const activeAddons = addonsData || [];
+      const subscription = subscriptionData as any; // Cast to avoid strict type checks on join
+
+      // Calculate totals
+      let totalResponsesFromAddons = 0;
+      activeAddons.forEach((addon: any) => {
+        totalResponsesFromAddons += addon.responses_added || 0;
+      });
+
+      // Check if user has active subscription or addons
+      const hasActiveSubscription = !!subscription || activeAddons.length > 0;
+      
+      // Check if user is Pro
+      const isPro = !!(subscription?.is_pro || (subscription?.plan_id && PRO_PLAN_IDS.includes(subscription.plan_id)));
+      
+      // Get remaining responses
+      const subscriptionResponses = subscription?.responses_remaining || 0;
+      const totalResponses = subscriptionResponses; // Addon responses usually added to this or tracked separately, simplifying for now
+
+      // Create processed status object
+      const processedStatus: SubscriptionStatus = {
+        hasActiveSubscription,
+        isPro,
+        subscription: subscription || null,
+        addons: activeAddons,
+        responsesRemaining: totalResponses,
+        totalResponses: totalResponses
+      };
+      
+      setSubscriptionStatus(processedStatus);
+      setIsProUser(isPro);
+      setResponsesRemaining(totalResponses);
+      
+      // Save to cache
+      saveToCache(isPro, totalResponses);
+      
+      console.log('Updated PRO status from Supabase:', {
+        isPro: isPro,
+        responsesRemaining: totalResponses,
+        hasActiveSubscription
+      });
+
     } catch (error) {
       console.error('Error fetching subscription status:', error);
-      // Fallback to cache if API fails
+      // Fallback to cache if fails
       loadFromCache();
     } finally {
       setLoading(false);

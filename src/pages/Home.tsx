@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, Navigate } from 'react-router-dom';
-import Header from '../components/layout/Header';
+import { Header } from '../components/layout';
 import Footer from '../components/layout/Footer';
 import Hero3D from '../components/ui/Hero3D';
 import FeaturedCourses3D from '../components/ui/FeaturedCourses3D';
@@ -9,7 +9,6 @@ import FeaturedResources3D from '../components/ui/FeaturedResources3D';
 import FeaturedSuccessStories3D from '../components/ui/FeaturedSuccessStories3D';
 import FeaturedScholarships3D from '../components/ui/FeaturedScholarships3D';
 import ScrollingBalls3D from '../components/ui/ScrollingBalls3D';
-import SubscriptionBanner from '../components/subscription/SubscriptionBanner';
 import { useLanguage } from '../utils/LanguageContext';
 import { ModelPositionProvider, useModelPosition } from '../utils/ModelPositionContext';
 import { useAuth } from '../utils/AuthContext';

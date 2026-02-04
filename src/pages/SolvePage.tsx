@@ -11,6 +11,7 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css'; // Ensure katex CSS is imported for math rendering
+import coinIcon from '../assets/assets_coin.png';
 
 // Type definitions for PDF.js
 interface PDFPageProxy {
@@ -130,6 +131,7 @@ const SolvePage: React.FC = () => {
   const [isProcessing, setIsProcessingStarted] = useState(false);
   const [processingStatus, setProcessingStatus] = useState('');
   const [history, setHistory] = useState<DBChat[]>([]);
+  const [pdfPageCount, setPdfPageCount] = useState(0);
   
   const { user } = useAuth();
   
@@ -240,7 +242,7 @@ const SolvePage: React.FC = () => {
     setChatId(uuidv4());
   }, []);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       const allowedTypes = [
@@ -260,6 +262,26 @@ const SolvePage: React.FC = () => {
       
       if (isAllowed) {
         setAttachedFile(file);
+        
+        // Calculate PDF pages if needed
+        if (file.type === 'application/pdf') {
+          try {
+            const arrayBuffer = await file.arrayBuffer();
+            const loadingTask = pdfjsLib.getDocument({
+              data: arrayBuffer,
+              useWorkerFetch: false,
+              isEvalSupported: false,
+              useSystemFonts: true
+            });
+            const pdf = await loadingTask.promise;
+            setPdfPageCount(pdf.numPages);
+          } catch (error) {
+            console.error('Error counting PDF pages:', error);
+            setPdfPageCount(0);
+          }
+        } else {
+          setPdfPageCount(0);
+        }
       } else {
         alert('Please select a valid file (Image (no GIF), PDF, DOC, DOCX, TXT, XLSX, or CSV)');
         // Reset input
@@ -669,6 +691,24 @@ const SolvePage: React.FC = () => {
 
   const isSendDisabled = !inputValue.trim() && !attachedFile;
 
+  const calculateCost = () => {
+    if (attachedFile) {
+      if (attachedFile.type === 'application/pdf') {
+        return pdfPageCount * 2;
+      } else if (attachedFile.type.startsWith('image/')) {
+        return 3;
+      } else {
+        // Documents
+        return 10;
+      }
+    } else if (inputValue.trim()) {
+      return 2;
+    }
+    return 0;
+  };
+
+  const cost = calculateCost();
+
   return (
     <div className="h-screen bg-[#111111] text-white flex font-sans overflow-hidden">
       <SidebarLeft />
@@ -783,13 +823,20 @@ const SolvePage: React.FC = () => {
                                <button 
                                  onClick={handleSendMessage}
                                  disabled={isSendDisabled}
-                                 className={`absolute bottom-3 right-4 p-2 rounded-full transition-all duration-200 flex items-center justify-center w-8 h-8 ${
+                                 className={`absolute bottom-3 right-4 p-2 rounded-full transition-all duration-200 flex items-center justify-center ${
                                    isSendDisabled 
-                                     ? 'bg-[#27272a] text-gray-600 cursor-not-allowed' 
-                                     : 'bg-white text-black hover:bg-gray-200'
+                                     ? 'bg-[#27272a] text-gray-600 cursor-not-allowed w-8 h-8' 
+                                     : 'bg-white text-black hover:bg-gray-200 w-auto px-3 h-8 gap-1'
                                  }`}
                                >
-                                   <FaArrowUp size={14} />
+                                   {!isSendDisabled && cost > 0 ? (
+                                     <>
+                                       <span className="text-xs font-bold">-{cost}</span>
+                                       <img src={coinIcon} alt="coins" className="w-4 h-4" />
+                                     </>
+                                   ) : (
+                                     <FaArrowUp size={14} />
+                                   )}
                                </button>
                            </div>
                        </div>
@@ -926,13 +973,20 @@ const SolvePage: React.FC = () => {
                          <button 
                            onClick={handleSendMessage}
                            disabled={isSendDisabled}
-                           className={`absolute bottom-2 right-4 p-2 rounded-full transition-all duration-200 flex items-center justify-center w-8 h-8 ${
+                           className={`absolute bottom-2 right-4 p-2 rounded-full transition-all duration-200 flex items-center justify-center ${
                              isSendDisabled 
-                               ? 'bg-[#27272a] text-gray-600 cursor-not-allowed' 
-                               : 'bg-white text-black hover:bg-gray-200'
+                               ? 'bg-[#27272a] text-gray-600 cursor-not-allowed w-8 h-8' 
+                               : 'bg-white text-black hover:bg-gray-200 w-auto px-3 h-8 gap-1'
                            }`}
                          >
-                             <FaArrowUp size={14} />
+                             {!isSendDisabled && cost > 0 ? (
+                               <>
+                                 <span className="text-xs font-bold">-{cost}</span>
+                                 <img src={coinIcon} alt="coins" className="w-4 h-4" />
+                               </>
+                             ) : (
+                               <FaArrowUp size={14} />
+                             )}
                          </button>
                      </div>
                 </div>

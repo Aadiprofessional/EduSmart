@@ -17,7 +17,9 @@ import {
   FaMoon, 
   FaGraduationCap,
   FaChevronDown,
-  FaChevronUp
+  FaChevronUp,
+  FaHistory,
+  FaCalendarAlt
 } from 'react-icons/fa';
 import { useAuth } from '../../utils/AuthContext';
 
@@ -89,6 +91,7 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
                 active={isActive('/dashboard')} 
                 onClick={() => navigate('/dashboard')}
               />
+            
               <NavItem 
                 icon={<FaBullseye />} 
                 label="Solve" 
@@ -100,6 +103,12 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
                 label="Paper Grader" 
                 active={isActive('/paper-grader')}
                 onClick={() => navigate('/paper-grader')} 
+              />
+                <NavItem 
+                icon={<FaCalendarAlt />} 
+                label="Study Planner" 
+                active={isActive('/study-planner')} 
+                onClick={() => navigate('/study-planner')}
               />
               <NavItem 
                 icon={<FaMobileAlt />} 
@@ -141,6 +150,7 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
                     >
                         <div className="space-y-1 border-t border-gray-200 dark:border-white/5 pt-4">
                             <NavItem icon={<FaCog />} label="Settings" onClick={() => navigate('/profile')} />
+                            <NavItem icon={<FaHistory />} label="Transaction History" onClick={() => navigate('/transaction-history')} />
                             <NavItem icon={<FaBookOpen />} label="Quick Guide" onClick={() => navigate('/resources')} />
                             <NavItem icon={<FaGift />} label="Earn" badge="NEW" onClick={() => navigate('/referral')} />
                             <NavItem icon={<FaCommentDots />} label="Give Feedback" onClick={() => window.location.href = 'mailto:feedback@matrixedu.ai'} />

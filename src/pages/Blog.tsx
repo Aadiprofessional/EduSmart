@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { FaCalendarAlt, FaUser, FaTag, FaSearch, FaArrowLeft, FaClock, FaArrowRight, FaChartLine, FaGraduationCap, FaGlobe, FaTimes, FaShare, FaBookmark, FaEye, FaFilter, FaChevronDown, FaSort, FaHeart, FaRegHeart, FaNewspaper, FaTh, FaList, FaPen } from 'react-icons/fa';
-import Header from '../components/layout/Header';
+import { Header } from '../components/layout';
 import Footer from '../components/layout/Footer';
 import PageHeader from '../components/ui/PageHeader';
 import MobileFilterPanel from '../components/ui/MobileFilterPanel';

@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { FaShieldAlt, FaGraduationCap, FaUsers, FaLock, FaHandshake, FaExclamationTriangle, FaBookOpen, FaRobot, FaDatabase, FaCertificate } from 'react-icons/fa';
-import Header from '../components/layout/Header';
+import { Header } from '../components/layout';
 import Footer from '../components/layout/Footer';
 import IconComponent from '../components/ui/IconComponent';
 import { useLanguage } from '../utils/LanguageContext';

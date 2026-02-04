@@ -7,10 +7,10 @@ import {
   FaChevronLeft, FaChevronRight, FaFileAlt, FaGraduationCap, FaPenFancy,
   FaBookOpen, FaComments, FaQuestionCircle, FaLayerGroup, FaUserGraduate,
   FaBrain, FaSpellCheck, FaRobot, FaEdit, FaLightbulb, FaBookReader,
-  FaMagic, FaCode, FaLanguage, FaCalculator, FaFlask, FaGlobe
+  FaMagic, FaCode, FaLanguage, FaCalculator, FaFlask, FaGlobe, FaCreditCard, FaUndo
 } from 'react-icons/fa';
 import { AiOutlineCrown, AiOutlineClose } from 'react-icons/ai';
-import Header from '../components/layout/Header';
+import { Header } from '../components/layout';
 import Footer from '../components/layout/Footer';
 import IconComponent from '../components/ui/IconComponent';
 import { useAuth } from '../utils/AuthContext';
@@ -234,31 +234,43 @@ const Dashboard: React.FC = () => {
     }).format(amount);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
+  const getStatusColor = (status?: string) => {
+    switch (status?.toLowerCase()) {
       case 'completed':
       case 'active':
+      case 'purchase':
+      case 'succeeded':
         return 'text-green-400';
       case 'pending':
         return 'text-yellow-400';
       case 'failed':
       case 'cancelled':
         return 'text-red-400';
+      case 'refund':
+        return 'text-blue-400';
+      case 'spend':
+        return 'text-purple-400';
       default:
         return 'text-gray-400';
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status.toLowerCase()) {
+  const getStatusIcon = (status?: string) => {
+    switch (status?.toLowerCase()) {
       case 'completed':
       case 'active':
+      case 'purchase':
+      case 'succeeded':
         return FaCheckCircle;
       case 'pending':
         return FaClock;
       case 'failed':
       case 'cancelled':
         return FaExclamationTriangle;
+      case 'refund':
+        return FaUndo;
+      case 'spend':
+        return FaCreditCard;
       default:
         return FaClock;
     }
@@ -742,7 +754,9 @@ const Dashboard: React.FC = () => {
                   </div>
                   
                   <div className="space-y-4">
-                    {transactions.map((transaction) => (
+                    {transactions.map((transaction) => {
+                      const displayStatus = transaction.type || transaction.status || 'unknown';
+                      return (
                       <div 
                         key={transaction.id} 
                         className="flex items-center justify-between p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-all duration-200 cursor-pointer"
@@ -750,24 +764,24 @@ const Dashboard: React.FC = () => {
                       >
                         <div className="flex items-center">
                           <IconComponent 
-                            icon={getStatusIcon(transaction.status)} 
-                            className={`w-5 h-5 mr-3 ${getStatusColor(transaction.status)}`} 
+                            icon={getStatusIcon(displayStatus)} 
+                            className={`w-5 h-5 mr-3 ${getStatusColor(displayStatus)}`} 
                           />
                           <div>
                             <p className="text-white font-medium">
-                              {transaction.subscription_plans?.name || 'Subscription'}
+                              {transaction.description || transaction.subscription_plans?.name || 'Subscription'}
                             </p>
                             <p className="text-gray-400 text-sm">{formatDate(transaction.created_at)}</p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-white font-medium">{formatCurrency(transaction.amount)}</p>
-                          <p className={`text-sm ${getStatusColor(transaction.status)}`}>
-                            {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
+                          <p className="text-white font-medium">{Math.abs(transaction.amount)} Coins</p>
+                          <p className={`text-sm ${getStatusColor(displayStatus)}`}>
+                            {displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)}
                           </p>
                         </div>
                       </div>
-                    ))}
+                    )})}
                   </div>
                 </motion.div>
               )}

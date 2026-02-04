@@ -1,27 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate, Link } from 'react-router-dom';
-import { FaPlay, FaUpload, FaBolt, FaPenAlt, FaChalkboardTeacher, FaHeadphones, FaCheckCircle, FaChartBar, FaUniversity, FaSearch, FaFileAlt, FaBars, FaTimes, FaMobileAlt, FaLaptop, FaCheck, FaChevronDown, FaChevronUp, FaBook } from 'react-icons/fa';
-import { useAuth } from '../../utils/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { FaPlay, FaUpload, FaBolt, FaCheckCircle, FaSearch, FaFileAlt, FaMobileAlt, FaLaptop, FaCheck, FaChevronDown, FaChevronUp, FaBook, FaTimes } from 'react-icons/fa';
+import { Header } from '../layout';
 
 const MatrixEduLanding: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   const toggleFaq = (index: number) => {
     setOpenFaqIndex(openFaqIndex === index ? null : index);
   };
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   // Star styles including twinkling static stars and shooting stars
   const starStyles = `
@@ -91,90 +80,11 @@ const MatrixEduLanding: React.FC = () => {
     }
   };
   
-  const scrollToFeatures = () => {
-    const element = document.getElementById('features-section');
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-indigo-500 selection:text-white overflow-x-hidden">
       <style>{starStyles}</style>
       
-      {/* Navbar */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-[#050505]/80 backdrop-blur-md border-b border-white/5' : 'bg-transparent border-transparent'}`}>
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-            {/* Logo */}
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-               <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-500">MatrixEdu</span>
-            </div>
-
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-6">
-                <Link to="/about" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">Careers <span className="text-[10px] bg-green-500/20 text-green-500 px-1.5 py-0.5 rounded ml-1">Hiring</span></Link>
-                <Link to="/blog" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">Blog</Link>
-                <Link to="/resources" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">Explore</Link>
-                <button onClick={scrollToFeatures} className="text-sm font-medium text-gray-400 hover:text-white transition-colors">Features</button>
-            </div>
-
-            {/* Auth Buttons */}
-            <div className="hidden md:flex items-center gap-4">
-                {user ? (
-                   <button 
-                     onClick={() => navigate('/dashboard')}
-                     className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full font-medium text-sm transition-colors"
-                   >
-                     Dashboard
-                   </button>
-                ) : (
-                  <>
-                    <button onClick={() => navigate('/login')} className="text-sm font-medium text-white hover:text-gray-300 transition-colors">Login</button>
-                    {/* Only show Dashboard if logged in, otherwise regular signup logic or hidden */}
-                  </>
-                )}
-            </div>
-
-            {/* Mobile Menu Button */}
-            <button 
-              className="md:hidden text-gray-400 hover:text-white"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            >
-              {isMobileMenuOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
-            </button>
-        </div>
-
-        {/* Mobile Menu */}
-        <AnimatePresence>
-            {isMobileMenuOpen && (
-                <motion.div
-                   initial={{ opacity: 0, height: 0 }}
-                   animate={{ opacity: 1, height: 'auto' }}
-                   exit={{ opacity: 0, height: 0 }}
-                   className="md:hidden bg-[#0a0a0a] border-b border-white/5 overflow-hidden"
-                >
-                    <div className="px-4 py-6 space-y-4 flex flex-col">
-                        <Link to="/about" className="text-gray-400 hover:text-white">Careers</Link>
-                        <Link to="/blog" className="text-gray-400 hover:text-white">Blog</Link>
-                        <Link to="/resources" className="text-gray-400 hover:text-white">Explore</Link>
-                        <button onClick={() => { scrollToFeatures(); setIsMobileMenuOpen(false); }} className="text-left text-gray-400 hover:text-white">Features</button>
-                        <div className="pt-4 border-t border-white/5 flex flex-col gap-3">
-                             {user ? (
-                                <button 
-                                  onClick={() => navigate('/dashboard')}
-                                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold"
-                                >
-                                  Dashboard
-                                </button>
-                             ) : (
-                                <button onClick={() => navigate('/login')} className="w-full py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold">Login</button>
-                             )}
-                        </div>
-                    </div>
-                </motion.div>
-            )}
-        </AnimatePresence>
-      </nav>
+      <Header />
 
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden min-h-[90vh] flex flex-col items-center justify-center">

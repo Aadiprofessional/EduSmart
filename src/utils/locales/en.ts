@@ -18,6 +18,7 @@ export const en = {
     profile: "Profile",
     settings: "Settings",
     dashboard: "Dashboard",
+    pricing: "Pricing",
     proMember: "Pro Member",
     left: "left",
     buyMore: "Buy More Responses",

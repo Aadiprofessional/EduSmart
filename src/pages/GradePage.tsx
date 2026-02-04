@@ -11,6 +11,7 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
+import coinIcon from '../assets/assets_coin.png';
 
 // Type definitions for PDF.js
 interface PDFPageProxy {
@@ -89,6 +90,8 @@ const GradePage: React.FC = () => {
   const [showPaperModal, setShowPaperModal] = useState(false);
   const [showPasteModal, setShowPasteModal] = useState(false);
   const [pastedContent, setPastedContent] = useState('');
+  const [pdfPageCount, setPdfPageCount] = useState(0);
+  const [paperPdfPageCount, setPaperPdfPageCount] = useState(0);
   
   const { user } = useAuth();
   
@@ -212,7 +215,7 @@ const GradePage: React.FC = () => {
     setChatId(uuidv4());
   }, []);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       const allowedTypes = [
@@ -231,6 +234,27 @@ const GradePage: React.FC = () => {
       
       if (isAllowed) {
         setAttachedFile(file);
+        
+        // Calculate PDF pages if needed
+        if (file.type === 'application/pdf') {
+          try {
+            const arrayBuffer = await file.arrayBuffer();
+            const loadingTask = pdfjsLib.getDocument({
+              data: arrayBuffer,
+              useWorkerFetch: false,
+              isEvalSupported: false,
+              useSystemFonts: true
+            });
+            const pdf = await loadingTask.promise;
+            setPdfPageCount(pdf.numPages);
+          } catch (error) {
+            console.error('Error counting PDF pages:', error);
+            setPdfPageCount(0);
+          }
+        } else {
+          setPdfPageCount(0);
+        }
+
         // Automatically start chat when file is selected
         setChatStarted(true);
       } else {
@@ -256,7 +280,7 @@ const GradePage: React.FC = () => {
     }
   };
 
-  const handlePaperSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePaperSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       const allowedTypes = [
@@ -270,6 +294,26 @@ const GradePage: React.FC = () => {
       
       if (allowedTypes.includes(file.type)) {
         setPaperFile(file);
+
+        // Calculate PDF pages if needed
+        if (file.type === 'application/pdf') {
+          try {
+            const arrayBuffer = await file.arrayBuffer();
+            const loadingTask = pdfjsLib.getDocument({
+              data: arrayBuffer,
+              useWorkerFetch: false,
+              isEvalSupported: false,
+              useSystemFonts: true
+            });
+            const pdf = await loadingTask.promise;
+            setPaperPdfPageCount(pdf.numPages);
+          } catch (error) {
+            console.error('Error counting PDF pages:', error);
+            setPaperPdfPageCount(0);
+          }
+        } else {
+          setPaperPdfPageCount(0);
+        }
       } else {
         alert('Please select a valid file (PDF, Word, or Image) for the paper');
       }
@@ -731,6 +775,40 @@ const GradePage: React.FC = () => {
 
   const isSendDisabled = !inputValue.trim() && !attachedFile;
 
+  const calculateCost = () => {
+    if (attachedFile) {
+      if (attachedFile.type === 'application/pdf') {
+        return pdfPageCount * 2;
+      } else if (attachedFile.type.startsWith('image/')) {
+        return 3;
+      } else {
+        // Documents
+        return 10;
+      }
+    } else if (inputValue.trim()) {
+      return 2;
+    }
+    return 0;
+  };
+  
+  const calculatePaperCost = () => {
+    if (paperFile) {
+      if (paperFile.type === 'application/pdf') {
+        return paperPdfPageCount * 2;
+      } else if (paperFile.type.startsWith('image/')) {
+        return 3;
+      } else {
+        // Documents
+        return 10;
+      }
+    }
+    return 0;
+  };
+
+  const cost = calculateCost();
+  const paperCost = calculatePaperCost();
+  const pasteCost = 2; // Text only
+
   return (
     <div className="h-screen bg-[#111111] text-white flex font-sans overflow-hidden">
       <SidebarLeft />
@@ -1094,9 +1172,15 @@ const GradePage: React.FC = () => {
               <button 
                 onClick={handleGenerateGrading}
                 disabled={!paperFile}
-                className="bg-white text-black px-6 py-2 rounded-lg font-bold hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-white text-black px-6 py-2 rounded-lg font-bold hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 Grade Paper
+                {paperFile && paperCost > 0 && (
+                   <>
+                     <span className="text-sm font-bold ml-1">-{paperCost}</span>
+                     <img src={coinIcon} alt="coins" className="w-4 h-4" />
+                   </>
+                )}
               </button>
             </div>
           </div>
@@ -1132,9 +1216,15 @@ const GradePage: React.FC = () => {
               <button 
                 onClick={handlePasteSubmit}
                 disabled={!pastedContent.trim()}
-                className="bg-white text-black px-6 py-2 rounded-lg font-bold hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-white text-black px-6 py-2 rounded-lg font-bold hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 Grade Paper
+                {pastedContent.trim() && (
+                   <>
+                     <span className="text-sm font-bold ml-1">-{pasteCost}</span>
+                     <img src={coinIcon} alt="coins" className="w-4 h-4" />
+                   </>
+                )}
               </button>
             </div>
           </div>

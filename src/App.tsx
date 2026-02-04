@@ -21,10 +21,12 @@ import ChatBotPage from './pages/ChatBot';
 import AiStudy from './pages/AiStudy';
 import AiTutorPage from './pages/AiTutorPage';
 import Profile from './pages/Profile';
-import Subscription from './pages/Subscription';
-import Payment from './pages/Payment';
+import PricingPage from './pages/PricingPage';
+import BuySubscriptionPage from './pages/BuySubscriptionPage';
+import TransactionHistoryPage from './pages/TransactionHistoryPage';
 import Dashboard from './pages/Dashboard';
 import MatrixEduDashboard from './pages/MatrixEduDashboard';
+import StudyPlannerPage from './pages/StudyPlannerPage';
 import SolvePage from './pages/SolvePage';
 import GradePage from './pages/GradePage';
 import StudyMaterialPage from './pages/StudyMaterialPage';
@@ -37,7 +39,6 @@ import CookiesPolicy from './pages/CookiesPolicy';
 import MathTestPage from './pages/MathTestPage';
 
 // Components
-import ChatBot from './components/ui/ChatBot';
 import ErrorNotification from './components/ErrorNotification';
 
 import ScrollToTop from './components/ui/ScrollToTop';
@@ -125,19 +126,25 @@ function App() {
                       <Route path="/blog/:id" element={<Blog />} />
                       <Route path="/scholarships" element={<Scholarships />} />
                       <Route path="/scholarship-finder" element={<Scholarships />} />
-                      <Route path="/subscription" element={
+                      <Route path="/pricing" element={<PricingPage />} />
+                      <Route path="/subscription/buy/:planId" element={
                         <ProtectedRoute>
-                          <Subscription />
+                          <BuySubscriptionPage />
                         </ProtectedRoute>
                       } />
-                      <Route path="/payment" element={
+                      <Route path="/transaction-history" element={
                         <ProtectedRoute>
-                          <Payment />
+                          <TransactionHistoryPage />
                         </ProtectedRoute>
                       } />
                       <Route path="/dashboard" element={
                         <ProtectedRoute>
                           <MatrixEduDashboard />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/study-planner" element={
+                        <ProtectedRoute>
+                          <StudyPlannerPage />
                         </ProtectedRoute>
                       } />
                       <Route path="/solve" element={
@@ -180,9 +187,6 @@ function App() {
                       <Route path="/math-test" element={<MathTestPage />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
-                    
-                          {/* ChatBot component visible on all pages */}
-                          <ChatBot />
                         </div>
                       </Router>
                     </AppDataProvider>

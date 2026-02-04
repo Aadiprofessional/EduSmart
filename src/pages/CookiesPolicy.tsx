@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FaCookie, FaToggleOn, FaToggleOff, FaShieldAlt, FaChartLine, FaGlobe, FaCog, FaCheck, FaTimes } from 'react-icons/fa';
-import Header from '../components/layout/Header';
+import { Header } from '../components/layout';
 import Footer from '../components/layout/Footer';
 import IconComponent from '../components/ui/IconComponent';
 import { useLanguage } from '../utils/LanguageContext';

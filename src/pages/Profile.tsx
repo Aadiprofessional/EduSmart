@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaUser, FaGraduationCap, FaMapMarkerAlt, FaBook, FaSave, FaEdit, FaCheck, FaTimes, FaGlobe, FaDollarSign, FaCalendarAlt, FaChartLine, FaSync, FaCamera, FaEnvelope, FaPhone, FaLinkedin, FaGithub, FaTwitter } from 'react-icons/fa';
 import { HiOutlineAcademicCap } from 'react-icons/hi';
-import Header from '../components/layout/Header';
+import { Header } from '../components/layout';
 import Footer from '../components/layout/Footer';
 import PageHeader from '../components/ui/PageHeader';
 import IconComponent from '../components/ui/IconComponent';

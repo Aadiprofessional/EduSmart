@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaPlus, FaEdit, FaTrash, FaEye, FaCalendarAlt, FaUniversity, FaGraduationCap, FaCheckCircle, FaClock, FaExclamationTriangle, FaSpinner, FaSearch, FaFilter, FaTimes, FaSort, FaSortAmountUp, FaSortAmountDown, FaCheck, FaBell, FaBellSlash, FaClipboardList, FaSave, FaChartLine } from 'react-icons/fa';
-import Header from '../components/layout/Header';
+import { Header } from '../components/layout';
 import Footer from '../components/layout/Footer';
 import PageHeader from '../components/ui/PageHeader';
 import IconComponent from '../components/ui/IconComponent';

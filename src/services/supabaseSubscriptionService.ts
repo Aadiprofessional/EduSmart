@@ -11,6 +11,7 @@ export interface SupabaseUserSubscription {
   end_date: string | null;
   responses_remaining: number | null;
   responses_total: number | null;
+  current_coins: number | null;
   last_response_refresh: string | null;
   is_pro: boolean;
   created_at: string;
@@ -67,6 +68,7 @@ class SupabaseSubscriptionService {
       responses_remaining: responsesRemaining,
       responses_total: responsesTotal,
       responses_used: responsesUsed,
+      current_coins: supabaseSubscription.current_coins || 0,
       last_response_refresh: supabaseSubscription.last_response_refresh,
       is_pro: isPro,
       created_at: supabaseSubscription.created_at,

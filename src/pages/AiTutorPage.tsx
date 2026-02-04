@@ -21,7 +21,7 @@ import {
 } from 'react-icons/ai';
 import { FiSend, FiThumbsUp, FiThumbsDown, FiRefreshCw, FiMaximize2, FiShare2, FiImage, FiTrash2, FiEdit3, FiCopy, FiDownload, FiPlus, FiMessageSquare, FiX, FiFile, FiFileText, FiChevronLeft, FiChevronRight, FiMoreHorizontal } from 'react-icons/fi';
 import IconComponent from '../components/ui/IconComponent';
-import Header from '../components/layout/Header';
+import { Header } from '../components/layout';
 import { useResponseCheck, ResponseUpgradeModal } from '../utils/responseChecker';
 import { useNotification } from '../utils/NotificationContext';
 import { useLanguage } from '../utils/LanguageContext';

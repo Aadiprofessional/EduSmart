@@ -23,7 +23,7 @@ import { FaCrown, FaCheck } from 'react-icons/fa';
 import IconComponent from '../components/ui/IconComponent';
 import { useAuth } from '../utils/AuthContext';
 import { useProStatus, ProBadge, requiresProAccess } from '../utils/proStatusUtils';
-import Header from '../components/layout/Header';
+import { Header } from '../components/layout';
 import Footer from '../components/layout/Footer';
 import { ContentWriterComponent } from '../components/ui/ContentWriterComponent';
 import { HumanizerComponent } from '../components/ui/HumanizerComponent';

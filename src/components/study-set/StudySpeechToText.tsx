@@ -2,125 +2,160 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
-import { FaPlay, FaPause, FaForward, FaBackward, FaDownload, FaMicrophone, FaCopy, FaSearch } from 'react-icons/fa';
+import { FaPlay, FaPause, FaForward, FaBackward, FaDownload, FaMicrophone, FaVideo } from 'react-icons/fa';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { Skeleton } from '../ui/Skeleton';
 
-interface TranscriptSegment {
-    time: number;
-    text: string;
+interface Word {
+    start: number;
+    end: number;
+    word: string;
+}
+
+interface AudioMetadata {
+    id: number;
+    uid: string;
+    documentid: string;
+    uploaded_at: string;
+    duration: number | null;
+    language: string | null;
+    audio_url: string | null;
+    words_data: Word[] | null;
+    video_url: string | null;
 }
 
 const StudySpeechToText: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const { user } = useAuth();
+    
+    // Playback state
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
     const [playbackSpeed, setPlaybackSpeed] = useState(1);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [transcript, setTranscript] = useState<TranscriptSegment[]>([]);
-    const [audioUrl, setAudioUrl] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [isGenerating, setIsGenerating] = useState(false);
     
-    const audioRef = useRef<HTMLAudioElement>(null);
+    // Data state
+    const [searchQuery, setSearchQuery] = useState('');
+    const [transcript, setTranscript] = useState<Word[]>([]);
+    const [mediaUrl, setMediaUrl] = useState<string | null>(null);
+    const [mediaType, setMediaType] = useState<'audio' | 'video'>('audio');
+    const [loading, setLoading] = useState(true);
+    const [isPolling, setIsPolling] = useState(false);
+    
+    // Refs
+    const mediaRef = useRef<HTMLMediaElement>(null);
+    const scrollRef = useRef<HTMLDivElement>(null);
 
+    // Initial check and polling
     useEffect(() => {
-        let intervalId: NodeJS.Timeout;
+        let pollInterval: NodeJS.Timeout;
         let isMounted = true;
 
-        const fetchData = async () => {
+        const checkAndPoll = async () => {
             if (!id || !user) return;
 
             try {
-                const { data, error } = await supabase
-                    .from('speech_to_text_documents')
-                    .select('transcript, audio_url')
-                    .eq('document_id', id)
-                    .eq('uid', user.id)
-                    .single();
+                // Poll audio_metadata
+                const fetchMetadata = async () => {
+                    if (!isMounted) return;
 
-                if (error && error.code !== 'PGRST116') {
-                    console.error('Error fetching data:', error);
-                }
+                    const { data, error } = await supabase
+                        .from('audio_metadata')
+                        .select('*')
+                        .eq('documentid', id)
+                        .eq('uid', user.id)
+                        .single();
 
-                if (isMounted) {
                     if (data) {
-                         // Parse transcript if it's a string, or use directly if JSON
-                        let parsedTranscript: TranscriptSegment[] = [];
-                        if (typeof data.transcript === 'string') {
-                             try {
-                                 parsedTranscript = JSON.parse(data.transcript);
-                             } catch (e) {
-                                 console.error("Error parsing transcript JSON", e);
-                             }
-                        } else if (Array.isArray(data.transcript)) {
-                            parsedTranscript = data.transcript;
+                        // Data found
+                        const metadata = data as AudioMetadata;
+                        
+                        // Determine media URL and type
+                        if (metadata.video_url) {
+                            setMediaUrl(metadata.video_url);
+                            setMediaType('video');
+                        } else if (metadata.audio_url) {
+                            setMediaUrl(metadata.audio_url);
+                            setMediaType('audio');
                         }
 
-                        if (parsedTranscript.length > 0) {
-                            setTranscript(parsedTranscript);
-                            setAudioUrl(data.audio_url);
-                            setLoading(false);
-                            setIsGenerating(false);
-                            if (intervalId) clearInterval(intervalId);
-                        } else {
-                             setIsGenerating(true);
-                             setLoading(false);
+                        // Set transcript
+                        if (metadata.words_data && Array.isArray(metadata.words_data)) {
+                            setTranscript(metadata.words_data);
                         }
-                    } else {
-                        // Data not ready yet, keep polling
-                        setIsGenerating(true);
+
+                        // Set duration if available
+                        if (metadata.duration) {
+                            setDuration(metadata.duration);
+                        }
+
                         setLoading(false);
+                        setIsPolling(false);
+                        return true; // Stop polling
                     }
+                    
+                    // Keep polling
+                    setIsPolling(true);
+                    return false;
+                };
+
+                // Initial fetch
+                const done = await fetchMetadata();
+                if (!done) {
+                    pollInterval = setInterval(async () => {
+                        const stop = await fetchMetadata();
+                        if (stop) clearInterval(pollInterval);
+                    }, 10000); // 10 seconds
                 }
+
             } catch (err) {
-                console.error('Unexpected error:', err);
+                console.error("Error in checkAndPoll:", err);
+                setLoading(false);
             }
         };
 
-        fetchData();
-        intervalId = setInterval(fetchData, 5000); // Poll every 5 seconds
+        checkAndPoll();
 
         return () => {
             isMounted = false;
-            clearInterval(intervalId);
+            if (pollInterval) clearInterval(pollInterval);
         };
     }, [id, user]);
 
+    // Media event listeners
     useEffect(() => {
-        const audio = audioRef.current;
-        if (!audio) return;
+        const media = mediaRef.current;
+        if (!media) return;
 
-        const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
-        const handleLoadedMetadata = () => setDuration(audio.duration);
+        const handleTimeUpdate = () => setCurrentTime(media.currentTime);
+        const handleLoadedMetadata = () => {
+            if (!duration && media.duration) setDuration(media.duration);
+        };
         const handleEnded = () => setIsPlaying(false);
 
-        audio.addEventListener('timeupdate', handleTimeUpdate);
-        audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-        audio.addEventListener('ended', handleEnded);
+        media.addEventListener('timeupdate', handleTimeUpdate);
+        media.addEventListener('loadedmetadata', handleLoadedMetadata);
+        media.addEventListener('ended', handleEnded);
 
         return () => {
-            audio.removeEventListener('timeupdate', handleTimeUpdate);
-            audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-            audio.removeEventListener('ended', handleEnded);
+            media.removeEventListener('timeupdate', handleTimeUpdate);
+            media.removeEventListener('loadedmetadata', handleLoadedMetadata);
+            media.removeEventListener('ended', handleEnded);
         };
-    }, [audioUrl]);
+    }, [mediaUrl, mediaType]); // Re-bind if media source changes
 
+    // Play/Pause effect
     useEffect(() => {
-        if (audioRef.current) {
+        if (mediaRef.current) {
             if (isPlaying) {
-                audioRef.current.play().catch(e => console.error("Play error:", e));
+                mediaRef.current.play().catch(e => console.error("Play error:", e));
             } else {
-                audioRef.current.pause();
+                mediaRef.current.pause();
             }
         }
     }, [isPlaying]);
 
-    const togglePlay = () => {
-        setIsPlaying(!isPlaying);
-    };
+    const togglePlay = () => setIsPlaying(!isPlaying);
 
     const formatTime = (seconds: number) => {
         if (!seconds || isNaN(seconds)) return "0:00";
@@ -130,139 +165,201 @@ const StudySpeechToText: React.FC = () => {
     };
 
     const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (!audioRef.current || !duration) return;
+        if (!mediaRef.current || !duration) return;
         const rect = e.currentTarget.getBoundingClientRect();
         const percent = (e.clientX - rect.left) / rect.width;
         const newTime = percent * duration;
-        audioRef.current.currentTime = newTime;
+        mediaRef.current.currentTime = newTime;
         setCurrentTime(newTime);
     };
 
-    const filteredTranscript = transcript.filter(item => 
-        item.text.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    // Group words into 30s paragraphs
+    const groupedTranscript = React.useMemo(() => {
+        const groups: { start: number; words: Word[] }[] = [];
+        let currentGroup: Word[] = [];
+        let groupStartTime = 0;
 
-    if (loading) {
-        return (
-            <div className="h-full flex flex-col bg-[#111111] text-white overflow-hidden">
-                 {/* Header Skeleton */}
-                 <div className="p-6 border-b border-white/10 bg-[#1a1a1a]">
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-4">
-                             <Skeleton dark width={48} height={48} className="rounded-full" />
-                             <div>
-                                 <Skeleton dark width={140} height={24} className="mb-2" />
-                                 <Skeleton dark width={80} height={16} />
-                             </div>
-                        </div>
-                    </div>
-                    {/* Controls */}
-                    <div className="flex flex-col gap-4">
-                        <Skeleton dark width="100%" height={6} className="rounded-full" />
-                        <div className="flex justify-center gap-6">
-                            <Skeleton dark width={32} height={32} className="rounded-full" />
-                            <Skeleton dark width={48} height={48} className="rounded-full" />
-                            <Skeleton dark width={32} height={32} className="rounded-full" />
-                        </div>
-                    </div>
-                 </div>
-                 
-                 {/* Transcript Skeleton */}
-                 <div className="flex-1 p-4 space-y-4">
-                     {[1, 2, 3, 4, 5, 6].map((i) => (
-                         <div key={i} className="flex gap-4">
-                             <Skeleton dark width={40} height={20} />
-                             <div className="flex-1 space-y-2">
-                                 <Skeleton dark width="100%" height={16} />
-                                 <Skeleton dark width="90%" height={16} />
-                             </div>
-                         </div>
-                     ))}
-                 </div>
-            </div>
+        transcript.forEach((word) => {
+            // Check if word belongs to next 30s block
+            // Actually, requirements say "in para of 30 sec each".
+            // We can group based on absolute time chunks: 0-30, 30-60, etc.
+            const chunkIndex = Math.floor(word.start / 30);
+            const chunkStartTime = chunkIndex * 30;
+
+            if (chunkStartTime !== groupStartTime) {
+                if (currentGroup.length > 0) {
+                    groups.push({ start: groupStartTime, words: currentGroup });
+                }
+                currentGroup = [];
+                groupStartTime = chunkStartTime;
+            }
+            currentGroup.push(word);
+        });
+        
+        if (currentGroup.length > 0) {
+            groups.push({ start: groupStartTime, words: currentGroup });
+        }
+
+        return groups;
+    }, [transcript]);
+
+    // Auto-scroll to active group
+    useEffect(() => {
+        const activeGroupIndex = groupedTranscript.findIndex(
+            (group) => currentTime >= group.start && currentTime < group.start + 30
         );
+        
+        if (activeGroupIndex !== -1 && scrollRef.current) {
+            const activeElement = scrollRef.current.children[activeGroupIndex] as HTMLElement;
+            if (activeElement) {
+                activeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    }, [currentTime, groupedTranscript]);
+
+    if (loading || isPolling) {
+        // Show skeleton or loading state
+        // If polling, we might want to show "Processing..." state
+        if (isPolling && !mediaUrl) {
+             return (
+                <div className="h-full flex items-center justify-center bg-[#111111] text-white">
+                    <div className="flex flex-col items-center gap-4">
+                        <AiOutlineLoading3Quarters className="animate-spin text-[#c2410c] text-4xl" />
+                        <p className="text-gray-400">Processing media...</p>
+                        <p className="text-sm text-gray-500">Waiting for transcription (checking every 10s)...</p>
+                    </div>
+                </div>
+            );
+        }
+        // Normal loading
+        if (loading) {
+             return (
+                <div className="h-full flex flex-col bg-[#111111] text-white overflow-hidden p-6">
+                     <Skeleton dark width="100%" height={200} className="mb-6" />
+                     <div className="space-y-4">
+                         {[1,2,3].map(i => <Skeleton key={i} dark width="100%" height={60} />)}
+                     </div>
+                </div>
+            );
+        }
     }
 
-    if (isGenerating) {
+    if (!mediaUrl && !loading) {
         return (
             <div className="h-full flex items-center justify-center bg-[#111111] text-white">
-                <div className="flex flex-col items-center gap-4">
-                    <AiOutlineLoading3Quarters className="animate-spin text-[#c2410c] text-4xl" />
-                    <p className="text-gray-400">Processing audio...</p>
-                    <p className="text-sm text-gray-500">This may take a few minutes</p>
-                </div>
+                <p className="text-gray-400">No media found for this document.</p>
             </div>
         );
     }
 
     return (
-        <div className="h-full flex flex-col bg-[#111111] text-white overflow-hidden">
-            {audioUrl && <audio ref={audioRef} src={audioUrl} />}
+        <div className="max-w-4xl mx-auto w-full h-full relative overflow-hidden">
+            {/* Hidden Media Element (Audio only, Video is rendered visibly) */}
+            {mediaType === 'audio' && (
+                <audio 
+                    ref={mediaRef as React.RefObject<HTMLAudioElement>} 
+                    src={mediaUrl!} 
+                    onTimeUpdate={() => setCurrentTime(mediaRef.current?.currentTime || 0)}
+                    onLoadedMetadata={() => setDuration(mediaRef.current?.duration || 0)}
+                    onEnded={() => setIsPlaying(false)}
+                />
+            )}
             
-            {/* Audio Player Header */}
-            <div className="p-6 border-b border-white/10 bg-[#1a1a1a]">
-                <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-full bg-[#c2410c]/20 flex items-center justify-center text-[#c2410c]">
-                            <FaMicrophone size={20} />
+            {/* Player Card - Fixed Top */}
+            <div className="absolute top-0 left-0 right-0 z-20 p-4">
+                <div className="backdrop-blur-md bg-black/40 border border-white/10 rounded-2xl p-6 shadow-xl">
+                    <div className="flex items-start justify-between mb-6">
+                        <div className="flex items-center gap-4 w-full">
+                            {mediaType === 'video' ? (
+                                // Video Player within the card
+                                <div className="w-full max-w-md aspect-video bg-black rounded-xl overflow-hidden relative group mx-auto border border-white/10">
+                                    <video 
+                                        src={mediaUrl!}
+                                        className="w-full h-full object-contain"
+                                        ref={mediaRef as React.RefObject<HTMLVideoElement>}
+                                        onClick={togglePlay}
+                                        onTimeUpdate={() => setCurrentTime(mediaRef.current?.currentTime || 0)}
+                                        onLoadedMetadata={() => setDuration(mediaRef.current?.duration || 0)}
+                                        onEnded={() => setIsPlaying(false)}
+                                    />
+                                    {!isPlaying && (
+                                        <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
+                                            <div className="w-12 h-12 bg-[#c2410c]/90 rounded-full flex items-center justify-center text-white">
+                                                <FaPlay className="ml-1 text-xl" />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                // Audio Icon / Info
+                                <>
+                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center overflow-hidden shadow-lg shadow-orange-900/20">
+                                        <FaMicrophone className="text-white text-xl" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-white text-lg">Audio Transcription</h3>
+                                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                                            {isPlaying && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>}
+                                            {formatTime(currentTime)} / {formatTime(duration)}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
-                        <div>
-                            <h2 className="text-xl font-bold">Audio Recording</h2>
-                            <p className="text-sm text-gray-400">
-                                {duration > 0 ? `${formatTime(duration)} Duration` : 'Loading duration...'}
-                            </p>
-                        </div>
-                    </div>
-                    {audioUrl && (
-                        <a 
-                            href={audioUrl} 
-                            download 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors text-gray-300 hover:text-white"
-                        >
-                            <FaDownload />
-                        </a>
-                    )}
-                </div>
-
-                {/* Controls */}
-                <div className="flex flex-col gap-2">
-                    <div 
-                        className="w-full bg-gray-700 h-1.5 rounded-full overflow-hidden cursor-pointer"
-                        onClick={handleSeek}
-                    >
-                        <div 
-                            className="bg-[#c2410c] h-full transition-all duration-100" 
-                            style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
-                        ></div>
-                    </div>
-                    <div className="flex justify-between text-xs text-gray-400 mt-1">
-                        <span>{formatTime(currentTime)}</span>
-                        <span>{formatTime(duration)}</span>
+                        
+                        {mediaUrl && (
+                            <a 
+                                href={mediaUrl} 
+                                download 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="bg-[#1a1a1a] hover:bg-[#252525] text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors border border-white/10"
+                            >
+                                <FaDownload size={14} />
+                            </a>
+                        )}
                     </div>
 
-                    <div className="flex items-center justify-center gap-6 mt-2">
-                        <button 
-                            className="text-gray-400 hover:text-white transition-colors"
-                            onClick={() => {
-                                if (audioRef.current) audioRef.current.currentTime -= 10;
+                    {/* Progress Bar */}
+                    <div className="mb-4 group">
+                        <input
+                            type="range"
+                            min="0"
+                            max={duration || 100}
+                            value={currentTime}
+                            onChange={(e) => {
+                                const newTime = parseFloat(e.target.value);
+                                if (mediaRef.current) mediaRef.current.currentTime = newTime;
+                                setCurrentTime(newTime);
                             }}
+                            className="w-full h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:bg-[#c2410c] transition-all"
+                            style={{
+                                backgroundImage: `linear-gradient(to right, #c2410c ${(currentTime / (duration || 1)) * 100}%, #1f2937 ${(currentTime / (duration || 1)) * 100}%)`
+                            }}
+                        />
+                    </div>
+
+                    {/* Controls */}
+                    <div className="flex items-center justify-center gap-6">
+                        <button 
+                            onClick={() => {
+                                if (mediaRef.current) mediaRef.current.currentTime -= 10;
+                            }} 
+                            className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/5 rounded-full"
                         >
                             <FaBackward />
                         </button>
                         <button 
                             onClick={togglePlay}
-                            className="w-12 h-12 bg-[#c2410c] hover:bg-[#9a3412] rounded-full flex items-center justify-center text-white transition-colors shadow-lg shadow-orange-900/20"
-                            disabled={!audioUrl}
+                            className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-black hover:scale-105 transition-transform shadow-lg shadow-white/10"
                         >
                             {isPlaying ? <FaPause /> : <FaPlay className="ml-1" />}
                         </button>
                         <button 
-                            className="text-gray-400 hover:text-white transition-colors"
                             onClick={() => {
-                                if (audioRef.current) audioRef.current.currentTime += 10;
-                            }}
+                                if (mediaRef.current) mediaRef.current.currentTime += 10;
+                            }} 
+                            className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/5 rounded-full"
                         >
                             <FaForward />
                         </button>
@@ -271,66 +368,59 @@ const StudySpeechToText: React.FC = () => {
             </div>
 
             {/* Transcript Area */}
-            <div className="flex-1 flex flex-col min-h-0">
-                <div className="p-4 border-b border-white/10 flex items-center justify-between bg-[#111111]">
-                    <h3 className="font-bold text-gray-300">Transcript</h3>
-                    <div className="flex items-center gap-2">
-                        <div className="relative">
-                            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs" />
-                            <input 
-                                type="text" 
-                                placeholder="Search transcript..." 
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="bg-[#1a1a1a] border border-white/10 rounded-full py-1.5 pl-8 pr-4 text-xs text-white focus:outline-none focus:border-[#c2410c]"
-                            />
-                        </div>
-                        <button 
-                            className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
-                            onClick={() => {
-                                const text = transcript.map(t => t.text).join('\n');
-                                navigator.clipboard.writeText(text);
-                            }}
-                        >
-                            <FaCopy size={14} />
-                        </button>
-                    </div>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                    {filteredTranscript.length > 0 ? (
-                        filteredTranscript.map((item, index) => (
+            <div 
+                ref={scrollRef} 
+                className={`absolute inset-0 overflow-y-auto custom-scrollbar px-4 pb-8 ${mediaType === 'video' ? 'pt-[420px]' : 'pt-[240px]'}`}
+            >
+                {groupedTranscript.length > 0 ? (
+                    groupedTranscript.map((group, groupIndex) => {
+                        const isGroupActive = currentTime >= group.start && currentTime < group.start + 30;
+                        return (
                             <div 
-                                key={index} 
-                                className={`flex gap-4 p-3 rounded-xl transition-colors cursor-pointer ${
-                                    currentTime >= item.time && currentTime < (transcript[index + 1]?.time || duration)
-                                    ? 'bg-[#c2410c]/10 border border-[#c2410c]/20'
-                                    : 'hover:bg-white/5 border border-transparent'
-                                }`}
-                                onClick={() => {
-                                    if (audioRef.current) {
-                                        audioRef.current.currentTime = item.time;
-                                        setCurrentTime(item.time);
-                                        if (!isPlaying) setIsPlaying(true);
-                                    }
-                                }}
+                                key={groupIndex} 
+                                className={`mb-4 transition-all duration-500 ${isGroupActive ? 'opacity-100 scale-[1.01]' : 'opacity-60 hover:opacity-80'}`}
                             >
-                                <span className="text-xs font-mono text-gray-500 mt-1 min-w-[40px]">{formatTime(item.time)}</span>
-                                <p className={`text-sm leading-relaxed ${
-                                    currentTime >= item.time && currentTime < (transcript[index + 1]?.time || duration)
-                                    ? 'text-white'
-                                    : 'text-gray-400'
-                                }`}>
-                                    {item.text}
-                                </p>
+                                <div className="text-xs text-gray-500 font-mono mb-2 ml-1">
+                                    {formatTime(group.start)} - {formatTime(group.start + 30)}
+                                </div>
+                                <div 
+                                    className={`p-6 rounded-2xl border text-base leading-loose transition-all duration-300 ${
+                                        isGroupActive 
+                                            ? 'bg-orange-900/10 border-orange-500/30 text-gray-100 shadow-[0_0_20px_rgba(194,65,12,0.1)]' 
+                                            : 'bg-[#1a1a1a]/50 border-white/5 text-gray-400 hover:bg-[#1a1a1a]'
+                                    }`}
+                                >
+                                    {group.words.map((word, wordIndex) => {
+                                        const isActive = currentTime >= word.start && currentTime <= word.end;
+                                        return (
+                                            <span 
+                                                key={wordIndex}
+                                                className={`cursor-pointer transition-colors duration-200 inline-block mr-1 rounded px-0.5 -mx-0.5 ${
+                                                    isActive ? 'text-[#c2410c] font-bold bg-[#c2410c]/10' : 'hover:text-gray-200'
+                                                }`}
+                                                onClick={() => {
+                                                    if (mediaRef.current) {
+                                                        mediaRef.current.currentTime = word.start;
+                                                        if (!isPlaying) setIsPlaying(true);
+                                                    }
+                                                }}
+                                            >
+                                                {word.word}
+                                            </span>
+                                        );
+                                    })}
+                                </div>
                             </div>
-                        ))
-                    ) : (
-                        <div className="text-center py-12 text-gray-500">
-                            {transcript.length === 0 ? 'No transcript available.' : 'No matching text found.'}
+                        );
+                    })
+                ) : (
+                    <div className="text-center py-12 text-gray-500 flex flex-col items-center gap-4">
+                        <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center">
+                            <FaMicrophone className="text-2xl text-gray-600" />
                         </div>
-                    )}
-                </div>
+                        <p>No transcript available yet.</p>
+                    </div>
+                )}
             </div>
         </div>
     );
