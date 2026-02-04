@@ -93,20 +93,20 @@ const StudyFlashcards: React.FC = () => {
                 {/* Stats Pills Skeleton */}
                 <div className="flex flex-wrap justify-center gap-2 mb-8">
                     {[1, 2, 3, 4].map((i) => (
-                        <Skeleton key={i} dark width={100} height={32} className="rounded-full" />
+                        <Skeleton key={i} width={100} height={32} className="rounded-full" />
                     ))}
                 </div>
 
                 {/* Flashcard Skeleton */}
                 <div className="w-full aspect-[16/9] mb-8">
-                     <Skeleton dark width="100%" height="100%" className="rounded-2xl" />
+                     <Skeleton width="100%" height="100%" className="rounded-2xl" />
                 </div>
 
                 {/* Controls Skeleton */}
                 <div className="flex items-center gap-6">
-                    <Skeleton dark width={48} height={48} className="rounded-full" />
-                    <Skeleton dark width={60} height={24} />
-                    <Skeleton dark width={48} height={48} className="rounded-full" />
+                    <Skeleton width={48} height={48} className="rounded-full" />
+                    <Skeleton width={60} height={24} />
+                    <Skeleton width={48} height={48} className="rounded-full" />
                 </div>
             </div>
         );
@@ -117,10 +117,10 @@ const StudyFlashcards: React.FC = () => {
             <div className="flex-1 flex flex-col items-center justify-center h-full">
                 <div className="relative">
                     <div className="absolute inset-0 bg-indigo-500 blur-xl opacity-20 rounded-full animate-pulse"></div>
-                    <FaMagic className="relative text-5xl text-indigo-400 mb-6 animate-bounce" />
+                    <FaMagic className="relative text-5xl text-indigo-500 dark:text-indigo-400 mb-6 animate-bounce" />
                 </div>
-                <h2 className="text-2xl font-bold text-white mb-2">Generating Flashcards...</h2>
-                <p className="text-gray-400 max-w-md text-center">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Generating Flashcards...</h2>
+                <p className="text-gray-500 dark:text-gray-400 max-w-md text-center">
                     We're using AI to create smart flashcards from your document. This might take a few moments!
                 </p>
             </div>
@@ -130,7 +130,7 @@ const StudyFlashcards: React.FC = () => {
     if (flashcards.length === 0 && !loading) {
         return (
             <div className="flex-1 flex flex-col items-center justify-center h-full">
-                <p className="text-gray-400">No flashcards found.</p>
+                <p className="text-gray-500">No flashcards found.</p>
             </div>
         );
     }
@@ -141,23 +141,23 @@ const StudyFlashcards: React.FC = () => {
         <div className="flex-1 flex flex-col items-center justify-center h-full max-w-4xl mx-auto w-full px-4">
             {/* Stats Pills */}
             <div className="flex flex-wrap justify-center gap-2 mb-8">
-                <div className="bg-red-900/30 border border-red-500/20 text-red-400 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
+                <div className="bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-red-500"></div> {stats.unfamiliar} Unfamiliar
                 </div>
-                <div className="bg-indigo-900/30 border border-indigo-500/20 text-indigo-400 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
+                <div className="bg-indigo-100 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-500/20 text-indigo-700 dark:text-indigo-400 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-indigo-500"></div> {stats.learning} Learning
                 </div>
-                <div className="bg-blue-900/30 border border-blue-500/20 text-blue-400 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
+                <div className="bg-blue-100 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-500/20 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-blue-500"></div> {stats.familiar} Familiar
                 </div>
-                <div className="bg-green-900/30 border border-green-500/20 text-green-400 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
+                <div className="bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-500/20 text-green-700 dark:text-green-400 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-green-500"></div> {stats.mastered} Mastered
                 </div>
             </div>
 
             {/* Flashcard */}
             <div 
-                className="w-full aspect-[16/9] mb-8 cursor-pointer group" 
+                className="w-full aspect-[16/9] min-h-[300px] mb-8 cursor-pointer group" 
                 onClick={() => setFlipped(!flipped)}
                 style={{ perspective: '1000px' }}
             >
@@ -170,18 +170,18 @@ const StudyFlashcards: React.FC = () => {
                  >
                      {/* Front */}
                      <div 
-                        className="absolute inset-0 bg-[#111] border border-white/10 rounded-2xl p-8 md:p-12 flex flex-col items-center justify-center group-hover:border-white/20 transition-colors shadow-2xl shadow-black/50"
+                        className="absolute inset-0 bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl p-8 md:p-12 flex flex-col items-center justify-center group-hover:border-gray-300 dark:group-hover:border-white/20 transition-colors shadow-xl dark:shadow-2xl shadow-gray-200/50 dark:shadow-black/50"
                         style={{ backfaceVisibility: 'hidden' }}
                      >
-                         <div className="absolute top-6 left-6 text-gray-500"><FaImage /></div>
-                         <h3 className="text-xl md:text-2xl font-medium text-center leading-relaxed select-none">{currentCard?.question}</h3>
+                         <div className="absolute top-6 left-6 text-gray-400 dark:text-gray-500"><FaImage /></div>
+                         <h3 className="text-xl md:text-2xl font-medium text-center leading-relaxed select-none text-gray-900 dark:text-white">{currentCard?.question}</h3>
                          
                          <div className="absolute bottom-6 flex flex-col items-center gap-2">
                             <span className="text-sm text-gray-500">Click to flip</span>
-                            <span className="bg-[#1a1a1a] px-2 py-1 rounded text-xs text-gray-400 font-mono border border-white/5">space</span>
+                            <span className="bg-gray-100 dark:bg-[#1a1a1a] px-2 py-1 rounded text-xs text-gray-500 dark:text-gray-400 font-mono border border-gray-200 dark:border-white/5">space</span>
                          </div>
                          
-                         <div className="absolute bottom-6 left-6 text-gray-600 hover:text-red-400 transition-colors">
+                         <div className="absolute bottom-6 left-6 text-gray-400 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-colors">
                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                              </svg>
@@ -190,14 +190,14 @@ const StudyFlashcards: React.FC = () => {
 
                      {/* Back */}
                      <div 
-                        className="absolute inset-0 bg-[#111] border border-white/10 rounded-2xl p-8 md:p-12 flex flex-col items-center justify-center group-hover:border-white/20 transition-colors shadow-2xl shadow-black/50"
+                        className="absolute inset-0 bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl p-8 md:p-12 flex flex-col items-center justify-center group-hover:border-gray-300 dark:group-hover:border-white/20 transition-colors shadow-xl dark:shadow-2xl shadow-gray-200/50 dark:shadow-black/50"
                         style={{ 
                             backfaceVisibility: 'hidden',
                             transform: 'rotateY(180deg)'
                         }}
                      >
-                         <h3 className="text-xl md:text-2xl font-medium text-center text-blue-400 mb-4 select-none">Answer</h3>
-                         <p className="text-gray-400 text-center max-w-lg leading-relaxed select-none">{currentCard?.answer}</p>
+                         <h3 className="text-xl md:text-2xl font-medium text-center text-blue-600 dark:text-blue-400 mb-4 select-none">Answer</h3>
+                         <p className="text-gray-600 dark:text-gray-400 text-center max-w-lg leading-relaxed select-none">{currentCard?.answer}</p>
                      </div>
                  </div>
             </div>
@@ -207,15 +207,15 @@ const StudyFlashcards: React.FC = () => {
                 <button 
                     onClick={handlePrev}
                     disabled={currentIndex === 0}
-                    className={`w-12 h-12 rounded-full bg-[#1a1a1a] border border-white/10 flex items-center justify-center text-white transition-colors ${currentIndex === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#252525]'}`}
+                    className={`w-12 h-12 rounded-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-700 dark:text-white transition-colors ${currentIndex === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-[#252525]'}`}
                 >
                     <FaChevronLeft />
                 </button>
-                <span className="text-gray-400 font-medium">{currentIndex + 1} / {flashcards.length}</span>
+                <span className="text-gray-600 dark:text-gray-400 font-medium">{currentIndex + 1} / {flashcards.length}</span>
                 <button 
                     onClick={handleNext}
                     disabled={currentIndex === flashcards.length - 1}
-                    className={`w-12 h-12 rounded-full bg-[#1a1a1a] border border-white/10 flex items-center justify-center text-white transition-colors ${currentIndex === flashcards.length - 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#252525]'}`}
+                    className={`w-12 h-12 rounded-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-700 dark:text-white transition-colors ${currentIndex === flashcards.length - 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-[#252525]'}`}
                 >
                     <FaChevronRight />
                 </button>

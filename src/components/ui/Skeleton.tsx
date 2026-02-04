@@ -17,7 +17,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   animation = 'shimmer',
   dark = false
 }) => {
-  const baseClasses = dark ? 'bg-white/5' : 'bg-gray-200';
+  const baseClasses = dark ? 'bg-white/5' : 'bg-gray-200 dark:bg-white/5';
   
   const variantClasses = {
     default: 'rounded',
@@ -28,8 +28,8 @@ export const Skeleton: React.FC<SkeletonProps> = ({
 
   const animationClasses = {
     pulse: 'animate-skeleton-pulse',
-    shimmer: dark ? 'animate-skeleton-shimmer-dark' : 'animate-skeleton-shimmer',
-    wave: dark ? 'animate-skeleton-shimmer-dark' : 'animate-skeleton-shimmer'
+    shimmer: dark ? 'animate-skeleton-shimmer-dark' : 'animate-skeleton-shimmer dark:animate-skeleton-shimmer-dark',
+    wave: dark ? 'animate-skeleton-shimmer-dark' : 'animate-skeleton-shimmer dark:animate-skeleton-shimmer-dark'
   };
 
   const style = {

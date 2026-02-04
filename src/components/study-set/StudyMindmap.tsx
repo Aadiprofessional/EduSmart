@@ -129,6 +129,7 @@ const StudyMindmap: React.FC = () => {
     useEffect(() => {
         if (chartRef.current && !isGenerating && !loading) {
             const chartInstance = echarts.init(chartRef.current);
+            const isDark = document.documentElement.classList.contains('dark');
             
             const defaultData = [{
                 name: 'No Data Available',
@@ -138,7 +139,7 @@ const StudyMindmap: React.FC = () => {
             const chartData = mindmapData || defaultData;
 
             const option: any = {
-                backgroundColor: '#111111',
+                backgroundColor: isDark ? '#111111' : '#f9fafb',
                 tooltip: {
                     trigger: 'item',
                     triggerOn: 'mousemove',
@@ -156,6 +157,7 @@ const StudyMindmap: React.FC = () => {
                 series: [
                     {
                         type: 'tree',
+                        roam: true,
                         data: Array.isArray(chartData) ? chartData : [chartData],
                         top: '5%',
                         left: '10%',
@@ -167,7 +169,7 @@ const StudyMindmap: React.FC = () => {
                             verticalAlign: 'middle',
                             align: 'right',
                             fontSize: 14,
-                            color: '#fff'
+                            color: isDark ? '#fff' : '#111827'
                         },
                         leaves: {
                             label: {
@@ -184,10 +186,10 @@ const StudyMindmap: React.FC = () => {
                         animationDurationUpdate: 750,
                         itemStyle: {
                             color: '#c2410c',
-                            borderColor: '#fff'
+                            borderColor: isDark ? '#fff' : '#e5e7eb'
                         },
                         lineStyle: {
-                            color: '#555',
+                            color: isDark ? '#555' : '#9ca3af',
                             curveness: 0.5
                         }
                     }
@@ -200,10 +202,33 @@ const StudyMindmap: React.FC = () => {
                 chartInstance.resize();
             };
 
+            // Observer for theme changes
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.attributeName === 'class') {
+                        const isDarkNow = document.documentElement.classList.contains('dark');
+                        chartInstance.setOption({
+                            backgroundColor: isDarkNow ? '#111111' : '#f9fafb',
+                            series: [{
+                                label: { color: isDarkNow ? '#fff' : '#111827' },
+                                itemStyle: { borderColor: isDarkNow ? '#fff' : '#e5e7eb' },
+                                lineStyle: { color: isDarkNow ? '#555' : '#9ca3af' }
+                            }]
+                        });
+                    }
+                });
+            });
+
+            observer.observe(document.documentElement, {
+                attributes: true,
+                attributeFilter: ['class']
+            });
+
             window.addEventListener('resize', handleResize);
 
             return () => {
                 window.removeEventListener('resize', handleResize);
+                observer.disconnect();
                 chartInstance.dispose();
             };
         }
@@ -211,24 +236,24 @@ const StudyMindmap: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="flex-1 flex flex-col items-center justify-center h-full bg-[#111111] relative overflow-hidden">
+            <div className="flex-1 flex flex-col items-center justify-center h-full bg-gray-50 dark:bg-[#111111] relative overflow-hidden">
                 {/* Central Node */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-8">
                      {/* Left Branch */}
                      <div className="flex flex-col gap-8 items-end">
-                        <Skeleton dark width={120} height={40} className="rounded-lg" />
-                        <Skeleton dark width={140} height={40} className="rounded-lg" />
-                        <Skeleton dark width={100} height={40} className="rounded-lg" />
+                        <Skeleton width={120} height={40} className="rounded-lg" />
+                        <Skeleton width={140} height={40} className="rounded-lg" />
+                        <Skeleton width={100} height={40} className="rounded-lg" />
                      </div>
                      
                      {/* Center */}
-                     <Skeleton dark width={160} height={60} className="rounded-xl border-4 border-white/10" />
+                     <Skeleton width={160} height={60} className="rounded-xl border-4 border-gray-200 dark:border-white/10" />
 
                      {/* Right Branch */}
                      <div className="flex flex-col gap-8">
-                        <Skeleton dark width={130} height={40} className="rounded-lg" />
-                        <Skeleton dark width={110} height={40} className="rounded-lg" />
-                        <Skeleton dark width={150} height={40} className="rounded-lg" />
+                        <Skeleton width={130} height={40} className="rounded-lg" />
+                        <Skeleton width={110} height={40} className="rounded-lg" />
+                        <Skeleton width={150} height={40} className="rounded-lg" />
                      </div>
                 </div>
             </div>
@@ -237,13 +262,13 @@ const StudyMindmap: React.FC = () => {
 
     if (isGenerating) {
         return (
-            <div className="flex-1 flex flex-col items-center justify-center h-full bg-[#111111]">
+            <div className="flex-1 flex flex-col items-center justify-center h-full bg-gray-50 dark:bg-[#111111]">
                 <div className="relative">
                     <div className="absolute inset-0 bg-indigo-500 blur-xl opacity-20 rounded-full animate-pulse"></div>
                     <FaMagic className="relative text-5xl text-indigo-400 mb-6 animate-bounce" />
                 </div>
-                <h2 className="text-2xl font-bold text-white mb-2">Generating with AI magic...</h2>
-                <p className="text-gray-400 max-w-md text-center">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Generating with AI magic...</h2>
+                <p className="text-gray-600 dark:text-gray-400 max-w-md text-center">
                     We're structuring your knowledge into a mind map. This usually takes just a moment!
                 </p>
             </div>
@@ -251,16 +276,16 @@ const StudyMindmap: React.FC = () => {
     }
 
     return (
-        <div className="h-full relative flex flex-col bg-[#111111]">
+        <div className="h-full relative flex flex-col bg-gray-50 dark:bg-[#111111]">
             {/* Toolbar */}
             <div className="absolute top-4 right-4 z-10 flex gap-2">
-                <button className="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors">
+                <button className="p-2 bg-white dark:bg-white/10 hover:bg-gray-100 dark:hover:bg-white/20 border border-gray-200 dark:border-transparent rounded-lg text-gray-700 dark:text-white transition-colors">
                     <FaPlus size={14} />
                 </button>
-                <button className="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors">
+                <button className="p-2 bg-white dark:bg-white/10 hover:bg-gray-100 dark:hover:bg-white/20 border border-gray-200 dark:border-transparent rounded-lg text-gray-700 dark:text-white transition-colors">
                     <FaMinus size={14} />
                 </button>
-                <button className="p-2 bg-[#c2410c] hover:bg-[#9a3412] rounded-lg text-white transition-colors flex items-center gap-2">
+                <button className="p-2 bg-[#c2410c] hover:bg-[#9a3412] rounded-lg text-white transition-colors flex items-center gap-2 shadow-lg shadow-orange-900/20">
                     <FaDownload size={12} />
                     <span className="text-sm font-bold">Export</span>
                 </button>
@@ -268,12 +293,12 @@ const StudyMindmap: React.FC = () => {
 
             <div className="flex-1 w-full h-full" ref={chartRef}></div>
             
-            <div className="absolute bottom-8 left-8 p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 max-w-sm">
+            <div className="absolute bottom-8 left-8 p-4 bg-white/80 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-white/10 max-w-sm shadow-lg">
                 <div className="flex items-center gap-2 text-[#c2410c] mb-2">
                     <FaProjectDiagram />
                     <span className="font-bold">Mindmap View</span>
                 </div>
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                     Visual representation of your study material. Click on nodes to expand or collapse branches.
                 </p>
             </div>

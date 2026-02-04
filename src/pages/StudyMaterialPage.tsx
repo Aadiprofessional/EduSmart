@@ -15,7 +15,9 @@ import {
   FaChevronLeft,
   FaGraduationCap,
   FaMicrophone,
-  FaProjectDiagram
+  FaProjectDiagram,
+  FaBars,
+  FaTimes
 } from 'react-icons/fa';
 import { useAuth } from '../utils/AuthContext';
 
@@ -38,9 +40,11 @@ interface StudySidebarProps {
     activeMethod: string;
     onSelectMethod: (id: string) => void;
     allowedMethods?: Record<string, boolean>;
+    isOpen: boolean;
+    onClose: () => void;
 }
 
-const StudySidebar: React.FC<StudySidebarProps> = ({ activeMethod, onSelectMethod, allowedMethods }) => {
+const StudySidebar: React.FC<StudySidebarProps> = ({ activeMethod, onSelectMethod, allowedMethods, isOpen, onClose }) => {
     const navigate = useNavigate();
     const { user } = useAuth();
 
@@ -54,68 +58,82 @@ const StudySidebar: React.FC<StudySidebarProps> = ({ activeMethod, onSelectMetho
         { id: 'fill-blanks', label: 'Fill in the Blanks', icon: <FaEdit />, key: 'fill_in_the_blanks' },
         { id: 'written-tests', label: 'Written Test', icon: <FaPencilAlt />, key: 'written_tests' },
         { id: 'tutor-lesson', label: 'Tutor Lesson', icon: <FaGraduationCap />, key: 'tutor_lesson' },
-        { id: 'content', label: 'Content', icon: <FaFileAlt />, key: 'content' }, // Assuming content is always true or has a key
+        { id: 'content', label: 'Content', icon: <FaFileAlt />, key: 'content' },
     ];
 
     const methods = allMethods.filter(method => {
-        if (!allowedMethods) return true; // Show all if no config provided (legacy/direct access)
-        if (method.id === 'content') return true; // Always show content? Or check key? User listed Content.
+        if (!allowedMethods) return true; 
+        if (method.id === 'content') return true; 
         return allowedMethods[method.key];
     });
 
     return (
-        <aside className="w-64 bg-[#111111] border-r border-white/10 flex flex-col h-screen flex-shrink-0">
-            {/* Header */}
-            <div className="p-4 border-b border-white/5">
-                <div className="flex items-center gap-2 mb-6 cursor-pointer" onClick={() => navigate('/dashboard')}>
-                   <div className="text-indigo-500 text-xl font-bold">MatrixEdu</div>
-                </div>
-                
-                <button 
-                    onClick={() => navigate('/dashboard')}
-                    className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm font-medium mb-2"
-                >
-                    <FaArrowLeft size={10} />
-                    <span>Back</span>
-                </button>
-            </div>
-
-            {/* Methods List */}
-            <nav className="flex-1 overflow-y-auto p-2 space-y-1">
-                {methods.map((method) => (
-                    <button
-                        key={method.id}
-                        onClick={() => onSelectMethod(method.id)}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                            activeMethod === method.id 
-                            ? 'bg-[#1a1a1a] text-white' 
-                            : 'text-gray-400 hover:text-white hover:bg-white/5'
-                        }`}
-                    >
-                        <span className={activeMethod === method.id ? 'text-white' : 'text-gray-500'}>{method.icon}</span>
-                        <span>{method.label}</span>
+        <aside className={`
+            fixed inset-y-0 left-0 z-50 lg:relative lg:z-0
+            w-64 bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-white/10 
+            flex flex-col h-full flex-shrink-0 transition-transform duration-300
+            ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}>
+                {/* Header */}
+                <div className="p-4 border-b border-gray-200 dark:border-white/5 flex justify-between items-center">
+                    <div className="flex flex-col">
+                        <div className="flex items-center gap-2 mb-1 cursor-pointer" onClick={() => navigate('/dashboard')}>
+                           <div className="text-indigo-600 dark:text-indigo-500 text-xl font-bold">MatrixEdu</div>
+                        </div>
+                        
+                        <button 
+                            onClick={() => navigate('/dashboard')}
+                            className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors text-sm font-medium"
+                        >
+                            <FaArrowLeft size={10} />
+                            <span>Back</span>
+                        </button>
+                    </div>
+                    {/* Close Button on Mobile */}
+                    <button onClick={onClose} className="lg:hidden text-gray-500 dark:text-gray-400">
+                        <FaTimes size={20} />
                     </button>
-                ))}
-
-                <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-500 hover:text-white hover:bg-white/5 transition-colors mt-4">
-                    <FaPlus size={12} />
-                    <span>ADD METHOD</span>
-                </button>
-            </nav>
-
-            {/* User Profile */}
-            <div className="p-4 border-t border-white/5">
-                <div className="flex items-center gap-3 px-2 py-2 cursor-pointer hover:bg-white/5 rounded transition-colors">
-                    <div className="w-8 h-8 rounded-full bg-cyan-600 flex items-center justify-center text-xs font-bold text-white">
-                        {user?.email?.substring(0, 2).toUpperCase() || 'AI'}
-                    </div>
-                    <div className="flex-1 overflow-hidden">
-                        <p className="text-sm font-medium truncate text-white">{user?.email?.split('@')[0] || 'User'}</p>
-                    </div>
-                    <FaChevronDown size={12} className="text-gray-500" />
                 </div>
-            </div>
-        </aside>
+
+                {/* Methods List */}
+                <nav className="flex-1 overflow-y-auto p-2 space-y-1">
+                    {methods.map((method) => (
+                        <button
+                            key={method.id}
+                            onClick={() => {
+                                onSelectMethod(method.id);
+                                if (window.innerWidth < 1024) onClose();
+                            }}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                                activeMethod === method.id 
+                                ? 'bg-indigo-50 dark:bg-[#1a1a1a] text-indigo-600 dark:text-white font-medium' 
+                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
+                            }`}
+                        >
+                            <span className={activeMethod === method.id ? 'text-indigo-600 dark:text-white' : 'text-gray-500'}>{method.icon}</span>
+                            <span>{method.label}</span>
+                        </button>
+                    ))}
+
+                    <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-colors mt-4">
+                        <FaPlus size={12} />
+                        <span>ADD METHOD</span>
+                    </button>
+                </nav>
+
+                {/* User Profile */}
+                <div className="p-4 border-t border-gray-200 dark:border-white/5">
+                    <div className="flex items-center gap-3 px-2 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-white/5 rounded transition-colors">
+                        <div className="w-8 h-8 rounded-full bg-cyan-600 flex items-center justify-center text-xs font-bold text-white">
+                            {user?.email?.substring(0, 2).toUpperCase() || 'AI'}
+                        </div>
+                        <div className="flex-1 overflow-hidden">
+                            <p className="text-sm font-medium truncate text-gray-900 dark:text-white">{user?.email?.split('@')[0] || 'User'}</p>
+                        </div>
+                        <FaChevronDown size={12} className="text-gray-500" />
+                    </div>
+                </div>
+            </aside>
     );
 };
 
@@ -127,6 +145,27 @@ const StudyMaterialPage: React.FC = () => {
     const location = useLocation();
     const studySetData = location.state?.studySetData;
     const [activeMethod, setActiveMethod] = useState('notes');
+    const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024);
+    const [isRightPanelOpen, setIsRightPanelOpen] = useState(window.innerWidth >= 1280);
+
+    // Handle resize
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth < 1024) {
+                setIsSidebarOpen(false);
+            } else {
+                setIsSidebarOpen(true);
+            }
+            if (window.innerWidth < 1280) {
+                setIsRightPanelOpen(false);
+            } else {
+                setIsRightPanelOpen(true);
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // Mock Content
     const title = studySetData?.title || "System Architecture Diagram"; // Use title from data if available
@@ -193,7 +232,7 @@ const StudyMaterialPage: React.FC = () => {
                 return <StudyContent />;
             default:
                 return (
-                    <div className="flex items-center justify-center h-full text-gray-500">
+                    <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
                         Select a method to view content
                     </div>
                 );
@@ -201,46 +240,96 @@ const StudyMaterialPage: React.FC = () => {
     };
 
     return (
-        <div className="h-screen bg-[#111111] text-white flex font-sans overflow-hidden">
+        <div className="h-screen bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-white flex font-sans overflow-hidden relative">
+            {/* Mobile Overlays */}
+            {(isSidebarOpen && window.innerWidth < 1024) && (
+                <div 
+                    className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
+            {(isRightPanelOpen && window.innerWidth < 1280) && (
+                <div 
+                    className="fixed inset-0 bg-black/50 z-40 xl:hidden"
+                    onClick={() => setIsRightPanelOpen(false)}
+                />
+            )}
+
             <StudySidebar 
                 activeMethod={activeMethod} 
                 onSelectMethod={setActiveMethod} 
                 allowedMethods={studySetData}
+                isOpen={isSidebarOpen}
+                onClose={() => setIsSidebarOpen(false)}
             />
             
-            <main className="flex-1 flex flex-col min-w-0 h-full">
+            <main className="flex-1 flex flex-col min-w-0 h-full relative">
                 {/* Top Bar */}
-                <div className="h-16 border-b border-white/5 flex items-center justify-between px-8 flex-shrink-0">
+                <div className="h-16 border-b border-gray-200 dark:border-white/5 flex items-center justify-between px-4 md:px-8 flex-shrink-0 bg-white dark:bg-[#111111]">
                     <div className="flex items-center gap-4">
-                        <button onClick={() => navigate('/dashboard')} className="text-gray-400 hover:text-white">
+                        {/* Left Sidebar Toggle */}
+                        {!isSidebarOpen && (
+                            <button 
+                                onClick={() => setIsSidebarOpen(true)}
+                                className="p-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-white/5"
+                            >
+                                <FaBars size={18} />
+                            </button>
+                        )}
+
+                        <button onClick={() => navigate('/dashboard')} className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hidden md:block">
                             <FaChevronLeft size={12} />
                         </button>
-                        <h1 className="font-bold text-lg truncate">{title}</h1>
+                        <h1 className="font-bold text-lg truncate text-gray-900 dark:text-white">{title}</h1>
                     </div>
                     
-                    <div className="flex items-center gap-4">
-                         <button className="text-gray-400 hover:text-white text-sm font-medium flex items-center gap-2">
-                             <span className="w-4 h-4 rounded border border-gray-600 flex items-center justify-center"><span className="text-[10px]">T</span></span>
-                             Filter by Topic
+                    <div className="flex items-center gap-2 md:gap-4">
+                         <button className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
+                             <span className="w-4 h-4 rounded border border-gray-400 dark:border-gray-600 flex items-center justify-center"><span className="text-[10px]">T</span></span>
+                             <span className="hidden sm:inline">Filter by Topic</span>
                          </button>
-                         <button className="text-gray-400 hover:text-white text-sm font-medium flex items-center gap-2">
+                         <button className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
                              <FaPencilAlt size={12} />
-                             Edit Cards
+                             <span className="hidden sm:inline">Edit Cards</span>
                          </button>
-                         <button className="text-gray-400 hover:text-white text-sm font-medium flex items-center gap-2">
-                             Hide sidebar
-                             <FaChevronRight size={10} />
-                         </button>
+                         
+                         {/* Right Panel Toggle */}
+                         {!isRightPanelOpen && (
+                            <button 
+                                onClick={() => setIsRightPanelOpen(true)}
+                                className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                            >
+                                <FaBook size={14} />
+                                <span className="hidden sm:inline">Resources</span>
+                            </button>
+                         )}
                     </div>
                 </div>
 
                 {/* Content Area */}
-                <div className={`flex-1 relative ${activeMethod === 'notes' ? 'flex flex-col overflow-hidden' : 'overflow-y-auto p-8 scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent'}`}>
+                <div className={`flex-1 relative bg-gray-50 dark:bg-[#111111] ${activeMethod === 'notes' ? 'flex flex-col overflow-hidden' : 'overflow-y-auto p-4 md:p-8 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-800 scrollbar-track-transparent'}`}>
                     {renderContent()}
                 </div>
             </main>
 
-            <StudyRightPanel activeMethod={activeMethod} />
+            {/* Right Panel */}
+            <div className={`
+                fixed inset-y-0 right-0 z-50 xl:relative xl:z-0
+                bg-white dark:bg-[#111111] border-l border-gray-200 dark:border-white/10
+                transition-transform duration-300 shadow-2xl xl:shadow-none
+                ${isRightPanelOpen ? 'translate-x-0' : 'translate-x-full xl:translate-x-0 xl:hidden'}
+            `}>
+                <div className="h-full flex flex-col relative">
+                     {/* Close Button on Mobile */}
+                     <button 
+                        onClick={() => setIsRightPanelOpen(false)} 
+                        className="absolute top-4 right-4 z-50 xl:hidden text-gray-500 dark:text-gray-400 p-2 rounded-full bg-gray-100 dark:bg-[#1a1a1a]"
+                    >
+                        <FaTimes size={16} />
+                    </button>
+                    <StudyRightPanel activeMethod={activeMethod} />
+                </div>
+            </div>
         </div>
     );
 };

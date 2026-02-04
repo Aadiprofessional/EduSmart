@@ -54,14 +54,14 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
           animate={{ width: 256, opacity: 1 }} // 256px = w-64
           exit={{ width: 0, opacity: 0 }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
-          className={`bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-white/10 flex flex-col justify-between h-screen p-4 flex-shrink-0 relative group text-gray-900 dark:text-white ${className}`}
+          className={`bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-white/10 flex flex-col justify-between h-full p-4 flex-shrink-0 group text-gray-900 dark:text-white ${className}`}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
-          {/* Close Button (Visible on Hover) */}
+          {/* Close Button (Visible on Hover or always on mobile) */}
           <button
             onClick={onClose}
-            className={`absolute top-4 right-4 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+            className={`absolute top-4 right-4 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-opacity duration-200 opacity-100 lg:opacity-0 lg:group-hover:opacity-100`}
             title="Close Sidebar"
           >
             <FaChevronUp className="transform -rotate-90" />
@@ -195,10 +195,14 @@ interface NavItemProps {
 const NavItem: React.FC<NavItemProps> = ({ icon, label, active = false, badge, onClick }) => (
     <button 
       onClick={onClick}
-      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm ${active ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm group ${
+        active 
+          ? 'bg-indigo-50 text-indigo-600 dark:bg-white/10 dark:text-white' 
+          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/5'
+      }`}
     >
         <div className="flex items-center gap-3">
-            <span className={active ? 'text-white' : 'text-gray-400'}>{icon}</span>
+            <span className={active ? 'text-indigo-600 dark:text-white' : 'text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300'}>{icon}</span>
             <span>{label}</span>
         </div>
         {badge && <span className="text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded font-bold">{badge}</span>}

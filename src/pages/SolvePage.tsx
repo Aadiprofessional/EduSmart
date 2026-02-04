@@ -79,6 +79,24 @@ interface DBMessage {
 }
 
 const SolvePage: React.FC = () => {
+  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(window.innerWidth >= 1024);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      if (mobile) {
+        setIsLeftSidebarOpen(false);
+      } else {
+        setIsLeftSidebarOpen(true);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const subjects = ['Psychology', 'Physics', 'Biology', 'Math', 'General', 'Chemistry', 'Language', 'History', 'Economics'];
   const [selectedSubject, setSelectedSubject] = useState('General');
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -710,23 +728,45 @@ const SolvePage: React.FC = () => {
   const cost = calculateCost();
 
   return (
-    <div className="h-screen bg-[#111111] text-white flex font-sans overflow-hidden">
-      <SidebarLeft />
+    <div className="h-screen bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-white flex font-sans overflow-hidden relative">
+      {/* Mobile Sidebar Overlay */}
+      {(isLeftSidebarOpen && isMobile) && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setIsLeftSidebarOpen(false)}
+        />
+      )}
+
+      <SidebarLeft 
+        isOpen={isLeftSidebarOpen} 
+        onClose={() => setIsLeftSidebarOpen(false)}
+        className="fixed inset-y-0 left-0 z-50 lg:relative lg:z-0 shadow-2xl lg:shadow-none h-full"
+      />
       
-      <div className="flex-1 flex relative">
-        <main className={`flex-1 flex flex-col relative transition-all duration-300 ${isHistoryOpen ? 'mr-0' : 'mr-0'}`}>
+      <div className="flex-1 flex relative w-full">
+        <main className={`flex-1 flex flex-col relative transition-all duration-300 w-full ${isHistoryOpen ? 'mr-0' : 'mr-0'}`}>
            {/* Top Icons - Absolute Positioned */}
-           <button 
-             onClick={handleNewChat}
-             className="absolute top-6 left-6 p-2 text-gray-400 hover:text-white transition-colors z-20"
-             title="New Chat"
-           >
-              <FaRegEdit size={22} />
-           </button>
+           <div className="absolute top-6 left-6 z-20 flex items-center gap-4">
+             {(!isLeftSidebarOpen || !isMobile) && (
+                <button 
+                  onClick={() => setIsLeftSidebarOpen(true)} 
+                  className="w-10 h-10 rounded-full bg-indigo-600 dark:bg-indigo-500 text-white flex items-center justify-center font-bold text-sm hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors shadow-sm lg:hidden"
+                >
+                  ME
+                </button>
+             )}
+             <button 
+               onClick={handleNewChat}
+               className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+               title="New Chat"
+             >
+                <FaRegEdit size={22} />
+             </button>
+           </div>
            
            <button 
              onClick={() => setIsHistoryOpen(!isHistoryOpen)}
-             className={`absolute top-6 right-6 p-2 text-gray-400 hover:text-white transition-colors z-20 ${isHistoryOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+             className={`absolute top-6 right-6 p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors z-20 ${isHistoryOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
              title="History"
            >
               <FaHistory size={22} />
@@ -760,10 +800,10 @@ const SolvePage: React.FC = () => {
                                  ref={el => subjectRefs.current[subject] = el}
                                  onClick={() => setSelectedSubject(subject)}
                                  className={`px-5 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 ${
-                                     selectedSubject === subject 
-                                     ? 'bg-[#27272a] text-white' 
-                                     : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
-                                 }`}
+                                    selectedSubject === subject 
+                                    ? 'bg-gray-900 text-white dark:bg-[#27272a] dark:text-white' 
+                                    : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
+                                }`}
                                >
                                    {subject}
                                </button>
@@ -779,33 +819,33 @@ const SolvePage: React.FC = () => {
                    <div className="w-full relative flex flex-col items-center">
                        
                        {/* Drag & Drop Zone */}
-                       <div 
-                         onClick={handleDropZoneClick}
-                         className="w-[98%] bg-[#111111] border border-dashed border-gray-800 rounded-t-3xl rounded-b-lg h-32 flex flex-col items-center justify-start pt-6 cursor-pointer hover:bg-white/5 hover:border-gray-600 transition-all group z-0 mb-[-45px]"
-                       >
-                           <input 
-                            type="file" 
-                            ref={fileInputRef} 
-                            className="hidden" 
-                            onChange={handleFileSelect}
-                            accept=".jpg,.jpeg,.png,.webp,application/pdf,.doc,.docx,.txt,.xlsx,.csv"
-                          />
-                           <div className="mb-2 relative">
-                              {attachedFile ? (
-                                <FaFileAlt className="text-white group-hover:text-gray-200 transition-colors" size={20} />
-                              ) : (
-                                <FaImage className="text-gray-500 group-hover:text-gray-400 transition-colors" size={20} />
-                              )}
-                           </div>
-                           <span className="text-sm text-gray-500 group-hover:text-gray-400 transition-colors">
-                             {attachedFile 
-                               ? `Attached: ${attachedFile.name}`
-                               : 'Drag & drop or click to add an image, pdf, docs, xlsx, etc.'}
-                           </span>
-                       </div>
+                      <div 
+                        onClick={handleDropZoneClick}
+                        className="w-[98%] bg-white dark:bg-[#111111] border border-dashed border-gray-300 dark:border-gray-800 rounded-t-3xl rounded-b-lg h-24 lg:h-32 flex flex-col items-center justify-center lg:justify-start pt-0 lg:pt-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 hover:border-gray-400 dark:hover:border-gray-600 transition-all group z-0 mb-[-35px] lg:mb-[-45px]"
+                      >
+                          <input 
+                           type="file" 
+                           ref={fileInputRef} 
+                           className="hidden" 
+                           onChange={handleFileSelect}
+                           accept=".jpg,.jpeg,.png,.webp,application/pdf,.doc,.docx,.txt,.xlsx,.csv"
+                         />
+                          <div className="mb-1 lg:mb-2 relative">
+                             {attachedFile ? (
+                               <FaFileAlt className="text-gray-900 dark:text-white group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors w-4 h-4 lg:w-5 lg:h-5" />
+                             ) : (
+                               <FaImage className="text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-400 transition-colors w-4 h-4 lg:w-5 lg:h-5" />
+                             )}
+                          </div>
+                          <span className="text-[10px] lg:text-sm text-center px-4 text-gray-500 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-400 transition-colors leading-tight">
+                            {attachedFile 
+                              ? `Attached: ${attachedFile.name}`
+                              : 'Drag & drop or click to add an image, pdf, docs, xlsx, etc.'}
+                          </span>
+                      </div>
                        
                        {/* Input Box */}
-                       <div className="w-full bg-black/40 backdrop-blur-xl rounded-[32px] p-2 border border-white/5 shadow-2xl z-10 relative">
+                       <div className="w-full bg-white dark:bg-black/40 backdrop-blur-xl rounded-[32px] p-2 border border-gray-200 dark:border-white/5 shadow-xl dark:shadow-2xl z-10 relative">
                            <div className="relative w-full">
                                <textarea 
                                  value={inputValue}
@@ -817,7 +857,7 @@ const SolvePage: React.FC = () => {
                                    }
                                  }}
                                  placeholder="Type your question here..." 
-                                 className="w-full bg-transparent text-gray-300 placeholder-gray-500 focus:outline-none text-lg resize-none py-4 px-4 pr-12 min-h-[64px]"
+                                 className="w-full bg-transparent text-gray-800 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none text-lg resize-none py-4 px-4 pr-12 min-h-[64px]"
                                  rows={1}
                                />
                                <button 
@@ -825,8 +865,8 @@ const SolvePage: React.FC = () => {
                                  disabled={isSendDisabled}
                                  className={`absolute bottom-3 right-4 p-2 rounded-full transition-all duration-200 flex items-center justify-center ${
                                    isSendDisabled 
-                                     ? 'bg-[#27272a] text-gray-600 cursor-not-allowed w-8 h-8' 
-                                     : 'bg-white text-black hover:bg-gray-200 w-auto px-3 h-8 gap-1'
+                                     ? 'bg-gray-100 dark:bg-[#27272a] text-gray-400 dark:text-gray-600 cursor-not-allowed w-8 h-8' 
+                                     : 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 w-auto px-3 h-8 gap-1'
                                  }`}
                                >
                                    {!isSendDisabled && cost > 0 ? (
@@ -859,7 +899,7 @@ const SolvePage: React.FC = () => {
                         {/* Attachment (User) */}
                         {msg.type === 'user' && msg.attachment && (
                           <div 
-                            className="mb-3 rounded-xl overflow-hidden border border-white/10 w-64 h-32 cursor-pointer hover:border-white/30 transition-all bg-[#1f1f23] relative group"
+                            className="mb-3 rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 w-64 h-32 cursor-pointer hover:border-gray-300 dark:hover:border-white/30 transition-all bg-gray-100 dark:bg-[#1f1f23] relative group"
                             onClick={() => setPreviewAttachment(msg.attachment)}
                           >
                             {msg.attachment.type.startsWith('image/') && msg.attachment.url ? (
@@ -893,8 +933,8 @@ const SolvePage: React.FC = () => {
                         {/* Message Content */}
                         <div className={`
                           ${msg.type === 'user' 
-                            ? 'bg-[#27272a] text-white px-5 py-3 rounded-2xl rounded-tr-sm' 
-                            : 'text-gray-200 w-full'
+                            ? 'bg-gray-100 dark:bg-[#27272a] text-gray-900 dark:text-white px-5 py-3 rounded-2xl rounded-tr-sm' 
+                            : 'text-gray-900 dark:text-gray-200 w-full'
                           }
                         `}>
                           {msg.type === 'ai' && msg.subject && (
@@ -913,7 +953,7 @@ const SolvePage: React.FC = () => {
                                 </div>
                               ) : (
                                 <>
-                                <div className="prose prose-invert max-w-none text-gray-200 text-left">
+                                <div className="prose dark:prose-invert max-w-none text-gray-900 dark:text-gray-200 text-left">
                                     <ReactMarkdown 
                                       remarkPlugins={[remarkGfm, remarkMath]}
                                       rehypePlugins={[rehypeKatex]}
@@ -955,7 +995,7 @@ const SolvePage: React.FC = () => {
                 </div>
 
                 {/* Bottom Input Area (Sticky) */}
-                <div className="absolute bottom-6 left-6 right-6 bg-black/40 backdrop-blur-xl rounded-[32px] p-2 border border-white/5 shadow-2xl z-20">
+                <div className="absolute bottom-6 left-6 right-6 bg-white/80 dark:bg-black/40 backdrop-blur-xl rounded-[32px] p-2 border border-gray-200 dark:border-white/5 shadow-2xl z-20">
                      <div className="relative w-full">
                          <textarea 
                            value={inputValue}
@@ -1022,48 +1062,48 @@ const SolvePage: React.FC = () => {
       </main>
 
         {/* History Sidebar - Right */}
-        <div 
-          className={`
-            fixed top-0 right-0 h-full w-80 bg-[#0c0c0c] border-l border-white/5 transform transition-transform duration-300 ease-in-out z-30
-            ${isHistoryOpen ? 'translate-x-0' : 'translate-x-full'}
-          `}
-        >
-          <div className="p-6 h-full flex flex-col">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-xl font-semibold text-white">Solve History</h2>
-              <button 
-                onClick={() => setIsHistoryOpen(false)}
-                className="text-gray-500 hover:text-white transition-colors"
-              >
-                <div className="flex items-center text-sm font-medium">
-                   <span className="mr-1 text-lg">»</span> 
-                </div>
-              </button>
-            </div>
+      <div 
+        className={`
+          fixed top-0 right-0 h-full w-80 bg-white dark:bg-[#0c0c0c] border-l border-gray-200 dark:border-white/5 transform transition-transform duration-300 ease-in-out z-30
+          ${isHistoryOpen ? 'translate-x-0' : 'translate-x-full'}
+        `}
+      >
+        <div className="p-6 h-full flex flex-col">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Solve History</h2>
+            <button 
+              onClick={() => setIsHistoryOpen(false)}
+              className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
+            >
+              <div className="flex items-center text-sm font-medium">
+                 <span className="mr-1 text-lg">»</span> 
+              </div>
+            </button>
+          </div>
 
-            <div className="flex-1 overflow-y-auto">
-              {history.map(item => (
-                 <div key={item.id} onClick={() => loadChat(item)} className="group cursor-pointer mb-4 p-3 rounded-lg hover:bg-white/5 transition-colors border border-transparent hover:border-white/5">
-                    <div className="flex gap-3">
-                       <div className="w-16 h-16 bg-gray-800 rounded-md overflow-hidden flex-shrink-0">
-                         <div className="w-full h-full flex items-center justify-center text-gray-600">
-                             <FaImage />
-                         </div>
+          <div className="flex-1 overflow-y-auto">
+            {history.map(item => (
+               <div key={item.id} onClick={() => loadChat(item)} className="group cursor-pointer mb-4 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors border border-transparent hover:border-gray-200 dark:hover:border-white/5">
+                  <div className="flex gap-3">
+                     <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-md overflow-hidden flex-shrink-0">
+                       <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-600">
+                           <FaImage />
                        </div>
-                       <div className="flex-1 min-w-0">
-                         <div className="flex items-center justify-between mb-1">
-                            <span className="text-[#ff5500] text-[10px] font-bold uppercase tracking-wider">{item.metadata?.subject || 'GENERAL'}</span>
-                            <span className="text-gray-600 text-[10px]">{new Date(item.created_at).toLocaleDateString()}</span>
-                         </div>
-                         <h3 className="text-gray-200 text-sm font-medium truncate mb-1">{item.title || 'Untitled Chat'}</h3>
-                         <p className="text-gray-500 text-xs truncate">View conversation</p>
+                     </div>
+                     <div className="flex-1 min-w-0">
+                       <div className="flex items-center justify-between mb-1">
+                          <span className="text-[#ff5500] text-[10px] font-bold uppercase tracking-wider">{item.metadata?.subject || 'GENERAL'}</span>
+                          <span className="text-gray-500 dark:text-gray-600 text-[10px]">{new Date(item.created_at).toLocaleDateString()}</span>
                        </div>
-                    </div>
-                 </div>
-              ))}
-            </div>
+                       <h3 className="text-gray-900 dark:text-gray-200 text-sm font-medium truncate mb-1">{item.title || 'Untitled Chat'}</h3>
+                       <p className="text-gray-500 text-xs truncate">View conversation</p>
+                     </div>
+                  </div>
+               </div>
+            ))}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

@@ -135,9 +135,10 @@ const StudyNotes: React.FC = () => {
         if (!editorRef.current) return;
         
         try {
+            const isDarkMode = document.documentElement.classList.contains('dark');
             const canvas = await html2canvas(editorRef.current, { 
                 scale: 2,
-                backgroundColor: '#111111', // Match dark theme
+                backgroundColor: isDarkMode ? '#111111' : '#ffffff', // Match theme
                 useCORS: true
             });
             const imgData = canvas.toDataURL('image/png');
@@ -162,7 +163,7 @@ const StudyNotes: React.FC = () => {
                     execCmd(command, value);
                 }
             }}
-            className={`p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded flex-shrink-0 transition-colors flex items-center gap-1 ${activePopup && (command === 'createLink' || command === 'insertImage') ? 'bg-white/10 text-white' : ''}`}
+            className={`p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 rounded flex-shrink-0 transition-colors flex items-center gap-1 ${activePopup && (command === 'createLink' || command === 'insertImage') ? 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white' : ''}`}
             title={label || command}
         >
             {icon}
@@ -176,11 +177,11 @@ const StudyNotes: React.FC = () => {
             <div className="absolute top-0 left-0 right-0 z-20 p-4 flex justify-center pointer-events-none">
                 <div className="max-w-3xl w-full relative pointer-events-auto">
                     {/* Glassmorphism Toolbar */}
-                    <div className="rounded-xl overflow-hidden border border-white/10 shadow-2xl backdrop-blur-md bg-[#1a1a1a]/80 supports-[backdrop-filter]:bg-[#1a1a1a]/60">
+                    <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 shadow-2xl backdrop-blur-md bg-white/80 dark:bg-[#1a1a1a]/80 supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-[#1a1a1a]/60">
                         <div className="flex items-center gap-1 p-2 overflow-x-auto scrollbar-none">
                             {/* Font Style */}
                             <ToolbarButton icon={<span className="text-xs font-bold">Sans Serif</span>} command="fontName" value="Arial" />
-                            <div className="w-px h-4 bg-white/10 mx-1 flex-shrink-0"></div>
+                            <div className="w-px h-4 bg-gray-200 dark:bg-white/10 mx-1 flex-shrink-0"></div>
                             
                             {/* Basic Formatting */}
                             <ToolbarButton icon={<FaBold size={12} />} command="bold" />
@@ -189,27 +190,27 @@ const StudyNotes: React.FC = () => {
                             <ToolbarButton icon={<FaStrikethrough size={12} />} command="strikeThrough" />
                             <ToolbarButton icon={<FaHighlighter size={12} />} command="hiliteColor" value="yellow" />
                             
-                            <div className="w-px h-4 bg-white/10 mx-1 flex-shrink-0"></div>
+                            <div className="w-px h-4 bg-gray-200 dark:bg-white/10 mx-1 flex-shrink-0"></div>
                             
                             {/* Headings */}
                             <ToolbarButton icon={<FaChevronDown size={8} />} label="H1" command="formatBlock" value="H1" />
                             <ToolbarButton icon={<FaChevronDown size={8} />} label="H2" command="formatBlock" value="H2" />
                             
-                            <div className="w-px h-4 bg-white/10 mx-1 flex-shrink-0"></div>
+                            <div className="w-px h-4 bg-gray-200 dark:bg-white/10 mx-1 flex-shrink-0"></div>
                             
                             {/* Lists & Indent */}
                             <ToolbarButton icon={<FaListUl size={12} />} command="insertUnorderedList" />
                             <ToolbarButton icon={<FaListOl size={12} />} command="insertOrderedList" />
                             <ToolbarButton icon={<FaQuoteRight size={12} />} command="formatBlock" value="blockquote" />
                             
-                            <div className="w-px h-4 bg-white/10 mx-1 flex-shrink-0"></div>
+                            <div className="w-px h-4 bg-gray-200 dark:bg-white/10 mx-1 flex-shrink-0"></div>
                             
                             {/* Alignment */}
                             <ToolbarButton icon={<FaAlignLeft size={12} />} command="justifyLeft" />
                             <ToolbarButton icon={<FaAlignCenter size={12} />} command="justifyCenter" />
                             <ToolbarButton icon={<FaAlignRight size={12} />} command="justifyRight" />
                             
-                            <div className="w-px h-4 bg-white/10 mx-1 flex-shrink-0"></div>
+                            <div className="w-px h-4 bg-gray-200 dark:bg-white/10 mx-1 flex-shrink-0"></div>
                             
                             {/* Special */}
                             <ToolbarButton icon={<FaLink size={12} />} onClick={() => openPopup('link')} />
@@ -219,13 +220,13 @@ const StudyNotes: React.FC = () => {
                             <ToolbarButton icon={<FaMinus size={12} />} command="insertHorizontalRule" />
                             <ToolbarButton icon={<FaImage size={12} />} onClick={() => openPopup('image')} />
                             
-                            <div className="w-px h-4 bg-white/10 mx-1 flex-shrink-0"></div>
+                            <div className="w-px h-4 bg-gray-200 dark:bg-white/10 mx-1 flex-shrink-0"></div>
                             
                             {/* Actions */}
                             <ToolbarButton icon={<FaEraser size={12} />} command="removeFormat" />
                             <button 
                                 onClick={handleExportPdf}
-                                className="p-2 text-indigo-400 hover:text-indigo-300 hover:bg-white/10 rounded flex-shrink-0 transition-colors ml-auto flex items-center gap-2"
+                                className="p-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded flex-shrink-0 transition-colors ml-auto flex items-center gap-2"
                                 title="Export PDF"
                             >
                                 <FaFilePdf size={12} />
@@ -236,14 +237,14 @@ const StudyNotes: React.FC = () => {
 
                     {/* Popup for Link/Image */}
                     {activePopup && (
-                        <div className="absolute top-full left-0 mt-2 p-3 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl z-50 flex items-center gap-2 w-64 backdrop-blur-md">
+                        <div className="absolute top-full left-0 mt-2 p-3 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl shadow-2xl z-50 flex items-center gap-2 w-64 backdrop-blur-md">
                             <form onSubmit={handlePopupSubmit} className="flex items-center gap-2 w-full">
                                 <input
                                     type="text"
                                     value={popupValue}
                                     onChange={(e) => setPopupValue(e.target.value)}
                                     placeholder={activePopup === 'link' ? "Enter URL..." : "Enter Image URL..."}
-                                    className="flex-1 bg-black/30 border border-white/10 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-blue-500"
+                                    className="flex-1 bg-gray-100 dark:bg-black/30 border border-gray-200 dark:border-white/10 rounded px-2 py-1 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                                     autoFocus
                                 />
                                 <button 
@@ -255,7 +256,7 @@ const StudyNotes: React.FC = () => {
                                 <button 
                                     type="button"
                                     onClick={() => setActivePopup(null)}
-                                    className="p-1 text-gray-400 hover:text-white"
+                                    className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                                 >
                                     <FaMinus size={10} className="rotate-45" />
                                 </button>
@@ -266,46 +267,46 @@ const StudyNotes: React.FC = () => {
             </div>
 
             {/* Scrollable Content */}
-            <div className="h-full overflow-y-auto px-8 pb-8 pt-24 scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent">
+            <div className="h-full overflow-y-auto px-8 pb-8 pt-24 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-800 scrollbar-track-transparent">
                 <div className="max-w-3xl mx-auto w-full min-h-full">
                     {isGenerating ? (
                         <div className="flex flex-col items-center justify-center h-full pt-20">
                             <div className="relative">
                                 <div className="absolute inset-0 bg-indigo-500 blur-xl opacity-20 rounded-full animate-pulse"></div>
-                                <FaMagic className="relative text-5xl text-indigo-400 mb-6 animate-bounce" />
+                                <FaMagic className="relative text-5xl text-indigo-500 dark:text-indigo-400 mb-6 animate-bounce" />
                             </div>
-                            <h2 className="text-2xl font-bold text-white mb-2">Generating with AI magic...</h2>
-                            <p className="text-gray-400 max-w-md text-center">
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Generating with AI magic...</h2>
+                            <p className="text-gray-500 dark:text-gray-400 max-w-md text-center">
                                 We're crafting your study notes. This usually takes just a moment!
                             </p>
                         </div>
                     ) : loading ? (
                         <div className="space-y-6 pt-6">
-                            <Skeleton dark width="60%" height={48} className="mb-8" />
+                            <Skeleton width="60%" height={48} className="mb-8" />
                             <div className="space-y-3">
-                                <Skeleton dark width="100%" height={20} />
-                                <Skeleton dark width="100%" height={20} />
-                                <Skeleton dark width="90%" height={20} />
+                                <Skeleton width="100%" height={20} />
+                                <Skeleton width="100%" height={20} />
+                                <Skeleton width="90%" height={20} />
                             </div>
-                            <Skeleton dark width="40%" height={32} className="mt-8 mb-4" />
+                            <Skeleton width="40%" height={32} className="mt-8 mb-4" />
                             <div className="space-y-3">
-                                <Skeleton dark width="100%" height={20} />
-                                <Skeleton dark width="95%" height={20} />
-                                <Skeleton dark width="98%" height={20} />
+                                <Skeleton width="100%" height={20} />
+                                <Skeleton width="95%" height={20} />
+                                <Skeleton width="98%" height={20} />
                             </div>
                             <div className="space-y-4 mt-8">
-                                <Skeleton dark width="100%" height={20} />
+                                <Skeleton width="100%" height={20} />
                                 <div className="pl-6 space-y-2">
-                                    <Skeleton dark width="80%" height={20} />
-                                    <Skeleton dark width="75%" height={20} />
-                                    <Skeleton dark width="85%" height={20} />
+                                    <Skeleton width="80%" height={20} />
+                                    <Skeleton width="75%" height={20} />
+                                    <Skeleton width="85%" height={20} />
                                 </div>
                             </div>
                         </div>
                     ) : (
                         <div 
                             ref={editorRef}
-                            className="prose prose-invert max-w-none focus:outline-none pb-20"
+                            className="prose prose-gray dark:prose-invert max-w-none focus:outline-none pb-20"
                             // contentEditable
                             // suppressContentEditableWarning
                         >
@@ -314,22 +315,22 @@ const StudyNotes: React.FC = () => {
                                     remarkPlugins={[remarkGfm]} 
                                     rehypePlugins={[rehypeRaw]}
                                     components={{
-                                        h1: ({node, ...props}) => <h1 className="text-3xl font-bold text-white mb-4 mt-6 border-b border-gray-700 pb-2" {...props} />,
-                                        h2: ({node, ...props}) => <h2 className="text-2xl font-semibold text-white mb-3 mt-5" {...props} />,
-                                        h3: ({node, ...props}) => <h3 className="text-xl font-medium text-gray-200 mb-2 mt-4" {...props} />,
-                                        ul: ({node, ...props}) => <ul className="list-disc pl-6 space-y-2 text-gray-300" {...props} />,
-                                        ol: ({node, ...props}) => <ol className="list-decimal pl-6 space-y-2 text-gray-300" {...props} />,
+                                        h1: ({node, ...props}) => <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4 mt-6 border-b border-gray-200 dark:border-gray-700 pb-2" {...props} />,
+                                        h2: ({node, ...props}) => <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-3 mt-5" {...props} />,
+                                        h3: ({node, ...props}) => <h3 className="text-xl font-medium text-gray-800 dark:text-gray-200 mb-2 mt-4" {...props} />,
+                                        ul: ({node, ...props}) => <ul className="list-disc pl-6 space-y-2 text-gray-700 dark:text-gray-300" {...props} />,
+                                        ol: ({node, ...props}) => <ol className="list-decimal pl-6 space-y-2 text-gray-700 dark:text-gray-300" {...props} />,
                                         li: ({node, ...props}) => <li className="pl-1" {...props} />,
-                                        blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-indigo-500 pl-4 italic text-gray-400 my-4" {...props} />,
-                                        table: ({node, ...props}) => <div className="overflow-x-auto my-6"><table className="min-w-full divide-y divide-gray-700 border border-gray-700 rounded-lg" {...props} /></div>,
-                                        thead: ({node, ...props}) => <thead className="bg-gray-800" {...props} />,
-                                        th: ({node, ...props}) => <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-b border-gray-700" {...props} />,
-                                        td: ({node, ...props}) => <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300 border-b border-gray-700" {...props} />,
-                                        a: ({node, ...props}) => <a className="text-blue-400 hover:text-blue-300 underline" {...props} />,
+                                        blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-indigo-500 pl-4 italic text-gray-600 dark:text-gray-400 my-4" {...props} />,
+                                        table: ({node, ...props}) => <div className="overflow-x-auto my-6"><table className="min-w-full divide-y divide-gray-300 dark:divide-gray-700 border border-gray-300 dark:border-gray-700 rounded-lg" {...props} /></div>,
+                                        thead: ({node, ...props}) => <thead className="bg-gray-100 dark:bg-gray-800" {...props} />,
+                                        th: ({node, ...props}) => <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider border-b border-gray-300 dark:border-gray-700" {...props} />,
+                                        td: ({node, ...props}) => <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 border-b border-gray-300 dark:border-gray-700" {...props} />,
+                                        a: ({node, ...props}) => <a className="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 underline" {...props} />,
                                         code: ({node, className, children, ...props}) => {
                                             const match = /language-(\w+)/.exec(className || '');
                                             return !match ? (
-                                                <code className="bg-gray-800 px-1 py-0.5 rounded text-sm text-indigo-300" {...props}>
+                                                <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm text-indigo-600 dark:text-indigo-300" {...props}>
                                                     {children}
                                                 </code>
                                             ) : (

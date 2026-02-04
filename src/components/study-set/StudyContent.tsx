@@ -58,11 +58,11 @@ const StudyContent: React.FC = () => {
         return (
             <div className="flex flex-col items-center justify-center h-full w-full p-6 overflow-hidden">
                 <div className="w-full max-w-4xl mx-auto space-y-4">
-                     <Skeleton dark width="100%" height={400} className="rounded-xl" />
+                     <Skeleton width="100%" height={400} className="rounded-xl" />
                      <div className="space-y-2 mt-4">
-                        <Skeleton dark width="80%" height={20} />
-                        <Skeleton dark width="90%" height={20} />
-                        <Skeleton dark width="60%" height={20} />
+                        <Skeleton width="80%" height={20} />
+                        <Skeleton width="90%" height={20} />
+                        <Skeleton width="60%" height={20} />
                      </div>
                 </div>
             </div>
@@ -87,8 +87,8 @@ const StudyContent: React.FC = () => {
             // Audio
             if (type === 'audio' || type === 'audio_file' || getFileType(documentUrl) === 'audio') {
                 return (
-                    <div className="flex flex-col items-center justify-center w-full max-w-2xl mx-auto p-8 bg-gray-900 rounded-xl">
-                         <h3 className="text-xl font-bold text-white mb-6">Audio Content</h3>
+                    <div className="flex flex-col items-center justify-center w-full max-w-2xl mx-auto p-8 bg-gray-100 dark:bg-gray-900 rounded-xl">
+                         <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Audio Content</h3>
                          <audio controls className="w-full">
                              <source src={documentUrl} />
                              Your browser does not support the audio element.
@@ -125,7 +125,7 @@ const StudyContent: React.FC = () => {
             // PDF / Document
             if (type === 'pdf' || type === 'pdf_file' || type === 'document' || getFileType(documentUrl) === 'pdf') {
                  return (
-                    <div className="w-full h-full min-h-[80vh] rounded-lg shadow-lg overflow-hidden">
+                    <div className="w-full h-full min-h-[80vh] bg-white dark:bg-[#1a1a1a] rounded-lg shadow-lg overflow-hidden">
                         <PDFViewer url={documentUrl} />
                     </div>
                  );
@@ -133,7 +133,7 @@ const StudyContent: React.FC = () => {
             
             // Fallback for generic URLs (websites)
             return (
-                 <div className="w-full h-full min-h-[80vh] bg-white rounded-lg shadow-lg overflow-hidden">
+                 <div className="w-full h-full min-h-[80vh] bg-white dark:bg-[#1a1a1a] rounded-lg shadow-lg overflow-hidden">
                      <iframe 
                          src={documentUrl} 
                          className="w-full h-full border-none" 

@@ -1073,15 +1073,15 @@ const MethodSelectionPage: React.FC = () => {
                             <p className="text-gray-500 dark:text-gray-400">Choose all the methods you want included in your study set:</p>
                         </div>
 
-                        {/* First Row: 4 items in 2x2 grid on medium screens */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        {/* First Row: 4 items in 2x2 grid on all screens */}
+                        <div className="grid grid-cols-2 gap-3 md:gap-4 mb-3 md:mb-4">
                             {visibleMethods.slice(0, 4).map((method) => {
                                 const isSelected = selectedMethods.includes(method.id);
                                 return (
                                     <div 
                                         key={method.id}
                                         onClick={() => toggleMethod(method.id)}
-                                        className={`relative flex items-center p-6 rounded-xl border cursor-pointer transition-all h-24 group ${
+                                        className={`relative flex flex-col md:flex-row items-center md:items-center justify-center md:justify-start p-3 md:p-6 rounded-xl border cursor-pointer transition-all h-auto md:h-24 group ${
                                             isSelected 
                                             ? 'bg-orange-50 dark:bg-[#1a1a1a] border-orange-200 dark:border-white/20' 
                                             : 'bg-white dark:bg-[#111] border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20'
@@ -1097,12 +1097,12 @@ const MethodSelectionPage: React.FC = () => {
                                             </button>
                                         )}
 
-                                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center mr-4 transition-colors ${
+                                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-2 md:mb-0 md:mr-4 transition-colors ${
                                             isSelected ? 'bg-[#c2410c]/20 text-[#c2410c]' : 'bg-gray-100 dark:bg-gray-800/50 text-gray-400 dark:text-gray-500'
                                         }`}>
                                             {method.icon}
                                         </div>
-                                        <span className={`font-medium text-lg ${isSelected ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-500'}`}>
+                                        <span className={`font-medium text-sm md:text-lg text-center md:text-left ${isSelected ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-500'}`}>
                                             {method.label}
                                         </span>
                                     </div>
@@ -1110,15 +1110,15 @@ const MethodSelectionPage: React.FC = () => {
                             })}
                         </div>
 
-                        {/* Second Row: 3 items in 1x3 grid on medium screens */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
+                        {/* Second Row: 2 items on mobile, 3 on medium */}
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mb-8 md:mb-12">
                             {visibleMethods.slice(4).map((method) => {
                                 const isSelected = selectedMethods.includes(method.id);
                                 return (
                                     <div 
                                         key={method.id}
                                         onClick={() => toggleMethod(method.id)}
-                                        className={`relative flex items-center p-6 rounded-xl border cursor-pointer transition-all h-24 group ${
+                                        className={`relative flex flex-col md:flex-row items-center md:items-center justify-center md:justify-start p-3 md:p-6 rounded-xl border cursor-pointer transition-all h-auto md:h-24 group ${
                                             isSelected 
                                             ? 'bg-orange-50 dark:bg-[#1a1a1a] border-orange-200 dark:border-white/20' 
                                             : 'bg-white dark:bg-[#111] border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20'
@@ -1134,12 +1134,12 @@ const MethodSelectionPage: React.FC = () => {
                                             </button>
                                         )}
 
-                                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center mr-4 transition-colors ${
+                                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-2 md:mb-0 md:mr-4 transition-colors ${
                                             isSelected ? 'bg-[#c2410c]/20 text-[#c2410c]' : 'bg-gray-100 dark:bg-gray-800/50 text-gray-400 dark:text-gray-500'
                                         }`}>
                                             {method.icon}
                                         </div>
-                                        <span className={`font-medium text-lg ${isSelected ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-500'}`}>
+                                        <span className={`font-medium text-sm md:text-lg text-center md:text-left ${isSelected ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-500'}`}>
                                             {method.label}
                                         </span>
                                     </div>

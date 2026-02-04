@@ -75,6 +75,24 @@ interface DBMessage {
 }
 
 const GradePage: React.FC = () => {
+  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(window.innerWidth >= 1024);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      if (mobile) {
+        setIsLeftSidebarOpen(false);
+      } else {
+        setIsLeftSidebarOpen(true);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const [chatStarted, setChatStarted] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -810,10 +828,22 @@ const GradePage: React.FC = () => {
   const pasteCost = 2; // Text only
 
   return (
-    <div className="h-screen bg-[#111111] text-white flex font-sans overflow-hidden">
-      <SidebarLeft />
+    <div className="h-screen bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-white flex font-sans overflow-hidden relative">
+      {/* Mobile Sidebar Overlay */}
+      {(isLeftSidebarOpen && isMobile) && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setIsLeftSidebarOpen(false)}
+        />
+      )}
+
+      <SidebarLeft 
+        isOpen={isLeftSidebarOpen} 
+        onClose={() => setIsLeftSidebarOpen(false)}
+        className="fixed inset-y-0 left-0 z-50 lg:relative lg:z-0 shadow-2xl lg:shadow-none h-full"
+      />
       
-      <main className="flex-1 flex flex-col relative">
+      <main className="flex-1 flex flex-col relative w-full">
          {/* Hidden File Input */}
          <input 
             type="file" 
@@ -823,42 +853,72 @@ const GradePage: React.FC = () => {
             accept=".jpg,.jpeg,.png,.webp,application/pdf,.doc,.docx,.txt,.xlsx,.csv"
           />
 
+         {/* Unified Header: ME Button + New Chat/Back Navigation */}
+         <div className="absolute top-6 left-6 z-30 flex items-center gap-4">
+            {(!isLeftSidebarOpen || !isMobile) && (
+              <button 
+                onClick={() => setIsLeftSidebarOpen(true)} 
+                className="w-10 h-10 rounded-full bg-indigo-600 dark:bg-indigo-500 text-white flex items-center justify-center font-bold text-sm hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors shadow-sm lg:hidden"
+              >
+                ME
+              </button>
+            )}
+
+            {chatStarted ? (
+               <button 
+                 onClick={handleNewChat}
+                 className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors bg-white/80 dark:bg-black/50 backdrop-blur-sm px-3 py-2 rounded-lg shadow-sm"
+               >
+                  <FaChevronRight className="rotate-180" size={12} /> 
+                  <span className="hidden sm:inline">Back to Dashboard</span>
+               </button>
+            ) : (
+               <button 
+                  onClick={handleNewChat}
+                  className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors bg-white/80 dark:bg-black/50 backdrop-blur-sm rounded-full shadow-sm"
+                  title="New Chat"
+                >
+                   <FaRegEdit size={20} />
+                </button>
+            )}
+         </div>
+
          {!chatStarted ? (
            <div className="flex-1 overflow-y-auto p-8 lg:p-12">
-             <div className="max-w-4xl mx-auto w-full pt-12">
+             <div className="max-w-4xl mx-auto w-full pt-20 lg:pt-24">
              <div className="text-center mb-16">
-                 <h1 className="text-4xl font-bold mb-3">What do you want to grade?</h1>
-                 <p className="text-gray-400">Grade your paper based on your rubric</p>
+                 <h1 className="text-4xl font-bold mb-3 text-gray-900 dark:text-white">What do you want to grade?</h1>
+                 <p className="text-gray-500 dark:text-gray-400">Grade your paper based on your rubric</p>
              </div>
 
              {/* Action Cards */}
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-20 max-w-2xl mx-auto">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6 mb-10 lg:mb-20 max-w-2xl mx-auto">
                  <button 
                   onClick={handleUploadClick}
-                  className="bg-[#111] border border-white/10 rounded-2xl p-8 text-left hover:bg-[#151515] hover:border-white/20 transition-all group"
+                  className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl p-6 lg:p-8 text-left hover:bg-gray-50 dark:hover:bg-[#151515] hover:border-gray-300 dark:hover:border-white/20 transition-all group shadow-sm dark:shadow-none"
                  >
-                     <div className="mb-4 text-gray-400 group-hover:text-white transition-colors">
+                     <div className="mb-4 text-gray-400 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
                          <FaUpload size={24} />
                      </div>
-                     <h3 className="text-lg font-bold mb-1">Upload</h3>
+                     <h3 className="text-lg font-bold mb-1 text-gray-900 dark:text-white">Upload</h3>
                      <p className="text-sm text-gray-500">PDF, Word documents</p>
                  </button>
 
                  <button 
                   onClick={handlePasteClick}
-                  className="bg-[#111] border border-white/10 rounded-2xl p-8 text-left hover:bg-[#151515] hover:border-white/20 transition-all group"
+                  className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl p-6 lg:p-8 text-left hover:bg-gray-50 dark:hover:bg-[#151515] hover:border-gray-300 dark:hover:border-white/20 transition-all group shadow-sm dark:shadow-none"
                  >
-                     <div className="mb-4 text-gray-400 group-hover:text-white transition-colors">
+                     <div className="mb-4 text-gray-400 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
                          <FaFileAlt size={24} />
                      </div>
-                     <h3 className="text-lg font-bold mb-1">Paste</h3>
+                     <h3 className="text-lg font-bold mb-1 text-gray-900 dark:text-white">Paste</h3>
                      <p className="text-sm text-gray-500">Copy and paste text</p>
                  </button>
              </div>
 
              {/* Your Grades Section */}
              <div>
-                 <h2 className="text-xl font-bold mb-6">Your grades</h2>
+                 <h2 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">Your grades</h2>
                  
                  {history.length === 0 ? (
                     <div className="text-center text-gray-500 py-8">
@@ -870,30 +930,30 @@ const GradePage: React.FC = () => {
                         <div 
                           key={item.id} 
                           onClick={() => loadChat(item)}
-                          className="bg-[#111] border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-colors cursor-pointer"
+                          className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl p-6 hover:border-gray-300 dark:hover:border-white/20 transition-colors cursor-pointer shadow-sm dark:shadow-none"
                         >
                              <div className="flex items-start justify-between mb-4">
                                  <div className="flex items-center gap-4">
-                                     <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center text-xl">
+                                     <div className="w-12 h-12 bg-gray-100 dark:bg-white rounded-lg flex items-center justify-center text-xl">
                                          ✍️
                                      </div>
                                      <div>
-                                         <h3 className="font-bold mb-1">{item.title || 'Grading Report'}</h3>
+                                         <h3 className="font-bold mb-1 text-gray-900 dark:text-white">{item.title || 'Grading Report'}</h3>
                                          <p className="text-xs text-gray-500">{new Date(item.created_at).toLocaleDateString()}</p>
                                      </div>
                                  </div>
-                                 <button className="text-gray-500 hover:text-white">•••</button>
+                                 <button className="text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white">•••</button>
                              </div>
                              
-                             <p className="text-gray-400 text-sm leading-relaxed mb-6 line-clamp-2">
+                             <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-6 line-clamp-2">
                                  View detailed grading report and feedback...
                              </p>
         
-                             <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                                 <button className="flex items-center gap-2 text-sm text-white font-medium hover:text-gray-300 transition-colors">
+                             <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-white/5">
+                                 <button className="flex items-center gap-2 text-sm text-gray-900 dark:text-white font-medium hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
                                      View Details <FaChevronRight size={10} />
                                  </button>
-                                 <span className="font-bold">--</span>
+                                 <span className="font-bold text-gray-400 dark:text-gray-500">--</span>
                              </div>
                          </div>
                       ))}
@@ -905,18 +965,11 @@ const GradePage: React.FC = () => {
          ) : (
            /* Chat State (Result View) */
            <div className="flex-1 flex flex-col h-full w-full max-w-5xl mx-auto px-6 pt-6 pb-6 relative overflow-hidden">
-              
-              <button 
-                onClick={handleNewChat}
-                className="absolute top-0 left-6 flex items-center gap-2 text-gray-400 hover:text-white transition-colors z-20"
-              >
-                 <FaChevronRight className="rotate-180" size={12} /> Back to Dashboard
-              </button>
 
               {/* Messages Area */}
               <div 
                 ref={messagesContainerRef}
-                className="flex-1 overflow-y-auto pr-2 custom-scrollbar pt-10 pb-32"
+                className="flex-1 overflow-y-auto pr-2 custom-scrollbar pt-10 pb-20 lg:pb-32"
               >
                 {messages.map((msg) => (
                   <div key={msg.id} className={`mb-8 flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -925,7 +978,7 @@ const GradePage: React.FC = () => {
                       {/* Attachment (User) */}
                       {msg.type === 'user' && msg.attachment && (
                         <div 
-                          className="mb-3 rounded-xl overflow-hidden border border-white/10 w-64 h-32 cursor-pointer hover:border-white/30 transition-all bg-[#1f1f23] relative group"
+                          className="mb-3 rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 w-64 h-32 cursor-pointer hover:border-gray-300 dark:hover:border-white/30 transition-all bg-gray-100 dark:bg-[#1f1f23] relative group"
                           onClick={() => setPreviewAttachment(msg.attachment)}
                         >
                           {msg.attachment.type.startsWith('image/') && msg.attachment.url ? (
@@ -959,8 +1012,8 @@ const GradePage: React.FC = () => {
                       {/* Message Content */}
                       <div className={`
                         ${msg.type === 'user' 
-                          ? 'bg-[#27272a] text-white px-5 py-3 rounded-2xl rounded-tr-sm' 
-                          : 'text-gray-200 w-full'
+                          ? 'bg-gray-100 dark:bg-[#27272a] text-gray-900 dark:text-white px-5 py-3 rounded-2xl rounded-tr-sm' 
+                          : 'text-gray-900 dark:text-gray-200 w-full'
                         }
                       `}>
                         {msg.type === 'ai' ? (
@@ -973,7 +1026,7 @@ const GradePage: React.FC = () => {
                               </div>
                             ) : (
                               <>
-                              <div className="prose prose-invert max-w-none text-gray-200 text-left">
+                              <div className="prose dark:prose-invert max-w-none text-gray-900 dark:text-gray-200 text-left">
                                   <ReactMarkdown 
                                     remarkPlugins={[remarkGfm, remarkMath]}
                                     rehypePlugins={[rehypeKatex]}
@@ -983,17 +1036,17 @@ const GradePage: React.FC = () => {
                                 </div>
                                 
                                 {/* AI Toolbar */}
-                                <div className="flex items-center gap-4 mt-4 pt-3 border-t border-white/5">
+                                <div className="flex items-center gap-4 mt-4 pt-3 border-t border-gray-200 dark:border-white/5">
                                   <button 
                                     onClick={() => handleCopy(msg.content)}
-                                    className="flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors"
+                                    className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
                                     title="Copy to clipboard"
                                   >
                                     <FaCopy /> Copy
                                   </button>
                                   <button 
                                     onClick={() => handleExportPDF(msg.content)}
-                                    className="flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors"
+                                    className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
                                     title="Export as PDF"
                                   >
                                     <FaFilePdf /> Export PDF
@@ -1015,25 +1068,25 @@ const GradePage: React.FC = () => {
               </div>
 
               {/* Bottom Actions Area */}
-              <div className="absolute bottom-8 left-0 right-0 z-20 flex items-center justify-center gap-4 pointer-events-none">
+              <div className="absolute bottom-4 lg:bottom-8 left-0 right-0 z-20 flex items-center justify-center gap-2 lg:gap-4 pointer-events-none px-4">
                    <button 
                      onClick={() => setShowPaperModal(true)}
-                     className="pointer-events-auto flex items-center gap-3 bg-black/40 backdrop-blur-xl border border-white/10 hover:border-white/20 hover:bg-black/60 text-white px-8 py-4 rounded-full transition-all group shadow-lg"
+                     className="pointer-events-auto flex items-center gap-2 lg:gap-3 bg-black/40 backdrop-blur-xl border border-white/10 hover:border-white/20 hover:bg-black/60 text-white px-4 py-3 lg:px-8 lg:py-4 rounded-full transition-all group shadow-lg"
                    >
-                       <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
-                         <FaUpload size={14} className="text-gray-300 group-hover:text-white" />
+                       <div className="w-6 h-6 lg:w-8 lg:h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
+                         <FaUpload className="text-gray-300 group-hover:text-white w-3 h-3 lg:w-3.5 lg:h-3.5" />
                        </div>
-                       <span className="font-medium">Upload Paper</span>
+                       <span className="text-xs lg:text-base font-medium">Upload Paper</span>
                    </button>
                    
                    <button 
                      onClick={handlePasteModalOpen}
-                     className="pointer-events-auto flex items-center gap-3 bg-black/40 backdrop-blur-xl border border-white/10 hover:border-white/20 hover:bg-black/60 text-white px-8 py-4 rounded-full transition-all group shadow-lg"
+                     className="pointer-events-auto flex items-center gap-2 lg:gap-3 bg-black/40 backdrop-blur-xl border border-white/10 hover:border-white/20 hover:bg-black/60 text-white px-4 py-3 lg:px-8 lg:py-4 rounded-full transition-all group shadow-lg"
                    >
-                       <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
-                         <FaFileAlt size={14} className="text-gray-300 group-hover:text-white" />
+                       <div className="w-6 h-6 lg:w-8 lg:h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
+                         <FaFileAlt className="text-gray-300 group-hover:text-white w-3 h-3 lg:w-3.5 lg:h-3.5" />
                        </div>
-                       <span className="font-medium">Paste Paper</span>
+                       <span className="text-xs lg:text-base font-medium">Paste Paper</span>
                    </button>
               </div>
 
@@ -1043,15 +1096,15 @@ const GradePage: React.FC = () => {
       {/* Rubric Modal */}
       {showRubricModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
-            <div className="p-6 border-b border-white/5">
-              <h3 className="text-xl font-bold text-white">Upload Rubric</h3>
-              <p className="text-sm text-gray-400 mt-1">
+          <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+            <div className="p-6 border-b border-gray-100 dark:border-white/5">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Upload Rubric</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                 Upload a grading rubric to help the AI grade your paper accurately.
               </p>
             </div>
             
-            <div className="p-8 flex flex-col items-center justify-center border-b border-white/5 bg-[#151515]/50">
+            <div className="p-8 flex flex-col items-center justify-center border-b border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-[#151515]/50">
               <input 
                 type="file" 
                 ref={rubricInputRef}
@@ -1061,17 +1114,17 @@ const GradePage: React.FC = () => {
               />
               
               {rubricFile ? (
-                <div className="w-full bg-[#1f1f23] border border-white/10 rounded-xl p-4 flex items-center gap-4">
+                <div className="w-full bg-white dark:bg-[#1f1f23] border border-gray-200 dark:border-white/10 rounded-xl p-4 flex items-center gap-4 shadow-sm dark:shadow-none">
                   <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
-                    <FaFileAlt className="text-blue-400" />
+                    <FaFileAlt className="text-blue-500 dark:text-blue-400" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate text-white">{rubricFile.name}</p>
+                    <p className="font-medium truncate text-gray-900 dark:text-white">{rubricFile.name}</p>
                     <p className="text-xs text-gray-500">{(rubricFile.size / 1024).toFixed(1)} KB</p>
                   </div>
                   <button 
                     onClick={() => setRubricFile(null)}
-                    className="p-2 hover:bg-white/5 rounded-lg text-gray-400 hover:text-white"
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white"
                   >
                     ✕
                   </button>
@@ -1079,29 +1132,29 @@ const GradePage: React.FC = () => {
               ) : (
                 <button 
                   onClick={() => rubricInputRef.current?.click()}
-                  className="w-full border-2 border-dashed border-white/10 rounded-xl p-8 hover:border-white/20 hover:bg-white/5 transition-all flex flex-col items-center gap-4 group"
+                  className="w-full border-2 border-dashed border-gray-300 dark:border-white/10 rounded-xl p-8 hover:border-indigo-500 dark:hover:border-white/20 hover:bg-white dark:hover:bg-white/5 transition-all flex flex-col items-center gap-4 group"
                 >
-                  <div className="w-16 h-16 bg-[#1f1f23] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <FaUpload className="text-gray-400 group-hover:text-white" size={24} />
+                  <div className="w-16 h-16 bg-white dark:bg-[#1f1f23] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm dark:shadow-none">
+                    <FaUpload className="text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-white" size={24} />
                   </div>
                   <div className="text-center">
-                    <p className="font-medium text-white mb-1">Click to upload rubric</p>
+                    <p className="font-medium text-gray-900 dark:text-white mb-1">Click to upload rubric</p>
                     <p className="text-xs text-gray-500">PDF or Word (Optional)</p>
                   </div>
                 </button>
               )}
             </div>
             
-            <div className="p-6 flex items-center justify-between bg-[#111]">
+            <div className="p-6 flex items-center justify-between bg-white dark:bg-[#111]">
               <button 
                 onClick={handleSkipRubric}
-                className="text-gray-400 hover:text-white text-sm font-medium px-4 py-2"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium px-4 py-2"
               >
                 Skip Rubric
               </button>
               <button 
                 onClick={handleNextRubric}
-                className="bg-white text-black px-6 py-2 rounded-lg font-bold hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-gray-900 dark:bg-white text-white dark:text-black px-6 py-2 rounded-lg font-bold hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next
               </button>
@@ -1113,15 +1166,15 @@ const GradePage: React.FC = () => {
       {/* Paper Modal */}
       {showPaperModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
-            <div className="p-6 border-b border-white/5">
-              <h3 className="text-xl font-bold text-white">Upload Paper</h3>
-              <p className="text-sm text-gray-400 mt-1">
+          <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+            <div className="p-6 border-b border-gray-100 dark:border-white/5">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Upload Paper</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                 Upload the student paper or answer sheet you want to grade.
               </p>
             </div>
             
-            <div className="p-8 flex flex-col items-center justify-center border-b border-white/5 bg-[#151515]/50">
+            <div className="p-8 flex flex-col items-center justify-center border-b border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-[#151515]/50">
               <input 
                 type="file" 
                 ref={paperInputRef}
@@ -1131,17 +1184,17 @@ const GradePage: React.FC = () => {
               />
               
               {paperFile ? (
-                <div className="w-full bg-[#1f1f23] border border-white/10 rounded-xl p-4 flex items-center gap-4">
+                <div className="w-full bg-white dark:bg-[#1f1f23] border border-gray-200 dark:border-white/10 rounded-xl p-4 flex items-center gap-4 shadow-sm dark:shadow-none">
                   <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center">
-                    <FaFileAlt className="text-green-400" />
+                    <FaFileAlt className="text-green-500 dark:text-green-400" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate text-white">{paperFile.name}</p>
+                    <p className="font-medium truncate text-gray-900 dark:text-white">{paperFile.name}</p>
                     <p className="text-xs text-gray-500">{(paperFile.size / 1024).toFixed(1)} KB</p>
                   </div>
                   <button 
                     onClick={() => setPaperFile(null)}
-                    className="p-2 hover:bg-white/5 rounded-lg text-gray-400 hover:text-white"
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white"
                   >
                     ✕
                   </button>
@@ -1149,30 +1202,30 @@ const GradePage: React.FC = () => {
               ) : (
                 <button 
                   onClick={() => paperInputRef.current?.click()}
-                  className="w-full border-2 border-dashed border-white/10 rounded-xl p-8 hover:border-white/20 hover:bg-white/5 transition-all flex flex-col items-center gap-4 group"
+                  className="w-full border-2 border-dashed border-gray-300 dark:border-white/10 rounded-xl p-8 hover:border-indigo-500 dark:hover:border-white/20 hover:bg-white dark:hover:bg-white/5 transition-all flex flex-col items-center gap-4 group"
                 >
-                  <div className="w-16 h-16 bg-[#1f1f23] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <FaUpload className="text-gray-400 group-hover:text-white" size={24} />
+                  <div className="w-16 h-16 bg-white dark:bg-[#1f1f23] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm dark:shadow-none">
+                    <FaUpload className="text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-white" size={24} />
                   </div>
                   <div className="text-center">
-                    <p className="font-medium text-white mb-1">Click to upload paper</p>
+                    <p className="font-medium text-gray-900 dark:text-white mb-1">Click to upload paper</p>
                     <p className="text-xs text-gray-500">PDF, Word, or Image</p>
                   </div>
                 </button>
               )}
             </div>
             
-            <div className="p-6 flex items-center justify-between bg-[#111]">
+            <div className="p-6 flex items-center justify-between bg-white dark:bg-[#111]">
               <button 
                 onClick={() => setShowPaperModal(false)}
-                className="text-gray-400 hover:text-white text-sm font-medium px-4 py-2"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium px-4 py-2"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleGenerateGrading}
                 disabled={!paperFile}
-                className="bg-white text-black px-6 py-2 rounded-lg font-bold hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="bg-gray-900 dark:bg-white text-white dark:text-black px-6 py-2 rounded-lg font-bold hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 Grade Paper
                 {paperFile && paperCost > 0 && (
@@ -1189,34 +1242,34 @@ const GradePage: React.FC = () => {
       {/* Paste Modal */}
       {showPasteModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl">
-            <div className="p-6 border-b border-white/5">
-              <h3 className="text-xl font-bold text-white">Paste Paper Content</h3>
-              <p className="text-sm text-gray-400 mt-1">
+          <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl">
+            <div className="p-6 border-b border-gray-100 dark:border-white/5">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Paste Paper Content</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                 Paste the text content of the paper you want to grade.
               </p>
             </div>
             
-            <div className="p-6 bg-[#151515]/50">
+            <div className="p-6 bg-gray-50 dark:bg-[#151515]/50">
               <textarea
                 value={pastedContent}
                 onChange={(e) => setPastedContent(e.target.value)}
                 placeholder="Paste your text here..."
-                className="w-full h-64 bg-[#1f1f23] text-gray-200 border border-white/10 rounded-xl p-4 focus:outline-none focus:border-white/30 resize-none"
+                className="w-full h-64 bg-white dark:bg-[#1f1f23] text-gray-900 dark:text-gray-200 border border-gray-200 dark:border-white/10 rounded-xl p-4 focus:outline-none focus:border-indigo-500 dark:focus:border-white/30 resize-none"
               />
             </div>
             
-            <div className="p-6 flex items-center justify-between bg-[#111]">
+            <div className="p-6 flex items-center justify-between bg-white dark:bg-[#111]">
               <button 
                 onClick={() => setShowPasteModal(false)}
-                className="text-gray-400 hover:text-white text-sm font-medium px-4 py-2"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium px-4 py-2"
               >
                 Cancel
               </button>
               <button 
                 onClick={handlePasteSubmit}
                 disabled={!pastedContent.trim()}
-                className="bg-white text-black px-6 py-2 rounded-lg font-bold hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="bg-gray-900 dark:bg-white text-white dark:text-black px-6 py-2 rounded-lg font-bold hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 Grade Paper
                 {pastedContent.trim() && (

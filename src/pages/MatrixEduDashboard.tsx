@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SidebarLeft from '../components/dashboard/SidebarLeft';
 import SidebarRight from '../components/dashboard/SidebarRight';
@@ -6,18 +6,43 @@ import ActionCards from '../components/dashboard/ActionCards';
 import StudySetList from '../components/dashboard/StudySetList';
 import { UploadModal, PasteModal, RecordModal, CreateFolderModal } from '../components/dashboard/DashboardModals';
 import { useAuth } from '../utils/AuthContext';
-import { FaBars, FaFolder } from 'react-icons/fa';
+import { FaBars, FaFolder, FaGraduationCap } from 'react-icons/fa';
 import { supabase } from '../utils/supabase';
 import { StudySet } from '../components/dashboard/StudySetCard';
 
 const MatrixEduDashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const scrollRef = useRef<HTMLDivElement>(null);
   
   // Modal States
   const [activeModal, setActiveModal] = useState<'upload' | 'paste' | 'record' | 'createFolder' | null>(null);
-  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
-  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
+  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(window.innerWidth >= 1024);
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(window.innerWidth >= 1280);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+      const scrollTop = e.currentTarget.scrollTop;
+      setIsScrolled(scrollTop > 0);
+  };
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) {
+        setIsLeftSidebarOpen(false);
+      } else {
+        setIsLeftSidebarOpen(true);
+      }
+      if (window.innerWidth < 1280) {
+        setIsRightSidebarOpen(false);
+      } else {
+        setIsRightSidebarOpen(true);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Mock Data
   interface Folder {
@@ -88,51 +113,89 @@ const MatrixEduDashboard: React.FC = () => {
   };
 
   return (
-    <div className="h-screen bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-white flex font-sans overflow-hidden">
+    <div className="h-screen bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-white flex font-sans overflow-hidden relative">
+      {/* Mobile Sidebar Overlays */}
+      {(isLeftSidebarOpen && window.innerWidth < 1024) && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setIsLeftSidebarOpen(false)}
+        />
+      )}
+      {(isRightSidebarOpen && window.innerWidth < 1280) && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 xl:hidden"
+          onClick={() => setIsRightSidebarOpen(false)}
+        />
+      )}
+
       {/* Left Sidebar */}
-      <SidebarLeft isOpen={isLeftSidebarOpen} onClose={() => setIsLeftSidebarOpen(false)} />
+      <SidebarLeft 
+        isOpen={isLeftSidebarOpen} 
+        onClose={() => setIsLeftSidebarOpen(false)} 
+        className="fixed inset-y-0 left-0 z-50 lg:relative lg:z-0 shadow-2xl lg:shadow-none h-full"
+      />
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col h-full relative overflow-hidden transition-all duration-300">
-        {/* Fixed Header Section */}
-        <div className="flex-shrink-0 p-8 lg:p-12 pb-6 max-w-4xl mx-auto w-full relative">
-            
-            {/* Top Navigation Toggles */}
-            <div className="absolute top-6 left-6 right-6 flex justify-between items-center pointer-events-none">
-                <div className="pointer-events-auto">
-                    {!isLeftSidebarOpen && (
-                        <button onClick={() => setIsLeftSidebarOpen(true)} className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-none transition-colors">
-                            <FaBars size={20} />
-                        </button>
-                    )}
-                </div>
-                <div className="pointer-events-auto">
-                    {!isRightSidebarOpen && (
-                        <button onClick={() => setIsRightSidebarOpen(true)} className="flex items-center gap-2 px-3 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-none transition-colors">
-                            <FaFolder size={16} />
-                            <span className="text-sm font-medium">Folders</span>
-                        </button>
-                    )}
+      <main className="flex-1 h-full relative overflow-hidden transition-all duration-300 w-full">
+        <div 
+            className="h-full overflow-y-auto custom-scrollbar scroll-smooth" 
+            onScroll={handleScroll} 
+            ref={scrollRef}
+        >
+            {/* Sticky Header Section */}
+            <div className={`sticky top-0 z-30 transition-all duration-300 w-full ${isScrolled ? 'bg-white/95 dark:bg-[#111]/95 backdrop-blur-md shadow-sm border-b border-gray-200 dark:border-white/5 py-2' : 'bg-transparent py-4 md:py-8 lg:py-12'}`}>
+                <div className="max-w-4xl mx-auto px-4 md:px-8 lg:px-12 relative">
+                    
+                    {/* Top Navigation Toggles + Logo */}
+                    <div className={`flex justify-between items-center ${isScrolled ? 'mb-2' : 'mb-4 md:mb-8'}`}>
+                        <div className="flex items-center gap-3">
+                            {!isLeftSidebarOpen && (
+                                <button 
+                                    onClick={() => setIsLeftSidebarOpen(true)} 
+                                    className="w-10 h-10 rounded-full bg-indigo-600 dark:bg-indigo-500 text-white flex items-center justify-center font-bold text-sm hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors shadow-sm md:hidden"
+                                >
+                                    ME
+                                </button>
+                            )}
+                            
+                            {/* Desktop/Tablet Menu Trigger (Hidden on Mobile) */}
+                            {!isLeftSidebarOpen && (
+                                <button 
+                                    onClick={() => setIsLeftSidebarOpen(true)} 
+                                    className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-none transition-colors hidden md:block"
+                                >
+                                    <FaBars size={20} />
+                                </button>
+                            )}
+                        </div>
+                        <div className="">
+                            {!isRightSidebarOpen && (
+                                <button onClick={() => setIsRightSidebarOpen(true)} className="flex items-center gap-2 px-3 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-none transition-colors">
+                                    <FaFolder size={16} />
+                                    <span className="text-sm font-medium hidden sm:inline">Folders</span>
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Header Title - Collapses on scroll */}
+                    <div className={`text-center transition-all duration-300 overflow-hidden ${isScrolled ? 'h-0 opacity-0 mb-0' : 'h-auto opacity-100 mb-8 md:mb-12 mt-4'}`}>
+                        <h1 className="text-2xl md:text-4xl font-bold mb-3 text-gray-900 dark:text-white">Hey {user?.email?.split('@')[0] || 'AI'}, what do you wanna master?</h1>
+                        <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 px-4">Upload anything and get interactive notes, flashcards, quizzes, and more</p>
+                    </div>
+
+                    {/* Action Cards */}
+                    <ActionCards 
+                       onUpload={() => setActiveModal('upload')}
+                       onPaste={() => setActiveModal('paste')}
+                       onRecord={() => setActiveModal('record')}
+                       isCompact={isScrolled}
+                    />
                 </div>
             </div>
 
-            {/* Header */}
-            <div className="text-center mb-12 mt-8">
-                <h1 className="text-4xl font-bold mb-3">Hey {user?.email?.split('@')[0] || 'AI'}, what do you wanna master?</h1>
-                <p className="text-gray-500 dark:text-gray-400">Upload anything and get interactive notes, flashcards, quizzes, and more</p>
-            </div>
-
-            {/* Action Cards */}
-            <ActionCards 
-               onUpload={() => setActiveModal('upload')}
-               onPaste={() => setActiveModal('paste')}
-               onRecord={() => setActiveModal('record')}
-            />
-        </div>
-
-        {/* Scrollable Study Sets Section */}
-        <div className="flex-1 overflow-y-auto px-8 lg:px-12 pb-12 custom-scrollbar">
-            <div className="max-w-4xl mx-auto">
+            {/* Scrollable Study Sets Section */}
+            <div className="px-4 md:px-8 lg:px-12 pb-24 max-w-4xl mx-auto">
                 <StudySetList 
                     studySets={studySets} 
                     onSetClick={(set: any) => {
@@ -149,6 +212,7 @@ const MatrixEduDashboard: React.FC = () => {
         onCreateFolder={() => setActiveModal('createFolder')}
         isOpen={isRightSidebarOpen} 
         onClose={() => setIsRightSidebarOpen(false)}
+        className="fixed inset-y-0 right-0 z-50 xl:relative xl:z-0 shadow-2xl xl:shadow-none h-full"
       />
 
       {/* Modals */}

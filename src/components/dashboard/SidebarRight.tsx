@@ -28,14 +28,14 @@ const SidebarRight: React.FC<SidebarRightProps> = ({
           animate={{ width: 288, opacity: 1 }} // 288px = w-72
           exit={{ width: 0, opacity: 0 }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
-          className={`bg-white dark:bg-[#111111] border-l border-gray-200 dark:border-white/10 p-6 flex flex-col h-screen flex-shrink-0 relative group text-gray-900 dark:text-white ${className}`}
+          className={`bg-white dark:bg-[#111111] border-l border-gray-200 dark:border-white/10 p-6 flex flex-col h-full flex-shrink-0 group text-gray-900 dark:text-white ${className}`}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
-          {/* Close Button (Visible on Hover) */}
+          {/* Close Button (Visible on Hover or always on mobile) */}
           <button
             onClick={onClose}
-            className={`absolute top-4 left-4 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+            className={`absolute top-4 left-4 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-opacity duration-200 opacity-100 xl:opacity-0 xl:group-hover:opacity-100`}
             title="Close Sidebar"
           >
             <FaChevronLeft className="transform rotate-180" />
@@ -68,7 +68,7 @@ const SidebarRight: React.FC<SidebarRightProps> = ({
 
                  {folders.length === 0 ? (
                    <div className="text-center py-12">
-                       <FaFolder size={48} className="text-gray-200 dark:text-[#1a1a1a] mx-auto mb-4" />
+                       <FaFolder size={48} className="text-gray-300 dark:text-[#333] mx-auto mb-4" />
                        <p className="text-sm text-gray-500 mb-1">No folders yet</p>
                        <p className="text-xs text-gray-400 dark:text-gray-600">Create your first folder to organize your study sets</p>
                    </div>

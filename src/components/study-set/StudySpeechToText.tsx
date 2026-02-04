@@ -222,10 +222,10 @@ const StudySpeechToText: React.FC = () => {
         // If polling, we might want to show "Processing..." state
         if (isPolling && !mediaUrl) {
              return (
-                <div className="h-full flex items-center justify-center bg-[#111111] text-white">
+                <div className="h-full flex items-center justify-center bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-white">
                     <div className="flex flex-col items-center gap-4">
-                        <AiOutlineLoading3Quarters className="animate-spin text-[#c2410c] text-4xl" />
-                        <p className="text-gray-400">Processing media...</p>
+                        <AiOutlineLoading3Quarters className="animate-spin text-indigo-600 dark:text-[#c2410c] text-4xl" />
+                        <p className="text-gray-600 dark:text-gray-400">Processing media...</p>
                         <p className="text-sm text-gray-500">Waiting for transcription (checking every 10s)...</p>
                     </div>
                 </div>
@@ -234,10 +234,10 @@ const StudySpeechToText: React.FC = () => {
         // Normal loading
         if (loading) {
              return (
-                <div className="h-full flex flex-col bg-[#111111] text-white overflow-hidden p-6">
-                     <Skeleton dark width="100%" height={200} className="mb-6" />
+                <div className="h-full flex flex-col bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-white overflow-hidden p-6">
+                     <Skeleton width="100%" height={200} className="mb-6" />
                      <div className="space-y-4">
-                         {[1,2,3].map(i => <Skeleton key={i} dark width="100%" height={60} />)}
+                         {[1,2,3].map(i => <Skeleton key={i} width="100%" height={60} />)}
                      </div>
                 </div>
             );
@@ -246,8 +246,8 @@ const StudySpeechToText: React.FC = () => {
 
     if (!mediaUrl && !loading) {
         return (
-            <div className="h-full flex items-center justify-center bg-[#111111] text-white">
-                <p className="text-gray-400">No media found for this document.</p>
+            <div className="h-full flex items-center justify-center bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-white">
+                <p className="text-gray-500 dark:text-gray-400">No media found for this document.</p>
             </div>
         );
     }
@@ -267,12 +267,12 @@ const StudySpeechToText: React.FC = () => {
             
             {/* Player Card - Fixed Top */}
             <div className="absolute top-0 left-0 right-0 z-20 p-4">
-                <div className="backdrop-blur-md bg-black/40 border border-white/10 rounded-2xl p-6 shadow-xl">
+                <div className="backdrop-blur-md bg-white/80 dark:bg-black/40 border border-gray-200 dark:border-white/10 rounded-2xl p-6 shadow-xl">
                     <div className="flex items-start justify-between mb-6">
                         <div className="flex items-center gap-4 w-full">
                             {mediaType === 'video' ? (
                                 // Video Player within the card
-                                <div className="w-full max-w-md aspect-video bg-black rounded-xl overflow-hidden relative group mx-auto border border-white/10">
+                                <div className="w-full max-w-md aspect-video bg-black rounded-xl overflow-hidden relative group mx-auto border border-gray-200 dark:border-white/10">
                                     <video 
                                         src={mediaUrl!}
                                         className="w-full h-full object-contain"
@@ -284,7 +284,7 @@ const StudySpeechToText: React.FC = () => {
                                     />
                                     {!isPlaying && (
                                         <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
-                                            <div className="w-12 h-12 bg-[#c2410c]/90 rounded-full flex items-center justify-center text-white">
+                                            <div className="w-12 h-12 bg-indigo-600/90 dark:bg-[#c2410c]/90 rounded-full flex items-center justify-center text-white">
                                                 <FaPlay className="ml-1 text-xl" />
                                             </div>
                                         </div>
@@ -293,12 +293,12 @@ const StudySpeechToText: React.FC = () => {
                             ) : (
                                 // Audio Icon / Info
                                 <>
-                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center overflow-hidden shadow-lg shadow-orange-900/20">
+                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 dark:from-orange-500 dark:to-red-500 flex items-center justify-center overflow-hidden shadow-lg shadow-indigo-900/20 dark:shadow-orange-900/20">
                                         <FaMicrophone className="text-white text-xl" />
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-white text-lg">Audio Transcription</h3>
-                                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                                        <h3 className="font-bold text-gray-900 dark:text-white text-lg">Audio Transcription</h3>
+                                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                                             {isPlaying && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>}
                                             {formatTime(currentTime)} / {formatTime(duration)}
                                         </div>
@@ -313,7 +313,7 @@ const StudySpeechToText: React.FC = () => {
                                 download 
                                 target="_blank" 
                                 rel="noopener noreferrer"
-                                className="bg-[#1a1a1a] hover:bg-[#252525] text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors border border-white/10"
+                                className="bg-gray-100 dark:bg-[#1a1a1a] hover:bg-gray-200 dark:hover:bg-[#252525] text-gray-700 dark:text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors border border-gray-200 dark:border-white/10"
                             >
                                 <FaDownload size={14} />
                             </a>
@@ -332,9 +332,9 @@ const StudySpeechToText: React.FC = () => {
                                 if (mediaRef.current) mediaRef.current.currentTime = newTime;
                                 setCurrentTime(newTime);
                             }}
-                            className="w-full h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:bg-[#c2410c] transition-all"
+                            className="w-full h-1 bg-gray-200 dark:bg-gray-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-indigo-600 dark:[&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:bg-indigo-500 dark:hover:[&::-webkit-slider-thumb]:bg-[#c2410c] transition-all"
                             style={{
-                                backgroundImage: `linear-gradient(to right, #c2410c ${(currentTime / (duration || 1)) * 100}%, #1f2937 ${(currentTime / (duration || 1)) * 100}%)`
+                                backgroundImage: `linear-gradient(to right, ${document.documentElement.classList.contains('dark') ? '#c2410c' : '#4f46e5'} ${(currentTime / (duration || 1)) * 100}%, ${document.documentElement.classList.contains('dark') ? '#1f2937' : '#e5e7eb'} ${(currentTime / (duration || 1)) * 100}%)`
                             }}
                         />
                     </div>
@@ -345,13 +345,13 @@ const StudySpeechToText: React.FC = () => {
                             onClick={() => {
                                 if (mediaRef.current) mediaRef.current.currentTime -= 10;
                             }} 
-                            className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/5 rounded-full"
+                            className="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-full"
                         >
                             <FaBackward />
                         </button>
                         <button 
                             onClick={togglePlay}
-                            className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-black hover:scale-105 transition-transform shadow-lg shadow-white/10"
+                            className="w-12 h-12 bg-indigo-600 dark:bg-white rounded-full flex items-center justify-center text-white dark:text-black hover:scale-105 transition-transform shadow-lg shadow-indigo-600/20 dark:shadow-white/10"
                         >
                             {isPlaying ? <FaPause /> : <FaPlay className="ml-1" />}
                         </button>
@@ -359,7 +359,7 @@ const StudySpeechToText: React.FC = () => {
                             onClick={() => {
                                 if (mediaRef.current) mediaRef.current.currentTime += 10;
                             }} 
-                            className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/5 rounded-full"
+                            className="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-full"
                         >
                             <FaForward />
                         </button>
@@ -386,8 +386,8 @@ const StudySpeechToText: React.FC = () => {
                                 <div 
                                     className={`p-6 rounded-2xl border text-base leading-loose transition-all duration-300 ${
                                         isGroupActive 
-                                            ? 'bg-orange-900/10 border-orange-500/30 text-gray-100 shadow-[0_0_20px_rgba(194,65,12,0.1)]' 
-                                            : 'bg-[#1a1a1a]/50 border-white/5 text-gray-400 hover:bg-[#1a1a1a]'
+                                            ? 'bg-indigo-50 dark:bg-orange-900/10 border-indigo-200 dark:border-orange-500/30 text-gray-900 dark:text-gray-100 shadow-[0_0_20px_rgba(79,70,229,0.1)] dark:shadow-[0_0_20px_rgba(194,65,12,0.1)]' 
+                                            : 'bg-white dark:bg-[#1a1a1a]/50 border-gray-200 dark:border-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-[#1a1a1a]'
                                     }`}
                                 >
                                     {group.words.map((word, wordIndex) => {
@@ -396,7 +396,7 @@ const StudySpeechToText: React.FC = () => {
                                             <span 
                                                 key={wordIndex}
                                                 className={`cursor-pointer transition-colors duration-200 inline-block mr-1 rounded px-0.5 -mx-0.5 ${
-                                                    isActive ? 'text-[#c2410c] font-bold bg-[#c2410c]/10' : 'hover:text-gray-200'
+                                                    isActive ? 'text-indigo-600 dark:text-[#c2410c] font-bold bg-indigo-100 dark:bg-[#c2410c]/10' : 'hover:text-gray-900 dark:hover:text-gray-200'
                                                 }`}
                                                 onClick={() => {
                                                     if (mediaRef.current) {

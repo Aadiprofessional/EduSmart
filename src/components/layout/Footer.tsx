@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaYoutube, FaPhone, FaEnvelope, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaYoutube, FaPhone, FaEnvelope, FaMapMarkerAlt, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import IconComponent from '../ui/IconComponent';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../../utils/LanguageContext';
 import { getPageTheme } from '../../utils/pageThemes';
 
@@ -10,6 +10,13 @@ const Footer: React.FC = () => {
   const { t } = useLanguage();
   const location = useLocation();
   const theme = getPageTheme(location.pathname);
+  
+  // Mobile accordion state
+  const [openSection, setOpenSection] = useState<string | null>(null);
+
+  const toggleSection = (section: string) => {
+    setOpenSection(openSection === section ? null : section);
+  };
 
   const socialVariants = {
     hover: { 
@@ -44,105 +51,175 @@ const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="relative text-white overflow-hidden bg-[#0a0a0a] border-t border-white/10">
+    <footer className="relative text-gray-900 dark:text-white overflow-hidden bg-white dark:bg-[#0a0a0a] border-t border-gray-200 dark:border-white/10">
       
       <div className="container mx-auto px-4 py-8 sm:py-12 lg:py-16 relative z-10">
         {/* Mobile Layout */}
         <div className="block lg:hidden">
           <motion.div 
-            className="text-center mb-8"
+            className="text-center mb-6"
             variants={containerVariants}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.1 }}
           >
             {/* Logo */}
-            <motion.div variants={itemVariants} className="mb-6">
-              <h3 className="text-2xl sm:text-3xl font-bold text-white mb-3 tracking-tight">
+            <motion.div variants={itemVariants} className="mb-4">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">
                 MatrixEdu
               </h3>
-              <p className="text-gray-400 text-sm leading-relaxed max-w-sm mx-auto">
+              <p className="text-gray-600 dark:text-gray-400 text-xs leading-relaxed max-w-sm mx-auto">
                 {t('footer.aiEducation')}
               </p>
             </motion.div>
             
-            {/* Social Media */}
-            <motion.div variants={itemVariants} className="flex justify-center space-x-4 mb-8">
+            {/* Social Media - Compact */}
+            <motion.div variants={itemVariants} className="flex justify-center space-x-3 mb-6">
               {[
-                { icon: FaFacebook, href: "#", color: "text-gray-400 hover:text-white" },
-                { icon: FaTwitter, href: "#", color: "text-gray-400 hover:text-white" },
-                { icon: FaInstagram, href: "#", color: "text-gray-400 hover:text-white" },
-                { icon: FaLinkedin, href: "#", color: "text-gray-400 hover:text-white" },
-                { icon: FaYoutube, href: "#", color: "text-gray-400 hover:text-white" }
+                { icon: FaFacebook, href: "#", color: "text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white" },
+                { icon: FaTwitter, href: "#", color: "text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white" },
+                { icon: FaInstagram, href: "#", color: "text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white" },
+                { icon: FaLinkedin, href: "#", color: "text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white" },
+                { icon: FaYoutube, href: "#", color: "text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white" }
               ].map((social, index) => (
                 <motion.a 
                   key={index}
                   href={social.href} 
-                  className={`p-2 bg-white/5 rounded-full border border-white/10 ${social.color} transition-all duration-300 hover:border-white/30 hover:bg-white/10`}
+                  className={`p-1.5 bg-gray-100 dark:bg-white/5 rounded-full border border-gray-200 dark:border-white/10 ${social.color} transition-all duration-300 hover:border-indigo-600/30 dark:hover:border-white/30 hover:bg-gray-200 dark:hover:bg-white/10`}
                   variants={socialVariants} 
                   whileHover="hover"
                 >
-                  <IconComponent icon={social.icon} className="text-sm" />
+                  <IconComponent icon={social.icon} className="text-xs" />
                 </motion.a>
               ))}
             </motion.div>
 
             {/* Quick Actions */}
-            <motion.div variants={itemVariants} className="grid grid-cols-2 gap-4 mb-8">
+            <motion.div variants={itemVariants} className="grid grid-cols-2 gap-3 mb-6">
               <Link 
                 to="/courses" 
-                className="bg-white text-black px-4 py-3 rounded-lg font-bold text-sm transition-all duration-300 hover:bg-gray-200"
+                className="bg-gray-100 dark:bg-white text-gray-900 dark:text-black px-3 py-2.5 rounded-lg font-bold text-xs transition-all duration-300 hover:bg-gray-200 dark:hover:bg-gray-200"
               >
                 {t('footer.browseCourses')}
               </Link>
               <Link 
                 to="/scholarships" 
-                className="bg-[#1a1a1a] text-white border border-white/10 px-4 py-3 rounded-lg font-bold text-sm transition-all duration-300 hover:bg-white/10"
+                className="bg-black dark:bg-[#1a1a1a] text-white border border-gray-800 dark:border-white/10 px-3 py-2.5 rounded-lg font-bold text-xs transition-all duration-300 hover:bg-gray-800 dark:hover:bg-white/10"
               >
                 {t('footer.findScholarships')}
               </Link>
             </motion.div>
 
-            {/* Contact Info */}
-            <motion.div variants={itemVariants} className="space-y-3 mb-8">
-              <div className="flex items-center justify-center text-sm text-gray-300">
-                <IconComponent icon={FaPhone} className="mr-2 text-blue-400" />
-                <span>{t('footer.contactInfo.phone')}</span>
-              </div>
-              <div className="flex items-center justify-center text-sm text-gray-300">
-                <IconComponent icon={FaEnvelope} className="mr-2 text-purple-400" />
-                <a href={`mailto:${t('footer.contactInfo.email')}`} className="text-purple-400">
-                  {t('footer.contactInfo.email')}
-                </a>
-              </div>
-            </motion.div>
+            {/* Mobile Accordions */}
+            <div className="space-y-2 mb-6 text-left">
+                {/* Quick Links Accordion */}
+                <div className="border-b border-gray-200 dark:border-white/10">
+                    <button 
+                        onClick={() => toggleSection('quickLinks')}
+                        className="w-full py-3 flex items-center justify-between text-sm font-bold text-gray-900 dark:text-white"
+                    >
+                        {t('footer.quickLinks')}
+                        {openSection === 'quickLinks' ? <FaChevronUp size={12} /> : <FaChevronDown size={12} />}
+                    </button>
+                    <AnimatePresence>
+                        {openSection === 'quickLinks' && (
+                            <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="overflow-hidden"
+                            >
+                                <ul className="pb-3 space-y-2">
+                                    {[
+                                        { name: t('nav.home'), href: '/' },
+                                        { name: t('nav.database'), href: '/database' },
+                                        { name: t('nav.successStories'), href: '/case-studies' },
+                                        { name: t('nav.aiCourses'), href: '/ai-courses' },
+                                        { name: t('nav.blog'), href: '/blog' }
+                                    ].map((link, index) => (
+                                        <li key={index}>
+                                            <Link to={link.href} className="text-xs text-gray-600 dark:text-gray-400 block py-1">
+                                                {link.name}
+                                            </Link>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
 
-            {/* Quick Links */}
-            <motion.div variants={itemVariants}>
-              <h3 className="text-xl font-bold mb-6 text-white">{t('footer.quickLinks')}</h3>
-              <ul className="space-y-3">
-                {[
-                  { name: t('nav.home'), href: '/' },
-                  { name: t('nav.database'), href: '/database' },
-                  { name: t('nav.successStories'), href: '/case-studies' },
-                  { name: t('nav.aiCourses'), href: '/ai-courses' },
-                  { name: t('nav.blog'), href: '/blog' }
-                ].map((link, index) => (
-                  <li key={index}>
-                    <motion.div variants={linkVariants} whileHover="hover">
-                      <Link 
-                        to={link.href} 
-                        className="text-gray-300 hover:text-white inline-flex items-center group transition-all duration-300"
-                        data-magnetic
-                      >
-                        <span className="w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full mr-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                        {link.name}
-                      </Link>
-                    </motion.div>
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
+                {/* Resources Accordion */}
+                <div className="border-b border-gray-200 dark:border-white/10">
+                    <button 
+                        onClick={() => toggleSection('resources')}
+                        className="w-full py-3 flex items-center justify-between text-sm font-bold text-gray-900 dark:text-white"
+                    >
+                        {t('footer.resources')}
+                        {openSection === 'resources' ? <FaChevronUp size={12} /> : <FaChevronDown size={12} />}
+                    </button>
+                    <AnimatePresence>
+                        {openSection === 'resources' && (
+                            <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="overflow-hidden"
+                            >
+                                <ul className="pb-3 space-y-2">
+                                    {[
+                                        { name: t('footer.resourceLinks.scholarships'), href: '/scholarship-finder' },
+                                        { name: t('footer.resourceLinks.applicationTracker'), href: '/application-tracker' },
+                                        { name: t('footer.resourceLinks.privacyPolicy'), href: '/privacy' },
+                                        { name: t('footer.resourceLinks.termsOfService'), href: '/terms' },
+                                        { name: t('footer.resourceLinks.faq'), href: '/faq' }
+                                    ].map((link, index) => (
+                                        <li key={index}>
+                                            <Link to={link.href} className="text-xs text-gray-600 dark:text-gray-400 block py-1">
+                                                {link.name}
+                                            </Link>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+
+                {/* Contact Accordion */}
+                <div className="border-b border-gray-200 dark:border-white/10">
+                    <button 
+                        onClick={() => toggleSection('contact')}
+                        className="w-full py-3 flex items-center justify-between text-sm font-bold text-gray-900 dark:text-white"
+                    >
+                        {t('footer.contactUs')}
+                        {openSection === 'contact' ? <FaChevronUp size={12} /> : <FaChevronDown size={12} />}
+                    </button>
+                    <AnimatePresence>
+                        {openSection === 'contact' && (
+                            <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="overflow-hidden"
+                            >
+                                <div className="pb-3 space-y-3 text-xs text-gray-600 dark:text-gray-400">
+                                    <div className="flex items-center">
+                                        <IconComponent icon={FaPhone} className="mr-2 text-blue-600 dark:text-blue-400" />
+                                        <span>{t('footer.contactInfo.phone')}</span>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <IconComponent icon={FaEnvelope} className="mr-2 text-purple-600 dark:text-purple-400" />
+                                        <a href={`mailto:${t('footer.contactInfo.email')}`} className="text-purple-600 dark:text-purple-400">
+                                            {t('footer.contactInfo.email')}
+                                        </a>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            </div>
           </motion.div>
         </div>
 
@@ -157,26 +234,26 @@ const Footer: React.FC = () => {
           {/* About */}
           <motion.div variants={itemVariants}>
             <div className="mb-6">
-              <h3 className="text-3xl font-bold text-white mb-4 tracking-tight">
+              <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-4 tracking-tight">
                 MatrixEdu
               </h3>
-              <p className="text-gray-400 mb-6 leading-relaxed">
+              <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
                 {t('footer.about')}
               </p>
             </div>
             
             <div className="flex space-x-4">
               {[
-                { icon: FaFacebook, href: "#", color: "hover:text-white" },
-                { icon: FaTwitter, href: "#", color: "hover:text-white" },
-                { icon: FaInstagram, href: "#", color: "hover:text-white" },
-                { icon: FaLinkedin, href: "#", color: "hover:text-white" },
-                { icon: FaYoutube, href: "#", color: "hover:text-white" }
+                { icon: FaFacebook, href: "#", color: "hover:text-indigo-600 dark:hover:text-white" },
+                { icon: FaTwitter, href: "#", color: "hover:text-indigo-600 dark:hover:text-white" },
+                { icon: FaInstagram, href: "#", color: "hover:text-indigo-600 dark:hover:text-white" },
+                { icon: FaLinkedin, href: "#", color: "hover:text-indigo-600 dark:hover:text-white" },
+                { icon: FaYoutube, href: "#", color: "hover:text-indigo-600 dark:hover:text-white" }
               ].map((social, index) => (
                 <motion.a 
                   key={index}
                   href={social.href} 
-                  className={`p-3 bg-white/5 rounded-full border border-white/10 text-gray-400 ${social.color} transition-all duration-300 hover:border-white/30 hover:bg-white/10`}
+                  className={`p-3 bg-gray-100 dark:bg-white/5 rounded-full border border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400 ${social.color} transition-all duration-300 hover:border-indigo-600/30 dark:hover:border-white/30 hover:bg-gray-200 dark:hover:bg-white/10`}
                   variants={socialVariants} 
                   whileHover="hover"
                   data-magnetic
@@ -189,7 +266,7 @@ const Footer: React.FC = () => {
           
           {/* Quick Links */}
           <motion.div variants={itemVariants}>
-            <h3 className="text-xl font-bold mb-6 text-white">{t('footer.quickLinks')}</h3>
+            <h3 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">{t('footer.quickLinks')}</h3>
             <ul className="space-y-3">
               {[
                 { name: t('nav.home'), href: '/' },
@@ -202,7 +279,7 @@ const Footer: React.FC = () => {
                   <motion.div variants={linkVariants} whileHover="hover">
                     <Link 
                       to={link.href} 
-                      className="text-gray-300 hover:text-white inline-flex items-center group transition-all duration-300"
+                      className="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-white inline-flex items-center group transition-all duration-300"
                       data-magnetic
                     >
                       <span className="w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full mr-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
@@ -216,7 +293,7 @@ const Footer: React.FC = () => {
           
           {/* Resources */}
           <motion.div variants={itemVariants}>
-            <h3 className="text-xl font-bold mb-6 text-white">{t('footer.resources')}</h3>
+            <h3 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">{t('footer.resources')}</h3>
             <ul className="space-y-3">
               {[
                 { name: t('footer.resourceLinks.scholarships'), href: '/scholarship-finder' },
@@ -229,7 +306,7 @@ const Footer: React.FC = () => {
                   <motion.div variants={linkVariants} whileHover="hover">
                     <Link 
                       to={link.href} 
-                      className="text-gray-300 hover:text-white inline-flex items-center group transition-all duration-300"
+                      className="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-white inline-flex items-center group transition-all duration-300"
                       data-magnetic
                     >
                       <span className="w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full mr-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
@@ -243,38 +320,38 @@ const Footer: React.FC = () => {
           
           {/* Contact */}
           <motion.div variants={itemVariants}>
-            <h3 className="text-xl font-bold mb-6 text-white">{t('footer.contactUs')}</h3>
-            <div className="space-y-6 text-gray-300">
+            <h3 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">{t('footer.contactUs')}</h3>
+            <div className="space-y-6 text-gray-600 dark:text-gray-300">
               {/* Hong Kong Office */}
-              <div className="p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 hover:border-white/20 transition-all duration-300">
-                <p className="font-semibold text-white mb-2 flex items-center">
-                  <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
+              <div className="p-4 bg-gray-50 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-white/10 hover:border-indigo-500/30 dark:hover:border-white/20 transition-all duration-300">
+                <p className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center">
+                  <span className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full mr-2"></span>
                   {t('footer.hongKongOffice')}
                 </p>
                 <p className="text-sm leading-relaxed">Unit G1, 35/F, Legend Tower<br />
                 7 Shing Yip Street, Kwun Tong, KLN<br />
-                <span className="text-blue-400">+852 66359879</span></p>
+                <span className="text-blue-600 dark:text-blue-400">+852 66359879</span></p>
               </div>
               
               {/* Shenzhen Office */}
-              <div className="p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 hover:border-white/20 transition-all duration-300">
-                <p className="font-semibold text-white mb-2 flex items-center">
-                  <span className="w-2 h-2 bg-purple-400 rounded-full mr-2"></span>
+              <div className="p-4 bg-gray-50 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-white/10 hover:border-indigo-500/30 dark:hover:border-white/20 transition-all duration-300">
+                <p className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center">
+                  <span className="w-2 h-2 bg-purple-500 dark:bg-purple-400 rounded-full mr-2"></span>
                   {t('footer.shenzhenOffice')}
                 </p>
                 <p className="text-sm leading-relaxed">前海桂湾三路深港青年夢工場<br />
                 香港大學青年科創學院4樓<br />
-                <span className="text-purple-400">+86 13266989879</span></p>
+                <span className="text-purple-600 dark:text-purple-400">+86 13266989879</span></p>
               </div>
               
               {/* Email */}
-              <div className="p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 hover:border-white/20 transition-all duration-300">
-                <p className="font-semibold text-white mb-2 flex items-center">
-                  <span className="w-2 h-2 bg-pink-400 rounded-full mr-2"></span>
+              <div className="p-4 bg-gray-50 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-white/10 hover:border-indigo-500/30 dark:hover:border-white/20 transition-all duration-300">
+                <p className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center">
+                  <span className="w-2 h-2 bg-pink-500 dark:bg-pink-400 rounded-full mr-2"></span>
                   {t('footer.email')}
                 </p>
                 <p className="text-sm">
-                  <a href="mailto:info@matrixaiglobal.com" className="text-pink-400 hover:text-pink-300 transition-colors duration-300">
+                  <a href="mailto:info@matrixaiglobal.com" className="text-pink-600 dark:text-pink-400 hover:text-pink-500 dark:hover:text-pink-300 transition-colors duration-300">
                     info@matrixaiglobal.com
                   </a>
                 </p>
@@ -285,24 +362,24 @@ const Footer: React.FC = () => {
         
         {/* Bottom Section */}
         <motion.div 
-          className="border-t border-white/10 mt-8 sm:mt-12 pt-6 sm:pt-8"
+          className="border-t border-gray-200 dark:border-white/10 mt-8 sm:mt-12 pt-6 sm:pt-8"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.8 }}
         >
           <div className="flex flex-col sm:flex-row justify-between items-center text-center sm:text-left">
-            <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-0">
+            <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mb-4 sm:mb-0">
               © 2024 MatrixEdu. All rights reserved.
             </p>
             <div className="flex flex-wrap justify-center sm:justify-end gap-4 sm:gap-6 text-xs sm:text-sm">
-              <Link to="/privacy" className="text-gray-400 hover:text-white transition-colors duration-300">
+              <Link to="/privacy" className="text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white transition-colors duration-300">
                 {t('footer.privacyPolicy')}
               </Link>
-              <Link to="/terms" className="text-gray-400 hover:text-white transition-colors duration-300">
+              <Link to="/terms" className="text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white transition-colors duration-300">
                 {t('footer.termsOfService')}
               </Link>
-              <Link to="/cookies" className="text-gray-400 hover:text-white transition-colors duration-300">
+              <Link to="/cookies" className="text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white transition-colors duration-300">
                 {t('footer.cookiePolicy')}
               </Link>
             </div>

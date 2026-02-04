@@ -96,28 +96,28 @@ const StudyWrittenTest: React.FC = () => {
              <div className="flex-1 flex flex-col items-center justify-center h-full max-w-4xl mx-auto w-full px-4 py-8">
                 {/* Stats Pills */}
                 <div className="flex flex-wrap justify-center gap-2 mb-12">
-                     <Skeleton dark width={120} height={32} className="rounded-full" />
-                     <Skeleton dark width={120} height={32} className="rounded-full" />
+                     <Skeleton width={120} height={32} className="rounded-full" />
+                     <Skeleton width={120} height={32} className="rounded-full" />
                 </div>
 
                 {/* Question Card */}
                 <div className="w-full max-w-3xl mb-8">
-                     <Skeleton dark width="90%" height={32} className="mx-auto mb-4" />
-                     <Skeleton dark width="80%" height={32} className="mx-auto mb-8" />
+                     <Skeleton width="90%" height={32} className="mx-auto mb-4" />
+                     <Skeleton width="80%" height={32} className="mx-auto mb-8" />
                      
                      <div className="w-full space-y-4">
-                        <Skeleton dark width="100%" height={192} className="rounded-xl" />
+                        <Skeleton width="100%" height={192} className="rounded-xl" />
                         <div className="flex justify-end">
-                             <Skeleton dark width={120} height={40} className="rounded-lg" />
+                             <Skeleton width={120} height={40} className="rounded-lg" />
                         </div>
                      </div>
                 </div>
 
                 {/* Navigation */}
                 <div className="flex items-center gap-6">
-                    <Skeleton dark width={48} height={48} className="rounded-full" />
-                    <Skeleton dark width={60} height={24} />
-                    <Skeleton dark width={48} height={48} className="rounded-full" />
+                    <Skeleton width={48} height={48} className="rounded-full" />
+                    <Skeleton width={60} height={24} />
+                    <Skeleton width={48} height={48} className="rounded-full" />
                 </div>
              </div>
         );
@@ -152,17 +152,17 @@ const StudyWrittenTest: React.FC = () => {
         <div className="flex-1 flex flex-col items-center justify-center h-full max-w-4xl mx-auto w-full px-4 overflow-y-auto py-8">
             {/* Stats Pills - Static for now as logic wasn't requested */}
             <div className="flex flex-wrap justify-center gap-2 mb-12">
-                <div className="bg-red-900/30 border border-red-500/20 text-red-400 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
+                <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-red-500"></div> {questions.length - Object.keys(userAnswers).length} Remaining
                 </div>
-                <div className="bg-indigo-900/30 border border-indigo-500/20 text-indigo-400 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
+                <div className="bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-500/20 text-indigo-600 dark:text-indigo-400 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-indigo-500"></div> {Object.keys(userAnswers).length} Answered
                 </div>
             </div>
 
             {/* Question Card */}
             <div className="w-full max-w-3xl mb-8">
-                <h3 className="text-xl md:text-2xl font-medium text-center text-white mb-8 leading-relaxed">
+                <h3 className="text-xl md:text-2xl font-medium text-center text-gray-900 dark:text-white mb-8 leading-relaxed">
                     {currentQuestion.question}
                 </h3>
 
@@ -171,7 +171,7 @@ const StudyWrittenTest: React.FC = () => {
                         <>
                             <textarea 
                                 placeholder="Type your answer here..." 
-                                className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl p-4 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors h-48 resize-none"
+                                className="w-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl p-4 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors h-48 resize-none"
                                 value={userAnswers[currentIndex] || ''}
                                 onChange={handleAnswerChange}
                             ></textarea>
@@ -187,20 +187,20 @@ const StudyWrittenTest: React.FC = () => {
                         </>
                     ) : (
                         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <div className="bg-[#1a1a1a] border border-white/10 rounded-xl p-6">
-                                <h4 className="text-sm font-bold text-gray-400 uppercase mb-2">Your Answer</h4>
-                                <p className="text-white text-lg">{userAnswers[currentIndex]}</p>
+                            <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl p-6">
+                                <h4 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Your Answer</h4>
+                                <p className="text-gray-900 dark:text-white text-lg">{userAnswers[currentIndex]}</p>
                             </div>
                             
-                            <div className="bg-green-900/20 border border-green-500/20 rounded-xl p-6">
-                                <h4 className="text-sm font-bold text-green-400 uppercase mb-2">Correct Answer</h4>
-                                <p className="text-gray-200 text-lg leading-relaxed">{currentQuestion.correct_answer}</p>
+                            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-500/20 rounded-xl p-6">
+                                <h4 className="text-sm font-bold text-green-600 dark:text-green-400 uppercase mb-2">Correct Answer</h4>
+                                <p className="text-gray-700 dark:text-gray-200 text-lg leading-relaxed">{currentQuestion.correct_answer}</p>
                             </div>
 
                             <div className="flex justify-end">
                                 <button 
                                     onClick={handleNext}
-                                    className="bg-white text-black hover:bg-gray-200 px-6 py-2 rounded-lg font-bold transition-colors"
+                                    className="bg-gray-900 dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 px-6 py-2 rounded-lg font-bold transition-colors"
                                 >
                                     {currentIndex === questions.length - 1 ? 'Finish' : 'Next Question'}
                                 </button>
@@ -215,15 +215,15 @@ const StudyWrittenTest: React.FC = () => {
                 <button 
                     onClick={handlePrev}
                     disabled={currentIndex === 0}
-                    className={`w-12 h-12 rounded-full bg-[#1a1a1a] border border-white/10 flex items-center justify-center text-white transition-colors ${currentIndex === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#252525]'}`}
+                    className={`w-12 h-12 rounded-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-600 dark:text-white transition-colors ${currentIndex === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-[#252525]'}`}
                 >
                     <FaChevronLeft />
                 </button>
-                <span className="text-gray-400 font-medium">{currentIndex + 1} / {questions.length}</span>
+                <span className="text-gray-600 dark:text-gray-400 font-medium">{currentIndex + 1} / {questions.length}</span>
                 <button 
                     onClick={handleNext}
                     disabled={currentIndex === questions.length - 1}
-                    className={`w-12 h-12 rounded-full bg-[#1a1a1a] border border-white/10 flex items-center justify-center text-white transition-colors ${currentIndex === questions.length - 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#252525]'}`}
+                    className={`w-12 h-12 rounded-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-600 dark:text-white transition-colors ${currentIndex === questions.length - 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-[#252525]'}`}
                 >
                     <FaChevronRight />
                 </button>

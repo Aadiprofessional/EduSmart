@@ -104,22 +104,22 @@ const StudyMultipleChoice: React.FC = () => {
                 {/* Stats Pills Skeleton */}
                 <div className="flex flex-wrap justify-center gap-2 mb-12">
                     {[1, 2, 3, 4].map((i) => (
-                        <Skeleton key={i} dark width={120} height={32} className="rounded-full" />
+                        <Skeleton key={i} width={120} height={32} className="rounded-full" />
                     ))}
                 </div>
 
                 {/* Question Skeleton */}
                 <div className="w-full max-w-3xl mb-12 flex flex-col items-center gap-3">
-                    <Skeleton dark width="90%" height={32} />
-                    <Skeleton dark width="60%" height={32} />
+                    <Skeleton width="90%" height={32} />
+                    <Skeleton width="60%" height={32} />
                 </div>
 
                 {/* Options Grid Skeleton */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mb-12">
                     {[1, 2, 3, 4].map((i) => (
-                        <div key={i} className="bg-[#1a1a1a] border border-white/10 rounded-xl p-4 flex items-center gap-4">
-                            <Skeleton dark width={32} height={32} className="rounded flex-shrink-0" />
-                            <Skeleton dark width="70%" height={24} />
+                        <div key={i} className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl p-4 flex items-center gap-4">
+                            <Skeleton width={32} height={32} className="rounded flex-shrink-0" />
+                            <Skeleton width="70%" height={24} />
                         </div>
                     ))}
                 </div>
@@ -156,22 +156,22 @@ const StudyMultipleChoice: React.FC = () => {
         <div className="flex-1 flex flex-col items-center justify-center h-full max-w-5xl mx-auto w-full px-4">
             {/* Stats Pills */}
             <div className="flex flex-wrap justify-center gap-2 mb-12">
-                <div className="bg-red-900/30 border border-red-500/20 text-red-400 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
+                <div className="bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-red-500"></div> {stats.unfamiliar} Unfamiliar
                 </div>
-                <div className="bg-indigo-900/30 border border-indigo-500/20 text-indigo-400 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
+                <div className="bg-indigo-100 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-500/20 text-indigo-700 dark:text-indigo-400 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-indigo-500"></div> {stats.learning} Learning
                 </div>
-                <div className="bg-blue-900/30 border border-blue-500/20 text-blue-400 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
+                <div className="bg-blue-100 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-500/20 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-blue-500"></div> {stats.familiar} Familiar
                 </div>
-                <div className="bg-green-900/30 border border-green-500/20 text-green-400 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
+                <div className="bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-500/20 text-green-700 dark:text-green-400 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-green-500"></div> {stats.mastered} Mastered
                 </div>
             </div>
 
             {/* Question */}
-            <h2 className="text-xl md:text-2xl font-medium text-center text-white mb-12 max-w-3xl leading-relaxed">
+            <h2 className="text-xl md:text-2xl font-medium text-center text-gray-900 dark:text-white mb-12 max-w-3xl leading-relaxed">
                 {currentQuestion?.question}
             </h2>
 
@@ -182,19 +182,19 @@ const StudyMultipleChoice: React.FC = () => {
                     const isSelected = selectedOption === key;
                     const isCorrect = key === currentQuestion.correct_option;
                     
-                    let borderClass = "border-white/10 hover:border-white/20";
-                    let bgClass = "bg-[#1a1a1a] hover:bg-[#252525]";
-                    let textClass = "text-gray-300 group-hover:text-white";
+                    let borderClass = "border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20";
+                    let bgClass = "bg-white dark:bg-[#1a1a1a] hover:bg-gray-50 dark:hover:bg-[#252525]";
+                    let textClass = "text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white";
                     
                     if (showResult) {
                         if (isCorrect) {
                             borderClass = "border-green-500/50";
-                            bgClass = "bg-green-900/20";
-                            textClass = "text-green-200";
+                            bgClass = "bg-green-50 dark:bg-green-900/20";
+                            textClass = "text-green-700 dark:text-green-200";
                         } else if (isSelected) {
                             borderClass = "border-red-500/50";
-                            bgClass = "bg-red-900/20";
-                            textClass = "text-red-200";
+                            bgClass = "bg-red-50 dark:bg-red-900/20";
+                            textClass = "text-red-700 dark:text-red-200";
                         }
                     }
 
@@ -205,7 +205,7 @@ const StudyMultipleChoice: React.FC = () => {
                             disabled={showResult}
                             className={`${bgClass} border ${borderClass} rounded-xl p-4 flex items-center gap-4 text-left transition-all group`}
                         >
-                            <div className={`w-8 h-8 rounded ${showResult && isCorrect ? 'bg-green-500 text-white' : (showResult && isSelected ? 'bg-red-500 text-white' : 'bg-indigo-900/50 text-indigo-500')} font-bold flex items-center justify-center flex-shrink-0 border border-indigo-500/20 group-hover:bg-indigo-500 group-hover:text-white transition-colors`}>
+                            <div className={`w-8 h-8 rounded ${showResult && isCorrect ? 'bg-green-500 text-white' : (showResult && isSelected ? 'bg-red-500 text-white' : 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-500')} font-bold flex items-center justify-center flex-shrink-0 border border-indigo-500/20 group-hover:bg-indigo-500 group-hover:text-white transition-colors`}>
                                 {key}
                             </div>
                             <span className={`${textClass} text-sm md:text-base flex-1`}>{value}</span>
@@ -222,7 +222,7 @@ const StudyMultipleChoice: React.FC = () => {
                 <button 
                     onClick={handlePrev}
                     disabled={currentIndex === 0}
-                    className={`w-12 h-12 rounded-full bg-[#1a1a1a] border border-white/10 flex items-center justify-center text-white transition-colors ${currentIndex === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#252525]'}`}
+                    className={`w-12 h-12 rounded-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white transition-colors ${currentIndex === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-[#252525]'}`}
                 >
                     <FaChevronLeft />
                 </button>
@@ -230,7 +230,7 @@ const StudyMultipleChoice: React.FC = () => {
                 <button 
                     onClick={handleNext}
                     disabled={currentIndex === questions.length - 1}
-                    className={`w-12 h-12 rounded-full bg-[#1a1a1a] border border-white/10 flex items-center justify-center text-white transition-colors ${currentIndex === questions.length - 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#252525]'}`}
+                    className={`w-12 h-12 rounded-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white transition-colors ${currentIndex === questions.length - 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-[#252525]'}`}
                 >
                     <FaChevronRight />
                 </button>

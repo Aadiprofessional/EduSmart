@@ -149,31 +149,31 @@ const StudyPodcast: React.FC = () => {
              <div className="max-w-4xl mx-auto w-full h-full relative overflow-hidden">
                 {/* Player Card Skeleton */}
                 <div className="absolute top-0 left-0 right-0 z-20 p-4">
-                    <div className="backdrop-blur-md bg-black/40 border border-white/10 rounded-2xl p-6 shadow-xl">
+                    <div className="backdrop-blur-md bg-white/80 dark:bg-black/40 border border-gray-200 dark:border-white/10 rounded-2xl p-6 shadow-xl">
                         <div className="flex items-start justify-between mb-6">
                              <div className="flex items-center gap-4">
-                                <Skeleton dark width={48} height={48} className="rounded-full" />
+                                <Skeleton width={48} height={48} className="rounded-full" />
                                 <div>
-                                    <Skeleton dark width={120} height={24} className="mb-2" />
-                                    <Skeleton dark width={80} height={16} />
+                                    <Skeleton width={120} height={24} className="mb-2" />
+                                    <Skeleton width={80} height={16} />
                                 </div>
                              </div>
-                             <Skeleton dark width={100} height={36} className="rounded-lg" />
+                             <Skeleton width={100} height={36} className="rounded-lg" />
                         </div>
                         {/* Progress and Controls */}
                          <div className="space-y-4">
-                            <Skeleton dark width="100%" height={8} className="rounded-full" />
+                            <Skeleton width="100%" height={8} className="rounded-full" />
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-4">
-                                    <Skeleton dark width={24} height={24} className="rounded-full" />
-                                    <Skeleton dark width={24} height={24} className="rounded-full" />
-                                    <Skeleton dark width={32} height={32} className="rounded-full" />
-                                    <Skeleton dark width={24} height={24} className="rounded-full" />
-                                    <Skeleton dark width={24} height={24} className="rounded-full" />
+                                    <Skeleton width={24} height={24} className="rounded-full" />
+                                    <Skeleton width={24} height={24} className="rounded-full" />
+                                    <Skeleton width={32} height={32} className="rounded-full" />
+                                    <Skeleton width={24} height={24} className="rounded-full" />
+                                    <Skeleton width={24} height={24} className="rounded-full" />
                                 </div>
                                 <div className="flex items-center gap-2">
-                                     <Skeleton dark width={24} height={24} />
-                                     <Skeleton dark width={64} height={8} className="rounded-full" />
+                                     <Skeleton width={24} height={24} />
+                                     <Skeleton width={64} height={8} className="rounded-full" />
                                 </div>
                             </div>
                         </div>
@@ -184,15 +184,15 @@ const StudyPodcast: React.FC = () => {
                  <div className="h-full overflow-y-auto pt-[220px] pb-32 px-4 space-y-6">
                     {[1, 2, 3, 4, 5].map((i) => (
                         <div key={i} className="flex gap-4">
-                            <Skeleton dark width={40} height={40} className="rounded-full flex-shrink-0" />
+                            <Skeleton width={40} height={40} className="rounded-full flex-shrink-0" />
                             <div className="flex-1 space-y-2">
                                 <div className="flex justify-between">
-                                    <Skeleton dark width={100} height={20} />
-                                    <Skeleton dark width={40} height={16} />
+                                    <Skeleton width={100} height={20} />
+                                    <Skeleton width={40} height={16} />
                                 </div>
-                                <Skeleton dark width="100%" height={16} />
-                                <Skeleton dark width="95%" height={16} />
-                                <Skeleton dark width="90%" height={16} />
+                                <Skeleton width="100%" height={16} />
+                                <Skeleton width="95%" height={16} />
+                                <Skeleton width="90%" height={16} />
                             </div>
                         </div>
                     ))}
@@ -236,15 +236,15 @@ const StudyPodcast: React.FC = () => {
 
             {/* Audio Player Card - Fixed Top */}
             <div className="absolute top-0 left-0 right-0 z-20 p-4">
-                <div className="backdrop-blur-md bg-black/40 border border-white/10 rounded-2xl p-6 shadow-xl">
+                <div className="backdrop-blur-md bg-white/90 dark:bg-black/40 border border-gray-200 dark:border-white/10 rounded-2xl p-6 shadow-xl">
                     <div className="flex items-start justify-between mb-6">
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center overflow-hidden">
                             <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Podcast" alt="Podcast" className="w-full h-full object-cover opacity-80" />
                         </div>
                         <div>
-                            <h3 className="font-bold text-white text-lg">Study Podcast</h3>
-                            <div className="flex items-center gap-2 text-xs text-gray-400">
+                            <h3 className="font-bold text-gray-900 dark:text-white text-lg">Study Podcast</h3>
+                            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                                 {isPlaying && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>}
                                 {formatTime(currentTime)} / {formatTime(duration)}
                             </div>
@@ -265,16 +265,16 @@ const StudyPodcast: React.FC = () => {
                         max={duration || 100}
                         value={currentTime}
                         onChange={handleSeek}
-                        className="w-full h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:bg-indigo-500 transition-all"
+                        className="w-full h-1 bg-gray-200 dark:bg-gray-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-indigo-600 dark:[&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:bg-indigo-500 transition-all"
                         style={{
-                            backgroundImage: `linear-gradient(to right, #6366f1 ${(currentTime / duration) * 100}%, #1f2937 ${(currentTime / duration) * 100}%)`
+                            backgroundImage: `linear-gradient(to right, #6366f1 ${(currentTime / duration) * 100}%, ${document.documentElement.classList.contains('dark') ? '#1f2937' : '#e5e7eb'} ${(currentTime / duration) * 100}%)`
                         }}
                     />
                 </div>
 
                 {/* Controls */}
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 text-gray-400">
+                    <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
                         <FaVolumeUp size={14} />
                         <input
                             type="range"
@@ -283,24 +283,24 @@ const StudyPodcast: React.FC = () => {
                             step="0.01"
                             value={volume}
                             onChange={handleVolumeChange}
-                            className="w-20 h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-gray-400 [&::-webkit-slider-thumb]:rounded-full"
+                            className="w-20 h-1 bg-gray-200 dark:bg-gray-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-gray-400 [&::-webkit-slider-thumb]:rounded-full"
                         />
                     </div>
 
                     <div className="flex items-center gap-6">
-                        <button onClick={() => handleSkip(-10)} className="text-gray-400 hover:text-white transition-colors"><FaRedo className="transform -scale-x-100" /></button>
+                        <button onClick={() => handleSkip(-10)} className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><FaRedo className="transform -scale-x-100" /></button>
                         <button 
                             onClick={togglePlay}
-                            className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-black hover:scale-105 transition-transform"
+                            className="w-12 h-12 bg-gray-900 dark:bg-white rounded-full flex items-center justify-center text-white dark:text-black hover:scale-105 transition-transform"
                         >
                             {isPlaying ? <FaPause /> : <FaPlay className="ml-1" />}
                         </button>
-                        <button onClick={() => handleSkip(10)} className="text-gray-400 hover:text-white transition-colors"><FaRedo /></button>
+                        <button onClick={() => handleSkip(10)} className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><FaRedo /></button>
                     </div>
 
-                    <div className="flex items-center gap-4 text-gray-400 text-sm">
-                        <span className="cursor-pointer hover:text-white">1x</span>
-                        <button className="hover:text-white"><FaDownload /></button>
+                    <div className="flex items-center gap-4 text-gray-500 dark:text-gray-400 text-sm">
+                        <span className="cursor-pointer hover:text-gray-900 dark:hover:text-white">1x</span>
+                        <button className="hover:text-gray-900 dark:hover:text-white"><FaDownload /></button>
                     </div>
                 </div>
             </div>
@@ -329,8 +329,8 @@ const StudyPodcast: React.FC = () => {
                                         item.speaker === 'Sam' ? 'rounded-tr-none' : 'rounded-tl-none'
                                     } ${
                                         isActive 
-                                            ? 'bg-indigo-900/30 border-indigo-500/50 text-white shadow-[0_0_15px_rgba(99,102,241,0.2)]' 
-                                            : 'bg-[#1a1a1a] border-white/10 text-gray-300 hover:bg-[#252525]'
+                                            ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-500/50 text-indigo-700 dark:text-white shadow-lg shadow-indigo-500/10 dark:shadow-[0_0_15px_rgba(99,102,241,0.2)]' 
+                                            : 'bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#252525]'
                                     }`}
                                     onClick={() => {
                                         if (audioRef.current) {
