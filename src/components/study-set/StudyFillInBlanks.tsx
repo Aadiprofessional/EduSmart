@@ -4,6 +4,10 @@ import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
 import { FaChevronLeft, FaChevronRight, FaMagic, FaCheckCircle, FaTimesCircle, FaSpinner, FaCommentDots } from 'react-icons/fa';
 import { Skeleton } from '../ui/Skeleton';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 
 interface BlankQuestion {
     before_blank: string;
@@ -26,6 +30,18 @@ const StudyFillInBlanks: React.FC<StudyFillInBlanksProps> = ({ onDiscuss }) => {
     const [hintText, setHintText] = useState<string | null>(null);
     const [showResult, setShowResult] = useState(false);
     const [isCorrect, setIsCorrect] = useState(false);
+
+    // Preprocess LaTeX to convert OpenAI format to react-markdown format
+    const preprocessLaTeX = (text: string) => {
+        if (typeof text !== 'string') return '';
+        return text
+            // Standard LaTeX block \[ ... \] -> $$ ... $$
+            .replace(/\\\[([\s\S]*?)\\\]/g, (_, eq) => `$$${eq}$$`)
+            // Standard LaTeX inline \( ... \) -> $ ... $
+            .replace(/\\\(([\s\S]*?)\\\)/g, (_, eq) => `$${eq}$`)
+            // Heuristic: [ \command... ] -> $$ \command... $$
+            .replace(/\[\s*(\\frac|\\boxed|\\begin|\\sum|\\int|\\partial|\\sqrt|\\mathbf|\\mathrm|\\mathcal|\\mathscr|\\mathfrak|\\mathbb|\\sin|\\cos|\\tan)([\s\S]*?)\]/g, (match, cmd, rest) => `$$${cmd}${rest}$$`);
+    };
 
     useEffect(() => {
         let intervalId: NodeJS.Timeout;
@@ -172,8 +188,18 @@ const StudyFillInBlanks: React.FC<StudyFillInBlanksProps> = ({ onDiscuss }) => {
                     <div className={`absolute top-0 left-0 right-0 h-1 ${isCorrect ? 'bg-green-500' : 'bg-red-500'}`}></div>
                 )}
                 
-                <h3 className="text-xl md:text-2xl font-medium text-center text-gray-900 dark:text-white mb-8 leading-relaxed">
-                    {currentQuestion.before_blank}
+                <div className="text-xl md:text-2xl font-medium text-center text-gray-900 dark:text-white mb-8 leading-relaxed w-full">
+                    <div className="inline prose dark:prose-invert max-w-none">
+                        <ReactMarkdown 
+                            remarkPlugins={[remarkGfm, remarkMath]} 
+                            rehypePlugins={[rehypeKatex]}
+                            components={{
+                                p: ({node, ...props}) => <span {...props} />
+                            }}
+                        >
+                            {preprocessLaTeX(currentQuestion.before_blank)}
+                        </ReactMarkdown>
+                    </div>
                     <span className="inline-block min-w-[100px] border-b-2 border-indigo-500 mx-2 text-indigo-600 dark:text-indigo-400 font-bold text-center px-2 transition-all duration-300">
                         {showResult ? (
                             currentQuestion.blank
@@ -186,8 +212,18 @@ const StudyFillInBlanks: React.FC<StudyFillInBlanksProps> = ({ onDiscuss }) => {
                             '\u00A0'
                         )}
                     </span>
-                    {currentQuestion.after_blank}
-                </h3>
+                    <div className="inline prose dark:prose-invert max-w-none">
+                        <ReactMarkdown 
+                            remarkPlugins={[remarkGfm, remarkMath]} 
+                            rehypePlugins={[rehypeKatex]}
+                            components={{
+                                p: ({node, ...props}) => <span {...props} />
+                            }}
+                        >
+                            {preprocessLaTeX(currentQuestion.after_blank)}
+                        </ReactMarkdown>
+                    </div>
+                </div>
 
                 <div className="w-full max-w-md space-y-4">
                     {!showResult ? (
@@ -232,7 +268,19 @@ const StudyFillInBlanks: React.FC<StudyFillInBlanksProps> = ({ onDiscuss }) => {
                             
                             {!isCorrect && (
                                 <div className="text-gray-600 dark:text-gray-400 mb-6 text-center">
-                                    The correct answer is: <span className="text-gray-900 dark:text-white font-bold">{currentQuestion.blank}</span>
+                                    The correct answer is: <span className="text-gray-900 dark:text-white font-bold">
+                                        <div className="inline prose dark:prose-invert max-w-none">
+                                            <ReactMarkdown 
+                                                remarkPlugins={[remarkGfm, remarkMath]} 
+                                                rehypePlugins={[rehypeKatex]}
+                                                components={{
+                                                    p: ({node, ...props}) => <span {...props} />
+                                                }}
+                                            >
+                                                {preprocessLaTeX(currentQuestion.blank)}
+                                            </ReactMarkdown>
+                                        </div>
+                                    </span>
                                 </div>
                             )}
 

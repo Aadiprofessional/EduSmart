@@ -737,7 +737,7 @@ const MethodSelectionPage: React.FC = () => {
     React.useEffect(() => {
         const extractMetadata = async () => {
             if (!state?.uploadPayload) return;
-            const { uploadedFileType, publicUrl, file, duration } = state.uploadPayload;
+            const { uploadedFileType, publicUrl, messages, duration } = state.uploadPayload;
 
             // Prioritize duration from payload if available (it's already calculated in uploadService)
             if (duration && (uploadedFileType === 'audio' || uploadedFileType === 'video')) {
@@ -745,7 +745,9 @@ const MethodSelectionPage: React.FC = () => {
                  return; 
             }
 
-            if (uploadedFileType === 'pdf') {
+            if (uploadedFileType === 'pdf_vision' && messages && messages[0]?.page_count) {
+                setMetaData(prev => ({ ...prev, pageCount: messages[0].page_count }));
+            } else if (uploadedFileType === 'pdf') {
                 try {
                     const loadingTask = pdfjsLib.getDocument(publicUrl); 
                     const pdf = await loadingTask.promise;
@@ -792,7 +794,7 @@ const MethodSelectionPage: React.FC = () => {
        const type = state?.uploadPayload?.uploadedFileType;
 
        if (type === 'image') sourceCost = 3;
-       else if (type === 'pdf') sourceCost = (metaData.pageCount || 1) * 2;
+       else if (type === 'pdf' || type === 'pdf_vision') sourceCost = (metaData.pageCount || 1) * 2;
        else if (type === 'audio' || type === 'video') sourceCost = Math.ceil((metaData.duration || 60) / 60) * 1;
        else if (type === 'text' || !type) sourceCost = 0; // URL/Text
 
@@ -926,7 +928,7 @@ const MethodSelectionPage: React.FC = () => {
                         <div>
                             <h3 className="font-bold text-lg">Source Material</h3>
                             <p className="text-sm text-gray-500">
-                                {state?.uploadPayload?.uploadedFileType === 'pdf' ? `PDF (${metaData.pageCount || 1} pages)` :
+                                {(state?.uploadPayload?.uploadedFileType === 'pdf' || state?.uploadPayload?.uploadedFileType === 'pdf_vision') ? `PDF (${metaData.pageCount || 1} pages)` :
                                  state?.uploadPayload?.uploadedFileType === 'image' ? 'Image' :
                                  (state?.uploadPayload?.uploadedFileType === 'audio' || state?.uploadPayload?.uploadedFileType === 'video') ? `Audio/Video (${Math.ceil((metaData.duration || 60) / 60)} mins)` :
                                  'Text / URL'}

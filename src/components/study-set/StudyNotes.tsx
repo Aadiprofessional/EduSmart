@@ -5,7 +5,9 @@ import { supabase } from '../../utils/supabase';
 import { renderToStaticMarkup } from 'react-dom/server';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
 import rehypeRaw from 'rehype-raw';
+import rehypeKatex from 'rehype-katex';
 import { 
   FaChevronDown, FaBold, FaItalic, FaUnderline, FaStrikethrough, 
   FaListUl, FaListOl, FaQuoteRight, FaCode, FaMinus, FaImage, FaEraser,
@@ -75,12 +77,24 @@ const StudyNotes: React.FC = () => {
                             : (data.notes_data.content || data.notes_data.note || JSON.stringify(data.notes_data));
                         
                         // Parse Markdown if it looks like markdown
-                        if (typeof content === 'string' && !content.trim().startsWith('<') && (content.includes('#') || content.includes('**') || content.includes('- ') || content.includes('|'))) {
+                        if (typeof content === 'string' && !content.trim().startsWith('<') && (content.includes('#') || content.includes('**') || content.includes('- ') || content.includes('|') || content.includes('\\(') || content.includes('\\['))) {
                             try {
+                                // Preprocess LaTeX to convert various formats to react-markdown compatible format
+                                const preprocessLaTeX = (text: string) => {
+                                    if (typeof text !== 'string') return '';
+                                    return text
+                                        // Standard LaTeX block \[ ... \] -> $$ ... $$
+                                        .replace(/\\\[([\s\S]*?)\\\]/g, (_, eq) => `$$${eq}$$`)
+                                        // Standard LaTeX inline \( ... \) -> $ ... $
+                                        .replace(/\\\(([\s\S]*?)\\\)/g, (_, eq) => `$${eq}$`)
+                                        // Heuristic: [ \command... ] -> $$ \command... $$ (matches likely block math without standard delimiters)
+                                        .replace(/\[\s*(\\frac|\\boxed|\\begin|\\sum|\\int|\\partial|\\sqrt|\\mathbf|\\mathrm|\\mathcal|\\mathscr|\\mathfrak|\\mathbb|\\sin|\\cos|\\tan)([\s\S]*?)\]/g, (match, cmd, rest) => `$$${cmd}${rest}$$`);
+                                };
+
                                 content = renderToStaticMarkup(
                                     <ReactMarkdown 
-                                        remarkPlugins={[remarkGfm]} 
-                                        rehypePlugins={[rehypeRaw]}
+                                        remarkPlugins={[remarkGfm, remarkMath]} 
+                                        rehypePlugins={[rehypeRaw, rehypeKatex]}
                                         components={{
                                             h1: ({node, ...props}) => <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4 mt-6 border-b border-gray-200 dark:border-gray-700 pb-2" {...props} />,
                                             h2: ({node, ...props}) => <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-3 mt-5" {...props} />,
@@ -108,7 +122,7 @@ const StudyNotes: React.FC = () => {
                                             }
                                         }}
                                     >
-                                        {content}
+                                        {preprocessLaTeX(content)}
                                     </ReactMarkdown>
                                 );
                             } catch (e) {

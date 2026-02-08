@@ -4,7 +4,9 @@ import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
 import rehypeRaw from 'rehype-raw';
+import rehypeKatex from 'rehype-katex';
 import { FaMagic } from 'react-icons/fa';
 import { Skeleton } from '../ui/Skeleton';
 
@@ -14,6 +16,18 @@ const StudyTutorLesson: React.FC = () => {
     const [lessonContent, setLessonContent] = useState<string>('');
     const [loading, setLoading] = useState(true);
     const [isGenerating, setIsGenerating] = useState(false);
+
+    // Preprocess LaTeX to convert various formats to react-markdown compatible format
+    const preprocessLaTeX = (text: string) => {
+        if (typeof text !== 'string') return '';
+        return text
+            // Standard LaTeX block \[ ... \] -> $$ ... $$
+            .replace(/\\\[([\s\S]*?)\\\]/g, (_, eq) => `$$${eq}$$`)
+            // Standard LaTeX inline \( ... \) -> $ ... $
+            .replace(/\\\(([\s\S]*?)\\\)/g, (_, eq) => `$${eq}$`)
+            // Heuristic: [ \command... ] -> $$ \command... $$
+            .replace(/\[\s*(\\frac|\\boxed|\\begin|\\sum|\\int|\\partial|\\sqrt|\\mathbf|\\mathrm|\\mathcal|\\mathscr|\\mathfrak|\\mathbb|\\sin|\\cos|\\tan)([\s\S]*?)\]/g, (match, cmd, rest) => `$$${cmd}${rest}$$`);
+    };
 
     useEffect(() => {
         let intervalId: NodeJS.Timeout;
@@ -91,8 +105,8 @@ const StudyTutorLesson: React.FC = () => {
                     ) : (
                         <div className="prose dark:prose-invert max-w-none focus:outline-none pb-20">
                             <ReactMarkdown 
-                                remarkPlugins={[remarkGfm]} 
-                                rehypePlugins={[rehypeRaw]}
+                                remarkPlugins={[remarkGfm, remarkMath]} 
+                                rehypePlugins={[rehypeRaw, rehypeKatex]}
                                 components={{
                                     h1: ({node, ...props}) => <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4 mt-6 border-b border-gray-200 dark:border-gray-700 pb-2" {...props} />,
                                     h2: ({node, ...props}) => <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-3 mt-8 border-b border-gray-200 dark:border-gray-800 pb-2" {...props} />,
@@ -124,7 +138,7 @@ const StudyTutorLesson: React.FC = () => {
                                     }
                                 }}
                             >
-                                {lessonContent}
+                                {preprocessLaTeX(lessonContent)}
                             </ReactMarkdown>
                         </div>
                     )}

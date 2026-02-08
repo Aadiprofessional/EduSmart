@@ -4,6 +4,10 @@ import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
 import PDFViewer from './PDFViewer';
 import { Skeleton } from '../ui/Skeleton';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 
 const StudyContent: React.FC = () => {
     const location = useLocation();
@@ -44,6 +48,18 @@ const StudyContent: React.FC = () => {
     const documentUrl = contentData?.document_url;
     const documentText = contentData?.document_text;
 
+    // Preprocess LaTeX to convert OpenAI format to react-markdown format
+    const preprocessLaTeX = (text: string) => {
+        if (typeof text !== 'string') return '';
+        return text
+            // Standard LaTeX block \[ ... \] -> $$ ... $$
+            .replace(/\\\[([\s\S]*?)\\\]/g, (_, eq) => `$$${eq}$$`)
+            // Standard LaTeX inline \( ... \) -> $ ... $
+            .replace(/\\\(([\s\S]*?)\\\)/g, (_, eq) => `$${eq}$`)
+            // Heuristic: [ \command... ] -> $$ \command... $$
+            .replace(/\[\s*(\\frac|\\boxed|\\begin|\\sum|\\int|\\partial|\\sqrt|\\mathbf|\\mathrm|\\mathcal|\\mathscr|\\mathfrak|\\mathbb|\\sin|\\cos|\\tan)([\s\S]*?)\]/g, (match, cmd, rest) => `$$${cmd}${rest}$$`);
+    };
+
     // Helper to determine file type from URL extension if documentType is generic 'url' or missing
     const getFileType = (url: string) => {
         const extension = url.split('.').pop()?.toLowerCase();
@@ -72,10 +88,10 @@ const StudyContent: React.FC = () => {
     const renderContent = () => {
         if (!documentUrl && documentText) {
              return (
-                <div className="bg-white dark:bg-[#1a1a1a] p-8 rounded-lg shadow-sm max-w-4xl mx-auto w-full">
-                    <pre className="whitespace-pre-wrap font-sans text-gray-800 dark:text-gray-200 text-lg leading-relaxed">
-                        {documentText}
-                    </pre>
+                <div className="bg-white dark:bg-[#1a1a1a] p-8 rounded-lg shadow-sm max-w-4xl mx-auto w-full prose dark:prose-invert max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                        {preprocessLaTeX(documentText)}
+                    </ReactMarkdown>
                 </div>
              );
         }

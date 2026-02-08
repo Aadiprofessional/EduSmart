@@ -4,6 +4,10 @@ import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
 import { FaChevronLeft, FaChevronRight, FaMagic, FaCheckCircle, FaTimesCircle, FaCommentDots } from 'react-icons/fa';
 import { Skeleton } from '../ui/Skeleton';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 
 interface MultipleChoiceQuestion {
     question: string;
@@ -31,6 +35,18 @@ const StudyMultipleChoice: React.FC<StudyMultipleChoiceProps> = ({ onDiscuss }) 
         familiar: 0,
         mastered: 0
     });
+
+    // Preprocess LaTeX to convert OpenAI format to react-markdown format
+    const preprocessLaTeX = (text: string) => {
+        if (typeof text !== 'string') return '';
+        return text
+            // Standard LaTeX block \[ ... \] -> $$ ... $$
+            .replace(/\\\[([\s\S]*?)\\\]/g, (_, eq) => `$$${eq}$$`)
+            // Standard LaTeX inline \( ... \) -> $ ... $
+            .replace(/\\\(([\s\S]*?)\\\)/g, (_, eq) => `$${eq}$`)
+            // Heuristic: [ \command... ] -> $$ \command... $$
+            .replace(/\[\s*(\\frac|\\boxed|\\begin|\\sum|\\int|\\partial|\\sqrt|\\mathbf|\\mathrm|\\mathcal|\\mathscr|\\mathfrak|\\mathbb|\\sin|\\cos|\\tan)([\s\S]*?)\]/g, (match, cmd, rest) => `$$${cmd}${rest}$$`);
+    };
 
     useEffect(() => {
         let intervalId: NodeJS.Timeout;
@@ -175,9 +191,11 @@ const StudyMultipleChoice: React.FC<StudyMultipleChoiceProps> = ({ onDiscuss }) 
             </div>
 
             {/* Question */}
-            <h2 className="text-xl md:text-2xl font-medium text-center text-gray-900 dark:text-white mb-12 max-w-3xl leading-relaxed">
-                {currentQuestion?.question}
-            </h2>
+            <div className="text-xl md:text-2xl font-medium text-center text-gray-900 dark:text-white mb-12 max-w-3xl leading-relaxed prose dark:prose-invert max-w-none">
+                <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                    {preprocessLaTeX(currentQuestion?.question)}
+                </ReactMarkdown>
+            </div>
 
             {/* Options Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mb-12">
@@ -212,14 +230,32 @@ const StudyMultipleChoice: React.FC<StudyMultipleChoiceProps> = ({ onDiscuss }) 
                             <div className={`w-8 h-8 rounded ${showResult && isCorrect ? 'bg-green-500 text-white' : (showResult && isSelected ? 'bg-red-500 text-white' : 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-500')} font-bold flex items-center justify-center flex-shrink-0 border border-indigo-500/20 group-hover:bg-indigo-500 group-hover:text-white transition-colors`}>
                                 {key}
                             </div>
-                            <span className={`${textClass} text-sm md:text-base flex-1`}>{value}</span>
-                            {showResult && isCorrect && <FaCheckCircle className="text-green-500" />}
-                            {showResult && isSelected && !isCorrect && <FaTimesCircle className="text-red-500" />}
+                            <div className={`${textClass} text-sm md:text-base flex-1 prose dark:prose-invert max-w-none`}>
+                                <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                    {preprocessLaTeX(value)}
+                                </ReactMarkdown>
+                            </div>
+                            {showResult && isCorrect && <FaCheckCircle className="text-green-500 flex-shrink-0" />}
+                            {showResult && isSelected && !isCorrect && <FaTimesCircle className="text-red-500 flex-shrink-0" />}
                         </button>
                     );
                 })
                 )}
             </div>
+
+            {/* Explanation */}
+            {showResult && currentQuestion.explanation && (
+                <div className="w-full max-w-3xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-500/20 rounded-xl p-6 mb-8 animate-in fade-in slide-in-from-bottom-4">
+                    <h3 className="text-blue-800 dark:text-blue-300 font-semibold mb-2 flex items-center gap-2">
+                        <FaMagic className="text-blue-500" /> Explanation
+                    </h3>
+                    <div className="text-blue-900 dark:text-blue-200 leading-relaxed prose dark:prose-invert max-w-none">
+                         <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                            {preprocessLaTeX(currentQuestion.explanation)}
+                        </ReactMarkdown>
+                    </div>
+                </div>
+            )}
 
             {/* Navigation */}
             <div className="relative w-full flex justify-center items-center">

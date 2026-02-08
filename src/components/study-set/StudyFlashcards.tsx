@@ -4,6 +4,10 @@ import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
 import { FaChevronLeft, FaChevronRight, FaImage, FaMagic, FaCommentDots } from 'react-icons/fa';
 import { Skeleton } from '../ui/Skeleton';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 
 interface Flashcard {
     question: string;
@@ -28,6 +32,18 @@ const StudyFlashcards: React.FC<StudyFlashcardsProps> = ({ onDiscuss }) => {
         familiar: 0,
         mastered: 0
     });
+
+    // Preprocess LaTeX to convert OpenAI format to react-markdown format
+    const preprocessLaTeX = (text: string) => {
+        if (typeof text !== 'string') return '';
+        return text
+            // Standard LaTeX block \[ ... \] -> $$ ... $$
+            .replace(/\\\[([\s\S]*?)\\\]/g, (_, eq) => `$$${eq}$$`)
+            // Standard LaTeX inline \( ... \) -> $ ... $
+            .replace(/\\\(([\s\S]*?)\\\)/g, (_, eq) => `$${eq}$`)
+            // Heuristic: [ \command... ] -> $$ \command... $$
+            .replace(/\[\s*(\\frac|\\boxed|\\begin|\\sum|\\int|\\partial|\\sqrt|\\mathbf|\\mathrm|\\mathcal|\\mathscr|\\mathfrak|\\mathbb|\\sin|\\cos|\\tan)([\s\S]*?)\]/g, (match, cmd, rest) => `$$${cmd}${rest}$$`);
+    };
 
     useEffect(() => {
         let intervalId: NodeJS.Timeout;
@@ -178,7 +194,11 @@ const StudyFlashcards: React.FC<StudyFlashcardsProps> = ({ onDiscuss }) => {
                         style={{ backfaceVisibility: 'hidden' }}
                      >
                          <div className="absolute top-6 left-6 text-gray-400 dark:text-gray-500"><FaImage /></div>
-                         <h3 className="text-xl md:text-2xl font-medium text-center leading-relaxed select-none text-gray-900 dark:text-white">{currentCard?.question}</h3>
+                         <div className="text-xl md:text-2xl font-medium text-center leading-relaxed select-none text-gray-900 dark:text-white prose dark:prose-invert max-w-none">
+                             <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                 {preprocessLaTeX(currentCard?.question)}
+                             </ReactMarkdown>
+                         </div>
                          
                          <div className="absolute bottom-6 flex flex-col items-center gap-2">
                             <span className="text-sm text-gray-500">Click to flip</span>
@@ -201,7 +221,11 @@ const StudyFlashcards: React.FC<StudyFlashcardsProps> = ({ onDiscuss }) => {
                         }}
                      >
                          <h3 className="text-xl md:text-2xl font-medium text-center text-blue-600 dark:text-blue-400 mb-4 select-none">Answer</h3>
-                         <p className="text-gray-600 dark:text-gray-400 text-center max-w-lg leading-relaxed select-none">{currentCard?.answer}</p>
+                         <div className="text-gray-600 dark:text-gray-400 text-center max-w-lg leading-relaxed select-none prose dark:prose-invert max-w-none">
+                             <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                 {preprocessLaTeX(currentCard?.answer)}
+                             </ReactMarkdown>
+                         </div>
                      </div>
                  </div>
             </div>

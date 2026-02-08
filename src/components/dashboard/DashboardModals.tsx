@@ -2,7 +2,18 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes, FaUpload, FaLink, FaMicrophone, FaCheck, FaBook, FaListUl, FaLayerGroup, FaPodcast, FaChalkboardTeacher, FaPencilAlt, FaEdit, FaChevronDown, FaStop, FaPlay, FaPause } from 'react-icons/fa';
 import { useAuth } from '../../utils/AuthContext';
+import { jsPDF } from 'jspdf';
 import { uploadService, UploadPayload } from '../../services/uploadService';
+
+// Helper for reading file
+const readFileAsDataURL = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
 
 // --- Base Modal Component ---
 export interface BaseModalProps {
@@ -68,25 +79,65 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void; onNex
   }, [isOpen]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0] && user) {
-        const file = e.target.files[0];
+    if (e.target.files && e.target.files.length > 0 && user) {
+        const files = Array.from(e.target.files);
+        const imageFiles = files.filter(f => f.type.startsWith('image/'));
+        const nonImageFiles = files.filter(f => !f.type.startsWith('image/'));
+
+        if (files.length > 5) {
+             alert("You can upload up to 5 files maximum.");
+             return;
+        }
+
+        if (nonImageFiles.length > 1) {
+             alert("You can only upload 1 non-image file at a time.");
+             return;
+        }
+        
+        if (nonImageFiles.length === 1 && imageFiles.length > 0) {
+             alert("You cannot mix images with other file types when uploading multiple files.");
+             return;
+        }
+
         setUploadState('uploading');
-        setProgress(10); // Start progress
+        setProgress(10); 
 
         try {
             let resultPayload: UploadPayload;
             const uid = user.id;
 
-            if (file.type.startsWith('audio/')) {
-                resultPayload = await uploadService.constructAudioPayload(file, uid);
-                resultPayload.uploadedFileType = 'audio';
-            } else if (file.type.startsWith('video/')) {
-                resultPayload = await uploadService.constructVideoPayload(file, uid);
-                resultPayload.uploadedFileType = 'video';
+            if (files.length === 1) {
+                const file = files[0];
+                if (file.type.startsWith('audio/')) {
+                    resultPayload = await uploadService.constructAudioPayload(file, uid);
+                    resultPayload.uploadedFileType = 'audio';
+                } else if (file.type.startsWith('video/')) {
+                    resultPayload = await uploadService.constructVideoPayload(file, uid);
+                    resultPayload.uploadedFileType = 'video';
+                } else {
+                    // Default to document for everything else (pdf, doc, image, etc.)
+                    resultPayload = await uploadService.constructDocumentPayload(file, uid);
+                    // uploadedFileType is already set inside constructDocumentPayload for documents/images
+                }
             } else {
-                // Default to document for everything else (pdf, doc, image, etc.)
-                resultPayload = await uploadService.constructDocumentPayload(file, uid);
-                // uploadedFileType is already set inside constructDocumentPayload for documents/images
+                // Multiple images -> PDF
+                const doc = new jsPDF();
+                
+                for (let i = 0; i < imageFiles.length; i++) {
+                    if (i > 0) doc.addPage();
+                    const image = imageFiles[i];
+                    const imageDataUrl = await readFileAsDataURL(image);
+                    const imgProps = doc.getImageProperties(imageDataUrl);
+                    const pdfWidth = doc.internal.pageSize.getWidth();
+                    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                    const imageType = image.type === 'image/png' ? 'PNG' : 'JPEG';
+                    doc.addImage(imageDataUrl, imageType, 0, 0, pdfWidth, pdfHeight);
+                }
+                
+                const pdfBlob = doc.output('blob');
+                const pdfFile = new File([pdfBlob], `combined_images_${Date.now()}.pdf`, { type: 'application/pdf' });
+                
+                resultPayload = await uploadService.constructDocumentPayload(pdfFile, uid);
             }
 
             setPayload(resultPayload);
@@ -118,6 +169,7 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void; onNex
         className="hidden" 
         onChange={handleFileChange}
         accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.ppt,.pptx"
+        multiple
       />
       {uploadState === 'idle' || uploadState === 'error' ? (
         <div 

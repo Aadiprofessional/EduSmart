@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { FaChevronLeft, FaChevronRight, FaMagic, FaCommentDots } from 'react-icons/fa';
-import { Skeleton } from '../ui/Skeleton';
 import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
+import { FaChevronLeft, FaChevronRight, FaMagic, FaCommentDots } from 'react-icons/fa';
+import { Skeleton } from '../ui/Skeleton';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 
 interface TestQuestion {
     question: string;
@@ -23,6 +27,18 @@ const StudyWrittenTest: React.FC<StudyWrittenTestProps> = ({ onDiscuss }) => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [userAnswers, setUserAnswers] = useState<{[key: number]: string}>({});
     const [showAnswer, setShowAnswer] = useState(false);
+
+    // Preprocess LaTeX to convert OpenAI format to react-markdown format
+    const preprocessLaTeX = (text: string) => {
+        if (typeof text !== 'string') return '';
+        return text
+            // Standard LaTeX block \[ ... \] -> $$ ... $$
+            .replace(/\\\[([\s\S]*?)\\\]/g, (_, eq) => `$$${eq}$$`)
+            // Standard LaTeX inline \( ... \) -> $ ... $
+            .replace(/\\\(([\s\S]*?)\\\)/g, (_, eq) => `$${eq}$`)
+            // Heuristic: [ \command... ] -> $$ \command... $$
+            .replace(/\[\s*(\\frac|\\boxed|\\begin|\\sum|\\int|\\partial|\\sqrt|\\mathbf|\\mathrm|\\mathcal|\\mathscr|\\mathfrak|\\mathbb|\\sin|\\cos|\\tan)([\s\S]*?)\]/g, (match, cmd, rest) => `$$${cmd}${rest}$$`);
+    };
 
     useEffect(() => {
         let intervalId: NodeJS.Timeout;
@@ -179,8 +195,10 @@ const StudyWrittenTest: React.FC<StudyWrittenTestProps> = ({ onDiscuss }) => {
                         <span className="max-w-0 overflow-hidden group-hover/btn:max-w-[120px] transition-all duration-300 whitespace-nowrap text-sm font-medium">Discuss with AI</span>
                     </button>
                 )}
-                <h3 className="text-xl md:text-2xl font-medium text-center text-gray-900 dark:text-white mb-8 leading-relaxed pt-8">
-                    {currentQuestion.question}
+                <h3 className="text-xl md:text-2xl font-medium text-center text-gray-900 dark:text-white mb-8 leading-relaxed pt-8 prose dark:prose-invert max-w-none w-full">
+                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                        {preprocessLaTeX(currentQuestion.question)}
+                    </ReactMarkdown>
                 </h3>
 
                 <div className="w-full space-y-4">
@@ -206,12 +224,20 @@ const StudyWrittenTest: React.FC<StudyWrittenTestProps> = ({ onDiscuss }) => {
                         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl p-6">
                                 <h4 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Your Answer</h4>
-                                <p className="text-gray-900 dark:text-white text-lg">{userAnswers[currentIndex]}</p>
+                                <div className="text-gray-900 dark:text-white text-lg prose dark:prose-invert max-w-none">
+                                     <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                        {preprocessLaTeX(userAnswers[currentIndex])}
+                                    </ReactMarkdown>
+                                </div>
                             </div>
                             
                             <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-500/20 rounded-xl p-6">
                                 <h4 className="text-sm font-bold text-green-600 dark:text-green-400 uppercase mb-2">Correct Answer</h4>
-                                <p className="text-gray-700 dark:text-gray-200 text-lg leading-relaxed">{currentQuestion.correct_answer}</p>
+                                <div className="text-gray-700 dark:text-gray-200 text-lg leading-relaxed prose dark:prose-invert max-w-none">
+                                     <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                        {preprocessLaTeX(currentQuestion.correct_answer)}
+                                    </ReactMarkdown>
+                                </div>
                             </div>
 
                             <div className="flex justify-end">
