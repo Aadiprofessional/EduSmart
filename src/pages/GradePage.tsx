@@ -101,6 +101,10 @@ const GradePage: React.FC = () => {
   const [isProcessing, setIsProcessingStarted] = useState(false);
   const [processingStatus, setProcessingStatus] = useState('');
   const [history, setHistory] = useState<DBChat[]>([]);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const ITEMS_PER_PAGE = 10;
   
   const [rubricFile, setRubricFile] = useState<File | null>(null);
   const [paperFile, setPaperFile] = useState<File | null>(null);
@@ -118,20 +122,40 @@ const GradePage: React.FC = () => {
   const rubricInputRef = useRef<HTMLInputElement>(null);
   const paperInputRef = useRef<HTMLInputElement>(null);
 
-  const fetchChatHistory = async () => {
+  const fetchChatHistory = async (pageNumber = 0, isLoadMore = false) => {
     if (!user) return;
+    if (isLoadMore) setLoadingMore(true);
+
+    const from = pageNumber * ITEMS_PER_PAGE;
+    const to = from + ITEMS_PER_PAGE - 1;
+
     const { data, error } = await supabase
       .from('solve_chats')
       .select('*')
       .eq('owner', user.id)
       .eq('service_type', 'grade')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .range(from, to);
     
     if (error) {
       console.error('Error fetching history:', error);
     } else if (data) {
-      setHistory(data);
+        if (data.length < ITEMS_PER_PAGE) {
+            setHasMore(false);
+        }
+        if (isLoadMore) {
+            setHistory(prev => [...prev, ...data]);
+        } else {
+            setHistory(data);
+        }
     }
+    if (isLoadMore) setLoadingMore(false);
+  };
+
+  const handleLoadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchChatHistory(nextPage, true);
   };
 
   const [previewAttachment, setPreviewAttachment] = useState<any>(null);
@@ -176,7 +200,9 @@ const GradePage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchChatHistory();
+    setPage(0);
+    setHasMore(true);
+    fetchChatHistory(0, false);
   }, [user]);
 
   const loadChat = async (chat: DBChat) => {
@@ -791,6 +817,13 @@ const GradePage: React.FC = () => {
     }
   };
 
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop <= clientHeight + 100 && hasMore && !loadingMore) {
+      handleLoadMore();
+    }
+  };
+
   const isSendDisabled = !inputValue.trim() && !attachedFile;
 
   const calculateCost = () => {
@@ -884,7 +917,10 @@ const GradePage: React.FC = () => {
          </div>
 
          {!chatStarted ? (
-           <div className="flex-1 overflow-y-auto p-8 lg:p-12">
+           <div 
+             className="flex-1 overflow-y-auto p-8 lg:p-12"
+             onScroll={handleScroll}
+           >
              <div className="max-w-4xl mx-auto w-full pt-20 lg:pt-24">
              <div className="text-center mb-16">
                  <h1 className="text-4xl font-bold mb-3 text-gray-900 dark:text-white">What do you want to grade?</h1>
@@ -957,6 +993,12 @@ const GradePage: React.FC = () => {
                              </div>
                          </div>
                       ))}
+                      
+                      {loadingMore && (
+                        <div className="flex justify-center mt-4 mb-4">
+                            <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      )}
                     </div>
                  )}
              </div>

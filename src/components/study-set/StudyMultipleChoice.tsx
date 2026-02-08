@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
-import { FaChevronLeft, FaChevronRight, FaMagic, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronRight, FaMagic, FaCheckCircle, FaTimesCircle, FaCommentDots } from 'react-icons/fa';
 import { Skeleton } from '../ui/Skeleton';
 
 interface MultipleChoiceQuestion {
@@ -12,7 +12,11 @@ interface MultipleChoiceQuestion {
     explanation?: string;
 }
 
-const StudyMultipleChoice: React.FC = () => {
+interface StudyMultipleChoiceProps {
+    onDiscuss?: (content: string) => void;
+}
+
+const StudyMultipleChoice: React.FC<StudyMultipleChoiceProps> = ({ onDiscuss }) => {
     const { id } = useParams<{ id: string }>();
     const { user } = useAuth();
     const [questions, setQuestions] = useState<MultipleChoiceQuestion[]>([]);
@@ -218,22 +222,43 @@ const StudyMultipleChoice: React.FC = () => {
             </div>
 
             {/* Navigation */}
-            <div className="flex items-center gap-6">
-                <button 
-                    onClick={handlePrev}
-                    disabled={currentIndex === 0}
-                    className={`w-12 h-12 rounded-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white transition-colors ${currentIndex === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-[#252525]'}`}
-                >
-                    <FaChevronLeft />
-                </button>
-                <span className="text-gray-400 font-medium">{currentIndex + 1} / {questions.length}</span>
-                <button 
-                    onClick={handleNext}
-                    disabled={currentIndex === questions.length - 1}
-                    className={`w-12 h-12 rounded-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white transition-colors ${currentIndex === questions.length - 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-[#252525]'}`}
-                >
-                    <FaChevronRight />
-                </button>
+            <div className="relative w-full flex justify-center items-center">
+                <div className="flex items-center gap-6">
+                    <button 
+                        onClick={handlePrev}
+                        disabled={currentIndex === 0}
+                        className={`w-12 h-12 rounded-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white transition-colors ${currentIndex === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-[#252525]'}`}
+                    >
+                        <FaChevronLeft />
+                    </button>
+                    <span className="text-gray-400 font-medium">{currentIndex + 1} / {questions.length}</span>
+                    <button 
+                        onClick={handleNext}
+                        disabled={currentIndex === questions.length - 1}
+                        className={`w-12 h-12 rounded-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-900 dark:text-white transition-colors ${currentIndex === questions.length - 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-[#252525]'}`}
+                    >
+                        <FaChevronRight />
+                    </button>
+                </div>
+
+                {onDiscuss && (
+                    <div className="absolute right-0">
+                        <button
+                            onClick={() => {
+                                const optionsStr = Object.entries(currentQuestion.options)
+                                    .map(([k, v]) => `${k}: ${v}`)
+                                    .join('\n');
+                                const content = `Multiple Choice Question: ${currentQuestion.question}\nOptions:\n${optionsStr}\nCorrect Answer: ${currentQuestion.correct_option}`;
+                                onDiscuss(content);
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-full hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors"
+                            title="Discuss in Chat"
+                        >
+                            <FaCommentDots />
+                            <span className="text-sm font-medium hidden sm:inline">Discuss</span>
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

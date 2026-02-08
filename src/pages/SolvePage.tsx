@@ -150,6 +150,10 @@ const SolvePage: React.FC = () => {
   const [processingStatus, setProcessingStatus] = useState('');
   const [history, setHistory] = useState<DBChat[]>([]);
   const [pdfPageCount, setPdfPageCount] = useState(0);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const ITEMS_PER_PAGE = 10;
   
   const { user } = useAuth();
   
@@ -158,24 +162,43 @@ const SolvePage: React.FC = () => {
   const subjectRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const fetchChatHistory = async () => {
+  const fetchChatHistory = async (pageNumber = 0, isLoadMore = false) => {
     if (!user) return;
+    if (isLoadMore) setLoadingMore(true);
+
+    const from = pageNumber * ITEMS_PER_PAGE;
+    const to = from + ITEMS_PER_PAGE - 1;
+
     const { data, error } = await supabase
       .from('solve_chats')
       .select('*')
       .eq('owner', user.id)
       .eq('service_type', 'solve')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .range(from, to);
     
     if (error) {
       console.error('Error fetching history:', error);
     } else if (data) {
-      setHistory(data);
+      if (isLoadMore) {
+        setHistory(prev => [...prev, ...data]);
+      } else {
+        setHistory(data);
+      }
+
+      if (data.length < ITEMS_PER_PAGE) {
+        setHasMore(false);
+      } else {
+        setHasMore(true);
+      }
     }
+    
+    if (isLoadMore) setLoadingMore(false);
   };
 
   useEffect(() => {
-    fetchChatHistory();
+    setPage(0);
+    fetchChatHistory(0, false);
   }, [user]);
 
   const loadChat = async (chat: DBChat) => {
@@ -727,6 +750,15 @@ const SolvePage: React.FC = () => {
 
   const cost = calculateCost();
 
+  const handleHistoryScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop <= clientHeight + 50 && hasMore && !loadingMore) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchChatHistory(nextPage, true);
+    }
+  };
+
   return (
     <div className="h-screen bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-white flex font-sans overflow-hidden relative">
       {/* Mobile Sidebar Overlay */}
@@ -1081,7 +1113,10 @@ const SolvePage: React.FC = () => {
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto">
+          <div 
+            className="flex-1 overflow-y-auto"
+            onScroll={handleHistoryScroll}
+          >
             {history.map(item => (
                <div key={item.id} onClick={() => loadChat(item)} className="group cursor-pointer mb-4 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors border border-transparent hover:border-gray-200 dark:hover:border-white/5">
                   <div className="flex gap-3">
@@ -1101,6 +1136,12 @@ const SolvePage: React.FC = () => {
                   </div>
                </div>
             ))}
+            
+            {loadingMore && (
+              <div className="flex justify-center mt-2 mb-2">
+                 <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            )}
           </div>
         </div>
       </div>

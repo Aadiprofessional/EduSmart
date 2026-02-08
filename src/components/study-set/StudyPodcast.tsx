@@ -4,7 +4,7 @@ import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
 import { 
     FaPlay, FaPause, FaStepBackward, FaStepForward, 
-    FaVolumeUp, FaDownload, FaHandPaper, FaMagic, FaRedo 
+    FaVolumeUp, FaDownload, FaMagic, FaRedo, FaCommentDots 
 } from 'react-icons/fa';
 import { Skeleton } from '../ui/Skeleton';
 
@@ -17,7 +17,11 @@ interface PodcastSegment {
     start_time_formatted: string;
 }
 
-const StudyPodcast: React.FC = () => {
+interface StudyPodcastProps {
+    onDiscuss?: (text: string) => void;
+}
+
+const StudyPodcast: React.FC<StudyPodcastProps> = ({ onDiscuss }) => {
     const { id } = useParams<{ id: string }>();
     const { user } = useAuth();
     const [isPlaying, setIsPlaying] = useState(false);
@@ -30,6 +34,57 @@ const StudyPodcast: React.FC = () => {
     const [isGenerating, setIsGenerating] = useState(false);
     const audioRef = useRef<HTMLAudioElement>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const [isCompact, setIsCompact] = useState(false);
+    const isUserScrolling = useRef(false);
+    const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
+    const isAutoScrolling = useRef(false);
+
+    // Scroll listener for compact mode
+    useEffect(() => {
+        const handleScroll = () => {
+            if (scrollRef.current) {
+                const currentScroll = scrollRef.current.scrollTop;
+
+                // Trigger compact mode
+                // We use a larger threshold to prevent oscillation/loops when layout shifts
+                // The shift is approx 140px (Audio)
+                const shift = 180;
+                
+                setIsCompact(prev => {
+                    if (!prev && currentScroll > shift) {
+                        return true;
+                    } else if (prev && currentScroll < 20) {
+                        return false;
+                    }
+                    return prev;
+                });
+
+                // Detect user scrolling vs auto-scrolling
+                if (!isAutoScrolling.current) {
+                    isUserScrolling.current = true;
+                    if (scrollTimeout.current) {
+                        clearTimeout(scrollTimeout.current);
+                    }
+                    // Reset user scrolling state after 3 seconds of inactivity
+                    scrollTimeout.current = setTimeout(() => {
+                        isUserScrolling.current = false;
+                    }, 3000);
+                }
+            }
+        };
+        const scrollElement = scrollRef.current;
+        if (scrollElement) {
+            scrollElement.addEventListener('scroll', handleScroll);
+        }
+        return () => {
+            if (scrollElement) {
+                scrollElement.removeEventListener('scroll', handleScroll);
+            }
+            if (scrollTimeout.current) {
+                clearTimeout(scrollTimeout.current);
+            }
+        };
+    }, [loading, isGenerating, audioUrl]);
 
     useEffect(() => {
         let intervalId: NodeJS.Timeout;
@@ -132,6 +187,9 @@ const StudyPodcast: React.FC = () => {
 
     // Auto-scroll to active segment
     useEffect(() => {
+        // Skip if user is manually scrolling
+        if (isUserScrolling.current) return;
+
         const activeSegment = transcript.findIndex(
             (seg) => currentTime >= seg.start_seconds && currentTime < seg.end_seconds
         );
@@ -139,7 +197,23 @@ const StudyPodcast: React.FC = () => {
         if (activeSegment !== -1 && scrollRef.current) {
             const activeElement = scrollRef.current.children[activeSegment] as HTMLElement;
             if (activeElement) {
-                activeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                isAutoScrolling.current = true;
+                // Use scrollTo instead of scrollIntoView to prevent whole page scrolling
+                const container = scrollRef.current;
+                const elementTop = activeElement.offsetTop;
+                const elementHeight = activeElement.offsetHeight;
+                const containerHeight = container.clientHeight;
+                
+                const targetScrollTop = elementTop - (containerHeight / 2) + (elementHeight / 2);
+
+                container.scrollTo({
+                    top: targetScrollTop,
+                    behavior: 'smooth'
+                });
+                // Reset auto-scrolling flag after animation (approx 1s)
+                setTimeout(() => {
+                    isAutoScrolling.current = false;
+                }, 1000);
             }
         }
     }, [currentTime, transcript]);
@@ -225,7 +299,7 @@ const StudyPodcast: React.FC = () => {
     }
 
     return (
-        <div className="max-w-4xl mx-auto w-full h-full relative overflow-hidden">
+        <div className="max-w-4xl mx-auto w-full flex-1 min-h-0 relative overflow-hidden">
             <audio
                 ref={audioRef}
                 src={audioUrl || ''}
@@ -235,85 +309,127 @@ const StudyPodcast: React.FC = () => {
             />
 
             {/* Audio Player Card - Fixed Top */}
-            <div className="absolute top-0 left-0 right-0 z-20 p-4">
-                <div className="backdrop-blur-md bg-white/90 dark:bg-black/40 border border-gray-200 dark:border-white/10 rounded-2xl p-6 shadow-xl">
-                    <div className="flex items-start justify-between mb-6">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center overflow-hidden">
-                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Podcast" alt="Podcast" className="w-full h-full object-cover opacity-80" />
+            <div className={`absolute top-0 left-0 right-0 z-20 transition-all duration-300 ${isCompact ? 'p-2' : 'p-4'}`}>
+                <div className={`backdrop-blur-md bg-white/90 dark:bg-black/80 border border-gray-200 dark:border-white/10 rounded-2xl shadow-xl transition-all duration-300 overflow-hidden ${isCompact ? 'p-3' : 'p-6'}`}>
+                    
+                    {isCompact ? (
+                        // Compact View
+                        <div className="flex items-center gap-3 w-full">
+                            {/* Icon */}
+                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Podcast" alt="Podcast" className="w-full h-full object-cover opacity-80" />
+                            </div>
+                            
+                            {/* Controls */}
+                             <div className="flex-1 flex flex-col justify-center min-w-0">
+                                <div className="flex items-center justify-between mb-2">
+                                     <span className="text-[10px] text-gray-500 dark:text-gray-400 font-mono w-10 text-left">{formatTime(currentTime)}</span>
+
+                                     <div className="flex items-center gap-4">
+                                         <button onClick={() => handleSkip(-10)} className="text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white"><FaRedo size={12} className="transform -scale-x-100" /></button>
+                                         <button onClick={togglePlay} className="text-indigo-600 dark:text-white hover:scale-110 transition-transform">
+                                            <div className="w-8 h-8 bg-gray-900 dark:bg-white rounded-full flex items-center justify-center text-white dark:text-black">
+                                                {isPlaying ? <FaPause size={10}/> : <FaPlay size={10} className="ml-0.5"/>}
+                                            </div>
+                                        </button>
+                                         <button onClick={() => handleSkip(10)} className="text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white"><FaRedo size={12} /></button>
+                                     </div>
+
+                                     <span className="text-[10px] text-gray-500 dark:text-gray-400 font-mono w-10 text-right">{formatTime(duration)}</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max={duration || 100}
+                                    value={currentTime}
+                                    onChange={handleSeek}
+                                    className="w-full h-1.5 bg-gray-200 dark:bg-gray-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-indigo-600 dark:[&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:bg-indigo-500 transition-all"
+                                    style={{
+                                        backgroundImage: `linear-gradient(to right, #6366f1 ${(currentTime / (duration || 1)) * 100}%, ${document.documentElement.classList.contains('dark') ? '#1f2937' : '#e5e7eb'} ${(currentTime / (duration || 1)) * 100}%)`
+                                    }}
+                                />
+                             </div>
                         </div>
-                        <div>
-                            <h3 className="font-bold text-gray-900 dark:text-white text-lg">Study Podcast</h3>
-                            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                                {isPlaying && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>}
-                                {formatTime(currentTime)} / {formatTime(duration)}
+                    ) : (
+                        // Expanded View
+                        <div className="w-full">
+                            <div className="flex flex-col md:flex-row items-center md:items-start justify-between mb-4 md:mb-6 gap-4">
+                                <div className="flex items-center gap-4 w-full">
+                                    <div className="w-14 h-14 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-lg">
+                                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Podcast" alt="Podcast" className="w-full h-full object-cover opacity-80" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <h3 className="font-bold text-gray-900 dark:text-white text-lg md:text-xl truncate">Study Podcast</h3>
+                                        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                            {isPlaying && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>}
+                                            {formatTime(currentTime)} / {formatTime(duration)}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Progress Bar - Podcast */}
+                            <div className="mb-4 md:mb-6 group">
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max={duration || 100}
+                                    value={currentTime}
+                                    onChange={handleSeek}
+                                    className="w-full h-2 bg-gray-200 dark:bg-gray-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-indigo-600 dark:[&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:bg-indigo-500 transition-all"
+                                    style={{
+                                        backgroundImage: `linear-gradient(to right, #6366f1 ${(currentTime / (duration || 1)) * 100}%, ${document.documentElement.classList.contains('dark') ? '#1f2937' : '#e5e7eb'} ${(currentTime / (duration || 1)) * 100}%)`
+                                    }}
+                                />
+                            </div>
+
+                            {/* Controls Row */}
+                            <div className="flex items-center justify-between gap-4">
+                                {/* Volume (Hidden on small mobile) */}
+                                <div className="hidden sm:flex items-center gap-3 text-gray-500 dark:text-gray-400 w-24">
+                                    <FaVolumeUp size={14} />
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="1"
+                                        step="0.01"
+                                        value={volume}
+                                        onChange={handleVolumeChange}
+                                        className="w-full h-1 bg-gray-200 dark:bg-gray-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-gray-400 [&::-webkit-slider-thumb]:rounded-full"
+                                    />
+                                </div>
+
+                                {/* Main Controls (Centered) */}
+                                <div className="flex items-center justify-center gap-6 md:gap-8 flex-1">
+                                    <button onClick={() => handleSkip(-10)} className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-full"><FaRedo className="transform -scale-x-100 text-lg md:text-xl" /></button>
+                                    <button 
+                                        onClick={togglePlay}
+                                        className="w-14 h-14 md:w-16 md:h-16 bg-gray-900 dark:bg-white rounded-full flex items-center justify-center text-white dark:text-black hover:scale-105 transition-transform shadow-xl"
+                                    >
+                                        {isPlaying ? <FaPause className="text-xl md:text-2xl" /> : <FaPlay className="ml-1 text-xl md:text-2xl" />}
+                                    </button>
+                                    <button onClick={() => handleSkip(10)} className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-full"><FaRedo className="text-lg md:text-xl" /></button>
+                                </div>
+
+                                {/* Extras */}
+                                <div className="flex items-center gap-4 text-gray-500 dark:text-gray-400 text-sm w-24 justify-end">
+                                    <span className="cursor-pointer hover:text-gray-900 dark:hover:text-white font-medium hidden sm:block">1x</span>
+                                    <button className="hover:text-gray-900 dark:hover:text-white p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors"><FaDownload /></button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
-                        <FaHandPaper />
-                        Raise Hand
-                    </button>
+                    )}
                 </div>
-
-                {/* Progress Bar */}
-                <div className="mb-4 group">
-                    <input
-                        type="range"
-                        min="0"
-                        max={duration || 100}
-                        value={currentTime}
-                        onChange={handleSeek}
-                        className="w-full h-1 bg-gray-200 dark:bg-gray-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-indigo-600 dark:[&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:bg-indigo-500 transition-all"
-                        style={{
-                            backgroundImage: `linear-gradient(to right, #6366f1 ${(currentTime / duration) * 100}%, ${document.documentElement.classList.contains('dark') ? '#1f2937' : '#e5e7eb'} ${(currentTime / duration) * 100}%)`
-                        }}
-                    />
-                </div>
-
-                {/* Controls */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
-                        <FaVolumeUp size={14} />
-                        <input
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.01"
-                            value={volume}
-                            onChange={handleVolumeChange}
-                            className="w-20 h-1 bg-gray-200 dark:bg-gray-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-gray-400 [&::-webkit-slider-thumb]:rounded-full"
-                        />
-                    </div>
-
-                    <div className="flex items-center gap-6">
-                        <button onClick={() => handleSkip(-10)} className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><FaRedo className="transform -scale-x-100" /></button>
-                        <button 
-                            onClick={togglePlay}
-                            className="w-12 h-12 bg-gray-900 dark:bg-white rounded-full flex items-center justify-center text-white dark:text-black hover:scale-105 transition-transform"
-                        >
-                            {isPlaying ? <FaPause /> : <FaPlay className="ml-1" />}
-                        </button>
-                        <button onClick={() => handleSkip(10)} className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><FaRedo /></button>
-                    </div>
-
-                    <div className="flex items-center gap-4 text-gray-500 dark:text-gray-400 text-sm">
-                        <span className="cursor-pointer hover:text-gray-900 dark:hover:text-white">1x</span>
-                        <button className="hover:text-gray-900 dark:hover:text-white"><FaDownload /></button>
-                    </div>
-                </div>
-            </div>
             </div>
 
             {/* Transcript */}
-            <div ref={scrollRef} className="absolute inset-0 overflow-y-auto custom-scrollbar px-4 pt-[280px] pb-8">
+            <div ref={scrollRef} className={`absolute inset-0 overflow-y-auto custom-scrollbar px-4 md:px-8 pb-8 transition-all duration-300 overscroll-contain ${isCompact ? 'pt-[100px]' : 'pt-[280px] md:pt-[280px]'}`}>
                 {transcript.map((item, index) => {
                     const isActive = currentTime >= item.start_seconds && currentTime < item.end_seconds;
                     return (
                         <div 
                             key={index} 
-                            className={`flex gap-4 transition-opacity duration-300 ${item.speaker === 'Sam' ? 'flex-row-reverse' : ''} ${isActive ? 'opacity-100 scale-[1.02]' : 'opacity-50 hover:opacity-80'}`}
+                            className={`flex gap-4 transition-opacity duration-300 ${index === 0 ? 'mt-6' : ''} ${item.speaker === 'Sam' ? 'flex-row-reverse' : ''} ${isActive ? 'opacity-100 scale-[1.02]' : 'opacity-50 hover:opacity-80'}`}
                         >
                             <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-800 flex-shrink-0 border border-white/10">
                                 <img 
@@ -322,10 +438,10 @@ const StudyPodcast: React.FC = () => {
                                     className="w-full h-full object-cover" 
                                 />
                             </div>
-                            <div className={`max-w-[80%] ${item.speaker === 'Sam' ? 'items-end' : 'items-start'} flex flex-col`}>
+                            <div className={`max-w-[80%] ${item.speaker === 'Sam' ? 'items-end' : 'items-start'} flex flex-col relative`}>
                                 <span className="text-xs text-gray-500 mb-1 px-1">{item.speaker}</span>
                                 <div 
-                                    className={`p-4 rounded-2xl border text-sm leading-relaxed transition-colors duration-300 cursor-pointer ${
+                                    className={`p-4 rounded-2xl border text-xs md:text-sm leading-relaxed transition-colors duration-300 cursor-pointer relative ${
                                         item.speaker === 'Sam' ? 'rounded-tr-none' : 'rounded-tl-none'
                                     } ${
                                         isActive 
@@ -341,6 +457,21 @@ const StudyPodcast: React.FC = () => {
                                     }}
                                 >
                                     {item.text}
+                                    
+                                    {isActive && onDiscuss && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const content = `Context from Podcast (${item.speaker} at ${formatTime(item.start_seconds)}): "${item.text}"`;
+                                                onDiscuss(content);
+                                            }}
+                                            className={`absolute -top-3 ${item.speaker === 'Sam' ? '-left-3' : '-right-3'} group/btn flex items-center gap-2 bg-indigo-600 text-white p-2 rounded-full shadow-lg hover:bg-indigo-700 transition-all duration-200 z-10`}
+                                            title="Discuss in Chat"
+                                        >
+                                            <FaCommentDots size={12} />
+                                            <span className="max-w-0 overflow-hidden group-hover/btn:max-w-[120px] transition-all duration-300 whitespace-nowrap text-xs font-medium">Discuss with AI</span>
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>

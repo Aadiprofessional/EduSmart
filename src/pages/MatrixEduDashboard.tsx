@@ -23,7 +23,18 @@ const MatrixEduDashboard: React.FC = () => {
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
       const scrollTop = e.currentTarget.scrollTop;
-      setIsScrolled(scrollTop > 0);
+      
+      // Add hysteresis to prevent shaking
+      if (scrollTop > 10 && !isScrolled) {
+          setIsScrolled(true);
+      } else if (scrollTop < 5 && isScrolled) {
+          setIsScrolled(false);
+      }
+
+      const { scrollHeight, clientHeight } = e.currentTarget;
+      if (scrollHeight - scrollTop <= clientHeight + 100 && hasMore && !loadingMore) {
+          handleLoadMore();
+      }
   };
 
   useEffect(() => {
@@ -55,57 +66,71 @@ const MatrixEduDashboard: React.FC = () => {
   const [folders, setFolders] = useState<Folder[]>([]);
 
   const [studySets, setStudySets] = useState<StudySet[]>([]);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const ITEMS_PER_PAGE = 12;
+
+  const fetchStudySets = async (pageNumber = 0, isLoadMore = false) => {
+      if (!user) return;
+      if (isLoadMore) setLoadingMore(true);
+      
+      try {
+          const from = pageNumber * ITEMS_PER_PAGE;
+          const to = from + ITEMS_PER_PAGE - 1;
+
+          const { data, error } = await supabase
+              .from('upload_document')
+              .select('*')
+              .eq('uid', user.id) 
+              .order('created_at', { ascending: false })
+              .range(from, to);
+              
+          if (error) throw error;
+          
+          if (data) {
+              const mappedSets: StudySet[] = data.map((doc: any) => ({
+                  id: doc.document_id,
+                  title: doc.document_type ? doc.document_type.charAt(0).toUpperCase() + doc.document_type.slice(1) : (doc.title || 'Untitled Study Set'),
+                  stats: {
+                      unfamiliar: 0,
+                      learning: 0,
+                      familiar: 0,
+                      mastered: 0
+                  },
+                  progress: 0,
+                  totalCards: 0,
+                  ...doc // Keep original fields
+              }));
+
+              if (data.length < ITEMS_PER_PAGE) {
+                  setHasMore(false);
+              }
+
+              if (isLoadMore) {
+                  setStudySets(prev => [...prev, ...mappedSets]);
+              } else {
+                  setStudySets(mappedSets);
+              }
+          }
+      } catch (error) {
+          console.error('Error fetching study sets:', error);
+      } finally {
+          if (isLoadMore) setLoadingMore(false);
+      }
+  };
 
   useEffect(() => {
-    const fetchStudySets = async () => {
-        // We fetch even if user is not fully loaded? Usually user is null initially.
-        // Assuming user object has id or uid.
-        // The auth context might provide user.id or user.sub depending on provider.
-        // Let's assume user.id works as per other files.
-        // If user is null, we can't fetch user specific docs.
-        
-        // However, for testing purpose if user is not logged in, we might want to skip or show empty.
-        // The auth context provides 'user' which is Supabase user usually.
-        
-        if (!user) return;
-        
-        try {
-            const { data, error } = await supabase
-                .from('upload_document')
-                .select('*')
-                // .eq('uid', user.id) // Filter by user if needed. User requested "show all the items from the table" but implied context. 
-                                      // Usually we only show user's items. 
-                                      // The response example has "uid": "5f21c714-a255-4bab-864e-a36c63466a95".
-                                      // I will filter by user.id if available, otherwise fetch all (or limit).
-                                      // To be safe and follow standard practice, I'll filter by user.id.
-                .eq('uid', user.id) 
-                .order('created_at', { ascending: false });
-                
-            if (error) throw error;
-            
-            if (data) {
-                const mappedSets: StudySet[] = data.map((doc: any) => ({
-                    id: doc.document_id,
-                    title: doc.document_type ? doc.document_type.charAt(0).toUpperCase() + doc.document_type.slice(1) : (doc.title || 'Untitled Study Set'),
-                    stats: {
-                        unfamiliar: 0,
-                        learning: 0,
-                        familiar: 0,
-                        mastered: 0
-                    },
-                    progress: 0,
-                    totalCards: 0,
-                    ...doc // Keep original fields
-                }));
-                setStudySets(mappedSets);
-            }
-        } catch (error) {
-            console.error('Error fetching study sets:', error);
-        }
-    };
-    
-    fetchStudySets();
+    setPage(0);
+    setHasMore(true);
+    fetchStudySets(0, false);
   }, [user]);
+
+  const handleLoadMore = () => {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchStudySets(nextPage, true);
+  };
 
   const handleCreateFolder = (name: string, color: string) => {
       setFolders([...folders, { id: Date.now().toString(), name, count: 0, color }]);
@@ -195,13 +220,19 @@ const MatrixEduDashboard: React.FC = () => {
             </div>
 
             {/* Scrollable Study Sets Section */}
-            <div className="px-4 md:px-8 lg:px-12 pb-24 max-w-4xl mx-auto">
+            <div className="px-4 md:px-8 lg:px-12 pb-24 max-w-4xl mx-auto min-h-screen">
                 <StudySetList 
                     studySets={studySets} 
                     onSetClick={(set: any) => {
                         navigate(`/study-set/${set.id}`, { state: { studySetData: set } });
                     }}
                 />
+                
+                {loadingMore && (
+                    <div className="flex justify-center mt-8 mb-8">
+                        <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                )}
             </div>
         </div>
       </main>

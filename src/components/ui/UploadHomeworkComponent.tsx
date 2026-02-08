@@ -18,7 +18,8 @@ import { v4 as uuidv4 } from 'uuid';
 // Import homework API functions
 import { 
   getHomeworkHistory, 
-  deleteHomework 
+  deleteHomework,
+  submitHomework
 } from '../../utils/homeworkAPI';
 
 // Import markdown and math libraries
@@ -363,7 +364,7 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
       // Update local state
       setHomeworkHistory(prev => [newItem, ...prev.slice(0, 19)]); // Keep only last 20 items
 
-      /*
+      
       // Submit to database
       const submissionData = {
         question,
@@ -403,7 +404,7 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
         console.error('❌ Failed to save homework to database:', result.error);
         // Do not save to localStorage as fallback - require authentication
       }
-      */
+      
     } catch (error) {
       console.error('❌ Error saving homework:', error);
       // Do not save to localStorage as fallback - require authentication

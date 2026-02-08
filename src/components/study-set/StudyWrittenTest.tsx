@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { FaChevronLeft, FaChevronRight, FaMagic } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronRight, FaMagic, FaCommentDots } from 'react-icons/fa';
 import { Skeleton } from '../ui/Skeleton';
 import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
@@ -10,7 +10,11 @@ interface TestQuestion {
     correct_answer: string;
 }
 
-const StudyWrittenTest: React.FC = () => {
+interface StudyWrittenTestProps {
+    onDiscuss?: (text: string) => void;
+}
+
+const StudyWrittenTest: React.FC<StudyWrittenTestProps> = ({ onDiscuss }) => {
     const { id } = useParams<{ id: string }>();
     const { user } = useAuth();
     const [questions, setQuestions] = useState<TestQuestion[]>([]);
@@ -161,8 +165,21 @@ const StudyWrittenTest: React.FC = () => {
             </div>
 
             {/* Question Card */}
-            <div className="w-full max-w-3xl mb-8">
-                <h3 className="text-xl md:text-2xl font-medium text-center text-gray-900 dark:text-white mb-8 leading-relaxed">
+            <div className="w-full max-w-3xl mb-8 relative">
+                 {onDiscuss && (
+                    <button
+                        onClick={() => {
+                            const content = `Written Test Question: ${currentQuestion.question}\nCorrect Answer: ${currentQuestion.correct_answer}`;
+                            onDiscuss(content);
+                        }}
+                        className="absolute top-0 right-0 group/btn flex items-center gap-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 p-2 rounded-full hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors"
+                        title="Discuss in Chat"
+                    >
+                        <FaCommentDots />
+                        <span className="max-w-0 overflow-hidden group-hover/btn:max-w-[120px] transition-all duration-300 whitespace-nowrap text-sm font-medium">Discuss with AI</span>
+                    </button>
+                )}
+                <h3 className="text-xl md:text-2xl font-medium text-center text-gray-900 dark:text-white mb-8 leading-relaxed pt-8">
                     {currentQuestion.question}
                 </h3>
 
@@ -211,22 +228,24 @@ const StudyWrittenTest: React.FC = () => {
             </div>
 
             {/* Navigation */}
-            <div className="flex items-center gap-6">
-                <button 
-                    onClick={handlePrev}
-                    disabled={currentIndex === 0}
-                    className={`w-12 h-12 rounded-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-600 dark:text-white transition-colors ${currentIndex === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-[#252525]'}`}
-                >
-                    <FaChevronLeft />
-                </button>
-                <span className="text-gray-600 dark:text-gray-400 font-medium">{currentIndex + 1} / {questions.length}</span>
-                <button 
-                    onClick={handleNext}
-                    disabled={currentIndex === questions.length - 1}
-                    className={`w-12 h-12 rounded-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-600 dark:text-white transition-colors ${currentIndex === questions.length - 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-[#252525]'}`}
-                >
-                    <FaChevronRight />
-                </button>
+            <div className="relative w-full flex justify-center items-center">
+                <div className="flex items-center gap-6">
+                    <button 
+                        onClick={handlePrev}
+                        disabled={currentIndex === 0}
+                        className={`w-12 h-12 rounded-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-600 dark:text-white transition-colors ${currentIndex === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-[#252525]'}`}
+                    >
+                        <FaChevronLeft />
+                    </button>
+                    <span className="text-gray-600 dark:text-gray-400 font-medium">{currentIndex + 1} / {questions.length}</span>
+                    <button 
+                        onClick={handleNext}
+                        disabled={currentIndex === questions.length - 1}
+                        className={`w-12 h-12 rounded-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-600 dark:text-white transition-colors ${currentIndex === questions.length - 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-[#252525]'}`}
+                    >
+                        <FaChevronRight />
+                    </button>
+                </div>
             </div>
         </div>
     );

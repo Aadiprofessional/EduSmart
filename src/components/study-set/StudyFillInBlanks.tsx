@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
-import { FaChevronLeft, FaChevronRight, FaMagic, FaCheckCircle, FaTimesCircle, FaSpinner } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronRight, FaMagic, FaCheckCircle, FaTimesCircle, FaSpinner, FaCommentDots } from 'react-icons/fa';
 import { Skeleton } from '../ui/Skeleton';
 
 interface BlankQuestion {
@@ -11,7 +11,11 @@ interface BlankQuestion {
     after_blank: string;
 }
 
-const StudyFillInBlanks: React.FC = () => {
+interface StudyFillInBlanksProps {
+    onDiscuss?: (text: string) => void;
+}
+
+const StudyFillInBlanks: React.FC<StudyFillInBlanksProps> = ({ onDiscuss }) => {
     const { id } = useParams<{ id: string }>();
     const { user } = useAuth();
     const [questions, setQuestions] = useState<BlankQuestion[]>([]);
@@ -19,6 +23,7 @@ const StudyFillInBlanks: React.FC = () => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [userAnswer, setUserAnswer] = useState('');
+    const [hintText, setHintText] = useState<string | null>(null);
     const [showResult, setShowResult] = useState(false);
     const [isCorrect, setIsCorrect] = useState(false);
 
@@ -79,6 +84,7 @@ const StudyFillInBlanks: React.FC = () => {
         if (currentIndex < questions.length - 1) {
             setCurrentIndex(prev => prev + 1);
             setUserAnswer('');
+            setHintText(null);
             setShowResult(false);
             setIsCorrect(false);
         }
@@ -88,6 +94,7 @@ const StudyFillInBlanks: React.FC = () => {
         if (currentIndex > 0) {
             setCurrentIndex(prev => prev - 1);
             setUserAnswer('');
+            setHintText(null);
             setShowResult(false);
             setIsCorrect(false);
         }
@@ -95,8 +102,10 @@ const StudyFillInBlanks: React.FC = () => {
 
     const handleHint = () => {
         const currentQ = questions[currentIndex];
-        // Reveal first letter or first few letters
-        setUserAnswer(currentQ.blank.substring(0, Math.ceil(currentQ.blank.length / 2)));
+        // Reveal only a small part of the answer (approx 30%), hiding the rest
+        const len = currentQ.blank.length;
+        const revealCount = Math.max(1, Math.floor(len * 0.3));
+        setHintText(currentQ.blank.substring(0, revealCount));
     };
 
     if (loading) {
@@ -165,8 +174,17 @@ const StudyFillInBlanks: React.FC = () => {
                 
                 <h3 className="text-xl md:text-2xl font-medium text-center text-gray-900 dark:text-white mb-8 leading-relaxed">
                     {currentQuestion.before_blank}
-                    <span className="inline-block min-w-[100px] border-b-2 border-indigo-500 mx-2 text-indigo-600 dark:text-indigo-400 font-bold text-center px-2">
-                        {showResult ? currentQuestion.blank : '\u00A0'}
+                    <span className="inline-block min-w-[100px] border-b-2 border-indigo-500 mx-2 text-indigo-600 dark:text-indigo-400 font-bold text-center px-2 transition-all duration-300">
+                        {showResult ? (
+                            currentQuestion.blank
+                        ) : hintText ? (
+                            <span className="text-lg md:text-xl">
+                                <span className="opacity-100">{hintText}</span>
+                                <span className="opacity-40 blur-[4px] select-none">{currentQuestion.blank.substring(hintText.length)}</span>
+                            </span>
+                        ) : (
+                            '\u00A0'
+                        )}
                     </span>
                     {currentQuestion.after_blank}
                 </h3>
@@ -230,22 +248,40 @@ const StudyFillInBlanks: React.FC = () => {
             </div>
 
             {/* Navigation */}
-            <div className="flex items-center gap-6">
-                <button 
-                    onClick={handlePrev}
-                    disabled={currentIndex === 0}
-                    className="w-12 h-12 rounded-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-600 dark:text-white hover:bg-gray-50 dark:hover:bg-[#252525] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                >
-                    <FaChevronLeft />
-                </button>
-                <span className="text-gray-600 dark:text-gray-400 font-medium">{currentIndex + 1} / {questions.length}</span>
-                <button 
-                    onClick={handleNext}
-                    disabled={currentIndex === questions.length - 1}
-                    className="w-12 h-12 rounded-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-600 dark:text-white hover:bg-gray-50 dark:hover:bg-[#252525] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                >
-                    <FaChevronRight />
-                </button>
+            <div className="relative w-full flex justify-center items-center">
+                <div className="flex items-center gap-6">
+                    <button 
+                        onClick={handlePrev}
+                        disabled={currentIndex === 0}
+                        className="w-12 h-12 rounded-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-600 dark:text-white hover:bg-gray-50 dark:hover:bg-[#252525] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    >
+                        <FaChevronLeft />
+                    </button>
+                    <span className="text-gray-600 dark:text-gray-400 font-medium">{currentIndex + 1} / {questions.length}</span>
+                    <button 
+                        onClick={handleNext}
+                        disabled={currentIndex === questions.length - 1}
+                        className="w-12 h-12 rounded-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-600 dark:text-white hover:bg-gray-50 dark:hover:bg-[#252525] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    >
+                        <FaChevronRight />
+                    </button>
+                </div>
+
+                {onDiscuss && (
+                    <div className="absolute right-0">
+                        <button
+                            onClick={() => {
+                                const content = `Fill in the Blank Question: ${currentQuestion.before_blank} [${currentQuestion.blank}] ${currentQuestion.after_blank}`;
+                                onDiscuss(content);
+                            }}
+                            className="group/btn flex items-center gap-2 px-2 py-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-full hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors"
+                            title="Discuss in Chat"
+                        >
+                            <FaCommentDots />
+                            <span className="max-w-0 overflow-hidden group-hover/btn:max-w-[120px] transition-all duration-300 whitespace-nowrap text-sm font-medium">Discuss with AI</span>
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

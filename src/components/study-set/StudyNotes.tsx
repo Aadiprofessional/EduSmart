@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
+import { renderToStaticMarkup } from 'react-dom/server';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -9,7 +10,7 @@ import {
   FaChevronDown, FaBold, FaItalic, FaUnderline, FaStrikethrough, 
   FaListUl, FaListOl, FaQuoteRight, FaCode, FaMinus, FaImage, FaEraser,
   FaFilePdf, FaAlignLeft, FaAlignCenter, FaAlignRight, FaLink, FaHighlighter,
-  FaSuperscript, FaSubscript, FaMagic, FaBook
+  FaSuperscript, FaSubscript, FaMagic, FaBook, FaSave
 } from 'react-icons/fa';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -21,13 +22,24 @@ const StudyNotes: React.FC = () => {
     const location = useLocation();
     const studySetData = location.state?.studySetData;
     const editorRef = useRef<HTMLDivElement>(null);
-    const [activePopup, setActivePopup] = React.useState<'link' | 'image' | null>(null);
+    const [activePopup, setActivePopup] = React.useState<'link' | 'image' | 'font' | null>(null);
     const [popupValue, setPopupValue] = React.useState('');
     const savedSelection = useRef<Range | null>(null);
 
     const [notesContent, setNotesContent] = useState<string>('');
     const [loading, setLoading] = useState(true);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+
+    const fonts = [
+        { name: 'Sans Serif', value: 'Arial' },
+        { name: 'Serif', value: 'Times New Roman' },
+        { name: 'Monospace', value: 'Courier New' },
+        { name: 'Georgia', value: 'Georgia' },
+        { name: 'Verdana', value: 'Verdana' },
+        { name: 'Comic Sans', value: 'Comic Sans MS' }
+    ];
+    const [currentFont, setCurrentFont] = useState(fonts[0]);
 
     useEffect(() => {
         // We prioritize fetching fresh data from Supabase over navigation state
@@ -63,9 +75,47 @@ const StudyNotes: React.FC = () => {
                             : (data.notes_data.content || data.notes_data.note || JSON.stringify(data.notes_data));
                         
                         // Parse Markdown if it looks like markdown
-                        // if (typeof content === 'string' && (content.includes('#') || content.includes('**') || content.includes('- '))) {
-                        //     content = simpleMarkdownToHtml(content);
-                        // }
+                        if (typeof content === 'string' && !content.trim().startsWith('<') && (content.includes('#') || content.includes('**') || content.includes('- ') || content.includes('|'))) {
+                            try {
+                                content = renderToStaticMarkup(
+                                    <ReactMarkdown 
+                                        remarkPlugins={[remarkGfm]} 
+                                        rehypePlugins={[rehypeRaw]}
+                                        components={{
+                                            h1: ({node, ...props}) => <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4 mt-6 border-b border-gray-200 dark:border-gray-700 pb-2" {...props} />,
+                                            h2: ({node, ...props}) => <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-3 mt-5" {...props} />,
+                                            h3: ({node, ...props}) => <h3 className="text-xl font-medium text-gray-800 dark:text-gray-200 mb-2 mt-4" {...props} />,
+                                            ul: ({node, ...props}) => <ul className="list-disc pl-6 space-y-2 text-gray-700 dark:text-gray-300" {...props} />,
+                                            ol: ({node, ...props}) => <ol className="list-decimal pl-6 space-y-2 text-gray-700 dark:text-gray-300" {...props} />,
+                                            li: ({node, ...props}) => <li className="pl-1" {...props} />,
+                                            blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-indigo-500 pl-4 italic text-gray-600 dark:text-gray-400 my-4" {...props} />,
+                                            table: ({node, ...props}) => <div className="overflow-x-auto my-6"><table className="min-w-full divide-y divide-gray-300 dark:divide-gray-700 border border-gray-300 dark:border-gray-700 rounded-lg" {...props} /></div>,
+                                            thead: ({node, ...props}) => <thead className="bg-gray-100 dark:bg-gray-800" {...props} />,
+                                            th: ({node, ...props}) => <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider border-b border-gray-300 dark:border-gray-700" {...props} />,
+                                            td: ({node, ...props}) => <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 border-b border-gray-300 dark:border-gray-700" {...props} />,
+                                            a: ({node, ...props}) => <a className="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 underline" {...props} />,
+                                            code: ({node, className, children, ...props}) => {
+                                                const match = /language-(\w+)/.exec(className || '');
+                                                return !match ? (
+                                                    <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm text-indigo-600 dark:text-indigo-300" {...props}>
+                                                        {children}
+                                                    </code>
+                                                ) : (
+                                                    <code className={className} {...props}>
+                                                        {children}
+                                                    </code>
+                                                );
+                                            }
+                                        }}
+                                    >
+                                        {content}
+                                    </ReactMarkdown>
+                                );
+                            } catch (e) {
+                                console.error('Error rendering markdown:', e);
+                                // Fallback to raw content if rendering fails
+                            }
+                        }
 
                         setNotesContent(content);
                         setLoading(false);
@@ -153,6 +203,32 @@ const StudyNotes: React.FC = () => {
         }
     };
 
+    const handleSave = async () => {
+        if (!editorRef.current || !user || !id) return;
+        
+        setIsSaving(true);
+        try {
+            const content = editorRef.current.innerHTML;
+            
+            const { error } = await supabase
+                .from('notes_tools')
+                .update({ 
+                    notes_data: { content: content }
+                })
+                .eq('document_id', id)
+                .eq('uid', user.id);
+
+            if (error) throw error;
+            
+            // Optional: show a small indicator or toast
+            // console.log('Notes saved successfully');
+        } catch (err) {
+            console.error('Error saving notes:', err);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     const ToolbarButton = ({ icon, command, value, label, onClick }: { icon: React.ReactNode, command?: string, value?: string, label?: string, onClick?: () => void }) => (
         <button 
             onMouseDown={(e) => {
@@ -179,8 +255,31 @@ const StudyNotes: React.FC = () => {
                     {/* Glassmorphism Toolbar */}
                     <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 shadow-2xl backdrop-blur-md bg-white/80 dark:bg-[#1a1a1a]/80 supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-[#1a1a1a]/60">
                         <div className="flex items-center gap-1 p-2 overflow-x-auto scrollbar-none">
-                            {/* Font Style */}
-                            <ToolbarButton icon={<span className="text-xs font-bold">Sans Serif</span>} command="fontName" value="Arial" />
+                            {/* Font Style Dropdown */}
+                            <div className="relative">
+                                <ToolbarButton 
+                                    icon={<div className="flex items-center gap-1"><span className="text-xs font-bold whitespace-nowrap">{currentFont.name}</span><FaChevronDown size={8} /></div>}
+                                    onClick={() => setActivePopup(activePopup === 'font' ? null : 'font')}
+                                />
+                                {activePopup === 'font' && (
+                                    <div className="absolute top-full left-0 mt-2 p-1 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl shadow-2xl z-50 w-40 backdrop-blur-md">
+                                        {fonts.map((font) => (
+                                            <button
+                                                key={font.value}
+                                                onClick={() => {
+                                                    execCmd('fontName', font.value);
+                                                    setCurrentFont(font);
+                                                    setActivePopup(null);
+                                                }}
+                                                className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded transition-colors"
+                                                style={{ fontFamily: font.value }}
+                                            >
+                                                {font.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                             <div className="w-px h-4 bg-gray-200 dark:bg-white/10 mx-1 flex-shrink-0"></div>
                             
                             {/* Basic Formatting */}
@@ -225,8 +324,17 @@ const StudyNotes: React.FC = () => {
                             {/* Actions */}
                             <ToolbarButton icon={<FaEraser size={12} />} command="removeFormat" />
                             <button 
+                                onClick={handleSave}
+                                disabled={isSaving}
+                                className="p-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded flex-shrink-0 transition-colors ml-auto flex items-center gap-2 disabled:opacity-50"
+                                title="Save Notes"
+                            >
+                                <FaSave size={12} className={isSaving ? 'animate-spin' : ''} />
+                                <span className="text-xs font-bold">{isSaving ? 'Saving...' : 'Save'}</span>
+                            </button>
+                            <button 
                                 onClick={handleExportPdf}
-                                className="p-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded flex-shrink-0 transition-colors ml-auto flex items-center gap-2"
+                                className="p-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded flex-shrink-0 transition-colors flex items-center gap-2"
                                 title="Export PDF"
                             >
                                 <FaFilePdf size={12} />
@@ -267,7 +375,7 @@ const StudyNotes: React.FC = () => {
             </div>
 
             {/* Scrollable Content */}
-            <div className="h-full overflow-y-auto px-8 pb-8 pt-24 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-800 scrollbar-track-transparent">
+            <div className="h-full overflow-y-auto px-8 pb-8 pt-24 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-800 scrollbar-track-transparent overscroll-contain">
                 <div className="max-w-3xl mx-auto w-full min-h-full">
                     {isGenerating ? (
                         <div className="flex flex-col items-center justify-center h-full pt-20">
@@ -306,50 +414,11 @@ const StudyNotes: React.FC = () => {
                     ) : (
                         <div 
                             ref={editorRef}
-                            className="prose prose-gray dark:prose-invert max-w-none focus:outline-none pb-20"
-                            // contentEditable
-                            // suppressContentEditableWarning
-                        >
-                            {notesContent ? (
-                                <ReactMarkdown 
-                                    remarkPlugins={[remarkGfm]} 
-                                    rehypePlugins={[rehypeRaw]}
-                                    components={{
-                                        h1: ({node, ...props}) => <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4 mt-6 border-b border-gray-200 dark:border-gray-700 pb-2" {...props} />,
-                                        h2: ({node, ...props}) => <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-3 mt-5" {...props} />,
-                                        h3: ({node, ...props}) => <h3 className="text-xl font-medium text-gray-800 dark:text-gray-200 mb-2 mt-4" {...props} />,
-                                        ul: ({node, ...props}) => <ul className="list-disc pl-6 space-y-2 text-gray-700 dark:text-gray-300" {...props} />,
-                                        ol: ({node, ...props}) => <ol className="list-decimal pl-6 space-y-2 text-gray-700 dark:text-gray-300" {...props} />,
-                                        li: ({node, ...props}) => <li className="pl-1" {...props} />,
-                                        blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-indigo-500 pl-4 italic text-gray-600 dark:text-gray-400 my-4" {...props} />,
-                                        table: ({node, ...props}) => <div className="overflow-x-auto my-6"><table className="min-w-full divide-y divide-gray-300 dark:divide-gray-700 border border-gray-300 dark:border-gray-700 rounded-lg" {...props} /></div>,
-                                        thead: ({node, ...props}) => <thead className="bg-gray-100 dark:bg-gray-800" {...props} />,
-                                        th: ({node, ...props}) => <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider border-b border-gray-300 dark:border-gray-700" {...props} />,
-                                        td: ({node, ...props}) => <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 border-b border-gray-300 dark:border-gray-700" {...props} />,
-                                        a: ({node, ...props}) => <a className="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 underline" {...props} />,
-                                        code: ({node, className, children, ...props}) => {
-                                            const match = /language-(\w+)/.exec(className || '');
-                                            return !match ? (
-                                                <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm text-indigo-600 dark:text-indigo-300" {...props}>
-                                                    {children}
-                                                </code>
-                                            ) : (
-                                                <code className={className} {...props}>
-                                                    {children}
-                                                </code>
-                                            );
-                                        }
-                                    }}
-                                >
-                                    {notesContent}
-                                </ReactMarkdown>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center py-20 text-gray-500">
-                                    <FaBook className="text-4xl mb-4 opacity-50" />
-                                    <p className="text-lg">No notes content available.</p>
-                                </div>
-                            )}
-                        </div>
+                            className="prose prose-gray dark:prose-invert max-w-none focus:outline-none pb-20 min-h-[300px]"
+                            contentEditable={true}
+                            suppressContentEditableWarning={true}
+                            dangerouslySetInnerHTML={{ __html: notesContent }}
+                        />
                     )}
                 </div>
             </div>

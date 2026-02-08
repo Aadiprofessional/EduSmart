@@ -126,12 +126,10 @@ export const ProStatusProvider: React.FC<{ children: ReactNode }> = ({ children 
       }
 
       // 2. Fetch Active Addons
-      const { data: addonsData, error: addonsError } = await supabase
+      // We fetch addons and plans separately to avoid foreign key relationship errors (PGRST200)
+      const { data: rawAddonsData, error: addonsError } = await supabase
         .from('user_addons')
-        .select(`
-          *,
-          addon_plans (*)
-        `)
+        .select('*')
         .eq('user_id', user.id)
         .eq('status', 'active');
 
@@ -139,7 +137,36 @@ export const ProStatusProvider: React.FC<{ children: ReactNode }> = ({ children 
         console.error('Error fetching addons:', addonsError);
       }
 
-      const activeAddons = addonsData || [];
+      let activeAddons: any[] = rawAddonsData || [];
+
+      // Manual join with addon_plans if we have active addons
+      if (activeAddons.length > 0) {
+        try {
+          const addonIds = activeAddons.map((addon: any) => addon.addon_id).filter(Boolean);
+          
+          if (addonIds.length > 0) {
+            const { data: plansData, error: plansError } = await supabase
+              .from('addon_plans')
+              .select('*')
+              .in('id', addonIds);
+              
+            if (plansError) {
+              console.error('Error fetching addon plans for join:', plansError);
+            } else if (plansData) {
+              // Attach plan details to each addon
+              activeAddons = activeAddons.map((addon: any) => {
+                const plan = plansData.find((p: any) => p.id === addon.addon_id);
+                return {
+                  ...addon,
+                  addon_plans: plan || null
+                };
+              });
+            }
+          }
+        } catch (joinError) {
+          console.error('Error performing manual join for addons:', joinError);
+        }
+      }
       const subscription = subscriptionData as any; // Cast to avoid strict type checks on join
 
       // Calculate totals

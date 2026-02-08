@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
   FaArrowLeft, 
@@ -17,7 +17,8 @@ import {
   FaMicrophone,
   FaProjectDiagram,
   FaBars,
-  FaTimes
+    FaTimes,
+    FaCommentDots
 } from 'react-icons/fa';
 import { useAuth } from '../utils/AuthContext';
 
@@ -44,22 +45,22 @@ interface StudySidebarProps {
     onClose: () => void;
 }
 
+const allMethods = [
+    { id: 'notes', label: 'Notes', icon: <FaBook />, key: 'notes' },
+    { id: 'multiple-choice', label: 'Multiple Choice', icon: <FaListUl />, key: 'multiple_choice' },
+    { id: 'flashcards', label: 'Flashcards', icon: <FaLayerGroup />, key: 'flashcards' },
+    { id: 'podcast', label: 'Podcast', icon: <FaPodcast />, key: 'podcast' },
+    { id: 'speech-to-text', label: 'Speech to Text', icon: <FaMicrophone />, key: 'speech_to_text' },
+    { id: 'mindmap', label: 'Mindmap', icon: <FaProjectDiagram />, key: 'mindmap' },
+    { id: 'fill-blanks', label: 'Fill in the Blanks', icon: <FaEdit />, key: 'fill_in_the_blanks' },
+    { id: 'written-tests', label: 'Written Test', icon: <FaPencilAlt />, key: 'written_tests' },
+    { id: 'tutor-lesson', label: 'Tutor Lesson', icon: <FaGraduationCap />, key: 'tutor_lesson' },
+    { id: 'content', label: 'Content', icon: <FaFileAlt />, key: 'content' },
+];
+
 const StudySidebar: React.FC<StudySidebarProps> = ({ activeMethod, onSelectMethod, allowedMethods, isOpen, onClose }) => {
     const navigate = useNavigate();
     const { user } = useAuth();
-
-    const allMethods = [
-        { id: 'notes', label: 'Notes', icon: <FaBook />, key: 'notes' },
-        { id: 'multiple-choice', label: 'Multiple Choice', icon: <FaListUl />, key: 'multiple_choice' },
-        { id: 'flashcards', label: 'Flashcards', icon: <FaLayerGroup />, key: 'flashcards' },
-        { id: 'podcast', label: 'Podcast', icon: <FaPodcast />, key: 'podcast' },
-        { id: 'speech-to-text', label: 'Speech to Text', icon: <FaMicrophone />, key: 'speech_to_text' },
-        { id: 'mindmap', label: 'Mindmap', icon: <FaProjectDiagram />, key: 'mindmap' },
-        { id: 'fill-blanks', label: 'Fill in the Blanks', icon: <FaEdit />, key: 'fill_in_the_blanks' },
-        { id: 'written-tests', label: 'Written Test', icon: <FaPencilAlt />, key: 'written_tests' },
-        { id: 'tutor-lesson', label: 'Tutor Lesson', icon: <FaGraduationCap />, key: 'tutor_lesson' },
-        { id: 'content', label: 'Content', icon: <FaFileAlt />, key: 'content' },
-    ];
 
     const methods = allMethods.filter(method => {
         if (!allowedMethods) return true; 
@@ -144,9 +145,108 @@ const StudyMaterialPage: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const studySetData = location.state?.studySetData;
-    const [activeMethod, setActiveMethod] = useState('notes');
+    const [activeMethod, setActiveMethod] = useState(() => {
+        if (studySetData?.document_type === 'audio' || studySetData?.document_type === 'youtube' || studySetData?.document_type === 'video') {
+            return 'speech-to-text';
+        }
+        return 'notes';
+    });
     const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024);
     const [isRightPanelOpen, setIsRightPanelOpen] = useState(window.innerWidth >= 1280);
+    const [chatAttachment, setChatAttachment] = useState<{ type: 'text', content: string, source: string } | null>(null);
+    const [selectionButton, setSelectionButton] = useState<{ x: number, y: number, text: string, source: string } | null>(null);
+
+    // Helper to get source label
+    const getSourceLabel = (methodId: string) => {
+        const method = allMethods.find(m => m.id === methodId);
+        return method ? method.label : 'Study Material';
+    };
+
+    // Handle text selection
+    useEffect(() => {
+        const handleSelectionChange = () => {
+            // Skip if forbidden methods
+            if (['flashcards', 'multiple-choice'].includes(activeMethod)) {
+                setSelectionButton(null);
+                return;
+            }
+
+            const selection = window.getSelection();
+            if (!selection || selection.isCollapsed || !selection.toString().trim()) {
+                setSelectionButton(null);
+                return;
+            }
+
+            // Check if selection is inside the main content area
+            const anchorNode = selection.anchorNode;
+            const focusNode = selection.focusNode;
+            
+            const isInsideMain = (node: Node | null) => {
+                if (!node) return false;
+                const element = node.nodeType === 1 ? node as Element : node.parentElement;
+                return element?.closest('main') !== null;
+            };
+
+            if (!isInsideMain(anchorNode) || !isInsideMain(focusNode)) {
+                setSelectionButton(null);
+                return;
+            }
+
+            const text = selection.toString().trim();
+            if (text.length > 0) {
+                const range = selection.getRangeAt(0);
+                const rect = range.getBoundingClientRect();
+                
+                // Show button above the selection
+                setSelectionButton({
+                    x: rect.left + (rect.width / 2),
+                    y: rect.top - 50, // Position above selection
+                    text,
+                    source: getSourceLabel(activeMethod)
+                });
+            }
+        };
+
+        document.addEventListener('mouseup', handleSelectionChange);
+        document.addEventListener('keyup', handleSelectionChange);
+        
+        return () => {
+            document.removeEventListener('mouseup', handleSelectionChange);
+            document.removeEventListener('keyup', handleSelectionChange);
+        };
+    }, [activeMethod]);
+
+    // Add to Chat Helper
+    const addToChat = (text: string, source: string = 'Study Material') => {
+        setChatAttachment({ type: 'text', content: text, source });
+        setSelectionButton(null);
+        setIsRightPanelOpen(true);
+        // Clear selection
+        window.getSelection()?.removeAllRanges();
+    };
+
+    // Handle Command+U
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'u') {
+                e.preventDefault();
+                
+                // Skip if forbidden methods
+                if (['flashcards', 'multiple-choice'].includes(activeMethod)) return;
+
+                const selection = window.getSelection();
+                if (selection && !selection.isCollapsed) {
+                    const text = selection.toString().trim();
+                    if (text) {
+                        addToChat(text, getSourceLabel(activeMethod));
+                    }
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [activeMethod]);
 
     // Handle resize
     useEffect(() => {
@@ -169,6 +269,22 @@ const StudyMaterialPage: React.FC = () => {
 
     // Mock Content
     const title = studySetData?.title || "System Architecture Diagram"; // Use title from data if available
+
+    const methods = allMethods.filter(method => {
+        if (!studySetData) return true; 
+        if (method.id === 'content') return true; 
+        return studySetData[method.key];
+    });
+
+    // Scroll active method into view on mobile
+    useEffect(() => {
+        if (window.innerWidth < 1024) {
+            const activeEl = document.getElementById(`mobile-nav-${activeMethod}`);
+            if (activeEl) {
+                activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
+        }
+    }, [activeMethod]);
 
     // If we have studySetData, ensure the activeMethod is one of the allowed ones
     useEffect(() => {
@@ -213,19 +329,19 @@ const StudyMaterialPage: React.FC = () => {
             case 'notes':
                 return <StudyNotes />;
             case 'multiple-choice':
-                return <StudyMultipleChoice />;
+                return <StudyMultipleChoice onDiscuss={(text) => addToChat(text, 'Multiple Choice')} />;
             case 'flashcards':
-                return <StudyFlashcards />;
+                return <StudyFlashcards onDiscuss={(text) => addToChat(text, 'Flashcard')} />;
             case 'podcast':
-                return <StudyPodcast />;
+                return <StudyPodcast onDiscuss={(text) => addToChat(text, 'Podcast')} />;
             case 'speech-to-text':
-                return <StudySpeechToText />;
+                return <StudySpeechToText onDiscuss={(text) => addToChat(text, 'Speech to Text')} documentType={studySetData?.document_type} />;
             case 'mindmap':
                 return <StudyMindmap />;
             case 'fill-blanks':
-                return <StudyFillInBlanks />;
+                return <StudyFillInBlanks onDiscuss={(text) => addToChat(text, 'Fill in the Blanks')} />;
             case 'written-tests':
-                return <StudyWrittenTest />;
+                return <StudyWrittenTest onDiscuss={(text) => addToChat(text, 'Written Test')} />;
             case 'tutor-lesson':
                 return <StudyTutorLesson />;
             case 'content':
@@ -240,7 +356,7 @@ const StudyMaterialPage: React.FC = () => {
     };
 
     return (
-        <div className="h-screen bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-white flex font-sans overflow-hidden relative">
+        <div className="h-[100dvh] bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-white flex font-sans overflow-hidden relative">
             {/* Mobile Overlays */}
             {(isSidebarOpen && window.innerWidth < 1024) && (
                 <div 
@@ -271,7 +387,7 @@ const StudyMaterialPage: React.FC = () => {
                         {!isSidebarOpen && (
                             <button 
                                 onClick={() => setIsSidebarOpen(true)}
-                                className="p-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-white/5"
+                                className="hidden lg:block p-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-white/5"
                             >
                                 <FaBars size={18} />
                             </button>
@@ -284,15 +400,7 @@ const StudyMaterialPage: React.FC = () => {
                     </div>
                     
                     <div className="flex items-center gap-2 md:gap-4">
-                         <button className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
-                             <span className="w-4 h-4 rounded border border-gray-400 dark:border-gray-600 flex items-center justify-center"><span className="text-[10px]">T</span></span>
-                             <span className="hidden sm:inline">Filter by Topic</span>
-                         </button>
-                         <button className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
-                             <FaPencilAlt size={12} />
-                             <span className="hidden sm:inline">Edit Cards</span>
-                         </button>
-                         
+                        {/* Buttons removed */}
                          {/* Right Panel Toggle */}
                          {!isRightPanelOpen && (
                             <button 
@@ -306,8 +414,29 @@ const StudyMaterialPage: React.FC = () => {
                     </div>
                 </div>
 
+                {/* Mobile Navigation */}
+                <div className="lg:hidden bg-white dark:bg-[#111111] border-b border-gray-200 dark:border-white/5 overflow-x-auto no-scrollbar">
+                    <div className="flex items-center px-4 py-2 gap-2 min-w-max">
+                        {methods.map((method) => (
+                            <button
+                                key={method.id}
+                                id={`mobile-nav-${method.id}`}
+                                onClick={() => setActiveMethod(method.id)}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
+                                    activeMethod === method.id 
+                                    ? 'bg-indigo-600 text-white shadow-sm' 
+                                    : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'
+                                }`}
+                            >
+                                <span>{method.icon}</span>
+                                <span>{method.label}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
                 {/* Content Area */}
-                <div className={`flex-1 relative bg-gray-50 dark:bg-[#111111] ${activeMethod === 'notes' ? 'flex flex-col overflow-hidden' : 'overflow-y-auto p-4 md:p-8 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-800 scrollbar-track-transparent'}`}>
+                <div className={`flex-1 relative bg-gray-50 dark:bg-[#111111] ${['notes', 'podcast', 'speech-to-text'].includes(activeMethod) ? 'flex flex-col overflow-hidden' : 'overflow-y-auto p-4 md:p-8 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-800 scrollbar-track-transparent'}`}>
                     {renderContent()}
                 </div>
             </main>
@@ -327,9 +456,36 @@ const StudyMaterialPage: React.FC = () => {
                     >
                         <FaTimes size={16} />
                     </button>
-                    <StudyRightPanel activeMethod={activeMethod} />
+                    <StudyRightPanel 
+                        activeMethod={activeMethod} 
+                        documentId={id} 
+                        attachment={chatAttachment}
+                        onClearAttachment={() => setChatAttachment(null)}
+                    />
                 </div>
             </div>
+
+            {/* Floating Add to Chat Button */}
+            {selectionButton && (
+                <button
+                    style={{
+                        position: 'fixed',
+                        left: selectionButton.x,
+                        top: selectionButton.y,
+                        transform: 'translate(-50%, 0)',
+                        zIndex: 100
+                    }}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        addToChat(selectionButton.text, selectionButton.source);
+                    }}
+                    className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-indigo-700 transition-all animate-in fade-in zoom-in duration-200"
+                >
+                    <FaCommentDots />
+                    <span className="text-sm font-medium">Add to Chat</span>
+                    <span className="text-xs opacity-75 bg-indigo-800 px-1.5 py-0.5 rounded ml-1">⌘U</span>
+                </button>
+            )}
         </div>
     );
 };
