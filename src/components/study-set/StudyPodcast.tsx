@@ -7,6 +7,10 @@ import {
     FaVolumeUp, FaDownload, FaMagic, FaRedo, FaCommentDots 
 } from 'react-icons/fa';
 import { Skeleton } from '../ui/Skeleton';
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css'; // Ensure katex styles are available
 
 interface PodcastSegment {
     text: string;
@@ -38,6 +42,39 @@ const StudyPodcast: React.FC<StudyPodcastProps> = ({ onDiscuss }) => {
     const isUserScrolling = useRef(false);
     const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
     const isAutoScrolling = useRef(false);
+
+    // Preprocess LaTeX to convert various formats to react-markdown compatible format
+    const preprocessLaTeX = (text: string) => {
+        if (typeof text !== 'string') return '';
+        
+        // 1. Convert explicit delimiters
+        let processed = text
+            .replace(/\\\[([\s\S]*?)\\\]/g, (_, eq) => `$$${eq}$$`)
+            .replace(/\\\(([\s\S]*?)\\\)/g, (_, eq) => `$${eq}$`)
+            .replace(/\[\s*(\\frac|\\boxed|\\begin|\\sum|\\int|\\partial|\\sqrt|\\mathbf|\\mathrm|\\mathcal|\\mathscr|\\mathfrak|\\mathbb|\\sin|\\cos|\\tan)([\s\S]*?)\]/g, (match, cmd, rest) => `$$${cmd}${rest}$$`);
+
+        // 2. Smartly wrap bare math expressions
+        // Match sequences of non-whitespace characters OR brace-enclosed groups
+        // This prevents splitting "m^{-2 \times 6}" at the space inside the braces
+        return processed.replace(/((?:[^\s{]|\{[^}]*\})+)/g, (word) => {
+             // Check if 'word' looks like math and isn't already wrapped
+             if (word.includes('$')) return word;
+             
+             // Heuristic: contains ^, \, or ( _ AND { )
+             const isMath = word.includes('^') || word.includes('\\') || (word.includes('_') && word.includes('{'));
+             
+             if (isMath) {
+                 // Handle trailing punctuation
+                 const match = word.match(/^(.+?)([.,;:]?)$/);
+                 if (match) {
+                     const [_, core, punct] = match;
+                     return `$${core}$${punct}`;
+                 }
+                 return `$${word}$`;
+             }
+             return word;
+        });
+    };
 
     // Scroll listener for compact mode
     useEffect(() => {
@@ -99,9 +136,9 @@ const StudyPodcast: React.FC<StudyPodcastProps> = ({ onDiscuss }) => {
                     .select('podcast_data, audio_url')
                     .eq('document_id', id)
                     .eq('uid', user.id)
-                    .single();
+                    .maybeSingle();
 
-                if (error && error.code !== 'PGRST116') {
+                if (error) {
                     console.error('Error fetching data:', error);
                 }
 
@@ -456,7 +493,14 @@ const StudyPodcast: React.FC<StudyPodcastProps> = ({ onDiscuss }) => {
                                         }
                                     }}
                                 >
-                                    {item.text}
+                                    <div className="prose dark:prose-invert max-w-none prose-p:my-0 prose-headings:my-2">
+                                        <ReactMarkdown
+                                            remarkPlugins={[remarkMath]}
+                                            rehypePlugins={[rehypeKatex]}
+                                        >
+                                            {preprocessLaTeX(item.text)}
+                                        </ReactMarkdown>
+                                    </div>
                                     
                                     {isActive && onDiscuss && (
                                         <button

@@ -17,7 +17,7 @@ const BuySubscriptionPage: React.FC = () => {
   const [loading, setLoading] = useState(!plan);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState('TEST_CARD');
+  const [paymentMethod, setPaymentMethod] = useState('STRIPE');
 
   useEffect(() => {
     // If we don't have the plan from navigation state, fetch it
@@ -57,6 +57,26 @@ const BuySubscriptionPage: React.FC = () => {
     setError(null);
 
     try {
+      if (paymentMethod === 'STRIPE') {
+        const origin = window.location.origin;
+        const successUrl = `${origin}/thank-you`;
+        const cancelUrl = `${origin}/pricing`;
+
+        const response = await subscriptionAPI.createStripeCheckoutSession(
+          plan.id,
+          successUrl,
+          cancelUrl,
+          session
+        );
+
+        if (response.success && response.data?.url) {
+          window.location.href = response.data.url;
+          return;
+        } else {
+          throw new Error(response.error || 'Failed to create Stripe checkout session');
+        }
+      }
+
       const transactionId = `txn_manual_${Date.now()}`;
       const amount = plan.price;
       const uid = user.id;
@@ -194,28 +214,17 @@ const BuySubscriptionPage: React.FC = () => {
                   Payment Method
                 </h3>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <button
-                    onClick={() => setPaymentMethod('TEST_CARD')}
+                    onClick={() => setPaymentMethod('STRIPE')}
                     className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-2 ${
-                      paymentMethod === 'TEST_CARD'
+                      paymentMethod === 'STRIPE'
                         ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
                         : 'border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20'
                     }`}
                   >
-                    <span className="font-bold">Test Card</span>
-                    <span className="text-xs text-center opacity-75">Instant Approval</span>
-                  </button>
-                  <button
-                    onClick={() => setPaymentMethod('MANUAL_TRANSFER')}
-                    className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-2 ${
-                      paymentMethod === 'MANUAL_TRANSFER'
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
-                        : 'border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20'
-                    }`}
-                  >
-                    <span className="font-bold">Manual</span>
-                    <span className="text-xs text-center opacity-75">Bank Transfer</span>
+                    <span className="font-bold">Stripe</span>
+                    <span className="text-xs text-center opacity-75">Credit Card</span>
                   </button>
                 </div>
               </div>
@@ -227,10 +236,6 @@ const BuySubscriptionPage: React.FC = () => {
                   <div className="flex justify-between">
                     <span className="text-gray-500 dark:text-gray-400">Email</span>
                     <span className="font-medium">{user?.email}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">User ID</span>
-                    <span className="font-mono text-xs opacity-75">{user?.id}</span>
                   </div>
                 </div>
               </div>

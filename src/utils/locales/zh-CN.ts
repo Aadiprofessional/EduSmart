@@ -773,6 +773,15 @@ export const zhCN = {
     aiImport: "AI导入",
   
     aiRoadmap: "AI路线图",
+    priorityMatrix: "优先级矩阵",
+    timeline: "时间轴",
+    applicationStrategy: "申请策略",
+    studyOptimization: "学习优化",
+    deadlineManagement: "截止日期管理",
+    workloadDistribution: "工作量分配",
+    riskMitigation: "风险缓解",
+    progressTracking: "进度跟踪",
+    reminderManagement: "提醒管理",
     priorityText: "{priority}优先级",
 
     // Additional missing keys for Check Mistakes Component

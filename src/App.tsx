@@ -15,7 +15,6 @@ import NotFound from './pages/NotFound';
 import Resources from './pages/Resources';
 import Blog from './pages/Blog';
 import Scholarships from './pages/Scholarships';
-import ApplicationTracker from './pages/ApplicationTracker';
 import Signup from './pages/Signup';
 import ChatBotPage from './pages/ChatBot';
 import AiStudy from './pages/AiStudy';
@@ -37,6 +36,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import FAQ from './pages/FAQ';
 import CookiesPolicy from './pages/CookiesPolicy';
 import MathTestPage from './pages/MathTestPage';
+import TimerPage from './pages/TimerPage';
 
 // Components
 import ErrorNotification from './components/ErrorNotification';
@@ -172,11 +172,6 @@ function App() {
                           <Profile />
                         </ProtectedRoute>
                       } />
-                      <Route path="/application-tracker" element={
-                        <ProtectedRoute>
-                          <ApplicationTracker />
-                        </ProtectedRoute>
-                      } />
                       <Route path="/chatbot" element={<ChatBotPage />} />
                       <Route path="/chatbot/:chatId" element={<ChatBotPage />} />
                       <Route path="/thank-you" element={<ThankYou />} />
@@ -185,6 +180,7 @@ function App() {
                       <Route path="/faq" element={<FAQ />} />
                       <Route path="/cookies" element={<CookiesPolicy />} />
                       <Route path="/math-test" element={<MathTestPage />} />
+                      <Route path="/timer" element={<TimerPage />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                         </div>

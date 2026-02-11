@@ -219,6 +219,14 @@ export const subscriptionAPI = {
     return apiCall('POST', '/api/subscriptions/checkout', { planId }, session);
   },
 
+  createStripeCheckoutSession: async (planId: string, successUrl: string, cancelUrl: string, session?: Session | null): Promise<{ success: boolean; data?: { url: string; sessionId: string }; error?: string }> => {
+    return apiCall('POST', '/api/stripe/create-checkout-session', { 
+      planId,
+      successUrl,
+      cancelUrl
+    }, session);
+  },
+
   // Authenticated endpoints
   getStatus: async (session?: Session | null): Promise<{ success: boolean; data?: SubscriptionStatus; error?: string }> => {
     return apiCall('GET', '/api/subscriptions/status', null, session);

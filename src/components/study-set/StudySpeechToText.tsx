@@ -5,6 +5,10 @@ import { supabase } from '../../utils/supabase';
 import { FaPlay, FaPause, FaForward, FaBackward, FaDownload, FaMicrophone, FaVideo, FaCommentDots, FaExpand, FaCompress, FaArrowsAlt } from 'react-icons/fa';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { Skeleton } from '../ui/Skeleton';
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 
 interface Word {
     start: number;
@@ -385,6 +389,39 @@ const StudySpeechToText: React.FC<StudySpeechToTextProps> = ({ onDiscuss, docume
         const newTime = percent * duration;
         mediaRef.current.currentTime = newTime;
         setCurrentTime(newTime);
+    };
+
+    // Preprocess LaTeX to convert OpenAI format to react-markdown format
+    const preprocessLaTeX = (text: string) => {
+        if (typeof text !== 'string') return '';
+        
+        // 1. Convert explicit delimiters
+        let processed = text
+            .replace(/\\\[([\s\S]*?)\\\]/g, (_, eq) => `$$${eq}$$`)
+            .replace(/\\\(([\s\S]*?)\\\)/g, (_, eq) => `$${eq}$`)
+            .replace(/\[\s*(\\frac|\\boxed|\\begin|\\sum|\\int|\\partial|\\sqrt|\\mathbf|\\mathrm|\\mathcal|\\mathscr|\\mathfrak|\\mathbb|\\sin|\\cos|\\tan)([\s\S]*?)\]/g, (match, cmd, rest) => `$$${cmd}${rest}$$`);
+
+        // 2. Identify and wrap bare math words
+        return processed.split(/(\s+)/).map(part => {
+             if (part.trim() === '') return part; // Preserve whitespace
+             
+             // Check if it's already wrapped
+             if (part.includes('$')) return part;
+
+             // Heuristic: contains ^ or \ or ( _ AND { )
+             const isMath = part.includes('^') || part.includes('\\') || (part.includes('_') && part.includes('{'));
+             
+             if (isMath) {
+                 // Handle trailing punctuation
+                 const match = part.match(/^(.+?)([.,;:]?)$/);
+                 if (match) {
+                     const [_, core, punct] = match;
+                     return `$${core}$${punct}`;
+                 }
+                 return `$${part}$`;
+             }
+             return part;
+        }).join('');
     };
 
     // Group words into 30s paragraphs
@@ -971,25 +1008,25 @@ const StudySpeechToText: React.FC<StudySpeechToTextProps> = ({ onDiscuss, docume
                                             <span className="max-w-0 overflow-hidden group-hover/btn:max-w-[120px] transition-all duration-300 whitespace-nowrap text-sm font-medium">Discuss with AI</span>
                                         </button>
                                     )}
-                                    {group.words.map((word, wordIndex) => {
-                                        const isActive = currentTime >= word.start && currentTime <= word.end;
-                                        return (
-                                            <span 
-                                                key={wordIndex}
-                                                className={`cursor-pointer transition-colors duration-200 inline-block mr-1 rounded px-0.5 -mx-0.5 ${
-                                                    isActive ? 'text-indigo-600 dark:text-[#c2410c] font-bold bg-indigo-100 dark:bg-[#c2410c]/10' : 'hover:text-gray-900 dark:hover:text-gray-200'
-                                                }`}
-                                                onClick={() => {
-                                                    if (mediaRef.current) {
-                                                        mediaRef.current.currentTime = word.start;
-                                                        if (!isPlaying) setIsPlaying(true);
-                                                    }
-                                                }}
-                                            >
-                                                {word.word}
-                                            </span>
-                                        );
-                                    })}
+                                    <div 
+                                        className="prose dark:prose-invert max-w-none prose-p:my-0 cursor-pointer"
+                                        onClick={() => {
+                                            if (mediaRef.current) {
+                                                mediaRef.current.currentTime = group.start;
+                                                if (!isPlaying) setIsPlaying(true);
+                                            }
+                                        }}
+                                    >
+                                        <ReactMarkdown
+                                            remarkPlugins={[remarkMath]}
+                                            rehypePlugins={[rehypeKatex]}
+                                            components={{
+                                                p: ({node, ...props}) => <span {...props} />
+                                            }}
+                                        >
+                                            {preprocessLaTeX(group.words.map(w => w.word).join(' '))}
+                                        </ReactMarkdown>
+                                    </div>
                                 </div>
                             </div>
                         );

@@ -14,6 +14,7 @@ const MatrixEduDashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const studySetListRef = useRef<HTMLDivElement>(null);
   
   // Modal States
   const [activeModal, setActiveModal] = useState<'upload' | 'paste' | 'record' | 'createFolder' | null>(null);
@@ -24,11 +25,21 @@ const MatrixEduDashboard: React.FC = () => {
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
       const scrollTop = e.currentTarget.scrollTop;
       
-      // Add hysteresis to prevent shaking
-      if (scrollTop > 10 && !isScrolled) {
-          setIsScrolled(true);
-      } else if (scrollTop < 5 && isScrolled) {
-          setIsScrolled(false);
+      // Check if study set list touches top border
+      if (studySetListRef.current) {
+          const containerTop = e.currentTarget.getBoundingClientRect().top;
+          const listTop = studySetListRef.current.getBoundingClientRect().top;
+          const relativeTop = listTop - containerTop;
+          
+          // Check if study set list touches top border (plus offset for sticky header)
+          const stickyHeaderHeight = 80; // Approximate height of sticky header
+          const threshold = stickyHeaderHeight + 20;
+          
+          if (relativeTop <= threshold && !isScrolled) {
+              setIsScrolled(true);
+          } else if (relativeTop > threshold && isScrolled) {
+              setIsScrolled(false);
+          }
       }
 
       const { scrollHeight, clientHeight } = e.currentTarget;
@@ -167,12 +178,12 @@ const MatrixEduDashboard: React.FC = () => {
             onScroll={handleScroll} 
             ref={scrollRef}
         >
-            {/* Sticky Header Section */}
-            <div className={`sticky top-0 z-30 transition-all duration-300 w-full ${isScrolled ? 'bg-white/95 dark:bg-[#111]/95 backdrop-blur-md shadow-sm border-b border-gray-200 dark:border-white/5 py-2' : 'bg-transparent py-4 md:py-8 lg:py-12'}`}>
-                <div className="max-w-4xl mx-auto px-4 md:px-8 lg:px-12 relative">
+            {/* Sticky Navigation Header */}
+            <div className={`sticky top-0 z-40 transition-all duration-300 w-full border-b ${isScrolled ? 'bg-white/95 dark:bg-[#111]/95 backdrop-blur-md border-gray-200 dark:border-white/5 py-2 shadow-sm' : 'bg-gray-50/95 dark:bg-[#111111]/95 border-transparent py-4'}`}>
+                <div className="w-full mx-auto px-4 md:px-8 lg:px-12 relative flex flex-col justify-center min-h-[60px]">
                     
-                    {/* Top Navigation Toggles + Logo */}
-                    <div className={`flex justify-between items-center ${isScrolled ? 'mb-2' : 'mb-4 md:mb-8'}`}>
+                    {/* Top Row: Nav Toggles + (Optional) Compact Actions */}
+                    <div className="flex justify-between items-center">
                         <div className="flex items-center gap-3">
                             {!isLeftSidebarOpen && (
                                 <button 
@@ -183,7 +194,7 @@ const MatrixEduDashboard: React.FC = () => {
                                 </button>
                             )}
                             
-                            {/* Desktop/Tablet Menu Trigger (Hidden on Mobile) */}
+                            {/* Desktop/Tablet Menu Trigger */}
                             {!isLeftSidebarOpen && (
                                 <button 
                                     onClick={() => setIsLeftSidebarOpen(true)} 
@@ -193,6 +204,19 @@ const MatrixEduDashboard: React.FC = () => {
                                 </button>
                             )}
                         </div>
+
+                        {/* Compact Action Cards (Visible only when scrolled) */}
+                        <div className={`flex-1 mx-4 transition-all duration-300 ${isScrolled ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none absolute left-0 right-0'}`}>
+                            {isScrolled && (
+                                <ActionCards 
+                                   onUpload={() => setActiveModal('upload')}
+                                   onPaste={() => setActiveModal('paste')}
+                                   onRecord={() => setActiveModal('record')}
+                                   isCompact={true}
+                                />
+                            )}
+                        </div>
+
                         <div className="">
                             {!isRightSidebarOpen && (
                                 <button onClick={() => setIsRightSidebarOpen(true)} className="flex items-center gap-2 px-3 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-none transition-colors">
@@ -202,25 +226,33 @@ const MatrixEduDashboard: React.FC = () => {
                             )}
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    {/* Header Title - Collapses on scroll */}
-                    <div className={`text-center transition-all duration-300 overflow-hidden ${isScrolled ? 'h-0 opacity-0 mb-0' : 'h-auto opacity-100 mb-8 md:mb-12 mt-4'}`}>
-                        <h1 className="text-2xl md:text-4xl font-bold mb-3 text-gray-900 dark:text-white">Hey {user?.email?.split('@')[0] || 'AI'}, what do you wanna master?</h1>
-                        <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 px-4">Upload anything and get interactive notes, flashcards, quizzes, and more</p>
-                    </div>
+            {/* Hero Section (Scrolls away) */}
+            <div className="w-full mx-auto px-4 md:px-8 lg:px-12 relative mb-8">
+                {/* Header Title */}
+                <div className={`text-center transition-all duration-300 overflow-hidden ${isScrolled ? 'opacity-0 h-0 margin-0' : 'opacity-100 h-auto mb-8 md:mb-12 mt-4'}`}>
+                    <h1 className="text-2xl md:text-4xl font-bold mb-3 text-gray-900 dark:text-white">Hey {user?.email?.split('@')[0] || 'AI'}, what do you wanna master?</h1>
+                    <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 px-4">Upload anything and get interactive notes, flashcards, quizzes, and more</p>
+                </div>
 
-                    {/* Action Cards */}
+                {/* Expanded Action Cards */}
+                <div className={`transition-all duration-300 ${isScrolled ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100 h-auto'}`}>
                     <ActionCards 
                        onUpload={() => setActiveModal('upload')}
                        onPaste={() => setActiveModal('paste')}
                        onRecord={() => setActiveModal('record')}
-                       isCompact={isScrolled}
+                       isCompact={false}
                     />
                 </div>
             </div>
 
             {/* Scrollable Study Sets Section */}
-            <div className="px-4 md:px-8 lg:px-12 pb-24 max-w-4xl mx-auto min-h-screen">
+            <div 
+                ref={studySetListRef}
+                className="px-4 md:px-8 lg:px-12 pb-24 w-full mx-auto min-h-screen"
+            >
                 <StudySetList 
                     studySets={studySets} 
                     onSetClick={(set: any) => {

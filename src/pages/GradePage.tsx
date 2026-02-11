@@ -58,6 +58,8 @@ interface DBChat {
   created_at: string;
   metadata: any;
   service_type?: string;
+  rubric_url?: string | null;
+  rubric_name?: string | null;
 }
 
 interface DBMessage {
@@ -604,6 +606,7 @@ const GradePage: React.FC = () => {
               chatid: currentChatId,
               subject: "Grade",
               url: fileUrl,
+              rubric_url: rubricUrl,
               attachments: [{
                 url: fileUrl,
                 fileName: fileToSend.name,
@@ -640,6 +643,7 @@ const GradePage: React.FC = () => {
               chatid: currentChatId,
               subject: "Grade",
               url: fileUrl,
+              rubric_url: rubricUrl,
               image_urls: formattedImageUrls,
               page_count: imageUrls.length,
               attachments: rubricUrl && manualRubric ? [{
@@ -663,6 +667,7 @@ const GradePage: React.FC = () => {
               chatid: currentChatId,
               subject: "Grade",
               url: fileUrl,
+              rubric_url: rubricUrl,
               attachments: [{
                 url: fileUrl,
                 fileName: fileToSend.name,
@@ -694,6 +699,7 @@ const GradePage: React.FC = () => {
             timestamp: timestamp,
             chatid: currentChatId,
             subject: "Grade",
+            rubric_url: rubricUrl,
             attachments: rubricUrl && manualRubric ? [{
                 url: rubricUrl,
                 fileName: manualRubric.name,
@@ -711,7 +717,9 @@ const GradePage: React.FC = () => {
             owner: user?.id,
             title: contentToSend.substring(0, 50) || (fileToSend ? fileToSend.name : 'New Grading'),
             metadata: { subject: "Grade" },
-            service_type: 'grade'
+            service_type: 'grade',
+            rubric_url: rubricUrl || null,
+            rubric_name: manualRubric?.name || null
           });
           if (!chatError) {
             fetchChatHistory();
@@ -989,7 +997,18 @@ const GradePage: React.FC = () => {
                                  <button className="flex items-center gap-2 text-sm text-gray-900 dark:text-white font-medium hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
                                      View Details <FaChevronRight size={10} />
                                  </button>
-                                 <span className="font-bold text-gray-400 dark:text-gray-500">--</span>
+                                 {item.rubric_url && (
+                                     <a 
+                                        href={item.rubric_url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="flex items-center gap-1 text-xs bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors border border-indigo-100 dark:border-indigo-500/20"
+                                     >
+                                        <FaFileAlt size={10} />
+                                        {item.rubric_name || 'Rubric'}
+                                     </a>
+                                 )}
                              </div>
                          </div>
                       ))}

@@ -875,6 +875,17 @@ export const zhTW = {
     aiStudyRoadmapGenerator: "AI學習路線圖生成器",
     analyzeWithAI: "AI分析",
     aiRoadmap: "AI路線圖",
+    priorityMatrix: "優先級矩陣",
+    timeline: "時間軸",
+    applicationStrategy: "申請策略",
+    studyOptimization: "學習優化",
+    deadlineManagement: "截止日期管理",
+    workloadDistribution: "工作量分配",
+    riskMitigation: "風險緩解",
+    progressTracking: "進度追蹤",
+    reminderManagement: "提醒管理",
+    expandAll: "全部展開",
+    collapseAll: "全部折疊",
     priorityText: "{priority}優先級",
     
     // Additional missing keys for Check Mistakes Component

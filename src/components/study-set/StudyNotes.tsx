@@ -63,9 +63,9 @@ const StudyNotes: React.FC = () => {
                     .select('notes_data')
                     .eq('document_id', id)
                     .eq('uid', user.id)
-                    .single();
+                    .maybeSingle();
 
-                if (error && error.code !== 'PGRST116') {
+                if (error) {
                     console.error('Error fetching data:', error);
                 }
 

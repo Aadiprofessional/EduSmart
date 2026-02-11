@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AiOutlineBulb, AiOutlineRobot, AiOutlineUp, AiOutlineDown } from 'react-icons/ai';
-import { FiCalendar, FiClock, FiCheck, FiPlus, FiEdit, FiTrash2, FiFilter, FiChevronLeft, FiChevronRight, FiUpload, FiBook, FiChevronUp, FiChevronDown } from 'react-icons/fi';
+import { AiOutlineBulb, AiOutlineRobot, AiOutlineUp, AiOutlineDown, AiOutlineLineChart } from 'react-icons/ai';
+import { FiCalendar, FiClock, FiCheck, FiPlus, FiEdit, FiTrash2, FiFilter, FiChevronLeft, FiChevronRight, FiUpload, FiBook, FiChevronUp, FiChevronDown, FiX, FiAlertTriangle, FiBell } from 'react-icons/fi';
 import { FaCalendarAlt, FaSort, FaSortAmountDown, FaTimes, FaBell, FaBrain } from 'react-icons/fa';
 import IconComponent from './IconComponent';
 import { useLanguage } from '../../utils/LanguageContext';
-import { useAppData, StudyTask, Application } from '../../utils/AppDataContext';
+import { useAppData, StudyTask } from '../../utils/AppDataContext';
 import { useNotification } from '../../utils/NotificationContext';
+import { useAuth } from '../../utils/AuthContext';
+import { supabase } from '../../utils/supabase';
+import * as echarts from 'echarts';
 
 interface StudyPlannerComponentProps {
   className?: string;
@@ -19,9 +22,10 @@ interface PortalModalProps {
   onClose: () => void;
   children: React.ReactNode;
   className?: string;
+  fullScreen?: boolean;
 }
 
-const PortalModal: React.FC<PortalModalProps> = ({ isOpen, onClose, children, className = '' }) => {
+const PortalModal: React.FC<PortalModalProps> = ({ isOpen, onClose, children, className = '', fullScreen = false }) => {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -67,8 +71,10 @@ const PortalModal: React.FC<PortalModalProps> = ({ isOpen, onClose, children, cl
           onClick={(e) => e.stopPropagation()}
           style={{
             position: 'relative',
-            maxWidth: '90vw',
-            maxHeight: '90vh'
+            maxWidth: fullScreen ? '100vw' : '90vw',
+            maxHeight: fullScreen ? '100vh' : '90vh',
+            width: fullScreen ? '100%' : undefined,
+            height: fullScreen ? '100%' : undefined
           }}
         >
           {children}
@@ -77,6 +83,51 @@ const PortalModal: React.FC<PortalModalProps> = ({ isOpen, onClose, children, cl
     </AnimatePresence>,
     document.body
   );
+};
+
+// Simple ECharts Wrapper
+const SimpleChart = ({ option, style, className, theme }: { option: any, style?: React.CSSProperties, className?: string, theme?: string }) => {
+  const chartRef = useRef<HTMLDivElement>(null);
+  const chartInstance = useRef<echarts.ECharts | null>(null);
+
+  useEffect(() => {
+    if (chartRef.current) {
+      // Dispose existing instance if it exists (to handle theme changes)
+      if (chartInstance.current) {
+        chartInstance.current.dispose();
+      }
+      // Initialize new instance
+      chartInstance.current = echarts.init(chartRef.current, theme);
+      chartInstance.current.setOption(option);
+    }
+
+    const handleResize = () => {
+      chartInstance.current?.resize();
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      chartInstance.current?.dispose();
+      chartInstance.current = null;
+    };
+  }, [theme]); // Re-initialize when theme changes
+
+  // Update options when data changes
+  useEffect(() => {
+    if (chartInstance.current) {
+      chartInstance.current.setOption(option);
+    }
+  }, [option]);
+
+  useEffect(() => {
+    if (chartInstance.current) {
+      chartInstance.current.resize();
+    }
+  }, [style, className]);
+
+  return <div ref={chartRef} style={style} className={className} />;
 };
 
 // Generate a proper UUID v4
@@ -92,7 +143,8 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
   const topRef = useRef<HTMLDivElement>(null);
   const { t } = useLanguage();
   const { showSuccess, showError, showWarning } = useNotification();
-  const { studyTasks, applications, addStudyTask, updateStudyTask, deleteStudyTask, updateApplication, setReminder, unsetReminder, refreshData, isLoading } = useAppData();
+  const { user } = useAuth();
+  const { studyTasks, addStudyTask, updateStudyTask, deleteStudyTask, setReminder, unsetReminder, refreshData, isLoading } = useAppData();
   
   const [newTask, setNewTask] = useState({
     task: '',
@@ -101,6 +153,25 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
     priority: 'medium' as 'low' | 'medium' | 'high',
     estimatedHours: 1
   });
+
+  // Dark mode detection for charts
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  useEffect(() => {
+    // Initial check
+    if (document.documentElement.classList.contains('dark')) {
+      setIsDarkMode(true);
+    }
+    // Observer for class changes on html element
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class') {
+          setIsDarkMode(document.documentElement.classList.contains('dark'));
+        }
+      });
+    });
+    observer.observe(document.documentElement, { attributes: true });
+    return () => observer.disconnect();
+  }, []);
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
@@ -122,7 +193,7 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
 
   // AI Timetable Import state
   const [showAIModal, setShowAIModal] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState<{ file: File; base64: string; extractedText: string } | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<{ file: File; base64: string; extractedText: string; imageUrl?: string } | null>(null);
   const [isProcessingAI, setIsProcessingAI] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [aiAnalysisResult, setAiAnalysisResult] = useState<any>(null);
@@ -135,15 +206,76 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
   });
   const [customPrompt, setCustomPrompt] = useState('');
   const [isGeneratingSuggestion, setIsGeneratingSuggestion] = useState(false);
+  const [showRoadmapResultModal, setShowRoadmapResultModal] = useState(false);
   const [aiSuggestionResult, setAiSuggestionResult] = useState<{
-    priorityMatrix?: Array<{category: string; tasks: Array<{name: string; urgency: string; importance: string}>}>;
-    timeline?: Array<{phase: string; duration: string; tasks: string[]; milestones: string[]}>;
-    applicationStrategy?: Array<{status: string; actions: string[]; timeline: string}>;
-    studyOptimization?: Array<{subject: string; strategy: string; timeAllocation: string; resources: string[]}>;
-    deadlineManagement?: Array<{deadline: string; type: string; priority: string; actions: string[]}>;
-    workloadDistribution?: Array<{week: string; studyHours: string; applicationHours: string; focus: string[]}>;
-    riskMitigation?: Array<{risk: string; impact: string; mitigation: string[]}>;
-    progressTracking?: Array<{milestone: string; deadline: string; criteria: string[]}>;
+    priorityMatrix?: Array<{
+      category: string; 
+      tasks: Array<{
+        name: string; 
+        urgency: string; 
+        importance: string;
+        hasReminder?: boolean;
+        daysUntilDue?: number;
+      }>
+    }>;
+    timeline?: Array<{
+      phase: string; 
+      duration: string; 
+      tasks: Array<{description: string; priority: string; hasReminder: boolean; source: string} | string>; 
+      milestones: Array<{description: string; date: string; type: string}>;
+      reminders?: Array<{date: string; task: string; type: string; description: string}>;
+    }>;
+    applicationStrategy?: Array<{
+      status: string; 
+      actions: Array<{description: string; priority: string; deadline: string} | string>; 
+      timeline: string;
+      reminders?: Array<{date: string; description: string}>;
+    }>;
+    studyOptimization?: Array<{
+      subject: string; 
+      timeAllocation: string; 
+      totalTasks?: number;
+      completedTasks?: number;
+      strategy: string; 
+      resources: string[];
+      upcomingDeadlines?: Array<{date: string; task: string; priority: string}>;
+    }>;
+    deadlineManagement?: Array<{
+      deadline: string; 
+      type: string; 
+      priority: string; 
+      university?: string;
+      subject?: string;
+      daysUntil?: number;
+      actions: string[];
+      reminders?: Array<{date: string; description: string}>;
+    }>;
+    workloadDistribution?: Array<{
+      week: string; 
+      studyHours: string; 
+      applicationHours: string; 
+      totalTasks?: number;
+      highPriorityTasks?: number;
+      focus: string[];
+      criticalDeadlines?: Array<{date: string; type: string; description: string}>;
+      reminders?: Array<{date: string; description: string}>;
+    }>;
+    riskMitigation?: Array<{
+      risk: string; 
+      impact: string; 
+      likelihood?: string;
+      mitigation: string[];
+      monitoringReminders?: Array<{date: string; description: string}>;
+    }>;
+    progressTracking?: Array<{
+      milestone: string; 
+      deadline: string; 
+      status?: string;
+      relatedTasks?: number;
+      criteria: string[];
+      reminders?: Array<{date: string; description: string}>;
+      dependencies?: Array<{task: string; status: string}>;
+    }>;
     rawText?: string;
     reminderManagement?: Array<{
       date: string;
@@ -158,51 +290,6 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
       }>;
     }>;
   }>({});
-
-  // Expanded sections state for roadmap modal
-  const [expandedSections, setExpandedSections] = useState<{
-    [key: string]: boolean;
-  }>({
-    priorityMatrix: true,
-    timeline: true,
-    applicationStrategy: false,
-    studyOptimization: false,
-    deadlineManagement: false,
-    workloadDistribution: false,
-    riskMitigation: false,
-    progressTracking: false,
-    comprehensiveAnalysis: true // Change to true to expand by default
-  });
-
-  // Toggle section expansion
-  const toggleSection = (sectionKey: string) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [sectionKey]: !prev[sectionKey]
-    }));
-  };
-
-  // Expand all sections
-  const expandAllSections = () => {
-    setExpandedSections(prev => {
-      const allExpanded = Object.keys(prev).reduce((acc, key) => {
-        acc[key] = true;
-        return acc;
-      }, {} as { [key: string]: boolean });
-      return allExpanded;
-    });
-  };
-
-  // Collapse all sections
-  const collapseAllSections = () => {
-    setExpandedSections(prev => {
-      const allCollapsed = Object.keys(prev).reduce((acc, key) => {
-        acc[key] = false;
-        return acc;
-      }, {} as { [key: string]: boolean });
-      return allCollapsed;
-    });
-  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -527,10 +614,6 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
   };
 
   // Get applications with reminders for calendar display
-  const getApplicationsWithReminders = () => {
-    return applications.filter(app => app.reminder);
-  };
-
   // Get unique subjects for filter
   const getUniqueSubjects = () => {
     return Array.from(new Set(studyTasks.map(task => task.subject)));
@@ -773,7 +856,7 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
 
     // Check file type (only images for now)
     if (!file.type.startsWith('image/')) {
-      showWarning('Please select an image file (PNG, JPG, JPEG, GIF). PDF support coming soon!');
+      showWarning('Please select an image file (PNG, JPG, JPEG, GIF). Only images are supported for now.');
       return;
     }
 
@@ -783,9 +866,36 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
       return;
     }
 
+    if (!user) {
+      showError('Please sign in to upload files.');
+      return;
+    }
+
     try {
       setIsUploading(true);
-      const extractedText = await handleFileUpload(file);
+
+      // 1. Upload to Supabase
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `${user.id}/ai-import/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('chat-attachments')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('chat-attachments')
+        .getPublicUrl(filePath);
+
+      let extractedText = '';
+      try {
+        extractedText = await handleFileUpload(file);
+      } catch (extractError) {
+        console.warn('Text extraction failed, but proceeding with image:', extractError);
+        // Continue without extracted text
+      }
       
       // Create base64 string for display
       const base64 = await new Promise<string>((resolve) => {
@@ -797,10 +907,11 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
       setUploadedFile({
         file,
         base64,
-        extractedText
+        extractedText,
+        imageUrl: publicUrl
       });
 
-      showSuccess('File uploaded and analyzed successfully!');
+      showSuccess('File uploaded successfully!');
 
     } catch (error) {
       console.error('Error processing file:', error);
@@ -810,14 +921,106 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
     }
   };
 
+  // Helper to save tasks to database
+  const saveTasksToDatabase = async (tasks: any[]) => {
+    let addedCount = 0;
+    const taskPromises = tasks.map(async (task: any) => {
+      if (task.title && task.dueDate) {
+        const newTask: StudyTask = {
+          id: generateUUID(),
+          task: task.title,
+          subject: task.subject || 'General',
+          date: task.dueDate,
+          priority: task.priority || 'medium',
+          completed: false,
+          estimatedHours: task.estimatedHours || 2,
+          source: 'study'
+        };
+        await addStudyTask(newTask);
+        addedCount++;
+      }
+    });
+    await Promise.all(taskPromises);
+    return addedCount;
+  };
+
   const processWithAI = async () => {
     if (!uploadedFile) return;
 
     try {
       setIsProcessingAI(true);
-      const analysis = await analyzeWithAI(uploadedFile.extractedText);
-      setAiAnalysisResult(analysis);
-      showSuccess(`AI found ${analysis.length} tasks in your timetable!`);
+
+      // Call Webhook if imageUrl is available
+      if (uploadedFile.imageUrl && user) {
+        const webhookUrl = 'https://n8n.matrixaiserver.com/webhook/b95c1be4-c8db-47a1-bcd3-a871834037f3';
+        
+        // Format timestamp as "YYYY-MM-DD HH:mm:ss.SSS"
+        const now = new Date();
+        const formattedTimestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}.${String(now.getMilliseconds()).padStart(3, '0')}`;
+
+        const payload = {
+          uid: user.id,
+          image_url: uploadedFile.imageUrl,
+          timestamp: formattedTimestamp
+        };
+
+        const response = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          throw new Error(`Webhook failed: ${response.status} ${response.statusText}`);
+        }
+
+        const rawData = await response.json();
+        console.log('Webhook response:', rawData);
+
+        let tasksData: any[] = [];
+        
+        // Handle nested format: [{ data: [...] }]
+        if (Array.isArray(rawData) && rawData.length > 0 && rawData[0]?.data && Array.isArray(rawData[0].data)) {
+            tasksData = rawData[0].data;
+        } 
+        // Handle object format: { data: [...] }
+        else if (rawData && typeof rawData === 'object' && rawData.data && Array.isArray(rawData.data)) {
+            tasksData = rawData.data;
+        }
+        // Handle flat format: [...]
+        else if (Array.isArray(rawData)) {
+            tasksData = rawData;
+        }
+
+        console.log('Parsed tasks data:', tasksData);
+
+        // Map webhook response to internal format
+        const analysis = tasksData.map((item: any) => ({
+          title: item.task_text,
+          subject: item.subject,
+          dueDate: item.date,
+          priority: item.priority?.toLowerCase() || 'medium',
+          estimatedHours: Number(item.estimated_hours) || 1
+        }));
+
+        // Auto-save tasks directly
+        const addedCount = await saveTasksToDatabase(analysis);
+        showSuccess(`Successfully added ${addedCount} tasks to your study planner!`);
+        setShowAIModal(false);
+        setUploadedFile(null);
+        setAiAnalysisResult(null);
+
+      } else {
+        // Fallback to local extraction
+        if (!uploadedFile.extractedText) {
+             throw new Error("No text extracted and no image URL available.");
+        }
+        const analysis = await analyzeWithAI(uploadedFile.extractedText);
+        setAiAnalysisResult(analysis);
+        showSuccess(`AI found ${analysis.length} tasks in your timetable!`);
+      }
     } catch (error) {
       console.error('Error processing with AI:', error);
       showError('Failed to analyze timetable with AI. Please try again.');
@@ -831,25 +1034,7 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
     if (!aiAnalysisResult) return;
 
     try {
-      let addedCount = 0;
-      const taskPromises = aiAnalysisResult.map(async (task: any) => {
-        if (task.title && task.dueDate) {
-          const newTask: StudyTask = {
-            id: generateUUID(),
-            task: task.title,
-            subject: task.subject || 'General',
-            date: task.dueDate,
-            priority: task.priority || 'medium',
-            completed: false,
-            estimatedHours: task.estimatedHours || 2,
-            source: 'study'
-          };
-          await addStudyTask(newTask);
-          addedCount++;
-        }
-      });
-
-      await Promise.all(taskPromises);
+      const addedCount = await saveTasksToDatabase(aiAnalysisResult);
       showSuccess(`Successfully added ${addedCount} tasks to your study planner!`);
       setShowAIModal(false);
       setUploadedFile(null);
@@ -874,24 +1059,20 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
       // Get all study tasks (including those synced from applications)
       let allStudyTasks = studyTasks;
       
-      // Filter by date range if specified
+      // Validate date range as it is required
+      if (!suggestionDateRange.startDate || !suggestionDateRange.endDate) {
+        showError('Please select a date range for the AI Roadmap.');
+        setIsGeneratingSuggestion(false);
+        return;
+      }
+      
+      // Filter by date range
       if (suggestionDateRange.startDate && suggestionDateRange.endDate) {
         allStudyTasks = studyTasks.filter(task => {
           const taskDate = new Date(task.date);
           const startDate = new Date(suggestionDateRange.startDate);
           const endDate = new Date(suggestionDateRange.endDate);
           return taskDate >= startDate && taskDate <= endDate;
-        });
-      }
-
-      // Get applications data for additional context
-      let relevantApplications = applications;
-      if (suggestionDateRange.startDate && suggestionDateRange.endDate) {
-        relevantApplications = applications.filter(app => {
-          const appDeadline = new Date(app.deadline);
-          const startDate = new Date(suggestionDateRange.startDate);
-          const endDate = new Date(suggestionDateRange.endDate);
-          return appDeadline >= startDate && appDeadline <= endDate;
         });
       }
 
@@ -911,29 +1092,6 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
         daysUntilDue: Math.ceil((new Date(task.date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
       }));
 
-      // Prepare application data for context
-      const applicationData = relevantApplications.map(app => ({
-        id: app.id,
-        university: app.university,
-        program: app.program,
-        country: app.country,
-        deadline: app.deadline,
-        status: app.status,
-        notes: app.notes,
-        daysUntilDeadline: Math.ceil((new Date(app.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)),
-        totalTasks: app.tasks.length,
-        completedTasks: app.tasks.filter(t => t.completed).length,
-        pendingTasks: app.tasks.filter(t => !t.completed).length,
-        hasReminder: !!app.reminder,
-        taskDetails: app.tasks.map(task => ({
-          id: task.id,
-          task: task.task,
-          completed: task.completed,
-          dueDate: task.dueDate,
-          hasReminder: !!task.reminder
-        }))
-      }));
-
       // Calculate comprehensive statistics
       const stats = {
         totalStudyTasks: allStudyTasks.length,
@@ -946,201 +1104,31 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
         overdueTasks: allStudyTasks.filter(t => new Date(t.date) < new Date() && !t.completed).length,
         tasksWithReminders: allStudyTasks.filter(t => t.reminder).length,
         applicationTasks: allStudyTasks.filter(task => task.source === 'application').length,
-        studyOnlyTasks: allStudyTasks.filter(task => task.source === 'study').length,
-        totalApplications: relevantApplications.length,
-        applicationsByStatus: {
-          planning: relevantApplications.filter(a => a.status === 'planning').length,
-          inProgress: relevantApplications.filter(a => a.status === 'in-progress').length,
-          submitted: relevantApplications.filter(a => a.status === 'submitted').length,
-          interview: relevantApplications.filter(a => a.status === 'interview').length,
-          accepted: relevantApplications.filter(a => a.status === 'accepted').length,
-          rejected: relevantApplications.filter(a => a.status === 'rejected').length,
-          waitlisted: relevantApplications.filter(a => a.status === 'waitlisted').length,
-        },
-        upcomingDeadlines: relevantApplications.filter(a => {
-          const daysUntil = Math.ceil((new Date(a.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-          return daysUntil <= 30 && daysUntil > 0;
-        }).length,
-        overdueApplications: relevantApplications.filter(a => new Date(a.deadline) < new Date() && a.status !== 'submitted').length
+        studyOnlyTasks: allStudyTasks.filter(task => task.source === 'study').length
       };
 
-      // Enhanced prompt for XML format response
-      const prompt = customPrompt.trim() || 
-        `Create a comprehensive study and application management roadmap that integrates both academic tasks and university application requirements. 
+      const now = new Date();
+      const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}.${String(now.getMilliseconds()).padStart(3, '0')}`;
 
-IMPORTANT: Return your response in the following XML format ONLY. Do not include any text outside the XML structure:
+      // Prepare payload for N8N webhook
+      const payload = {
+        uid: user?.id,
+        timestamp: timestamp,
+        custom_request: customPrompt || '',
+        date_range: {
+          start: suggestionDateRange.startDate || null,
+          end: suggestionDateRange.endDate || null
+        },
+        tasks: studyTaskData,
+        stats: stats
+      };
 
-<roadmap>
-  <priorityMatrix>
-    <category name="High Urgency, High Importance">
-      <task name="Task Name" urgency="high" importance="high" hasReminder="true" daysUntilDue="3"/>
-    </category>
-    <category name="High Urgency, Low Importance">
-      <task name="Task Name" urgency="high" importance="low" hasReminder="false" daysUntilDue="7"/>
-    </category>
-    <category name="Low Urgency, High Importance">
-      <task name="Task Name" urgency="low" importance="high" hasReminder="true" daysUntilDue="14"/>
-    </category>
-    <category name="Low Urgency, Low Importance">
-      <task name="Task Name" urgency="low" importance="low" hasReminder="false" daysUntilDue="21"/>
-    </category>
-  </priorityMatrix>
-  
-  <timeline>
-    <phase name="Phase Name" duration="2 weeks">
-      <tasks>
-        <task priority="high" hasReminder="true" source="application">Task description</task>
-      </tasks>
-      <milestones>
-        <milestone date="2025-01-15" type="deadline">Milestone description</milestone>
-      </milestones>
-      <reminders>
-        <reminder date="2025-01-10" task="Task Name" type="study">Reminder description</reminder>
-      </reminders>
-    </phase>
-  </timeline>
-  
-  <applicationStrategy>
-    <status name="planning">
-      <action priority="high" deadline="2025-01-15">Action item</action>
-      <timeline>Timeline info</timeline>
-      <reminders>
-        <reminder date="2025-01-12">Reminder for this status</reminder>
-      </reminders>
-    </status>
-  </applicationStrategy>
-  
-  <studyOptimization>
-    <subject name="Subject Name" timeAllocation="4 hours/week" totalTasks="5" completedTasks="2">
-      <strategy>Study strategy</strategy>
-      <resource>Resource recommendation</resource>
-      <upcomingDeadlines>
-        <deadline date="2025-01-20" task="Assignment Name" priority="high"/>
-      </upcomingDeadlines>
-    </subject>
-  </studyOptimization>
-  
-  <deadlineManagement>
-    <deadline date="2025-01-15" type="application" priority="high" university="University Name" daysUntil="5">
-      <action>Action required</action>
-      <reminder date="2025-01-12">Set reminder for this deadline</reminder>
-    </deadline>
-    <deadline date="2025-01-18" type="study" priority="medium" subject="Mathematics" daysUntil="8">
-      <action>Action required</action>
-      <reminder date="2025-01-15">Set reminder for this deadline</reminder>
-    </deadline>
-  </deadlineManagement>
-  
-  <reminderManagement>
-    <reminder date="2025-01-10" type="study" priority="high" task="Complete Math Assignment">
-      <action>Review and complete assignment</action>
-      <followUp date="2025-01-12">Check progress</followUp>
-    </reminder>
-    <reminder date="2025-01-11" type="application" priority="high" university="Harvard University">
-      <action>Submit application documents</action>
-      <followUp date="2025-01-13">Confirm submission</followUp>
-    </reminder>
-  </reminderManagement>
-  
-  <workloadDistribution>
-    <week number="1" studyHours="20" applicationHours="10" totalTasks="8" highPriorityTasks="3">
-      <focus>Focus area</focus>
-      <criticalDeadlines>
-        <deadline date="2025-01-15" type="application">University Application</deadline>
-      </criticalDeadlines>
-      <reminders>
-        <reminder date="2025-01-12">Weekly reminder</reminder>
-      </reminders>
-    </week>
-  </workloadDistribution>
-  
-  <riskMitigation>
-    <risk name="Risk description" impact="high" likelihood="medium">
-      <mitigation>Mitigation strategy</mitigation>
-      <monitoringReminder date="2025-01-14">Check risk status</monitoringReminder>
-    </risk>
-  </riskMitigation>
-  
-  <progressTracking>
-    <milestone name="Milestone name" deadline="2025-01-15" status="pending" relatedTasks="3">
-      <criteria>Success criteria</criteria>
-      <reminder date="2025-01-12">Progress check reminder</reminder>
-      <dependencies>
-        <dependency task="Prerequisite Task" status="completed"/>
-      </dependencies>
-    </milestone>
-  </progressTracking>
-</roadmap>
-
-Focus on creating a realistic, actionable plan that maximizes success in both academic performance and university admissions. Include specific reminder dates, task relationships, and comprehensive deadline management.`;
-
-      const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+      const response = await fetch('https://n8n.matrixaiserver.com/webhook/363f0bef-d88e-4658-a9ab-94bed9bbe4bd', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || '4ca49c30-f9e7-467e-8269-cc156c131881'}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model: "doubao-seed-1-6-vision-250815",
-          messages: [
-            {
-              role: "system",
-              content: [
-                {
-                  type: "text", 
-                  text: "You are an expert academic advisor and university admissions counselor. You MUST respond ONLY in the exact XML format requested. Do not include any text before or after the XML structure. Provide comprehensive guidance that integrates both study planning and university application management."
-                }
-              ]
-            },
-            {
-              role: "user",
-              content: [
-                {
-                  type: "text",
-                  text: `${prompt}
-
-CURRENT DATE: ${new Date().toISOString().split('T')[0]}
-ANALYSIS PERIOD: ${suggestionDateRange.startDate || 'All time'} to ${suggestionDateRange.endDate || 'All time'}
-
-=== STUDY TASKS DATA ===
-${JSON.stringify(studyTaskData, null, 2)}
-
-=== UNIVERSITY APPLICATIONS DATA ===
-${JSON.stringify(applicationData, null, 2)}
-
-=== COMPREHENSIVE STATISTICS ===
-Study Tasks:
-- Total: ${stats.totalStudyTasks}
-- Completed: ${stats.completedStudyTasks}
-- Pending: ${stats.pendingStudyTasks}
-- Overdue: ${stats.overdueTasks}
-- Total Hours: ${stats.totalEstimatedHours}
-- High Priority: ${stats.highPriorityTasks}
-- Medium Priority: ${stats.mediumPriorityTasks}
-- Low Priority: ${stats.lowPriorityTasks}
-- With Reminders: ${stats.tasksWithReminders}
-- Application-related: ${stats.applicationTasks}
-- Study-only: ${stats.studyOnlyTasks}
-
-Applications:
-- Total Applications: ${stats.totalApplications}
-- Planning: ${stats.applicationsByStatus.planning}
-- In Progress: ${stats.applicationsByStatus.inProgress}
-- Submitted: ${stats.applicationsByStatus.submitted}
-- Interview Stage: ${stats.applicationsByStatus.interview}
-- Accepted: ${stats.applicationsByStatus.accepted}
-- Rejected: ${stats.applicationsByStatus.rejected}
-- Waitlisted: ${stats.applicationsByStatus.waitlisted}
-- Upcoming Deadlines (30 days): ${stats.upcomingDeadlines}
-- Overdue Applications: ${stats.overdueApplications}
-
-Remember: Return ONLY the XML structure. No additional text.`
-                }
-              ]
-            }
-          ],
-          stream: false
-        })
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
@@ -1148,7 +1136,97 @@ Remember: Return ONLY the XML structure. No additional text.`
       }
 
       const result = await response.json();
-      const xmlContent = result.choices?.[0]?.message?.content || '';
+      
+      // Try to find XML content in the response
+      let xmlContent = '';
+      
+      // Check if response is directly the XML string (in a JSON property like 'output' or 'text')
+      // or if it matches the previous structure
+      if (result.choices?.[0]?.message?.content) {
+        xmlContent = result.choices[0].message.content;
+      } else if (result.output) {
+        // Check if output is already an object (the new JSON structure)
+        if (typeof result.output === 'object' && result.output !== null) {
+          setAiSuggestionResult({
+            ...result.output,
+            rawText: JSON.stringify(result.output)
+          });
+          setShowRoadmapResultModal(true);
+          showSuccess('Comprehensive AI roadmap generated successfully!');
+          return;
+        }
+        xmlContent = result.output;
+      } else if (result.xml) {
+        xmlContent = result.xml;
+      } else if (typeof result === 'string' && result.includes('<roadmap>')) {
+        xmlContent = result;
+      } else if (typeof result === 'object') {
+        // If it's a JSON object, maybe we can just use it directly if it matches our internal structure?
+        // But for now, let's assume the webhook returns the XML or we need to extract it.
+        // If the webhook returns the roadmap object directly (not XML), we might need a different handler.
+        // For safety, let's check if we can stringify it and find XML tags, or just assume it might be the parsed data.
+        
+        // If the response IS the parsed data structure (timeline, priorityMatrix, etc.)
+        if (result.timeline || result.priorityMatrix) {
+          setAiSuggestionResult({
+            ...result,
+            rawText: JSON.stringify(result)
+          });
+          setShowRoadmapResultModal(true);
+          showSuccess('Comprehensive AI roadmap generated successfully!');
+          return;
+        }
+        
+        // Fallback: try to find any string property that looks like XML
+        const potentialXml = Object.values(result).find(val => typeof val === 'string' && val.includes('<roadmap>'));
+        if (potentialXml) {
+          xmlContent = potentialXml as string;
+        }
+      }
+
+      if (!xmlContent) {
+        console.warn('Could not find XML content in response:', result);
+        // Fallback or error handling
+        // For now, let's try to parse whatever we got or show an error
+        if (typeof result === 'string') {
+            xmlContent = result;
+        } else {
+            // If we received JSON but couldn't find XML, maybe it's a different format.
+            // Let's just try to stringify it and hope parseXMLRoadmap handles it or fails gracefully
+             xmlContent = JSON.stringify(result);
+        }
+      }
+      
+      // Check if xmlContent is actually a JSON string
+      if (typeof xmlContent === 'string' && (xmlContent.trim().startsWith('{') || xmlContent.trim().startsWith('['))) {
+        try {
+          const parsedJson = JSON.parse(xmlContent);
+          // If the parsed JSON has an output field that is an object, use that
+          if (parsedJson.output && typeof parsedJson.output === 'object') {
+             setAiSuggestionResult({
+              ...parsedJson.output,
+              rawText: xmlContent
+            });
+            setShowRoadmapResultModal(true);
+            showSuccess('Comprehensive AI roadmap generated successfully!');
+            return;
+          }
+          
+          // Otherwise, use the parsed JSON directly if it looks like a roadmap
+          if (parsedJson.timeline || parsedJson.priorityMatrix) {
+             setAiSuggestionResult({
+              ...parsedJson,
+              rawText: xmlContent
+            });
+            setShowRoadmapResultModal(true);
+            showSuccess('Comprehensive AI roadmap generated successfully!');
+            return;
+          }
+        } catch (e) {
+          // Not valid JSON, proceed to XML parsing
+          console.log('Content is not valid JSON, trying XML');
+        }
+      }
       
       // Parse XML response
       const parsedData = parseXMLRoadmap(xmlContent);
@@ -1157,6 +1235,7 @@ Remember: Return ONLY the XML structure. No additional text.`
         ...parsedData,
         rawText: xmlContent
       });
+      setShowRoadmapResultModal(true);
       
       showSuccess('Comprehensive AI roadmap generated successfully! 1 AI response used.');
       
@@ -1374,9 +1453,8 @@ Remember: Return ONLY the XML structure. No additional text.`
 
   // Calculate analysis data using useMemo
   const analysisData = useMemo(() => {
-    // Get all study tasks (including those synced from applications)
+    // Get all study tasks
     let allStudyTasks = studyTasks;
-    let relevantApplications = applications;
     
     if (suggestionDateRange.startDate && suggestionDateRange.endDate) {
       allStudyTasks = studyTasks.filter(task => {
@@ -1385,13 +1463,6 @@ Remember: Return ONLY the XML structure. No additional text.`
         const endDate = new Date(suggestionDateRange.endDate);
         return taskDate >= startDate && taskDate <= endDate;
       });
-      
-      relevantApplications = applications.filter(app => {
-        const appDeadline = new Date(app.deadline);
-        const startDate = new Date(suggestionDateRange.startDate);
-        const endDate = new Date(suggestionDateRange.endDate);
-        return appDeadline >= startDate && appDeadline <= endDate;
-      });
     }
     
     const completedTasks = allStudyTasks.filter(task => task.completed).length;
@@ -1399,22 +1470,16 @@ Remember: Return ONLY the XML structure. No additional text.`
     const totalHours = allStudyTasks.reduce((sum, task) => sum + task.estimatedHours, 0);
     const highPriorityTasks = allStudyTasks.filter(task => task.priority === 'high').length;
     const overdueTasks = allStudyTasks.filter(task => new Date(task.date) < new Date() && !task.completed).length;
-    const upcomingDeadlines = relevantApplications.filter(app => {
-      const daysUntil = Math.ceil((new Date(app.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-      return daysUntil <= 30 && daysUntil > 0;
-    }).length;
 
     return {
       allStudyTasks,
-      relevantApplications,
       completedTasks,
       pendingTasks,
       totalHours,
       highPriorityTasks,
-      overdueTasks,
-      upcomingDeadlines
+      overdueTasks
     };
-  }, [studyTasks, applications, suggestionDateRange.startDate, suggestionDateRange.endDate]);
+  }, [studyTasks, suggestionDateRange.startDate, suggestionDateRange.endDate]);
 
   const filteredTasks = getFilteredAndSortedTasks();
 
@@ -1462,6 +1527,83 @@ Remember: Return ONLY the XML structure. No additional text.`
     }
   };
 
+  // Chart Options for Roadmap Modal
+  const timelineChartOption = useMemo(() => {
+    if (!aiSuggestionResult?.timeline) return null;
+    return {
+      tooltip: { trigger: 'axis' },
+      grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+      xAxis: { type: 'category', data: aiSuggestionResult.timeline.map(t => t.phase), axisLabel: { interval: 0, rotate: 30, color: '#9CA3AF' } },
+      yAxis: { type: 'value', axisLabel: { color: '#9CA3AF' }, splitLine: { lineStyle: { color: '#374151', type: 'dashed', opacity: 0.3 } } },
+      series: [{
+        data: aiSuggestionResult.timeline.map(t => parseInt(t.duration) || 1),
+        type: 'bar',
+        itemStyle: { color: '#10B981', borderRadius: [4, 4, 0, 0] },
+        showBackground: true,
+        backgroundStyle: { color: 'rgba(180, 180, 180, 0.1)' }
+      }]
+    };
+  }, [aiSuggestionResult]);
+
+  const workloadChartOption = useMemo(() => {
+    if (!aiSuggestionResult?.workloadDistribution) return null;
+    return {
+      tooltip: { trigger: 'axis' },
+      legend: { data: ['Study', 'Application'], textStyle: { color: '#9CA3AF' }, bottom: 0 },
+      grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
+      xAxis: { type: 'category', data: aiSuggestionResult.workloadDistribution.map(w => w.week), axisLabel: { color: '#9CA3AF' } },
+      yAxis: { type: 'value', axisLabel: { color: '#9CA3AF' }, splitLine: { lineStyle: { color: '#374151', type: 'dashed', opacity: 0.3 } } },
+      series: [
+        {
+          name: 'Study',
+          type: 'line',
+          smooth: true,
+          data: aiSuggestionResult.workloadDistribution.map(w => parseInt(w.studyHours) || 0),
+          areaStyle: { opacity: 0.2 },
+          itemStyle: { color: '#3B82F6' }
+        },
+        {
+          name: 'Application',
+          type: 'line',
+          smooth: true,
+          data: aiSuggestionResult.workloadDistribution.map(w => parseInt(w.applicationHours) || 0),
+          areaStyle: { opacity: 0.2 },
+          itemStyle: { color: '#8B5CF6' }
+        }
+      ]
+    };
+  }, [aiSuggestionResult]);
+
+  const priorityChartOption = useMemo(() => {
+    if (!aiSuggestionResult?.priorityMatrix) return null;
+    const stats = { High: 0, Medium: 0, Low: 0 };
+    aiSuggestionResult.priorityMatrix.forEach(cat => {
+      cat.tasks.forEach(t => {
+        if (t.urgency.toLowerCase().includes('high')) stats.High++;
+        else if (t.urgency.toLowerCase().includes('medium')) stats.Medium++;
+        else stats.Low++;
+      });
+    });
+    return {
+      tooltip: { trigger: 'item' },
+      legend: { bottom: '0%', textStyle: { color: '#9CA3AF' } },
+      series: [{
+        name: 'Task Priority',
+        type: 'pie',
+        radius: ['40%', '70%'],
+        avoidLabelOverlap: false,
+        itemStyle: { borderRadius: 10, borderColor: 'transparent', borderWidth: 2 },
+        label: { show: false, position: 'center' },
+        emphasis: { label: { show: true, fontSize: '18', fontWeight: 'bold', color: '#9CA3AF' } },
+        data: [
+          { value: stats.High, name: 'High', itemStyle: { color: '#EF4444' } },
+          { value: stats.Medium, name: 'Medium', itemStyle: { color: '#F59E0B' } },
+          { value: stats.Low, name: 'Low', itemStyle: { color: '#10B981' } }
+        ]
+      }]
+    };
+  }, [aiSuggestionResult]);
+
   return (
     <motion.div
       className={`bg-white dark:bg-black/40 backdrop-blur-xl border border-gray-200 dark:border-white/5 rounded-[32px] shadow-2xl overflow-hidden ${className}`}
@@ -1477,7 +1619,7 @@ Remember: Return ONLY the XML structure. No additional text.`
           <div className="flex flex-wrap justify-center items-center gap-2 lg:gap-3 w-full lg:w-auto">
             <motion.button
               onClick={() => setShowAIModal(true)}
-              className="flex items-center px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg text-white font-medium shadow-md hover:shadow-lg transition-all"
+              className="flex items-center px-4 py-2 bg-purple-500/10 dark:bg-purple-500/20 text-purple-600 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30 rounded-xl hover:bg-purple-500/20 dark:hover:bg-purple-500/30 transition-all font-medium"
               variants={buttonVariants}
               whileHover="hover"
               whileTap="tap"
@@ -1488,7 +1630,7 @@ Remember: Return ONLY the XML structure. No additional text.`
             </motion.button>
             <motion.button
               onClick={openAISuggestionModal}
-              className="flex items-center px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg text-white font-medium shadow-md hover:shadow-lg transition-all"
+              className="flex items-center px-4 py-2 bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 rounded-xl hover:bg-emerald-500/20 dark:hover:bg-emerald-500/30 transition-all font-medium"
               variants={buttonVariants}
               whileHover="hover"
               whileTap="tap"
@@ -1499,7 +1641,7 @@ Remember: Return ONLY the XML structure. No additional text.`
             </motion.button>
             <motion.button
               onClick={() => setShowAddForm(!showAddForm)}
-              className="flex items-center px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg text-white font-medium shadow-md hover:shadow-lg transition-all"
+              className="flex items-center px-4 py-2 bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30 rounded-xl hover:bg-blue-500/20 dark:hover:bg-blue-500/30 transition-all font-medium"
               variants={buttonVariants}
               whileHover="hover"
               whileTap="tap"
@@ -1761,46 +1903,46 @@ Remember: Return ONLY the XML structure. No additional text.`
                             type="text"
                             value={task.task}
                             onChange={(e) => handleTaskNameChange(task.id, e.target.value)}
-                            className={`w-full bg-transparent border-none outline-none font-medium text-sm px-2 py-1 rounded transition-colors ${
+                            className={`w-full bg-transparent border-none outline-none font-semibold text-lg px-0 py-1 rounded transition-colors mb-2 ${
                               task.completed 
                                 ? 'line-through text-gray-400' 
-                                : 'text-gray-900 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 focus:bg-gray-200 dark:focus:bg-white/20'
+                                : 'text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-600'
                             }`}
                             placeholder="Task name"
                           />
-                          <div className="flex flex-wrap items-center gap-2 mt-1">
+                          <div className="flex flex-wrap items-center gap-3">
                             <input
                               type="text"
                               value={task.subject}
                               onChange={(e) => handleSubjectChange(task.id, e.target.value)}
-                              className="text-sm text-cyan-600 dark:text-cyan-400 bg-transparent border-none outline-none px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-white/10 focus:bg-gray-200 dark:focus:bg-white/20 w-24"
+                              className="text-sm font-medium text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-500/10 border border-cyan-100 dark:border-cyan-500/20 px-2.5 py-1 rounded-md hover:bg-cyan-100 dark:hover:bg-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all w-32"
                               placeholder="Subject"
                             />
-                            <div className="flex items-center">
-                              <IconComponent icon={FiCalendar} className="h-3 w-3 mr-1 text-gray-400" />
+                            <div className="flex items-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 px-2.5 py-1 rounded-md hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
+                              <IconComponent icon={FiCalendar} className="h-3.5 w-3.5 mr-2" />
                               <input
                                 type="date"
                                 value={task.date}
                                 onChange={(e) => handleDateChange(task.id, e.target.value)}
-                                className="text-sm text-gray-500 dark:text-gray-400 bg-transparent border-none outline-none px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-white/10 focus:bg-gray-200 dark:focus:bg-white/20"
+                                className="text-sm bg-transparent border-none outline-none p-0 w-28 cursor-pointer"
                               />
                             </div>
-                            <div className="flex items-center">
-                              <IconComponent icon={FiClock} className="h-3 w-3 mr-1 text-gray-400" />
+                            <div className="flex items-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 px-2.5 py-1 rounded-md hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
+                              <IconComponent icon={FiClock} className="h-3.5 w-3.5 mr-2" />
                               <input
                                 type="number"
                                 value={task.estimatedHours}
                                 onChange={(e) => handleEstimatedHoursChange(task.id, parseInt(e.target.value) || 1)}
                                 min="1"
                                 max="24"
-                                className="text-sm text-gray-500 dark:text-gray-400 bg-transparent border-none outline-none px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-white/10 focus:bg-gray-200 dark:focus:bg-white/20 w-12"
+                                className="text-sm bg-transparent border-none outline-none p-0 w-8 text-center"
                               />
-                              <span className="text-sm text-gray-500 dark:text-gray-400">h</span>
+                              <span className="text-sm ml-1">h</span>
                             </div>
                           </div>
                           {task.reminder && task.reminderDate && (
-                            <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-1 flex items-center">
-                              <IconComponent icon={FaBell} className="h-3 w-3 mr-1" />
+                            <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-2 flex items-center bg-yellow-50 dark:bg-yellow-500/10 px-2 py-1 rounded w-fit">
+                              <IconComponent icon={FaBell} className="h-3 w-3 mr-1.5" />
                               Reminder: {new Date(task.reminderDate).toLocaleDateString()} at {new Date(task.reminderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </div>
                           )}
@@ -1892,7 +2034,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                   </motion.button>
                 </div>
                 <p className="text-gray-600 dark:text-gray-400 mt-2">
-                  Upload your timetable image or PDF and let AI analyze it to automatically create study tasks with predicted priorities.
+                  Upload your timetable image and let AI analyze it to automatically create study tasks with predicted priorities.
                 </p>
               </div>
               
@@ -2024,7 +2166,7 @@ Remember: Return ONLY the XML structure. No additional text.`
                         {!aiAnalysisResult && (
                           <motion.button
                             onClick={processWithAI}
-                            disabled={isProcessingAI || !uploadedFile.extractedText}
+                            disabled={isProcessingAI || (!uploadedFile.extractedText && !uploadedFile.imageUrl)}
                             className="w-full sm:w-auto flex items-center justify-center px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:from-slate-400 disabled:to-slate-500 dark:disabled:from-slate-600 dark:disabled:to-slate-600 text-white font-medium rounded-lg transition-all disabled:cursor-not-allowed"
                             whileHover={{ scale: isProcessingAI ? 1 : 1.05 }}
                             whileTap={{ scale: isProcessingAI ? 1 : 0.95 }}
@@ -2064,7 +2206,7 @@ Remember: Return ONLY the XML structure. No additional text.`
         )}
       </AnimatePresence>
 
-      {/* AI Suggestion Modal */}
+      {/* AI Suggestion Modal - Compact Design */}
       <AnimatePresence>
         {showAISuggestionModal && (
           <PortalModal
@@ -2073,688 +2215,496 @@ Remember: Return ONLY the XML structure. No additional text.`
             className="flex items-center justify-center z-50 p-4"
           >
             <motion.div
-              className="bg-white dark:bg-black/80 backdrop-blur-xl border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col"
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-white dark:bg-black/90 backdrop-blur-xl border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden"
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
             >
-              <div className="p-6 border-b border-gray-200 dark:border-white/10 flex-shrink-0">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold text-emerald-600 dark:text-emerald-400 flex items-center">
-                    <IconComponent icon={AiOutlineBulb} className="mr-2" />
+              <div className="p-5 border-b border-gray-200 dark:border-white/10 flex justify-between items-center bg-gray-50/50 dark:bg-white/5">
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center">
+                    <IconComponent icon={AiOutlineRobot} className="mr-2 text-emerald-600 dark:text-emerald-400" />
                     {t('aiStudy.aiStudyRoadmapGenerator')}
                   </h2>
-                  <motion.button
-                    onClick={closeAISuggestionModal}
-                    className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    <IconComponent icon={FaTimes} className="h-5 w-5" />
-                  </motion.button>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Generate a personalized study plan based on your tasks
+                  </p>
                 </div>
-                <p className="text-gray-600 dark:text-gray-400 mt-2">
-                  Get AI-powered study roadmaps with task prioritization, time management, and workload division strategies.
-                </p>
+                <motion.button
+                  onClick={closeAISuggestionModal}
+                  className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-white/10 transition-colors"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <IconComponent icon={FiX} className="h-5 w-5" />
+                </motion.button>
               </div>
               
-              <div className="flex-1 overflow-y-auto p-6">
-                <div className="space-y-4">
-                  {/* Date Range and Prompt in a compact row */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {/* Date Range Selection */}
-                    <div className="bg-gray-50 dark:bg-[#1f1f23] rounded-xl p-4 border border-gray-200 dark:border-white/10">
-                      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
-                        <IconComponent icon={FiCalendar} className="mr-2 text-emerald-600 dark:text-emerald-400" />
-                        Date Range (Optional)
-                      </h3>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <input
-                            type="date"
-                            value={suggestionDateRange.startDate}
-                            onChange={(e) => setSuggestionDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-                            className="w-full px-3 py-2 bg-white dark:bg-black/20 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-lg text-gray-900 dark:text-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                          />
-                        </div>
-                        <div>
-                          <input
-                            type="date"
-                            value={suggestionDateRange.endDate}
-                            onChange={(e) => setSuggestionDateRange(prev => ({ ...prev, endDate: e.target.value }))}
-                            className="w-full px-3 py-2 bg-white dark:bg-black/20 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-lg text-gray-900 dark:text-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                          />
-                        </div>
+              <div className="p-6 space-y-5">
+                {/* Date Range Selection */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
+                    <IconComponent icon={FiCalendar} className="mr-2 text-emerald-500" />
+                    Select Date Range
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span className="text-gray-500 text-xs">Start</span>
                       </div>
+                      <input
+                        type="date"
+                        value={suggestionDateRange.startDate}
+                        onChange={(e) => setSuggestionDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                        className="pl-12 w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-gray-900 dark:text-white"
+                      />
                     </div>
-
-                    {/* Custom Prompt */}
-                    <div className="bg-gray-50 dark:bg-[#1f1f23] rounded-xl p-4 border border-gray-200 dark:border-white/10">
-                      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
-                        <IconComponent icon={FiEdit} className="mr-2 text-emerald-600 dark:text-emerald-400" />
-                        Custom Request (Optional)
-                      </h3>
-                      <textarea
-                        value={customPrompt}
-                        onChange={(e) => setCustomPrompt(e.target.value)}
-                        placeholder="e.g., 'Focus on exam preparation' or 'Help with time management'"
-                        className="w-full px-3 py-2 bg-white dark:bg-black/20 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-lg text-gray-900 dark:text-gray-300 placeholder-gray-500 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none outline-none"
-                        rows={3}
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span className="text-gray-500 text-xs">End</span>
+                      </div>
+                      <input
+                        type="date"
+                        value={suggestionDateRange.endDate}
+                        onChange={(e) => setSuggestionDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                        className="pl-10 w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-gray-900 dark:text-white"
                       />
                     </div>
                   </div>
+                </div>
 
-                  {/* Task Analysis Summary */}
-                  <div className="bg-[#1f1f23] rounded-xl p-4 border border-white/10">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-sm font-medium text-gray-300 flex items-center">
-                        <IconComponent icon={FiClock} className="mr-2 text-emerald-400" />
-                        Comprehensive Analysis
-                      </h3>
-                      <div className="flex items-center space-x-2">
-                        <motion.button
-                          onClick={() => toggleSection('comprehensiveAnalysis')}
-                          className="p-1 rounded-lg hover:bg-white/5 transition-colors"
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                        >
-                          <IconComponent 
-                            icon={expandedSections.comprehensiveAnalysis ? FiChevronUp : FiChevronDown} 
-                            className="h-4 w-4 text-gray-400" 
-                          />
-                        </motion.button>
+                {/* Additional Context */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
+                    <IconComponent icon={FiEdit} className="mr-2 text-blue-500" />
+                    Additional Context (Optional)
+                  </label>
+                  <textarea
+                    value={customPrompt}
+                    onChange={(e) => setCustomPrompt(e.target.value)}
+                    placeholder="E.g., I want to focus more on Math this week, or I have an exam on Friday..."
+                    className="w-full h-24 bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600"
+                  />
+                </div>
+
+                {/* Generate Button */}
+                <motion.button
+                  onClick={generateAISuggestion}
+                  disabled={isGeneratingSuggestion}
+                  className={`w-full py-3.5 rounded-xl font-medium text-sm flex items-center justify-center shadow-lg shadow-emerald-500/20 ${
+                    isGeneratingSuggestion
+                      ? 'bg-gray-100 dark:bg-white/5 text-gray-400 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white transform hover:-translate-y-0.5'
+                  } transition-all duration-200`}
+                  whileTap={!isGeneratingSuggestion ? { scale: 0.98 } : {}}
+                >
+                  {isGeneratingSuggestion ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                      Generating Roadmap...
+                    </>
+                  ) : (
+                    <>
+                      <IconComponent icon={FaBrain} className="h-4 w-4 mr-2" />
+                      Generate Study Roadmap
+                    </>
+                  )}
+                </motion.button>
+              </div>
+            </motion.div>
+          </PortalModal>
+        )}
+      </AnimatePresence>
+
+      {/* AI Roadmap Result Modal */}
+      <AnimatePresence>
+        {showRoadmapResultModal && (
+          <PortalModal
+            isOpen={showRoadmapResultModal}
+            onClose={() => setShowRoadmapResultModal(false)}
+            className="flex flex-col z-50 bg-gray-50 dark:bg-[#0a0a0a]"
+            fullScreen={true}
+          >
+            <div className="flex flex-col h-full w-full overflow-hidden">
+              {/* Header */}
+              <div className="flex-none px-6 py-4 bg-white dark:bg-[#111] border-b border-gray-200 dark:border-white/10 flex justify-between items-center z-10 shadow-sm">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+                    <IconComponent icon={AiOutlineRobot} className="mr-3 text-emerald-600 dark:text-emerald-400 h-6 w-6" />
+                    {t('aiStudy.aiStudyRoadmap')}
+                  </h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Your personalized AI-generated study strategy
+                  </p>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <motion.button
+                    onClick={() => setShowRoadmapResultModal(false)}
+                    className="p-2 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 rounded-full transition-colors text-gray-500 dark:text-gray-400"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    <IconComponent icon={FiX} className="h-5 w-5" />
+                  </motion.button>
+                </div>
+              </div>
+
+              {/* Dashboard Content */}
+              <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
+                <div className="max-w-7xl mx-auto space-y-6">
+                  
+                  {/* Charts Overview Section */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Priority Chart */}
+                    <div className="bg-white dark:bg-[#111] p-5 rounded-2xl border border-gray-200 dark:border-white/10 shadow-sm">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-semibold text-gray-900 dark:text-white flex items-center">
+                          <IconComponent icon={FiFilter} className="mr-2 text-purple-500" />
+                          Task Priorities
+                        </h3>
+                      </div>
+                      <div className="h-48 w-full">
+                        <SimpleChart option={priorityChartOption} style={{ height: '100%', width: '100%' }} theme={isDarkMode ? 'dark' : undefined} />
                       </div>
                     </div>
-                    
-                    <AnimatePresence>
-                      {expandedSections.comprehensiveAnalysis && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="text-gray-400 text-sm space-y-4">
-                            {(() => {
-                              // Get all study tasks (including those synced from applications)
-                              let allStudyTasks = studyTasks;
-                              let relevantApplications = applications;
-                              
-                              if (suggestionDateRange.startDate && suggestionDateRange.endDate) {
-                                allStudyTasks = studyTasks.filter(task => {
-                                  const taskDate = new Date(task.date);
-                                  const startDate = new Date(suggestionDateRange.startDate);
-                                  const endDate = new Date(suggestionDateRange.endDate);
-                                  return taskDate >= startDate && taskDate <= endDate;
-                                });
-                                
-                                relevantApplications = applications.filter(app => {
-                                  const appDeadline = new Date(app.deadline);
-                                  const startDate = new Date(suggestionDateRange.startDate);
-                                  const endDate = new Date(suggestionDateRange.endDate);
-                                  return appDeadline >= startDate && appDeadline <= endDate;
-                                });
-                              }
-                              
-                              const completedTasks = allStudyTasks.filter(task => task.completed).length;
-                              const pendingTasks = allStudyTasks.length - completedTasks;
-                              const totalHours = allStudyTasks.reduce((sum, task) => sum + task.estimatedHours, 0);
-                              const highPriorityTasks = allStudyTasks.filter(task => task.priority === 'high').length;
-                              const overdueTasks = allStudyTasks.filter(task => new Date(task.date) < new Date() && !task.completed).length;
-                              const upcomingDeadlines = relevantApplications.filter(app => {
-                                const daysUntil = Math.ceil((new Date(app.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-                                return daysUntil <= 30 && daysUntil > 0;
-                              }).length;
 
-                              return (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                  {/* Study Tasks Overview */}
-                                  <div className="bg-slate-600/30 rounded-lg p-4 border border-white/5">
-                                    <h4 className="text-xs font-semibold text-emerald-400 mb-3 flex items-center">
-                                      <IconComponent icon={FiBook} className="mr-2" />
-                                      Study Tasks Overview
-                                    </h4>
-                                    <div className="space-y-2">
-                                      <div className="flex justify-between">
-                                        <span className="text-xs text-slate-400">Total Tasks:</span>
-                                        <span className="text-xs font-medium text-slate-300">{allStudyTasks.length}</span>
-                                      </div>
-                                      <div className="flex justify-between">
-                                        <span className="text-xs text-slate-400">Completed:</span>
-                                        <span className="text-xs font-medium text-green-400">{completedTasks}</span>
-                                      </div>
-                                      <div className="flex justify-between">
-                                        <span className="text-xs text-slate-400">Pending:</span>
-                                        <span className="text-xs font-medium text-yellow-400">{pendingTasks}</span>
-                                      </div>
-                                      <div className="flex justify-between">
-                                        <span className="text-xs text-slate-400">High Priority:</span>
-                                        <span className="text-xs font-medium text-red-400">{highPriorityTasks}</span>
-                                      </div>
-                                      <div className="flex justify-between">
-                                        <span className="text-xs text-slate-400">Overdue:</span>
-                                        <span className="text-xs font-medium text-red-500">{overdueTasks}</span>
-                                      </div>
-                                      <div className="flex justify-between">
-                                        <span className="text-xs text-slate-400">Total Hours:</span>
-                                        <span className="text-xs font-medium text-blue-400">{totalHours}h</span>
-                                      </div>
-                                    </div>
-                                  </div>
+                    {/* Timeline Chart */}
+                    <div className="bg-white dark:bg-[#111] p-5 rounded-2xl border border-gray-200 dark:border-white/10 shadow-sm">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-semibold text-gray-900 dark:text-white flex items-center">
+                          <IconComponent icon={FiClock} className="mr-2 text-blue-500" />
+                          Timeline Distribution
+                        </h3>
+                      </div>
+                      <div className="h-48 w-full">
+                        <SimpleChart option={timelineChartOption} style={{ height: '100%', width: '100%' }} theme={isDarkMode ? 'dark' : undefined} />
+                      </div>
+                    </div>
 
-                                  {/* Application Status */}
-                                  <div className="bg-[#1f1f23] rounded-lg p-4 border border-white/10">
-                                    <h4 className="text-xs font-semibold text-purple-400 mb-3 flex items-center">
-                                      <IconComponent icon={FiEdit} className="mr-2" />
-                                      Application Status
-                                    </h4>
-                                    <div className="space-y-2">
-                                      <div className="flex justify-between">
-                                        <span className="text-xs text-gray-400">Total Apps:</span>
-                                        <span className="text-xs font-medium text-gray-300">{relevantApplications.length}</span>
-                                      </div>
-                                      <div className="flex justify-between">
-                                        <span className="text-xs text-gray-400">Planning:</span>
-                                        <span className="text-xs font-medium text-gray-400">{relevantApplications.filter(a => a.status === 'planning').length}</span>
-                                      </div>
-                                      <div className="flex justify-between">
-                                        <span className="text-xs text-gray-400">In Progress:</span>
-                                        <span className="text-xs font-medium text-blue-400">{relevantApplications.filter(a => a.status === 'in-progress').length}</span>
-                                      </div>
-                                      <div className="flex justify-between">
-                                        <span className="text-xs text-gray-400">Submitted:</span>
-                                        <span className="text-xs font-medium text-green-400">{relevantApplications.filter(a => a.status === 'submitted').length}</span>
-                                      </div>
-                                      <div className="flex justify-between">
-                                        <span className="text-xs text-gray-400">Upcoming Deadlines:</span>
-                                        <span className="text-xs font-medium text-indigo-400">{upcomingDeadlines}</span>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {/* Time Management */}
-                                  <div className="bg-[#1f1f23] rounded-lg p-4 border border-white/10">
-                                    <h4 className="text-xs font-semibold text-cyan-400 mb-3 flex items-center">
-                                      <IconComponent icon={FiClock} className="mr-2" />
-                                      Time Management
-                                    </h4>
-                                    <div className="space-y-2">
-                                      <div className="flex justify-between">
-                                        <span className="text-xs text-gray-400">Avg Hours/Task:</span>
-                                        <span className="text-xs font-medium text-gray-300">
-                                          {allStudyTasks.length > 0 ? (totalHours / allStudyTasks.length).toFixed(1) : '0'}h
-                                        </span>
-                                      </div>
-                                      <div className="flex justify-between">
-                                        <span className="text-xs text-gray-400">Tasks w/ Reminders:</span>
-                                        <span className="text-xs font-medium text-blue-400">
-                                          {allStudyTasks.filter(t => t.reminder).length}
-                                        </span>
-                                      </div>
-                                      <div className="flex justify-between">
-                                        <span className="text-xs text-gray-400">Study vs App Tasks:</span>
-                                        <span className="text-xs font-medium text-purple-400">
-                                          {allStudyTasks.filter(t => t.source === 'study').length}:{allStudyTasks.filter(t => t.source === 'application').length}
-                                        </span>
-                                      </div>
-                                      <div className="flex justify-between">
-                                        <span className="text-xs text-gray-400">Completion Rate:</span>
-                                        <span className="text-xs font-medium text-green-400">
-                                          {allStudyTasks.length > 0 ? Math.round((completedTasks / allStudyTasks.length) * 100) : 0}%
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })()}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                    {/* Workload Chart */}
+                    <div className="bg-white dark:bg-[#111] p-5 rounded-2xl border border-gray-200 dark:border-white/10 shadow-sm">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-semibold text-gray-900 dark:text-white flex items-center">
+                          <IconComponent icon={FiCheck} className="mr-2 text-emerald-500" />
+                          Workload Balance
+                        </h3>
+                      </div>
+                      <div className="h-48 w-full">
+                        <SimpleChart option={workloadChartOption} style={{ height: '100%', width: '100%' }} theme={isDarkMode ? 'dark' : undefined} />
+                      </div>
+                    </div>
                   </div>
 
-                  {/* AI Suggestion Result */}
-                  {Object.keys(aiSuggestionResult).length > 0 && (
-                    <div className="bg-[#1f1f23] rounded-xl p-4 border border-white/10">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-sm font-medium text-gray-300 flex items-center">
-                          <IconComponent icon={AiOutlineRobot} className="mr-2 text-emerald-400" />
-                          AI Study Roadmap
-                        </h3>
-                        <div className="flex items-center space-x-2">
-                          <motion.button
-                            onClick={expandAllSections}
-                            className="px-3 py-1 text-xs bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-lg transition-colors"
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                          >
-                            {t('aiStudy.expandAll')}
-                          </motion.button>
-                          <motion.button
-                            onClick={collapseAllSections}
-                            className="px-3 py-1 text-xs bg-white/10 hover:bg-white/20 text-gray-400 rounded-lg transition-colors"
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                          >
-                            {t('aiStudy.collapseAll')}
-                          </motion.button>
+                  {/* Detailed Sections Grid */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    
+                    {/* Priority Matrix Detail */}
+                    {aiSuggestionResult.priorityMatrix && (
+                      <div className="bg-white dark:bg-[#111] rounded-2xl border border-gray-200 dark:border-white/10 shadow-sm overflow-hidden flex flex-col">
+                        <div className="p-5 border-b border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
+                          <h3 className="font-bold text-gray-900 dark:text-white flex items-center text-lg">
+                            <IconComponent icon={FiFilter} className="mr-2 text-purple-500" />
+                            {t('aiStudy.priorityMatrix')}
+                          </h3>
+                        </div>
+                        <div className="p-5 space-y-4 flex-1 overflow-y-auto max-h-[400px]">
+                          {aiSuggestionResult.priorityMatrix.map((category, idx) => (
+                            <div key={idx} className="bg-gray-50 dark:bg-white/5 rounded-xl p-4 border border-gray-100 dark:border-white/5">
+                              <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center justify-between">
+                                {category.category}
+                                <span className="text-xs font-normal bg-gray-200 dark:bg-white/10 px-2 py-1 rounded-full text-gray-600 dark:text-gray-400">
+                                  {category.tasks.length} tasks
+                                </span>
+                              </h5>
+                              <div className="space-y-2">
+                                {category.tasks.map((task, taskIdx) => (
+                                  <div key={taskIdx} className="flex items-center justify-between text-sm bg-white dark:bg-black/20 p-2.5 rounded-lg border border-gray-100 dark:border-white/5">
+                                    <span className="text-gray-700 dark:text-gray-300 font-medium">{task.name}</span>
+                                    <div className="flex space-x-1">
+                                      <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${
+                                        task.urgency === 'high' ? 'bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400' : 
+                                        task.urgency === 'medium' ? 'bg-yellow-500/10 text-yellow-600 dark:bg-yellow-500/20 dark:text-yellow-400' : 
+                                        'bg-green-500/10 text-green-600 dark:bg-green-500/20 dark:text-green-400'
+                                      }`}>
+                                        {task.urgency}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                      
-                      <div className="space-y-4 max-h-80 overflow-y-auto">
-                        {/* Priority Matrix */}
-                        {aiSuggestionResult.priorityMatrix && (
-                          <div className="bg-slate-600/30 rounded-lg border border-white/5">
-                            <div 
-                              className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-600/20 transition-colors"
-                              onClick={() => toggleSection('priorityMatrix')}
-                            >
-                              <h4 className="text-sm font-semibold text-emerald-400 flex items-center">
-                                <IconComponent icon={FiFilter} className="mr-2" />
-                                {t('aiStudy.priorityMatrix')}
-                              </h4>
-                              <IconComponent 
-                                icon={expandedSections.priorityMatrix ? FiChevronUp : FiChevronDown} 
-                                className="h-4 w-4 text-slate-400" 
-                              />
-                            </div>
-                            <AnimatePresence>
-                              {expandedSections.priorityMatrix && (
-                                <motion.div
-                                  initial={{ height: 0, opacity: 0 }}
-                                  animate={{ height: 'auto', opacity: 1 }}
-                                  exit={{ height: 0, opacity: 0 }}
-                                  transition={{ duration: 0.3 }}
-                                  className="overflow-hidden px-4 pb-4"
-                                >
-                                  <div className="space-y-3">
-                                    {aiSuggestionResult.priorityMatrix.map((category, idx) => (
-                                      <div key={idx} className="bg-slate-700/50 rounded-lg p-3">
-                                        <h5 className="text-xs font-medium text-slate-300 mb-2">{category.category}</h5>
-                                        <div className="space-y-1">
-                                          {category.tasks.map((task, taskIdx) => (
-                                            <div key={taskIdx} className="flex items-center justify-between text-xs">
-                                              <span className="text-slate-400">{task.name}</span>
-                                              <div className="flex space-x-1">
-                                                <span className={`px-2 py-1 rounded text-xs ${
-                                                  task.urgency === 'high' ? 'bg-red-500/20 text-red-400' : 
-                                                  task.urgency === 'medium' ? 'bg-yellow-500/20 text-yellow-400' : 
-                                                  'bg-green-500/20 text-green-400'
-                                                }`}>
-                                                  {task.urgency}
-                                                </span>
-                                                <span className={`px-2 py-1 rounded text-xs ${
-                                                  task.importance === 'high' ? 'bg-purple-500/20 text-purple-400' : 
-                                                  task.importance === 'medium' ? 'bg-blue-500/20 text-blue-400' : 
-                                                  'bg-gray-500/20 text-gray-400'
-                                                }`}>
-                                                  {task.importance}
-                                                </span>
-                                              </div>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        )}
+                    )}
 
-                        {/* Timeline */}
-                        {aiSuggestionResult.timeline && (
-                          <div className="bg-slate-600/30 rounded-lg p-4 border border-white/5">
-                            <h4 className="text-sm font-semibold text-emerald-400 mb-3 flex items-center">
-                              <IconComponent icon={FiCalendar} className="mr-2" />
-                              {t('aiStudy.timeline')}
-                            </h4>
-                            <div className="space-y-3">
-                              {aiSuggestionResult.timeline.map((phase, idx) => (
-                                <div key={idx} className="bg-slate-700/50 rounded-lg p-3">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <h5 className="text-xs font-medium text-slate-300">{phase.phase}</h5>
-                                    <span className="text-xs text-cyan-400">{phase.duration}</span>
-                                  </div>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <div>
-                                      <h6 className="text-xs font-medium text-slate-400 mb-1">{t('aiStudy.tasks')}</h6>
-                                      <ul className="text-xs text-slate-500 space-y-1">
-                                        {phase.tasks.map((task, taskIdx) => (
-                                          <li key={taskIdx} className="flex items-start">
-                                            <span className="text-emerald-400 mr-2">•</span>
-                                            {task}
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                    <div>
-                                      <h6 className="text-xs font-medium text-slate-400 mb-1">{t('aiStudy.milestones')}</h6>
-                                      <ul className="text-xs text-slate-500 space-y-1">
-                                        {phase.milestones.map((milestone, milestoneIdx) => (
-                                          <li key={milestoneIdx} className="flex items-start">
-                                            <span className="text-yellow-400 mr-2">★</span>
-                                            {milestone}
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Application Strategy */}
-                        {aiSuggestionResult.applicationStrategy && (
-                          <div className="bg-slate-600/30 rounded-lg p-4 border border-white/5">
-                            <h4 className="text-sm font-semibold text-emerald-400 mb-3 flex items-center">
-                              <IconComponent icon={FiEdit} className="mr-2" />
-                              {t('aiStudy.applicationStrategy')}
-                            </h4>
-                            <div className="space-y-3">
-                              {aiSuggestionResult.applicationStrategy.map((strategy, idx) => (
-                                <div key={idx} className="bg-slate-700/50 rounded-lg p-3">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <h5 className="text-xs font-medium text-slate-300 capitalize">{strategy.status}</h5>
-                                    <span className="text-xs text-blue-400">{strategy.timeline}</span>
-                                  </div>
-                                  <ul className="text-xs text-slate-500 space-y-1">
-                                    {strategy.actions.map((action, actionIdx) => (
-                                      <li key={actionIdx} className="flex items-start">
-                                        <span className="text-blue-400 mr-2">→</span>
-                                        {action}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Study Optimization */}
-                        {aiSuggestionResult.studyOptimization && (
-                          <div className="bg-slate-600/30 rounded-lg p-4 border border-white/5">
-                            <h4 className="text-sm font-semibold text-emerald-400 mb-3 flex items-center">
-                              <IconComponent icon={FiClock} className="mr-2" />
-                              {t('aiStudy.studyOptimization')}
-                            </h4>
-                            <div className="space-y-3">
-                              {aiSuggestionResult.studyOptimization.map((subject, idx) => (
-                                <div key={idx} className="bg-slate-700/50 rounded-lg p-3">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <h5 className="text-xs font-medium text-slate-300">{subject.subject}</h5>
-                                    <span className="text-xs text-cyan-400">{subject.timeAllocation}</span>
-                                  </div>
-                                  <p className="text-xs text-slate-400 mb-2">{subject.strategy}</p>
+                    {/* Timeline Detail */}
+                    {aiSuggestionResult.timeline && (
+                      <div className="bg-white dark:bg-[#111] rounded-2xl border border-gray-200 dark:border-white/10 shadow-sm overflow-hidden flex flex-col">
+                        <div className="p-5 border-b border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
+                          <h3 className="font-bold text-gray-900 dark:text-white flex items-center text-lg">
+                            <IconComponent icon={FiClock} className="mr-2 text-blue-500" />
+                            {t('aiStudy.timeline')}
+                          </h3>
+                        </div>
+                        <div className="p-5 space-y-6 flex-1 overflow-y-auto max-h-[400px]">
+                          {aiSuggestionResult.timeline.map((item, idx) => (
+                            <div key={idx} className="relative pl-6 border-l-2 border-gray-200 dark:border-white/10 last:border-0 pb-2">
+                              <div className="absolute -left-[9px] top-0 h-4 w-4 rounded-full bg-blue-500 border-4 border-white dark:border-[#111]"></div>
+                              <div className="mb-1 flex justify-between items-start">
+                                <h5 className="text-sm font-bold text-gray-900 dark:text-white">{item.phase}</h5>
+                                <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded font-medium">
+                                  {item.duration}
+                                </span>
+                              </div>
+                              <div className="bg-gray-50 dark:bg-white/5 rounded-xl p-3 mt-2">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                   <div>
-                                    <h6 className="text-xs font-medium text-slate-400 mb-1">{t('aiStudy.resources')}</h6>
-                                    <ul className="text-xs text-slate-500 space-y-1">
-                                      {subject.resources.map((resource, resourceIdx) => (
-                                        <li key={resourceIdx} className="flex items-start">
-                                          <span className="text-green-400 mr-2">📚</span>
-                                          {resource}
+                                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">Tasks</p>
+                                    <ul className="space-y-1">
+                                      {item.tasks.map((task, i) => {
+                                        const isObj = typeof task === 'object' && task !== null;
+                                        const description = isObj ? (task as any).description : task;
+                                        const priority = isObj ? (task as any).priority : 'Medium';
+                                        
+                                        return (
+                                          <li key={i} className="text-xs text-gray-600 dark:text-gray-300 flex items-start">
+                                            <span className={`mr-1.5 mt-1 h-1.5 w-1.5 rounded-full flex-shrink-0 ${priority === 'High' ? 'bg-red-500' : priority === 'Medium' ? 'bg-amber-500' : 'bg-blue-500'}`}></span>
+                                            <span>{description}</span>
+                                          </li>
+                                        );
+                                      })}
+                                    </ul>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">Milestones</p>
+                                    <ul className="space-y-1">
+                                      {item.milestones.map((ms, i) => (
+                                        <li key={i} className="text-xs text-gray-600 dark:text-gray-300 flex items-start">
+                                          <IconComponent icon={FiCheck} className="mr-1.5 mt-0.5 h-3 w-3 text-emerald-500 flex-shrink-0" />
+                                          <span>
+                                            <span className="font-medium">{ms.date}:</span> {ms.description}
+                                          </span>
                                         </li>
                                       ))}
                                     </ul>
                                   </div>
                                 </div>
-                              ))}
+                              </div>
                             </div>
-                          </div>
-                        )}
-
-                        {/* Deadline Management */}
-                        {aiSuggestionResult.deadlineManagement && (
-                          <div className="bg-slate-600/30 rounded-lg p-4 border border-white/5">
-                            <h4 className="text-sm font-semibold text-emerald-400 mb-3 flex items-center">
-                              <IconComponent icon={FaBell} className="mr-2" />
-                              {t('aiStudy.deadlineManagement')}
-                            </h4>
-                            <div className="space-y-3">
-                              {aiSuggestionResult.deadlineManagement.map((deadline, idx) => (
-                                <div key={idx} className="bg-slate-700/50 rounded-lg p-3">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center space-x-2">
-                                      <span className="text-xs text-slate-300">{deadline.deadline}</span>
-                                      <span className={`px-2 py-1 rounded text-xs ${
-                                        deadline.priority === 'high' ? 'bg-red-500/20 text-red-400' : 
-                                        deadline.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' : 
-                                        'bg-green-500/20 text-green-400'
-                                      }`}>
-                                        {deadline.priority}
-                                      </span>
-                                    </div>
-                                    <span className="text-xs text-purple-400 capitalize">{deadline.type}</span>
-                                  </div>
-                                  <ul className="text-xs text-slate-500 space-y-1">
-                                    {deadline.actions.map((action, actionIdx) => (
-                                      <li key={actionIdx} className="flex items-start">
-                                        <span className="text-red-400 mr-2">⚡</span>
-                                        {action}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Workload Distribution */}
-                        {aiSuggestionResult.workloadDistribution && (
-                          <div className="bg-slate-600/30 rounded-lg p-4 border border-white/5">
-                            <h4 className="text-sm font-semibold text-emerald-400 mb-3 flex items-center">
-                              <IconComponent icon={FiCalendar} className="mr-2" />
-                              {t('aiStudy.workloadDistribution')}
-                            </h4>
-                            <div className="space-y-3">
-                              {aiSuggestionResult.workloadDistribution.map((week, idx) => (
-                                <div key={idx} className="bg-slate-700/50 rounded-lg p-3">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <h5 className="text-xs font-medium text-slate-300">{t('aiStudy.week')} {week.week}</h5>
-                                    <div className="flex space-x-2">
-                                      <span className="text-xs text-blue-400">{t('aiStudy.study')}: {week.studyHours}h</span>
-                                      <span className="text-xs text-indigo-400">{t('aiStudy.apps')}: {week.applicationHours}h</span>
-                                    </div>
-                                  </div>
-                                  <ul className="text-xs text-slate-500 space-y-1">
-                                    {week.focus.map((focus, focusIdx) => (
-                                      <li key={focusIdx} className="flex items-start">
-                                        <span className="text-cyan-400 mr-2">🎯</span>
-                                        {focus}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Risk Mitigation */}
-                        {aiSuggestionResult.riskMitigation && (
-                          <div className="bg-slate-600/30 rounded-lg p-4 border border-white/5">
-                            <h4 className="text-sm font-semibold text-emerald-400 mb-3 flex items-center">
-                              <IconComponent icon={FiTrash2} className="mr-2" />
-                              {t('aiStudy.riskMitigation')}
-                            </h4>
-                            <div className="space-y-3">
-                              {aiSuggestionResult.riskMitigation.map((risk, idx) => (
-                                <div key={idx} className="bg-slate-700/50 rounded-lg p-3">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <h5 className="text-xs font-medium text-slate-300">{risk.risk}</h5>
-                                    <span className={`px-2 py-1 rounded text-xs ${
-                                      risk.impact === 'high' ? 'bg-red-500/20 text-red-400' : 
-                                      risk.impact === 'medium' ? 'bg-yellow-500/20 text-yellow-400' : 
-                                      'bg-green-500/20 text-green-400'
-                                    }`}>
-                                      {risk.impact} {t('aiStudy.impact')}
-                                    </span>
-                                  </div>
-                                  <ul className="text-xs text-slate-500 space-y-1">
-                                    {risk.mitigation.map((mitigation, mitigationIdx) => (
-                                      <li key={mitigationIdx} className="flex items-start">
-                                        <span className="text-indigo-400 mr-2">🛡️</span>
-                                        {mitigation}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Reminder Management */}
-                        {aiSuggestionResult.reminderManagement && (
-                          <div className="bg-slate-600/30 rounded-lg p-4 border border-white/5">
-                            <h4 className="text-sm font-semibold text-yellow-400 mb-3 flex items-center">
-                              <IconComponent icon={FaBell} className="mr-2" />
-                              Reminder Management
-                            </h4>
-                            <div className="space-y-3">
-                              {aiSuggestionResult.reminderManagement.map((reminder, idx) => (
-                                <div key={idx} className="bg-slate-700/50 rounded-lg p-3">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center space-x-2">
-                                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                        reminder.priority === 'high' ? 'bg-red-500/20 text-red-400' :
-                                        reminder.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                                        'bg-green-500/20 text-green-400'
-                                      }`}>
-                                        {reminder.priority}
-                                      </span>
-                                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                        reminder.type === 'deadline' ? 'bg-red-500/10 text-red-300' :
-                                        reminder.type === 'application' ? 'bg-blue-500/10 text-blue-300' :
-                                        reminder.type === 'study' ? 'bg-purple-500/10 text-purple-300' :
-                                        'bg-gray-500/10 text-gray-300'
-                                      }`}>
-                                        {reminder.type}
-                                      </span>
-                                    </div>
-                                    <span className="text-xs text-cyan-400">{reminder.date}</span>
-                                  </div>
-                                  <div className="mb-2">
-                                    <h5 className="text-xs font-medium text-slate-300 mb-1">{reminder.task}</h5>
-                                    {reminder.university && (
-                                      <p className="text-xs text-slate-400">University: {reminder.university}</p>
-                                    )}
-                                  </div>
-                                  {reminder.actions && reminder.actions.length > 0 && (
-                                    <div className="mb-2">
-                                      <p className="text-xs font-medium text-slate-400 mb-1">Actions:</p>
-                                      <ul className="text-xs text-slate-500 space-y-1">
-                                        {reminder.actions.map((action, actionIdx) => (
-                                          <li key={actionIdx} className="flex items-start">
-                                            <span className="text-yellow-400 mr-2">•</span>
-                                            {action}
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                  )}
-                                  {reminder.followUps && reminder.followUps.length > 0 && (
-                                    <div>
-                                      <p className="text-xs font-medium text-slate-400 mb-1">Follow-ups:</p>
-                                      <div className="space-y-1">
-                                        {reminder.followUps.map((followUp, followUpIdx) => (
-                                          <div key={followUpIdx} className="flex items-center justify-between bg-slate-800/50 rounded px-2 py-1">
-                                            <span className="text-xs text-slate-400">{followUp.description}</span>
-                                            <span className="text-xs text-cyan-400">{followUp.date}</span>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Progress Tracking */}
-                        {aiSuggestionResult.progressTracking && (
-                          <div className="bg-slate-600/30 rounded-lg p-4 border border-white/5">
-                            <h4 className="text-sm font-semibold text-emerald-400 mb-3 flex items-center">
-                              <IconComponent icon={FiCheck} className="mr-2" />
-                              {t('aiStudy.progressTracking')}
-                            </h4>
-                            <div className="space-y-3">
-                              {aiSuggestionResult.progressTracking.map((milestone, idx) => (
-                                <div key={idx} className="bg-slate-700/50 rounded-lg p-3">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <h5 className="text-xs font-medium text-slate-300">{milestone.milestone}</h5>
-                                    <span className="text-xs text-green-400">{milestone.deadline}</span>
-                                  </div>
-                                  <ul className="text-xs text-slate-500 space-y-1">
-                                    {milestone.criteria.map((criteria, criteriaIdx) => (
-                                      <li key={criteriaIdx} className="flex items-start">
-                                        <span className="text-green-400 mr-2">✓</span>
-                                        {criteria}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Action Buttons - Fixed at bottom */}
-              <div className="p-6 border-t border-white/10 flex-shrink-0">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <motion.button
-                      onClick={generateAISuggestion}
-                      disabled={isGeneratingSuggestion}
-                      className="flex items-center px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 disabled:from-slate-600 disabled:to-slate-600 text-white font-medium rounded-lg transition-all disabled:cursor-not-allowed"
-                      whileHover={{ scale: isGeneratingSuggestion ? 1 : 1.05 }}
-                      whileTap={{ scale: isGeneratingSuggestion ? 1 : 0.95 }}
-                    >
-                      {isGeneratingSuggestion ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                          Generating Roadmap...
-                        </>
-                      ) : (
-                        <>
-                          <IconComponent icon={AiOutlineBulb} className="h-4 w-4 mr-2" />
-                          Generate Study Roadmap
-                        </>
-                      )}
-                    </motion.button>
-                    
-                    {Object.keys(aiSuggestionResult).length > 0 && (
-                      <div className="text-sm text-slate-400 flex items-center">
-                        <IconComponent icon={FiCheck} className="h-4 w-4 mr-1 text-green-400" />
-                        1 AI response used
+                          ))}
+                        </div>
                       </div>
                     )}
+
+                    {/* Application Strategy */}
+                    {aiSuggestionResult.applicationStrategy && (
+                      <div className="bg-white dark:bg-[#111] rounded-2xl border border-gray-200 dark:border-white/10 shadow-sm overflow-hidden flex flex-col">
+                        <div className="p-5 border-b border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
+                          <h3 className="font-bold text-gray-900 dark:text-white flex items-center text-lg">
+                            <IconComponent icon={FiBook} className="mr-2 text-emerald-500" />
+                            {t('aiStudy.applicationStrategy')}
+                          </h3>
+                        </div>
+                        <div className="p-5 space-y-4 flex-1 overflow-y-auto max-h-[400px]">
+                          {aiSuggestionResult.applicationStrategy.map((item, idx) => (
+                            <div key={idx} className="bg-emerald-50/50 dark:bg-emerald-900/10 rounded-xl p-4 border border-emerald-100 dark:border-emerald-500/20">
+                              <div className="flex justify-between items-start mb-3">
+                                <h5 className="text-sm font-bold text-gray-900 dark:text-white">{item.status}</h5>
+                                <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">{item.timeline}</span>
+                              </div>
+                              <div className="space-y-2">
+                                {item.actions.map((action, i) => {
+                                  const isObj = typeof action === 'object' && action !== null;
+                                  const description = isObj ? (action as any).description : action;
+                                  const priority = isObj ? (action as any).priority : 'Medium';
+                                  const deadline = isObj ? (action as any).deadline : '';
+                                  
+                                  return (
+                                    <div key={i} className="flex items-start text-sm text-gray-700 dark:text-gray-300">
+                                      <IconComponent icon={FiCheck} className="mt-1 mr-2 flex-shrink-0 text-emerald-500" />
+                                      <div className="flex-1">
+                                        <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium mr-2 ${
+                                          priority === 'High' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
+                                          priority === 'Medium' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' :
+                                          'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                                        }`}>
+                                          {priority}
+                                        </span>
+                                        <span>{description}</span>
+                                        {deadline && <span className="ml-2 text-xs text-gray-500">Due: {deadline}</span>}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Deadline Management */}
+                    {aiSuggestionResult.deadlineManagement && (
+                      <div className="bg-white dark:bg-[#111] rounded-2xl border border-gray-200 dark:border-white/10 shadow-sm overflow-hidden flex flex-col">
+                        <div className="p-5 border-b border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
+                          <h3 className="font-bold text-gray-900 dark:text-white flex items-center text-lg">
+                            <IconComponent icon={FiCalendar} className="mr-2 text-red-500" />
+                            Deadline Management
+                          </h3>
+                        </div>
+                        <div className="p-5 space-y-4 flex-1 overflow-y-auto max-h-[400px]">
+                          {aiSuggestionResult.deadlineManagement.map((item, idx) => (
+                            <div key={idx} className="bg-red-50/50 dark:bg-red-900/10 rounded-xl p-4 border border-red-100 dark:border-red-500/20">
+                              <div className="flex justify-between items-start mb-3">
+                                <div>
+                                  <h5 className="text-sm font-bold text-gray-900 dark:text-white">{item.type}</h5>
+                                  <span className="text-xs text-red-600 dark:text-red-400 font-medium">Due: {item.deadline}</span>
+                                </div>
+                                <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
+                                  item.priority === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
+                                  item.priority === 'medium' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' :
+                                  'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                                }`}>
+                                  {item.priority}
+                                </span>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Actions</p>
+                                {item.actions.map((action, i) => (
+                                  <div key={i} className="flex items-start text-sm text-gray-700 dark:text-gray-300">
+                                    <IconComponent icon={FiCheck} className="mt-1 mr-2 flex-shrink-0 text-red-500" />
+                                    <span>{action}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Study Optimization */}
+                    {aiSuggestionResult.studyOptimization && (
+                      <div className="bg-white dark:bg-[#111] rounded-2xl border border-gray-200 dark:border-white/10 shadow-sm overflow-hidden flex flex-col">
+                        <div className="p-5 border-b border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
+                          <h3 className="font-bold text-gray-900 dark:text-white flex items-center text-lg">
+                            <IconComponent icon={FaBrain} className="mr-2 text-amber-500" />
+                            {t('aiStudy.studyOptimization')}
+                          </h3>
+                        </div>
+                        <div className="p-5 space-y-4 flex-1 overflow-y-auto max-h-[400px]">
+                          <div className="grid grid-cols-1 gap-4">
+                            {aiSuggestionResult.studyOptimization.map((subject, idx) => (
+                              <div key={idx} className="bg-amber-50/50 dark:bg-amber-900/10 rounded-xl p-4 border border-amber-100 dark:border-amber-500/20">
+                                <h5 className="text-sm font-bold text-gray-900 dark:text-white mb-2">{subject.subject}</h5>
+                                <p className="text-sm text-gray-700 dark:text-gray-300 mb-2"><span className="font-semibold">Strategy:</span> {subject.strategy}</p>
+                                <p className="text-sm text-gray-700 dark:text-gray-300 mb-2"><span className="font-semibold">Time:</span> {subject.timeAllocation}</p>
+                                {subject.resources && subject.resources.length > 0 && (
+                                  <div className="mt-2">
+                                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Resources</span>
+                                    <div className="flex flex-wrap gap-2 mt-1">
+                                      {subject.resources.map((res, i) => (
+                                        <span key={i} className="text-xs bg-white dark:bg-black/20 px-2 py-1 rounded border border-amber-200 dark:border-amber-500/30 text-gray-600 dark:text-gray-400">
+                                          {res}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Risk Mitigation */}
+                    {aiSuggestionResult.riskMitigation && (
+                      <div className="bg-white dark:bg-[#111] rounded-2xl border border-gray-200 dark:border-white/10 shadow-sm overflow-hidden flex flex-col">
+                        <div className="p-5 border-b border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
+                          <h3 className="font-bold text-gray-900 dark:text-white flex items-center text-lg">
+                            <IconComponent icon={FiAlertTriangle} className="mr-2 text-red-500" />
+                            {t('aiStudy.riskMitigation')}
+                          </h3>
+                        </div>
+                        <div className="p-5 space-y-4 flex-1 overflow-y-auto max-h-[400px]">
+                          {aiSuggestionResult.riskMitigation.map((risk, idx) => (
+                            <div key={idx} className="bg-red-50/50 dark:bg-red-900/10 rounded-xl p-4 border border-red-100 dark:border-red-500/20">
+                              <h5 className="text-sm font-bold text-red-700 dark:text-red-400 mb-1">{risk.risk}</h5>
+                              <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">{risk.impact}</p>
+                              <div className="bg-white dark:bg-black/20 rounded-lg p-3 text-sm">
+                                <span className="font-medium text-gray-700 dark:text-gray-200">Mitigation: </span>
+                                <ul className="list-disc pl-4 mt-1 space-y-1">
+                                  {risk.mitigation.map((m, i) => (
+                                    <li key={i} className="text-gray-600 dark:text-gray-400">{m}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Progress Tracking */}
+                    {aiSuggestionResult.progressTracking && (
+                      <div className="bg-white dark:bg-[#111] rounded-2xl border border-gray-200 dark:border-white/10 shadow-sm overflow-hidden flex flex-col">
+                        <div className="p-5 border-b border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
+                          <h3 className="font-bold text-gray-900 dark:text-white flex items-center text-lg">
+                            <IconComponent icon={AiOutlineLineChart} className="mr-2 text-indigo-500" />
+                            {t('aiStudy.progressTracking')}
+                          </h3>
+                        </div>
+                        <div className="p-5 space-y-4 flex-1 overflow-y-auto max-h-[400px]">
+                          {aiSuggestionResult.progressTracking.map((item, idx) => (
+                            <div key={idx} className="p-3 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/10">
+                              <div className="flex justify-between items-center mb-2">
+                                <span className="text-sm font-bold text-gray-900 dark:text-white">{item.milestone}</span>
+                                <span className="text-xs font-medium px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-full">{item.deadline}</span>
+                              </div>
+                              <div className="space-y-1">
+                                {item.criteria.map((crit, i) => (
+                                  <div key={i} className="flex items-start text-xs text-gray-600 dark:text-gray-400">
+                                    <span className="mr-1.5 mt-0.5 text-indigo-500">•</span>
+                                    {crit}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Reminder Management */}
+                    {aiSuggestionResult.reminderManagement && (
+                      <div className="bg-white dark:bg-[#111] rounded-2xl border border-gray-200 dark:border-white/10 shadow-sm overflow-hidden flex flex-col">
+                        <div className="p-5 border-b border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
+                          <h3 className="font-bold text-gray-900 dark:text-white flex items-center text-lg">
+                            <IconComponent icon={FiBell} className="mr-2 text-yellow-500" />
+                            {t('aiStudy.reminderManagement')}
+                          </h3>
+                        </div>
+                        <div className="p-5 space-y-4 flex-1 overflow-y-auto max-h-[400px]">
+                          {aiSuggestionResult.reminderManagement.map((reminder, idx) => (
+                            <div key={idx} className="flex items-start p-3 bg-yellow-50/50 dark:bg-yellow-900/10 rounded-xl border border-yellow-100 dark:border-yellow-500/20">
+                              <IconComponent icon={FiClock} className="mt-1 mr-3 text-yellow-500 flex-shrink-0" />
+                              <div>
+                                <h5 className="text-sm font-bold text-gray-900 dark:text-white">{reminder.type}</h5>
+                                <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">{reminder.task}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{reminder.date}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                   </div>
-                  
-                  <motion.button
-                    onClick={closeAISuggestionModal}
-                    className="px-6 py-3 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 rounded-lg transition-colors"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    Close
-                  </motion.button>
                 </div>
               </div>
-            </motion.div>
+            </div>
           </PortalModal>
         )}
       </AnimatePresence>

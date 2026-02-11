@@ -18,9 +18,11 @@ import {
   FaProjectDiagram,
   FaBars,
     FaTimes,
-    FaCommentDots
+    FaCommentDots,
+    FaStopwatch
 } from 'react-icons/fa';
 import { useAuth } from '../utils/AuthContext';
+import { supabase } from '../utils/supabase';
 
 // Import Study Set Components
 import StudyNotes from '../components/study-set/StudyNotes';
@@ -34,12 +36,15 @@ import StudyContent from '../components/study-set/StudyContent';
 import StudyRightPanel from '../components/study-set/StudyRightPanel';
 import StudyMindmap from '../components/study-set/StudyMindmap';
 import StudySpeechToText from '../components/study-set/StudySpeechToText';
+import StudyTimer from '../components/study-set/StudyTimer';
+import { AddMethodModal } from '../components/study-set/AddMethodModal';
 
 // --- Components ---
 
 interface StudySidebarProps {
     activeMethod: string;
     onSelectMethod: (id: string) => void;
+    onAddMethod: () => void;
     allowedMethods?: Record<string, boolean>;
     isOpen: boolean;
     onClose: () => void;
@@ -58,7 +63,7 @@ const allMethods = [
     { id: 'content', label: 'Content', icon: <FaFileAlt />, key: 'content' },
 ];
 
-const StudySidebar: React.FC<StudySidebarProps> = ({ activeMethod, onSelectMethod, allowedMethods, isOpen, onClose }) => {
+const StudySidebar: React.FC<StudySidebarProps> = ({ activeMethod, onSelectMethod, onAddMethod, allowedMethods, isOpen, onClose }) => {
     const navigate = useNavigate();
     const { user } = useAuth();
 
@@ -116,7 +121,10 @@ const StudySidebar: React.FC<StudySidebarProps> = ({ activeMethod, onSelectMetho
                         </button>
                     ))}
 
-                    <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-colors mt-4">
+                    <button 
+                        onClick={onAddMethod}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-colors mt-4"
+                    >
                         <FaPlus size={12} />
                         <span>ADD METHOD</span>
                     </button>
@@ -144,7 +152,9 @@ const StudyMaterialPage: React.FC = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
-    const studySetData = location.state?.studySetData;
+    const [studySetData, setStudySetData] = useState(location.state?.studySetData);
+    const [pollingMethods, setPollingMethods] = useState<string[]>([]);
+
     const [activeMethod, setActiveMethod] = useState(() => {
         if (studySetData?.document_type === 'audio' || studySetData?.document_type === 'youtube' || studySetData?.document_type === 'video') {
             return 'speech-to-text';
@@ -153,8 +163,53 @@ const StudyMaterialPage: React.FC = () => {
     });
     const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024);
     const [isRightPanelOpen, setIsRightPanelOpen] = useState(window.innerWidth >= 1280);
+    const [isAddMethodModalOpen, setIsAddMethodModalOpen] = useState(false);
+    const [isTimerOpen, setIsTimerOpen] = useState(false);
     const [chatAttachment, setChatAttachment] = useState<{ type: 'text', content: string, source: string } | null>(null);
     const [selectionButton, setSelectionButton] = useState<{ x: number, y: number, text: string, source: string } | null>(null);
+
+    // Polling for updates when new methods are added
+    useEffect(() => {
+        if (pollingMethods.length === 0) return;
+
+        const fetchUpdates = async () => {
+            if (!id) return;
+            const { data } = await supabase
+                .from('documents')
+                .select('*')
+                .eq('id', id)
+                .single();
+            
+            if (data) {
+                // Merge pending methods as 'true' into the data for UI (optimistic)
+                const mergedData = { ...data };
+                pollingMethods.forEach(mId => {
+                    const method = allMethods.find(m => m.id === mId);
+                    if (method) mergedData[method.key] = true;
+                });
+                
+                setStudySetData(mergedData);
+                
+                // Check if pending methods are now available in the REAL data
+                const stillPending = pollingMethods.filter(methodId => {
+                    const method = allMethods.find(m => m.id === methodId);
+                    // If method key exists and is true, we are done with this one
+                    // The key in database is usually like 'notes', 'multiple_choice' etc.
+                    return method && !data[method.key];
+                });
+                
+                if (stillPending.length !== pollingMethods.length) {
+                    setPollingMethods(stillPending);
+                }
+            }
+        };
+        
+        // Initial fetch immediately
+        fetchUpdates();
+
+        const interval = setInterval(fetchUpdates, 2000);
+        return () => clearInterval(interval);
+    }, [pollingMethods, id]);
 
     // Helper to get source label
     const getSourceLabel = (methodId: string) => {
@@ -372,12 +427,13 @@ const StudyMaterialPage: React.FC = () => {
             )}
 
             <StudySidebar 
-                activeMethod={activeMethod} 
-                onSelectMethod={setActiveMethod} 
-                allowedMethods={studySetData}
-                isOpen={isSidebarOpen}
-                onClose={() => setIsSidebarOpen(false)}
-            />
+                    activeMethod={activeMethod} 
+                    onSelectMethod={setActiveMethod} 
+                    onAddMethod={() => setIsAddMethodModalOpen(true)}
+                    allowedMethods={studySetData}
+                    isOpen={isSidebarOpen}
+                    onClose={() => setIsSidebarOpen(false)}
+                />
             
             <main className="flex-1 flex flex-col min-w-0 h-full relative">
                 {/* Top Bar */}
@@ -400,7 +456,15 @@ const StudyMaterialPage: React.FC = () => {
                     </div>
                     
                     <div className="flex items-center gap-2 md:gap-4">
-                        {/* Buttons removed */}
+                        {/* Timer Button */}
+                        <button
+                            onClick={() => setIsTimerOpen(!isTimerOpen)}
+                            className={`p-2 rounded-lg transition-colors ${isTimerOpen ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'}`}
+                            title="Study Timer"
+                        >
+                            <FaStopwatch size={18} />
+                        </button>
+
                          {/* Right Panel Toggle */}
                          {!isRightPanelOpen && (
                             <button 
@@ -486,6 +550,34 @@ const StudyMaterialPage: React.FC = () => {
                     <span className="text-xs opacity-75 bg-indigo-800 px-1.5 py-0.5 rounded ml-1">⌘U</span>
                 </button>
             )}
+
+            {/* Study Timer */}
+            <StudyTimer isOpen={isTimerOpen} onClose={() => setIsTimerOpen(false)} />
+
+            {/* Add Method Modal */}
+            <AddMethodModal
+                isOpen={isAddMethodModalOpen}
+                onClose={() => setIsAddMethodModalOpen(false)}
+                studySetData={studySetData}
+                documentId={id!}
+                onMethodAdded={(methods) => {
+                    setPollingMethods(prev => [...prev, ...methods]);
+                    if (methods.length > 0) {
+                        setActiveMethod(methods[0]); // Switch immediately
+                    }
+                    
+                    // Initial optimistic update
+                    setStudySetData((prev: any) => {
+                         if (!prev) return prev;
+                         const newData = { ...prev };
+                         methods.forEach(mId => {
+                             const method = allMethods.find(m => m.id === mId);
+                             if (method) newData[method.key] = true;
+                         });
+                         return newData;
+                    });
+                }}
+            />
         </div>
     );
 };

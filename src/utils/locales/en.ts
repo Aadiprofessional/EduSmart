@@ -736,6 +736,15 @@ export const en = {
     aiStudyRoadmapGenerator: "AI Study Roadmap Generator",
     analyzeWithAI: "Analyze with AI",
     aiRoadmap: "AI Roadmap",
+    priorityMatrix: "Priority Matrix",
+    timeline: "Timeline",
+    applicationStrategy: "Application Strategy",
+    studyOptimization: "Study Optimization",
+    deadlineManagement: "Deadline Management",
+    workloadDistribution: "Workload Distribution",
+    riskMitigation: "Risk Mitigation",
+    progressTracking: "Progress Tracking",
+    reminderManagement: "Reminder Management",
     priorityText: "{priority} priority",
 
     // Check Mistakes Component specific
