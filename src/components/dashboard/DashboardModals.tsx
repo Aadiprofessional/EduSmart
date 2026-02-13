@@ -68,6 +68,8 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void; onNex
   const [uploadState, setUploadState] = useState<'idle' | 'uploading' | 'complete' | 'error'>('idle');
   const [progress, setProgress] = useState(0);
   const [payload, setPayload] = useState<UploadPayload | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pdfProcessType, setPdfProcessType] = useState<'document' | 'ocr' | 'pdf_vision'>('document');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -75,8 +77,63 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void; onNex
       setUploadState('idle');
       setProgress(0);
       setPayload(null);
+      setPendingFile(null);
+      setPdfProcessType('document');
     }
   }, [isOpen]);
+
+  const processFiles = async (files: File[], type: 'document' | 'ocr' | 'pdf_vision') => {
+    if (!user) return;
+    setUploadState('uploading');
+    setProgress(10); 
+
+    try {
+        let resultPayload: UploadPayload;
+        const uid = user.id;
+        const imageFiles = files.filter(f => f.type.startsWith('image/'));
+
+        if (files.length === 1) {
+            const file = files[0];
+            if (file.type.startsWith('audio/')) {
+                resultPayload = await uploadService.constructAudioPayload(file, uid);
+                resultPayload.uploadedFileType = 'audio';
+            } else if (file.type.startsWith('video/')) {
+                resultPayload = await uploadService.constructVideoPayload(file, uid);
+                resultPayload.uploadedFileType = 'video';
+            } else {
+                // Default to document for everything else (pdf, doc, image, etc.)
+                resultPayload = await uploadService.constructDocumentPayload(file, uid, type);
+            }
+        } else {
+            // Multiple images -> PDF
+            const doc = new jsPDF();
+            
+            for (let i = 0; i < imageFiles.length; i++) {
+                if (i > 0) doc.addPage();
+                const image = imageFiles[i];
+                const imageDataUrl = await readFileAsDataURL(image);
+                const imgProps = doc.getImageProperties(imageDataUrl);
+                const pdfWidth = doc.internal.pageSize.getWidth();
+                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                const imageType = image.type === 'image/png' ? 'PNG' : 'JPEG';
+                doc.addImage(imageDataUrl, imageType, 0, 0, pdfWidth, pdfHeight);
+            }
+            
+            const pdfBlob = doc.output('blob');
+            const pdfFile = new File([pdfBlob], `combined_images_${Date.now()}.pdf`, { type: 'application/pdf' });
+            
+            resultPayload = await uploadService.constructDocumentPayload(pdfFile, uid, 'pdf_vision');
+        }
+
+        setPayload(resultPayload);
+        setProgress(100);
+        setUploadState('complete');
+        setPendingFile(null);
+    } catch (error) {
+        console.error("Upload failed:", error);
+        setUploadState('error');
+    }
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0 && user) {
@@ -99,54 +156,14 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void; onNex
              return;
         }
 
-        setUploadState('uploading');
-        setProgress(10); 
-
-        try {
-            let resultPayload: UploadPayload;
-            const uid = user.id;
-
-            if (files.length === 1) {
-                const file = files[0];
-                if (file.type.startsWith('audio/')) {
-                    resultPayload = await uploadService.constructAudioPayload(file, uid);
-                    resultPayload.uploadedFileType = 'audio';
-                } else if (file.type.startsWith('video/')) {
-                    resultPayload = await uploadService.constructVideoPayload(file, uid);
-                    resultPayload.uploadedFileType = 'video';
-                } else {
-                    // Default to document for everything else (pdf, doc, image, etc.)
-                    resultPayload = await uploadService.constructDocumentPayload(file, uid);
-                    // uploadedFileType is already set inside constructDocumentPayload for documents/images
-                }
-            } else {
-                // Multiple images -> PDF
-                const doc = new jsPDF();
-                
-                for (let i = 0; i < imageFiles.length; i++) {
-                    if (i > 0) doc.addPage();
-                    const image = imageFiles[i];
-                    const imageDataUrl = await readFileAsDataURL(image);
-                    const imgProps = doc.getImageProperties(imageDataUrl);
-                    const pdfWidth = doc.internal.pageSize.getWidth();
-                    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-                    const imageType = image.type === 'image/png' ? 'PNG' : 'JPEG';
-                    doc.addImage(imageDataUrl, imageType, 0, 0, pdfWidth, pdfHeight);
-                }
-                
-                const pdfBlob = doc.output('blob');
-                const pdfFile = new File([pdfBlob], `combined_images_${Date.now()}.pdf`, { type: 'application/pdf' });
-                
-                resultPayload = await uploadService.constructDocumentPayload(pdfFile, uid);
-            }
-
-            setPayload(resultPayload);
-            setProgress(100);
-            setUploadState('complete');
-        } catch (error) {
-            console.error("Upload failed:", error);
-            setUploadState('error');
+        // Check for single PDF
+        if (files.length === 1 && files[0].type === 'application/pdf') {
+             setPendingFile(files[0]);
+             setPdfProcessType('document');
+             return;
         }
+
+        processFiles(files, 'pdf_vision');
     } else if (!user) {
         alert("Please sign in to upload files.");
     }
@@ -171,7 +188,83 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void; onNex
         accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.ppt,.pptx"
         multiple
       />
-      {uploadState === 'idle' || uploadState === 'error' ? (
+      
+      {pendingFile ? (
+        <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-xl p-8 text-center">
+            <div className="w-16 h-16 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FaBook className="text-2xl" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">PDF Detected</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{pendingFile.name}</p>
+            
+            <div className="grid grid-cols-1 gap-3 mb-8 w-full max-w-lg mx-auto">
+                {/* Extract Text Option */}
+                <div 
+                    onClick={() => setPdfProcessType('document')}
+                    className={`cursor-pointer p-4 rounded-lg border-2 transition-all ${pdfProcessType === 'document' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-[#1a1a1a]'}`}
+                >
+                    <div className="flex items-center space-x-3">
+                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 ${pdfProcessType === 'document' ? 'border-indigo-500 bg-indigo-500' : 'border-gray-400'}`}>
+                            {pdfProcessType === 'document' && <FaCheck className="text-white text-xs" />}
+                        </div>
+                        <div className="text-left">
+                            <span className="block text-gray-900 dark:text-white font-medium">Extract Text</span>
+                            <span className="block text-xs text-gray-500 mt-1">Extract text only. Standard document processing.</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* OCR Option */}
+                <div 
+                    onClick={() => setPdfProcessType('ocr')}
+                    className={`cursor-pointer p-4 rounded-lg border-2 transition-all ${pdfProcessType === 'ocr' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-[#1a1a1a]'}`}
+                >
+                    <div className="flex items-center space-x-3">
+                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 ${pdfProcessType === 'ocr' ? 'border-indigo-500 bg-indigo-500' : 'border-gray-400'}`}>
+                            {pdfProcessType === 'ocr' && <FaCheck className="text-white text-xs" />}
+                        </div>
+                        <div className="text-left">
+                            <span className="block text-gray-900 dark:text-white font-medium">OCR</span>
+                            <span className="block text-xs text-gray-500 mt-1">Best for scanned docs. Cost: 1 coin/page.</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* PDF Vision Option */}
+                <div 
+                    onClick={() => setPdfProcessType('pdf_vision')}
+                    className={`cursor-pointer p-4 rounded-lg border-2 transition-all ${pdfProcessType === 'pdf_vision' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-[#1a1a1a]'}`}
+                >
+                    <div className="flex items-center space-x-3">
+                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 ${pdfProcessType === 'pdf_vision' ? 'border-indigo-500 bg-indigo-500' : 'border-gray-400'}`}>
+                            {pdfProcessType === 'pdf_vision' && <FaCheck className="text-white text-xs" />}
+                        </div>
+                        <div className="text-left">
+                            <span className="block text-gray-900 dark:text-white font-medium">Include Images (AI Vision)</span>
+                            <span className="block text-xs text-gray-500 mt-1">Best for slides/diagrams. Cost: 2 coins/page.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="flex space-x-3 justify-center">
+                <button 
+                    onClick={() => { setPendingFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                    disabled={uploadState === 'uploading'}
+                    className={`px-4 py-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 ${uploadState === 'uploading' ? 'cursor-not-allowed opacity-50' : ''}`}
+                >
+                    Cancel
+                </button>
+                <button 
+                    onClick={() => processFiles([pendingFile], pdfProcessType)}
+                    disabled={uploadState === 'uploading'}
+                    className={`px-6 py-2 bg-[#c2410c] hover:bg-[#9a3412] text-white rounded-lg font-medium transition-colors ${uploadState === 'uploading' ? 'cursor-not-allowed opacity-70' : ''}`}
+                >
+                    {uploadState === 'uploading' ? 'Processing...' : 'Process PDF'}
+                </button>
+            </div>
+        </div>
+      ) : uploadState === 'idle' || uploadState === 'error' ? (
         <div 
             onClick={handleUploadClick}
             className={`border-2 border-dashed ${uploadState === 'error' ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 'border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#111]'} rounded-xl p-12 flex flex-col items-center justify-center text-center hover:border-gray-300 dark:hover:border-white/20 transition-colors cursor-pointer group`}
@@ -197,15 +290,17 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void; onNex
         </div>
       )}
 
+      {!pendingFile && (
       <div className="flex justify-end mt-6">
-         <button 
+        <button 
             onClick={() => payload && onNext(payload)}
-            disabled={uploadState !== 'complete' || !payload}
+            disabled={uploadState !== 'complete'}
             className={`px-8 py-2.5 rounded-lg font-medium transition-colors ${uploadState === 'complete' ? 'bg-[#c2410c] hover:bg-[#9a3412] text-white' : 'bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed'}`}
-         >
+        >
             Next
-         </button>
+        </button>
       </div>
+      )}
     </BaseModal>
   );
 };
@@ -215,14 +310,16 @@ export const PasteModal: React.FC<{ isOpen: boolean; onClose: () => void; onNext
   const { user } = useAuth();
   const [url, setUrl] = useState('');
   const [text, setText] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!user) {
         alert("Please sign in.");
         return;
     }
 
     if (url) {
+        // Direct navigation for all URLs (including YouTube) - n8n processing happens at generation
         const payload = uploadService.constructUrlPayload(url, user.id);
         onNext(payload);
     } else if (text) {
@@ -274,10 +371,10 @@ export const PasteModal: React.FC<{ isOpen: boolean; onClose: () => void; onNext
          <div className="flex justify-end mt-2">
             <button 
                 onClick={handleNext}
-                disabled={(!url && !text) || !user}
-                className={`px-8 py-2.5 rounded-lg font-medium transition-colors ${(!url && !text) || !user ? 'bg-gray-200 dark:bg-gray-800 text-gray-400 cursor-not-allowed' : 'bg-[#c2410c] hover:bg-[#9a3412] text-white'}`}
+                disabled={(!url && !text) || !user || isLoading}
+                className={`px-8 py-2.5 rounded-lg font-medium transition-colors ${(!url && !text) || !user || isLoading ? 'bg-gray-200 dark:bg-gray-800 text-gray-400 cursor-not-allowed' : 'bg-[#c2410c] hover:bg-[#9a3412] text-white'}`}
             >
-               Next
+               {isLoading ? 'Processing...' : 'Next'}
             </button>
          </div>
       </div>

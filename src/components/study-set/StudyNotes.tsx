@@ -32,6 +32,7 @@ const StudyNotes: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
     const fonts = [
         { name: 'Sans Serif', value: 'Arial' },
@@ -63,6 +64,8 @@ const StudyNotes: React.FC = () => {
                     .select('notes_data')
                     .eq('document_id', id)
                     .eq('uid', user.id)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
                     .maybeSingle();
 
                 if (error) {
@@ -125,6 +128,13 @@ const StudyNotes: React.FC = () => {
                                         {preprocessLaTeX(content)}
                                     </ReactMarkdown>
                                 );
+
+                                // Post-process to make math elements atomic/non-editable
+                                // This prevents contentEditable operations (like alignment) from breaking the internal HTML structure of KaTeX
+                                content = content
+                                    .replace(/class="katex"/g, 'class="katex" contentEditable="false"')
+                                    .replace(/class="katex-display"/g, 'class="katex-display" contentEditable="false"');
+
                             } catch (e) {
                                 console.error('Error rendering markdown:', e);
                                 // Fallback to raw content if rendering fails
@@ -234,6 +244,7 @@ const StudyNotes: React.FC = () => {
 
             if (error) throw error;
             
+            setHasUnsavedChanges(false);
             // Optional: show a small indicator or toast
             // console.log('Notes saved successfully');
         } catch (err) {
@@ -337,23 +348,6 @@ const StudyNotes: React.FC = () => {
                             
                             {/* Actions */}
                             <ToolbarButton icon={<FaEraser size={12} />} command="removeFormat" />
-                            <button 
-                                onClick={handleSave}
-                                disabled={isSaving}
-                                className="p-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded flex-shrink-0 transition-colors ml-auto flex items-center gap-2 disabled:opacity-50"
-                                title="Save Notes"
-                            >
-                                <FaSave size={12} className={isSaving ? 'animate-spin' : ''} />
-                                <span className="text-xs font-bold">{isSaving ? 'Saving...' : 'Save'}</span>
-                            </button>
-                            <button 
-                                onClick={handleExportPdf}
-                                className="p-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded flex-shrink-0 transition-colors flex items-center gap-2"
-                                title="Export PDF"
-                            >
-                                <FaFilePdf size={12} />
-                                <span className="text-xs font-bold">Export PDF</span>
-                            </button>
                         </div>
                     </div>
 
@@ -426,14 +420,74 @@ const StudyNotes: React.FC = () => {
                             </div>
                         </div>
                     ) : (
-                        <div 
-                            ref={editorRef}
-                            className="prose prose-gray dark:prose-invert max-w-none focus:outline-none pb-20 min-h-[300px]"
-                            contentEditable={true}
-                            suppressContentEditableWarning={true}
-                            dangerouslySetInnerHTML={{ __html: notesContent }}
-                        />
+                        <>
+                            <style>{`
+                                .study-notes-editor h1 {
+                                    font-size: 1.875rem;
+                                    font-weight: 700;
+                                    margin-bottom: 1rem;
+                                    margin-top: 1.5rem;
+                                    border-bottom: 1px solid #e5e7eb;
+                                    padding-bottom: 0.5rem;
+                                    color: #111827;
+                                }
+                                .dark .study-notes-editor h1 {
+                                    color: white;
+                                    border-color: #374151;
+                                }
+                                .study-notes-editor h2 {
+                                    font-size: 1.5rem;
+                                    font-weight: 600;
+                                    margin-bottom: 0.75rem;
+                                    margin-top: 1.25rem;
+                                    color: #111827;
+                                }
+                                .dark .study-notes-editor h2 {
+                                    color: white;
+                                }
+                                /* Protect Math elements */
+                                .katex, .katex-display {
+                                    user-select: text;
+                                }
+                                .katex-display {
+                                    margin: 1em 0;
+                                    overflow-x: auto;
+                                    overflow-y: hidden;
+                                }
+                            `}</style>
+                            <div 
+                                ref={editorRef}
+                                className="study-notes-editor prose prose-gray dark:prose-invert max-w-none focus:outline-none pb-20 min-h-[300px]"
+                                contentEditable={true}
+                                suppressContentEditableWarning={true}
+                                dangerouslySetInnerHTML={{ __html: notesContent }}
+                                onInput={() => setHasUnsavedChanges(true)}
+                            />
+                        </>
                     )}
+                </div>
+            </div>
+
+            {/* Bottom Action Bar */}
+            <div className="absolute bottom-6 left-0 right-0 flex justify-center pointer-events-none z-30">
+                <div className="flex items-center gap-2 pointer-events-auto">
+                    {hasUnsavedChanges && (
+                        <button 
+                            onClick={handleSave}
+                            disabled={isSaving}
+                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 hover:scale-105 active:scale-95"
+                        >
+                            <FaSave size={14} className={isSaving ? 'animate-spin' : ''} />
+                            <span className="text-sm font-medium">{isSaving ? 'Saving...' : 'Save Changes'}</span>
+                        </button>
+                    )}
+                    <button 
+                        onClick={handleExportPdf}
+                        className="px-4 py-2 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 rounded-full shadow-lg transition-all flex items-center gap-2 hover:scale-105 active:scale-95"
+                    >
+                        <FaFilePdf size={14} />
+                        <span className="text-sm font-medium">Export PDF</span>
+                    </button>
                 </div>
             </div>
         </div>

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
@@ -10,10 +10,163 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 
+// Helper to extract YouTube ID
+const getYouTubeId = (url: string) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+};
+
+// Native Video Player Component
+const NativeVideoPlayer = forwardRef((props: any, ref) => {
+    const { url, playing, onProgress, onDuration, onEnded, onPlay, onPause, width, height, className } = props;
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const iframeRef = useRef<HTMLIFrameElement>(null);
+    const youtubeId = getYouTubeId(url);
+    const isYouTube = !!youtubeId;
+    const playerInterval = useRef<NodeJS.Timeout | null>(null);
+
+    // Expose seekTo method
+    useImperativeHandle(ref, () => ({
+        seekTo: (seconds: number) => {
+            if (isYouTube && iframeRef.current) {
+                iframeRef.current.contentWindow?.postMessage(JSON.stringify({
+                    event: 'command',
+                    func: 'seekTo',
+                    args: [seconds, true]
+                }), '*');
+            } else if (videoRef.current) {
+                videoRef.current.currentTime = seconds;
+            }
+        },
+        getCurrentTime: () => {
+             return videoRef.current ? videoRef.current.currentTime : 0;
+        }
+    }));
+
+    // Handle Play/Pause props changes
+    useEffect(() => {
+        if (isYouTube && iframeRef.current) {
+             const command = playing ? 'playVideo' : 'pauseVideo';
+             iframeRef.current.contentWindow?.postMessage(JSON.stringify({
+                event: 'command',
+                func: command,
+                args: []
+            }), '*');
+        } else if (!isYouTube && videoRef.current) {
+            if (playing) {
+                videoRef.current.play().catch(e => console.error("Native play error:", e));
+            } else {
+                videoRef.current.pause();
+            }
+        }
+    }, [playing, isYouTube]);
+
+    // Setup YouTube Message Listener AND Polling for Progress
+    useEffect(() => {
+        if (!isYouTube) return;
+
+        // Listener for YouTube API events
+        const handleMessage = (event: MessageEvent) => {
+            if (event.origin !== "https://www.youtube.com") return;
+            try {
+                const data = JSON.parse(event.data);
+                if (data.event === 'infoDelivery' && data.info) {
+                    if (data.info.currentTime && onProgress) {
+                        onProgress({ playedSeconds: data.info.currentTime });
+                    }
+                    if (data.info.duration && onDuration) {
+                        onDuration(data.info.duration);
+                    }
+                    if (data.info.playerState === 0 && onEnded) { // 0 is ended
+                        onEnded();
+                    }
+                    if (data.info.playerState === 1 && onPlay) { // 1 is playing
+                        onPlay();
+                    }
+                    if (data.info.playerState === 2 && onPause) { // 2 is paused
+                        onPause();
+                    }
+                }
+            } catch (e) {
+                // Ignore parsing errors
+            }
+        };
+
+        window.addEventListener('message', handleMessage);
+        
+        // POLL for current time every 500ms
+        // This is crucial because YouTube doesn't always push 'infoDelivery' frequently enough for smooth subtitles
+        const pollTimer = setInterval(() => {
+            if (iframeRef.current && iframeRef.current.contentWindow) {
+                // We can't directly read iframe state due to cross-origin,
+                // BUT we can assume if the user is playing, we want to know where they are.
+                // Actually, standard YouTube Embed API doesn't support "getting" via postMessage easily without the YT.Player wrapper.
+                // However, we CAN'T use YT.Player wrapper as per previous instruction to use pure iframe.
+                
+                // WAIT! 'listening' must be enabled for infoDelivery to be sent automatically.
+                // We send a 'listening' event to the iframe.
+                iframeRef.current.contentWindow.postMessage(JSON.stringify({
+                    event: 'listening',
+                    id: youtubeId, // passing channel id or similar might be needed, but usually just JSON is enough
+                    channel: 'widget' // often required
+                }), '*');
+            }
+        }, 1000);
+
+        return () => {
+            window.removeEventListener('message', handleMessage);
+            clearInterval(pollTimer);
+        };
+    }, [isYouTube, onProgress, onDuration, onEnded, onPlay, onPause, youtubeId]);
+
+    if (isYouTube) {
+        return (
+            <div className={className} style={{ width, height }}>
+                <iframe
+                    ref={iframeRef}
+                    width="100%"
+                    height="100%"
+                    src={`https://www.youtube.com/embed/${youtubeId}?enablejsapi=1&origin=${window.location.origin}&modestbranding=1&rel=0&showinfo=1&controls=1&playsinline=1&iv_load_policy=3`}
+                    title="YouTube video player"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    style={{ pointerEvents: 'auto' }}
+                />
+            </div>
+        );
+    }
+
+    return (
+        <video
+            ref={videoRef}
+            src={url}
+            className={`${className} object-contain bg-black`}
+            style={{ width, height }}
+            controls
+            playsInline
+            onTimeUpdate={(e) => onProgress && onProgress({ playedSeconds: e.currentTarget.currentTime })}
+            onDurationChange={(e) => onDuration && onDuration(e.currentTarget.duration)}
+            onEnded={onEnded}
+            onPlay={onPlay}
+            onPause={onPause}
+        />
+    );
+});
+
 interface Word {
     start: number;
     end: number;
     word: string;
+}
+
+interface RawWord {
+    start: number | string;
+    end: number | string;
+    word?: string;
+    text?: string;
 }
 
 interface AudioMetadata {
@@ -24,9 +177,32 @@ interface AudioMetadata {
     duration: number | null;
     language: string | null;
     audio_url: string | null;
-    words_data: Word[] | null;
+    words_data: RawWord[] | null;
     video_url: string | null;
 }
+
+// Helper to parse time string "HH:MM:SS" or "MM:SS" to seconds
+const parseTime = (time: string | number): number => {
+    if (typeof time === 'number') return time;
+    if (!time) return 0;
+    
+    const parts = time.split(':').map(Number);
+    if (parts.some(isNaN)) return 0;
+    
+    if (parts.length === 3) {
+        return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    }
+    if (parts.length === 2) {
+        return parts[0] * 60 + parts[1];
+    }
+    return parts[0] || 0;
+};
+
+// Helper to detect YouTube URL
+const isYouTubeUrl = (url: string | null) => {
+    if (!url) return false;
+    return url.includes('youtube.com') || url.includes('youtu.be');
+};
 
 interface StudySpeechToTextProps {
     onDiscuss?: (text: string) => void;
@@ -34,6 +210,9 @@ interface StudySpeechToTextProps {
 }
 
 const StudySpeechToText: React.FC<StudySpeechToTextProps> = ({ onDiscuss, documentType }) => {
+    // Cast ReactPlayer to any to avoid type errors with playerVars and ref
+    // const VideoPlayer = ReactPlayer as any;
+    const VideoPlayer = NativeVideoPlayer;
     const { id } = useParams<{ id: string }>();
     const { user } = useAuth();
     
@@ -53,6 +232,7 @@ const StudySpeechToText: React.FC<StudySpeechToTextProps> = ({ onDiscuss, docume
     
     // Refs
     const mediaRef = useRef<HTMLMediaElement>(null);
+    const reactPlayerRef = useRef<any>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const [isCompact, setIsCompact] = useState(false);
     const isUserScrolling = useRef(false);
@@ -270,46 +450,65 @@ const StudySpeechToText: React.FC<StudySpeechToTextProps> = ({ onDiscuss, docume
             try {
                 // Poll audio_metadata
                 const fetchMetadata = async () => {
-                    if (!isMounted) return;
+                    if (!isMounted) return false;
 
-                    const { data, error } = await supabase
-                        .from('audio_metadata')
-                        .select('*')
-                        .eq('documentid', id)
-                        .eq('uid', user.id)
-                        .single();
+                    try {
+                        const { data, error } = await supabase
+                            .from('audio_metadata')
+                            .select('*')
+                            .eq('documentid', id)
+                            .eq('uid', user.id)
+                            .order('uploaded_at', { ascending: false })
+                            .limit(1)
+                            .maybeSingle();
 
-                    if (data) {
-                        // Data found
-                        const metadata = data as AudioMetadata;
-                        
-                        // Determine media URL and type
-                        if (metadata.video_url) {
-                            setMediaUrl(metadata.video_url);
-                            setMediaType('video');
-                        } else if (metadata.audio_url) {
-                            setMediaUrl(metadata.audio_url);
-                            // Force video type if document_type indicates video/youtube
-                            if (documentType === 'video' || documentType === 'youtube') {
+                        if (error) {
+                            console.error('Error fetching metadata:', error);
+                            return false;
+                        }
+
+                        if (data) {
+                            // Data found
+                            const metadata = data as AudioMetadata;
+                            
+                            // Determine media URL and type
+                            let processedUrl = '';
+                            if (metadata.video_url) {
+                                processedUrl = metadata.video_url.trim();
+                                setMediaUrl(processedUrl);
                                 setMediaType('video');
-                            } else {
-                                setMediaType('audio');
+                            } else if (metadata.audio_url) {
+                                processedUrl = metadata.audio_url.trim();
+                                setMediaUrl(processedUrl);
+                                // Force video type if document_type indicates video/youtube or if URL is YouTube
+                                if (documentType === 'video' || documentType === 'youtube' || isYouTubeUrl(processedUrl)) {
+                                    setMediaType('video');
+                                } else {
+                                    setMediaType('audio');
+                                }
                             }
-                        }
 
-                        // Set transcript
-                        if (metadata.words_data && Array.isArray(metadata.words_data)) {
-                            setTranscript(metadata.words_data);
-                        }
+                            // Set transcript
+                            if (metadata.words_data && Array.isArray(metadata.words_data)) {
+                                const processedWords: Word[] = metadata.words_data.map((w: RawWord) => ({
+                                    start: parseTime(w.start),
+                                    end: parseTime(w.end),
+                                    word: w.text || w.word || ''
+                                }));
+                                setTranscript(processedWords);
+                            }
 
-                        // Set duration if available
-                        if (metadata.duration) {
-                            setDuration(metadata.duration);
-                        }
+                            // Set duration if available
+                            if (metadata.duration) {
+                                setDuration(metadata.duration);
+                            }
 
-                        setLoading(false);
-                        setIsPolling(false);
-                        return true; // Stop polling
+                            setLoading(false);
+                            setIsPolling(false);
+                            return true; // Stop polling
+                        }
+                    } catch (err) {
+                        console.error("Error in fetchMetadata:", err);
                     }
                     
                     // Keep polling
@@ -321,6 +520,10 @@ const StudySpeechToText: React.FC<StudySpeechToTextProps> = ({ onDiscuss, docume
                 const done = await fetchMetadata();
                 if (!done) {
                     pollInterval = setInterval(async () => {
+                        if (!isMounted) {
+                            clearInterval(pollInterval);
+                            return;
+                        }
                         const stop = await fetchMetadata();
                         if (stop) clearInterval(pollInterval);
                     }, 10000); // 10 seconds
@@ -364,14 +567,23 @@ const StudySpeechToText: React.FC<StudySpeechToTextProps> = ({ onDiscuss, docume
 
     // Play/Pause effect
     useEffect(() => {
-        if (mediaRef.current) {
+        if (mediaType === 'audio' && mediaRef.current) {
+            const media = mediaRef.current;
             if (isPlaying) {
-                mediaRef.current.play().catch(e => console.error("Play error:", e));
+                const playPromise = media.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        // Ignore AbortError which happens when pause() is called while play() is pending
+                        if (error.name !== 'AbortError') {
+                            console.error("Play error:", error);
+                        }
+                    });
+                }
             } else {
-                mediaRef.current.pause();
+                media.pause();
             }
         }
-    }, [isPlaying]);
+    }, [isPlaying, mediaType]);
 
     const togglePlay = () => setIsPlaying(!isPlaying);
 
@@ -383,12 +595,20 @@ const StudySpeechToText: React.FC<StudySpeechToTextProps> = ({ onDiscuss, docume
     };
 
     const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (!mediaRef.current || !duration) return;
+        if (!duration) return;
         const rect = e.currentTarget.getBoundingClientRect();
         const percent = (e.clientX - rect.left) / rect.width;
         const newTime = percent * duration;
-        mediaRef.current.currentTime = newTime;
+        
         setCurrentTime(newTime);
+
+        if (mediaType === 'video' && reactPlayerRef.current) {
+            reactPlayerRef.current.seekTo(newTime);
+            // Ensure we play after seeking
+            if (!isPlaying) setIsPlaying(true);
+        } else if (mediaRef.current) {
+            mediaRef.current.currentTime = newTime;
+        }
     };
 
     // Preprocess LaTeX to convert OpenAI format to react-markdown format
@@ -566,34 +786,77 @@ const StudySpeechToText: React.FC<StudySpeechToTextProps> = ({ onDiscuss, docume
     const currentSubtitle = React.useMemo(() => {
         if (!transcript || transcript.length === 0) return null;
         
-        // Find current word
-        const currentWord = transcript.find(w => currentTime >= w.start && currentTime <= w.end);
+        const isYouTube = mediaUrl ? isYouTubeUrl(mediaUrl) : false;
+
+        // Find all matching segments
+        const matches = transcript.filter(w => currentTime >= w.start && currentTime <= w.end);
         
-        // If we have a current word (or even if not, just find the segment based on time)
-        // Let's create static segments of ~8 words
-        const SEGMENT_SIZE = 8;
+        // If multiple match, pick the one that started most recently (handles overlaps)
+        const currentWord = matches.length > 0 
+            ? matches.reduce((prev, current) => (prev.start > current.start) ? prev : current)
+            : undefined;
         
-        // Find which index in the transcript corresponds to current time
-        // If exact word match:
-        let currentIndex = -1;
-        if (currentWord) {
-            currentIndex = transcript.findIndex(w => w === currentWord);
-        } else {
-            // Find closest word before current time
-             currentIndex = transcript.findIndex(w => w.start > currentTime) - 1;
-             if (currentIndex === -2) currentIndex = transcript.length - 1; // Time is past end
-             if (currentIndex === -1) currentIndex = 0; // Time is before start
+        // Check if the current segment is a phrase (contains spaces) or if it's YouTube
+        // If so, we treat it as a complete line/sentence and show it as-is.
+        const isPhrase = currentWord && currentWord.word.trim().includes(' ');
+
+        if (isYouTube || isPhrase) {
+            return currentWord ? [currentWord] : null;
         }
 
-        if (currentIndex !== -1) {
-            const segmentIndex = Math.floor(currentIndex / SEGMENT_SIZE);
-            const start = segmentIndex * SEGMENT_SIZE;
-            const end = Math.min(transcript.length, start + SEGMENT_SIZE);
-            return transcript.slice(start, end);
+        // For standard word-level timestamps, use smart expansion logic
+        // Find center index
+        let centerIndex = -1;
+        if (currentWord) {
+            centerIndex = transcript.findIndex(w => w === currentWord);
+        } else {
+            // Find closest previous word
+            centerIndex = transcript.findIndex(w => w.start > currentTime) - 1;
+            // Handle edge cases
+            if (centerIndex === -2) centerIndex = transcript.length - 1; // currentTime > all starts
+            if (centerIndex === -1) centerIndex = 0; // currentTime < all starts
+        }
+
+        if (centerIndex !== -1 && transcript[centerIndex]) {
+            // Smart expansion based on character count to keep it strictly to 1 line
+            // Target roughly 40 characters for a single line on most devices
+            const MAX_CHARS = 40; 
+            let start = centerIndex;
+            let end = centerIndex;
+            let currentChars = transcript[centerIndex].word.length;
+
+            // Expand outwards
+            while (currentChars < MAX_CHARS) {
+                let added = false;
+                
+                // Try adding left
+                if (start > 0) {
+                    const prevWord = transcript[start - 1];
+                    if (currentChars + prevWord.word.length + 1 <= MAX_CHARS) {
+                        start--;
+                        currentChars += prevWord.word.length + 1;
+                        added = true;
+                    }
+                }
+                
+                // Try adding right
+                if (end < transcript.length - 1) {
+                    const nextWord = transcript[end + 1];
+                    if (currentChars + nextWord.word.length + 1 <= MAX_CHARS) {
+                        end++;
+                        currentChars += nextWord.word.length + 1;
+                        added = true;
+                    }
+                }
+
+                if (!added) break;
+            }
+
+            return transcript.slice(start, end + 1);
         }
         
         return null;
-    }, [currentTime, transcript]);
+    }, [currentTime, transcript, mediaUrl]);
 
     if (loading || isPolling) {
         // Show skeleton or loading state
@@ -679,8 +942,10 @@ const StudySpeechToText: React.FC<StudySpeechToTextProps> = ({ onDiscuss, docume
                                         value={currentTime}
                                         onChange={(e) => {
                                             const newTime = parseFloat(e.target.value);
-                                            if (mediaRef.current) mediaRef.current.currentTime = newTime;
                                             setCurrentTime(newTime);
+                                            if (mediaRef.current) {
+                                                mediaRef.current.currentTime = newTime;
+                                            }
                                         }}
                                         className="w-full h-1.5 bg-gray-200 dark:bg-gray-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-indigo-600 dark:[&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:bg-indigo-500 dark:hover:[&::-webkit-slider-thumb]:bg-[#c2410c] transition-all"
                                         style={{
@@ -730,8 +995,10 @@ const StudySpeechToText: React.FC<StudySpeechToTextProps> = ({ onDiscuss, docume
                                         value={currentTime}
                                         onChange={(e) => {
                                             const newTime = parseFloat(e.target.value);
-                                            if (mediaRef.current) mediaRef.current.currentTime = newTime;
                                             setCurrentTime(newTime);
+                                            if (mediaRef.current) {
+                                                mediaRef.current.currentTime = newTime;
+                                            }
                                         }}
                                         className="w-full h-2 bg-gray-200 dark:bg-gray-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-indigo-600 dark:[&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:bg-indigo-500 dark:hover:[&::-webkit-slider-thumb]:bg-[#c2410c] transition-all"
                                         style={{
@@ -774,7 +1041,7 @@ const StudySpeechToText: React.FC<StudySpeechToTextProps> = ({ onDiscuss, docume
             {/* Transcript Area - Scrollable */}
             <div 
                 ref={scrollRef} 
-                className={`flex-1 overflow-y-auto custom-scrollbar px-4 md:px-8 pb-8 transition-all duration-300 overscroll-contain ${
+                className={`flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-800 scrollbar-track-transparent px-4 md:px-8 pb-8 transition-all duration-300 overscroll-contain ${
                     mediaType === 'audio' 
                         ? (isCompact ? 'pt-[100px]' : 'pt-[240px] md:pt-[240px]')
                         : 'pt-6'
@@ -821,35 +1088,37 @@ const StudySpeechToText: React.FC<StudySpeechToTextProps> = ({ onDiscuss, docume
                                 {isCompact && !isFullscreen && (
                                     <div 
                                         onMouseDown={handleDragStart}
-                                        className="absolute top-2 left-2 z-30 p-2 bg-black/50 text-white rounded-full cursor-move hover:bg-indigo-600 transition-colors opacity-0 group-hover:opacity-100 backdrop-blur-sm"
+                                        className="absolute top-2 left-2 z-30 p-2 bg-black/50 text-white rounded-full cursor-move hover:bg-indigo-600 transition-colors opacity-0 group-hover:opacity-100 backdrop-blur-sm pointer-events-auto"
                                         title="Drag to move"
                                     >
                                         <FaArrowsAlt size={12} />
                                     </div>
                                 )}
 
-                                <video 
-                                    src={mediaUrl!}
-                                    className="w-full h-full object-contain bg-black"
-                                    ref={mediaRef as React.RefObject<HTMLVideoElement>}
-                                    onClick={togglePlay}
-                                    onTimeUpdate={() => setCurrentTime(mediaRef.current?.currentTime || 0)}
-                                    onLoadedMetadata={() => setDuration(mediaRef.current?.duration || 0)}
-                                    onEnded={() => setIsPlaying(false)}
-                                />
-                                
-                                {/* Play Overlay (Center) */}
-                                {!isPlaying && (
-                                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none z-10">
-                                        <div className={`bg-indigo-600/90 dark:bg-[#c2410c]/90 rounded-full flex items-center justify-center text-white backdrop-blur-sm shadow-xl ${isCompact ? 'w-10 h-10' : 'w-16 h-16'}`}>
-                                            <FaPlay className={`${isCompact ? 'ml-0.5 text-lg' : 'ml-1 text-3xl'}`} />
-                                        </div>
+                                    <div className="w-full h-full bg-black relative z-20" style={{ pointerEvents: 'auto' }}>
+                                        <VideoPlayer
+                                            ref={reactPlayerRef}
+                                            url={mediaUrl!}
+                                            playing={isPlaying}
+                                            width="100%"
+                                            height="100%"
+                                            className="react-player"
+                                            onProgress={(state: any) => {
+                                                if (!isDragging.current && !isResizing.current) {
+                                                    setCurrentTime(state.playedSeconds);
+                                                }
+                                            }}
+                                            onDuration={(d: number) => setDuration(d)}
+                                            onEnded={() => setIsPlaying(false)}
+                                            onPlay={() => setIsPlaying(true)}
+                                            onPause={() => setIsPlaying(false)}
+                                        />
                                     </div>
-                                )}
+                                
 
                                 {/* Subtitles Overlay */}
                                 {currentSubtitle && (
-                                    <div className={`absolute left-0 right-0 text-center pointer-events-none z-10 ${isCompact ? 'bottom-12 px-2' : 'bottom-16 px-4'}`}>
+                                    <div className={`absolute left-0 right-0 text-center pointer-events-none z-40 ${isCompact ? 'bottom-12 px-2' : 'bottom-16 px-4'}`}>
                                         <div className="inline-flex flex-wrap justify-center gap-1 bg-black/60 px-3 py-1.5 rounded-lg backdrop-blur-sm shadow-sm">
                                             {(currentSubtitle as any as Word[]).map((w, i) => {
                                                 const isCurrentWord = currentTime >= w.start && currentTime <= w.end;
@@ -872,93 +1141,23 @@ const StudySpeechToText: React.FC<StudySpeechToTextProps> = ({ onDiscuss, docume
                                     </div>
                                 )}
 
-                                {/* Video Controls Overlay (Bottom) */}
-                                <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent transition-opacity duration-300 flex flex-col justify-end gap-2 ${isCompact ? 'p-2' : 'p-4'} ${!isPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                                    {/* Progress Bar */}
-                                    <div className="w-full relative group/progress h-2 flex items-center">
-                                        <input
-                                            type="range"
-                                            min="0"
-                                            max={duration || 100}
-                                            value={currentTime}
-                                            onChange={(e) => {
-                                                const newTime = parseFloat(e.target.value);
-                                                if (mediaRef.current) mediaRef.current.currentTime = newTime;
-                                                setCurrentTime(newTime);
+                                {/* Compact Mode Controls Overlay */}
+                                {isCompact && (
+                                    <div className="absolute top-2 right-2 z-30 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (scrollRef.current) {
+                                                    scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                                                }
                                             }}
-                                            className="absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer"
-                                        />
-                                        <div className="w-full h-1 bg-white/30 rounded-full overflow-hidden relative">
-                                            <div 
-                                                className="h-full bg-indigo-500 dark:bg-[#c2410c] absolute top-0 left-0"
-                                                style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
-                                            />
-                                        </div>
-                                        {/* Handle only visible on hover or large mode */}
-                                        <div 
-                                            className={`w-3 h-3 bg-white rounded-full absolute top-1/2 -translate-y-1/2 z-10 shadow-sm transition-transform pointer-events-none ${isCompact ? 'scale-0' : 'scale-0 group-hover/progress:scale-100'}`}
-                                            style={{ left: `${(currentTime / (duration || 1)) * 100}%` }}
-                                        />
+                                            className="p-2 bg-black/50 text-white rounded-full hover:bg-indigo-600 transition-colors backdrop-blur-sm"
+                                            title="Expand View"
+                                        >
+                                            <FaVideo size={12} />
+                                        </button>
                                     </div>
-
-                                    {/* Control Buttons */}
-                                    <div className="flex items-center justify-between text-white">
-                                        <div className="flex items-center gap-2 md:gap-4">
-                                            <button onClick={togglePlay} className="hover:text-indigo-400 transition-colors">
-                                                {isPlaying ? <FaPause size={isCompact ? 10 : 14} /> : <FaPlay size={isCompact ? 10 : 14} />}
-                                            </button>
-                                            
-                                            {!isCompact && (
-                                                <div className="flex items-center gap-2">
-                                                    <button onClick={() => { if(mediaRef.current) mediaRef.current.currentTime -= 10; }} className="hover:text-indigo-400 transition-colors">
-                                                        <FaBackward size={12} />
-                                                    </button>
-                                                    <button onClick={() => { if(mediaRef.current) mediaRef.current.currentTime += 10; }} className="hover:text-indigo-400 transition-colors">
-                                                        <FaForward size={12} />
-                                                    </button>
-                                                </div>
-                                            )}
-
-                                            <span className={`${isCompact ? 'text-[10px]' : 'text-xs'} font-mono opacity-80`}>
-                                                {formatTime(currentTime)} / {formatTime(duration)}
-                                            </span>
-                                        </div>
-
-                                        <div className="flex items-center gap-3">
-                                            {/* Extra controls (Download) */}
-                                            {mediaUrl && !isCompact && (
-                                                <a href={mediaUrl} download target="_blank" rel="noopener noreferrer" className="hover:text-indigo-400 transition-colors">
-                                                    <FaDownload size={14} />
-                                                </a>
-                                            )}
-                                            
-                                            {/* Full Screen Button */}
-                                            <button 
-                                                onClick={toggleFullScreen}
-                                                className="hover:text-indigo-400 transition-colors"
-                                                title={isFullscreen ? "Exit Full Screen" : "Full Screen"}
-                                            >
-                                                {isFullscreen ? <FaCompress size={isCompact ? 12 : 14} /> : <FaExpand size={isCompact ? 12 : 14} />}
-                                            </button>
-
-                                            {/* Expand button for compact mode */}
-                                            {isCompact && (
-                                                <button 
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        // Scroll back to top
-                                                        if (scrollRef.current) {
-                                                            scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-                                                        }
-                                                    }}
-                                                    className="hover:text-indigo-400 transition-colors"
-                                                >
-                                                    <FaVideo size={12} />
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
+                                )}
 
                                 {/* Resize Handle - Only in Compact Mode */}
                                 {isCompact && !isFullscreen && (
@@ -1011,7 +1210,10 @@ const StudySpeechToText: React.FC<StudySpeechToTextProps> = ({ onDiscuss, docume
                                     <div 
                                         className="prose dark:prose-invert max-w-none prose-p:my-0 cursor-pointer"
                                         onClick={() => {
-                                            if (mediaRef.current) {
+                                            if (mediaType === 'video' && reactPlayerRef.current) {
+                                                reactPlayerRef.current.seekTo(group.start);
+                                                if (!isPlaying) setIsPlaying(true);
+                                            } else if (mediaRef.current) {
                                                 mediaRef.current.currentTime = group.start;
                                                 if (!isPlaying) setIsPlaying(true);
                                             }

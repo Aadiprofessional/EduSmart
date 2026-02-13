@@ -322,8 +322,26 @@ const StudyMaterialPage: React.FC = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    // Mock Content
-    const title = studySetData?.title || "System Architecture Diagram"; // Use title from data if available
+    // Fetch data if missing (e.g. on refresh)
+    useEffect(() => {
+        if (!studySetData && id) {
+             const fetchData = async () => {
+                const { data, error } = await supabase
+                    .from('documents')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+                if (data) {
+                    setStudySetData(data);
+                }
+                if (error) console.error("Error fetching study set:", error);
+             };
+             fetchData();
+        }
+    }, [id, studySetData]);
+
+    // Determine title
+    const title = studySetData?.title || studySetData?.file_name || studySetData?.name || "Study Set";
 
     const methods = allMethods.filter(method => {
         if (!studySetData) return true; 
@@ -500,7 +518,7 @@ const StudyMaterialPage: React.FC = () => {
                 </div>
 
                 {/* Content Area */}
-                <div className={`flex-1 relative bg-gray-50 dark:bg-[#111111] ${['notes', 'podcast', 'speech-to-text'].includes(activeMethod) ? 'flex flex-col overflow-hidden' : 'overflow-y-auto p-4 md:p-8 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-800 scrollbar-track-transparent'}`}>
+                <div className={`flex-1 relative bg-gray-50 dark:bg-[#111111] ${['notes', 'podcast', 'speech-to-text', 'tutor-lesson'].includes(activeMethod) ? 'flex flex-col overflow-hidden' : 'overflow-y-auto p-4 md:p-8 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-800 scrollbar-track-transparent'}`}>
                     {renderContent()}
                 </div>
             </main>

@@ -249,6 +249,8 @@ const StudyMindmap: React.FC = () => {
                     .select('mindmap_data')
                     .eq('document_id', id)
                     .eq('uid', user.id)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
                     .maybeSingle();
 
                 if (error) {
@@ -291,6 +293,7 @@ const StudyMindmap: React.FC = () => {
     }, [id, user]);
 
     const chartInstanceRef = useRef<echarts.ECharts | null>(null);
+    const currentZoom = useRef(1);
 
     useEffect(() => {
         if (chartRef.current && !isGenerating && !loading) {
@@ -328,10 +331,11 @@ const StudyMindmap: React.FC = () => {
                         type: 'tree',
                         roam: true,
                         data: Array.isArray(chartData) ? chartData : [chartData],
-                        top: '5%',
-                        left: '10%',
-                        bottom: '5%',
-                        right: '20%',
+                        top: '10%',
+                        left: '15%',
+                        bottom: '10%',
+                        right: '25%',
+                        initialTreeDepth: -1,
                         symbolSize: 10,
                         label: {
                             position: 'left',
@@ -557,14 +561,36 @@ const StudyMindmap: React.FC = () => {
         }, 100);
     };
 
+    const handleZoom = (type: 'in' | 'out') => {
+        if (!chartInstanceRef.current) return;
+        
+        const newZoom = type === 'in' 
+            ? currentZoom.current * 1.2 
+            : currentZoom.current / 1.2;
+            
+        currentZoom.current = newZoom;
+        
+        chartInstanceRef.current.setOption({
+            series: [{
+                zoom: newZoom
+            }]
+        });
+    };
+
     return (
         <div className="h-full relative flex flex-col bg-gray-50 dark:bg-[#111111]">
             {/* Toolbar */}
             <div className="absolute top-4 right-4 z-10 flex gap-2">
-                <button className="p-2 bg-white dark:bg-white/10 hover:bg-gray-100 dark:hover:bg-white/20 border border-gray-200 dark:border-transparent rounded-lg text-gray-700 dark:text-white transition-colors">
+                <button 
+                    onClick={() => handleZoom('in')}
+                    className="p-2 bg-white dark:bg-white/10 hover:bg-gray-100 dark:hover:bg-white/20 border border-gray-200 dark:border-transparent rounded-lg text-gray-700 dark:text-white transition-colors"
+                >
                     <FaPlus size={14} />
                 </button>
-                <button className="p-2 bg-white dark:bg-white/10 hover:bg-gray-100 dark:hover:bg-white/20 border border-gray-200 dark:border-transparent rounded-lg text-gray-700 dark:text-white transition-colors">
+                <button 
+                    onClick={() => handleZoom('out')}
+                    className="p-2 bg-white dark:bg-white/10 hover:bg-gray-100 dark:hover:bg-white/20 border border-gray-200 dark:border-transparent rounded-lg text-gray-700 dark:text-white transition-colors"
+                >
                     <FaMinus size={14} />
                 </button>
                 <button 

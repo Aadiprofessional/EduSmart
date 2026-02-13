@@ -432,7 +432,7 @@
   ],
   "images": [
     {
-      "uri": "textures/Material.002_baseColor.jpeg"
+      "uri": "/models/textures/Material.002_baseColor.jpeg"
     }
   ],
   "materials": [

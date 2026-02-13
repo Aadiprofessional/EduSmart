@@ -422,14 +422,11 @@ const ScrollingBalls3D: React.FC = () => {
   const [webglError, setWebglError] = useState(false);
 
   useEffect(() => {
-    // Check if device is mobile
     const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 1024 || 'ontouchstart' in window);
+      setIsMobile(window.innerWidth < 768);
     };
-    
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 

@@ -1,11 +1,72 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { FaPlay, FaUpload, FaBolt, FaCheckCircle, FaSearch, FaFileAlt, FaMobileAlt, FaLaptop, FaCheck, FaChevronDown, FaChevronUp, FaBook, FaTimes } from 'react-icons/fa';
 import { Header } from '../layout';
+import DarkSvg from '../../assets/Dark.svg';
+import ScrollingBalls3D from './ScrollingBalls3D';
+import HowItWorksScroll from './HowItWorksScroll';
+import { ModelPositionProvider, useModelPosition } from '../../utils/ModelPositionContext';
 
-const MatrixEduLanding: React.FC = () => {
+const MatrixEduLandingContent: React.FC = () => {
   const navigate = useNavigate();
+  const { registerComponent, unregisterComponent } = useModelPosition();
+  const heroRef = useRef<HTMLElement>(null);
+  const howItWorksRef = useRef<HTMLDivElement>(null);
+  const whatYouCanDoRef = useRef<HTMLElement>(null);
+  const accessAnywhereRef = useRef<HTMLElement>(null);
+  const comparisonRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (heroRef.current) {
+      registerComponent('landing-hero', heroRef.current, {
+        pencil: {
+          x: 600, y: -100, z: 1, scale: 3.0, rotation: { x: 0, y: 0, z: 0.1 }, visible: true
+        },
+        eraser: {
+          x: -600, y: 100, z: 1, scale: 1.5, visible: true
+        },
+        sharpener: {
+          x: 0, y: -300, z: 1, scale: 0.03, visible: true
+        }
+      });
+    }
+
+    // how-it-works registration moved to HowItWorksScroll.tsx for per-step positioning
+
+    if (whatYouCanDoRef.current) {
+      registerComponent('what-you-can-do', whatYouCanDoRef.current, {
+        pencil: { x: 650, y: -200, z: 1, scale: 2.8, rotation: { x: 0, y: -0.5, z: 0.2 }, visible: true },
+        eraser: { x: -650, y: 150, z: 0, scale: 1.6, visible: true },
+        sharpener: { x: 0, y: 350, z: 1, scale: 0.035, visible: true }
+      });
+    }
+
+    if (accessAnywhereRef.current) {
+      registerComponent('access-anywhere', accessAnywhereRef.current, {
+        pencil: { x: -600, y: -100, z: 0, scale: 2.4, visible: true },
+        eraser: { x: 600, y: 100, z: 1, scale: 1.4, visible: true },
+        sharpener: { x: -500, y: 300, z: -1, scale: 0.03, visible: true }
+      });
+    }
+
+    if (comparisonRef.current) {
+      registerComponent('comparison', comparisonRef.current, {
+        pencil: { x: 700, y: 0, z: 1, scale: 3.0, rotation: { x: 0.1, y: 0.1, z: 0.1 }, visible: true },
+        eraser: { x: -700, y: -200, z: 0, scale: 1.7, visible: true },
+        sharpener: { x: 0, y: -350, z: 1, scale: 0.04, visible: true }
+      });
+    }
+
+    return () => {
+        unregisterComponent('landing-hero');
+        unregisterComponent('how-it-works');
+        unregisterComponent('what-you-can-do');
+        unregisterComponent('access-anywhere');
+        unregisterComponent('comparison');
+    };
+  }, [registerComponent, unregisterComponent]);
+
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   const toggleFaq = (index: number) => {
@@ -90,100 +151,49 @@ const MatrixEduLanding: React.FC = () => {
       <Header />
 
       {/* Hero Section */}
-      <section className="relative pt-20 pb-10 md:pt-48 md:pb-32 overflow-hidden min-h-0 md:min-h-screen flex flex-col items-center justify-start md:justify-center">
-        {/* Background Glows - Sun Indigo & Stars */}
-        <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute inset-0 bg-white dark:bg-[#050505]"></div>
-            
-            {/* Sun Indigo Glow - Intense bottom center like a rising sun */}
-            <div className="absolute bottom-[-20%] left-1/2 -translate-x-1/2 w-[140%] h-[70%] bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-indigo-100 via-indigo-100/40 dark:from-[#6366f1] dark:via-[#6366f1]/40 to-transparent blur-[60px] opacity-80"></div>
-            <div className="absolute bottom-[-10%] left-1/2 -translate-x-1/2 w-[80%] h-[40%] bg-indigo-300 dark:bg-indigo-600 blur-[100px] opacity-50"></div>
-            
-            {/* Static Stars - Randomly distributed */}
-            <div className="absolute inset-0">
-               {[...Array(20)].map((_, i) => (
-                  <div 
-                    key={i}
-                    className="static-star bg-indigo-400 dark:bg-white"
-                    style={{
-                       top: `${Math.random() * 70}%`, // Keep stars mostly in upper 70%
-                       left: `${Math.random() * 100}%`,
-                       width: `${Math.random() * 2 + 1}px`,
-                       height: `${Math.random() * 2 + 1}px`,
-                       animationDelay: `${Math.random() * 3}s`,
-                       opacity: Math.random() * 0.7 + 0.3
-                    }}
-                  />
-               ))}
-            </div>
-
-            {/* Shooting Stars */}
-            <div className="absolute inset-0 overflow-hidden">
-                <span className="shooting-star" style={{ top: '0%', left: '10%', animationDelay: '0s' }}></span>
-                <span className="shooting-star" style={{ top: '10%', left: '0%', animationDelay: '2s' }}></span>
-                <span className="shooting-star" style={{ top: '20%', left: '20%', animationDelay: '5s' }}></span>
-                <span className="shooting-star" style={{ top: '5%', left: '30%', animationDelay: '8s' }}></span>
-            </div>
+      <section ref={heroRef} className="relative pt-20 pb-10 md:pt-32 md:pb-20 overflow-hidden min-h-screen flex flex-col items-center justify-center bg-[#111]">
+        
+        {/* Doodle Background */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
+            <img src={DarkSvg} alt="Doodle Background" className="w-full h-full object-cover opacity-50" />
         </div>
 
-        {/* Floating Top Banner */}
-        <motion.div 
-           initial={{ opacity: 0, y: -20 }}
-           animate={{ opacity: 1, y: 0 }}
-           transition={{ delay: 0.5 }}
-           className="relative mt-0 mb-3 md:absolute md:top-24 md:mt-0 md:mb-0 left-0 right-0 z-20 flex justify-center px-4"
-        >
-            <div className="bg-gray-100/80 dark:bg-white/10 backdrop-blur-md border border-gray-200 dark:border-white/10 rounded-full py-2 px-4 md:px-6 flex items-center gap-2 max-w-full shadow-sm dark:shadow-none">
-            <span className="bg-indigo-500 rounded-full p-1 shrink-0"><FaBolt size={10} className="text-white" /></span>
-            <span className="text-[10px] xs:text-xs md:text-sm font-medium text-gray-700 dark:text-gray-200 whitespace-normal text-center leading-tight">MatrixEdu AI Study Tool – Ace Your Exams & Crush Your Homework</span>
-          </div>
-        </motion.div>
-
-        <div className="container mx-auto px-4 relative z-10 mt-2 md:mt-12">
-          <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-20">
-            
-            {/* Left Content */}
-            <motion.div 
-              className="lg:w-1/2 text-left"
+        <div className="container mx-auto px-4 relative z-10 text-center">
+            <motion.div
               variants={containerVariants}
               initial="hidden"
               animate="visible"
+              className="max-w-5xl mx-auto"
             >
-              <motion.div variants={itemVariants} className="inline-flex items-center space-x-2 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-full px-4 py-1.5 mb-4 backdrop-blur-sm">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                <span className="text-sm font-medium text-gray-600 dark:text-gray-300">We help you study. Not cheat.</span>
-              </motion.div>
 
-              <motion.h1 variants={itemVariants} className="text-3xl xs:text-4xl md:text-5xl lg:text-7xl font-bold leading-tight mb-4 tracking-tight text-gray-900 dark:text-white">
+              <motion.h1 variants={itemVariants} className="text-4xl md:text-6xl lg:text-7xl font-permanent-marker leading-tight mb-8 tracking-widest text-white">
                 Learn Faster...<br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-indigo-700 dark:from-indigo-400 dark:to-indigo-600">
-                  Like, a Lot Faster
-                </span>
+                Like, a Lot Faster
               </motion.h1>
 
-              <motion.p variants={itemVariants} className="text-base md:text-xl text-gray-600 dark:text-gray-400 mb-6 max-w-lg leading-relaxed">
-                EduSmart AI is the #1 AI study tool that helps you ace your exams & crush your homework 10x faster.
+              <motion.p variants={itemVariants} className="text-lg md:text-xl text-gray-300 mb-10 max-w-2xl mx-auto leading-relaxed">
+                 EduSmart AI is the #1 AI study tool that helps you ace your exams & crush your homework 10x faster.
               </motion.p>
 
-              <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4">
+              <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-6 justify-center">
                 <button 
                   onClick={() => navigate('/signup')}
-                  className="px-6 py-3 md:px-8 md:py-4 bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-xl font-bold text-base md:text-lg text-white hover:shadow-lg hover:shadow-indigo-500/25 transition-all duration-300 transform hover:-translate-y-1"
+                  className="px-10 py-4 bg-white text-black rounded-full font-bold text-xl hover:bg-gray-200 transition-all duration-300 transform hover:-translate-y-1 shadow-[0_0_20px_rgba(255,255,255,0.3)]"
                 >
-                  Start Learning Faster - it's free
+                  Start Learning Faster
                 </button>
                 <button 
-                  onClick={() => navigate('/signup')} // Assuming demo leads to signup or a demo page
-                  className="px-6 py-3 md:px-8 md:py-4 bg-white border border-gray-200 dark:bg-white/5 dark:border-white/10 rounded-xl font-bold text-base md:text-lg text-gray-800 dark:text-white hover:bg-gray-50 dark:hover:bg-white/10 transition-all duration-300 flex items-center justify-center gap-2 shadow-sm dark:shadow-none"
+                  onClick={() => navigate('/signup')} 
+                  className="px-10 py-4 bg-transparent border-2 border-white/20 text-white rounded-full font-bold text-xl hover:bg-white/10 transition-all duration-300 flex items-center justify-center gap-3"
                 >
-                  <FaPlay size={14} /> Demo
+                  <FaPlay size={16} /> Demo
                 </button>
               </motion.div>
-              
-              <motion.div variants={itemVariants} className="mt-8 flex items-center gap-2 text-sm text-gray-500">
+
+              <motion.div variants={itemVariants} className="mt-12 flex justify-center items-center gap-2 text-sm text-gray-400">
                  <div className="flex -space-x-2">
                     {[1,2,3,4,5].map(i => (
-                        <div key={i} className={`w-8 h-8 rounded-full border-2 border-white dark:border-black bg-gradient-to-br from-indigo-${i}00 to-purple-${i}00 flex items-center justify-center text-xs text-black font-bold`}>
+                        <div key={i} className={`w-8 h-8 rounded-full border-2 border-white bg-gradient-to-br from-indigo-${i}00 to-purple-${i}00 flex items-center justify-center text-xs text-black font-bold`}>
                             {String.fromCharCode(64+i)}
                         </div>
                     ))}
@@ -191,37 +201,6 @@ const MatrixEduLanding: React.FC = () => {
                  <span>Loved by 1,000,000+ students</span>
               </motion.div>
             </motion.div>
-
-            {/* Right Image (Mockup) */}
-            <motion.div 
-              className="lg:w-1/2"
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-            >
-              <div className="relative rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#111] p-2 shadow-2xl">
-                <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/10 to-purple-500/10 rounded-2xl pointer-events-none" />
-                <div className="bg-gray-50 dark:bg-[#0a0a0a] rounded-xl overflow-hidden aspect-video relative group">
-                    {/* Fake UI for Dashboard */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="text-center">
-                            <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Hey handsome, what do you wanna master?</h3>
-                            <div className="flex gap-4 justify-center">
-                                <div className="bg-white dark:bg-[#1a1a1a] p-4 rounded-lg w-32 h-24 flex flex-col items-center justify-center gap-2 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
-                                    <FaUpload className="text-gray-400" />
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">Upload</span>
-                                </div>
-                                <div className="bg-white dark:bg-[#1a1a1a] p-4 rounded-lg w-32 h-24 flex flex-col items-center justify-center gap-2 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
-                                    <FaFileAlt className="text-gray-400" />
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">Paste</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
         </div>
       </section>
 
@@ -274,514 +253,235 @@ const MatrixEduLanding: React.FC = () => {
       </section>
 
       {/* How it Works Section */}
-      <section id="features-section" className="py-12 md:py-24 relative bg-white dark:bg-[#050505]">
-        <div className="container mx-auto px-4">
-            <div className="text-center mb-10 md:mb-16">
-                <h2 className="text-3xl md:text-5xl font-bold mb-4 text-gray-900 dark:text-white">How it works</h2>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6 md:gap-8 mb-6 md:mb-8">
-                {/* Card 1 */}
-                <div className="bg-white dark:bg-[#0f0f0f] border border-gray-200 dark:border-white/10 rounded-3xl p-1 overflow-hidden group hover:border-indigo-500/30 transition-all duration-300 shadow-lg dark:shadow-none">
-                    <div className="bg-gray-50 dark:bg-[#151515] rounded-[20px] h-64 md:h-80 relative overflow-hidden flex items-center justify-center">
-                        <div className="text-center p-6 md:p-8">
-                            <h3 className="text-xl md:text-2xl font-bold mb-2 text-gray-900 dark:text-white">Hey Chloe, what do you wanna master?</h3>
-                            <div className="flex gap-4 justify-center mt-6 md:mt-8">
-                                <div className="bg-white dark:bg-[#222] p-4 rounded-lg w-24 h-24 flex flex-col items-center justify-center gap-2 shadow-sm dark:shadow-none border border-gray-200 dark:border-transparent">
-                                    <FaUpload className="text-gray-600 dark:text-white" size={24} />
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">Upload</span>
-                                </div>
-                                <div className="bg-white dark:bg-[#222] p-4 rounded-lg w-24 h-24 flex flex-col items-center justify-center gap-2 shadow-sm dark:shadow-none border border-gray-200 dark:border-transparent">
-                                    <FaFileAlt className="text-gray-600 dark:text-white" size={24} />
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">Paste</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="p-6 md:p-8">
-                        <h3 className="text-xl font-bold text-indigo-600 dark:text-indigo-500 mb-2">Upload or Paste Content:</h3>
-                        <p className="text-gray-600 dark:text-gray-400">Whether it is your class notes, a YouTube video, or a webpage.</p>
-                    </div>
-                </div>
-
-                {/* Card 2 */}
-                <div className="bg-white dark:bg-[#0f0f0f] border border-gray-200 dark:border-white/10 rounded-3xl p-1 overflow-hidden group hover:border-indigo-500/30 transition-all duration-300 shadow-lg dark:shadow-none">
-                    <div className="bg-gray-50 dark:bg-[#151515] rounded-[20px] h-64 md:h-80 relative overflow-hidden flex items-center justify-center">
-                         {/* Flashcard Mockup */}
-                         <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/5 rounded-xl p-6 w-3/4 max-w-sm shadow-sm dark:shadow-none">
-                            <div className="text-xs text-gray-500 mb-4 flex justify-between">
-                                <span>Unfamiliar</span>
-                                <span>Familiar</span>
-                            </div>
-                            <div className="text-center py-6 md:py-8">
-                                <p className="text-sm text-gray-800 dark:text-gray-300">Cell membrane, cytoplasm, and DNA.</p>
-                            </div>
-                            <div className="flex gap-2 mt-4">
-                                <button onClick={() => navigate('/signup')} className="flex-1 bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-500 text-xs py-2 rounded hover:bg-red-200 dark:hover:bg-red-500/30 transition-colors">I don't know it</button>
-                                <button onClick={() => navigate('/signup')} className="flex-1 bg-green-100 dark:bg-green-500/20 text-green-600 dark:text-green-500 text-xs py-2 rounded hover:bg-green-200 dark:hover:bg-green-500/30 transition-colors">I know it</button>
-                            </div>
-                         </div>
-                    </div>
-                    <div className="p-6 md:p-8 cursor-pointer" onClick={() => navigate('/signup')}>
-                        <h3 className="text-xl font-bold text-indigo-600 dark:text-indigo-500 mb-2">Instant Flashcards:</h3>
-                        <p className="text-gray-600 dark:text-gray-400">Turn hours of study into minutes with AI generated flashcards.</p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Row 2 */}
-            <div className="grid md:grid-cols-2 gap-6 md:gap-8 mb-6 md:mb-8">
-                {/* Card 3 - Quiz */}
-                <div className="bg-white dark:bg-[#0f0f0f] border border-gray-200 dark:border-white/10 rounded-3xl p-1 overflow-hidden group hover:border-indigo-500/30 transition-all duration-300 shadow-lg dark:shadow-none">
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-600/5 rounded-[20px] h-64 md:h-80 relative overflow-hidden p-6 md:p-8 flex items-center justify-center">
-                        <div className="w-full max-w-sm space-y-3">
-                             <div className="bg-green-100 dark:bg-green-500/20 border border-green-200 dark:border-green-500/30 p-3 rounded-lg flex items-center gap-3">
-                                <FaCheckCircle className="text-green-600 dark:text-green-500" />
-                                <span className="text-xs text-green-800 dark:text-green-100">A tail that helps a cell move or propel itself.</span>
-                             </div>
-                             <div className="bg-white dark:bg-[#222] p-3 rounded-lg flex items-center gap-3 opacity-50 border border-gray-200 dark:border-transparent">
-                                <span className="w-4 h-4 rounded border border-gray-400 dark:border-gray-500"></span>
-                                <span className="text-xs text-gray-500 dark:text-gray-400">A hair-like projection...</span>
-                             </div>
-                        </div>
-                    </div>
-                    <div className="p-6 md:p-8 cursor-pointer" onClick={() => navigate('/signup')}>
-                        <h3 className="text-xl font-bold text-indigo-600 dark:text-indigo-500 mb-2">Smart Quizzes:</h3>
-                        <p className="text-gray-600 dark:text-gray-400">Learn from every mistake with AI explanations for incorrect answers.</p>
-                    </div>
-                </div>
-
-                {/* Card 4 - Written Tests */}
-                <div className="bg-white dark:bg-[#0f0f0f] border border-gray-200 dark:border-white/10 rounded-3xl p-1 overflow-hidden group hover:border-indigo-500/30 transition-all duration-300 shadow-lg dark:shadow-none">
-                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-600/5 rounded-[20px] h-64 md:h-80 relative overflow-hidden p-6 md:p-8 flex items-center justify-center">
-                        <div className="w-full max-w-sm bg-white dark:bg-[#1a1a1a] rounded-xl p-4 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
-                             <p className="text-sm font-medium mb-4 text-gray-900 dark:text-white">What is the endoplasmic reticulum?</p>
-                             <div className="bg-gray-100 dark:bg-[#252525] rounded-lg p-3 h-20 mb-3 text-xs text-gray-500 dark:text-gray-400">I don't know 😅</div>
-                             <div className="flex justify-end"><button onClick={() => navigate('/signup')} className="bg-blue-600 text-xs px-4 py-1.5 rounded-full hover:bg-blue-700 transition-colors text-white">Submit</button></div>
-                        </div>
-                    </div>
-                    <div className="p-6 md:p-8 cursor-pointer" onClick={() => navigate('/signup')}>
-                        <h3 className="text-xl font-bold text-indigo-600 dark:text-indigo-500 mb-2">Written Tests:</h3>
-                        <p className="text-gray-600 dark:text-gray-400">Practice written answers and get detailed explanations for wrong answers.</p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Row 3 */}
-            <div className="grid md:grid-cols-2 gap-6 md:gap-8 mb-6 md:mb-8">
-                {/* Card 5 - Virtual Tutor */}
-                <div className="bg-white dark:bg-[#0f0f0f] border border-gray-200 dark:border-white/10 rounded-3xl p-1 overflow-hidden group hover:border-indigo-500/30 transition-all duration-300 shadow-lg dark:shadow-none">
-                    <div className="bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-600/5 rounded-[20px] h-64 md:h-80 relative overflow-hidden p-6 md:p-8 flex items-center justify-center">
-                        <div className="w-full max-w-sm bg-white dark:bg-[#1a1a1a] rounded-xl p-4 border border-gray-200 dark:border-white/5 font-mono text-xs relative shadow-xl dark:shadow-2xl">
-                             {/* Physics calculations mockup */}
-                             <div className="flex justify-between mb-4 gap-4">
-                                 <div className="bg-gray-50 dark:bg-[#222] p-2 rounded w-1/2 border border-gray-100 dark:border-transparent">
-                                     <div className="grid grid-cols-3 gap-1 text-[10px] text-gray-500 dark:text-gray-400 border-b border-gray-300 dark:border-gray-700 pb-1 mb-1 text-center">
-                                         <span>t</span><span>v</span><span>Sp</span>
-                                     </div>
-                                     <div className="space-y-1 text-[10px] text-center text-gray-700 dark:text-gray-300">
-                                         <div className="grid grid-cols-3 gap-1"><span>0</span><span>+24</span><span>+24</span></div>
-                                         <div className="grid grid-cols-3 gap-1"><span>1</span><span>+18</span><span>+18</span></div>
-                                         <div className="grid grid-cols-3 gap-1 border border-red-500 bg-red-50 dark:bg-red-500/10 rounded px-0.5 relative">
-                                            <span>4</span><span>0</span><span>0</span>
-                                            {/* Arrow pointer */}
-                                            <div className="absolute -left-3 top-1 text-red-500">➤</div>
-                                         </div>
-                                         <div className="grid grid-cols-3 gap-1"><span>6</span><span>-12</span><span>+12</span></div>
-                                     </div>
-                                 </div>
-                                 <div className="w-1/2 space-y-2 flex flex-col justify-center">
-                                     <div className="bg-gray-50 dark:bg-[#222] p-2 rounded text-center border border-red-500/30">
-                                         <span className="text-red-500 dark:text-red-400 font-bold">a = -6m/s²</span>
-                                     </div>
-                                     <div className="bg-gray-50 dark:bg-[#222] p-2 rounded text-center text-gray-700 dark:text-gray-300 border border-gray-100 dark:border-transparent">
-                                         <span>Speed = |v|</span>
-                                     </div>
-                                     <div className="text-[8px] text-gray-500 text-center mt-2">
-                                         Introduction to Basic Physics Concepts
-                                     </div>
-                                 </div>
-                             </div>
-                             <div className="bg-gray-50 dark:bg-[#222] p-3 rounded-lg text-[10px] text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-white/5 flex gap-2 items-center">
-                                 <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
-                                 "What is the acceleration of the balloon at its maximum height?"
-                             </div>
-                        </div>
-                    </div>
-                    <div className="p-6 md:p-8 cursor-pointer" onClick={() => navigate('/signup')}>
-                        <h3 className="text-xl font-bold text-indigo-600 dark:text-indigo-500 mb-2">24/7 Virtual Tutor: <span className="text-gray-500 dark:text-white font-normal">Simplify complex topics and gain clarity anytime.</span></h3>
-                    </div>
-                </div>
-
-                {/* Card 6 - Audio */}
-                <div className="bg-white dark:bg-[#0f0f0f] border border-gray-200 dark:border-white/10 rounded-3xl p-1 overflow-hidden group hover:border-indigo-500/30 transition-all duration-300 shadow-lg dark:shadow-none">
-                    <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-600/5 rounded-[20px] h-64 md:h-80 relative overflow-hidden p-6 md:p-8 flex items-center justify-center">
-                        <div className="w-full max-w-sm bg-white dark:bg-[#1a1a1a] rounded-xl overflow-hidden border border-gray-200 dark:border-white/5 shadow-xl dark:shadow-2xl flex flex-col h-full max-h-[220px]">
-                             {/* Podcast Player Mockup */}
-                             <div className="p-4 border-b border-gray-100 dark:border-white/5 flex-1 overflow-hidden relative">
-                                 <div className="absolute inset-0 bg-gradient-to-b from-transparent to-gray-50 dark:to-[#1a1a1a] pointer-events-none z-10"></div>
-                                 <div className="flex gap-3 items-start mb-4">
-                                     <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0 overflow-hidden border border-gray-300 dark:border-white/10">
-                                        <div className="w-full h-full bg-gradient-to-br from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-800"></div>
-                                     </div>
-                                     <div className="bg-gray-100 dark:bg-[#222] p-3 rounded-2xl rounded-tl-none text-[10px] text-gray-600 dark:text-gray-400 leading-relaxed border border-gray-200 dark:border-white/5">
-                                        <p className="mb-2">"Alright, let's dive into something truly electrifying today: the meteoric rise of MatrixEdu AI..."</p>
-                                        <p>It's fascinating how it adapts to your learning style in real-time.</p>
-                                    </div>
-                                 </div>
-                             </div>
-                             <div className="bg-gray-50 dark:bg-[#111] p-4 flex items-center gap-4 border-t border-gray-100 dark:border-white/5">
-                                 <button className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-white hover:bg-indigo-600 transition-colors shadow-lg shadow-indigo-500/20 group-hover:scale-105">
-                                     <FaPlay size={14} className="ml-1" />
-                                 </button>
-                                 <div className="flex-1 space-y-1.5">
-                                     <div className="h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
-                                         <div className="h-full w-1/3 bg-indigo-500 rounded-full"></div>
-                                     </div>
-                                     <div className="flex justify-between text-[10px] text-gray-500 font-medium">
-                                         <span>04:20</span>
-                                         <span>12:45</span>
-                                     </div>
-                                 </div>
-                             </div>
-                        </div>
-                    </div>
-                    <div className="p-6 md:p-8 cursor-pointer" onClick={() => navigate('/signup')}>
-                        <h3 className="text-xl font-bold text-indigo-600 dark:text-indigo-500 mb-2">Audio Podcasts: <span className="text-gray-500 dark:text-white font-normal">Make studying fun with engaging audio lessons.</span></h3>
-                    </div>
-                </div>
-            </div>
-
-             {/* Row 4 - Grading & Progress */}
-             <div className="grid md:grid-cols-2 gap-6 md:gap-8 mb-12">
-                {/* Card 7 - Grading */}
-                <div className="bg-white dark:bg-[#0f0f0f] border border-gray-200 dark:border-white/10 rounded-3xl p-1 overflow-hidden group hover:border-indigo-500/30 transition-all duration-300 shadow-lg dark:shadow-none">
-                    <div className="bg-gradient-to-br from-blue-100 to-gray-100 dark:from-blue-900/30 dark:to-black rounded-[20px] h-64 md:h-80 relative overflow-hidden flex items-center justify-center p-6 md:p-8">
-                         <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-xl p-4 w-full max-w-sm shadow-xl dark:shadow-2xl">
-                             <div className="flex justify-between items-center mb-4 border-b border-gray-100 dark:border-white/5 pb-2">
-                                 <span className="text-xs font-bold text-blue-500 dark:text-blue-400">Essay Analysis</span>
-                                 <span className="text-xs text-gray-500">Just now</span>
-                             </div>
-                             <div className="space-y-3">
-                                 <div className="flex justify-between text-xs">
-                                     <span className="text-gray-500 dark:text-gray-400">Structure</span>
-                                     <span className="text-green-500">Good</span>
-                                 </div>
-                                 <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full w-full">
-                                     <div className="h-full bg-green-500 w-[85%] rounded-full"></div>
-                                 </div>
-                                 <div className="flex justify-between text-xs mt-2">
-                                     <span className="text-gray-500 dark:text-gray-400">Clarity</span>
-                                     <span className="text-yellow-500">Average</span>
-                                 </div>
-                                 <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full w-full">
-                                     <div className="h-full bg-yellow-500 w-[60%] rounded-full"></div>
-                                 </div>
-                                 <div className="mt-4 p-2 bg-blue-50 dark:bg-blue-500/10 rounded border border-blue-100 dark:border-blue-500/20">
-                                     <p className="text-[10px] text-blue-600 dark:text-blue-300 leading-relaxed">"Consider strengthening your thesis statement to better guide the reader..."</p>
-                                 </div>
-                             </div>
-                         </div>
-                    </div>
-                    <div className="p-6 md:p-8">
-                        <h3 className="text-xl font-bold text-indigo-600 dark:text-indigo-500 mb-2">Smart Paper Grading:</h3>
-                        <p className="text-gray-600 dark:text-gray-400">Get detailed feedback based on your rubric.</p>
-                    </div>
-                </div>
-
-                {/* Card 8 - Progress */}
-                <div className="bg-white dark:bg-[#0f0f0f] border border-gray-200 dark:border-white/10 rounded-3xl p-1 overflow-hidden group hover:border-indigo-500/30 transition-all duration-300 shadow-lg dark:shadow-none">
-                    <div className="bg-gradient-to-br from-green-100 to-gray-100 dark:from-green-900/30 dark:to-black rounded-[20px] h-64 md:h-80 relative overflow-hidden flex items-center justify-center p-6 md:p-8">
-                         <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-xl p-6 w-full max-w-sm shadow-xl dark:shadow-2xl">
-                             <div className="flex items-center gap-4 mb-6">
-                                 <div className="w-12 h-12 rounded-full border-4 border-green-500 flex items-center justify-center text-xs font-bold text-gray-900 dark:text-white">
-                                     78%
-                                 </div>
-                                 <div>
-                                     <div className="text-sm font-bold text-gray-900 dark:text-white">Biology 101</div>
-                                     <div className="text-xs text-green-500">Improving</div>
-                                 </div>
-                             </div>
-                             <div className="space-y-4">
-                                 <div className="bg-gray-50 dark:bg-[#1a1a1a] p-3 rounded-lg border border-gray-200 dark:border-white/5 flex justify-between items-center">
-                                     <span className="text-xs text-gray-500 dark:text-gray-400">Flashcards</span>
-                                     <span className="text-xs font-bold text-gray-900 dark:text-white">124/150</span>
-                                 </div>
-                                 <div className="bg-gray-50 dark:bg-[#1a1a1a] p-3 rounded-lg border border-gray-200 dark:border-white/5 flex justify-between items-center">
-                                     <span className="text-xs text-gray-500 dark:text-gray-400">Quizzes</span>
-                                     <span className="text-xs font-bold text-gray-900 dark:text-white">8/10</span>
-                                 </div>
-                             </div>
-                         </div>
-                    </div>
-                    <div className="p-6 md:p-8">
-                        <h3 className="text-xl font-bold text-indigo-600 dark:text-indigo-500 mb-2">Track Your Progress:</h3>
-                        <p className="text-gray-600 dark:text-gray-400">Monitor your growth and master subjects faster.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div className="text-center mb-16">
-                 <button 
-                   onClick={() => navigate('/dashboard')}
-                   className="px-8 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-xl font-bold text-lg text-white hover:shadow-lg hover:shadow-indigo-500/25 transition-all duration-300"
-                 >
-                   Go to Dashboard
-                 </button>
-            </div>
-        </div>
-      </section>
+      <div ref={howItWorksRef}>
+        <HowItWorksScroll />
+      </div>
 
       {/* What you can do with MatrixEdu Section */}
-      <section className="py-12 md:py-24 bg-gray-50 dark:bg-black">
-        <div className="container mx-auto px-4">
-             <div className="text-center mb-10 md:mb-16">
-                 <h2 className="text-3xl md:text-5xl font-bold mb-4 text-gray-900 dark:text-white">What you can do with MatrixEdu</h2>
-                 <p className="text-gray-600 dark:text-gray-400 text-lg">From exam prep to homework help—everything you need to learn faster and smarter</p>
+      <section ref={whatYouCanDoRef} className="py-20 md:py-32 bg-gray-50 dark:bg-black relative overflow-hidden">
+        <div className="container mx-auto px-4 relative z-10">
+             <div className="text-center mb-16 md:mb-24">
+                 <h2 className="text-4xl md:text-6xl font-permanent-marker mb-6 text-gray-900 dark:text-white">Unlock Your Potential</h2>
+                 <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">One platform, endless possibilities. Everything you need to excel in your studies.</p>
              </div>
 
-             <div className="max-w-4xl mx-auto space-y-6">
-                 <div className="bg-white dark:bg-[#0f0f0f] border border-gray-200 dark:border-white/10 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-start gap-6 hover:border-green-500/30 transition-colors group shadow-md dark:shadow-none">
-                     <div className="bg-green-100 dark:bg-green-500/10 p-4 rounded-xl group-hover:bg-green-200 dark:group-hover:bg-green-500/20 transition-colors">
-                         <FaCheckCircle className="text-green-600 dark:text-green-500" size={28} />
-                     </div>
-                     <div>
-                         <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">Exam Preparation & Review</h3>
-                         <p className="text-gray-600 dark:text-gray-400 leading-relaxed">Transform lecture slides and notes into flashcards, quizzes, and fill-in-the-blank questions instantly. Active recall techniques help you ace exams with less study time.</p>
-                     </div>
-                 </div>
-
-                 <div className="bg-white dark:bg-[#0f0f0f] border border-gray-200 dark:border-white/10 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-start gap-6 hover:border-purple-500/30 transition-colors group shadow-md dark:shadow-none">
-                     <div className="bg-purple-100 dark:bg-purple-500/10 p-4 rounded-xl group-hover:bg-purple-200 dark:group-hover:bg-purple-500/20 transition-colors">
-                         <FaFileAlt className="text-purple-600 dark:text-purple-500" size={28} />
-                     </div>
-                     <div>
-                         <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">Homework Help & Assignment Support</h3>
-                         <p className="text-gray-600 dark:text-gray-400 leading-relaxed">Generate summaries and interactive study materials to simplify complex assignments. Clarify difficult subjects and make your study sessions more productive.</p>
+             <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+                 {/* Card 1 */}
+                 <div className="group relative bg-white dark:bg-[#0f0f0f] rounded-[2rem] p-8 hover:-translate-y-2 transition-all duration-500 border border-gray-100 dark:border-white/5 shadow-xl hover:shadow-2xl hover:shadow-green-500/10">
+                     <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                     <div className="relative z-10">
+                         <div className="w-16 h-16 rounded-2xl bg-green-100 dark:bg-green-500/10 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
+                             <FaCheckCircle className="text-green-600 dark:text-green-500 text-3xl" />
+                         </div>
+                         <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">Exam Prep Master</h3>
+                         <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-6">Convert any study material into active recall tools. Generate flashcards and quizzes instantly to retain information longer.</p>
+                         <div className="flex items-center text-green-600 dark:text-green-500 font-bold text-sm">
+                             <span>Start Practicing</span>
+                             <FaPlay className="ml-2 text-xs group-hover:translate-x-1 transition-transform" />
+                         </div>
                      </div>
                  </div>
 
-                 <div className="bg-white dark:bg-[#0f0f0f] border border-gray-200 dark:border-white/10 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-start gap-6 hover:border-blue-500/30 transition-colors group shadow-md dark:shadow-none">
-                     <div className="bg-blue-100 dark:bg-blue-500/10 p-4 rounded-xl group-hover:bg-blue-200 dark:group-hover:bg-blue-500/20 transition-colors">
-                         <FaSearch className="text-blue-600 dark:text-blue-500" size={28} />
+                 {/* Card 2 */}
+                 <div className="group relative bg-white dark:bg-[#0f0f0f] rounded-[2rem] p-8 hover:-translate-y-2 transition-all duration-500 border border-gray-100 dark:border-white/5 shadow-xl hover:shadow-2xl hover:shadow-purple-500/10">
+                     <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                     <div className="relative z-10">
+                         <div className="w-16 h-16 rounded-2xl bg-purple-100 dark:bg-purple-500/10 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
+                             <FaFileAlt className="text-purple-600 dark:text-purple-500 text-3xl" />
+                         </div>
+                         <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">Homework Assistant</h3>
+                         <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-6">Stuck on an assignment? Get instant explanations, summaries, and step-by-step breakdowns for complex topics.</p>
+                         <div className="flex items-center text-purple-600 dark:text-purple-500 font-bold text-sm">
+                             <span>Get Help Now</span>
+                             <FaPlay className="ml-2 text-xs group-hover:translate-x-1 transition-transform" />
+                         </div>
                      </div>
-                     <div>
-                         <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">Research and Study Content Creation</h3>
-                         <p className="text-gray-600 dark:text-gray-400 leading-relaxed">Turn sprawling articles and video lectures into clear, digestible content. Streamline note-taking and enhance comprehension to focus on developing insightful ideas.</p>
+                 </div>
+
+                 {/* Card 3 */}
+                 <div className="group relative bg-white dark:bg-[#0f0f0f] rounded-[2rem] p-8 hover:-translate-y-2 transition-all duration-500 border border-gray-100 dark:border-white/5 shadow-xl hover:shadow-2xl hover:shadow-blue-500/10">
+                     <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                     <div className="relative z-10">
+                         <div className="w-16 h-16 rounded-2xl bg-blue-100 dark:bg-blue-500/10 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
+                             <FaSearch className="text-blue-600 dark:text-blue-500 text-3xl" />
+                         </div>
+                         <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Research Companion</h3>
+                         <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-6">Digest long papers and videos in seconds. Extract key insights and organize your research effortlessly.</p>
+                         <div className="flex items-center text-blue-600 dark:text-blue-500 font-bold text-sm">
+                             <span>Start Researching</span>
+                             <FaPlay className="ml-2 text-xs group-hover:translate-x-1 transition-transform" />
+                         </div>
                      </div>
                  </div>
              </div>
 
-             <div className="text-center mt-12">
+             <div className="text-center mt-16">
                  <button 
                    onClick={() => navigate('/signup')}
-                   className="px-6 py-3 md:px-8 md:py-4 bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-xl font-bold text-lg text-white hover:shadow-lg hover:shadow-indigo-500/25 transition-all duration-300"
+                   className="px-8 py-4 bg-black dark:bg-white text-white dark:text-black rounded-full font-bold text-lg hover:scale-105 transition-transform duration-300 shadow-xl"
                  >
-                   Try MatrixEdu AI for free &rarr;
+                   Try MatrixEdu Free
                  </button>
              </div>
         </div>
       </section>
 
       {/* Access Anywhere Section */}
-      <section className="py-12 md:py-24 bg-white dark:bg-[#050505] relative overflow-hidden">
+      <section ref={accessAnywhereRef} className="py-20 md:py-32 bg-white dark:bg-[#050505] relative overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-500/10 via-transparent to-transparent opacity-50"></div>
+          
           <div className="container mx-auto px-4 relative z-10">
-              <div className="text-center mb-10 md:mb-16">
-                  <h2 className="text-3xl md:text-5xl font-bold mb-4 text-gray-900 dark:text-white">Access the MatrixEdu AI Study Tool Anywhere, Anytime</h2>
-                  <p className="text-gray-600 dark:text-gray-400 text-lg">Study seamlessly across all your devices with our responsive platform.</p>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6 md:gap-8 max-w-5xl mx-auto">
-                  {/* Multi-Device Card */}
-                  <div className="bg-gray-50 dark:bg-[#0f0f0f] border border-gray-200 dark:border-white/10 rounded-3xl overflow-hidden group hover:border-pink-500/30 transition-all duration-300 shadow-lg dark:shadow-none">
-                      <div className="bg-gradient-to-r from-pink-100 to-purple-100 dark:from-pink-900/40 dark:to-purple-900/40 p-8 h-48 flex items-center justify-center">
-                          <FaLaptop size={60} className="text-pink-500 dark:text-white/80 drop-shadow-lg" />
+              <div className="flex flex-col lg:flex-row items-center gap-16">
+                  {/* Text Side */}
+                  <div className="lg:w-1/2 text-left">
+                      <div className="inline-block px-4 py-2 bg-indigo-50 dark:bg-indigo-500/10 rounded-full text-indigo-600 dark:text-indigo-400 font-bold text-sm mb-6 border border-indigo-100 dark:border-indigo-500/20">
+                          <FaMobileAlt className="inline mr-2" /> Cross-Platform Sync
                       </div>
-                      <div className="p-6 md:p-8">
-                          <h3 className="text-xl font-bold text-pink-600 dark:text-pink-500 mb-3">Multi-Device Compatibility for the AI Study Tool</h3>
-                          <p className="text-gray-600 dark:text-gray-400 leading-relaxed">Study effectively on any device - laptop, tablet, or smartphone. Consistent, intuitive experience that adapts to your screen and fits your lifestyle.</p>
+                      <h2 className="text-4xl md:text-6xl font-permanent-marker mb-6 text-gray-900 dark:text-white leading-tight">
+                          Study Anywhere.<br/>
+                          <span className="text-indigo-600 dark:text-indigo-500">Anytime.</span>
+                      </h2>
+                      <p className="text-xl text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
+                          Your study materials follow you. Start on your laptop during class, review on your phone during commute, and polish on your tablet at home.
+                      </p>
+                      
+                      <div className="flex flex-col sm:flex-row gap-4">
+                          <button 
+                            onClick={() => navigate('/signup')}
+                            className="px-8 py-4 bg-indigo-600 text-white rounded-full font-bold text-lg hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2"
+                          >
+                            <FaLaptop /> Get Started
+                          </button>
+                          <button className="px-8 py-4 bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-white rounded-full font-bold text-lg hover:bg-gray-200 dark:hover:bg-white/10 transition-colors flex items-center justify-center gap-2">
+                             <FaMobileAlt /> Download App
+                          </button>
                       </div>
                   </div>
 
-                  {/* Mobile App Card */}
-                  <div className="bg-gray-50 dark:bg-[#0f0f0f] border border-gray-200 dark:border-white/10 rounded-3xl overflow-hidden group hover:border-blue-500/30 transition-all duration-300 shadow-lg dark:shadow-none">
-                      <div className="bg-gradient-to-r from-blue-100 to-teal-100 dark:from-blue-900/40 dark:to-teal-900/40 p-8 h-48 flex items-center justify-center">
-                          <FaMobileAlt size={60} className="text-blue-500 dark:text-white/80 drop-shadow-lg" />
-                      </div>
-                      <div className="p-6 md:p-8">
-                          <h3 className="text-xl font-bold text-blue-500 dark:text-blue-400 mb-3">Mobile app and seamless website integration</h3>
-                          <p className="text-gray-600 dark:text-gray-400 leading-relaxed">Full-powered studying on any platform. Reliable performance at home or on the go, transforming your study routine across all devices.</p>
+                  {/* Visual Side */}
+                  <div className="lg:w-1/2 w-full relative">
+                      <div className="absolute -inset-4 bg-gradient-to-r from-pink-500 to-violet-500 rounded-[2.5rem] opacity-20 blur-2xl"></div>
+                      <div className="relative bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-[2rem] p-8 shadow-2xl overflow-hidden">
+                          {/* Floating Elements */}
+                          <motion.div 
+                            animate={{ y: [0, -10, 0] }}
+                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                            className="absolute top-8 right-8 bg-white dark:bg-[#1a1a1a] p-4 rounded-2xl shadow-lg border border-gray-100 dark:border-white/5 z-20"
+                          >
+                              <FaCheckCircle className="text-green-500 text-2xl" />
+                          </motion.div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-4 mt-8">
+                                  <div className="bg-white dark:bg-[#1a1a1a] p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-white/5 flex flex-col items-center justify-center aspect-square hover:scale-105 transition-transform duration-300">
+                                      <FaLaptop size={40} className="text-indigo-500 mb-4" />
+                                      <span className="font-bold text-gray-900 dark:text-white">Web</span>
+                                  </div>
+                                  <div className="bg-white dark:bg-[#1a1a1a] p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-white/5 flex flex-col items-center justify-center aspect-square hover:scale-105 transition-transform duration-300">
+                                      <FaMobileAlt size={40} className="text-pink-500 mb-4" />
+                                      <span className="font-bold text-gray-900 dark:text-white">Mobile</span>
+                                  </div>
+                              </div>
+                              <div className="space-y-4">
+                                  <div className="bg-white dark:bg-[#1a1a1a] p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-white/5 flex flex-col items-center justify-center aspect-square hover:scale-105 transition-transform duration-300">
+                                      <div className="w-12 h-12 bg-green-100 dark:bg-green-500/20 rounded-full flex items-center justify-center mb-4">
+                                          <FaCheck size={20} className="text-green-600 dark:text-green-400" />
+                                      </div>
+                                      <span className="font-bold text-gray-900 dark:text-white">Synced</span>
+                                  </div>
+                                  <div className="bg-indigo-600 p-6 rounded-2xl shadow-lg flex flex-col items-center justify-center aspect-square text-white hover:scale-105 transition-transform duration-300">
+                                      <span className="text-4xl font-bold mb-2">10x</span>
+                                      <span className="text-indigo-200 text-sm">Faster</span>
+                                  </div>
+                              </div>
+                          </div>
                       </div>
                   </div>
               </div>
-
-              <div className="text-center mt-12">
-                 <button 
-                   onClick={() => navigate('/signup')}
-                   className="px-6 py-3 md:px-8 md:py-4 bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-xl font-bold text-lg text-white hover:shadow-lg hover:shadow-indigo-500/25 transition-all duration-300"
-                 >
-                   Start acing my exams
-                 </button>
-             </div>
           </div>
       </section>
 
       {/* Comparison Section */}
-      <section className="py-12 md:py-24 bg-gray-50 dark:bg-black relative">
+      <section ref={comparisonRef} className="py-20 md:py-32 bg-gray-50 dark:bg-black relative">
           <div className="container mx-auto px-4">
-              <div className="text-center mb-10 md:mb-16">
-                  <h2 className="text-3xl md:text-5xl font-bold mb-4 text-gray-900 dark:text-white">Why Our AI Study Tool Outperforms Traditional Methods</h2>
-                  <p className="text-gray-600 dark:text-gray-400 text-lg max-w-2xl mx-auto">Experience the advantages of AI-powered studying compared to conventional methods. Our approach is designed to save you time, boost retention, and make learning more effective.</p>
+              <div className="text-center mb-16 md:mb-24">
+                  <h2 className="text-4xl md:text-6xl font-permanent-marker mb-6 text-gray-900 dark:text-white">Why MatrixEdu Wins</h2>
+                  <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">Stop studying harder. Start studying smarter with the power of AI.</p>
               </div>
 
-              <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-                  {/* Card 1 - Evidence Based */}
-                  <div className="bg-white dark:bg-[#0f0f0f] border border-gray-200 dark:border-white/10 rounded-2xl overflow-hidden hover:border-green-500/30 transition-all duration-300 shadow-lg dark:shadow-none">
-                      <div className="bg-green-50 dark:bg-green-900/20 p-6 flex items-center gap-4 border-b border-gray-100 dark:border-white/5">
-                          <div className="bg-green-100 dark:bg-green-500/20 p-2 rounded-lg">
-                              <FaBook className="text-green-600 dark:text-green-500" size={20} />
-                          </div>
-                          <h3 className="font-bold text-lg text-gray-900 dark:text-white">Evidence-Based Techniques vs. Conventional Learning</h3>
-                      </div>
-                      <div className="p-6 space-y-6">
-                          <div>
-                              <p className="text-xs font-bold text-gray-500 mb-3 tracking-wider">TRADITIONAL METHODS</p>
-                              <ul className="space-y-2">
-                                  <li className="flex items-start gap-2 text-sm text-gray-500 dark:text-gray-400">
-                                      <div className="mt-1 min-w-[16px]"><div className="w-4 h-4 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center"><FaTimes size={10} className="text-red-500" /></div></div>
-                                      <span>Passive reading and highlighting</span>
-                                  </li>
-                                  <li className="flex items-start gap-2 text-sm text-gray-500 dark:text-gray-400">
-                                      <div className="mt-1 min-w-[16px]"><div className="w-4 h-4 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center"><FaTimes size={10} className="text-red-500" /></div></div>
-                                      <span>Repetitive reviewing without feedback</span>
-                                  </li>
-                                  <li className="flex items-start gap-2 text-sm text-gray-500 dark:text-gray-400">
-                                      <div className="mt-1 min-w-[16px]"><div className="w-4 h-4 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center"><FaTimes size={10} className="text-red-500" /></div></div>
-                                      <span>Inefficient time allocation</span>
-                                  </li>
-                              </ul>
-                          </div>
-                          <div className="h-px bg-gray-100 dark:bg-white/5 relative">
-                              <FaChevronDown className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-indigo-500 bg-white dark:bg-[#0f0f0f] p-1" size={24} />
-                          </div>
-                          <div>
-                              <p className="text-xs font-bold text-indigo-500 mb-3 tracking-wider">STUDLEY AI</p>
-                              <ul className="space-y-2">
-                                  <li className="flex items-start gap-2 text-sm text-gray-900 dark:text-white">
-                                      <div className="mt-1 min-w-[16px]"><div className="w-4 h-4 rounded-full bg-green-100 dark:bg-green-500/10 flex items-center justify-center"><FaCheck size={10} className="text-green-600 dark:text-green-500" /></div></div>
-                                      <span>Active recall techniques built-in</span>
-                                  </li>
-                                  <li className="flex items-start gap-2 text-sm text-gray-900 dark:text-white">
-                                      <div className="mt-1 min-w-[16px]"><div className="w-4 h-4 rounded-full bg-green-100 dark:bg-green-500/10 flex items-center justify-center"><FaCheck size={10} className="text-green-600 dark:text-green-500" /></div></div>
-                                      <span>Spaced repetition algorithms</span>
-                                  </li>
-                                  <li className="flex items-start gap-2 text-sm text-gray-900 dark:text-white">
-                                      <div className="mt-1 min-w-[16px]"><div className="w-4 h-4 rounded-full bg-green-100 dark:bg-green-500/10 flex items-center justify-center"><FaCheck size={10} className="text-green-600 dark:text-green-500" /></div></div>
-                                      <span>Real-time feedback and insights</span>
-                                  </li>
-                              </ul>
-                          </div>
-                      </div>
+              <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8 relative">
+                  {/* VS Badge */}
+                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 hidden md:flex items-center justify-center w-16 h-16 bg-white dark:bg-[#111] rounded-full border-4 border-gray-100 dark:border-[#222] shadow-xl font-black text-xl italic text-gray-900 dark:text-white">
+                      VS
                   </div>
 
-                  {/* Card 2 - Speed */}
-                  <div className="bg-white dark:bg-[#0f0f0f] border border-gray-200 dark:border-white/10 rounded-2xl overflow-hidden hover:border-indigo-500/30 transition-all duration-300 shadow-lg dark:shadow-none">
-                      <div className="bg-indigo-50 dark:bg-indigo-900/20 p-6 flex items-center gap-4 border-b border-gray-100 dark:border-white/5">
-                          <div className="bg-indigo-100 dark:bg-indigo-500/20 p-2 rounded-lg">
-                              <FaBolt className="text-indigo-600 dark:text-indigo-500" size={20} />
+                  {/* Traditional Way */}
+                  <div className="bg-white dark:bg-[#0f0f0f] rounded-[2rem] p-8 md:p-12 border border-gray-200 dark:border-white/5 opacity-80 hover:opacity-100 transition-opacity duration-300">
+                      <div className="flex items-center gap-4 mb-8">
+                          <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center">
+                              <FaTimes className="text-red-500 text-xl" />
                           </div>
-                          <h3 className="font-bold text-lg text-gray-900 dark:text-white">Speed and Personalization at Your Fingertips</h3>
+                          <h3 className="text-2xl font-bold text-gray-900 dark:text-white">The Old Way</h3>
                       </div>
-                      <div className="p-6 space-y-6">
-                          <div>
-                              <p className="text-xs font-bold text-gray-500 mb-3 tracking-wider">TRADITIONAL METHODS</p>
-                              <ul className="space-y-2">
-                                  <li className="flex items-start gap-2 text-sm text-gray-500 dark:text-gray-400">
-                                      <div className="mt-1 min-w-[16px]"><div className="w-4 h-4 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center"><FaTimes size={10} className="text-red-500" /></div></div>
-                                      <span>Hours spent creating manual study materials</span>
-                                  </li>
-                                  <li className="flex items-start gap-2 text-sm text-gray-500 dark:text-gray-400">
-                                      <div className="mt-1 min-w-[16px]"><div className="w-4 h-4 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center"><FaTimes size={10} className="text-red-500" /></div></div>
-                                      <span>One-size-fits-all approach</span>
-                                  </li>
-                                  <li className="flex items-start gap-2 text-sm text-gray-500 dark:text-gray-400">
-                                      <div className="mt-1 min-w-[16px]"><div className="w-4 h-4 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center"><FaTimes size={10} className="text-red-500" /></div></div>
-                                      <span>Limited ability to adapt to your needs</span>
-                                  </li>
-                              </ul>
-                          </div>
-                          <div className="h-px bg-gray-100 dark:bg-white/5 relative">
-                              <FaChevronDown className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-indigo-500 bg-white dark:bg-[#0f0f0f] p-1" size={24} />
-                          </div>
-                          <div>
-                              <p className="text-xs font-bold text-indigo-500 mb-3 tracking-wider">STUDLEY AI</p>
-                              <ul className="space-y-2">
-                                  <li className="flex items-start gap-2 text-sm text-gray-900 dark:text-white">
-                                      <div className="mt-1 min-w-[16px]"><div className="w-4 h-4 rounded-full bg-green-100 dark:bg-green-500/10 flex items-center justify-center"><FaCheck size={10} className="text-green-600 dark:text-green-500" /></div></div>
-                                      <span>Instant AI-generated study materials</span>
-                                  </li>
-                                  <li className="flex items-start gap-2 text-sm text-gray-900 dark:text-white">
-                                      <div className="mt-1 min-w-[16px]"><div className="w-4 h-4 rounded-full bg-green-100 dark:bg-green-500/10 flex items-center justify-center"><FaCheck size={10} className="text-green-600 dark:text-green-500" /></div></div>
-                                      <span>Personalized learning experience</span>
-                                  </li>
-                                  <li className="flex items-start gap-2 text-sm text-gray-900 dark:text-white">
-                                      <div className="mt-1 min-w-[16px]"><div className="w-4 h-4 rounded-full bg-green-100 dark:bg-green-500/10 flex items-center justify-center"><FaCheck size={10} className="text-green-600 dark:text-green-500" /></div></div>
-                                      <span>Adaptive content based on your progress</span>
-                                  </li>
-                              </ul>
-                          </div>
-                      </div>
+                      <ul className="space-y-6">
+                          <li className="flex items-start gap-4">
+                              <FaTimes className="text-red-500 mt-1 shrink-0" />
+                              <span className="text-gray-600 dark:text-gray-400 text-lg">Hours of passive reading and highlighting</span>
+                          </li>
+                          <li className="flex items-start gap-4">
+                              <FaTimes className="text-red-500 mt-1 shrink-0" />
+                              <span className="text-gray-600 dark:text-gray-400 text-lg">Manually creating flashcards (boring!)</span>
+                          </li>
+                          <li className="flex items-start gap-4">
+                              <FaTimes className="text-red-500 mt-1 shrink-0" />
+                              <span className="text-gray-600 dark:text-gray-400 text-lg">No feedback on written answers</span>
+                          </li>
+                          <li className="flex items-start gap-4">
+                              <FaTimes className="text-red-500 mt-1 shrink-0" />
+                              <span className="text-gray-600 dark:text-gray-400 text-lg">Scattered notes across notebooks</span>
+                          </li>
+                      </ul>
                   </div>
 
-                  {/* Card 3 - Cost */}
-                  <div className="bg-white dark:bg-[#0f0f0f] border border-gray-200 dark:border-white/10 rounded-2xl overflow-hidden hover:border-purple-500/30 transition-all duration-300 shadow-lg dark:shadow-none">
-                      <div className="bg-purple-50 dark:bg-purple-900/20 p-6 flex items-center gap-4 border-b border-gray-100 dark:border-white/5">
-                          <div className="bg-purple-100 dark:bg-purple-500/20 p-2 rounded-lg">
-                              <span className="text-purple-600 dark:text-purple-500 font-bold text-lg">$</span>
+                  {/* MatrixEdu Way */}
+                  <div className="bg-white dark:bg-[#0f0f0f] rounded-[2rem] p-8 md:p-12 border-2 border-indigo-500 shadow-2xl shadow-indigo-500/20 relative overflow-hidden transform hover:-translate-y-2 transition-transform duration-300">
+                      <div className="absolute top-0 right-0 bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-bl-xl">RECOMMENDED</div>
+                      <div className="flex items-center gap-4 mb-8">
+                          <div className="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center">
+                              <FaCheck className="text-indigo-600 dark:text-indigo-400 text-xl" />
                           </div>
-                          <h3 className="font-bold text-lg text-gray-900 dark:text-white">Cost-Effectiveness and Convenience</h3>
+                          <h3 className="text-2xl font-bold text-gray-900 dark:text-white">The MatrixEdu Way</h3>
                       </div>
-                      <div className="p-6 space-y-6">
-                          <div>
-                              <p className="text-xs font-bold text-gray-500 mb-3 tracking-wider">TRADITIONAL METHODS</p>
-                              <ul className="space-y-2">
-                                  <li className="flex items-start gap-2 text-sm text-gray-500 dark:text-gray-400">
-                                      <div className="mt-1 min-w-[16px]"><div className="w-4 h-4 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center"><FaTimes size={10} className="text-red-500" /></div></div>
-                                      <span>Expensive private tutors ($50-100/hr)</span>
-                                  </li>
-                                  <li className="flex items-start gap-2 text-sm text-gray-500 dark:text-gray-400">
-                                      <div className="mt-1 min-w-[16px]"><div className="w-4 h-4 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center"><FaTimes size={10} className="text-red-500" /></div></div>
-                                      <span>Multiple tools and subscriptions</span>
-                                  </li>
-                                  <li className="flex items-start gap-2 text-sm text-gray-500 dark:text-gray-400">
-                                      <div className="mt-1 min-w-[16px]"><div className="w-4 h-4 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center"><FaTimes size={10} className="text-red-500" /></div></div>
-                                      <span>Limited availability and scheduling issues</span>
-                                  </li>
-                              </ul>
-                          </div>
-                          <div className="h-px bg-gray-100 dark:bg-white/5 relative">
-                              <FaChevronDown className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-indigo-500 bg-white dark:bg-[#0f0f0f] p-1" size={24} />
-                          </div>
-                          <div>
-                              <p className="text-xs font-bold text-indigo-500 mb-3 tracking-wider">STUDLEY AI</p>
-                              <ul className="space-y-2">
-                                  <li className="flex items-start gap-2 text-sm text-gray-900 dark:text-white">
-                                      <div className="mt-1 min-w-[16px]"><div className="w-4 h-4 rounded-full bg-green-100 dark:bg-green-500/10 flex items-center justify-center"><FaCheck size={10} className="text-green-600 dark:text-green-500" /></div></div>
-                                      <span>Affordable subscription with all features</span>
-                                  </li>
-                                  <li className="flex items-start gap-2 text-sm text-gray-900 dark:text-white">
-                                      <div className="mt-1 min-w-[16px]"><div className="w-4 h-4 rounded-full bg-green-100 dark:bg-green-500/10 flex items-center justify-center"><FaCheck size={10} className="text-green-600 dark:text-green-500" /></div></div>
-                                      <span>All-in-one study platform</span>
-                                  </li>
-                                  <li className="flex items-start gap-2 text-sm text-gray-900 dark:text-white">
-                                      <div className="mt-1 min-w-[16px]"><div className="w-4 h-4 rounded-full bg-green-500/10 flex items-center justify-center"><FaCheck size={10} className="text-green-500" /></div></div>
-                                      <span>Available 24/7, study anytime anywhere</span>
-                                  </li>
-                              </ul>
-                          </div>
-                      </div>
+                      <ul className="space-y-6">
+                          <li className="flex items-start gap-4">
+                              <FaCheckCircle className="text-indigo-500 mt-1 shrink-0" />
+                              <span className="text-gray-600 dark:text-gray-400 text-lg">Instant active recall materials</span>
+                          </li>
+                          <li className="flex items-start gap-4">
+                              <FaCheckCircle className="text-indigo-500 mt-1 shrink-0" />
+                              <span className="text-gray-600 dark:text-gray-400 text-lg">AI-generated flashcards in seconds</span>
+                          </li>
+                          <li className="flex items-start gap-4">
+                              <FaCheckCircle className="text-indigo-500 mt-1 shrink-0" />
+                              <span className="text-gray-600 dark:text-gray-400 text-lg">Real-time grading & explanations</span>
+                          </li>
+                          <li className="flex items-start gap-4">
+                              <FaCheckCircle className="text-indigo-500 mt-1 shrink-0" />
+                              <span className="text-gray-600 dark:text-gray-400 text-lg">All materials synced & organized</span>
+                          </li>
+                      </ul>
                   </div>
               </div>
+
+              <div className="text-center mt-16">
+                 <button 
+                   onClick={() => navigate('/signup')}
+                   className="px-10 py-5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full font-bold text-xl hover:shadow-lg hover:shadow-indigo-500/40 hover:scale-105 transition-all duration-300"
+                 >
+                   Join 1,000,000+ Students Today
+                 </button>
+                 <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">No credit card required • Free plan available</p>
+             </div>
           </div>
       </section>
 
@@ -830,6 +530,15 @@ const MatrixEduLanding: React.FC = () => {
           </div>
       </section>
     </div>
+  );
+};
+
+const MatrixEduLanding: React.FC = () => {
+  return (
+    <ModelPositionProvider>
+      <ScrollingBalls3D />
+      <MatrixEduLandingContent />
+    </ModelPositionProvider>
   );
 };
 

@@ -12,8 +12,23 @@ import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
 import * as echarts from 'echarts';
 
+export interface StudyPlannerHistory {
+  id: string;
+  created_at: string;
+  roadmap_data: any;
+  webhook_response: any;
+  title?: string;
+}
+
+export interface StudyPlannerComponentHandle {
+  loadHistoryItem: (item: StudyPlannerHistory) => void;
+  refreshHistory: () => void;
+}
+
 interface StudyPlannerComponentProps {
   className?: string;
+  onToggleHistory?: () => void;
+  onRefreshHistory?: () => void;
 }
 
 // Portal Modal Component - renders at document.body level
@@ -139,7 +154,7 @@ const generateUUID = (): string => {
   });
 };
 
-const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className = '' }) => {
+const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, StudyPlannerComponentProps>(({ className = '', onToggleHistory, onRefreshHistory }, ref) => {
   const topRef = useRef<HTMLDivElement>(null);
   const { t } = useLanguage();
   const { showSuccess, showError, showWarning } = useNotification();
@@ -290,6 +305,24 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
       }>;
     }>;
   }>({});
+
+  // History state - No longer used for display here, but methods kept for compatibility/lifting if needed.
+  // Actually, we keep local history state for now as the parent might just toggle visibility, 
+  // or we can remove the internal panel rendering if the parent renders it.
+  // For this step, let's keep internal logic but use the prop to toggle if provided.
+
+  // Remove the interface declaration since it's now exported above
+  // interface StudyPlannerHistory { ... }
+
+  const [history, setHistory] = useState<StudyPlannerHistory[]>([]);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
+  // Expose methods to parent
+  React.useImperativeHandle(ref, () => ({
+    loadHistoryItem,
+    refreshHistory: fetchHistory
+  }));
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -1051,6 +1084,62 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
     setAiAnalysisResult(null);
   };
 
+  // History functions
+  const fetchHistory = async () => {
+    if (!user) return;
+    try {
+      setIsLoadingHistory(true);
+      const { data, error } = await supabase
+        .from('study_planner_history')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setHistory(data || []);
+    } catch (error) {
+      console.error('Error fetching history:', error);
+      showError('Failed to load history.');
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  const saveHistory = async (roadmapData: any, webhookResponse: any, title?: string) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('study_planner_history')
+        .insert({
+          user_id: user.id,
+          roadmap_data: roadmapData,
+          webhook_response: webhookResponse,
+          title: title || `Study Plan - ${new Date().toLocaleDateString()}`
+        });
+
+      if (error) throw error;
+      
+      // Notify parent to refresh history
+      if (onRefreshHistory) {
+        onRefreshHistory();
+      }
+      
+      // Refresh local history if using internal state
+      fetchHistory();
+    } catch (error) {
+      console.error('Error saving history:', error);
+    }
+  };
+
+  const loadHistoryItem = (item: StudyPlannerHistory) => {
+    setAiSuggestionResult({
+      ...item.roadmap_data,
+      rawText: typeof item.roadmap_data === 'string' ? item.roadmap_data : JSON.stringify(item.roadmap_data)
+    });
+    setShowHistoryModal(false);
+    setShowRoadmapResultModal(true);
+  };
+
   // AI Suggestion Functions
   const generateAISuggestion = async () => {
     try {
@@ -1151,6 +1240,7 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
             ...result.output,
             rawText: JSON.stringify(result.output)
           });
+          await saveHistory(result.output, result);
           setShowRoadmapResultModal(true);
           showSuccess('Comprehensive AI roadmap generated successfully!');
           return;
@@ -1172,6 +1262,7 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
             ...result,
             rawText: JSON.stringify(result)
           });
+          await saveHistory(result, result);
           setShowRoadmapResultModal(true);
           showSuccess('Comprehensive AI roadmap generated successfully!');
           return;
@@ -1207,6 +1298,7 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
               ...parsedJson.output,
               rawText: xmlContent
             });
+            await saveHistory(parsedJson.output, result);
             setShowRoadmapResultModal(true);
             showSuccess('Comprehensive AI roadmap generated successfully!');
             return;
@@ -1218,6 +1310,7 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
               ...parsedJson,
               rawText: xmlContent
             });
+            await saveHistory(parsedJson, result);
             setShowRoadmapResultModal(true);
             showSuccess('Comprehensive AI roadmap generated successfully!');
             return;
@@ -1235,6 +1328,7 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
         ...parsedData,
         rawText: xmlContent
       });
+      await saveHistory(parsedData, result);
       setShowRoadmapResultModal(true);
       
       showSuccess('Comprehensive AI roadmap generated successfully! 1 AI response used.');
@@ -1640,6 +1734,24 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
               {t('aiStudy.aiRoadmap')}
             </motion.button>
             <motion.button
+              onClick={() => {
+                if (onToggleHistory) {
+                  onToggleHistory();
+                } else {
+                  setShowHistoryModal(true);
+                  fetchHistory();
+                }
+              }}
+              className="flex items-center px-4 py-2 bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 rounded-xl hover:bg-amber-500/20 dark:hover:bg-amber-500/30 transition-all font-medium"
+              variants={buttonVariants}
+              whileHover="hover"
+              whileTap="tap"
+              title="View History"
+            >
+              <IconComponent icon={FiClock} className="h-4 w-4 mr-2" />
+              History
+            </motion.button>
+            <motion.button
               onClick={() => setShowAddForm(!showAddForm)}
               className="flex items-center px-4 py-2 bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30 rounded-xl hover:bg-blue-500/20 dark:hover:bg-blue-500/30 transition-all font-medium"
               variants={buttonVariants}
@@ -1692,8 +1804,9 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
                 <input
                   type="date"
                   value={newTask.date}
+                  onClick={(e) => e.currentTarget.showPicker()}
                   onChange={(e) => setNewTask({...newTask, date: e.target.value})}
-                  className="w-full px-3 py-2 bg-white dark:bg-[#1f1f23] border border-gray-200 dark:border-white/10 rounded-lg text-gray-900 dark:text-gray-300 focus:outline-none focus:border-indigo-500 dark:focus:border-white/20"
+                  className="w-full px-3 py-2 bg-white dark:bg-[#1f1f23] border border-gray-200 dark:border-white/10 rounded-lg text-gray-900 dark:text-gray-300 focus:outline-none focus:border-indigo-500 dark:focus:border-white/20 dark:[color-scheme:dark] dark:[&::-webkit-calendar-picker-indicator]:invert"
                   required
                 />
               </div>
@@ -1816,8 +1929,9 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
                   <input
                     type="date"
                     value={selectedDate}
+                    onClick={(e) => e.currentTarget.showPicker()}
                     onChange={(e) => setSelectedDate(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-black/20 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-lg text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
+                    className="w-full px-3 py-2 bg-white dark:bg-black/20 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-lg text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none dark:[color-scheme:dark] dark:[&::-webkit-calendar-picker-indicator]:invert"
                   />
                 </div>
 
@@ -1875,126 +1989,146 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
                 {filteredTasks.map((task, index) => (
                   <motion.div
                     key={task.id}
-                    className={`p-4 bg-white dark:bg-[#1f1f23] backdrop-blur-md rounded-lg border border-gray-200 dark:border-white/10 transition-all shadow-sm dark:shadow-none ${
-                      task.completed ? 'opacity-75' : ''
+                    className={`group relative p-5 bg-white dark:bg-[#18181b]/60 backdrop-blur-xl rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm hover:shadow-lg hover:border-gray-200 dark:hover:border-white/10 transition-all duration-300 ${
+                      task.completed ? 'opacity-60 grayscale-[0.5]' : ''
                     }`}
                     variants={itemVariants}
                     initial="hidden"
                     animate="visible"
-                    transition={{ delay: index * 0.1 }}
+                    transition={{ delay: index * 0.05 }}
                   >
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center space-x-4 flex-1 min-w-0">
-                        <motion.button
-                          onClick={() => handleTaskToggle(task.id)}
-                          className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                            task.completed
-                              ? 'bg-green-500 border-green-500 text-white'
-                              : 'border-gray-400 hover:border-cyan-400 dark:border-gray-600 dark:hover:border-cyan-400'
-                          }`}
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                        >
-                          {task.completed && <IconComponent icon={FiCheck} className="h-3 w-3" />}
-                        </motion.button>
+                    {/* Priority Indicator Line */}
+                    <div className={`absolute left-0 top-6 bottom-6 w-1 rounded-r-full transition-colors duration-300 ${
+                      task.priority === 'high' ? 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.4)]' :
+                      task.priority === 'medium' ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.4)]' :
+                      'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]'
+                    }`} />
 
-                        <div className="flex-1 min-w-0">
+                    <div className="flex items-start gap-4 pl-3">
+                      {/* Checkbox */}
+                      <motion.button
+                        onClick={() => handleTaskToggle(task.id)}
+                        className={`mt-1.5 flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
+                          task.completed
+                            ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm'
+                            : 'border-gray-300 dark:border-zinc-600 hover:border-emerald-500 dark:hover:border-emerald-400 bg-transparent'
+                        }`}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                      >
+                        {task.completed && <IconComponent icon={FiCheck} className="h-3 w-3 stroke-[3]" />}
+                      </motion.button>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0 space-y-3">
+                        {/* Header: Title & Priority */}
+                        <div className="flex items-start justify-between gap-3">
                           <input
                             type="text"
                             value={task.task}
                             onChange={(e) => handleTaskNameChange(task.id, e.target.value)}
-                            className={`w-full bg-transparent border-none outline-none font-semibold text-lg px-0 py-1 rounded transition-colors mb-2 ${
+                            className={`w-full bg-transparent border-none outline-none font-semibold text-lg leading-tight transition-colors ${
                               task.completed 
-                                ? 'line-through text-gray-400' 
-                                : 'text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-600'
+                                ? 'line-through text-gray-400 dark:text-zinc-500' 
+                                : 'text-gray-900 dark:text-zinc-100 placeholder-gray-400'
                             }`}
                             placeholder="Task name"
                           />
-                          <div className="flex flex-wrap items-center gap-3">
-                            <input
+                          
+                          {/* Priority Badge (Clickable) */}
+                          <motion.button
+                            onClick={() => handlePriorityUpdate(task.id, task.priority)}
+                            className={`flex-shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border transition-all duration-300 ${
+                              task.priority === 'high' 
+                                ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-500/20 hover:bg-rose-100 dark:hover:bg-rose-500/20' 
+                                : task.priority === 'medium'
+                                ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/20 hover:bg-amber-100 dark:hover:bg-amber-500/20'
+                                : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20 hover:bg-emerald-100 dark:hover:bg-emerald-500/20'
+                            }`}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            {task.priority}
+                          </motion.button>
+                        </div>
+
+                        {/* Metadata Row */}
+                        <div className="flex flex-wrap items-center gap-2.5">
+                          {/* Subject */}
+                          <div className="group/input relative">
+                             <input
                               type="text"
                               value={task.subject}
                               onChange={(e) => handleSubjectChange(task.id, e.target.value)}
-                              className="text-sm font-medium text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-500/10 border border-cyan-100 dark:border-cyan-500/20 px-2.5 py-1 rounded-md hover:bg-cyan-100 dark:hover:bg-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all w-32"
+                              className="w-24 sm:w-32 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-600 dark:text-zinc-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/30 outline-none transition-all hover:bg-gray-100 dark:hover:bg-white/10 placeholder-gray-400 dark:placeholder-zinc-600"
                               placeholder="Subject"
                             />
-                            <div className="flex items-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 px-2.5 py-1 rounded-md hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
-                              <IconComponent icon={FiCalendar} className="h-3.5 w-3.5 mr-2" />
-                              <input
-                                type="date"
-                                value={task.date}
-                                onChange={(e) => handleDateChange(task.id, e.target.value)}
-                                className="text-sm bg-transparent border-none outline-none p-0 w-28 cursor-pointer"
-                              />
-                            </div>
-                            <div className="flex items-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 px-2.5 py-1 rounded-md hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
-                              <IconComponent icon={FiClock} className="h-3.5 w-3.5 mr-2" />
-                              <input
-                                type="number"
-                                value={task.estimatedHours}
-                                onChange={(e) => handleEstimatedHoursChange(task.id, parseInt(e.target.value) || 1)}
-                                min="1"
-                                max="24"
-                                className="text-sm bg-transparent border-none outline-none p-0 w-8 text-center"
-                              />
-                              <span className="text-sm ml-1">h</span>
-                            </div>
                           </div>
-                          {task.reminder && task.reminderDate && (
-                            <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-2 flex items-center bg-yellow-50 dark:bg-yellow-500/10 px-2 py-1 rounded w-fit">
-                              <IconComponent icon={FaBell} className="h-3 w-3 mr-1.5" />
-                              Reminder: {new Date(task.reminderDate).toLocaleDateString()} at {new Date(task.reminderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </div>
-                          )}
-                        </div>
 
-                        <div className="hidden sm:block">
-                          <motion.button
-                            onClick={() => handlePriorityUpdate(task.id, task.priority)}
-                            className={`px-2 py-1 rounded-full text-xs font-medium border transition-all hover:scale-105 ${getPriorityColor(task.priority)}`}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            title="Click to change priority"
-                          >
-                            {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                          </motion.button>
+                          {/* Date */}
+                          <div className="flex items-center bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5 rounded-lg px-2.5 py-1.5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors group-focus-within:ring-2 group-focus-within:ring-indigo-500/20">
+                            <IconComponent icon={FiCalendar} className="h-3.5 w-3.5 text-gray-400 dark:text-zinc-500 mr-2" />
+                            <input
+                              type="date"
+                              value={task.date}
+                              onClick={(e) => e.currentTarget.showPicker()}
+                              onChange={(e) => handleDateChange(task.id, e.target.value)}
+                              className="bg-transparent border-none outline-none text-xs font-medium text-gray-600 dark:text-zinc-300 w-24 cursor-pointer dark:[color-scheme:dark] dark:[&::-webkit-calendar-picker-indicator]:invert"
+                            />
+                          </div>
+
+                          {/* Duration */}
+                          <div className="flex items-center bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5 rounded-lg px-2.5 py-1.5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
+                            <IconComponent icon={FiClock} className="h-3.5 w-3.5 text-gray-400 dark:text-zinc-500 mr-2" />
+                            <input
+                              type="number"
+                              value={task.estimatedHours}
+                              onChange={(e) => handleEstimatedHoursChange(task.id, parseInt(e.target.value) || 1)}
+                              min="1"
+                              max="24"
+                              className="bg-transparent border-none outline-none text-xs font-medium text-gray-600 dark:text-zinc-300 w-8 text-center"
+                            />
+                            <span className="text-xs text-gray-400 dark:text-zinc-500 ml-1">h</span>
+                          </div>
                         </div>
+                        
+                        {/* Reminder Status (if set) */}
+                        {task.reminder && task.reminderDate && (
+                          <div className="flex items-center gap-2 text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-2.5 py-1 rounded-md w-fit border border-amber-100 dark:border-amber-500/10">
+                            <IconComponent icon={FaBell} className="h-3 w-3" />
+                            <span>
+                              Reminder: {new Date(task.reminderDate).toLocaleDateString()} at {new Date(task.reminderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        )}
                       </div>
 
-                      <div className="flex items-center space-x-1 sm:space-x-2">
-                        <motion.button
+                      {/* Actions (Vertical or Horizontal) */}
+                      <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-2 group-hover:translate-x-0">
+                         <motion.button
                           onClick={() => openReminderModal(task.id)}
                           className={`p-2 rounded-lg transition-colors ${
                             task.reminder 
-                              ? 'text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 bg-yellow-500/10' 
-                              : 'text-gray-400 hover:text-yellow-500 dark:hover:text-yellow-400 hover:bg-yellow-500/10'
+                              ? 'text-amber-500 bg-amber-500/10 dark:bg-amber-500/20' 
+                              : 'text-gray-400 hover:text-amber-500 hover:bg-amber-500/10 dark:hover:bg-amber-500/20'
                           }`}
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
-                          title={task.reminder ? 'Reminder set' : 'Set reminder'}
+                          title={task.reminder ? 'Edit Reminder' : 'Set Reminder'}
                         >
                           <IconComponent icon={FaBell} className="h-4 w-4" />
                         </motion.button>
-
+                        
                         <motion.button
                           onClick={() => handleDeleteTask(task.id)}
-                          className="p-2 text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
+                          className="p-2 text-gray-400 hover:text-rose-500 hover:bg-rose-500/10 dark:hover:bg-rose-500/20 rounded-lg transition-colors"
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
+                          title="Delete Task"
                         >
                           <IconComponent icon={FiTrash2} className="h-4 w-4" />
                         </motion.button>
                       </div>
-                    </div>
-                    {/* Mobile Priority Badge */}
-                    <div className="sm:hidden mt-2 flex justify-end">
-                      <motion.button
-                        onClick={() => handlePriorityUpdate(task.id, task.priority)}
-                        className={`px-2 py-1 rounded-full text-xs font-medium border transition-all ${getPriorityColor(task.priority)}`}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                      </motion.button>
                     </div>
                   </motion.div>
                 ))}
@@ -2206,6 +2340,101 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
         )}
       </AnimatePresence>
 
+      {/* History Panel (Slide-over) */}
+      <AnimatePresence>
+        {showHistoryModal && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowHistoryModal(false)}
+              className="fixed inset-0 bg-black/20 dark:bg-black/50 z-[60] backdrop-blur-sm"
+            />
+            
+            {/* Panel */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="fixed right-0 top-0 h-full w-full max-w-md bg-white dark:bg-[#09090b]/95 backdrop-blur-xl border-l border-gray-200 dark:border-white/10 shadow-2xl z-[70] flex flex-col"
+            >
+              <div className="p-6 border-b border-gray-200 dark:border-white/10 flex justify-between items-center bg-gray-50/50 dark:bg-transparent">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
+                  <div className="p-2 rounded-lg bg-amber-500/10 mr-3">
+                    <IconComponent icon={FiClock} className="h-5 w-5 text-amber-500" />
+                  </div>
+                  Roadmap History
+                </h2>
+                <motion.button
+                  onClick={() => setShowHistoryModal(false)}
+                  className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <IconComponent icon={FiX} className="h-5 w-5" />
+                </motion.button>
+              </div>
+              
+              <div className="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-4">
+                {isLoadingHistory ? (
+                  <div className="flex justify-center items-center h-40">
+                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-amber-500 border-t-transparent"></div>
+                  </div>
+                ) : history.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-64 text-center">
+                    <div className="w-20 h-20 bg-gray-100 dark:bg-white/5 rounded-full flex items-center justify-center mb-4 border border-gray-200 dark:border-white/5">
+                        <IconComponent icon={FiClock} className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <p className="text-gray-900 dark:text-white font-medium mb-1 text-lg">No history yet</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs mx-auto">
+                        Generate your first AI roadmap to see it here.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {history.map((item) => (
+                      <motion.div
+                        key={item.id}
+                        className="p-4 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl hover:border-amber-500/50 dark:hover:border-amber-500/50 hover:shadow-lg dark:hover:bg-white/10 cursor-pointer transition-all group relative overflow-hidden"
+                        onClick={() => loadHistoryItem(item)}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-amber-500/10 to-transparent rounded-bl-3xl -mr-2 -mt-2 transition-opacity opacity-0 group-hover:opacity-100" />
+                        
+                        <div className="flex justify-between items-start relative z-10">
+                          <div className="flex-1 pr-4">
+                            <h3 className="font-semibold text-gray-900 dark:text-white mb-2 text-lg group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors line-clamp-2">
+                              {item.title || 'Untitled Roadmap'}
+                            </h3>
+                            <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 space-x-4">
+                                <span className="flex items-center bg-gray-100 dark:bg-black/30 px-2 py-1 rounded-md">
+                                    <IconComponent icon={FiCalendar} className="mr-1.5 h-3.5 w-3.5 text-gray-400" />
+                                    {new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </span>
+                                <span className="flex items-center bg-gray-100 dark:bg-black/30 px-2 py-1 rounded-md">
+                                    <IconComponent icon={FiClock} className="mr-1.5 h-3.5 w-3.5 text-gray-400" />
+                                    {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                            </div>
+                          </div>
+                          <div className="bg-gray-100 dark:bg-white/5 p-2 rounded-full text-gray-400 group-hover:bg-amber-500 group-hover:text-white transition-all transform group-hover:rotate-45">
+                             <IconComponent icon={FiChevronRight} className="h-5 w-5" />
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* AI Suggestion Modal - Compact Design */}
       <AnimatePresence>
         {showAISuggestionModal && (
@@ -2255,8 +2484,9 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
                       <input
                         type="date"
                         value={suggestionDateRange.startDate}
+                        onClick={(e) => e.currentTarget.showPicker()}
                         onChange={(e) => setSuggestionDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-                        className="pl-12 w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-gray-900 dark:text-white"
+                        className="pl-12 w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-gray-900 dark:text-white dark:[color-scheme:dark] dark:[&::-webkit-calendar-picker-indicator]:invert"
                       />
                     </div>
                     <div className="relative">
@@ -2266,8 +2496,9 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
                       <input
                         type="date"
                         value={suggestionDateRange.endDate}
+                        onClick={(e) => e.currentTarget.showPicker()}
                         onChange={(e) => setSuggestionDateRange(prev => ({ ...prev, endDate: e.target.value }))}
-                        className="pl-10 w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-gray-900 dark:text-white"
+                        className="pl-10 w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-gray-900 dark:text-white dark:[color-scheme:dark] dark:[&::-webkit-calendar-picker-indicator]:invert"
                       />
                     </div>
                   </div>
@@ -2754,8 +2985,9 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
                     <input
                       type="date"
                       value={reminderDate}
+                      onClick={(e) => e.currentTarget.showPicker()}
                       onChange={(e) => setReminderDate(e.target.value)}
-                      className="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-lg px-4 py-3 text-gray-900 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                      className="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-lg px-4 py-3 text-gray-900 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 dark:[color-scheme:dark] dark:[&::-webkit-calendar-picker-indicator]:invert"
                     />
                   </div>
                   
@@ -2766,8 +2998,9 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
                     <input
                       type="time"
                       value={reminderTime}
+                      onClick={(e) => e.currentTarget.showPicker()}
                       onChange={(e) => setReminderTime(e.target.value)}
-                      className="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-lg px-4 py-3 text-gray-900 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                      className="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-lg px-4 py-3 text-gray-900 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 dark:[color-scheme:dark] dark:[&::-webkit-calendar-picker-indicator]:invert"
                     />
                   </div>
                 </div>
@@ -2816,6 +3049,6 @@ const StudyPlannerComponent: React.FC<StudyPlannerComponentProps> = ({ className
       </AnimatePresence>
     </motion.div>
   );
-};
+});
 
 export default StudyPlannerComponent;

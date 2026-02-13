@@ -122,6 +122,8 @@ const StudyFillInBlanks: React.FC<StudyFillInBlanksProps> = ({ onDiscuss }) => {
                     .select('generated_json')
                     .eq('document_id', id)
                     .eq('uid', user.id)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
                     .maybeSingle();
 
                 if (error) {

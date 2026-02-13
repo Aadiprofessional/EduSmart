@@ -9,6 +9,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
+import rehypeRaw from 'rehype-raw';
 import 'katex/dist/katex.min.css';
 
 // --- Types ---
@@ -157,7 +158,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
                 id: documentId,
                 owner: user?.id,
                 title: 'Study Set Chat', // Default title
-                service_type: 'solve',
+                service_type: 'study_chat',
                 metadata: { type: 'study_set_chat' }
             }).select();
             
@@ -199,7 +200,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
             };
 
             // 4. Send to Webhook
-            const response = await fetch('https://n8n.matrixaiserver.com/webhook/matrixEdu/solveQuestion', {
+            const response = await fetch('https://n8n.matrixaiserver.com/webhook/282d6827-c241-4e4e-b7ff-cc957e2b81d0', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(requestBody),
@@ -213,6 +214,40 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
             let aiContent = '';
             let buffer = '';
 
+            const processLine = (line: string) => {
+                if (!line.trim()) return;
+                try {
+                    const json = JSON.parse(line);
+                    let newContent = '';
+
+                    // Handle array format with output field
+                    if (Array.isArray(json) && json.length > 0 && json[0]?.output) {
+                        newContent = json[0].output;
+                    } 
+                    // Handle streaming format
+                    else if (json.type === 'item' && typeof json.content === 'string') {
+                        newContent = json.content;
+                    }
+
+                    if (newContent) {
+                        aiContent += newContent;
+                        setMessages(prev => {
+                            const newMessages = [...prev];
+                            const lastMsgIndex = newMessages.findIndex(m => m.id === aiMsgId);
+                            if (lastMsgIndex !== -1) {
+                                newMessages[lastMsgIndex] = {
+                                    ...newMessages[lastMsgIndex],
+                                    content: aiContent
+                                };
+                            }
+                            return newMessages;
+                        });
+                    }
+                } catch (e) {
+                    // Ignore parse errors for partial lines
+                }
+            };
+
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
@@ -223,27 +258,13 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
                 buffer = lines.pop() || '';
 
                 for (const line of lines) {
-                    if (!line.trim()) continue;
-                    try {
-                        const json = JSON.parse(line);
-                        if (json.type === 'item' && typeof json.content === 'string') {
-                            aiContent += json.content;
-                            setMessages(prev => {
-                                const newMessages = [...prev];
-                                const lastMsgIndex = newMessages.findIndex(m => m.id === aiMsgId);
-                                if (lastMsgIndex !== -1) {
-                                    newMessages[lastMsgIndex] = {
-                                        ...newMessages[lastMsgIndex],
-                                        content: aiContent
-                                    };
-                                }
-                                return newMessages;
-                            });
-                        }
-                    } catch (e) {
-                        // Ignore parse errors for partial lines
-                    }
+                    processLine(line);
                 }
+            }
+
+            // Process any remaining buffer
+            if (buffer.trim()) {
+                processLine(buffer);
             }
 
             // 6. Save AI Message
@@ -306,7 +327,37 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
                                         ) : (
                                             <ReactMarkdown 
                                                 remarkPlugins={[remarkGfm, remarkMath]}
-                                                rehypePlugins={[rehypeKatex]}
+                                                rehypePlugins={[rehypeRaw, rehypeKatex]}
+                                                components={{
+                                                    h1: ({node, ...props}) => <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4 mt-6 border-b border-gray-200 dark:border-gray-700 pb-2" {...props} />,
+                                                    h2: ({node, ...props}) => <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-3 mt-8 border-b border-gray-200 dark:border-gray-800 pb-2" {...props} />,
+                                                    h3: ({node, ...props}) => <h3 className="text-xl font-medium text-gray-800 dark:text-gray-200 mb-2 mt-6" {...props} />,
+                                                    p: ({node, ...props}) => <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-6 text-lg" {...props} />,
+                                                    ul: ({node, ...props}) => <ul className="list-disc pl-6 space-y-3 text-gray-600 dark:text-gray-300 my-4" {...props} />,
+                                                    ol: ({node, ...props}) => <ol className="list-decimal pl-6 space-y-3 text-gray-600 dark:text-gray-300 my-4" {...props} />,
+                                                    li: ({node, ...props}) => <li className="pl-1" {...props} />,
+                                                    blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-indigo-500 pl-4 italic text-gray-600 dark:text-gray-400 my-6 bg-gray-50 dark:bg-white/5 p-4 rounded-r" {...props} />,
+                                                    hr: ({node, ...props}) => <hr className="border-gray-200 dark:border-gray-700 my-8" {...props} />,
+                                                    strong: ({node, ...props}) => <strong className="font-bold text-gray-900 dark:text-white" {...props} />,
+                                                    em: ({node, ...props}) => <em className="italic text-gray-700 dark:text-gray-200" {...props} />,
+                                                    table: ({node, ...props}) => <div className="overflow-x-auto my-8"><table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg" {...props} /></div>,
+                                                    thead: ({node, ...props}) => <thead className="bg-gray-50 dark:bg-gray-800" {...props} />,
+                                                    th: ({node, ...props}) => <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700" {...props} />,
+                                                    td: ({node, ...props}) => <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700" {...props} />,
+                                                    a: ({node, ...props}) => <a className="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 underline" {...props} />,
+                                                    code: ({node, className, children, ...props}) => {
+                                                        const match = /language-(\w+)/.exec(className || '');
+                                                        return !match ? (
+                                                            <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm text-indigo-600 dark:text-indigo-300" {...props}>
+                                                                {children}
+                                                            </code>
+                                                        ) : (
+                                                            <code className={className} {...props}>
+                                                                {children}
+                                                            </code>
+                                                        );
+                                                    }
+                                                }}
                                             >
                                                 {preprocessMath(msg.content)}
                                             </ReactMarkdown>
@@ -326,22 +377,26 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
             <div className="p-4 border-t border-gray-200 dark:border-white/5 bg-white dark:bg-[#111111]">
                 {/* Attachment Pill */}
                 {attachment && (
-                    <div className="mb-2 flex items-center justify-between bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-500/20 rounded-lg p-2 animate-in slide-in-from-bottom-2 duration-200">
-                        <div className="flex items-center gap-2 overflow-hidden">
-                            <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-800 flex items-center justify-center flex-shrink-0 text-indigo-600 dark:text-indigo-300">
-                                <FaPaperclip size={10} />
+                    <div className="mb-3 flex flex-col gap-2 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-500/30 rounded-xl p-3 animate-in slide-in-from-bottom-2 duration-200 shadow-sm">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-800 flex items-center justify-center flex-shrink-0 text-indigo-600 dark:text-indigo-300">
+                                    <FaPaperclip size={10} />
+                                </div>
+                                <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300 truncate">{attachment.source}</span>
                             </div>
-                            <div className="flex flex-col min-w-0">
-                                <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 truncate">{attachment.source}</span>
-                                <span className="text-[10px] text-indigo-600/70 dark:text-indigo-400/70 truncate">{attachment.content.substring(0, 40)}...</span>
-                            </div>
+                            <button 
+                                onClick={onClearAttachment}
+                                className="p-1.5 text-indigo-400 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-200 rounded-full hover:bg-indigo-100 dark:hover:bg-indigo-800/50 transition-colors"
+                            >
+                                <FaTimes size={12} />
+                            </button>
                         </div>
-                        <button 
-                            onClick={onClearAttachment}
-                            className="p-1 text-indigo-400 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-200 rounded-full hover:bg-indigo-100 dark:hover:bg-indigo-800/50 transition-colors"
-                        >
-                            <FaTimes size={10} />
-                        </button>
+                        <div className="pl-8">
+                            <p className="text-xs text-indigo-900/80 dark:text-indigo-200/80 line-clamp-3 leading-relaxed font-medium">
+                                "{attachment.content}"
+                            </p>
+                        </div>
                     </div>
                 )}
                 <div className="relative">

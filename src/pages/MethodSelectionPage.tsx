@@ -709,7 +709,8 @@ const MethodSelectionPage: React.FC = () => {
 
     const [selectedMethods, setSelectedMethods] = useState<string[]>(() => {
         const type = state?.uploadPayload?.uploadedFileType;
-        if (type === 'audio' || type === 'video') {
+        const hasDuration = state?.uploadPayload?.duration;
+        if (type === 'audio' || type === 'video' || (type === 'url' && hasDuration)) {
             return ['speech-to-text', 'notes'];
         }
         return ['tutor-lesson'];
@@ -722,6 +723,26 @@ const MethodSelectionPage: React.FC = () => {
     const [metaData, setMetaData] = useState<{ duration?: number; pageCount?: number }>({});
     const [userCoins, setUserCoins] = useState<number>(0);
     const { user } = useAuth();
+
+    // Helper to extract file name from payload
+    const getFileName = () => {
+        if (!state?.uploadPayload) return "New Study Set";
+        const { uploadPayload } = state;
+        
+        // Check for audio_name (from audio/video uploads)
+        if (uploadPayload.audio_name) return uploadPayload.audio_name;
+        
+        // Check for messages (from document uploads)
+        if (uploadPayload.messages && uploadPayload.messages.length > 0) {
+            const msg = uploadPayload.messages[0];
+            // Check attachments
+            if (msg.attachments && msg.attachments.length > 0 && msg.attachments[0].fileName) {
+                return msg.attachments[0].fileName;
+            }
+        }
+        
+        return "New Study Set";
+    };
 
     // Fetch user coins
     React.useEffect(() => {
@@ -739,13 +760,13 @@ const MethodSelectionPage: React.FC = () => {
             if (!state?.uploadPayload) return;
             const { uploadedFileType, publicUrl, messages, duration } = state.uploadPayload;
 
-            // Prioritize duration from payload if available (it's already calculated in uploadService)
-            if (duration && (uploadedFileType === 'audio' || uploadedFileType === 'video')) {
+            // Prioritize duration from payload if available (it's already calculated in uploadService or fetched via webhook)
+            if (duration && (uploadedFileType === 'audio' || uploadedFileType === 'video' || uploadedFileType === 'url')) {
                  setMetaData(prev => ({ ...prev, duration: Number(duration) }));
                  return; 
             }
 
-            if (uploadedFileType === 'pdf_vision' && messages && messages[0]?.page_count) {
+            if ((uploadedFileType === 'pdf_vision' || uploadedFileType === 'ocr') && messages && messages[0]?.page_count) {
                 setMetaData(prev => ({ ...prev, pageCount: messages[0].page_count }));
             } else if (uploadedFileType === 'pdf') {
                 try {
@@ -778,16 +799,17 @@ const MethodSelectionPage: React.FC = () => {
         extractMetadata();
     }, [state?.uploadPayload]);
 
-    // Force Speech to Text for Audio/Video
+    // Force Speech to Text for Audio/Video/YouTube
     React.useEffect(() => {
         const type = state?.uploadPayload?.uploadedFileType;
-        if (type === 'audio' || type === 'video') {
+        const hasDuration = state?.uploadPayload?.duration;
+        if (type === 'audio' || type === 'video' || type === 'url') {
              setSelectedMethods(prev => {
                  if (prev.includes('speech-to-text')) return prev;
                  return [...prev, 'speech-to-text'];
              });
         }
-    }, [state?.uploadPayload?.uploadedFileType]);
+    }, [state?.uploadPayload?.uploadedFileType, state?.uploadPayload?.duration]);
 
     const calculateCosts = () => {
        let sourceCost = 0;
@@ -795,8 +817,10 @@ const MethodSelectionPage: React.FC = () => {
 
        if (type === 'image') sourceCost = 3;
        else if (type === 'pdf' || type === 'pdf_vision') sourceCost = (metaData.pageCount || 1) * 2;
+       else if (type === 'ocr') sourceCost = (metaData.pageCount || 1) * 1;
+       else if (type === 'document' || type === 'text' || type === 'url') sourceCost = 10;
        else if (type === 'audio' || type === 'video') sourceCost = Math.ceil((metaData.duration || 60) / 60) * 1;
-       else if (type === 'text' || !type) sourceCost = 0; // URL/Text
+       else if (!type) sourceCost = 0;
 
        let methodsCost = 0;
        selectedMethods.forEach(m => {
@@ -832,14 +856,16 @@ const MethodSelectionPage: React.FC = () => {
     const visibleMethods = methods.filter(m => {
         if (m.id === 'speech-to-text') {
              const type = state?.uploadPayload?.uploadedFileType;
-             return type === 'audio' || type === 'video';
+             const hasDuration = state?.uploadPayload?.duration;
+             return type === 'audio' || type === 'video' || type === 'url';
         }
         return true;
     });
 
     const toggleMethod = (id: string) => {
         const type = state?.uploadPayload?.uploadedFileType;
-        if (id === 'speech-to-text' && (type === 'audio' || type === 'video')) {
+        const hasDuration = state?.uploadPayload?.duration;
+        if (id === 'speech-to-text' && (type === 'audio' || type === 'video' || type === 'url')) {
             return; 
         }
         if (selectedMethods.includes(id)) {
@@ -859,8 +885,21 @@ const MethodSelectionPage: React.FC = () => {
         if (state?.uploadPayload) {
             setIsGenerating(true);
             try {
+                let currentPayload = { ...state.uploadPayload };
+
+                // Process YouTube URL
+                if (currentPayload.uploadedFileType === 'url') {
+                     const ytUrl = currentPayload.messages?.[0]?.url || currentPayload.url;
+                     if (ytUrl) {
+                         // Directly set type to youtube as requested
+                         currentPayload.uploadedFileType = 'youtube';
+                         // Ensure URL is passed clearly (it's already in 'url' and messages[0].url)
+                         currentPayload.youtube_url = ytUrl; // Adding explicit field just in case
+                     }
+                }
+
                 const payload = {
-                    ...state.uploadPayload,
+                    ...currentPayload,
                     mindmap: selectedMethods.includes('mindmap'),
                     notes: selectedMethods.includes('notes'),
                     multiple_choice: selectedMethods.includes('multiple-choice'),
@@ -929,8 +968,9 @@ const MethodSelectionPage: React.FC = () => {
                             <h3 className="font-bold text-lg">Source Material</h3>
                             <p className="text-sm text-gray-500">
                                 {(state?.uploadPayload?.uploadedFileType === 'pdf' || state?.uploadPayload?.uploadedFileType === 'pdf_vision') ? `PDF (${metaData.pageCount || 1} pages)` :
+                                 state?.uploadPayload?.uploadedFileType === 'ocr' ? `PDF (OCR) (${metaData.pageCount || 1} pages)` :
                                  state?.uploadPayload?.uploadedFileType === 'image' ? 'Image' :
-                                 (state?.uploadPayload?.uploadedFileType === 'audio' || state?.uploadPayload?.uploadedFileType === 'video') ? `Audio/Video (${Math.ceil((metaData.duration || 60) / 60)} mins)` :
+                                 (state?.uploadPayload?.uploadedFileType === 'audio' || state?.uploadPayload?.uploadedFileType === 'video' || (state?.uploadPayload?.uploadedFileType === 'url' && metaData.duration)) ? `Audio/Video (${Math.ceil((metaData.duration || 60) / 60)} mins)` :
                                  'Text / URL'}
                             </p>
                         </div>
@@ -1062,7 +1102,7 @@ const MethodSelectionPage: React.FC = () => {
                      <button onClick={() => navigate('/dashboard')} className="text-gray-400 hover:text-gray-600 dark:hover:text-white mr-4">
                         <FaArrowLeft size={12} />
                      </button>
-                     <h1 className="font-bold text-lg text-gray-900 dark:text-white">System Architecture Diagram</h1>
+                     <h1 className="font-bold text-lg text-gray-900 dark:text-white truncate max-w-2xl" title={getFileName()}>{getFileName()}</h1>
                 </div>
 
                 {/* Content */}

@@ -1,1008 +1,807 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-import { Document, Paragraph, TextRun, Packer } from 'docx';
-import { Header } from '../components/layout';
-import Footer from '../components/layout/Footer';
-import { FiEdit, FiDownload, FiShare2, FiSave, FiSettings, FiRotateCw, FiRefreshCw, FiCopy, FiTrash, FiBook, FiFileText, FiMail, FiClipboard } from 'react-icons/fi';
-import { AiOutlineFontSize, AiOutlineHighlight, AiOutlineAlignLeft, AiOutlineAlignCenter, AiOutlineAlignRight, AiOutlineBold, AiOutlineItalic, AiOutlineUnderline, AiOutlineOrderedList, AiOutlineUnorderedList, AiOutlineLink, AiOutlineRobot, AiOutlineBulb, AiOutlineHistory } from 'react-icons/ai';
+import { supabase } from '../utils/supabase';
+import { 
+  FaChevronDown, FaBold, FaItalic, FaUnderline, FaStrikethrough, 
+  FaListUl, FaListOl, FaQuoteRight, FaCode, FaMinus, FaImage, FaEraser,
+  FaFilePdf, FaAlignLeft, FaAlignCenter, FaAlignRight, FaLink, FaHighlighter,
+  FaHistory, FaPenNib, FaFileAlt, FaEnvelope, FaClipboard, FaUserGraduate, FaFileContract, FaMagic,
+  FaChevronLeft, FaChevronRight, FaTimes, FaTrash
+} from 'react-icons/fa';
+import { FiMenu, FiX, FiRefreshCw, FiCopy } from 'react-icons/fi';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeRaw from 'rehype-raw';
+import rehypeKatex from 'rehype-katex';
+import { renderToStaticMarkup } from 'react-dom/server';
 import IconComponent from '../components/ui/IconComponent';
 import { useNotification } from '../utils/NotificationContext';
+import SidebarLeft from '../components/dashboard/SidebarLeft';
 
 const ContentWriter: React.FC = () => {
-  const navigate = useNavigate();
+  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(window.innerWidth >= 1024);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+  
   const [prompt, setPrompt] = useState('');
-  const [generatedContent, setGeneratedContent] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
   const [activeTemplate, setActiveTemplate] = useState('college-app');
-  const [editedContent, setEditedContent] = useState('');
-  const [showPreview, setShowPreview] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
-  const [fontSize, setFontSize] = useState(16);
+  const [editedContent, setEditedContent] = useState(''); // Stores HTML content
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false); // Right panel history state
+  const [tone, setTone] = useState('professional');
+  const [targetWordCount, setTargetWordCount] = useState(500);
+  
+  // Editor State
+  const editorRef = useRef<HTMLDivElement>(null);
+  const [activePopup, setActivePopup] = React.useState<'link' | 'image' | 'font' | null>(null);
+  const [popupValue, setPopupValue] = React.useState('');
+  const savedSelection = useRef<Range | null>(null);
+  const [currentFont, setCurrentFont] = useState({ name: 'Sans Serif', value: 'Arial' });
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  const [isGenerating, setIsGenerating] = useState(false);
   const [contentHistory, setContentHistory] = useState<{ 
+    id: string,
     title: string, 
     date: string, 
     content: string,
     template: string,
     prompt: string 
-  }[]>([
-    { 
-      title: "College Application Essay", 
-      date: "3 days ago", 
-      content: "As I reflect on my journey through high school...",
-      template: "college-app",
-      prompt: "Write a compelling college application essay about my passion for computer science"
-    },
-    { 
-      title: "Research Paper Outline", 
-      date: "1 week ago", 
-      content: "The impact of technology on modern education...",
-      template: "research-paper",
-      prompt: "Generate an outline for a research paper on the impact of artificial intelligence in education"
-    },
-  ]);
-  const editorRef = useRef<HTMLTextAreaElement>(null);
-  const [showAIEditModal, setShowAIEditModal] = useState(false);
-  const [editInstructions, setEditInstructions] = useState('');
-  const [isEditing, setIsEditing] = useState(false);
-  const [editProgress, setEditProgress] = useState(0);
-  const [highlightedSections, setHighlightedSections] = useState<{start: number, end: number, original: string, updated: string}[]>([]);
-  const [editStep, setEditStep] = useState<'analyzing' | 'searching' | 'updating'>('analyzing');
-  const [showDownloadOptions, setShowDownloadOptions] = useState(false);
+  }[]>([]);
+
+  const fetchHistory = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('user_content')
+        .select('*')
+        .eq('uid', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching history:', error);
+        return;
+      }
+
+      if (data) {
+        const formattedHistory = data.map(item => ({
+          id: item.id || item.created_at, // Fallback to created_at if id is missing (table issue)
+          title: item.title || 'Untitled',
+          date: new Date(item.created_at).toLocaleDateString(),
+          content: item.content,
+          template: item.content_type || 'custom',
+          prompt: item.prompt
+        }));
+        console.log('History loaded:', formattedHistory);
+        setContentHistory(formattedHistory);
+      }
+    } catch (error) {
+      console.error('Error fetching history:', error);
+    }
+  };
+
   const { showSuccess, showError } = useNotification();
 
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        when: "beforeChildren",
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1 }
-  };
-
-  const buttonVariants = {
-    hover: { scale: 1.05, boxShadow: "0px 3px 10px rgba(0, 0, 0, 0.2)" },
-    tap: { scale: 0.98 }
-  };
-
-  const templates = [
-    { id: 'college-app', name: 'College Application Essay', icon: FiBook },
-    { id: 'cover-letter', name: 'Cover Letter', icon: FiFileText },
-    { id: 'recommendation', name: 'Recommendation Letter', icon: FiMail },
-    { id: 'research-paper', name: 'Research Paper', icon: FiClipboard },
-    { id: 'scholarship', name: 'Scholarship Application', icon: FiClipboard },
-    { id: 'personal-statement', name: 'Personal Statement', icon: FiFileText },
+  const fonts = [
+    { name: 'Sans Serif', value: 'Arial' },
+    { name: 'Serif', value: 'Times New Roman' },
+    { name: 'Monospace', value: 'Courier New' },
+    { name: 'Georgia', value: 'Georgia' },
+    { name: 'Verdana', value: 'Verdana' },
+    { name: 'Comic Sans', value: 'Comic Sans MS' }
   ];
 
-  // Add interface for parsed result
-  interface AnalysisResult {
-    sections: string[];
-    updates: string[];
-    explanation?: string;
-  }
+  const templates = [
+    { id: 'college-app', name: 'College App Essay', icon: FaUserGraduate },
+    { id: 'cover-letter', name: 'Cover Letter', icon: FaFileAlt },
+    { id: 'recommendation', name: 'Recommendation', icon: FaEnvelope },
+    { id: 'research-paper', name: 'Research Paper', icon: FaClipboard },
+    { id: 'scholarship', name: 'Scholarship App', icon: FaFileContract },
+    { id: 'personal-statement', name: 'Personal Statement', icon: FaPenNib },
+  ];
 
-  // Add delay between API calls to avoid rate limits
-  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+  useEffect(() => {
+    fetchHistory();
+    const handleResize = () => {
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      if (mobile) setIsLeftSidebarOpen(false);
+      else setIsLeftSidebarOpen(true);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-  // Helper function to make API calls with retry logic
-  const makeAPICall = async (prompt: string, retries = 3): Promise<string> => {
-    for (let i = 0; i < retries; i++) {
-      try {
-        // Add delay between retries
-        if (i > 0) {
-          await delay(2000 * i); // Exponential backoff
-        }
+  // --- Editor Functions (from StudyNotes) ---
 
-        const response = await axios.post(
-          'https://ddtgdhehxhgarkonvpfq.supabase.co/functions/v1/createContent',
-          { prompt },
-          {
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-        return response.data.output.text;
-      } catch (error) {
-        if (i === retries - 1) throw error; // Throw on last retry
-        console.warn('API call failed, retrying...', error);
-      }
-    }
-    throw new Error('API call failed after retries');
+  const execCmd = (command: string, value: string | undefined = undefined) => {
+    document.execCommand(command, false, value);
+    if (editorRef.current) editorRef.current.focus();
+    setHasUnsavedChanges(true);
   };
+
+  const saveSelection = () => {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      savedSelection.current = selection.getRangeAt(0);
+    }
+  };
+
+  const restoreSelection = () => {
+    const selection = window.getSelection();
+    if (selection && savedSelection.current) {
+      selection.removeAllRanges();
+      selection.addRange(savedSelection.current);
+    }
+  };
+
+  const handlePopupSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    restoreSelection();
+    if (activePopup === 'link') execCmd('createLink', popupValue);
+    else if (activePopup === 'image') execCmd('insertImage', popupValue);
+    setActivePopup(null);
+    setPopupValue('');
+  };
+
+  const openPopup = (type: 'link' | 'image') => {
+    saveSelection();
+    setActivePopup(type);
+    setPopupValue('');
+  };
+
+  const ToolbarButton = ({ icon, command, value, label, onClick }: { icon: React.ReactNode, command?: string, value?: string, label?: string, onClick?: () => void }) => (
+    <button 
+        onMouseDown={(e) => {
+            e.preventDefault();
+            if (onClick) onClick();
+            else if (command) execCmd(command, value);
+        }}
+        className={`p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 rounded flex-shrink-0 transition-colors flex items-center gap-1 ${activePopup && (command === 'createLink' || command === 'insertImage') ? 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white' : ''}`}
+        title={label || command}
+    >
+        {icon}
+        {label && <span className="text-xs font-bold">{label}</span>}
+    </button>
+  );
+
+  // --- Generation Logic ---
 
   const handleGenerateContent = async () => {
     if (!prompt.trim()) return;
     
     setIsGenerating(true);
+    setEditedContent(''); // Clear for streaming
+    
     try {
-      const response = await axios.post(
-        'https://ddtgdhehxhgarkonvpfq.supabase.co/functions/v1/createContent',
-        {
-          prompt: prompt
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json'
+      const { data: { user } } = await supabase.auth.getUser();
+      const uid = user?.id || "0a147ebe-af99-481b-bcaf-ae70c9aeb8d8";
+
+      const response = await fetch('https://n8n.matrixaiserver.com/webhook/086f4156-4b18-4ac3-b5e1-4ad96a86b896', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            uid,
+            prompt,
+            contentType: activeTemplate,
+            tone,
+            targetWordCount,
+            timestamp: new Date().toISOString()
+        })
+      });
+      
+      if (!response.body) throw new Error('No response body');
+      
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+      let accumulatedRaw = '';
+      let accumulatedMarkdown = '';
+      
+      while (!done) {
+          const { value, done: doneReading } = await reader.read();
+          done = doneReading;
+          if (value) {
+              const chunkValue = decoder.decode(value, { stream: true });
+              accumulatedRaw += chunkValue;
+              
+              // Split by potential JSON boundaries
+              const parts = accumulatedRaw.split(/(?<=})\s*(?=\{)/);
+              
+              // If not done, keep the last part in buffer
+              const partsToProcess = done ? parts : parts.slice(0, -1);
+              
+              if (!done) {
+                  accumulatedRaw = parts[parts.length - 1];
+              } else {
+                  accumulatedRaw = '';
+              }
+
+              for (const part of partsToProcess) {
+                  try {
+                      const parsed = JSON.parse(part);
+                      // Extract content based on n8n response structure
+                      if (parsed.type === 'item' && parsed.content) {
+                          accumulatedMarkdown += parsed.content;
+                      } else if (parsed.content) {
+                          accumulatedMarkdown += parsed.content;
+                      }
+                  } catch (e) {
+                      // Skip invalid chunks
+                  }
+              }
+              
+              const htmlContent = renderToStaticMarkup(
+                <ReactMarkdown 
+                    remarkPlugins={[remarkGfm, remarkMath]} 
+                    rehypePlugins={[rehypeRaw, rehypeKatex]}
+                >
+                    {accumulatedMarkdown}
+                </ReactMarkdown>
+              );
+              setEditedContent(htmlContent);
           }
-        }
-      );
+      }
       
-      // Set the generated content from API response
-      const content = response.data.output.text;
-      setGeneratedContent(content);
-      setEditedContent(content);
-      
-      // Add to history with template and prompt information
-      const newHistoryItem = {
-        title: getHistoryTitle(prompt),
-        date: 'Just now',
-        content: content,
-        template: activeTemplate,
-        prompt: prompt
-      };
-      setContentHistory([newHistoryItem, ...contentHistory]);
+      setHasUnsavedChanges(true);
+
+      // Save logic removed as per user request
+      /*
+      if (user) {
+        await supabase.from('user_content').insert({
+          uid: user.id,
+          prompt,
+          content: accumulatedMarkdown, // Save raw markdown
+          title: prompt.split(' ').slice(0, 4).join(' ') + '...',
+          content_type: activeTemplate,
+          tone,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+        fetchHistory();
+      }
+      */
+
     } catch (error) {
       console.error('Error generating content:', error);
+      showError('Failed to generate content. Please try again.');
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const getHistoryTitle = (promptText: string) => {
-    // Extract a title from the prompt
-    return promptText.split(' ').slice(0, 4).join(' ') + '...';
-  };
-
   const selectTemplate = (templateId: string) => {
     setActiveTemplate(templateId);
-    
-    // Set default prompts based on template
     let templatePrompt = '';
     switch(templateId) {
-      case 'college-app':
-        templatePrompt = 'Write a compelling college application essay about my passion for computer science and how it has shaped my future goals.';
-        break;
-      case 'cover-letter':
-        templatePrompt = 'Create a professional cover letter for an internship position at a tech company highlighting my skills in programming and teamwork.';
-        break;
-      case 'recommendation':
-        templatePrompt = 'Write a recommendation letter for a student applying to graduate school, emphasizing their research abilities and academic achievements.';
-        break;
-      case 'research-paper':
-        templatePrompt = 'Generate an outline for a research paper on the impact of artificial intelligence in education.';
-        break;
-      case 'scholarship':
-        templatePrompt = 'Create a scholarship application essay discussing my financial needs and academic achievements.';
-        break;
-      case 'personal-statement':
-        templatePrompt = 'Write a personal statement explaining my motivation to study medical sciences and my career aspirations.';
-        break;
+      case 'college-app': templatePrompt = 'Write a compelling college application essay about my passion for computer science...'; break;
+      case 'cover-letter': templatePrompt = 'Create a professional cover letter for an internship position...'; break;
+      case 'recommendation': templatePrompt = 'Write a recommendation letter for a student applying to graduate school...'; break;
+      case 'research-paper': templatePrompt = 'Generate an outline for a research paper on AI in education...'; break;
+      case 'scholarship': templatePrompt = 'Create a scholarship application essay...'; break;
+      case 'personal-statement': templatePrompt = 'Write a personal statement for medical school...'; break;
     }
-    
     setPrompt(templatePrompt);
   };
 
-  const handleCopyContent = () => {
-    let content = editedContent;
-    // Convert markdown to formatted text
-    content = content
-      .replace(/\*\*(.*?)\*\*/g, '$1')
-      .replace(/\*(.*?)\*/g, '$1')
-      .replace(/_(.*?)_/g, '$1')
-      .replace(/==(.*?)==/g, '$1')
-      .replace(/\n- (.*)/g, '• $1')
-      .replace(/\n\d+\. (.*)/g, '$1')
-      .replace(/#{1,6} (.*)/g, '$1')
-      .replace(/\n/g, '\n');
-    navigator.clipboard.writeText(content);
-  };
-
-  const handleDownloadContent = (format: 'txt' | 'pdf' | 'doc') => {
-    const element = document.createElement('a');
-    let content = editedContent;
-    
-    // Convert markdown to formatted text
-    content = content
-      .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
-      .replace(/\*(.*?)\*/g, '$1') // Remove italic
-      .replace(/_(.*?)_/g, '$1') // Remove underline
-      .replace(/==(.*?)==/g, '$1') // Remove highlight
-      .replace(/\n- (.*)/g, '• $1') // Convert unordered lists
-      .replace(/\n\d+\. (.*)/g, '$1') // Convert ordered lists
-      .replace(/#{1,6} (.*)/g, '$1') // Remove headers
-      .replace(/\n/g, '\n'); // Keep newlines
-
-    if (format === 'txt') {
-      const file = new Blob([content], {type: 'text/plain'});
-      element.href = URL.createObjectURL(file);
-      element.download = `content-${new Date().toISOString().slice(0, 10)}.txt`;
-    } else if (format === 'pdf') {
-      // Create PDF using jsPDF
-      const doc = new jsPDF();
-      const lines = doc.splitTextToSize(content, 180);
-      doc.text(lines, 15, 15);
-      doc.save(`content-${new Date().toISOString().slice(0, 10)}.pdf`);
-      return;
-    } else if (format === 'doc') {
-      // Create DOC using docx
-      const doc = new Document({
-        sections: [{
-          properties: {},
-          children: [
-            new Paragraph({
-              children: [
-                new TextRun(content)
-              ],
-            }),
-          ],
-        }],
-      });
-      
-      // Use Packer to generate the document
-      Packer.toBlob(doc).then(blob => {
-        const file = new Blob([blob], {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
-        element.href = URL.createObjectURL(file);
-        element.download = `content-${new Date().toISOString().slice(0, 10)}.docx`;
-        document.body.appendChild(element);
-        element.click();
-        document.body.removeChild(element);
-      });
-      return;
-    }
-
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
-  };
-
-  const handleShareContent = () => {
-    let content = editedContent;
-    // Convert markdown to formatted text for sharing
-    content = content
-      .replace(/\*\*(.*?)\*\*/g, '$1')
-      .replace(/\*(.*?)\*/g, '$1')
-      .replace(/_(.*?)_/g, '$1');
-
-    if (navigator.share) {
-      navigator.share({
-        title: 'Generated Content',
-        text: content,
-      }).catch(console.error);
-    } else {
-      // Fallback for browsers that don't support Web Share API
-      navigator.clipboard.writeText(content);
-      showSuccess('Content copied to clipboard!');
-    }
-  };
-
-  const loadFromHistory = (item: { 
-    title: string, 
-    date: string, 
-    content: string,
-    template: string,
-    prompt: string 
-  }) => {
-    setEditedContent(item.content);
-    setActiveTemplate(item.template);
-    setPrompt(item.prompt);
-    setShowHistory(false);
-  };
-
-  // Rich text formatting functions
-  const applyFormatting = (format: string) => {
+  const handleExportPdf = async () => {
     if (!editorRef.current) return;
-    
-    const start = editorRef.current.selectionStart;
-    const end = editorRef.current.selectionEnd;
-    const selectedText = editedContent.substring(start, end);
-    
-    let formattedText = '';
-    let cursorPosition = start;
-    
-    switch(format) {
-      case 'bold':
-        formattedText = `**${selectedText}**`;
-        cursorPosition = start + 2;
-        break;
-      case 'italic':
-        formattedText = `*${selectedText}*`;
-        cursorPosition = start + 1;
-        break;
-      case 'underline':
-        formattedText = `_${selectedText}_`;
-        cursorPosition = start + 1;
-        break;
-      case 'list-ordered':
-        formattedText = `\n1. ${selectedText}`;
-        cursorPosition = start + 4;
-        break;
-      case 'list-unordered':
-        formattedText = `\n- ${selectedText}`;
-        cursorPosition = start + 3;
-        break;
-      case 'highlight':
-        formattedText = `==${selectedText}==`;
-        cursorPosition = start + 2;
-        break;
+    try {
+        const isDarkMode = document.documentElement.classList.contains('dark');
+        const canvas = await html2canvas(editorRef.current, { 
+            scale: 2,
+            backgroundColor: isDarkMode ? '#111111' : '#ffffff',
+            useCORS: true
+        });
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save('content-writer-doc.pdf');
+    } catch (error) {
+        console.error('Error exporting PDF:', error);
     }
-    
-    const newContent = 
-      editedContent.substring(0, start) + 
-      formattedText + 
-      editedContent.substring(end);
-    
-    setEditedContent(newContent);
-    
-    // Reset cursor position
-    setTimeout(() => {
-      if (editorRef.current) {
-        editorRef.current.focus();
-        editorRef.current.selectionStart = end + (formattedText.length - selectedText.length);
-        editorRef.current.selectionEnd = end + (formattedText.length - selectedText.length);
-      }
-    }, 0);
   };
 
-  // Increase/decrease font size
-  const changeFontSize = (delta: number) => {
-    setFontSize(Math.max(12, Math.min(24, fontSize + delta)));
+  const handleCopyContent = () => {
+      if (!editorRef.current) return;
+      navigator.clipboard.writeText(editorRef.current.innerText);
+      showSuccess('Content copied to clipboard!');
   };
 
-  const handleAIEdit = async () => {
-    if (!editInstructions.trim()) return;
-    
-    setIsEditing(true);
-    setEditProgress(0);
-    setEditStep('analyzing');
+  const handleDeleteHistory = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm('Are you sure you want to delete this history item?')) return;
     
     try {
-      // Step 1: Single API call to analyze and identify sections
-      const analysisPrompt = `Given this content and instructions, perform a complete analysis:
-
-Content: "${editedContent}"
-Instructions: "${editInstructions}"
-
-Return a JSON object with:
-1. sections: Array of sections that need to be modified (exact text)
-2. updates: Array of updated versions for each section
-3. explanation: Brief explanation of changes
-
-Format the response as valid JSON.`;
-
-      setEditProgress(20);
-      const analysisResult = await makeAPICall(analysisPrompt);
+      // Determine if we are deleting by UUID or using created_at as fallback
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
       
-      let parsedResult: AnalysisResult;
-      try {
-        parsedResult = JSON.parse(analysisResult) as AnalysisResult;
-        // Validate the parsed result has required properties
-        if (!Array.isArray(parsedResult.sections) || !Array.isArray(parsedResult.updates)) {
-          throw new Error('Invalid response format');
+      let query = supabase
+        .from('user_content')
+        .delete();
+      
+      if (isUuid) {
+        // If it looks like a UUID, assume column 'id' exists
+        query = query.eq('id', id);
+      } else {
+        // Fallback: Delete by created_at and uid (since id column is likely missing)
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+           query = query.eq('uid', user.id).eq('created_at', id);
+        } else {
+           throw new Error('User not authenticated for deletion');
         }
-      } catch (e) {
-        // If JSON parsing fails, try to extract sections manually
-        const sections = analysisResult.split('\n').filter(line => 
-          line.includes('Original:') || line.includes('Updated:')
-        );
-        parsedResult = {
-          sections: sections.filter(s => s.includes('Original:')).map(s => s.replace('Original:', '').trim()),
-          updates: sections.filter(s => s.includes('Updated:')).map(s => s.replace('Updated:', '').trim())
-        };
       }
 
-      setEditProgress(60);
-      setEditStep('updating');
+      const { error } = await query;
 
-      // Apply updates
-      let updatedContent = editedContent;
-      const highlights = parsedResult.sections.map((section: string, index: number) => {
-        const start = updatedContent.indexOf(section);
-        const updated = parsedResult.updates[index] || section; // Fallback to original if update not found
-        updatedContent = updatedContent.replace(section, updated);
-        return {
-          start,
-          end: start + updated.length,
-          original: section,
-          updated
-        };
-      });
+      if (error) throw error;
 
-      setHighlightedSections(highlights);
-      setEditProgress(80);
-
-      // Final consistency check with single API call
-      const finalContent = await makeAPICall(
-        `Review this updated content and ensure all changes are consistent:
-Content: "${updatedContent}"
-Original Instructions: "${editInstructions}"
-
-Return the final, polished content.`
-      );
-
-      setEditedContent(finalContent);
-      setEditProgress(100);
-      setShowAIEditModal(false);
-      setEditInstructions('');
-      
+      setContentHistory(prev => prev.filter(item => item.id !== id));
+      showSuccess('History item deleted');
     } catch (error) {
-      console.error('Error during AI editing:', error);
-      // Show error message to user
-      showError('An error occurred while editing. Please try again in a few moments.');
-    } finally {
-      setIsEditing(false);
-      setHighlightedSections([]);
-      setEditProgress(0);
-      setEditStep('analyzing');
+      console.error('Error deleting history:', error);
+      showError('Failed to delete history item');
     }
   };
 
-  // Add pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 1000; // Adjust based on your needs
-  const totalPages = Math.ceil(editedContent.length / itemsPerPage);
-
-  const getCurrentPageContent = () => {
-    const start = (currentPage - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
-    return editedContent.slice(start, end);
+  const loadFromHistory = (item: any) => {
+    // If content is stored as markdown, convert to HTML for the editor
+    const htmlContent = renderToStaticMarkup(
+        <ReactMarkdown 
+            remarkPlugins={[remarkGfm, remarkMath]} 
+            rehypePlugins={[rehypeRaw, rehypeKatex]}
+        >
+            {item.content}
+        </ReactMarkdown>
+    );
+    setEditedContent(htmlContent);
+    setActiveTemplate(item.template);
+    setPrompt(item.prompt);
+    setIsHistoryOpen(false);
   };
 
+  const [mobileTab, setMobileTab] = useState<'generator' | 'editor'>('generator');
+
+  // Switch to editor tab on mobile when generating
+  useEffect(() => {
+    if (isGenerating && isMobile) {
+      setMobileTab('editor');
+    }
+  }, [isGenerating, isMobile]);
+
   return (
-    <>
-      <Header />
-      <motion.div
-        initial="hidden"
-        animate="visible"
-        variants={containerVariants}
-        className="min-h-screen bg-gradient-to-b from-teal-50 to-white"
-      >
-        <div className="container mx-auto px-4 py-8">
-          {/* Header Section */}
-          <motion.div variants={itemVariants} className="mb-8">
-            <h1 className="text-4xl font-bold text-primary">
-              AI Content Writer
-              <span className="ml-2 text-xl font-normal text-teal-600">for Students</span>
-            </h1>
-            <p className="text-gray-600 mt-2">
-              Generate professional content for applications, essays, letters, and more.
-            </p>
-          </motion.div>
+    <div className="h-screen bg-[#050505] text-white flex font-sans overflow-hidden relative selection:bg-indigo-500/30">
+      
+      {/* Background Gradients */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute top-[-20%] left-[-20%] w-[50%] h-[50%] rounded-full bg-indigo-600/5 blur-[150px]" />
+        <div className="absolute bottom-[-20%] right-[-20%] w-[50%] h-[50%] rounded-full bg-blue-600/5 blur-[150px]" />
+        <div className="absolute top-[20%] right-[20%] w-[30%] h-[30%] rounded-full bg-purple-600/5 blur-[120px]" />
+      </div>
 
-          <div className="flex flex-col lg:flex-row gap-6">
-            {/* Left Panel - Template Selection & Input */}
-            <motion.div variants={itemVariants} className="w-full lg:w-1/3">
-              <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-                <h2 className="text-xl font-bold text-primary mb-4 flex items-center">
-                  <IconComponent icon={FiFileText} className="mr-2" /> Templates
-                </h2>
-                <div className="grid grid-cols-2 gap-3 mb-6">
-                  {templates.map((template) => (
-                    <motion.button
-                      key={template.id}
-                      variants={buttonVariants}
-                      whileHover="hover"
-                      whileTap="tap"
-                      onClick={() => selectTemplate(template.id)}
-                      className={`flex flex-col items-center justify-center p-4 rounded-lg transition-colors
-                        ${activeTemplate === template.id 
-                          ? 'bg-primary text-white shadow-md' 
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                    >
-                      <IconComponent icon={template.icon} className="text-2xl mb-2" />
-                      <span className="text-sm text-center">{template.name}</span>
-                    </motion.button>
-                  ))}
-                </div>
+      {/* Mobile Sidebar Overlay */}
+      {(isLeftSidebarOpen && isMobile) && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-md z-40 lg:hidden"
+          onClick={() => setIsLeftSidebarOpen(false)}
+        />
+      )}
 
-                <h2 className="text-xl font-bold text-primary mb-4 flex items-center">
-                  <IconComponent icon={AiOutlineRobot} className="mr-2" /> Prompt
-                </h2>
-                <textarea
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Describe what you want to generate... For example: Write a compelling college application essay about my passion for computer science."
-                  className="w-full h-40 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
-                />
-                <motion.button
-                  variants={buttonVariants}
-                  whileHover="hover"
-                  whileTap="tap"
-                  onClick={handleGenerateContent}
-                  disabled={isGenerating}
-                  className="mt-4 w-full bg-secondary hover:bg-secondary-light text-white font-medium py-3 px-6 rounded-lg flex items-center justify-center transition-colors disabled:opacity-50"
+      {/* Left Sidebar */}
+      <SidebarLeft 
+        isOpen={isLeftSidebarOpen} 
+        onClose={() => setIsLeftSidebarOpen(false)}
+        className="fixed inset-y-0 left-0 z-50 lg:relative lg:z-0 shadow-2xl lg:shadow-none h-full border-r border-white/5 bg-[#0a0a0a]"
+      />
+
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col h-full relative overflow-hidden z-10">
+        
+        {/* Header / Mobile Nav */}
+        <header className="h-16 border-b border-white/5 bg-[#0a0a0a]/80 backdrop-blur-xl flex items-center justify-between px-4 lg:px-6 shrink-0 z-20">
+            <div className="flex items-center gap-4">
+                <button 
+                    onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)} 
+                    className="lg:hidden w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 text-white flex items-center justify-center transition-colors"
                 >
-                  {isGenerating ? (
-                    <>
-                      <IconComponent icon={FiRotateCw} className="animate-spin mr-2" /> 
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <IconComponent icon={AiOutlineBulb} className="mr-2" /> 
-                      Generate Content
-                    </>
-                  )}
-                </motion.button>
-
-                {/* History Button */}
-                <motion.button
-                  variants={buttonVariants}
-                  whileHover="hover"
-                  whileTap="tap"
-                  onClick={() => setShowHistory(!showHistory)}
-                  className="mt-3 w-full bg-white border border-gray-300 text-gray-700 font-medium py-2 px-6 rounded-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
-                >
-                  <IconComponent icon={AiOutlineHistory} className="mr-2" /> 
-                  View History
-                </motion.button>
-              </div>
-
-              {/* Tips Section */}
-              <motion.div variants={itemVariants} className="bg-white rounded-xl shadow-lg p-6">
-                <h2 className="text-xl font-bold text-primary mb-4 flex items-center">
-                  <IconComponent icon={FiBook} className="mr-2" /> Tips
-                </h2>
-                <ul className="space-y-3 text-gray-700">
-                  <li className="flex items-start">
-                    <span className="bg-teal-100 text-teal-700 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0">1</span>
-                    <span>Be specific in your prompt for better results</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="bg-teal-100 text-teal-700 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0">2</span>
-                    <span>Edit the generated content to personalize it</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="bg-teal-100 text-teal-700 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0">3</span>
-                    <span>Use formatting tools to improve readability</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="bg-teal-100 text-teal-700 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 flex-shrink-0">4</span>
-                    <span>Always review and personalize AI-generated content</span>
-                  </li>
-                </ul>
-              </motion.div>
-            </motion.div>
-
-            {/* Right Panel - Editor */}
-            <motion.div variants={itemVariants} className="w-full lg:w-2/3">
-              <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                {/* Toolbar */}
-                <div className="bg-gray-100 p-3 border-b border-gray-200 flex flex-wrap items-center gap-2">
-                  <motion.button
-                    variants={buttonVariants}
-                    whileHover="hover"
-                    whileTap="tap"
-                    onClick={() => applyFormatting('bold')}
-                    className="p-2 rounded hover:bg-gray-200"
-                    title="Bold"
-                  >
-                    <IconComponent icon={AiOutlineBold} />
-                  </motion.button>
-                  <motion.button
-                    variants={buttonVariants}
-                    whileHover="hover"
-                    whileTap="tap"
-                    onClick={() => applyFormatting('italic')}
-                    className="p-2 rounded hover:bg-gray-200"
-                    title="Italic"
-                  >
-                    <IconComponent icon={AiOutlineItalic} />
-                  </motion.button>
-                  <motion.button
-                    variants={buttonVariants}
-                    whileHover="hover"
-                    whileTap="tap"
-                    onClick={() => applyFormatting('underline')}
-                    className="p-2 rounded hover:bg-gray-200"
-                    title="Underline"
-                  >
-                    <IconComponent icon={AiOutlineUnderline} />
-                  </motion.button>
-                  <div className="h-6 w-px bg-gray-300 mx-1"></div>
-                  <motion.button
-                    variants={buttonVariants}
-                    whileHover="hover"
-                    whileTap="tap"
-                    onClick={() => applyFormatting('list-ordered')}
-                    className="p-2 rounded hover:bg-gray-200"
-                    title="Ordered List"
-                  >
-                    <IconComponent icon={AiOutlineOrderedList} />
-                  </motion.button>
-                  <motion.button
-                    variants={buttonVariants}
-                    whileHover="hover"
-                    whileTap="tap"
-                    onClick={() => applyFormatting('list-unordered')}
-                    className="p-2 rounded hover:bg-gray-200"
-                    title="Unordered List"
-                  >
-                    <IconComponent icon={AiOutlineUnorderedList} />
-                  </motion.button>
-                  <div className="h-6 w-px bg-gray-300 mx-1"></div>
-                  <motion.button
-                    variants={buttonVariants}
-                    whileHover="hover"
-                    whileTap="tap"
-                    onClick={() => applyFormatting('highlight')}
-                    className="p-2 rounded hover:bg-gray-200"
-                    title="Highlight"
-                  >
-                    <IconComponent icon={AiOutlineHighlight} />
-                  </motion.button>
-                  <div className="h-6 w-px bg-gray-300 mx-1"></div>
-                  <div className="flex items-center">
-                    <motion.button
-                      variants={buttonVariants}
-                      whileHover="hover"
-                      whileTap="tap"
-                      onClick={() => changeFontSize(-1)}
-                      className="p-2 rounded hover:bg-gray-200"
-                      title="Decrease font size"
-                    >
-                      <IconComponent icon={AiOutlineFontSize} className="text-sm" />
-                    </motion.button>
-                    <span className="text-sm mx-1">{fontSize}px</span>
-                    <motion.button
-                      variants={buttonVariants}
-                      whileHover="hover"
-                      whileTap="tap"
-                      onClick={() => changeFontSize(1)}
-                      className="p-2 rounded hover:bg-gray-200"
-                      title="Increase font size"
-                    >
-                      <IconComponent icon={AiOutlineFontSize} className="text-lg" />
-                    </motion.button>
-                  </div>
-                  
-                  <div className="flex-grow"></div>
-                  
-                  <motion.button
-                    variants={buttonVariants}
-                    whileHover="hover"
-                    whileTap="tap"
-                    onClick={() => setShowPreview(!showPreview)}
-                    className={`px-3 py-1 rounded text-sm font-medium ${showPreview ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                    title="Toggle Preview"
-                  >
-                    {showPreview ? 'Edit Mode' : 'Preview'}
-                  </motion.button>
-
-                  <div className="h-6 w-px bg-gray-300 mx-1"></div>
-                  
-                  <motion.button
-                    variants={buttonVariants}
-                    whileHover="hover"
-                    whileTap="tap"
-                    onClick={() => setShowAIEditModal(true)}
-                    className="flex items-center px-3 py-1 rounded text-sm font-medium bg-gradient-to-r from-purple-500 to-indigo-600 text-white hover:from-purple-600 hover:to-indigo-700"
-                  >
-                    <IconComponent icon={AiOutlineRobot} className="mr-2" />
-                    AI Edit
-                  </motion.button>
-                </div>
-
-                {/* Content Panel */}
-                <div className="p-6">
-                  {showPreview ? (
-                    <div className="min-h-[500px] p-4 border border-gray-200 rounded-lg prose max-w-none">
-                      <div style={{ fontSize: `${fontSize}px` }}>
-                        {getCurrentPageContent()
-                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                          .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                          .replace(/_(.*?)_/g, '<u>$1</u>')
-                          .replace(/==(.*?)==/g, '<mark>$1</mark>')
-                          .replace(/\n- (.*)/g, '<ul><li>$1</li></ul>')
-                          .replace(/\n\d+\. (.*)/g, '<ol><li>$1</li></ol>')
-                          .replace(/\n/g, '<br />')
-                          .replace(/#{1,6} (.*)/g, '<h3>$1</h3>')}
-                      </div>
-                      
-                      {/* Pagination */}
-                      {totalPages > 1 && (
-                        <div className="flex justify-center mt-4">
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                              disabled={currentPage === 1}
-                              className="px-3 py-1 border rounded disabled:opacity-50"
-                            >
-                              Previous
-                            </button>
-                            <span className="px-3 py-1">
-                              Page {currentPage} of {totalPages}
-                            </span>
-                            <button
-                              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                              disabled={currentPage === totalPages}
-                              className="px-3 py-1 border rounded disabled:opacity-50"
-                            >
-                              Next
-                            </button>
-                          </div>
-                        </div>
-                      )}
+                    <IconComponent icon={FiMenu} className="w-5 h-5" />
+                </button>
+                <h1 className="text-lg lg:text-xl font-bold text-white flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                        <FaPenNib size={14} className="text-white" />
                     </div>
-                  ) : (
-                    <div className="relative">
-                      <textarea
-                        ref={editorRef}
-                        value={editedContent}
-                        onChange={(e) => setEditedContent(e.target.value)}
-                        placeholder="Your content will appear here after generation. You can edit it as needed."
-                        className="w-full min-h-[500px] p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent font-mono resize-none"
-                        style={{ fontSize: `${fontSize}px` }}
-                      />
-                      {highlightedSections.map((section, index) => (
-                        <motion.div
-                          key={index}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="absolute left-0 right-0 bg-purple-100 bg-opacity-30 pointer-events-none"
-                          style={{
-                            top: `${section.start * 1.5}em`,
-                            height: `${(section.end - section.start) * 1.5}em`
-                          }}
-                        />
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Action Buttons */}
-                  <div className="mt-4 flex flex-wrap gap-3">
-                    <motion.button
-                      variants={buttonVariants}
-                      whileHover="hover"
-                      whileTap="tap"
-                      onClick={handleCopyContent}
-                      className="flex items-center text-sm px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg"
-                    >
-                      <IconComponent icon={FiCopy} className="mr-2" /> Copy
-                    </motion.button>
-                    
-                    {/* Download Buttons */}
-                    <div className="flex items-center space-x-2">
-                      <motion.button
-                        variants={buttonVariants}
-                        whileHover="hover"
-                        whileTap="tap"
-                        onClick={() => setShowDownloadOptions(!showDownloadOptions)}
-                        className={`flex items-center text-sm px-4 py-2 rounded-lg transition-all duration-300 ${
-                          showDownloadOptions 
-                            ? 'bg-primary text-white' 
-                            : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                        }`}
-                      >
-                        <IconComponent icon={FiDownload} className="mr-2" /> 
-                        {showDownloadOptions ? 'Close' : 'Download'}
-                      </motion.button>
-
-                      <AnimatePresence>
-                        {showDownloadOptions && (
-                          <motion.div 
-                            className="flex items-center space-x-2"
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            transition={{ duration: 0.3 }}
-                          >
-                            <motion.button
-                              whileHover={{ scale: 1.05, y: -2 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => handleDownloadContent('pdf')}
-                              className="flex items-center text-sm px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
-                            >
-                              <div className="flex items-center">
-                                <span className="mr-2 text-lg">📑</span>
-                                <span className="font-medium">PDF</span>
-                              </div>
-                            </motion.button>
-
-                            <motion.button
-                              whileHover={{ scale: 1.05, y: -2 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => handleDownloadContent('doc')}
-                              className="flex items-center text-sm px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
-                            >
-                              <div className="flex items-center">
-                                <span className="mr-2 text-lg">📝</span>
-                                <span className="font-medium">DOC</span>
-                              </div>
-                            </motion.button>
-
-                            <motion.button
-                              whileHover={{ scale: 1.05, y: -2 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => handleDownloadContent('txt')}
-                              className="flex items-center text-sm px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
-                            >
-                              <div className="flex items-center">
-                                <span className="mr-2 text-lg">📄</span>
-                                <span className="font-medium">TXT</span>
-                              </div>
-                            </motion.button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                    
-                    <motion.button
-                      variants={buttonVariants}
-                      whileHover="hover"
-                      whileTap="tap"
-                      onClick={handleShareContent}
-                      className="flex items-center text-sm px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg"
-                    >
-                      <IconComponent icon={FiShare2} className="mr-2" /> Share
-                    </motion.button>
-                    
-                    <motion.button
-                      variants={buttonVariants}
-                      whileHover="hover"
-                      whileTap="tap"
-                      className="flex items-center text-sm px-4 py-2 bg-primary text-white hover:bg-primary-light rounded-lg ml-auto"
-                    >
-                      <IconComponent icon={FiSave} className="mr-2" /> Save
-                    </motion.button>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-
-        {/* History Drawer */}
-        <motion.div
-          className={`fixed top-0 right-0 w-full md:w-96 h-full bg-white shadow-lg z-50 overflow-y-auto transform transition-transform duration-300 ease-in-out ${showHistory ? 'translate-x-0' : 'translate-x-full'}`}
-          initial={false}
-        >
-          <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-primary">Your Content History</h2>
-              <button 
-                onClick={() => setShowHistory(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">Content Writer</span>
+                </h1>
             </div>
+
+            {/* Mobile Tab Switcher - Segmented Control Style */}
+            <div className="flex lg:hidden bg-white/5 p-1 rounded-full border border-white/5 relative">
+                <div 
+                    className={`absolute inset-y-1 rounded-full bg-indigo-600 shadow-lg shadow-indigo-500/20 transition-all duration-300 ease-out ${mobileTab === 'generator' ? 'left-1 w-[calc(50%-4px)]' : 'left-[calc(50%)] w-[calc(50%-4px)]'}`}
+                />
+                <button 
+                    onClick={() => setMobileTab('generator')}
+                    className={`relative z-10 px-5 py-1.5 text-xs font-semibold rounded-full transition-colors ${mobileTab === 'generator' ? 'text-white' : 'text-gray-400 hover:text-white'}`}
+                >
+                    Create
+                </button>
+                <button 
+                    onClick={() => setMobileTab('editor')}
+                    className={`relative z-10 px-5 py-1.5 text-xs font-semibold rounded-full transition-colors ${mobileTab === 'editor' ? 'text-white' : 'text-gray-400 hover:text-white'}`}
+                >
+                    Editor
+                </button>
+            </div>
+
+            {/* Desktop Actions */}
+            <div className="hidden lg:flex items-center gap-3">
+                 <button 
+                  onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+                  className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-all ${isHistoryOpen ? 'bg-white/10 text-white' : ''}`}
+                  title="History"
+                >
+                   <FaHistory size={14} />
+                   <span>History</span>
+                </button>
+            </div>
+        </header>
+
+        {/* Content Container */}
+        <div className="flex-1 flex overflow-hidden relative">
             
-            <div className="space-y-4">
-              {contentHistory.map((item, index) => (
-                <motion.div
-                  key={index}
-                  variants={itemVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="hidden"
-                  className="p-4 border border-gray-200 rounded-lg hover:border-primary cursor-pointer transition-colors"
-                  onClick={() => loadFromHistory(item)}
-                >
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-medium text-gray-800">{item.title}</h3>
-                    <span className="text-xs text-gray-500">{item.date}</span>
-                  </div>
-                  <div className="mt-2">
-                    <span className="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full mb-2">
-                      {templates.find(t => t.id === item.template)?.name || 'Custom'}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-2 line-clamp-2">{item.content.substring(0, 100)}...</p>
-                  <div className="mt-2">
-                    <p className="text-xs text-gray-500">Prompt: {item.prompt.substring(0, 50)}...</p>
-                  </div>
-                </motion.div>
-              ))}
-              
-              {contentHistory.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  <IconComponent icon={AiOutlineHistory} className="mx-auto text-4xl mb-2" />
-                  <p>No content history yet</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </motion.div>
+            {/* GENERATOR PANEL (Left) */}
+            <div className={`${mobileTab === 'generator' ? 'flex' : 'hidden'} lg:flex w-full lg:w-[400px] flex-col border-r border-white/5 bg-[#0a0a0a] relative z-10`}>
+                <div className="flex-1 overflow-y-auto p-5 lg:p-8 space-y-8 scrollbar-thin scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20">
+                    
+                    {/* Prompt Section */}
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <label className="text-sm font-semibold text-gray-200 flex items-center gap-2">
+                                <FaMagic className="text-indigo-400" size={12} />
+                                Your Prompt
+                            </label>
+                            {prompt && (
+                                <button 
+                                    onClick={() => setPrompt('')}
+                                    className="text-xs text-gray-500 hover:text-white transition-colors"
+                                >
+                                    Clear
+                                </button>
+                            )}
+                        </div>
+                        <div className="relative group">
+                            <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl opacity-0 group-focus-within:opacity-20 transition duration-500 blur"></div>
+                            <textarea
+                                value={prompt}
+                                onChange={(e) => setPrompt(e.target.value)}
+                                placeholder="What would you like to write about today? Be specific for better results..."
+                                className="relative w-full p-5 bg-white/[0.03] border border-white/10 rounded-2xl focus:outline-none focus:border-indigo-500/30 text-sm leading-relaxed min-h-[160px] resize-none placeholder-gray-600 text-gray-200 transition-all shadow-inner"
+                            />
+                        </div>
+                    </div>
 
-        {/* AI Edit Modal */}
-        <AnimatePresence>
-          {showAIEditModal && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-            >
-              <motion.div
-                initial={{ scale: 0.9, y: 20 }}
-                animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.9, y: 20 }}
-                className="bg-white rounded-xl shadow-xl p-6 w-full max-w-2xl"
-              >
-                <h2 className="text-2xl font-bold text-primary mb-4">AI Content Editor</h2>
-                <p className="text-gray-600 mb-4">
-                  Describe what specific changes you want to make. For example: "Change all mentions of MIT to Stanford" or "Update the basketball reference to football"
-                </p>
-                
-                <textarea
-                  value={editInstructions}
-                  onChange={(e) => setEditInstructions(e.target.value)}
-                  placeholder="Example: Change all mentions of MIT to Stanford, or update the basketball reference to football..."
-                  className="w-full h-32 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none mb-4"
-                />
-                
-                {isEditing && (
-                  <div className="mb-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-600">
-                        {editStep === 'analyzing' && 'Analyzing content and instructions...'}
-                        {editStep === 'searching' && 'Identifying sections to update...'}
-                        {editStep === 'updating' && 'Applying changes and checking consistency...'}
-                      </span>
-                      <span className="text-sm font-medium">{Math.round(editProgress)}%</span>
+                    {/* Controls */}
+                    <div className="grid grid-cols-2 gap-5">
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider pl-1">Tone</label>
+                            <div className="relative group">
+                                <select 
+                                    value={tone}
+                                    onChange={(e) => setTone(e.target.value)}
+                                    className="w-full appearance-none p-3 pl-4 pr-10 bg-white/[0.03] border border-white/10 rounded-xl text-sm text-gray-200 outline-none focus:border-indigo-500/30 focus:bg-white/[0.05] transition-all cursor-pointer shadow-sm"
+                                >
+                                    <option value="professional">Professional</option>
+                                    <option value="casual">Casual</option>
+                                    <option value="academic">Academic</option>
+                                    <option value="creative">Creative</option>
+                                    <option value="enthusiastic">Enthusiastic</option>
+                                </select>
+                                <FaChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 text-xs pointer-events-none group-hover:text-gray-400 transition-colors" />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider pl-1">Length</label>
+                            <div className="relative group">
+                                <input 
+                                    type="number"
+                                    value={targetWordCount}
+                                    onChange={(e) => setTargetWordCount(Number(e.target.value))}
+                                    className="w-full p-3 bg-white/[0.03] border border-white/10 rounded-xl text-sm text-gray-200 outline-none focus:border-indigo-500/30 focus:bg-white/[0.05] transition-all shadow-sm"
+                                    step={100}
+                                    min={100}
+                                    max={3000}
+                                />
+                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-600 font-medium">words</span>
+                            </div>
+                        </div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2.5">
-                      <motion.div
-                        className="bg-gradient-to-r from-purple-500 to-indigo-600 h-2.5 rounded-full"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${editProgress}%` }}
-                        transition={{ duration: 0.3 }}
-                      />
+
+                    {/* Generate Button */}
+                    <button
+                        onClick={handleGenerateContent}
+                        disabled={isGenerating || !prompt.trim()}
+                        className="w-full py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-[length:200%_auto] hover:bg-right text-white rounded-xl font-bold shadow-xl shadow-indigo-500/20 transition-all duration-500 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group relative overflow-hidden transform hover:-translate-y-0.5"
+                    >
+                        {isGenerating ? <FiRefreshCw className="animate-spin text-lg" /> : <FaMagic className="text-lg group-hover:rotate-12 transition-transform" />}
+                        <span className="relative tracking-wide">{isGenerating ? 'Generating...' : 'Generate Content'}</span>
+                    </button>
+
+                    {/* Templates Grid */}
+                    <div className="pt-6 border-t border-white/5">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Quick Start</h3>
+                            <span className="text-[10px] bg-white/5 px-2 py-1 rounded-md text-gray-500">Auto-fill</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            {templates.map(t => (
+                                <button
+                                    key={t.id}
+                                    onClick={() => selectTemplate(t.id)}
+                                    className={`p-4 rounded-xl border text-left transition-all group relative overflow-hidden flex flex-col gap-3 ${activeTemplate === t.id ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-white/[0.02] border-white/5 hover:border-white/10 hover:bg-white/[0.04]'}`}
+                                >
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${activeTemplate === t.id ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30' : 'bg-white/5 text-gray-500 group-hover:bg-white/10 group-hover:text-gray-300'} transition-all duration-300`}>
+                                        <t.icon size={14} />
+                                    </div>
+                                    <div>
+                                        <span className={`block text-xs font-bold mb-0.5 ${activeTemplate === t.id ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}`}>{t.name}</span>
+                                        <span className="block text-[10px] text-gray-600 group-hover:text-gray-500">Click to use</span>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                  </div>
-                )}
-                
-                <div className="flex justify-end gap-3">
-                  <motion.button
-                    variants={buttonVariants}
-                    whileHover="hover"
-                    whileTap="tap"
-                    onClick={() => setShowAIEditModal(false)}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-                  >
-                    Cancel
-                  </motion.button>
-                  <motion.button
-                    variants={buttonVariants}
-                    whileHover="hover"
-                    whileTap="tap"
-                    onClick={handleAIEdit}
-                    disabled={isEditing || !editInstructions.trim()}
-                    className="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 disabled:opacity-50"
-                  >
-                    {isEditing ? (
-                      <>
-                        <IconComponent icon={FiRotateCw} className="animate-spin mr-2 inline" />
-                        {editStep === 'analyzing' && 'Analyzing...'}
-                        {editStep === 'searching' && 'Searching...'}
-                        {editStep === 'updating' && 'Updating...'}
-                      </>
-                    ) : (
-                      'Update Content'
-                    )}
-                  </motion.button>
                 </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
-      <Footer />
-    </>
+            </div>
+
+            {/* EDITOR PANEL (Right) */}
+            <div className={`${mobileTab === 'editor' ? 'flex' : 'hidden'} lg:flex flex-1 relative bg-[#050505] flex-col h-full overflow-hidden`}>
+                
+                {/* Editor Top Bar (Toolbar) */}
+                <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 max-w-[95%] w-fit transition-all duration-300">
+                    <div className="rounded-2xl px-2 py-1.5 border border-white/10 shadow-2xl backdrop-blur-xl bg-[#151515]/90 flex items-center gap-1 overflow-x-auto scrollbar-none max-w-full">
+                        {/* Font Family */}
+                        <div className="relative group/font">
+                            <button 
+                                onClick={() => setActivePopup(activePopup === 'font' ? null : 'font')}
+                                className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-300 hover:bg-white/10 hover:text-white rounded-xl transition-all"
+                            >
+                                <span className="max-w-[80px] truncate">{currentFont.name}</span>
+                                <FaChevronDown size={8} className="opacity-50" />
+                            </button>
+                            {activePopup === 'font' && (
+                                <div className="absolute top-full left-0 mt-2 py-1 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl z-50 w-48 backdrop-blur-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                    {fonts.map((font) => (
+                                        <button
+                                            key={font.value}
+                                            onClick={() => {
+                                                execCmd('fontName', font.value);
+                                                setCurrentFont(font);
+                                                setActivePopup(null);
+                                            }}
+                                            className="w-full text-left px-4 py-2.5 text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-colors flex items-center justify-between group/item"
+                                            style={{ fontFamily: font.value }}
+                                        >
+                                            {font.name}
+                                            {currentFont.value === font.value && <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="w-px h-5 bg-white/10 mx-1 flex-shrink-0"></div>
+                        
+                        <ToolbarButton icon={<FaBold size={13} />} command="bold" label="" />
+                        <ToolbarButton icon={<FaItalic size={13} />} command="italic" label="" />
+                        <ToolbarButton icon={<FaUnderline size={13} />} command="underline" label="" />
+                        
+                        <div className="hidden sm:block w-px h-5 bg-white/10 mx-1 flex-shrink-0"></div>
+                        
+                        <div className="hidden sm:flex items-center gap-1">
+                            <ToolbarButton icon={<FaListUl size={13} />} command="insertUnorderedList" label="" />
+                            <ToolbarButton icon={<FaListOl size={13} />} command="insertOrderedList" label="" />
+                            <ToolbarButton icon={<FaQuoteRight size={13} />} command="formatBlock" value="blockquote" label="" />
+                        </div>
+
+                        <div className="w-px h-5 bg-white/10 mx-1 flex-shrink-0"></div>
+
+                        <ToolbarButton icon={<FaLink size={13} />} onClick={() => openPopup('link')} label="" />
+                        <ToolbarButton icon={<FaImage size={13} />} onClick={() => openPopup('image')} label="" />
+                    </div>
+
+                    {/* Popup Input */}
+                    {activePopup && activePopup !== 'font' && (
+                        <div className="absolute top-full left-0 mt-3 p-2 bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-2xl z-50 flex items-center gap-2 w-72 backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-200">
+                            <form onSubmit={handlePopupSubmit} className="flex items-center gap-2 w-full p-1">
+                                <input
+                                    type="text"
+                                    value={popupValue}
+                                    onChange={(e) => setPopupValue(e.target.value)}
+                                    placeholder={activePopup === 'link' ? "Paste link here..." : "Image URL..."}
+                                    className="flex-1 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition-all placeholder-gray-600"
+                                    autoFocus
+                                />
+                                <button type="submit" className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-lg font-bold shadow-lg shadow-indigo-500/20 transition-all">Add</button>
+                                <button type="button" onClick={() => setActivePopup(null)} className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+                                    <FiX size={14} />
+                                </button>
+                            </form>
+                        </div>
+                    )}
+                </div>
+
+                {/* Editor Area */}
+                <div className="flex-1 overflow-y-auto px-4 lg:px-16 pb-32 pt-28 scrollbar-thin scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20">
+                    <div className="max-w-4xl mx-auto w-full min-h-[800px] bg-[#0f0f0f] border border-white/5 rounded-xl p-8 lg:p-12 shadow-2xl relative transition-all duration-500">
+                        {/* Subtle paper texture/noise overlay could go here */}
+                        
+                        {isGenerating ? (
+                            <div className="flex flex-col items-center justify-center py-32 opacity-0 animate-in fade-in duration-700 fill-mode-forwards">
+                                <div className="relative mb-8">
+                                    <div className="absolute inset-0 bg-indigo-500 blur-3xl opacity-20 rounded-full animate-pulse"></div>
+                                    <div className="relative w-20 h-20 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-3xl border border-white/10 backdrop-blur-md flex items-center justify-center shadow-inner">
+                                        <FaMagic className="text-3xl text-indigo-400 animate-pulse" />
+                                    </div>
+                                </div>
+                                <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 mb-3">Crafting your Masterpiece</h2>
+                                <p className="text-gray-500 text-sm font-medium tracking-wide uppercase">AI is analyzing patterns...</p>
+                            </div>
+                        ) : (
+                            <>
+                                <style>{`
+                                    .content-writer-editor { font-size: 1.125rem; color: #d4d4d8; line-height: 1.8; }
+                                    .content-writer-editor h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 1.5rem; margin-top: 1rem; color: #fff; letter-spacing: -0.02em; line-height: 1.1; }
+                                    .content-writer-editor h2 { font-size: 1.875rem; font-weight: 700; margin-bottom: 1rem; margin-top: 2rem; color: #f4f4f5; letter-spacing: -0.01em; }
+                                    .content-writer-editor h3 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.75rem; margin-top: 1.5rem; color: #e4e4e7; }
+                                    .content-writer-editor p { margin-bottom: 1.5em; }
+                                    .content-writer-editor ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 1.5em; color: #a1a1aa; }
+                                    .content-writer-editor ol { list-style-type: decimal; padding-left: 1.5em; margin-bottom: 1.5em; color: #a1a1aa; }
+                                    .content-writer-editor blockquote { border-left: 3px solid #6366f1; padding-left: 1.5em; font-style: italic; margin: 2em 0; color: #d4d4d8; }
+                                    .content-writer-editor pre { background: #18181b; padding: 1.5em; border-radius: 0.75rem; overflow-x: auto; margin-bottom: 2em; border: 1px solid #27272a; font-size: 0.9em; }
+                                    .content-writer-editor code { font-family: 'JetBrains Mono', monospace; background: #27272a; padding: 0.2em 0.4em; border-radius: 0.3em; font-size: 0.85em; color: #e4e4e7; }
+                                    .content-writer-editor a { color: #818cf8; text-decoration: none; border-bottom: 1px solid rgba(129, 140, 248, 0.3); transition: border-color 0.2s; }
+                                    .content-writer-editor a:hover { border-bottom-color: #818cf8; }
+                                    .content-writer-editor img { max-width: 100%; border-radius: 0.75rem; margin: 2em 0; border: 1px solid #27272a; }
+                                `}</style>
+                                <div 
+                                    ref={editorRef}
+                                    className="content-writer-editor focus:outline-none min-h-[600px] font-serif"
+                                    contentEditable={true}
+                                    suppressContentEditableWarning={true}
+                                    dangerouslySetInnerHTML={{ __html: editedContent }}
+                                    onInput={() => {
+                                        setHasUnsavedChanges(true);
+                                    }}
+                                />
+                                {(!editedContent && !isGenerating) && (
+                                    <div className="absolute top-12 left-12 right-12 pointer-events-none opacity-10 select-none">
+                                        <h1 className="text-5xl font-bold text-gray-500 mb-8 font-serif">Untitled</h1>
+                                        <div className="space-y-4">
+                                            <div className="h-4 w-full bg-gray-500 rounded-full"></div>
+                                            <div className="h-4 w-5/6 bg-gray-500 rounded-full"></div>
+                                            <div className="h-4 w-4/6 bg-gray-500 rounded-full"></div>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+                </div>
+
+                {/* Bottom Action Bar */}
+                <div className="absolute bottom-8 left-0 right-0 flex justify-center pointer-events-none z-30">
+                    <div className="flex items-center gap-1.5 pointer-events-auto bg-[#1a1a1a]/80 backdrop-blur-xl p-1.5 rounded-full border border-white/10 shadow-2xl transform hover:scale-105 transition-transform duration-300">
+                        <button 
+                            onClick={handleCopyContent}
+                            className="px-5 py-2.5 text-sm font-semibold text-gray-300 hover:text-white hover:bg-white/10 rounded-full transition-all flex items-center gap-2"
+                        >
+                            <FiCopy size={16} /> <span>Copy</span>
+                        </button>
+                        <div className="w-px h-5 bg-white/10"></div>
+                        <button 
+                            onClick={handleExportPdf}
+                            className="px-6 py-2.5 text-sm font-semibold bg-white text-black hover:bg-gray-200 rounded-full shadow-lg shadow-white/10 transition-all flex items-center gap-2"
+                        >
+                            <FaFilePdf size={16} /> <span>Export</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+      </main>
+
+      {/* Right History Panel (Sliding) */}
+      <AnimatePresence>
+        {isHistoryOpen && (
+          <>
+             {/* Backdrop */}
+             <motion.div 
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
+               onClick={() => setIsHistoryOpen(false)}
+               className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+             />
+             
+             {/* Panel */}
+             <motion.div 
+               initial={{ x: '100%' }}
+               animate={{ x: 0 }}
+               exit={{ x: '100%' }}
+               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+               className="fixed top-0 right-0 h-full w-80 lg:w-[450px] bg-[#0a0a0a] shadow-2xl z-50 border-l border-white/10 flex flex-col"
+             >
+                <div className="p-6 border-b border-white/5 flex justify-between items-center bg-[#0a0a0a]/50 backdrop-blur-md">
+                   <div>
+                       <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                         <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-400">
+                            <FaHistory size={18} />
+                         </div>
+                         History
+                       </h3>
+                       <p className="text-xs text-gray-500 mt-1 ml-11">Your recent generations</p>
+                   </div>
+                   <button 
+                     onClick={() => setIsHistoryOpen(false)}
+                     className="p-2.5 text-gray-400 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
+                   >
+                     <FiX size={20} />
+                   </button>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-[#0a0a0a]">
+                    {contentHistory.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-full text-gray-500 space-y-4 opacity-50">
+                            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center">
+                                <FaHistory className="text-3xl" />
+                            </div>
+                            <p className="text-sm font-medium">No history yet</p>
+                        </div>
+                    ) : (
+                        contentHistory.map((item, idx) => (
+                            <div 
+                                key={item.id || idx} 
+                                onClick={() => loadFromHistory(item)} 
+                                className="group p-5 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] hover:border-indigo-500/20 cursor-pointer transition-all duration-300 relative overflow-hidden shadow-sm hover:shadow-md"
+                            >
+                                <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                
+                                <div className="flex justify-between items-start mb-3 relative z-10">
+                                    <h4 className="font-semibold text-gray-200 line-clamp-1 pr-8 text-base group-hover:text-indigo-300 transition-colors">{item.title}</h4>
+                                    <span className="text-[10px] text-gray-500 font-mono bg-white/5 px-2 py-1 rounded-md">{item.date}</span>
+                                </div>
+                                <p className="text-xs text-gray-400 line-clamp-2 mb-4 leading-relaxed relative z-10">{item.prompt}</p>
+                                <div className="flex items-center gap-2 relative z-10">
+                                    <span className="text-[10px] px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/10 capitalize font-semibold tracking-wide">
+                                        {item.template}
+                                    </span>
+                                </div>
+                                
+                                <button
+                                    onClick={(e) => handleDeleteHistory(item.id, e)}
+                                    className="absolute top-4 right-4 p-2 text-gray-500 hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100 z-20"
+                                    title="Delete"
+                                >
+                                    <FaTrash size={12} />
+                                </button>
+                            </div>
+                        ))
+                    )}
+                </div>
+             </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
   );
 };
 
-export default ContentWriter; 
+export default ContentWriter;

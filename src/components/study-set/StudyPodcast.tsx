@@ -136,6 +136,8 @@ const StudyPodcast: React.FC<StudyPodcastProps> = ({ onDiscuss }) => {
                     .select('podcast_data, audio_url')
                     .eq('document_id', id)
                     .eq('uid', user.id)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
                     .maybeSingle();
 
                 if (error) {

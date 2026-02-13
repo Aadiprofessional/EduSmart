@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import NotificationModal from '../components/ui/NotificationModal';
+import toast, { Toaster } from 'react-hot-toast';
 import ConfirmationModal from '../components/ui/ConfirmationModal';
 
 interface NotificationState {
@@ -39,14 +39,6 @@ interface NotificationProviderProps {
 }
 
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children }) => {
-  const [notification, setNotification] = useState<NotificationState>({
-    isOpen: false,
-    type: 'info',
-    message: '',
-    autoClose: true,
-    autoCloseDelay: 3000
-  });
-
   const [confirmation, setConfirmation] = useState<ConfirmationState>({
     isOpen: false,
     message: '',
@@ -54,49 +46,46 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   });
 
   const showNotification = (newNotification: Omit<NotificationState, 'isOpen'>) => {
-    setNotification({
-      ...newNotification,
-      isOpen: true
-    });
+    const { type, message } = newNotification;
+    switch (type) {
+      case 'success':
+        toast.success(message);
+        break;
+      case 'error':
+        toast.error(message);
+        break;
+      case 'warning':
+        toast(message, {
+          icon: '⚠️',
+        });
+        break;
+      case 'info':
+        toast(message, {
+          icon: 'ℹ️',
+        });
+        break;
+      default:
+        toast(message);
+    }
   };
 
   const showSuccess = (message: string, title?: string) => {
-    showNotification({
-      type: 'success',
-      message,
-      title: title || 'Success',
-      autoClose: true,
-      autoCloseDelay: 3000
-    });
+    toast.success(message);
   };
 
   const showError = (message: string, title?: string) => {
-    showNotification({
-      type: 'error',
-      message,
-      title: title || 'Error',
-      autoClose: true,
-      autoCloseDelay: 5000
-    });
+    toast.error(message);
   };
 
   const showWarning = (message: string, title?: string) => {
-    showNotification({
-      type: 'warning',
-      message,
-      title: title || 'Warning',
-      autoClose: true,
-      autoCloseDelay: 4000
+    toast(message, {
+      icon: '⚠️',
     });
   };
 
   const showInfo = (message: string, title?: string) => {
-    showNotification({
-      type: 'info',
-      message,
-      title: title || 'Information',
-      autoClose: true,
-      autoCloseDelay: 3000
+    toast(message, {
+      icon: 'ℹ️',
     });
   };
 
@@ -108,7 +97,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   };
 
   const closeNotification = () => {
-    setNotification(prev => ({ ...prev, isOpen: false }));
+    toast.dismiss();
   };
 
   const closeConfirmation = () => {
@@ -129,14 +118,26 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   return (
     <NotificationContext.Provider value={contextValue}>
       {children}
-      <NotificationModal
-        isOpen={notification.isOpen}
-        onClose={closeNotification}
-        type={notification.type}
-        title={notification.title}
-        message={notification.message}
-        autoClose={notification.autoClose}
-        autoCloseDelay={notification.autoCloseDelay}
+      <Toaster 
+        position="top-center"
+        toastOptions={{
+          className: 'bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-lg rounded-lg border border-gray-100 dark:border-white/10',
+          duration: 3000,
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            duration: 4000,
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff',
+            },
+          },
+        }}
       />
       <ConfirmationModal
         isOpen={confirmation.isOpen}

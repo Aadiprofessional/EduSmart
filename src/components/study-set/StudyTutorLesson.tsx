@@ -42,7 +42,9 @@ const StudyTutorLesson: React.FC = () => {
                     .select('lesson_text')
                     .eq('document_id', id)
                     .eq('uid', user.id)
-                    .single();
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
 
                 if (error && error.code !== 'PGRST116') {
                     console.error('Error fetching data:', error);
@@ -52,7 +54,10 @@ const StudyTutorLesson: React.FC = () => {
                     if (data && data.lesson_text) {
                         // Ensure newlines are handled correctly if they come as escaped string
                         const formattedContent = data.lesson_text.replace(/\\n/g, '\n');
-                        setLessonContent(formattedContent);
+                        setLessonContent(prev => {
+                            if (prev === formattedContent) return prev;
+                            return formattedContent;
+                        });
                         setLoading(false);
                         setIsGenerating(false);
                         if (intervalId) clearInterval(intervalId);
@@ -79,7 +84,7 @@ const StudyTutorLesson: React.FC = () => {
     return (
         <div className="h-full relative overflow-hidden">
             {/* Scrollable Content */}
-            <div className="h-full overflow-y-auto px-8 pb-8 pt-8 scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent">
+            <div className="h-full overflow-y-auto px-8 pb-8 pt-8 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-800 scrollbar-track-transparent">
                 <div className="max-w-3xl mx-auto w-full min-h-full">
                     {loading || isGenerating ? (
                         <div className="space-y-6">
@@ -148,4 +153,4 @@ const StudyTutorLesson: React.FC = () => {
     );
 };
 
-export default StudyTutorLesson;
+export default React.memo(StudyTutorLesson);

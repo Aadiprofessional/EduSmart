@@ -78,6 +78,27 @@ export const uploadService = {
     });
   },
 
+  // Get PDF page count without converting to images
+  async getPdfPageCount(file: File): Promise<number> {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      
+      // Initialize PDF.js with proper worker setup
+      const loadingTask = pdfjsLib.getDocument({
+        data: arrayBuffer,
+        useWorkerFetch: false,
+        isEvalSupported: false,
+        useSystemFonts: true
+      });
+      
+      const pdf = await loadingTask.promise as unknown as PDFDocumentProxy;
+      return pdf.numPages;
+    } catch (error) {
+      console.error('Error getting PDF page count:', error);
+      return 0;
+    }
+  },
+
   // Convert PDF to images using PDF.js
   async convertPdfToImages(file: File): Promise<string[]> {
     try {
@@ -220,20 +241,29 @@ export const uploadService = {
     };
   },
 
-  async constructDocumentPayload(file: File, uid: string): Promise<UploadPayload> {
+  async constructDocumentPayload(file: File, uid: string, pdfProcessType: 'document' | 'ocr' | 'pdf_vision' = 'document'): Promise<UploadPayload> {
     // Determine type based on mime type
     let type = 'document';
     let folder: 'documents' | 'images' = 'documents';
     let imageUrls: string[] = [];
+    let pageCount = 0;
     
     if (file.type.startsWith('image/')) {
         type = 'image';
         folder = 'images';
     } else if (file.type === 'application/pdf') {
-        type = 'pdf_vision';
-        // For PDF vision, we need to convert pages to images
-        const base64Images = await this.convertPdfToImages(file);
-        imageUrls = await this.uploadBase64Images(base64Images, uid);
+        if (pdfProcessType === 'pdf_vision') {
+            type = 'pdf_vision';
+            // For PDF vision, we need to convert pages to images
+            const base64Images = await this.convertPdfToImages(file);
+            imageUrls = await this.uploadBase64Images(base64Images, uid);
+            pageCount = imageUrls.length;
+        } else if (pdfProcessType === 'ocr') {
+            type = 'ocr';
+            pageCount = await this.getPdfPageCount(file);
+        } else {
+            type = 'document';
+        }
     }
 
     const url = await this.uploadFile(file, uid, folder);
@@ -241,7 +271,7 @@ export const uploadService = {
     // Base message object
     const message: any = {
       uid,
-      type: type, // 'document', 'image', or 'pdf_vision'
+      type: type, // 'document', 'image', 'pdf_vision', or 'ocr'
       text: { body: `Uploaded ${type}: ${file.name}` },
       body: `Uploaded ${type}: ${file.name}`,
       content: `Uploaded ${type}: ${file.name}`,
@@ -260,10 +290,12 @@ export const uploadService = {
       ]
     };
 
-    // Add specific fields for pdf_vision
+    // Add specific fields
     if (type === 'pdf_vision') {
         message.image_urls = imageUrls;
-        message.page_count = imageUrls.length;
+        message.page_count = pageCount;
+    } else if (type === 'ocr') {
+        message.page_count = pageCount;
     }
 
     return {

@@ -19,7 +19,8 @@ import {
   FaChevronDown,
   FaChevronUp,
   FaHistory,
-  FaCalendarAlt
+  FaCalendarAlt,
+  FaPenNib
 } from 'react-icons/fa';
 import { useAuth } from '../../utils/AuthContext';
 
@@ -103,6 +104,12 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
                 label="Paper Grader" 
                 active={isActive('/paper-grader')}
                 onClick={() => navigate('/paper-grader')} 
+              />
+              <NavItem 
+                icon={<FaPenNib />} 
+                label="Content Writer" 
+                active={isActive('/content-writer')}
+                onClick={() => navigate('/content-writer')} 
               />
                 <NavItem 
                 icon={<FaCalendarAlt />} 

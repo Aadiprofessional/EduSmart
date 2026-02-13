@@ -122,6 +122,8 @@ const StudyFlashcards: React.FC<StudyFlashcardsProps> = ({ onDiscuss }) => {
                     .select('flashcards_data')
                     .eq('document_id', id)
                     .eq('uid', user.id)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
                     .maybeSingle();
 
                 if (error) {

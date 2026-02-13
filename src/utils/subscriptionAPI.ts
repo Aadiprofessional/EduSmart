@@ -2,7 +2,7 @@ import { Session } from '@supabase/supabase-js';
 import { API_BASE_URL, getDefaultHeaders } from '../config/api';
 
 // Helper function to make API calls with authentication
-const apiCall = async (method: string, endpoint: string, data: any = null, session?: Session | null) => {
+const apiCall = async (method: string, endpoint: string, data: any = null, session?: Session | null, requireAuth: boolean = true) => {
   try {
     const headers = getDefaultHeaders(!!session, session);
 
@@ -18,23 +18,25 @@ const apiCall = async (method: string, endpoint: string, data: any = null, sessi
       accessTokenPreview: session?.access_token ? `${session.access_token.substring(0, 20)}...` : 'No token'
     });
 
-    // Additional check for authentication
-    if (!session) {
-      console.warn('⚠️ No session provided to API call');
-      return { 
-        success: false, 
-        error: 'No authentication session provided',
-        status: 401 
-      };
-    }
+    // Additional check for authentication if required
+    if (requireAuth) {
+      if (!session) {
+        console.warn('⚠️ No session provided to API call');
+        return { 
+          success: false, 
+          error: 'No authentication session provided',
+          status: 401 
+        };
+      }
 
-    if (!session.access_token) {
-      console.warn('⚠️ Session exists but no access token');
-      return { 
-        success: false, 
-        error: 'No access token in session',
-        status: 401 
-      };
+      if (!session.access_token) {
+        console.warn('⚠️ Session exists but no access token');
+        return { 
+          success: false, 
+          error: 'No access token in session',
+          status: 401 
+        };
+      }
     }
 
     const config = {
@@ -208,11 +210,11 @@ export const subscriptionAPI = {
   // Authenticated endpoints (require session)
   getPlans: async (session?: Session | null, uid?: string): Promise<{ success: boolean; data?: SubscriptionPlan[]; error?: string }> => {
     const queryParams = uid ? `?uid=${uid}` : (session?.user?.id ? `?uid=${session.user.id}` : '');
-    return apiCall('GET', `/api/subscriptions/plans${queryParams}`, null, session);
+    return apiCall('GET', `/api/subscriptions/plans${queryParams}`, null, session, false);
   },
 
   getAddons: async (session?: Session | null): Promise<{ success: boolean; data?: AddonPlan[]; error?: string }> => {
-    return apiCall('GET', '/api/subscriptions/addons', null, session);
+    return apiCall('GET', '/api/subscriptions/addons', null, session, false);
   },
 
   createCheckoutSession: async (planId: string, session?: Session | null): Promise<{ success: boolean; data?: { checkoutUrl: string }; error?: string }> => {

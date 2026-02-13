@@ -27,8 +27,11 @@ module.exports = {
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
+        'permanent-marker': ['"Permanent Marker"', 'cursive'],
       },
     },
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/typography'),
+  ],
 } 

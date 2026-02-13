@@ -44,6 +44,7 @@
     "react-latex-next": "^3.0.0",
     "react-markdown": "^10.1.0",
     "react-pdf": "^10.3.0",
+    "react-player": "^3.4.0",
     "react-router-dom": "^6.10.0",
     "react-scripts": "5.0.1",
     "react-scroll": "^1.9.3",
@@ -82,6 +83,7 @@
   },
   "devDependencies": {
     "@craco/craco": "^7.1.0",
+    "@tailwindcss/typography": "^0.5.19",
     "@types/react": "^18.3.27",
     "@types/react-dom": "^18.3.7",
     "@types/react-katex": "^3.0.4",

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
-import { FaChevronLeft, FaChevronRight, FaMagic, FaCheckCircle, FaTimesCircle, FaCommentDots, FaRedo } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronRight, FaMagic, FaCheckCircle, FaTimesCircle, FaCommentDots, FaRedo, FaLightbulb } from 'react-icons/fa';
 import { Skeleton } from '../ui/Skeleton';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -36,6 +36,7 @@ const StudyMultipleChoice: React.FC<StudyMultipleChoiceProps> = ({ onDiscuss }) 
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
     const [showResult, setShowResult] = useState(false);
     const [isCorrect, setIsCorrect] = useState(false);
+    const [showExplanationManual, setShowExplanationManual] = useState(false);
     const [filter, setFilter] = useState<QuestionStatus | 'all'>('unfamiliar');
 
     // Computed stats
@@ -64,6 +65,7 @@ const StudyMultipleChoice: React.FC<StudyMultipleChoiceProps> = ({ onDiscuss }) 
             setSelectedOption(currentQuestion.user_answer || null);
             setShowResult(false);
             setIsCorrect(false);
+            setShowExplanationManual(false);
         }
     }, [currentQuestion?.id]);
 
@@ -125,6 +127,8 @@ const StudyMultipleChoice: React.FC<StudyMultipleChoiceProps> = ({ onDiscuss }) 
                     .select('mcq_data')
                     .eq('document_id', id)
                     .eq('uid', user.id)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
                     .maybeSingle();
 
                 if (error) {
@@ -238,6 +242,7 @@ const StudyMultipleChoice: React.FC<StudyMultipleChoiceProps> = ({ onDiscuss }) 
         setShowResult(false);
         setIsCorrect(false);
         setSelectedOption(null);
+        setShowExplanationManual(false);
     };
 
     const handleNext = () => {
@@ -420,7 +425,7 @@ const StudyMultipleChoice: React.FC<StudyMultipleChoiceProps> = ({ onDiscuss }) 
                     </div>
 
                     {/* Explanation */}
-                    {(showResult || currentQuestion.status === 'mastered') && currentQuestion.explanation && (
+                    {(showResult || currentQuestion.status === 'mastered' || showExplanationManual) && currentQuestion.explanation && (
                         <div className="w-full max-w-3xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-500/20 rounded-xl p-6 mb-8 animate-in fade-in slide-in-from-bottom-4">
                             <h3 className="text-blue-800 dark:text-blue-300 font-semibold mb-2 flex items-center gap-2">
                                 <FaMagic className="text-blue-500" /> Explanation
@@ -534,7 +539,18 @@ const StudyMultipleChoice: React.FC<StudyMultipleChoiceProps> = ({ onDiscuss }) 
                     </div>
 
                     {onDiscuss && currentQuestion && (
-                        <div className="absolute right-0">
+                        <div className="absolute right-0 flex gap-2">
+                             {/* Explain Button */}
+                            {currentQuestion.explanation && (
+                                <button
+                                    onClick={() => setShowExplanationManual(!showExplanationManual)}
+                                    className="flex items-center gap-2 px-4 py-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-colors"
+                                    title="Show Explanation"
+                                >
+                                    <FaLightbulb />
+                                    <span className="text-sm font-medium hidden sm:inline">Explain</span>
+                                </button>
+                            )}
                             <button
                                 onClick={() => {
                                     const optionsStr = Object.entries(currentQuestion.options)
