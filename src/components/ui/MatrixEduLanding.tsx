@@ -6,6 +6,8 @@ import { Header } from '../layout';
 import DarkSvg from '../../assets/Dark.svg';
 import ScrollingBalls3D from './ScrollingBalls3D';
 import HowItWorksScroll from './HowItWorksScroll';
+import VideoDemoScroll from './VideoDemoScroll';
+import { TypewriterText, RotatingCircle } from './RotatingWordsCircle';
 import { ModelPositionProvider, useModelPosition } from '../../utils/ModelPositionContext';
 
 const MatrixEduLandingContent: React.FC = () => {
@@ -24,10 +26,10 @@ const MatrixEduLandingContent: React.FC = () => {
           x: 600, y: -100, z: 1, scale: 3.0, rotation: { x: 0, y: 0, z: 0.1 }, visible: true
         },
         eraser: {
-          x: -600, y: 100, z: 1, scale: 1.5, visible: true
+          x: -600, y: 100, z: 1, scale: 1.5, visible: false
         },
         sharpener: {
-          x: 0, y: -300, z: 1, scale: 0.03, visible: true
+          x: 0, y: -300, z: 1, scale: 0.03, visible: false
         }
       });
     }
@@ -144,6 +146,8 @@ const MatrixEduLandingContent: React.FC = () => {
     }
   };
   
+  const [activeIndex, setActiveIndex] = useState(0);
+
   return (
     <div className="min-h-screen bg-white dark:bg-[#050505] text-gray-900 dark:text-white font-sans selection:bg-indigo-500 selection:text-white overflow-x-hidden">
       <style>{starStyles}</style>
@@ -158,6 +162,9 @@ const MatrixEduLandingContent: React.FC = () => {
             <img src={DarkSvg} alt="Doodle Background" className="w-full h-full object-cover opacity-50" />
         </div>
 
+        {/* Background Rotating Circle - Centered */}
+        <RotatingCircle activeIndex={activeIndex} />
+
         <div className="container mx-auto px-4 relative z-10 text-center">
             <motion.div
               variants={containerVariants}
@@ -167,26 +174,19 @@ const MatrixEduLandingContent: React.FC = () => {
             >
 
               <motion.h1 variants={itemVariants} className="text-4xl md:text-6xl lg:text-7xl font-permanent-marker leading-tight mb-8 tracking-widest text-white">
-                Learn Faster...<br />
-                Like, a Lot Faster
+                Create accurate <br />
+                <TypewriterText 
+                    words={['explainers', 'flashcards', 'quizzes', 'notes', 'summaries', 'mindmaps', 'schedule', 'chat', 'analytics', 'research']} 
+                    onIndexChange={setActiveIndex}
+                /> <br /> from your course material in seconds.
               </motion.h1>
 
-              <motion.p variants={itemVariants} className="text-lg md:text-xl text-gray-300 mb-10 max-w-2xl mx-auto leading-relaxed">
-                 EduSmart AI is the #1 AI study tool that helps you ace your exams & crush your homework 10x faster.
-              </motion.p>
-
-              <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-6 justify-center">
+              <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-6 justify-center mb-12">
                 <button 
                   onClick={() => navigate('/signup')}
-                  className="px-10 py-4 bg-white text-black rounded-full font-bold text-xl hover:bg-gray-200 transition-all duration-300 transform hover:-translate-y-1 shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+                  className="px-10 py-4 bg-indigo-600 text-white rounded-full font-bold text-xl hover:bg-indigo-700 transition-all duration-300 transform hover:-translate-y-1 shadow-[0_0_20px_rgba(99,102,241,0.5)]"
                 >
-                  Start Learning Faster
-                </button>
-                <button 
-                  onClick={() => navigate('/signup')} 
-                  className="px-10 py-4 bg-transparent border-2 border-white/20 text-white rounded-full font-bold text-xl hover:bg-white/10 transition-all duration-300 flex items-center justify-center gap-3"
-                >
-                  <FaPlay size={16} /> Demo
+                  Try For Free
                 </button>
               </motion.div>
 
@@ -256,6 +256,9 @@ const MatrixEduLandingContent: React.FC = () => {
       <div ref={howItWorksRef}>
         <HowItWorksScroll />
       </div>
+
+      {/* Video Demo Section */}
+      <VideoDemoScroll />
 
       {/* What you can do with MatrixEdu Section */}
       <section ref={whatYouCanDoRef} className="py-20 md:py-32 bg-gray-50 dark:bg-black relative overflow-hidden">

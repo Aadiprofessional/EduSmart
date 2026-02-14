@@ -20,7 +20,8 @@ import {
   FaChevronUp,
   FaHistory,
   FaCalendarAlt,
-  FaPenNib
+  FaPenNib,
+  FaUserCheck
 } from 'react-icons/fa';
 import { useAuth } from '../../utils/AuthContext';
 
@@ -110,6 +111,12 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
                 label="Content Writer" 
                 active={isActive('/content-writer')}
                 onClick={() => navigate('/content-writer')} 
+              />
+              <NavItem 
+                icon={<FaUserCheck />} 
+                label="Humanizer" 
+                active={isActive('/humanizer')}
+                onClick={() => navigate('/humanizer')} 
               />
                 <NavItem 
                 icon={<FaCalendarAlt />} 

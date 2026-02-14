@@ -28,6 +28,7 @@ import MatrixEduDashboard from './pages/MatrixEduDashboard';
 import StudyPlannerPage from './pages/StudyPlannerPage';
 import SolvePage from './pages/SolvePage';
 import ContentWriter from './pages/ContentWriter';
+import Humanizer from './pages/Humanizer';
 import GradePage from './pages/GradePage';
 import StudyMaterialPage from './pages/StudyMaterialPage';
 import MethodSelectionPage from './pages/MethodSelectionPage';
@@ -156,6 +157,11 @@ function App() {
                       <Route path="/content-writer" element={
                         <ProtectedRoute>
                           <ContentWriter />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/humanizer" element={
+                        <ProtectedRoute>
+                          <Humanizer />
                         </ProtectedRoute>
                       } />
                       <Route path="/paper-grader" element={

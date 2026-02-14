@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { motion, useScroll, useTransform, useSpring, useInView } from 'framer-motion';
-import { FaUpload, FaBolt, FaBrain, FaPencilAlt } from 'react-icons/fa';
+import { FaUpload, FaBolt, FaBrain, FaPencilAlt, FaSitemap, FaCalendarAlt, FaFileAlt } from 'react-icons/fa';
 import { useModelPosition } from '../../utils/ModelPositionContext';
 
 const steps = [
@@ -31,6 +31,27 @@ const steps = [
     description: "Practice for written exams with AI-graded essay questions. Receive instant feedback on your writing style, accuracy, and completeness.",
     icon: FaPencilAlt,
     videoPlaceholder: "Written Test Demo Video"
+  },
+  {
+    id: 5,
+    title: "Interactive Mind Maps",
+    description: "Visualize connections between concepts with auto-generated mind maps. Perfect for understanding complex topics and structural relationships.",
+    icon: FaSitemap,
+    videoPlaceholder: "Mind Map Demo Video"
+  },
+  {
+    id: 6,
+    title: "Smart Study Planner",
+    description: "Get a personalized study schedule tailored to your exam date and learning pace. Stay organized and cover every topic efficiently.",
+    icon: FaCalendarAlt,
+    videoPlaceholder: "Planner Demo Video"
+  },
+  {
+    id: 7,
+    title: "AI Note Generation",
+    description: "Instantly convert long lectures or documents into concise, structured study notes. Focus on learning, not just transcribing.",
+    icon: FaFileAlt,
+    videoPlaceholder: "Notes Demo Video"
   }
 ];
 
@@ -158,6 +179,24 @@ const HowItWorksScroll: React.FC = () => {
       pencil: { x: 600, y: 0, z: 0, scale: 2.5, rotation: { x: 0, y: 0, z: 0.1 }, visible: true },
       eraser: { x: 700, y: 200, z: -1, scale: 1.5, visible: true },
       sharpener: { x: 500, y: -200, z: 0, scale: 0.03, visible: true }
+    },
+    // Step 5: Mind Maps (Text Left, Video Right)
+    {
+      pencil: { x: -600, y: 100, z: 0, scale: 2.5, rotation: { x: 0.2, y: 0.3, z: -0.1 }, visible: true },
+      eraser: { x: -700, y: -100, z: -2, scale: 1.5, visible: true },
+      sharpener: { x: 600, y: 200, z: -1, scale: 0.03, visible: true }
+    },
+    // Step 6: Study Planner (Text Right, Video Left)
+    {
+      pencil: { x: 600, y: -150, z: 0, scale: 2.5, rotation: { x: 0, y: -0.4, z: 0.1 }, visible: true },
+      eraser: { x: 700, y: 250, z: -1, scale: 1.5, visible: true },
+      sharpener: { x: -500, y: -100, z: -1, scale: 0.03, visible: true }
+    },
+    // Step 7: Notes (Text Left, Video Right)
+    {
+      pencil: { x: -600, y: 50, z: 0, scale: 2.5, rotation: { x: 0.1, y: 0.2, z: 0 }, visible: true },
+      eraser: { x: -500, y: 300, z: -1, scale: 1.5, visible: true },
+      sharpener: { x: 600, y: -200, z: -1, scale: 0.03, visible: true }
     }
   ];
 
@@ -199,7 +238,7 @@ const HowItWorksScroll: React.FC = () => {
                 How It Works
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                Master any subject in minutes with our simple 4-step process.
+                Master any subject in minutes with our comprehensive process.
             </p>
         </div>
 
