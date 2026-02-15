@@ -4,7 +4,7 @@ import SidebarLeft from '../components/dashboard/SidebarLeft';
 import SidebarRight from '../components/dashboard/SidebarRight';
 import ActionCards from '../components/dashboard/ActionCards';
 import StudySetList from '../components/dashboard/StudySetList';
-import { UploadModal, PasteModal, RecordModal, CreateFolderModal } from '../components/dashboard/DashboardModals';
+import { UploadModal, PasteModal, RecordModal, CreateFolderModal, MoveDocumentModal } from '../components/dashboard/DashboardModals';
 import { useAuth } from '../utils/AuthContext';
 import { FaBars, FaFolder, FaGraduationCap } from 'react-icons/fa';
 import { supabase } from '../utils/supabase';
@@ -17,7 +17,8 @@ const MatrixEduDashboard: React.FC = () => {
   const studySetListRef = useRef<HTMLDivElement>(null);
   
   // Modal States
-  const [activeModal, setActiveModal] = useState<'upload' | 'paste' | 'record' | 'createFolder' | null>(null);
+  const [activeModal, setActiveModal] = useState<'upload' | 'paste' | 'record' | 'createFolder' | 'moveDocument' | null>(null);
+  const [documentToMove, setDocumentToMove] = useState<StudySet | null>(null);
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(window.innerWidth >= 1024);
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(window.innerWidth >= 1280);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -72,15 +73,38 @@ const MatrixEduDashboard: React.FC = () => {
     name: string;
     count: number;
     color?: string;
+    document_ids: string[];
   }
   
   const [folders, setFolders] = useState<Folder[]>([]);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
 
   const [studySets, setStudySets] = useState<StudySet[]>([]);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const ITEMS_PER_PAGE = 12;
+
+  const fetchFolders = async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from('folders')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    
+    if (data) {
+      setFolders(data.map((f: any) => ({
+        ...f,
+        count: f.document_ids ? f.document_ids.length : 0,
+        document_ids: f.document_ids || []
+      })));
+    }
+  };
+
+  useEffect(() => {
+    fetchFolders();
+  }, [user]);
 
   const fetchStudySets = async (pageNumber = 0, isLoadMore = false) => {
       if (!user) return;
@@ -90,12 +114,27 @@ const MatrixEduDashboard: React.FC = () => {
           const from = pageNumber * ITEMS_PER_PAGE;
           const to = from + ITEMS_PER_PAGE - 1;
 
-          const { data, error } = await supabase
+          let query = supabase
               .from('upload_document')
               .select('*')
               .eq('uid', user.id) 
-              .order('created_at', { ascending: false })
-              .range(from, to);
+              .order('created_at', { ascending: false });
+
+          if (selectedFolderId) {
+            const folder = folders.find(f => f.id === selectedFolderId);
+            if (folder) {
+                 if (folder.document_ids.length > 0) {
+                     query = query.in('document_id', folder.document_ids);
+                 } else {
+                     setStudySets([]);
+                     setHasMore(false);
+                     setLoadingMore(false);
+                     return;
+                 }
+            }
+          }
+              
+          const { data, error } = await query.range(from, to);
               
           if (error) throw error;
           
@@ -135,7 +174,7 @@ const MatrixEduDashboard: React.FC = () => {
     setPage(0);
     setHasMore(true);
     fetchStudySets(0, false);
-  }, [user]);
+  }, [user, selectedFolderId]);
 
   const handleLoadMore = () => {
       const nextPage = page + 1;
@@ -143,13 +182,66 @@ const MatrixEduDashboard: React.FC = () => {
       fetchStudySets(nextPage, true);
   };
 
-  const handleCreateFolder = (name: string, color: string) => {
-      setFolders([...folders, { id: Date.now().toString(), name, count: 0, color }]);
+  const handleCreateFolder = async (name: string, color: string) => {
+      if (!user) return;
+      const { data, error } = await supabase
+        .from('folders')
+        .insert([{ user_id: user.id, name, document_ids: [], color }])
+        .select();
+
+      if (data) {
+          fetchFolders();
+          setActiveModal(null);
+      }
+  };
+
+  const handleMoveDocument = async (targetFolderId: string | null, documentId: string) => {
+    if (!user) return;
+
+    const currentFolders = folders.filter(f => f.document_ids.includes(documentId));
+    const removePromises = currentFolders.map(f => 
+      supabase.from('folders').update({ 
+        document_ids: f.document_ids.filter(id => id !== documentId) 
+      }).eq('id', f.id)
+    );
+    await Promise.all(removePromises);
+
+    if (targetFolderId) {
+      const targetFolder = folders.find(f => f.id === targetFolderId);
+      if (targetFolder) {
+        const newIds = Array.from(new Set([...targetFolder.document_ids, documentId]));
+        await supabase.from('folders').update({ 
+          document_ids: newIds 
+        }).eq('id', targetFolderId);
+      }
+    }
+
+    fetchFolders();
+    // Refresh study sets to reflect changes if currently filtering by folder
+    if (selectedFolderId) {
+       fetchStudySets(0, false);
+    }
+  };
+
+  const handleMoveClick = (set: StudySet) => {
+    setDocumentToMove(set);
+    setActiveModal('moveDocument');
+  };
+
+  const handleMoveConfirm = async (folderId: string | null) => {
+    if (documentToMove) {
+      await handleMoveDocument(folderId, String(documentToMove.id));
       setActiveModal(null);
+      setDocumentToMove(null);
+    }
+  };
+
+  const handleDragStart = (e: React.DragEvent, set: StudySet) => {
+      e.dataTransfer.setData('documentId', set.id.toString());
   };
 
   return (
-    <div className="h-screen bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-white flex font-sans overflow-hidden relative">
+    <div className="flex h-screen bg-gray-50 dark:bg-[#111] overflow-hidden">
       {/* Mobile Sidebar Overlays */}
       {(isLeftSidebarOpen && window.innerWidth < 1024) && (
         <div 
@@ -258,6 +350,8 @@ const MatrixEduDashboard: React.FC = () => {
                     onSetClick={(set: any) => {
                         navigate(`/study-set/${set.id}`, { state: { studySetData: set } });
                     }}
+                    onDragStart={handleDragStart}
+                    onMove={handleMoveClick}
                 />
                 
                 {loadingMore && (
@@ -276,6 +370,9 @@ const MatrixEduDashboard: React.FC = () => {
         isOpen={isRightSidebarOpen} 
         onClose={() => setIsRightSidebarOpen(false)}
         className="fixed inset-y-0 right-0 z-50 xl:relative xl:z-0 shadow-2xl xl:shadow-none h-full"
+        onMoveDocument={handleMoveDocument}
+        selectedFolderId={selectedFolderId}
+        onSelectFolder={setSelectedFolderId}
       />
 
       {/* Modals */}
@@ -307,6 +404,16 @@ const MatrixEduDashboard: React.FC = () => {
          isOpen={activeModal === 'createFolder'} 
          onClose={() => setActiveModal(null)} 
          onCreate={handleCreateFolder}
+      />
+      <MoveDocumentModal 
+         isOpen={activeModal === 'moveDocument'} 
+         onClose={() => {
+            setActiveModal(null);
+            setDocumentToMove(null);
+         }}
+         folders={folders}
+         onMove={handleMoveConfirm}
+         documentTitle={documentToMove?.title}
       />
     </div>
   );

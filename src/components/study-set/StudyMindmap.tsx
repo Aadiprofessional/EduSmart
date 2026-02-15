@@ -3,7 +3,7 @@ import * as echarts from 'echarts';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
-import { FaProjectDiagram, FaPlus, FaMinus, FaDownload, FaMagic } from 'react-icons/fa';
+import { FaProjectDiagram, FaPlus, FaMinus, FaDownload, FaMagic, FaTimes } from 'react-icons/fa';
 import { Skeleton } from '../ui/Skeleton';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
@@ -235,6 +235,7 @@ const StudyMindmap: React.FC = () => {
     const [mindmapData, setMindmapData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [showInfo, setShowInfo] = useState(true);
 
     useEffect(() => {
         let intervalId: NodeJS.Timeout;
@@ -604,15 +605,24 @@ const StudyMindmap: React.FC = () => {
 
             <div className="flex-1 w-full h-full" ref={chartRef}></div>
             
-            <div className="absolute bottom-8 left-8 p-4 bg-white/80 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-white/10 max-w-sm shadow-lg">
-                <div className="flex items-center gap-2 text-[#c2410c] mb-2">
-                    <FaProjectDiagram />
-                    <span className="font-bold">Mindmap View</span>
+            {showInfo && (
+                <div className="absolute bottom-8 left-8 p-4 bg-white/80 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-white/10 max-w-sm shadow-lg relative">
+                    <button
+                        aria-label="Close"
+                        onClick={() => setShowInfo(false)}
+                        className="absolute top-2 right-2 p-1 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                    >
+                        <FaTimes size={12} />
+                    </button>
+                    <div className="flex items-center gap-2 text-[#c2410c] mb-2">
+                        <FaProjectDiagram />
+                        <span className="font-bold">Mindmap View</span>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Visual representation of your study material. Click on nodes to expand or collapse branches.
+                    </p>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Visual representation of your study material. Click on nodes to expand or collapse branches.
-                </p>
-            </div>
+            )}
         </div>
     );
 };

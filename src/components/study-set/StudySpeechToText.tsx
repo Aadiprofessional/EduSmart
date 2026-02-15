@@ -26,6 +26,7 @@ const NativeVideoPlayer = forwardRef((props: any, ref) => {
     const youtubeId = getYouTubeId(url);
     const isYouTube = !!youtubeId;
     const playerInterval = useRef<NodeJS.Timeout | null>(null);
+    const [ytError, setYtError] = useState<number | null>(null);
 
     // Expose seekTo method
     useImperativeHandle(ref, () => ({
@@ -69,9 +70,15 @@ const NativeVideoPlayer = forwardRef((props: any, ref) => {
 
         // Listener for YouTube API events
         const handleMessage = (event: MessageEvent) => {
-            if (event.origin !== "https://www.youtube.com") return;
+            const allowedOrigins = new Set(["https://www.youtube.com", "https://www.youtube-nocookie.com"]);
+            if (!allowedOrigins.has(event.origin)) return;
             try {
                 const data = JSON.parse(event.data);
+                if (data.event === 'onError') {
+                    const code = typeof data.info === 'number' ? data.info : (data.info?.data || data.info?.code);
+                    setYtError(code ?? -1);
+                    return;
+                }
                 if (data.event === 'infoDelivery' && data.info) {
                     if (data.info.currentTime && onProgress) {
                         onProgress({ playedSeconds: data.info.currentTime });
@@ -122,19 +129,46 @@ const NativeVideoPlayer = forwardRef((props: any, ref) => {
     }, [isYouTube, onProgress, onDuration, onEnded, onPlay, onPause, youtubeId]);
 
     if (isYouTube) {
+        const errorText = (() => {
+            if (ytError === 101 || ytError === 150) return 'Playback on other websites has been disabled by the video owner.';
+            if (ytError === 100) return 'This video is unavailable (removed or private).';
+            if (ytError === 5) return 'The HTML5 player encountered an error.';
+            if (ytError === 2) return 'The video ID parameter is invalid.';
+            if (ytError != null) return 'This video cannot be played here.';
+            return null;
+        })();
         return (
-            <div className={className} style={{ width, height }}>
+            <div className={`${className} relative`} style={{ width, height }}>
                 <iframe
                     ref={iframeRef}
                     width="100%"
                     height="100%"
-                    src={`https://www.youtube.com/embed/${youtubeId}?enablejsapi=1&origin=${window.location.origin}&modestbranding=1&rel=0&showinfo=1&controls=1&playsinline=1&iv_load_policy=3`}
+                    src={`https://www.youtube-nocookie.com/embed/${youtubeId}?enablejsapi=1&origin=${window.location.origin}&modestbranding=1&rel=0&showinfo=1&controls=1&playsinline=1&iv_load_policy=3`}
                     title="YouTube video player"
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
+                    referrerPolicy="origin"
                     style={{ pointerEvents: 'auto' }}
                 />
+                {errorText && (
+                    <div className="absolute inset-0 flex items-center justify-center p-4">
+                        <div className="max-w-md w-full bg-black/70 text-white rounded-lg p-4 border border-white/20">
+                            <div className="font-semibold mb-2">Video unavailable</div>
+                            <div className="text-sm opacity-90 mb-3">{errorText}</div>
+                            {youtubeId && (
+                                <a
+                                    href={`https://www.youtube.com/watch?v=${youtubeId}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center px-3 py-2 bg-white text-black rounded-md text-sm font-medium hover:bg-gray-100 transition-colors"
+                                >
+                                    Open on YouTube
+                                </a>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
         );
     }
@@ -589,9 +623,13 @@ const StudySpeechToText: React.FC<StudySpeechToTextProps> = ({ onDiscuss, docume
 
     const formatTime = (seconds: number) => {
         if (!seconds || isNaN(seconds)) return "0:00";
-        const mins = Math.floor(seconds / 60);
+        const hrs = Math.floor(seconds / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
         const secs = Math.floor(seconds % 60);
-        return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        if (hrs > 0) {
+            return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
     const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {

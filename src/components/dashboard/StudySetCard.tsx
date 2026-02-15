@@ -14,7 +14,8 @@ import {
   FaProjectDiagram,
   FaEdit,
   FaPencilAlt,
-  FaGraduationCap
+  FaGraduationCap,
+  FaFolderOpen
 } from 'react-icons/fa';
 
 export interface StudySet {
@@ -46,9 +47,11 @@ interface StudySetCardProps {
   set: StudySet;
   viewMode?: 'grid' | 'list';
   onClick?: () => void;
+  onDragStart?: (e: React.DragEvent, set: StudySet) => void;
+  onMove?: (set: StudySet) => void;
 }
 
-const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid', onClick }) => {
+const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid', onClick, onDragStart, onMove }) => {
 
   const renderActionButtons = (size: number = 14) => {
       return (
@@ -71,6 +74,8 @@ const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid', onC
   if (viewMode === 'list') {
       return (
         <div 
+            draggable={!!onDragStart}
+            onDragStart={(e) => onDragStart?.(e, set)}
             onClick={onClick}
             className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl p-6 hover:border-gray-300 dark:hover:border-white/20 transition-colors group flex flex-col md:flex-row items-center gap-6 shadow-sm dark:shadow-none cursor-pointer"
         >
@@ -99,6 +104,15 @@ const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid', onC
 
                 <div className="flex gap-2 text-gray-400 dark:text-gray-500 w-full md:w-auto justify-center md:justify-end items-center overflow-x-auto no-scrollbar pb-1 md:pb-0">
                     {renderActionButtons(14)}
+                    {onMove && (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); onMove(set); }}
+                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded hover:text-gray-900 dark:hover:text-white transition-colors ml-2 flex-shrink-0"
+                        title="Move to Folder"
+                      >
+                        <FaFolderOpen />
+                      </button>
+                    )}
                     <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded hover:text-gray-900 dark:hover:text-white transition-colors ml-2 flex-shrink-0">
                         <FaEllipsisH />
                     </button>
@@ -110,12 +124,25 @@ const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid', onC
 
   return (
     <div 
+        draggable={!!onDragStart}
+        onDragStart={(e) => onDragStart?.(e, set)}
         onClick={onClick}
         className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl p-6 hover:border-gray-300 dark:hover:border-white/20 transition-colors group shadow-sm dark:shadow-none cursor-pointer"
     >
         <div className="flex justify-between items-start mb-4 md:mb-6">
             <h3 className="text-base md:text-lg font-bold text-gray-900 dark:text-white truncate pr-2">{set.title}</h3>
-            <button className="text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white flex-shrink-0"><FaEllipsisH /></button>
+            <div className="flex gap-2 flex-shrink-0 items-center">
+              {onMove && (
+                <button 
+                  onClick={(e) => { e.stopPropagation(); onMove(set); }}
+                  className="text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white"
+                  title="Move to Folder"
+                >
+                  <FaFolderOpen />
+                </button>
+              )}
+              <button className="text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white"><FaEllipsisH /></button>
+            </div>
         </div>
 
         <div className="space-y-2 mb-4 md:mb-6">

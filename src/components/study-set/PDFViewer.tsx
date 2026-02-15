@@ -52,27 +52,27 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ url }) => {
     };
 
     return (
-        <div className="flex flex-col h-full w-full bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700">
+        <div className="flex flex-col h-full w-full bg-transparent rounded-lg overflow-hidden">
             {/* Toolbar */}
-            <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm z-10">
+            <div className="flex items-center justify-between p-3 bg-black/40 backdrop-blur-md border-b border-white/10 shadow-sm z-10">
                 <div className="flex items-center space-x-4">
                     {/* Page Navigation */}
-                    <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                    <div className="flex items-center space-x-2 bg-white/5 rounded-lg p-1 border border-white/5">
                         <button
                             onClick={() => changePage(-1)}
                             disabled={pageNumber <= 1 || loading}
-                            className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-700 dark:text-gray-200"
+                            className="p-2 rounded-md hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-200"
                             title="Previous Page"
                         >
                             <FaChevronLeft size={14} />
                         </button>
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-200 min-w-[80px] text-center select-none">
+                        <span className="text-sm font-medium text-gray-200 min-w-[80px] text-center select-none">
                             {loading ? '...' : `${pageNumber} / ${numPages || '--'}`}
                         </span>
                         <button
                             onClick={() => changePage(1)}
                             disabled={pageNumber >= (numPages || 0) || loading}
-                            className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-700 dark:text-gray-200"
+                            className="p-2 rounded-md hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-200"
                             title="Next Page"
                         >
                             <FaChevronRight size={14} />
@@ -82,22 +82,22 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ url }) => {
 
                 <div className="flex items-center space-x-4">
                     {/* Zoom Controls */}
-                    <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                    <div className="flex items-center space-x-2 bg-white/5 rounded-lg p-1 border border-white/5">
                         <button
                             onClick={() => changeScale(-0.1)}
                             disabled={scale <= 0.5 || loading}
-                            className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-700 dark:text-gray-200"
+                            className="p-2 rounded-md hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-200"
                             title="Zoom Out"
                         >
                             <FaSearchMinus size={14} />
                         </button>
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-200 min-w-[60px] text-center select-none">
+                        <span className="text-sm font-medium text-gray-200 min-w-[60px] text-center select-none">
                             {Math.round(scale * 100)}%
                         </span>
                         <button
                             onClick={() => changeScale(0.1)}
                             disabled={scale >= 3.0 || loading}
-                            className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-700 dark:text-gray-200"
+                            className="p-2 rounded-md hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-200"
                             title="Zoom In"
                         >
                             <FaSearchPlus size={14} />
@@ -107,9 +107,9 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ url }) => {
             </div>
 
             {/* PDF Content */}
-            <div className="flex-1 overflow-auto flex justify-center p-4 relative bg-gray-50 dark:bg-gray-800/50">
+            <div className="flex-1 overflow-auto flex justify-center p-4 relative bg-black/20">
                 {error ? (
-                    <div className="flex flex-col items-center justify-center h-full text-red-500">
+                    <div className="flex flex-col items-center justify-center h-full text-red-400">
                         <p className="font-medium">{error}</p>
                     </div>
                 ) : (
@@ -119,7 +119,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ url }) => {
                         onLoadError={onDocumentLoadError}
                         loading={
                             <div className="flex items-center justify-center h-full">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
                             </div>
                         }
                         className="shadow-xl"

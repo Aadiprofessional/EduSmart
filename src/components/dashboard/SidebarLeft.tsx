@@ -21,7 +21,8 @@ import {
   FaHistory,
   FaCalendarAlt,
   FaPenNib,
-  FaUserCheck
+  FaUserCheck,
+  FaChevronLeft
 } from 'react-icons/fa';
 import { useAuth } from '../../utils/AuthContext';
 
@@ -60,29 +61,26 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
-          {/* Close Button (Visible on Hover or always on mobile) */}
-          <button
-            onClick={onClose}
-            className={`absolute top-4 right-4 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-opacity duration-200 opacity-100 lg:opacity-0 lg:group-hover:opacity-100`}
-            title="Close Sidebar"
-          >
-            <FaChevronUp className="transform -rotate-90" />
-          </button>
-
           <div className="overflow-hidden whitespace-nowrap">
             {/* Logo */}
-            <div className="flex items-center gap-2 mb-8 px-2 cursor-pointer" onClick={() => navigate('/')}>
-              <div className="text-indigo-600 dark:text-indigo-500 text-2xl">
-                  <FaGraduationCap /> 
+            <div className="flex items-center justify-between mb-8 px-2">
+              <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+                <div className="text-indigo-600 dark:text-indigo-500 text-2xl">
+                    <FaGraduationCap /> 
+                </div>
+                <motion.span 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.1 }}
+                  className="text-xl font-bold text-indigo-600 dark:text-indigo-500"
+                >
+                  MatrixEdu
+                </motion.span>
               </div>
-              <motion.span 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.1 }}
-                className="text-xl font-bold text-indigo-600 dark:text-indigo-500"
-              >
-                MatrixEdu
-              </motion.span>
+
+              <button onClick={onClose} className="hover:text-gray-900 dark:hover:text-white text-gray-400" title="Close Sidebar">
+                  <FaChevronLeft size={16} />
+              </button>
             </div>
 
             {/* Navigation */}

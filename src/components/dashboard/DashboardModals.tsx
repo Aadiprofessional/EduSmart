@@ -198,18 +198,18 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void; onNex
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{pendingFile.name}</p>
             
             <div className="grid grid-cols-1 gap-3 mb-8 w-full max-w-lg mx-auto">
-                {/* Extract Text Option */}
+                {/* PDF Vision Option */}
                 <div 
-                    onClick={() => setPdfProcessType('document')}
-                    className={`cursor-pointer p-4 rounded-lg border-2 transition-all ${pdfProcessType === 'document' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-[#1a1a1a]'}`}
+                    onClick={() => setPdfProcessType('pdf_vision')}
+                    className={`cursor-pointer p-4 rounded-lg border-2 transition-all ${pdfProcessType === 'pdf_vision' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-[#1a1a1a]'}`}
                 >
                     <div className="flex items-center space-x-3">
-                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 ${pdfProcessType === 'document' ? 'border-indigo-500 bg-indigo-500' : 'border-gray-400'}`}>
-                            {pdfProcessType === 'document' && <FaCheck className="text-white text-xs" />}
+                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 ${pdfProcessType === 'pdf_vision' ? 'border-indigo-500 bg-indigo-500' : 'border-gray-400'}`}>
+                            {pdfProcessType === 'pdf_vision' && <FaCheck className="text-white text-xs" />}
                         </div>
                         <div className="text-left">
-                            <span className="block text-gray-900 dark:text-white font-medium">Extract Text</span>
-                            <span className="block text-xs text-gray-500 mt-1">Extract text only. Standard document processing.</span>
+                            <span className="block text-gray-900 dark:text-white font-medium">Include Images (AI Vision)</span>
+                            <span className="block text-xs text-gray-500 mt-1">Best for slides/diagrams. Cost: 2 coins/page.</span>
                         </div>
                     </div>
                 </div>
@@ -230,18 +230,18 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void; onNex
                     </div>
                 </div>
 
-                {/* PDF Vision Option */}
+                {/* Extract Text Option */}
                 <div 
-                    onClick={() => setPdfProcessType('pdf_vision')}
-                    className={`cursor-pointer p-4 rounded-lg border-2 transition-all ${pdfProcessType === 'pdf_vision' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-[#1a1a1a]'}`}
+                    onClick={() => setPdfProcessType('document')}
+                    className={`cursor-pointer p-4 rounded-lg border-2 transition-all ${pdfProcessType === 'document' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-[#1a1a1a]'}`}
                 >
                     <div className="flex items-center space-x-3">
-                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 ${pdfProcessType === 'pdf_vision' ? 'border-indigo-500 bg-indigo-500' : 'border-gray-400'}`}>
-                            {pdfProcessType === 'pdf_vision' && <FaCheck className="text-white text-xs" />}
+                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 ${pdfProcessType === 'document' ? 'border-indigo-500 bg-indigo-500' : 'border-gray-400'}`}>
+                            {pdfProcessType === 'document' && <FaCheck className="text-white text-xs" />}
                         </div>
                         <div className="text-left">
-                            <span className="block text-gray-900 dark:text-white font-medium">Include Images (AI Vision)</span>
-                            <span className="block text-xs text-gray-500 mt-1">Best for slides/diagrams. Cost: 2 coins/page.</span>
+                            <span className="block text-gray-900 dark:text-white font-medium">Extract Text</span>
+                            <span className="block text-xs text-gray-500 mt-1">Extract text only. Standard document processing.</span>
                         </div>
                     </div>
                 </div>
@@ -579,68 +579,185 @@ export const MethodSelectionModal: React.FC<{ isOpen: boolean; onClose: () => vo
 
 
 // --- Create Folder Modal ---
-interface CreateFolderModalProps {
-   isOpen: boolean;
-   onClose: () => void;
-   onCreate: (name: string, color: string) => void;
+export interface CreateFolderModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onCreate: (name: string, color: string) => void;
 }
 
 export const CreateFolderModal: React.FC<CreateFolderModalProps> = ({ isOpen, onClose, onCreate }) => {
-   const [folderName, setFolderName] = useState('');
-   const [selectedColor, setSelectedColor] = useState('bg-gray-500');
+  const [folderName, setFolderName] = useState('');
+  const [selectedColor, setSelectedColor] = useState('blue');
+  const inputRef = useRef<HTMLInputElement>(null);
 
-   const colors = [
-      'bg-gray-500', 'bg-indigo-500', 'bg-yellow-500', 'bg-green-500', 'bg-teal-500', 'bg-sky-500',
-      'bg-indigo-500', 'bg-purple-500', 'bg-pink-500', 'bg-red-500', 'bg-blue-500', 'bg-cyan-500'
-   ];
+  const colors = [
+    { id: 'blue', bg: 'bg-blue-500' },
+    { id: 'green', bg: 'bg-green-500' },
+    { id: 'purple', bg: 'bg-purple-500' },
+    { id: 'orange', bg: 'bg-orange-500' },
+    { id: 'red', bg: 'bg-red-500' },
+    { id: 'pink', bg: 'bg-pink-500' },
+    { id: 'indigo', bg: 'bg-indigo-500' },
+    { id: 'teal', bg: 'bg-teal-500' },
+  ];
 
-   const handleSubmit = () => {
-      if (folderName.trim()) {
-         onCreate(folderName, selectedColor);
-         setFolderName('');
-         onClose();
-      }
-   };
+  useEffect(() => {
+    if (isOpen) {
+      setFolderName('');
+      setSelectedColor('blue');
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [isOpen]);
 
-   return (
-      <BaseModal isOpen={isOpen} onClose={onClose} title="Create New Folder" width="max-w-md">
-         <div className="space-y-6">
-            <div>
-               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Folder Name</label>
-               <input 
-                 type="text" 
-                 value={folderName}
-                 onChange={(e) => setFolderName(e.target.value)}
-                 placeholder="Enter folder name..." 
-                 className="w-full bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-lg py-3 px-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-blue-500/50 transition-colors"
-               />
+  const handleSubmit = () => {
+    if (folderName.trim()) {
+      onCreate(folderName, selectedColor);
+    }
+  };
+
+  return (
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Create New Folder"
+      width="max-w-md"
+    >
+      <div className="space-y-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Folder Name
+          </label>
+          <input
+            ref={inputRef}
+            type="text"
+            value={folderName}
+            onChange={(e) => setFolderName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+            placeholder="e.g. Biology 101"
+            className="w-full px-4 py-3 bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-gray-900 dark:text-white"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Color Code
+          </label>
+          <div className="flex flex-wrap gap-3">
+            {colors.map((color) => (
+              <button
+                key={color.id}
+                onClick={() => setSelectedColor(color.id)}
+                className={`w-8 h-8 rounded-full ${color.bg} transition-transform hover:scale-110 ${selectedColor === color.id ? 'ring-2 ring-offset-2 ring-gray-400 dark:ring-offset-black scale-110' : ''}`}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="flex gap-3 justify-end mt-8">
+          <button
+            onClick={onClose}
+            className="px-6 py-2.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-medium transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={!folderName.trim()}
+            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Create Folder
+          </button>
+        </div>
+      </div>
+    </BaseModal>
+  );
+};
+
+export interface MoveDocumentModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  folders: { id: string; name: string; count: number; color?: string }[];
+  onMove: (folderId: string | null) => void;
+  documentTitle?: string;
+}
+
+export const MoveDocumentModal: React.FC<MoveDocumentModalProps> = ({ isOpen, onClose, folders, onMove, documentTitle }) => {
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedFolderId(null);
+    }
+  }, [isOpen]);
+
+  const handleMove = () => {
+    onMove(selectedFolderId);
+    onClose();
+  };
+
+  return (
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={`Move "${documentTitle || 'Document'}"`}
+      subtitle="Select a folder to move this document to"
+      width="max-w-md"
+    >
+      <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+        <button
+          onClick={() => setSelectedFolderId(null)}
+          className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${
+            selectedFolderId === null
+              ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+              : 'border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5'
+          }`}
+        >
+          <div className="w-10 h-10 rounded-lg bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-gray-500">
+            <FaLayerGroup />
+          </div>
+          <div className="text-left">
+            <p className="font-medium text-gray-900 dark:text-white">All Study Sets</p>
+            <p className="text-xs text-gray-500">Default location</p>
+          </div>
+          {selectedFolderId === null && <FaCheck className="ml-auto text-blue-500" />}
+        </button>
+
+        {folders.map((folder) => (
+          <button
+            key={folder.id}
+            onClick={() => setSelectedFolderId(folder.id)}
+            className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${
+              selectedFolderId === folder.id
+                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                : 'border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5'
+            }`}
+          >
+            <div className={`w-10 h-10 rounded-lg bg-${folder.color || 'blue'}-100 dark:bg-${folder.color || 'blue'}-900/30 flex items-center justify-center text-${folder.color || 'blue'}-600 dark:text-${folder.color || 'blue'}-400`}>
+              <FaLayerGroup />
             </div>
-
-            <div>
-               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Choose Color</label>
-               <div className="grid grid-cols-6 gap-3">
-                  {colors.map((color) => (
-                     <button 
-                        key={color}
-                        onClick={() => setSelectedColor(color)}
-                        className={`w-10 h-10 rounded-full ${color} transition-transform hover:scale-110 flex items-center justify-center ${selectedColor === color ? 'ring-2 ring-white dark:ring-white ring-offset-2 ring-offset-white dark:ring-offset-[#0f0f0f]' : ''}`}
-                     />
-                  ))}
-               </div>
+            <div className="text-left">
+              <p className="font-medium text-gray-900 dark:text-white">{folder.name}</p>
+              <p className="text-xs text-gray-500">{folder.count} items</p>
             </div>
+            {selectedFolderId === folder.id && <FaCheck className="ml-auto text-blue-500" />}
+          </button>
+        ))}
+      </div>
 
-            <div className="flex justify-end gap-3 pt-2">
-               <button onClick={onClose} className="px-6 py-2.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white font-medium transition-colors">
-                  Cancel
-               </button>
-               <button 
-                 onClick={handleSubmit}
-                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors"
-               >
-                  + Create Folder
-               </button>
-            </div>
-         </div>
-      </BaseModal>
-   );
+      <div className="flex gap-3 justify-end mt-8 border-t border-gray-100 dark:border-white/5 pt-6">
+        <button
+          onClick={onClose}
+          className="px-6 py-2.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-medium transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleMove}
+          className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-blue-500/20"
+        >
+          Move Document
+        </button>
+      </div>
+    </BaseModal>
+  );
 };

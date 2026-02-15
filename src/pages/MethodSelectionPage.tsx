@@ -724,6 +724,55 @@ const MethodSelectionPage: React.FC = () => {
     const [userCoins, setUserCoins] = useState<number>(0);
     const { user } = useAuth();
 
+    // Progress Bar State
+    const [progress, setProgress] = useState(0);
+    const [loadingText, setLoadingText] = useState('Initializing...');
+
+    // Progress bar simulation
+    React.useEffect(() => {
+        let interval: any;
+        
+        if (isGenerating) {
+            const startTime = Date.now();
+            const duration = 180000; // 3 minutes in ms
+
+            interval = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                
+                // Calculate progress
+                let newProgress = (elapsed / duration) * 99;
+                if (newProgress > 99) newProgress = 99;
+                
+                setProgress(newProgress);
+
+                // Update text based on progress
+                if (newProgress < 5) setLoadingText('Initializing...');
+                else if (newProgress < 15) setLoadingText('Analyzing your files...');
+                else if (newProgress < 30) setLoadingText('Generating comprehensive notes...');
+                else if (newProgress < 45) setLoadingText('Creating challenging questions...');
+                else if (newProgress < 60) setLoadingText('Formulating flashcards...');
+                else if (newProgress < 80) setLoadingText('Polishing your study set...');
+                else if (newProgress < 99) setLoadingText('Almost there...');
+                else {
+                    // Stalled at 99%
+                    const stallTime = elapsed - duration;
+                    if (stallTime > 40000) {
+                         setLoadingText('Sometimes taking longer due to high traffic, please don\'t leave the page.');
+                    } else if (stallTime > 20000) {
+                         setLoadingText('Taking longer than expected...');
+                    } else {
+                         setLoadingText('Please wait a little longer...');
+                    }
+                }
+            }, 100);
+        } else {
+            setProgress(0);
+            setLoadingText('Initializing...');
+        }
+
+        return () => clearInterval(interval);
+    }, [isGenerating]);
+
     // Helper to extract file name from payload
     const getFileName = () => {
         if (!state?.uploadPayload) return "New Study Set";
@@ -1107,6 +1156,47 @@ const MethodSelectionPage: React.FC = () => {
 
                 {/* Content */}
                 <div className="flex-1 flex flex-col items-center justify-center p-8 overflow-y-auto">
+                    {isGenerating ? (
+                        <div className="max-w-md w-full text-center space-y-8">
+                            <div className="relative w-48 h-48 mx-auto">
+                                <svg className="w-full h-full transform -rotate-90">
+                                    <circle
+                                        cx="96"
+                                        cy="96"
+                                        r="88"
+                                        stroke="currentColor"
+                                        strokeWidth="12"
+                                        fill="transparent"
+                                        className="text-gray-200 dark:text-gray-800"
+                                    />
+                                    <circle
+                                        cx="96"
+                                        cy="96"
+                                        r="88"
+                                        stroke="currentColor"
+                                        strokeWidth="12"
+                                        fill="transparent"
+                                        strokeDasharray={2 * Math.PI * 88}
+                                        strokeDashoffset={2 * Math.PI * 88 * (1 - progress / 100)}
+                                        className="text-[#c2410c] transition-all duration-300 ease-out"
+                                        strokeLinecap="round"
+                                    />
+                                </svg>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                    <span className="text-4xl font-bold text-gray-900 dark:text-white">{Math.round(progress)}%</span>
+                                </div>
+                            </div>
+                            
+                            <div className="space-y-4">
+                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white animate-pulse min-h-[3rem]">
+                                    {loadingText}
+                                </h2>
+                                <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs mx-auto">
+                                    We're crafting your personalized study materials. This process takes about 3 minutes to ensure high quality.
+                                </p>
+                            </div>
+                        </div>
+                    ) : (
                     <div className="max-w-4xl w-full">
                         {step === 'summary' ? renderSummary() : (
                             <>
@@ -1239,6 +1329,7 @@ const MethodSelectionPage: React.FC = () => {
                         </>
                         )}
                     </div>
+                    )}
                 </div>
 
                 {/* Modals */}

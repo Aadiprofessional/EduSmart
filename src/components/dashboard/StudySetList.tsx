@@ -5,9 +5,11 @@ import StudySetCard, { StudySet } from './StudySetCard';
 interface StudySetListProps {
   studySets: StudySet[];
   onSetClick?: (set: StudySet) => void;
+  onDragStart?: (e: React.DragEvent, set: StudySet) => void;
+  onMove?: (set: StudySet) => void;
 }
 
-const StudySetList: React.FC<StudySetListProps> = ({ studySets, onSetClick }) => {
+const StudySetList: React.FC<StudySetListProps> = ({ studySets, onSetClick, onDragStart, onMove }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   return (
@@ -41,6 +43,8 @@ const StudySetList: React.FC<StudySetListProps> = ({ studySets, onSetClick }) =>
                     set={set} 
                     viewMode={viewMode} 
                     onClick={() => onSetClick?.(set)}
+                    onDragStart={onDragStart}
+                    onMove={onMove}
                 />
             ))}
         </div>
