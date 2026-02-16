@@ -20,6 +20,14 @@ type AuthContextType = {
   signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInWithApple: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{
+    success: boolean;
+    error: string | null;
+  }>;
+  updatePassword: (password: string) => Promise<{
+    success: boolean;
+    error: string | null;
+  }>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -169,6 +177,36 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const resetPassword = async (email: string) => {
+    try {
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) throw error;
+
+      return { success: true, error: null };
+    } catch (error: any) {
+      console.error('Error resetting password:', error.message);
+      return { success: false, error: error.message };
+    }
+  };
+
+  const updatePassword = async (password: string) => {
+    try {
+      const { data, error } = await supabase.auth.updateUser({
+        password: password
+      });
+
+      if (error) throw error;
+
+      return { success: true, error: null };
+    } catch (error: any) {
+      console.error('Error updating password:', error.message);
+      return { success: false, error: error.message };
+    }
+  };
+
   const value = {
     user,
     session,
@@ -178,6 +216,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     signOut,
     signInWithGoogle,
     signInWithApple,
+    resetPassword,
+    updatePassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

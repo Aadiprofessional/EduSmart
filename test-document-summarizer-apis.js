@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const BASE_URL = 'https://server.matrixedu.ai/api/document-summarizer';
+const BASE_URL = 'http://localhost:8000/api/document-summarizer';
 const TEST_UID = 'b846c59e-7422-4be3-a4f6-dd20145e8400';
 
 // Test data

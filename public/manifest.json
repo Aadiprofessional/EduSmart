@@ -8,14 +8,12 @@
       "type": "image/x-icon"
     },
     {
-      "src": "logo192.png",
-      "type": "image/png",
-      "sizes": "168x103"
+      "src": "matrixedu.png",
+      "type": "image/png"
     },
     {
-      "src": "logo512.png",
-      "type": "image/png",
-      "sizes": "168x103"
+      "src": "matrixedu.png",
+      "type": "image/png"
     }
   ],
   "start_url": ".",

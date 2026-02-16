@@ -7,6 +7,7 @@ import PageHeader from '../components/ui/PageHeader';
 import MobileFilterPanel from '../components/ui/MobileFilterPanel';
 import IconComponent from '../components/ui/IconComponent';
 import { motion, AnimatePresence } from 'framer-motion';
+import AnimatedSection from '../components/ui/AnimatedSection';
 import { blogAPI } from '../utils/apiService';
 import { useLanguage } from '../utils/LanguageContext';
 import { BlogCardSkeleton } from '../components/ui/Skeleton';
@@ -377,18 +378,83 @@ const Blog: React.FC = () => {
 
   console.log('Rendering blogs:', blogPosts.length, 'filtered:', sortedBlogs.length);
 
+  const FloatingParticle = ({ delay = 0, size = 4, color = "bg-white" }) => (
+    <motion.div
+      className={`absolute ${color} rounded-full opacity-20`}
+      style={{
+        width: size,
+        height: size,
+        left: Math.random() * 100 + '%',
+        top: Math.random() * 100 + '%'
+      }}
+      animate={{
+        y: [0, -100],
+        opacity: [0, 0.5, 0]
+      }}
+      transition={{
+        duration: 3 + Math.random() * 2,
+        repeat: Infinity,
+        delay: delay,
+        ease: "linear"
+      }}
+    />
+  );
+
+  const HolographicCard = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
+    <motion.div
+      className={`relative group ${className} h-full`}
+      whileHover={{ y: -5 }}
+      transition={{ duration: 0.3 }}
+    >
+      <div className="absolute inset-0 bg-gradient-to-b from-purple-500/10 to-transparent rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100" />
+      <div className="relative h-full bg-[#0A0A0A] backdrop-blur-xl border border-white/5 rounded-2xl overflow-hidden group-hover:border-purple-500/30 transition-all duration-300">
+        <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+        <div className="relative z-10 h-full flex flex-col">
+          {children}
+        </div>
+      </div>
+    </motion.div>
+  );
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-blue-50 to-indigo-50">
+    <div className="flex flex-col min-h-screen bg-[#050505] text-white overflow-hidden font-sans selection:bg-purple-500 selection:text-white">
       <Header />
-      <main className="flex-grow">
-        <PageHeader
-          title={t('blog.title') || 'Blog & Insights'}
-          subtitle={t('blog.subtitle') || 'Stay updated with the latest trends in education and technology'}
-          height="sm"
-        >
+      
+      {/* Floating Particles Background */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        {[...Array(30)].map((_, i) => (
+          <FloatingParticle 
+            key={i} 
+            delay={i * 0.2} 
+            size={Math.random() * 3 + 1}
+            color="bg-white"
+          />
+        ))}
+      </div>
+
+      <main className="flex-grow relative z-10 pt-20">
+        {/* Page Header */}
+        <div className="text-center mb-12 py-16 px-4">
+            <motion.h1 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="text-4xl md:text-5xl font-bold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60"
+            >
+                {t('blog.title') || "Latest Insights & Updates"}
+            </motion.h1>
+            <motion.p 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="text-lg text-gray-400 max-w-2xl mx-auto"
+            >
+                {t('blog.subtitle') || "Stay ahead with expert advice, educational trends, and MatrixEdu platform updates."}
+            </motion.p>
+          
           {/* Enhanced Search Bar - Desktop only */}
-          <div className="max-w-2xl mx-auto hidden lg:block">
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-2 shadow-2xl border border-white/20">
+          <div className="max-w-2xl mx-auto hidden lg:block mt-8">
+            <div className="bg-white/5 backdrop-blur-md rounded-2xl p-2 shadow-2xl border border-white/10">
               <div className="flex gap-2">
                 <div className="flex-1 relative">
                   <input
@@ -396,18 +462,18 @@ const Blog: React.FC = () => {
                     placeholder={t('blog.searchPlaceholder') || 'Search articles...'}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-6 py-4 pl-12 bg-white/90 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white transition-all text-lg placeholder-gray-500"
+                    className="w-full px-6 py-4 pl-12 bg-[#0A0A0A]/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:bg-[#0A0A0A] transition-all text-lg placeholder-gray-500 border border-white/5"
                   />
                   <IconComponent icon={FaSearch} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
                 </div>
-                <button className="px-6 py-4 bg-white/20 hover:bg-white/30 text-white rounded-xl font-medium transition-colors flex items-center gap-2 border border-white/30">
+                <button className="px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium transition-colors flex items-center gap-2 shadow-lg shadow-purple-500/20">
                   <IconComponent icon={FaSearch} />
                   <span className="hidden sm:inline">Search</span>
                 </button>
               </div>
             </div>
           </div>
-        </PageHeader>
+        </div>
 
         {/* Main Content */}
         <section className="py-8 sm:py-12">
@@ -421,13 +487,13 @@ const Blog: React.FC = () => {
                   placeholder="Search articles..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-10 py-3 bg-[#0A0A0A] border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
                 <IconComponent icon={FaSearch} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
                   >
                     <IconComponent icon={FaTimes} className="h-4 w-4" />
                   </button>
@@ -438,12 +504,12 @@ const Blog: React.FC = () => {
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowFilters(true)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-lg shadow-purple-500/20"
                 >
                   <IconComponent icon={FaFilter} className="h-4 w-4" />
                   <span>Filters</span>
                   {((activeCategory !== 'all' ? 1 : 0) + (selectedTag ? 1 : 0) + (searchQuery ? 1 : 0)) > 0 && (
-                    <span className="bg-blue-800 text-white text-xs px-2 py-1 rounded-full">
+                    <span className="bg-purple-800 text-white text-xs px-2 py-1 rounded-full">
                       {(activeCategory !== 'all' ? 1 : 0) + (selectedTag ? 1 : 0) + (searchQuery ? 1 : 0)}
                     </span>
                   )}
@@ -507,31 +573,31 @@ const Blog: React.FC = () => {
               <div className="flex flex-col lg:flex-row gap-8">
                 {/* Desktop Sidebar Skeleton */}
                 <div className="hidden lg:block lg:w-1/4">
-                  <div className="bg-white rounded-xl shadow-lg p-6 animate-pulse">
+                  <div className="bg-white/5 border border-white/10 rounded-xl p-6 animate-pulse">
                     <div className="flex items-center justify-between mb-6">
-                      <div className="h-5 bg-gray-300 rounded w-16"></div>
-                      <div className="h-4 bg-gray-300 rounded w-20"></div>
+                      <div className="h-5 bg-white/10 rounded w-16"></div>
+                      <div className="h-4 bg-white/10 rounded w-20"></div>
                     </div>
                     <div className="space-y-4">
-                      <div className="h-10 bg-gray-300 rounded"></div>
-                      <div className="h-10 bg-gray-300 rounded"></div>
-                      <div className="h-10 bg-gray-300 rounded"></div>
+                      <div className="h-10 bg-white/10 rounded"></div>
+                      <div className="h-10 bg-white/10 rounded"></div>
+                      <div className="h-10 bg-white/10 rounded"></div>
                     </div>
                   </div>
                 </div>
 
                 {/* Main Content Skeleton */}
                 <div className="lg:w-3/4">
-                  <div className="bg-white rounded-xl shadow-lg p-6 mb-6 animate-pulse">
-                    <div className="h-6 bg-gray-300 rounded w-48 mb-2"></div>
-                    <div className="h-4 bg-gray-300 rounded w-32"></div>
+                  <div className="bg-white/5 border border-white/10 rounded-xl p-6 mb-6 animate-pulse">
+                    <div className="h-6 bg-white/10 rounded w-48 mb-2"></div>
+                    <div className="h-4 bg-white/10 rounded w-32"></div>
                   </div>
 
                   {/* Desktop View Skeleton */}
                   <div className="hidden lg:block">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {[...Array(9)].map((_, index) => (
-                        <BlogCardSkeleton key={index} />
+                        <BlogCardSkeleton key={index} dark={true} />
                       ))}
                     </div>
                   </div>
@@ -540,7 +606,7 @@ const Blog: React.FC = () => {
                   <div className="lg:hidden">
                     <div className="grid grid-cols-2 gap-3 sm:gap-4">
                       {[...Array(6)].map((_, index) => (
-                        <BlogCardSkeleton key={index} isMobile={true} />
+                        <BlogCardSkeleton key={index} isMobile={true} dark={true} />
                       ))}
                     </div>
                   </div>
@@ -555,13 +621,13 @@ const Blog: React.FC = () => {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.5, delay: 0.2 }}
                 >
-                  <div className="bg-white rounded-xl shadow-lg p-6 sticky top-6">
+                  <div className="bg-[#0A0A0A] border border-white/10 rounded-xl p-6 sticky top-24 backdrop-blur-xl">
                     <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-lg font-bold text-gray-800">Filters</h3>
+                      <h3 className="text-lg font-bold text-white">Filters</h3>
                       {(searchQuery || activeCategory !== 'all') && (
                         <button
                           onClick={clearAllFilters}
-                          className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                          className="text-sm text-purple-400 hover:text-purple-300 font-medium"
                         >
                           Clear All
                         </button>
@@ -570,13 +636,13 @@ const Blog: React.FC = () => {
 
                     {/* Categories */}
                     <div className="mb-6">
-                      <h4 className="text-md font-semibold text-gray-700 mb-3">Categories</h4>
+                      <h4 className="text-md font-semibold text-gray-300 mb-3">Categories</h4>
                       <div className="space-y-2">
                         <motion.button
                           className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
                             activeCategory === 'all'
-                              ? 'bg-blue-100 text-blue-800 font-medium'
-                              : 'text-gray-700 hover:bg-gray-100'
+                              ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30 font-medium'
+                              : 'text-gray-400 hover:bg-white/5 hover:text-white'
                           }`}
                           onClick={() => setActiveCategory('all')}
                           whileHover={{ x: 2 }}
@@ -591,8 +657,8 @@ const Blog: React.FC = () => {
                               key={category}
                               className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center ${
                                 activeCategory === category
-                                  ? 'bg-blue-100 text-blue-800 font-medium'
-                                  : 'text-gray-700 hover:bg-gray-100'
+                                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30 font-medium'
+                                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
                               }`}
                               onClick={() => setActiveCategory(category)}
                               whileHover={{ x: 2 }}
@@ -607,15 +673,15 @@ const Blog: React.FC = () => {
 
                     {/* Popular Tags */}
                     <div>
-                      <h4 className="text-md font-semibold text-gray-700 mb-3">Popular Tags</h4>
+                      <h4 className="text-md font-semibold text-gray-300 mb-3">Popular Tags</h4>
                       <div className="flex flex-wrap gap-2">
                         {tags.slice(0, 10).map(tag => (
                           <motion.button
                             key={tag}
-                            className={`text-xs font-medium px-3 py-1 rounded-full transition-colors ${
+                            className={`text-xs font-medium px-3 py-1 rounded-full transition-colors border ${
                               selectedTag === tag
-                                ? 'bg-blue-100 text-blue-800'
-                                : 'bg-gray-100 hover:bg-blue-100 hover:text-blue-800 text-gray-700'
+                                ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                                : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10 hover:text-white'
                             }`}
                             onClick={() => setSelectedTag(selectedTag === tag ? '' : tag)}
                             whileHover={{ scale: 1.05 }}
@@ -637,17 +703,17 @@ const Blog: React.FC = () => {
                   transition={{ duration: 0.5, delay: 0.2 }}
                 >
                   {/* Results Header */}
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 bg-white rounded-xl shadow-lg p-6">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 bg-[#0A0A0A] border border-white/10 rounded-xl p-6 backdrop-blur-xl">
                     <div>
-                      <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                      <h2 className="text-2xl font-bold text-white mb-2">
                         {activeCategory === 'all' ? 'Latest Articles' : activeCategory}
                         {searchQuery && (
-                          <span className="text-lg font-normal text-gray-600 ml-2">
+                          <span className="text-lg font-normal text-gray-400 ml-2">
                             - Results for "{searchQuery}"
                           </span>
                         )}
                       </h2>
-                      <p className="text-gray-600">
+                      <p className="text-gray-400">
                         Showing {sortedBlogs.length} article{sortedBlogs.length !== 1 ? 's' : ''}
                       </p>
                     </div>
@@ -657,25 +723,25 @@ const Blog: React.FC = () => {
                       <div className="hidden lg:flex items-center gap-2">
                         <button
                           onClick={() => setViewMode('grid')}
-                          className={`p-2 rounded ${viewMode === 'grid' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}
+                          className={`p-2 rounded ${viewMode === 'grid' ? 'bg-purple-500/20 text-purple-300' : 'bg-white/5 text-gray-400'}`}
                         >
-                          <IconComponent icon={FaSort} />
+                          <IconComponent icon={FaTh} />
                         </button>
                         <button
                           onClick={() => setViewMode('list')}
-                          className={`p-2 rounded ${viewMode === 'list' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}
+                          className={`p-2 rounded ${viewMode === 'list' ? 'bg-purple-500/20 text-purple-300' : 'bg-white/5 text-gray-400'}`}
                         >
-                          <IconComponent icon={FaFilter} />
+                          <IconComponent icon={FaList} />
                         </button>
                       </div>
 
                       {/* Sort Dropdown */}
                       <div className="flex items-center gap-2">
-                        <IconComponent icon={FaSort} className="text-gray-500" />
+                        <IconComponent icon={FaSort} className="text-gray-400" />
                         <select
                           value={sortBy}
                           onChange={(e) => setSortBy(e.target.value)}
-                          className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                          className="px-3 py-2 bg-[#0A0A0A] border border-white/10 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
                         >
                           <option value="newest">Newest First</option>
                           <option value="oldest">Oldest First</option>
@@ -689,14 +755,14 @@ const Blog: React.FC = () => {
                   {/* Active Filters */}
                   {(searchQuery || activeCategory !== 'all' || selectedTag) && (
                     <motion.div 
-                      className="mb-6 bg-white rounded-xl shadow-lg p-4"
+                      className="mb-6 bg-[#0A0A0A] border border-white/10 rounded-xl p-4 backdrop-blur-xl"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                     >
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm text-gray-600 font-medium">Active filters:</span>
+                        <span className="text-sm text-gray-400 font-medium">Active filters:</span>
                         {searchQuery && (
-                          <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                          <span className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-sm flex items-center gap-1 border border-purple-500/30">
                             Search: "{searchQuery}"
                             <button onClick={() => setSearchQuery('')}>
                               <IconComponent icon={FaTimes} className="text-xs" />
@@ -704,7 +770,7 @@ const Blog: React.FC = () => {
                           </span>
                         )}
                         {activeCategory !== 'all' && (
-                          <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                          <span className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-sm flex items-center gap-1 border border-purple-500/30">
                             Category: {activeCategory}
                             <button onClick={() => setActiveCategory('all')}>
                               <IconComponent icon={FaTimes} className="text-xs" />
@@ -712,7 +778,7 @@ const Blog: React.FC = () => {
                           </span>
                         )}
                         {selectedTag && (
-                          <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                          <span className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-sm flex items-center gap-1 border border-purple-500/30">
                             Tag: #{selectedTag}
                             <button onClick={() => setSelectedTag('')}>
                               <IconComponent icon={FaTimes} className="text-xs" />
@@ -721,7 +787,7 @@ const Blog: React.FC = () => {
                         )}
                         <button
                           onClick={clearAllFilters}
-                          className="text-gray-500 hover:text-gray-700 text-sm underline ml-2"
+                          className="text-gray-400 hover:text-white text-sm underline ml-2"
                         >
                           Clear all
                         </button>
@@ -741,175 +807,147 @@ const Blog: React.FC = () => {
                       animate="visible"
                     >
                       {sortedBlogs.map((post) => (
-                        <motion.div
-                          key={post.id}
-                          className={viewMode === 'grid' 
-                            ? "bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 flex flex-col group cursor-pointer"
-                            : "bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 flex flex-col lg:flex-row group cursor-pointer"
-                          }
-                          variants={itemVariants}
-                          whileHover={{ y: -4, scale: 1.01 }}
+                      <HolographicCard
+                        key={post.id}
+                        className={viewMode === 'grid' 
+                          ? "flex flex-col h-full cursor-pointer group"
+                          : "flex flex-col lg:flex-row h-full cursor-pointer group"
+                        }
+                      >
+                        <div
+                          className="flex-1 flex flex-col h-full"
                           onClick={() => openBlogModal(post)}
                         >
                           {viewMode === 'grid' ? (
-                            // Grid View Layout - Database-style card
+                            // Grid View Layout
                             <>
-                              <div className="relative overflow-hidden">
+                              <div className="relative overflow-hidden h-48 flex-shrink-0">
                                 <img 
                                   src={post.image || '/api/placeholder/400/250'} 
                                   alt={post.title}
-                                  className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
+                                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                                 />
-                                <div className="absolute top-3 right-3 bg-white px-3 py-1 rounded-full text-sm font-bold text-purple-600 shadow-md">
+                                <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-transparent to-transparent opacity-60" />
+                                <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-md px-3 py-1 rounded-full text-xs font-medium text-white border border-white/10">
                                   {post.read_time || calculateReadTime(post.content || '')} min
                                 </div>
                                 {post.featured && (
-                                  <div className="absolute top-3 left-3 bg-gradient-to-r from-indigo-500 to-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+                                  <div className="absolute top-3 left-3 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-lg shadow-purple-500/20">
                                     Featured
                                   </div>
                                 )}
                               </div>
                               
                               <div className="p-6 flex-1 flex flex-col">
-                                <div className="flex items-center gap-2 mb-3">
-                                  <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded-full flex items-center">
+                                <div className="flex items-center gap-2 mb-4">
+                                  <span className="bg-purple-500/10 text-purple-300 text-xs font-medium px-2.5 py-1 rounded-lg border border-purple-500/20 flex items-center">
                                     {getCategoryIcon(post.category)}
                                     <span className="ml-1">{post.category}</span>
                                   </span>
-                                  <span className="text-gray-500 text-xs">
+                                  <span className="text-gray-400 text-xs">
                                     {formatDate(post.created_at)}
                                   </span>
                                 </div>
                                 
-                                <h3 className="text-lg font-bold text-gray-800 mb-2 line-clamp-2 flex-shrink-0 group-hover:text-purple-600 transition-colors">
+                                <h3 className="text-xl font-bold text-white mb-3 line-clamp-2 group-hover:text-purple-300 transition-colors">
                                   {post.title}
                                 </h3>
-                                <p className="text-gray-600 mb-4 text-sm line-clamp-3 flex-1">{post.excerpt}</p>
+                                <p className="text-gray-400 mb-6 text-sm line-clamp-3 flex-1">{post.excerpt}</p>
                                 
-                                <div className="flex items-center mb-4">
-                                  <img 
-                                    src={post.author?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author?.name || 'Author')}&background=8B5CF6&color=fff`}
-                                    alt={post.author?.name || 'Author'}
-                                    className="w-8 h-8 rounded-full mr-3"
-                                  />
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-gray-800 truncate">{post.author?.name || 'Anonymous'}</p>
-                                    <p className="text-xs text-gray-600">{formatDate(post.created_at)}</p>
+                                <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/5">
+                                  <div className="flex items-center gap-3">
+                                    <img 
+                                      src={post.author?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author?.name || 'Author')}&background=8B5CF6&color=fff`}
+                                      alt={post.author?.name || 'Author'}
+                                      className="w-8 h-8 rounded-full ring-2 ring-purple-500/20"
+                                    />
+                                    <div className="flex flex-col">
+                                      <span className="text-sm font-medium text-gray-200">{post.author?.name || 'Anonymous'}</span>
+                                      <span className="text-xs text-gray-500">Author</span>
+                                    </div>
+                                  </div>
+                                  <div className="p-2 rounded-lg bg-white/5 group-hover:bg-purple-500/20 transition-colors">
+                                    <IconComponent icon={FaArrowRight} className="text-gray-400 group-hover:text-purple-300 w-4 h-4" />
                                   </div>
                                 </div>
-                                
-                                {/* Tags */}
-                                {post.tags && post.tags.length > 0 && (
-                                  <div className="flex flex-wrap gap-1 mb-4">
-                                    {post.tags.slice(0, 3).map(tag => (
-                                      <span key={tag} className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">
-                                        #{tag}
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
-                                
-                                {/* Database-style single button */}
-                                <motion.button
-                                  className="w-full bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-700 hover:to-indigo-800 text-white py-3 px-4 rounded-lg font-medium transition-all text-sm shadow-lg"
-                                  whileHover={{ scale: 1.02 }}
-                                  whileTap={{ scale: 0.98 }}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    openBlogModal(post);
-                                  }}
-                                >
-                                  Read Article
-                                </motion.button>
                               </div>
                             </>
                           ) : (
-                            // List View Layout - Database-style horizontal card
-                            <>
-                              <div className="relative overflow-hidden w-full lg:w-80 flex-shrink-0">
+                            // List View Layout
+                            <div className="flex flex-col lg:flex-row h-full">
+                              <div className="relative overflow-hidden lg:w-80 h-48 lg:h-auto flex-shrink-0">
                                 <img 
                                   src={post.image || '/api/placeholder/400/250'} 
                                   alt={post.title}
-                                  className="w-full h-48 lg:h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                                 />
+                                <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-[#0A0A0A] via-transparent to-transparent opacity-60" />
                                 {post.featured && (
-                                  <div className="absolute top-3 left-3 bg-gradient-to-r from-indigo-500 to-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+                                  <div className="absolute top-3 left-3 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-lg shadow-purple-500/20">
                                     Featured
                                   </div>
                                 )}
                               </div>
                               
-                              <div className="p-6 flex-1 flex flex-col">
-                                <div className="flex items-center gap-2 mb-3">
-                                  <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded-full flex items-center">
-                                    {getCategoryIcon(post.category)}
-                                    <span className="ml-1">{post.category}</span>
-                                  </span>
-                                  <span className="text-gray-500 text-xs">
-                                    {post.read_time || calculateReadTime(post.content || '')} min read
-                                  </span>
+                              <div className="p-6 flex-1 flex flex-col justify-between">
+                                <div>
+                                  <div className="flex items-center gap-3 mb-3">
+                                    <span className="bg-purple-500/10 text-purple-300 text-xs font-medium px-2.5 py-1 rounded-lg border border-purple-500/20 flex items-center">
+                                      {getCategoryIcon(post.category)}
+                                      <span className="ml-1">{post.category}</span>
+                                    </span>
+                                    <span className="text-gray-400 text-xs flex items-center gap-1">
+                                      <IconComponent icon={FaClock} className="w-3 h-3" />
+                                      {post.read_time || calculateReadTime(post.content || '')} min read
+                                    </span>
+                                  </div>
+                                  
+                                  <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-purple-300 transition-colors">
+                                    {post.title}
+                                  </h3>
+                                  <p className="text-gray-400 mb-4 line-clamp-2">{post.excerpt}</p>
+                                  
+                                  {/* Tags */}
+                                  {post.tags && post.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mb-4">
+                                      {post.tags.slice(0, 5).map(tag => (
+                                        <span key={tag} className="text-xs text-gray-500 hover:text-purple-400 transition-colors">
+                                          #{tag}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
                                 
-                                <h3 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-purple-600 transition-colors">
-                                  {post.title}
-                                </h3>
-                                <p className="text-gray-600 mb-4 line-clamp-2 flex-1">{post.excerpt}</p>
-                                
-                                <div className="flex items-center justify-between mb-4">
-                                  <div className="flex items-center">
+                                <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                                  <div className="flex items-center gap-3">
                                     <img 
                                       src={post.author?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author?.name || 'Author')}&background=8B5CF6&color=fff`}
                                       alt={post.author?.name || 'Author'}
-                                      className="w-8 h-8 rounded-full mr-3"
+                                      className="w-8 h-8 rounded-full ring-2 ring-purple-500/20"
                                     />
-                                    <div>
-                                      <p className="text-sm font-medium text-gray-800">{post.author?.name || 'Anonymous'}</p>
-                                      <p className="text-xs text-gray-600">{formatDate(post.created_at)}</p>
+                                    <div className="flex flex-col">
+                                      <span className="text-sm font-medium text-gray-200">{post.author?.name || 'Anonymous'}</span>
+                                      <span className="text-xs text-gray-500">{formatDate(post.created_at)}</span>
                                     </div>
                                   </div>
                                   
-                                  {/* Database-style dual buttons */}
-                                  <div className="flex items-center gap-2">
-                                    <motion.button
-                                      className="bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-700 hover:to-indigo-800 text-white py-2 px-4 rounded-lg font-medium transition-all text-sm shadow-lg"
-                                      whileHover={{ scale: 1.02 }}
-                                      whileTap={{ scale: 0.98 }}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        openBlogModal(post);
-                                      }}
-                                    >
-                                      Read
-                                    </motion.button>
-                                    <motion.button
-                                      className="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium transition-all text-sm"
-                                      whileHover={{ scale: 1.02 }}
-                                      whileTap={{ scale: 0.98 }}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        // Handle bookmark functionality
-                                      }}
-                                    >
-                                      Save
-                                    </motion.button>
-                                  </div>
+                                  <button
+                                    className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-all text-sm shadow-lg shadow-purple-500/20"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openBlogModal(post);
+                                    }}
+                                  >
+                                    Read Article
+                                  </button>
                                 </div>
-                                
-                                {/* Tags */}
-                                {post.tags && post.tags.length > 0 && (
-                                  <div className="flex flex-wrap gap-1">
-                                    {post.tags.slice(0, 5).map(tag => (
-                                      <span key={tag} className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">
-                                        #{tag}
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
                               </div>
-                            </>
+                            </div>
                           )}
-                        </motion.div>
-                      ))}
+                        </div>
+                      </HolographicCard>
+                    ))}
                     </motion.div>
                   </div>
 
@@ -921,7 +959,7 @@ const Blog: React.FC = () => {
                           <motion.div
                             key={post.id}
                             variants={fadeIn("up", 0.1)}
-                            className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                            className="bg-[#0A0A0A] border border-white/10 rounded-xl overflow-hidden shadow-lg"
                             onClick={() => openBlogModal(post)}
                           >
                             <div className="relative">
@@ -931,34 +969,34 @@ const Blog: React.FC = () => {
                                 className="w-full h-28 sm:h-32 object-cover"
                               />
                               {post.featured && (
-                                <div className="absolute top-2 left-2 bg-indigo-500 text-white text-xs px-1 py-0.5 rounded-full">
+                                <div className="absolute top-2 left-2 bg-purple-600 text-white text-xs px-1.5 py-0.5 rounded-full">
                                   ★
                                 </div>
                               )}
                             </div>
                             <div className="p-3">
-                              <h3 className="font-semibold text-sm text-gray-900 mb-1 line-clamp-2 leading-tight">
+                              <h3 className="font-semibold text-sm text-white mb-1 line-clamp-2 leading-tight">
                                 {post.title}
                               </h3>
-                              <p className="text-xs text-gray-600 mb-2 flex items-center">
+                              <p className="text-xs text-gray-400 mb-2 flex items-center">
                                 <IconComponent icon={FaNewspaper} className="h-3 w-3 mr-1 flex-shrink-0" />
                                 <span className="truncate">{post.category}</span>
                               </p>
                               <div className="space-y-1 text-xs mb-3">
                                 <div className="flex justify-between items-center">
                                   <span className="text-gray-500">Author:</span>
-                                  <span className="font-medium text-purple-600 truncate">{post.author?.name || 'Anonymous'}</span>
+                                  <span className="font-medium text-purple-400 truncate">{post.author?.name || 'Anonymous'}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
                                   <span className="text-gray-500">Read time:</span>
-                                  <span className="font-medium text-green-600">{post.read_time || calculateReadTime(post.content || '')} min</span>
+                                  <span className="font-medium text-purple-400">{post.read_time || calculateReadTime(post.content || '')} min</span>
                                 </div>
                                 <div className="flex justify-between items-center">
                                   <span className="text-gray-500">Date:</span>
-                                  <span className="font-medium">{formatDate(post.created_at)}</span>
+                                  <span className="font-medium text-gray-300">{formatDate(post.created_at)}</span>
                                 </div>
                               </div>
-                              <button className="w-full px-3 py-1.5 bg-purple-600 text-white text-xs font-medium rounded-md hover:bg-purple-700 transition-colors">
+                              <button className="w-full px-3 py-1.5 bg-purple-600/20 text-purple-300 border border-purple-500/30 text-xs font-medium rounded-md hover:bg-purple-600 hover:text-white transition-colors">
                                 Read Article
                               </button>
                             </div>
@@ -972,7 +1010,7 @@ const Blog: React.FC = () => {
                           <motion.div
                             key={post.id}
                             variants={fadeIn("up", 0.1)}
-                            className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow"
+                            className="bg-[#0A0A0A] border border-white/10 rounded-xl p-4 shadow-lg"
                             onClick={() => openBlogModal(post)}
                           >
                             <div className="flex gap-3">
@@ -983,39 +1021,39 @@ const Blog: React.FC = () => {
                                   className="w-14 h-14 object-cover rounded-md"
                                 />
                                 {post.featured && (
-                                  <div className="absolute -top-1 -right-1 bg-indigo-500 text-white text-xs px-1 py-0.5 rounded-full">
+                                  <div className="absolute -top-1 -right-1 bg-purple-600 text-white text-xs px-1 py-0.5 rounded-full">
                                     ★
                                   </div>
                                 )}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-sm text-gray-900 mb-1 line-clamp-1">
+                                <h3 className="font-semibold text-sm text-white mb-1 line-clamp-1">
                                   {post.title}
                                 </h3>
-                                <p className="text-xs text-gray-600 mb-2 flex items-center">
+                                <p className="text-xs text-gray-400 mb-2 flex items-center">
                                   <IconComponent icon={FaNewspaper} className="h-3 w-3 mr-1" />
                                   {post.category}
                                 </p>
                                 <div className="grid grid-cols-2 gap-2 text-xs">
                                   <div>
                                     <span className="text-gray-500">Author: </span>
-                                    <span className="font-medium text-purple-600">{post.author?.name || 'Anonymous'}</span>
+                                    <span className="font-medium text-purple-400">{post.author?.name || 'Anonymous'}</span>
                                   </div>
                                   <div>
                                     <span className="text-gray-500">Read: </span>
-                                    <span className="font-medium">{post.read_time || calculateReadTime(post.content || '')} min</span>
+                                    <span className="font-medium text-purple-400">{post.read_time || calculateReadTime(post.content || '')} min</span>
                                   </div>
                                   <div className="col-span-2">
                                     <span className="text-gray-500">Published: </span>
-                                    <span className="font-medium text-green-600">{formatDate(post.created_at)}</span>
+                                    <span className="font-medium text-gray-300">{formatDate(post.created_at)}</span>
                                   </div>
                                 </div>
                               </div>
                               <div className="flex flex-col gap-1">
-                                <button className="p-2 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors">
+                                <button className="p-2 bg-white/5 text-gray-400 rounded hover:bg-white/10 transition-colors">
                                   <IconComponent icon={FaBookmark} className="h-3 w-3" />
                                 </button>
-                                <button className="p-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors">
+                                <button className="p-2 bg-purple-600/20 text-purple-300 border border-purple-500/30 rounded hover:bg-purple-600 hover:text-white transition-colors">
                                   <IconComponent icon={FaEye} className="h-3 w-3" />
                                 </button>
                               </div>
@@ -1038,7 +1076,7 @@ const Blog: React.FC = () => {
                         <button
                           onClick={() => handlePageChange(pagination.currentPage - 1)}
                           disabled={pagination.currentPage === 1}
-                          className="px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-4 py-2 text-sm font-medium text-gray-400 bg-[#0A0A0A] border border-white/10 rounded-lg hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                           Previous
                         </button>
@@ -1049,10 +1087,10 @@ const Blog: React.FC = () => {
                             <button
                               key={pageNum}
                               onClick={() => handlePageChange(pageNum)}
-                              className={`px-4 py-2 text-sm font-medium rounded-lg ${
+                              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                                 pagination.currentPage === pageNum
-                                  ? 'bg-blue-600 text-white'
-                                  : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
+                                  : 'text-gray-400 bg-[#0A0A0A] border border-white/10 hover:bg-white/5'
                               }`}
                             >
                               {pageNum}
@@ -1065,10 +1103,10 @@ const Blog: React.FC = () => {
                             <span className="px-2 text-gray-500">...</span>
                             <button
                               onClick={() => handlePageChange(pagination.totalPages)}
-                              className={`px-4 py-2 text-sm font-medium rounded-lg ${
+                              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                                 pagination.currentPage === pagination.totalPages
-                                  ? 'bg-blue-600 text-white'
-                                  : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
+                                  : 'text-gray-400 bg-[#0A0A0A] border border-white/10 hover:bg-white/5'
                               }`}
                             >
                               {pagination.totalPages}
@@ -1079,7 +1117,7 @@ const Blog: React.FC = () => {
                         <button
                           onClick={() => handlePageChange(pagination.currentPage + 1)}
                           disabled={pagination.currentPage === pagination.totalPages}
-                          className="px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-4 py-2 text-sm font-medium text-gray-400 bg-[#0A0A0A] border border-white/10 rounded-lg hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                           Next
                         </button>
@@ -1097,14 +1135,14 @@ const Blog: React.FC = () => {
       <AnimatePresence>
         {showModal && selectedBlog && (
           <motion.div
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={closeBlogModal}
           >
             <motion.div
-              className="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl"
+              className="bg-[#0A0A0A] border border-white/10 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
@@ -1116,9 +1154,10 @@ const Blog: React.FC = () => {
                   alt={selectedBlog.title}
                   className="w-full h-48 sm:h-64 object-cover"
                 />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] to-transparent opacity-60" />
                 <button
                   onClick={closeBlogModal}
-                  className="absolute top-4 right-4 bg-white text-gray-800 p-2 rounded-full hover:bg-gray-100 transition-colors shadow-md"
+                  className="absolute top-4 right-4 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors shadow-md backdrop-blur-sm border border-white/10"
                 >
                   <IconComponent icon={FaTimes} className="h-4 w-4" />
                 </button>
@@ -1126,60 +1165,60 @@ const Blog: React.FC = () => {
               
               <div className="p-4 sm:p-8">
                 <div className="flex flex-wrap items-center gap-2 mb-4">
-                  <span className="bg-blue-100 text-blue-800 text-xs sm:text-sm font-medium px-2 sm:px-3 py-1 rounded-full flex items-center">
+                  <span className="bg-purple-500/10 text-purple-300 text-xs sm:text-sm font-medium px-2 sm:px-3 py-1 rounded-full flex items-center border border-purple-500/20">
                     {getCategoryIcon(selectedBlog.category)}
                     <span className="ml-1">{selectedBlog.category}</span>
                   </span>
-                  <span className="text-gray-500 text-xs sm:text-sm flex items-center">
+                  <span className="text-gray-400 text-xs sm:text-sm flex items-center">
                     <IconComponent icon={FaClock} className="mr-1 h-3 w-3" />
                     {selectedBlog.read_time || calculateReadTime(selectedBlog.content || selectedBlog.excerpt)} min read
                   </span>
                   {selectedBlog.views && (
-                    <span className="text-gray-500 text-xs sm:text-sm flex items-center">
+                    <span className="text-gray-400 text-xs sm:text-sm flex items-center">
                       <IconComponent icon={FaEye} className="mr-1 h-3 w-3" />
                       {selectedBlog.views.toLocaleString()}
                     </span>
                   )}
                 </div>
                 
-                <h1 className="text-xl sm:text-3xl font-bold text-gray-800 mb-4 leading-tight">{selectedBlog.title}</h1>
+                <h1 className="text-xl sm:text-3xl font-bold text-white mb-4 leading-tight">{selectedBlog.title}</h1>
                 
                 <div className="flex items-center mb-6">
                   <img 
-                    src={selectedBlog.author?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedBlog.author?.name || 'Author')}&background=3b82f6&color=fff`}
+                    src={selectedBlog.author?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedBlog.author?.name || 'Author')}&background=8B5CF6&color=fff`}
                     alt={selectedBlog.author?.name || 'Author'}
-                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full mr-3 sm:mr-4"
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full mr-3 sm:mr-4 ring-2 ring-purple-500/20"
                   />
                   <div>
-                    <p className="font-medium text-gray-800 text-sm sm:text-base">{selectedBlog.author?.name || 'Anonymous'}</p>
-                    <p className="text-gray-600 text-xs sm:text-sm">{formatDate(selectedBlog.created_at)}</p>
+                    <p className="font-medium text-white text-sm sm:text-base">{selectedBlog.author?.name || 'Anonymous'}</p>
+                    <p className="text-gray-400 text-xs sm:text-sm">{formatDate(selectedBlog.created_at)}</p>
                   </div>
                 </div>
                 
-                <div className="prose prose-sm sm:prose max-w-none mb-6">
-                  <p className="text-sm sm:text-lg text-gray-700 leading-relaxed">{selectedBlog.content || selectedBlog.excerpt}</p>
+                <div className="prose prose-sm sm:prose max-w-none mb-6 prose-invert">
+                  <p className="text-sm sm:text-lg text-gray-300 leading-relaxed">{selectedBlog.content || selectedBlog.excerpt}</p>
                 </div>
                 
                 {selectedBlog.tags && selectedBlog.tags.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-6">
                     {selectedBlog.tags.map(tag => (
-                      <span key={tag} className="bg-gray-100 text-gray-700 text-xs sm:text-sm px-2 sm:px-3 py-1 rounded-full">
+                      <span key={tag} className="bg-white/5 text-gray-300 text-xs sm:text-sm px-2 sm:px-3 py-1 rounded-full border border-white/10 hover:bg-white/10 transition-colors">
                         #{tag}
                       </span>
                     ))}
                   </div>
                 )}
                 
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                  <button className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 border-t border-white/10 pt-6">
+                  <button className="flex items-center justify-center gap-2 bg-purple-600 text-white px-4 py-2.5 rounded-lg hover:bg-purple-700 transition-colors text-sm sm:text-base shadow-lg shadow-purple-500/20">
                     <IconComponent icon={FaShare} className="h-4 w-4" />
                     Share
                   </button>
-                  <button className="flex items-center justify-center gap-2 bg-gray-100 text-gray-700 px-4 py-2.5 rounded-lg hover:bg-gray-200 transition-colors text-sm sm:text-base">
+                  <button className="flex items-center justify-center gap-2 bg-white/5 text-gray-300 px-4 py-2.5 rounded-lg hover:bg-white/10 transition-colors text-sm sm:text-base border border-white/10">
                     <IconComponent icon={FaBookmark} className="h-4 w-4" />
                     Save for Later
                   </button>
-                  <button className="flex items-center justify-center gap-2 bg-green-100 text-green-700 px-4 py-2.5 rounded-lg hover:bg-green-200 transition-colors text-sm sm:text-base">
+                  <button className="flex items-center justify-center gap-2 bg-green-500/10 text-green-400 px-4 py-2.5 rounded-lg hover:bg-green-500/20 transition-colors text-sm sm:text-base border border-green-500/20">
                     <IconComponent icon={FaHeart} className="h-4 w-4" />
                     Like
                   </button>
@@ -1194,14 +1233,14 @@ const Blog: React.FC = () => {
       <AnimatePresence>
         {showFilters && (
           <motion.div
-            className="fixed inset-0 bg-black bg-opacity-50 z-[10000] lg:hidden"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[10000] lg:hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setShowFilters(false)}
           >
             <motion.div
-              className="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-xl"
+              className="fixed inset-y-0 right-0 w-full max-w-md bg-[#0A0A0A] shadow-2xl border-l border-white/10"
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
@@ -1209,13 +1248,13 @@ const Blog: React.FC = () => {
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="sticky top-0 bg-white border-b px-4 py-4 flex justify-between items-center z-10">
-                <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
+              <div className="sticky top-0 bg-[#0A0A0A] border-b border-white/10 px-4 py-4 flex justify-between items-center z-10">
+                <h3 className="text-lg font-semibold text-white">Filters</h3>
                 <button
                   onClick={() => setShowFilters(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors bg-gray-50 border border-gray-200"
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors bg-white/5 border border-white/10"
                 >
-                  <IconComponent icon={FaTimes} className="h-5 w-5 text-gray-700" />
+                  <IconComponent icon={FaTimes} className="h-5 w-5 text-gray-400" />
                 </button>
               </div>
 
@@ -1223,11 +1262,11 @@ const Blog: React.FC = () => {
               <div className="p-4 pb-20">
                 {/* Categories */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Category</label>
                   <select
                     value={activeCategory}
                     onChange={(e) => setActiveCategory(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-[#0A0A0A] border border-white/10 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                   >
                     <option value="all">All Categories</option>
                     {categories.filter(cat => cat !== 'all').map(category => (
@@ -1240,11 +1279,11 @@ const Blog: React.FC = () => {
 
                 {/* Sort By */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Sort By</label>
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-[#0A0A0A] border border-white/10 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                   >
                     <option value="newest">Newest First</option>
                     <option value="oldest">Oldest First</option>
@@ -1255,15 +1294,15 @@ const Blog: React.FC = () => {
 
                 {/* Popular Tags */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Popular Tags</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Popular Tags</label>
                   <div className="flex flex-wrap gap-2">
                     {tags.slice(0, 15).map(tag => (
                       <button
                         key={tag}
                         className={`text-xs font-medium px-3 py-2 rounded-full transition-colors ${
                           selectedTag === tag
-                            ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                            : 'bg-gray-100 hover:bg-blue-100 hover:text-blue-800 text-gray-700 border border-gray-200'
+                            ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                            : 'bg-white/5 hover:bg-white/10 text-gray-400 border border-white/10'
                         }`}
                         onClick={() => setSelectedTag(selectedTag === tag ? '' : tag)}
                       >
@@ -1275,14 +1314,14 @@ const Blog: React.FC = () => {
 
                 {/* Quick Filters */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Quick Filters</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Quick Filters</label>
                   <div className="space-y-2">
                     <button
                       onClick={() => {
                         setActiveCategory('all');
                         setSortBy('featured');
                       }}
-                      className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                      className="w-full text-left px-3 py-2 text-sm bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg transition-colors border border-white/10"
                     >
                       📌 Featured Articles
                     </button>
@@ -1291,7 +1330,7 @@ const Blog: React.FC = () => {
                         setActiveCategory('all');
                         setSortBy('popular');
                       }}
-                      className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                      className="w-full text-left px-3 py-2 text-sm bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg transition-colors border border-white/10"
                     >
                       🔥 Most Popular
                     </button>
@@ -1300,7 +1339,7 @@ const Blog: React.FC = () => {
                         setActiveCategory('all');
                         setSortBy('newest');
                       }}
-                      className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                      className="w-full text-left px-3 py-2 text-sm bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg transition-colors border border-white/10"
                     >
                       🆕 Latest Articles
                     </button>
@@ -1309,16 +1348,16 @@ const Blog: React.FC = () => {
               </div>
 
               {/* Footer */}
-              <div className="absolute bottom-0 left-0 right-0 bg-white border-t px-4 py-3 flex gap-3">
+              <div className="absolute bottom-0 left-0 right-0 bg-[#0A0A0A] border-t border-white/10 px-4 py-3 flex gap-3">
                 <button
                   onClick={clearAllFilters}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2 border border-white/10 text-gray-300 rounded-lg hover:bg-white/5 transition-colors"
                 >
                   Reset
                 </button>
                 <button
                   onClick={() => setShowFilters(false)}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-lg shadow-purple-500/20"
                 >
                   Apply
                 </button>

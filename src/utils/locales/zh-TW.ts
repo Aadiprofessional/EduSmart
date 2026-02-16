@@ -192,6 +192,7 @@ export const zhTW = {
       signInError: "登入失敗，請重試。",
       rememberMe: "記住我",
       orSignInWith: "或使用以下方式登入",
+      orContinueWith: "或繼續使用",
       joinMatrixEduAndGet: "加入MatrixEdu並獲得：",
       socialLoginError: "登入失敗。請重試。",
       // Feature descriptions for login page
@@ -302,6 +303,32 @@ export const zhTW = {
         aiMentoring: "✓ AI指導",
         certificates: "✓ 證書"
       }
+    },
+    forgotPassword: {
+      title: "重設密碼",
+      subtitle: "輸入您的電子郵件以接收密碼重設連結",
+      emailLabel: "電子郵件",
+      emailPlaceholder: "輸入您的電子郵件",
+      submitButton: "發送重設連結",
+      backToLogin: "返回登入",
+      successMessage: "檢查您的電子郵件獲取重設連結",
+      errorMessage: "發送重設連結失敗。請重試。",
+      emailRequired: "電子郵件為必填項",
+      emailInvalid: "請輸入有效的電子郵件地址"
+    },
+    updatePassword: {
+      title: "更新密碼",
+      subtitle: "在下方輸入您的新密碼",
+      passwordLabel: "新密碼",
+      passwordPlaceholder: "輸入新密碼",
+      confirmPasswordLabel: "確認密碼",
+      confirmPasswordPlaceholder: "確認新密碼",
+      submitButton: "更新密碼",
+      successMessage: "密碼更新成功",
+      errorMessage: "更新密碼失敗",
+      passwordRequired: "密碼為必填項",
+      passwordMinLength: "密碼至少需要6個字元",
+      passwordsNotMatch: "密碼不匹配"
     },
     signOut: "登出",
     profile: "個人資料",

@@ -1,7 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaEnvelope, FaLock, FaGoogle, FaApple, FaEye, FaEyeSlash, FaRocket, FaBrain, FaGraduationCap, FaStar, FaUsers, FaTrophy, FaBook, FaLightbulb } from 'react-icons/fa';
-import IconComponent from '../components/ui/IconComponent';
+import { FaEnvelope, FaLock, FaGoogle, FaApple, FaEye, FaEyeSlash, FaRocket, FaMagic } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import { useAuth } from '../utils/AuthContext';
 import { useLanguage } from '../utils/LanguageContext';
@@ -19,6 +18,16 @@ const Login: React.FC = () => {
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+
+  // Animation for the "black hole" particles
+  const particles = Array.from({ length: 50 }).map((_, i) => ({
+    id: i,
+    x: Math.random() * 100,
+    y: Math.random() * 100,
+    size: Math.random() * 3 + 1,
+    duration: Math.random() * 3 + 2,
+    delay: Math.random() * 2,
+  }));
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -125,603 +134,250 @@ const Login: React.FC = () => {
     }
   };
 
-  const floatingVariants = {
-    animate: {
-      y: [-10, 10, -10],
-      rotate: [0, 5, -5, 0],
-      transition: {
-        duration: 6,
-        repeat: Infinity,
-        ease: [0.42, 0, 0.58, 1] as const
-      }
-    }
-  };
-
-  // Particle animation component
-  const Particle = ({ delay = 0, size = 4, color = "bg-blue-400" }) => (
-    <motion.div
-      className={`absolute ${color} rounded-full opacity-20`}
-      style={{ width: size, height: size }}
-      animate={{
-        x: [0, 100, -50, 0],
-        y: [0, -100, 50, 0],
-        opacity: [0.2, 0.8, 0.2],
-      }}
-      transition={{
-        duration: 8 + Math.random() * 4,
-        repeat: Infinity,
-        delay: delay,
-        ease: [0.42, 0, 0.58, 1] as const
-      }}
-    />
-  );
-
-  // Flowing Lines Animation Component
-  const FlowingLines = () => (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none hidden lg:block">
-      <svg className="absolute inset-0 w-full h-full">
-        <defs>
-          <linearGradient id="flowGradient1" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#06b6d4" stopOpacity="0" />
-            <stop offset="50%" stopColor="#06b6d4" stopOpacity="0.6" />
-            <stop offset="100%" stopColor="#06b6d4" stopOpacity="0" />
-          </linearGradient>
-          <linearGradient id="flowGradient2" x1="100%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0" />
-            <stop offset="50%" stopColor="#8b5cf6" stopOpacity="0.6" />
-            <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <motion.path
-          d="M0,100 Q200,50 400,100 T800,100 Q1000,50 1200,100"
-          stroke="url(#flowGradient1)"
-          strokeWidth="2"
-          fill="none"
-          initial={{ pathLength: 0, opacity: 0 }}
-          animate={{ pathLength: 1, opacity: 1 }}
-          transition={{
-            pathLength: { duration: 3, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const },
-            opacity: { duration: 1 }
-          }}
-        />
-        <motion.path
-          d="M0,300 Q300,200 600,300 T1200,300"
-          stroke="url(#flowGradient2)"
-          strokeWidth="1.5"
-          fill="none"
-          initial={{ pathLength: 0, opacity: 0 }}
-          animate={{ pathLength: 1, opacity: 1 }}
-          transition={{
-            pathLength: { duration: 4, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const, delay: 1 },
-            opacity: { duration: 1, delay: 0.5 }
-          }}
-        />
-      </svg>
-    </div>
-  );
-
-  // Enhanced Background Orbs with Interaction
-  const InteractiveOrb = ({ 
-    size, 
-    color, 
-    position, 
-    animationDelay = 0 
-  }: { 
-    size: string, 
-    color: string, 
-    position: { top?: string, bottom?: string, left?: string, right?: string },
-    animationDelay?: number 
-  }) => (
-    <motion.div
-      className={`absolute ${size} ${color} rounded-full blur-3xl`}
-      style={position}
-      animate={{
-        scale: [1, 1.3, 1],
-        opacity: [0.3, 0.7, 0.3],
-        x: [0, 30, -20, 0],
-        y: [0, -20, 30, 0],
-      }}
-      transition={{
-        duration: 12 + Math.random() * 6,
-        repeat: Infinity,
-        ease: [0.42, 0, 0.58, 1] as const,
-        delay: animationDelay
-      }}
-      whileHover={{
-        scale: 1.5,
-        opacity: 0.8,
-        transition: { duration: 0.3 }
-      }}
-    />
-  );
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex relative overflow-hidden">
-      {/* Advanced Background Effects */}
-      <div className="absolute inset-0">
-        {/* Enhanced Interactive Animated gradient orbs */}
-        <InteractiveOrb 
-          size="w-96 h-96" 
-          color="bg-gradient-to-r from-cyan-500/30 to-blue-500/30" 
-          position={{ top: '10%', left: '10%' }}
-          animationDelay={0}
-        />
-        <InteractiveOrb 
-          size="w-80 h-80" 
-          color="bg-gradient-to-r from-purple-500/20 to-pink-500/20" 
-          position={{ top: '60%', left: '5%' }}
-          animationDelay={2}
-        />
-        <InteractiveOrb 
-          size="w-72 h-72" 
-          color="bg-gradient-to-r from-emerald-500/25 to-teal-500/25" 
-          position={{ top: '30%', right: '15%' }}
-          animationDelay={4}
-        />
+    <div className="relative min-h-screen bg-[#050505] text-white overflow-hidden font-sans selection:bg-purple-500 selection:text-white">
+      
+      {/* Particles / Stars moving into/out of the hole */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {particles.map((p) => (
+              <motion.div
+                  key={p.id}
+                  className="absolute rounded-full bg-white"
+                  style={{
+                      left: `${p.x}%`,
+                      top: `${p.y}%`,
+                      width: p.size,
+                      height: p.size,
+                      opacity: Math.random() * 0.5 + 0.2,
+                  }}
+                  animate={{
+                      y: [0, -100],
+                      opacity: [0, 1, 0],
+                  }}
+                  transition={{
+                      duration: p.duration,
+                      repeat: Infinity,
+                      delay: p.delay,
+                      ease: "linear"
+                  }}
+              />
+          ))}
+      </div>
 
-        {/* Additional Desktop-only Orbs */}
-        <div className="hidden lg:block">
-          <InteractiveOrb 
-            size="w-64 h-64" 
-            color="bg-gradient-to-r from-yellow-500/15 to-indigo-500/15" 
-            position={{ bottom: '20%', right: '25%' }}
-            animationDelay={6}
-          />
-          <InteractiveOrb 
-            size="w-56 h-56" 
-            color="bg-gradient-to-r from-indigo-500/20 to-purple-500/20" 
-            position={{ top: '70%', right: '5%' }}
-            animationDelay={8}
-          />
-        </div>
-
-        {/* Flowing Lines Animation */}
-        <FlowingLines />
-
-        {/* Enhanced floating particles with more variety */}
-        {Array.from({ length: 25 }).map((_, i) => (
-          <Particle 
-            key={i} 
-            delay={i * 0.4} 
-            size={Math.random() * 8 + 2}
-            color={['bg-blue-400', 'bg-purple-400', 'bg-cyan-400', 'bg-emerald-400', 'bg-pink-400', 'bg-yellow-400'][Math.floor(Math.random() * 6)]}
-          />
-        ))}
-
-        {/* Enhanced geometric grid pattern with animation */}
-        <motion.div 
-          className="absolute inset-0 opacity-[0.03]" 
-          animate={{
-            backgroundPosition: ['0px 0px', '80px 80px'],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: [0, 0, 1, 1] as const
-          }}
-          style={{
-            backgroundImage: `
-              linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
-            `,
-            backgroundSize: '80px 80px'
-          }} 
-        />
-
-        {/* Animated diagonal lines */}
-        <motion.div 
-          className="absolute inset-0 opacity-[0.05]" 
-          animate={{
-            backgroundPosition: ['0px 0px', '200px 200px'],
-          }}
-          transition={{
-            duration: 25,
-            repeat: Infinity,
-            ease: [0, 0, 1, 1] as const
-          }}
-          style={{
-          backgroundImage: `repeating-linear-gradient(
-            45deg,
-            transparent,
-            transparent 100px,
-            rgba(255,255,255,0.1) 100px,
-            rgba(255,255,255,0.1) 101px
-          )`
-          }} 
-        />
-
-        {/* Desktop-only Advanced Geometric Patterns */}
-        <div className="hidden lg:block">
-          <motion.div
-            className="absolute top-20 right-20 w-32 h-32 border border-cyan-400/20 rounded-full"
-            animate={{ 
-              rotate: 360,
-              scale: [1, 1.2, 1],
-              borderColor: ['rgba(6, 182, 212, 0.2)', 'rgba(6, 182, 212, 0.5)', 'rgba(6, 182, 212, 0.2)']
-            }}
-            transition={{ 
-              rotate: { duration: 30, repeat: Infinity, ease: [0, 0, 1, 1] as const },
-              scale: { duration: 4, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const },
-              borderColor: { duration: 3, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const }
-            }}
-          />
-          <motion.div
-            className="absolute bottom-32 left-20 w-24 h-24 border-2 border-purple-400/30"
-            animate={{ 
-              rotate: -360,
-              borderRadius: ['0%', '50%', '0%'],
-              borderColor: ['rgba(139, 92, 246, 0.3)', 'rgba(139, 92, 246, 0.6)', 'rgba(139, 92, 246, 0.3)']
-            }}
-            transition={{ 
-              rotate: { duration: 25, repeat: Infinity, ease: [0, 0, 1, 1] as const },
-              borderRadius: { duration: 5, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const },
-              borderColor: { duration: 4, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const }
-            }}
-          />
-        </div>
+      {/* Black Hole / Event Horizon Effect - Background */}
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-5xl h-[400px] perspective-1000 opacity-60 pointer-events-none z-0">
+          <div className="absolute left-1/2 bottom-[-100px] -translate-x-1/2 w-[600px] h-[300px] md:w-[800px] md:h-[400px]">
+              {/* Glows */}
+              <div className="absolute inset-0 rounded-[100%] bg-purple-600/20 blur-[80px] animate-pulse"></div>
+              <div className="absolute inset-x-10 bottom-0 h-[200px] rounded-[100%] bg-indigo-500/30 blur-[60px]"></div>
+              
+              {/* The Ring/Horizon */}
+              <div className="absolute left-1/2 bottom-[-150px] -translate-x-1/2 w-[120%] h-[300px] rounded-[50%] border-t-2 border-white/50 bg-gradient-to-b from-purple-500/10 to-transparent shadow-[0_-10px_40px_rgba(168,85,247,0.4)] box-shadow-[0_0_50px_rgba(139,92,246,0.5)]"></div>
+              
+              {/* Bright Edge */}
+              <div className="absolute left-1/2 bottom-[-152px] -translate-x-1/2 w-[120%] h-[300px] rounded-[50%] border-t-[4px] border-purple-300 blur-[2px] opacity-70"></div>
+              
+              {/* Inner Darkness */}
+              <div className="absolute left-1/2 bottom-[-148px] -translate-x-1/2 w-[118%] h-[296px] rounded-[50%] bg-[#050505]"></div>
+          </div>
       </div>
 
       <motion.div 
-        className="flex w-full relative z-10"
+        className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 sm:px-6"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
       >
-        {/* Left Side - Branding & Info */}
-        <div className="hidden lg:flex lg:w-1/2 flex-col justify-center items-center p-12 relative">
-          {/* Logo and Brand */}
-          <motion.div 
-            className="text-center mb-12"
-            variants={itemVariants}
-          >
-            <motion.div
-              className="inline-block mb-6"
-              variants={floatingVariants}
-              animate="animate"
-            >
-              <span className="text-6xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">
-                MatrixEdu
-              </span>
-            </motion.div>
-            <motion.p 
-              className="text-xl text-gray-300 mb-8 max-w-md"
-              variants={itemVariants}
-            >
-              Unlock your potential with AI-powered learning experiences
-            </motion.p>
-          </motion.div>
-
-          {/* Feature highlights */}
-          <motion.div 
-            className="space-y-6 max-w-md"
-            variants={itemVariants}
-          >
-            {[
-              { icon: FaBrain, title: t('auth.login.features.aiPoweredLearning.title'), desc: t('auth.login.features.aiPoweredLearning.description') },
-              { icon: FaRocket, title: t('auth.login.features.fastProgress.title'), desc: t('auth.login.features.fastProgress.description') },
-              { icon: FaGraduationCap, title: t('auth.login.features.expertContent.title'), desc: t('auth.login.features.expertContent.description') },
-              { icon: FaStar, title: t('auth.login.features.premiumQuality.title'), desc: t('auth.login.features.premiumQuality.description') }
-            ].map((feature, index) => (
-              <motion.div
-                key={index}
-                className="flex items-center space-x-4 p-4 bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10"
-                variants={itemVariants}
-                whileHover={{ 
-                  scale: 1.05, 
-                  backgroundColor: "rgba(255,255,255,0.1)",
-                  transition: { duration: 0.2 }
-                }}
-              >
-                <div className="p-3 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl">
-                  <IconComponent icon={feature.icon} className="text-2xl text-blue-400" />
-                </div>
-                <div>
-                  <h3 className="text-white font-semibold">{feature.title}</h3>
-                  <p className="text-gray-400 text-sm">{feature.desc}</p>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-
-          {/* Floating decorative elements */}
-          <motion.div
-            className="absolute top-20 right-20 w-20 h-20 border-2 border-blue-400/30 rounded-full animate-pulse"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 20, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
-          />
-          <motion.div
-            className="absolute bottom-32 left-16 w-16 h-16 border-2 border-purple-400/30 rounded-lg"
-            animate={{ rotate: -360 }}
-            transition={{ duration: 25, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
-          />
-          <motion.div
-            className="absolute top-1/2 left-8 w-12 h-12 bg-gradient-to-r from-cyan-400/20 to-blue-400/20 rounded-full blur-sm"
-            animate={{ 
-              scale: [1, 1.5, 1],
-              opacity: [0.2, 0.6, 0.2]
-            }}
-            transition={{ duration: 4, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const }}
-          />
-        </div>
-
-        {/* Right Side - Login Form */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center p-3 sm:p-6 lg:p-12">
+        
+        {/* Login Form */}
+        <div className="w-full flex items-center justify-center">
           <motion.div 
             className="w-full max-w-sm sm:max-w-md"
             variants={itemVariants}
           >
-            {/* Mobile Logo */}
-            <motion.div 
-              className="text-center mb-6 sm:mb-8 lg:hidden"
-              variants={itemVariants}
-            >
-              <Link to="/" className="inline-block">
-                <span className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">
+            {/* Logo */}
+            <div className="text-center mb-8">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-sm font-medium text-purple-200 backdrop-blur-md mb-6">
+                  <FaMagic className="text-purple-400" />
+                  Study smarter using AI
+                </div>
+                <h1 className="text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
                   MatrixEdu
-                </span>
-              </Link>
-              {/* Mobile tagline */}
-              <motion.p 
-                className="text-blue-200 text-sm mt-2 max-w-xs mx-auto"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, duration: 0.6 }}
-              >
-                Your AI-powered learning companion
-              </motion.p>
-            </motion.div>
+                </h1>
+            </div>
 
-            {/* Mobile Features Preview (Above Form) */}
+            {/* Login Form Container */}
             <motion.div 
-              className="lg:hidden mb-6 grid grid-cols-2 gap-3"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.6 }}
-            >
-              {[
-                { icon: FaUsers, text: t('auth.login.mobileFeatures.students'), color: "text-blue-400" },
-                { icon: FaTrophy, text: t('auth.login.mobileFeatures.topRated'), color: "text-yellow-400" },
-                { icon: FaBook, text: t('auth.login.mobileFeatures.courses'), color: "text-emerald-400" },
-                { icon: FaLightbulb, text: t('auth.login.mobileFeatures.aiTutoring'), color: "text-purple-400" }
-              ].map((item, index) => (
-                <motion.div
-                  key={index}
-                  className="flex items-center space-x-2 bg-white/5 backdrop-blur-sm rounded-lg p-2"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.5 + index * 0.1, duration: 0.4 }}
-                  whileHover={{ scale: 1.05 }}
-                >
-                  <IconComponent icon={item.icon} className={`text-sm ${item.color}`} />
-                  <span className="text-white text-xs font-medium">{item.text}</span>
-                </motion.div>
-              ))}
-            </motion.div>
-
-            {/* Login Form - Desktop version without magnetic effect */}
-            <motion.div 
-              className="bg-white/10 backdrop-blur-2xl rounded-2xl sm:rounded-3xl border border-white/20 shadow-2xl overflow-hidden relative"
+              className="bg-[#111] rounded-2xl border border-white/10 shadow-2xl overflow-hidden relative"
               variants={itemVariants}
-              whileHover={{ 
-                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
-                borderColor: "rgba(255,255,255,0.3)"
-              }}
             >
-              {/* Holographic effect overlay */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-500" />
-              
               {/* Header */}
-              <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 backdrop-blur-sm p-4 sm:p-6 lg:p-8 border-b border-white/10 relative">
-                <motion.h1 
-                  className="text-xl sm:text-2xl lg:text-3xl font-bold text-white text-center"
-                  variants={itemVariants}
-                >
-                  {t('auth.login.welcomeBackToMatrixEdu')}
-                </motion.h1>
-                <motion.p 
-                  className="text-blue-200 text-center mt-1 sm:mt-2 text-sm sm:text-base"
-                  variants={itemVariants}
-                >
-                  {t('auth.login.continueJourney')}
-                </motion.p>
-                
-                {/* Decorative elements */}
-                <div className="absolute top-2 sm:top-4 right-2 sm:right-4 w-6 h-6 sm:w-8 sm:h-8 border border-blue-400/30 rounded-full animate-pulse" />
-                <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 w-4 h-4 sm:w-6 sm:h-6 bg-purple-400/20 rounded-full animate-bounce" />
+              <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#151515]">
+                 <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50"></div>
+                    <div className="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/50"></div>
+                    <div className="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50"></div>
+                 </div>
+                 <div className="text-xs text-gray-500">{t('auth.login.welcomeBackToMatrixEdu')}</div>
+                 <div className="w-4"></div>
               </div>
               
-              <div className="p-4 sm:p-6 lg:p-8">
+              <div className="p-6 sm:p-8">
                 {/* Social login buttons */}
                 <motion.div 
-                  className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6"
+                  className="grid grid-cols-2 gap-3 sm:gap-4 mb-6"
                   variants={itemVariants}
                 >
                   <motion.button
                     onClick={() => handleSocialLogin('Google')}
-                    className="flex items-center justify-center gap-1 sm:gap-2 bg-white/10 backdrop-blur-sm border border-white/20 text-white px-2 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl hover:bg-white/20 transition-all duration-300 relative overflow-hidden group text-sm sm:text-base"
-                    whileHover={{ y: -2, scale: 1.02 }}
-                    whileTap={{ y: 0, scale: 0.98 }}
+                    className="flex items-center justify-center px-4 py-2.5 border border-white/10 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-all duration-200 gap-2 text-sm font-medium"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <IconComponent icon={FaGoogle} className="text-red-400 relative z-10 text-sm sm:text-base" />
-                    <span className="font-medium relative z-10">Google</span>
+                    <FaGoogle className="text-white" />
+                    <span>Google</span>
                   </motion.button>
                   <motion.button
                     onClick={() => handleSocialLogin('Apple')}
-                    className="flex items-center justify-center gap-1 sm:gap-2 bg-blue-600/20 backdrop-blur-sm border border-blue-500/30 text-white px-2 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl hover:bg-blue-600/30 transition-all duration-300 relative overflow-hidden group text-sm sm:text-base"
-                    whileHover={{ y: -2, scale: 1.02 }}
-                    whileTap={{ y: 0, scale: 0.98 }}
+                    className="flex items-center justify-center px-4 py-2.5 border border-white/10 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-all duration-200 gap-2 text-sm font-medium"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-blue-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <IconComponent icon={FaApple} className="text-blue-400 relative z-10 text-sm sm:text-base" />
-                    <span className="font-medium relative z-10">Apple</span>
+                    <FaApple className="text-white text-lg" />
+                    <span>Apple</span>
                   </motion.button>
                 </motion.div>
-                
-                <motion.div 
-                  className="flex items-center justify-center mb-4 sm:mb-6"
-                  variants={itemVariants}
-                >
-                  <div className="border-t border-white/20 flex-grow"></div>
-                  <span className="px-3 sm:px-4 text-gray-300 text-xs sm:text-sm font-medium">{t('auth.login.orSignInWith')}</span>
-                  <div className="border-t border-white/20 flex-grow"></div>
-                </motion.div>
 
-                {/* Auth error display */}
-                {authError && (
-                  <motion.div 
-                    className="bg-red-500/10 border border-red-500/30 text-red-300 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl mb-3 sm:mb-4 backdrop-blur-sm text-sm"
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                  >
-                    {authError}
-                  </motion.div>
-                )}
-                
-                <form onSubmit={handleSubmit}>
-                  <motion.div className="mb-3 sm:mb-4" variants={itemVariants}>
-                    <label htmlFor="email" className="block text-gray-200 text-xs sm:text-sm font-medium mb-1 sm:mb-2">
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-white/10"></div>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-[#111] text-gray-500">{t('auth.login.orContinueWith')}</span>
+                  </div>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-400 block ml-1">
                       {t('auth.login.emailLabel')}
                     </label>
                     <div className="relative group">
-                      <IconComponent icon={FaEnvelope} className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-blue-400 transition-colors text-sm" />
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <FaEnvelope className="text-gray-500 group-focus-within:text-purple-400 transition-colors" />
+                      </div>
                       <input
                         type="email"
-                        id="email"
                         name="email"
                         value={formData.email}
                         onChange={handleChange}
-                        className={`w-full pl-9 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 bg-white/10 backdrop-blur-sm border rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 transition-all duration-300 text-sm sm:text-base ${
-                          errors.email ? 'border-red-500/50' : 'border-white/20 hover:border-white/30 focus:border-blue-500/50'
-                        }`}
-                        placeholder={t('auth.login.emailPlaceholder')}
+                        className={`block w-full pl-10 pr-3 py-2.5 bg-white/5 border ${errors.email ? 'border-red-500/50' : 'border-white/10 group-hover:border-white/20'} rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500/50 text-white placeholder-gray-600 focus:outline-none transition-all`}
+                        placeholder="name@example.com"
                       />
-                      <div className="absolute inset-0 rounded-lg sm:rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 focus-within:opacity-100 transition-opacity duration-300 pointer-events-none" />
                     </div>
-                    {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
-                  </motion.div>
-                  
-                  <motion.div className="mb-3 sm:mb-4" variants={itemVariants}>
-                    <label htmlFor="password" className="block text-gray-200 text-xs sm:text-sm font-medium mb-1 sm:mb-2">
+                    {errors.email && (
+                      <motion.p 
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-red-400 text-xs mt-1 ml-1"
+                      >
+                        {errors.email}
+                      </motion.p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-400 block ml-1">
                       {t('auth.login.passwordLabel')}
                     </label>
                     <div className="relative group">
-                      <IconComponent icon={FaLock} className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-blue-400 transition-colors text-sm" />
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <FaLock className="text-gray-500 group-focus-within:text-purple-400 transition-colors" />
+                      </div>
                       <input
-                        type={showPassword ? 'text' : 'password'}
-                        id="password"
+                        type={showPassword ? "text" : "password"}
                         name="password"
                         value={formData.password}
                         onChange={handleChange}
-                        className={`w-full pl-9 sm:pl-12 pr-9 sm:pr-12 py-2.5 sm:py-3 bg-white/10 backdrop-blur-sm border rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 transition-all duration-300 text-sm sm:text-base ${
-                          errors.password ? 'border-red-500/50' : 'border-white/20 hover:border-white/30 focus:border-blue-500/50'
-                        }`}
-                        placeholder={t('auth.login.passwordPlaceholder')}
+                        className={`block w-full pl-10 pr-10 py-2.5 bg-white/5 border ${errors.password ? 'border-red-500/50' : 'border-white/10 group-hover:border-white/20'} rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500/50 text-white placeholder-gray-600 focus:outline-none transition-all`}
+                        placeholder="••••••••"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-300 transition-colors focus:outline-none"
                       >
-                        <IconComponent icon={showPassword ? FaEyeSlash : FaEye} className="text-sm" />
+                        {showPassword ? <FaEyeSlash /> : <FaEye />}
                       </button>
-                      <div className="absolute inset-0 rounded-lg sm:rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 focus-within:opacity-100 transition-opacity duration-300 pointer-events-none" />
                     </div>
-                    {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password}</p>}
-                  </motion.div>
-                  
-                  <motion.div className="flex items-center justify-between mb-4 sm:mb-6" variants={itemVariants}>
-                    <label className="flex items-center group cursor-pointer">
-                      <input
-                        type="checkbox"
+                    {errors.password && (
+                      <motion.p 
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-red-400 text-xs mt-1 ml-1"
+                      >
+                        {errors.password}
+                      </motion.p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center space-x-2 cursor-pointer group">
+                      <div className={`w-4 h-4 rounded border ${rememberMe ? 'bg-purple-600 border-purple-600' : 'border-white/20 group-hover:border-white/40'} flex items-center justify-center transition-all`}>
+                        {rememberMe && <FaRocket className="text-white text-[10px]" />}
+                      </div>
+                      <input 
+                        type="checkbox" 
                         checked={rememberMe}
-                        onChange={(e) => setRememberMe(e.target.checked)}
-                        className="mr-2 text-blue-500 bg-white/10 border-white/20 rounded focus:ring-blue-500 focus:ring-2"
+                        onChange={() => setRememberMe(!rememberMe)}
+                        className="hidden"
                       />
-                      <span className="text-xs sm:text-sm text-gray-300 group-hover:text-white transition-colors">{t('auth.login.rememberMe')}</span>
+                      <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors">{t('auth.login.rememberMe')}</span>
                     </label>
-                    <Link to="/forgot-password" className="text-xs sm:text-sm text-blue-400 hover:text-blue-300 transition-colors relative group">
+                    <Link 
+                      to="/forgot-password" 
+                      className="text-sm font-medium text-purple-400 hover:text-purple-300 transition-colors"
+                    >
                       {t('auth.login.forgotPassword')}
-                      <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 group-hover:w-full transition-all duration-300"></span>
                     </Link>
-                  </motion.div>
-                  
+                  </div>
+
+                  {authError && (
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-200 text-sm flex items-center gap-2"
+                    >
+                      <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                      {authError}
+                    </motion.div>
+                  )}
+
                   <motion.button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium py-2.5 sm:py-3 px-4 rounded-lg sm:rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl relative overflow-hidden group text-sm sm:text-base"
-                    variants={itemVariants}
-                    whileHover={{ scale: 1.02, y: -2 }}
+                    className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-white/10 hover:bg-white/20 border-white/10 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <div className="relative z-10">
-                      {isSubmitting ? (
-                        <div className="flex items-center justify-center">
-                          <motion.div
-                            className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full mr-2"
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
-                          />
-                          {t('common.loading')}
-                        </div>
-                      ) : (
-                        t('auth.login.signInButton')
-                      )}
-                    </div>
+                    {isSubmitting ? (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      t('auth.login.signInButton')
+                    )}
                   </motion.button>
                 </form>
-                
-                <motion.div className="text-center mt-4 sm:mt-6" variants={itemVariants}>
-                  <span className="text-gray-300 text-xs sm:text-sm">{t('auth.login.noAccount')} </span>
-                  <Link to="/signup" className="text-blue-400 hover:text-blue-300 font-medium transition-colors relative group text-xs sm:text-sm">
-                    {t('auth.login.signUpLink')}
-                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 group-hover:w-full transition-all duration-300"></span>
-                  </Link>
-                </motion.div>
+
+                <div className="mt-6 text-center">
+                  <p className="text-sm text-gray-500">
+                    {t('auth.login.noAccount')}{' '}
+                    <Link to="/signup" className="font-medium text-purple-400 hover:text-purple-300 transition-colors">
+                      {t('auth.login.signUpLink')}
+                    </Link>
+                  </p>
+                </div>
               </div>
             </motion.div>
-
-            {/* Mobile Bottom Elements */}
-            <div className="lg:hidden mt-6 space-y-4">
-              {/* Trust indicators */}
-              <motion.div 
-                className="flex justify-center items-center space-x-4 text-gray-400"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.8, duration: 0.6 }}
-              >
-                <div className="flex items-center space-x-1">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="text-xs">{t('auth.login.trustIndicators.secure')}</span>
-                </div>
-                <div className="w-px h-4 bg-gray-600"></div>
-                <div className="flex items-center space-x-1">
-                  <IconComponent icon={FaUsers} className="text-xs text-blue-400" />
-                  <span className="text-xs">{t('auth.login.trustIndicators.users')}</span>
-                </div>
-                <div className="w-px h-4 bg-gray-600"></div>
-                <div className="flex items-center space-x-1">
-                  <IconComponent icon={FaTrophy} className="text-xs text-yellow-400" />
-                  <span className="text-xs">{t('auth.login.trustIndicators.topRated')}</span>
-                </div>
-              </motion.div>
-
-              {/* Quick benefits */}
-              <motion.div 
-                className="text-center"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1, duration: 0.6 }}
-              >
-                <p className="text-gray-400 text-xs mb-2">{t('auth.login.joinMatrixEduAndGet')}</p>
-                <div className="flex justify-center space-x-4 text-xs">
-                  <span className="text-blue-300">{t('auth.login.benefits.aiTutoring')}</span>
-                  <span className="text-purple-300">{t('auth.login.benefits.progressTracking')}</span>
-                  <span className="text-emerald-300">{t('auth.login.benefits.expertContent')}</span>
-                </div>
-              </motion.div>
-            </div>
           </motion.div>
         </div>
       </motion.div>
@@ -729,4 +385,4 @@ const Login: React.FC = () => {
   );
 };
 
-export default Login; 
+export default Login;

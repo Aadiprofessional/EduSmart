@@ -663,7 +663,7 @@ export const CreateFolderModal: React.FC<CreateFolderModalProps> = ({ isOpen, on
           <button
             onClick={handleSubmit}
             disabled={!folderName.trim()}
-            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Create Folder
           </button>
@@ -695,6 +695,17 @@ export const MoveDocumentModal: React.FC<MoveDocumentModalProps> = ({ isOpen, on
     onClose();
   };
 
+  const colorStyles: Record<string, string> = {
+    blue: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
+    green: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
+    purple: 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
+    orange: 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400',
+    red: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
+    pink: 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400',
+    indigo: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400',
+    teal: 'bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400',
+  };
+
   return (
     <BaseModal
       isOpen={isOpen}
@@ -708,7 +719,7 @@ export const MoveDocumentModal: React.FC<MoveDocumentModalProps> = ({ isOpen, on
           onClick={() => setSelectedFolderId(null)}
           className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${
             selectedFolderId === null
-              ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+              ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
               : 'border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5'
           }`}
         >
@@ -719,7 +730,7 @@ export const MoveDocumentModal: React.FC<MoveDocumentModalProps> = ({ isOpen, on
             <p className="font-medium text-gray-900 dark:text-white">All Study Sets</p>
             <p className="text-xs text-gray-500">Default location</p>
           </div>
-          {selectedFolderId === null && <FaCheck className="ml-auto text-blue-500" />}
+          {selectedFolderId === null && <FaCheck className="ml-auto text-indigo-500" />}
         </button>
 
         {folders.map((folder) => (
@@ -728,18 +739,18 @@ export const MoveDocumentModal: React.FC<MoveDocumentModalProps> = ({ isOpen, on
             onClick={() => setSelectedFolderId(folder.id)}
             className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${
               selectedFolderId === folder.id
-                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
                 : 'border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5'
             }`}
           >
-            <div className={`w-10 h-10 rounded-lg bg-${folder.color || 'blue'}-100 dark:bg-${folder.color || 'blue'}-900/30 flex items-center justify-center text-${folder.color || 'blue'}-600 dark:text-${folder.color || 'blue'}-400`}>
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${colorStyles[folder.color || 'blue'] || colorStyles.blue}`}>
               <FaLayerGroup />
             </div>
             <div className="text-left">
               <p className="font-medium text-gray-900 dark:text-white">{folder.name}</p>
               <p className="text-xs text-gray-500">{folder.count} items</p>
             </div>
-            {selectedFolderId === folder.id && <FaCheck className="ml-auto text-blue-500" />}
+            {selectedFolderId === folder.id && <FaCheck className="ml-auto text-indigo-500" />}
           </button>
         ))}
       </div>
@@ -753,7 +764,7 @@ export const MoveDocumentModal: React.FC<MoveDocumentModalProps> = ({ isOpen, on
         </button>
         <button
           onClick={handleMove}
-          className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-blue-500/20"
+          className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-indigo-500/20"
         >
           Move Document
         </button>

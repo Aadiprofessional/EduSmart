@@ -11,12 +11,13 @@ export const getApiBaseUrl = (): string => {
   // Development vs Production detection
   if (process.env.NODE_ENV === 'development') {
     // For local development
-    return 'https://server.matrixedu.ai';
+    return 'http://localhost:8000';
   }
 
   // For production - you should set REACT_APP_API_BASE_URL in your deployment environment
   // This is a fallback that might need CORS configuration
-  return 'https://server.matrixedu.ai';
+  // Note: Update this to your actual production domain when deployed
+  return 'http://localhost:8000';
 };
 
 // Export the base URL

@@ -5,7 +5,7 @@ const axios = require('axios');
 
 // Test configuration
 const TEST_CONFIG = {
-  baseUrl: 'https://server.matrixedu.ai', // Your API base URL
+  baseUrl: 'http://localhost:8000', // Your API base URL
   // For local testing, use: 'http://localhost:3001'
   testUser: {
     email: 'test@example.com',

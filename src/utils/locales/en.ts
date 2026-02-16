@@ -91,6 +91,7 @@ export const en = {
       passwordRequired: "Password is required",
       signInError: "Failed to sign in. Please try again.",
       rememberMe: "Remember me",
+      orContinueWith: "Or continue with",
       orSignInWith: "Or sign in with",
       joinMatrixEduAndGet: "Join MatrixEdu and get:",
       socialLoginError: "login failed. Please try again.",
@@ -202,6 +203,32 @@ export const en = {
         aiMentoring: "✓ AI Mentoring",
         certificates: "✓ Certificates"
       }
+    },
+    forgotPassword: {
+      title: "Reset Password",
+      subtitle: "Enter your email to receive a password reset link",
+      emailLabel: "Email",
+      emailPlaceholder: "Enter your email",
+      submitButton: "Send Reset Link",
+      backToLogin: "Back to Login",
+      successMessage: "Check your email for the reset link",
+      errorMessage: "Failed to send reset link. Please try again.",
+      emailRequired: "Email is required",
+      emailInvalid: "Please enter a valid email"
+    },
+    updatePassword: {
+      title: "Update Password",
+      subtitle: "Enter your new password below",
+      passwordLabel: "New Password",
+      passwordPlaceholder: "Enter new password",
+      confirmPasswordLabel: "Confirm Password",
+      confirmPasswordPlaceholder: "Confirm new password",
+      submitButton: "Update Password",
+      successMessage: "Password updated successfully",
+      errorMessage: "Failed to update password",
+      passwordRequired: "Password is required",
+      passwordMinLength: "Password must be at least 6 characters",
+      passwordsNotMatch: "Passwords do not match"
     },
     signOut: "Sign Out",
     profile: "Profile",

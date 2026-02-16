@@ -266,30 +266,34 @@ export const ResourceCardSkeleton: React.FC<{ isMobile?: boolean }> = ({ isMobil
 };
 
 // Blog Card Skeleton
-export const BlogCardSkeleton: React.FC<{ isMobile?: boolean }> = ({ isMobile = false }) => {
+export const BlogCardSkeleton: React.FC<{ isMobile?: boolean; dark?: boolean }> = ({ isMobile = false, dark = false }) => {
+  const baseBg = dark ? 'bg-[#0A0A0A] border-white/10' : 'bg-white border-gray-100';
+  const shimmerBase = dark ? 'bg-white/5' : 'bg-gray-200';
+  const shimmerHighlight = dark ? 'bg-white/10' : 'bg-gray-300';
+
   return (
-    <div className={`bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 h-full flex flex-col ${isMobile ? 'h-64' : 'h-80'}`}>
-      <div className={`${isMobile ? 'h-32' : 'h-48'} bg-gray-200 animate-skeleton-shimmer relative`}>
-        <div className="absolute top-2 right-2 h-6 w-16 bg-gray-300 animate-skeleton-shimmer rounded-full"></div>
+    <div className={`${baseBg} rounded-xl shadow-lg overflow-hidden border h-full flex flex-col ${isMobile ? 'h-64' : 'h-80'}`}>
+      <div className={`${isMobile ? 'h-32' : 'h-48'} ${shimmerBase} animate-skeleton-shimmer relative`}>
+        <div className={`absolute top-2 right-2 h-6 w-16 ${shimmerHighlight} animate-skeleton-shimmer rounded-full`}></div>
       </div>
       
       <div className="p-4 flex flex-col flex-grow">
-        <div className={`${isMobile ? 'h-4' : 'h-5'} bg-gray-300 animate-skeleton-shimmer rounded mb-2`}></div>
-        <div className={`${isMobile ? 'h-3' : 'h-4'} bg-gray-300 animate-skeleton-shimmer rounded w-4/5 mb-3`}></div>
+        <div className={`${isMobile ? 'h-4' : 'h-5'} ${shimmerHighlight} animate-skeleton-shimmer rounded mb-2`}></div>
+        <div className={`${isMobile ? 'h-3' : 'h-4'} ${shimmerHighlight} animate-skeleton-shimmer rounded w-4/5 mb-3`}></div>
         
         <div className="flex items-center gap-2 mb-3">
-          <div className="h-6 w-6 bg-gray-300 animate-skeleton-shimmer rounded-full"></div>
-          <div className="h-3 bg-gray-300 animate-skeleton-shimmer rounded w-20"></div>
-          <div className="h-3 bg-gray-300 animate-skeleton-shimmer rounded w-16"></div>
+          <div className={`h-6 w-6 ${shimmerHighlight} animate-skeleton-shimmer rounded-full`}></div>
+          <div className={`h-3 ${shimmerHighlight} animate-skeleton-shimmer rounded w-20`}></div>
+          <div className={`h-3 ${shimmerHighlight} animate-skeleton-shimmer rounded w-16`}></div>
         </div>
         
         <div className="flex justify-between items-center mb-3">
-          <div className="h-3 bg-gray-300 animate-skeleton-shimmer rounded w-24"></div>
-          <div className="h-3 bg-gray-300 animate-skeleton-shimmer rounded w-16"></div>
+          <div className={`h-3 ${shimmerHighlight} animate-skeleton-shimmer rounded w-24`}></div>
+          <div className={`h-3 ${shimmerHighlight} animate-skeleton-shimmer rounded w-16`}></div>
         </div>
         
         <div className="mt-auto">
-          <div className={`${isMobile ? 'h-8' : 'h-10'} bg-gray-300 animate-skeleton-shimmer rounded-lg`}></div>
+          <div className={`${isMobile ? 'h-8' : 'h-10'} ${shimmerHighlight} animate-skeleton-shimmer rounded-lg`}></div>
         </div>
       </div>
     </div>
@@ -564,23 +568,28 @@ export const OurImpactSkeleton: React.FC = () => {
 };
 
 // Case Studies Page Skeleton
-export const CaseStudiesSkeleton: React.FC<{ viewMode?: 'grid' | 'list' }> = ({ viewMode = 'grid' }) => {
+export const CaseStudiesSkeleton: React.FC<{ viewMode?: 'grid' | 'list'; dark?: boolean }> = ({ viewMode = 'grid', dark = false }) => {
+  const baseBg = dark ? 'bg-[#0A0A0A] border-white/10' : 'bg-white border-gray-100';
+  const shimmerBase = dark ? 'bg-white/5' : 'bg-gray-200';
+  const shimmerHighlight = dark ? 'bg-white/10' : 'bg-gray-300';
+  const textColor = dark ? 'bg-white/10' : 'bg-gray-300';
+
   if (viewMode === 'list') {
     return (
       <div className="space-y-6">
         {[...Array(6)].map((_, index) => (
-          <div key={index} className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+          <div key={index} className={`${baseBg} rounded-xl shadow-lg p-6 border`}>
             <div className="flex items-start space-x-6">
-              <div className="h-24 w-24 bg-gray-200 animate-skeleton-shimmer rounded-lg flex-shrink-0"></div>
+              <div className={`h-24 w-24 ${shimmerBase} animate-skeleton-shimmer rounded-lg flex-shrink-0`}></div>
               <div className="flex-1">
-                <div className="h-6 bg-gray-300 animate-skeleton-shimmer rounded mb-2"></div>
-                <div className="h-4 bg-gray-300 animate-skeleton-shimmer rounded w-3/4 mb-3"></div>
-                <div className="h-4 bg-gray-300 animate-skeleton-shimmer rounded mb-2"></div>
-                <div className="h-4 bg-gray-300 animate-skeleton-shimmer rounded w-5/6 mb-4"></div>
+                <div className={`h-6 ${textColor} animate-skeleton-shimmer rounded mb-2`}></div>
+                <div className={`h-4 ${textColor} animate-skeleton-shimmer rounded w-3/4 mb-3`}></div>
+                <div className={`h-4 ${textColor} animate-skeleton-shimmer rounded mb-2`}></div>
+                <div className={`h-4 ${textColor} animate-skeleton-shimmer rounded w-5/6 mb-4`}></div>
                 <div className="flex items-center space-x-4">
-                  <div className="h-4 bg-gray-300 animate-skeleton-shimmer rounded w-20"></div>
-                  <div className="h-4 bg-gray-300 animate-skeleton-shimmer rounded w-24"></div>
-                  <div className="h-4 bg-gray-300 animate-skeleton-shimmer rounded w-16"></div>
+                  <div className={`h-4 ${textColor} animate-skeleton-shimmer rounded w-20`}></div>
+                  <div className={`h-4 ${textColor} animate-skeleton-shimmer rounded w-24`}></div>
+                  <div className={`h-4 ${textColor} animate-skeleton-shimmer rounded w-16`}></div>
                 </div>
               </div>
             </div>
@@ -591,22 +600,20 @@ export const CaseStudiesSkeleton: React.FC<{ viewMode?: 'grid' | 'list' }> = ({ 
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {[...Array(9)].map((_, index) => (
-        <div key={index} className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
-          <div className="h-48 bg-gray-200 animate-skeleton-shimmer"></div>
-          <div className="p-6">
-            <div className="h-6 bg-gray-300 animate-skeleton-shimmer rounded mb-3"></div>
-            <div className="h-4 bg-gray-300 animate-skeleton-shimmer rounded w-3/4 mb-2"></div>
-            <div className="h-4 bg-gray-300 animate-skeleton-shimmer rounded mb-4"></div>
+    <div className="h-full">
+        <div className={`${baseBg} rounded-xl shadow-lg overflow-hidden border h-full flex flex-col`}>
+          <div className={`h-48 ${shimmerBase} animate-skeleton-shimmer`}></div>
+          <div className="p-6 flex flex-col flex-grow">
+            <div className={`h-6 ${textColor} animate-skeleton-shimmer rounded mb-3`}></div>
+            <div className={`h-4 ${textColor} animate-skeleton-shimmer rounded w-3/4 mb-2`}></div>
+            <div className={`h-4 ${textColor} animate-skeleton-shimmer rounded mb-4`}></div>
             <div className="flex items-center justify-between mb-4">
-              <div className="h-4 bg-gray-300 animate-skeleton-shimmer rounded w-20"></div>
-              <div className="h-4 bg-gray-300 animate-skeleton-shimmer rounded w-16"></div>
+              <div className={`h-4 ${textColor} animate-skeleton-shimmer rounded w-20`}></div>
+              <div className={`h-4 ${textColor} animate-skeleton-shimmer rounded w-16`}></div>
             </div>
-            <div className="h-10 bg-gray-300 animate-skeleton-shimmer rounded-lg"></div>
+            <div className={`h-10 ${textColor} animate-skeleton-shimmer rounded-lg mt-auto`}></div>
           </div>
         </div>
-      ))}
     </div>
   );
 };

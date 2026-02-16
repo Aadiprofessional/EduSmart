@@ -24,8 +24,8 @@ import 'katex/dist/katex.min.css';
 
 // API Configuration
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://server.matrixedu.ai/api' 
-  : 'https://server.matrixedu.ai/api';
+  ? 'http://localhost:8000/api' 
+  : 'http://localhost:8000/api';
 
 // Get user ID from authentication context or localStorage - proper authentication
 const getUserId = (user?: any, session?: any): string | null => {

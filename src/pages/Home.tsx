@@ -8,7 +8,6 @@ import FeaturedCourses3D from '../components/ui/FeaturedCourses3D';
 import FeaturedResources3D from '../components/ui/FeaturedResources3D';
 import FeaturedSuccessStories3D from '../components/ui/FeaturedSuccessStories3D';
 import FeaturedScholarships3D from '../components/ui/FeaturedScholarships3D';
-import ScrollingBalls3D from '../components/ui/ScrollingBalls3D';
 import { useLanguage } from '../utils/LanguageContext';
 import { ModelPositionProvider, useModelPosition } from '../utils/ModelPositionContext';
 import { useAuth } from '../utils/AuthContext';

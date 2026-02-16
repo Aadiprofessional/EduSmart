@@ -16,6 +16,8 @@ import Resources from './pages/Resources';
 import Blog from './pages/Blog';
 import Scholarships from './pages/Scholarships';
 import Signup from './pages/Signup';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import ChatBotPage from './pages/ChatBot';
 import AiStudy from './pages/AiStudy';
 import AiTutorPage from './pages/AiTutorPage';
@@ -94,6 +96,8 @@ function App() {
                       <Route path="/" element={<Home />} />
                       <Route path="/login" element={<Login />} />
                       <Route path="/signup" element={<Signup />} />
+                      <Route path="/forgot-password" element={<ForgotPassword />} />
+                      <Route path="/reset-password" element={<ResetPassword />} />
                       <Route path="/auth/callback" element={<AuthCallback />} />
                       <Route path="/about" element={<About />} />
                       <Route path="/courses" element={<Courses />} />

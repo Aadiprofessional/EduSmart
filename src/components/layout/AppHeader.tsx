@@ -6,6 +6,7 @@ import { useAuth } from '../../utils/AuthContext';
 import { useSubscription } from '../../utils/SubscriptionContext';
 import { supabase } from '../../utils/supabase';
 import coinIcon from '../../assets/assets_coin.png';
+import matrixLogo from '../../assets/matrixedu.png';
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
@@ -123,6 +124,7 @@ const Header: React.FC = () => {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+             <img src={matrixLogo} alt="MatrixEdu Logo" className="w-8 h-8 rounded-lg" />
              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-500">MatrixEdu</span>
           </div>
 

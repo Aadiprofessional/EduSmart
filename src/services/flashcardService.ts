@@ -1,8 +1,8 @@
 import { Flashcard, FlashcardSet } from '../components/ui/FlashcardComponent';
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://server.matrixedu.ai' 
-  : 'https://server.matrixedu.ai';
+  ? 'http://localhost:8000' 
+  : 'http://localhost:8000';
 
 export interface APIFlashcardSet {
   id: string;

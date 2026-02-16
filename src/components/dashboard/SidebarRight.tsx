@@ -46,6 +46,17 @@ const SidebarRight: React.FC<SidebarRightProps> = ({
     }
   };
 
+  const colorVariants: Record<string, string> = {
+    blue: 'text-blue-500 dark:text-blue-400',
+    green: 'text-green-500 dark:text-green-400',
+    purple: 'text-purple-500 dark:text-purple-400',
+    orange: 'text-orange-500 dark:text-orange-400',
+    red: 'text-red-500 dark:text-red-400',
+    pink: 'text-pink-500 dark:text-pink-400',
+    indigo: 'text-indigo-500 dark:text-indigo-400',
+    teal: 'text-teal-500 dark:text-teal-400',
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -68,49 +79,49 @@ const SidebarRight: React.FC<SidebarRightProps> = ({
           <div className="space-y-6 overflow-hidden">
                  <button 
                    onClick={onCreateFolder}
-                   className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors whitespace-nowrap shadow-sm"
+                   className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors whitespace-nowrap shadow-sm"
                  >
                      <FaPlus size={12} />
                      <span>Create New Folder</span>
                  </button>
 
                  <div 
-                   onClick={() => onSelectFolder?.(null)}
-                   onDragOver={(e) => handleDragOver(e, 'all')}
-                   onDragLeave={handleDragLeave}
-                   onDrop={(e) => handleDrop(e, null)}
-                   className={`bg-gray-100 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:border-gray-300 dark:hover:border-white/20 transition-colors whitespace-nowrap ${selectedFolderId === null ? 'ring-2 ring-blue-500' : ''} ${dragOverFolderId === 'all' ? 'bg-blue-100 dark:bg-blue-900/20 border-blue-500' : ''}`}
-                 >
-                     <FaFolder className="text-gray-400 flex-shrink-0" />
-                     <div className="flex-1 overflow-hidden">
-                         <p className="text-sm font-medium truncate text-gray-900 dark:text-white">All Study Sets</p>
-                     </div>
-                 </div>
+                  onClick={() => onSelectFolder?.(null)}
+                  onDragOver={(e) => handleDragOver(e, 'all')}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, null)}
+                  className={`bg-gray-100 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:border-gray-300 dark:hover:border-white/20 transition-colors whitespace-nowrap ${selectedFolderId === null ? 'ring-2 ring-inset ring-indigo-500' : ''} ${dragOverFolderId === 'all' ? 'bg-indigo-100 dark:bg-indigo-900/20 border-indigo-500' : ''}`}
+                >
+                    <FaFolder className="text-gray-400 flex-shrink-0" />
+                    <div className="flex-1 overflow-hidden">
+                        <p className="text-sm font-medium truncate text-gray-900 dark:text-white">All Study Sets</p>
+                    </div>
+                </div>
 
-                 {folders.length === 0 ? (
-                   <div className="text-center py-12">
-                       <FaFolder size={48} className="text-gray-300 dark:text-[#333] mx-auto mb-4" />
-                       <p className="text-sm text-gray-500 mb-1">No folders yet</p>
-                       <p className="text-xs text-gray-400 dark:text-gray-600">Create your first folder to organize your study sets</p>
-                   </div>
-                 ) : (
-                   <div className="space-y-2 overflow-y-auto max-h-[calc(100vh-300px)] custom-scrollbar">
-                     {folders.map(folder => (
-                       <div 
-                         key={folder.id} 
-                         onClick={() => onSelectFolder?.(folder.id)}
-                         onDragOver={(e) => handleDragOver(e, folder.id)}
-                         onDragLeave={handleDragLeave}
-                         onDrop={(e) => handleDrop(e, folder.id)}
-                         className={`flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg cursor-pointer text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap ${selectedFolderId === folder.id ? 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white' : ''} ${dragOverFolderId === folder.id ? 'bg-blue-100 dark:bg-blue-900/20' : ''}`}
-                       >
-                          <FaFolder className={`${folder.color ? `text-${folder.color}-500 dark:text-${folder.color}-400` : 'text-gray-400'} flex-shrink-0`} />
-                          <span className="text-sm flex-1 truncate">{folder.name}</span>
-                          <span className="text-xs opacity-50 flex-shrink-0">{folder.count}</span>
-                       </div>
-                     ))}
-                   </div>
-                 )}
+                {folders.length === 0 ? (
+                  <div className="text-center py-12">
+                      <FaFolder size={48} className="text-gray-300 dark:text-[#333] mx-auto mb-4" />
+                      <p className="text-sm text-gray-500 mb-1">No folders yet</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-600">Create your first folder to organize your study sets</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 overflow-y-auto max-h-[calc(100vh-300px)] custom-scrollbar">
+                    {folders.map(folder => (
+                      <div 
+                        key={folder.id} 
+                        onClick={() => onSelectFolder?.(folder.id)}
+                        onDragOver={(e) => handleDragOver(e, folder.id)}
+                        onDragLeave={handleDragLeave}
+                        onDrop={(e) => handleDrop(e, folder.id)}
+                        className={`flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg cursor-pointer text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap ${selectedFolderId === folder.id ? 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white' : ''} ${dragOverFolderId === folder.id ? 'bg-indigo-100 dark:bg-indigo-900/20' : ''}`}
+                      >
+                         <FaFolder className={`${folder.color ? colorVariants[folder.color] || 'text-gray-400' : 'text-gray-400'} flex-shrink-0`} />
+                         <span className="text-sm flex-1 truncate">{folder.name}</span>
+                         <span className="text-xs opacity-50 flex-shrink-0">{folder.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
              </div>
         </motion.aside>
       )}

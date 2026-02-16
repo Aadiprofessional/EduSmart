@@ -101,19 +101,24 @@ const AuthCallback: React.FC = () => {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-      <div className="bg-white/10 backdrop-blur-2xl rounded-2xl border border-white/20 shadow-2xl p-8 max-w-md w-full mx-4">
+    <div className="min-h-screen bg-[#050505] flex items-center justify-center relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[100px]" />
+      </div>
+
+      <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl p-8 max-w-md w-full mx-4 relative z-10">
         <div className="text-center">
           {status === 'loading' && (
             <>
-              <div className="text-4xl text-blue-400 mx-auto mb-4 flex justify-center">
+              <div className="text-4xl text-purple-400 mx-auto mb-4 flex justify-center">
                 <svg className="animate-spin h-10 w-10" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
               </div>
               <h2 className="text-2xl font-bold text-white mb-2">Authenticating</h2>
-              <p className="text-gray-300">{message}</p>
+              <p className="text-gray-400">{message}</p>
             </>
           )}
           
@@ -125,7 +130,7 @@ const AuthCallback: React.FC = () => {
                 </svg>
               </div>
               <h2 className="text-2xl font-bold text-white mb-2">Success!</h2>
-              <p className="text-gray-300">{message}</p>
+              <p className="text-gray-400">{message}</p>
             </>
           )}
           
@@ -137,10 +142,10 @@ const AuthCallback: React.FC = () => {
                 </svg>
               </div>
               <h2 className="text-2xl font-bold text-white mb-2">Authentication Failed</h2>
-              <p className="text-gray-300">{message}</p>
+              <p className="text-gray-400">{message}</p>
               <button
                 onClick={() => navigate('/login')}
-                className="mt-4 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                className="mt-6 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl transition-all font-medium shadow-lg shadow-purple-600/30"
               >
                 Back to Login
               </button>
@@ -152,4 +157,4 @@ const AuthCallback: React.FC = () => {
   );
 };
 
-export default AuthCallback; 
+export default AuthCallback;

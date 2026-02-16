@@ -6,8 +6,9 @@ export const ANTOM_CONFIG = {
   domain: process.env.REACT_APP_ANTOM_DOMAIN || 'https://open-sea-global.alipay.com',
   
   // URLs for payment flow
-  notifyUrl: process.env.REACT_APP_ANTOM_NOTIFY_URL || 'https://server.matrixedu.ai/api/antom/payment-notification',
-  redirectUrl: process.env.REACT_APP_ANTOM_REDIRECT_URL || 'https://server.matrixedu.ai/payment-result',
+  // Note: Update these URLs to your actual domain for production
+  notifyUrl: process.env.REACT_APP_ANTOM_NOTIFY_URL || 'http://localhost:8000/api/antom/payment-notification',
+  redirectUrl: process.env.REACT_APP_ANTOM_REDIRECT_URL || 'http://localhost:3000/payment-result',
   
   // SDK settings
   locale: 'en_US',

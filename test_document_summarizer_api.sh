@@ -3,7 +3,7 @@
 # Test Document Summarizer API Endpoints
 # Make sure your server is running on localhost:8000
 
-BASE_URL="https://server.matrixedu.ai/api/document-summarizer"
+BASE_URL="http://localhost:8000/api/document-summarizer"
 
 # Prompt user for their authenticated user ID
 echo "🧪 Testing Document Summarizer API Endpoints"

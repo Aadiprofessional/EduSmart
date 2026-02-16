@@ -8,7 +8,7 @@ const crypto = require('crypto');
 
 // Test configuration
 const TEST_CONFIG = {
-  baseUrl: 'https://server.matrixedu.ai', // Adjust based on your server
+  baseUrl: 'http://localhost:8000', // Adjust based on your server
   testCards: {
     visa: '4054695723100768',
     visaGeneric: '4111111111111111',

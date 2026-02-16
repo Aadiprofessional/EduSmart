@@ -91,6 +91,7 @@ export const zhCN = {
       signInError: "登录失败，请重试。",
       rememberMe: "记住我",
       orSignInWith: "或使用以下方式登录",
+      orContinueWith: "或继续使用",
       joinMatrixEduAndGet: "加入MatrixEdu并获得：",
       socialLoginError: "登录失败。请重试。",
       // Feature descriptions for login page
@@ -201,6 +202,32 @@ export const zhCN = {
         aiMentoring: "✓ AI指导",
         certificates: "✓ 证书"
       }
+    },
+    forgotPassword: {
+      title: "重置密码",
+      subtitle: "输入您的邮箱以接收密码重置链接",
+      emailLabel: "邮箱",
+      emailPlaceholder: "输入您的邮箱",
+      submitButton: "发送重置链接",
+      backToLogin: "返回登录",
+      successMessage: "检查您的邮箱获取重置链接",
+      errorMessage: "发送重置链接失败。请重试。",
+      emailRequired: "邮箱是必填项",
+      emailInvalid: "请输入有效的邮箱地址"
+    },
+    updatePassword: {
+      title: "更新密码",
+      subtitle: "在下方输入您的新密码",
+      passwordLabel: "新密码",
+      passwordPlaceholder: "输入新密码",
+      confirmPasswordLabel: "确认密码",
+      confirmPasswordPlaceholder: "确认新密码",
+      submitButton: "更新密码",
+      successMessage: "密码更新成功",
+      errorMessage: "更新密码失败",
+      passwordRequired: "密码是必填项",
+      passwordMinLength: "密码至少需要6个字符",
+      passwordsNotMatch: "密码不匹配"
     },
     signOut: "退出登录",
     profile: "个人资料",

@@ -5,6 +5,7 @@ import IconComponent from '../ui/IconComponent';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../../utils/LanguageContext';
 import { getPageTheme } from '../../utils/pageThemes';
+import matrixLogo from '../../assets/matrixedu.png';
 
 const Footer: React.FC = () => {
   const { t } = useLanguage();
@@ -64,10 +65,13 @@ const Footer: React.FC = () => {
             viewport={{ once: true, amount: 0.1 }}
           >
             {/* Logo */}
-            <motion.div variants={itemVariants} className="mb-4">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">
-                MatrixEdu
-              </h3>
+            <motion.div variants={itemVariants} className="mb-4 flex flex-col items-center">
+              <div className="flex items-center gap-2 mb-2">
+                <img src={matrixLogo} alt="MatrixEdu Logo" className="w-8 h-8 rounded-lg" />
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
+                  MatrixEdu
+                </h3>
+              </div>
               <p className="text-gray-600 dark:text-gray-400 text-xs leading-relaxed max-w-sm mx-auto">
                 {t('footer.aiEducation')}
               </p>
@@ -234,9 +238,12 @@ const Footer: React.FC = () => {
           {/* About */}
           <motion.div variants={itemVariants}>
             <div className="mb-6">
-              <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-4 tracking-tight">
-                MatrixEdu
-              </h3>
+              <div className="flex items-center gap-2 mb-4">
+                <img src={matrixLogo} alt="MatrixEdu Logo" className="w-10 h-10 rounded-lg" />
+                <h3 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
+                  MatrixEdu
+                </h3>
+              </div>
               <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
                 {t('footer.about')}
               </p>

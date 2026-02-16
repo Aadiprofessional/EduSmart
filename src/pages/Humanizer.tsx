@@ -204,7 +204,7 @@ const Humanizer: React.FC = () => {
       const uid = user?.id || "0a147ebe-af99-481b-bcaf-ae70c9aeb8d8";
 
       // Using the new API endpoint
-      const response = await fetch('https://server.matrixedu.ai/api/humanizer/createHumanization', {
+      const response = await fetch('http://localhost:8000/api/humanizer/createHumanization', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

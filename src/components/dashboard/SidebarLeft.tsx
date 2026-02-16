@@ -28,6 +28,8 @@ import { useAuth } from '../../utils/AuthContext';
 
 import { useTheme } from '../../utils/ThemeContext';
 
+import matrixLogo from '../../assets/matrixedu.png';
+
 interface SidebarLeftProps {
   className?: string;
   isOpen?: boolean;
@@ -65,8 +67,8 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
             {/* Logo */}
             <div className="flex items-center justify-between mb-8 px-2">
               <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-                <div className="text-indigo-600 dark:text-indigo-500 text-2xl">
-                    <FaGraduationCap /> 
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-[0_0_15px_rgba(99,102,241,0.5)]">
+                    <img src={matrixLogo} alt="MatrixEdu Logo" className="w-5 h-5" />
                 </div>
                 <motion.span 
                   initial={{ opacity: 0 }}
@@ -165,8 +167,8 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
                             <NavItem icon={<FaHistory />} label="Transaction History" onClick={() => navigate('/transaction-history')} />
                             <NavItem icon={<FaBookOpen />} label="Quick Guide" onClick={() => navigate('/resources')} />
                             <NavItem icon={<FaGift />} label="Earn" badge="NEW" onClick={() => navigate('/referral')} />
-                            <NavItem icon={<FaCommentDots />} label="Give Feedback" onClick={() => window.location.href = 'mailto:feedback@matrixedu.ai'} />
-                            <NavItem icon={<FaEnvelope />} label="Contact Us" onClick={() => window.location.href = 'mailto:support@matrixedu.ai'} />
+                            <NavItem icon={<FaCommentDots />} label="Give Feedback" onClick={() => window.location.href = 'mailto:feedback@matrixaiglobal.com'} />
+                            <NavItem icon={<FaEnvelope />} label="Contact Us" onClick={() => window.location.href = 'mailto:info@matrixaiglobal.com'} />
                             <button onClick={handleSignOut} className="w-full flex items-center gap-3 px-3 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors text-sm">
                                 <FaSignOutAlt />
                                 <span>Sign out</span>

@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { FaGraduationCap, FaUniversity, FaChartLine, FaStar, FaFilter, FaSearch, FaCheck, FaTimesCircle, FaEye, FaHeart, FaCalendarAlt, FaMapMarkerAlt, FaAward, FaSpinner, FaTimes, FaTh, FaList, FaSort, FaUser, FaBookmark } from 'react-icons/fa';
+import { FaStar, FaFilter, FaSearch, FaTimes, FaTh, FaList, FaSort, FaArrowRight, FaGraduationCap, FaChartLine, FaHeart, FaUniversity, FaMapMarkerAlt, FaBook, FaMoneyBillWave } from 'react-icons/fa';
 import { Header } from '../components/layout';
 import Footer from '../components/layout/Footer';
-import PageHeader from '../components/ui/PageHeader';
-import MobileFilterPanel from '../components/ui/MobileFilterPanel';
 import IconComponent from '../components/ui/IconComponent';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../utils/LanguageContext';
 import { caseStudyAPI } from '../utils/apiService';
 import { CaseStudiesSkeleton } from '../components/ui/Skeleton';
 
+// Interfaces
 interface CaseStudy {
   id: string;
   title: string;
@@ -45,6 +44,44 @@ interface CaseStudy {
   updated_at?: string;
 }
 
+const FloatingParticle = ({ delay = 0, size = 4, color = "bg-white" }) => (
+  <motion.div
+    className={`absolute ${color} rounded-full opacity-20`}
+    style={{
+      width: size,
+      height: size,
+      left: Math.random() * 100 + '%',
+      top: Math.random() * 100 + '%'
+    }}
+    animate={{
+      y: [0, -100],
+      opacity: [0, 0.5, 0]
+    }}
+    transition={{
+      duration: 3 + Math.random() * 2,
+      repeat: Infinity,
+      delay: delay,
+      ease: "linear"
+    }}
+  />
+);
+
+const HolographicCard = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
+  <motion.div
+    className={`relative group ${className} h-full`}
+    whileHover={{ y: -5 }}
+    transition={{ duration: 0.3 }}
+  >
+    <div className="absolute inset-0 bg-gradient-to-b from-purple-500/10 to-transparent rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100" />
+    <div className="relative h-full bg-[#0A0A0A] backdrop-blur-xl border border-white/5 rounded-2xl overflow-hidden group-hover:border-purple-500/30 transition-all duration-300">
+      <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+      <div className="relative z-10 h-full flex flex-col">
+        {children}
+      </div>
+    </div>
+  </motion.div>
+);
+
 const CaseStudies: React.FC = () => {
   const { t } = useLanguage();
   const [caseStudies, setCaseStudies] = useState<CaseStudy[]>([]);
@@ -67,9 +104,10 @@ const CaseStudies: React.FC = () => {
   const [fields, setFields] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [mobileViewMode, setMobileViewMode] = useState<'grid' | 'list'>('grid');
-  const [showFilters, setShowMobileFilters] = useState(false);
-  const [sortBy, setSortBy] = useState<'newest' | 'popular' | 'scholarship' | 'university'>('newest');
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [sortBy, setSortBy] = useState<'newest' | 'popular' | 'scholarship'>('newest');
 
+  // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -79,35 +117,6 @@ const CaseStudies: React.FC = () => {
       }
     }
   };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.5
-      }
-    }
-  };
-
-  const fadeIn = (direction: string, delay: number) => ({
-    hidden: {
-      y: direction === "up" ? 40 : direction === "down" ? -40 : 0,
-      x: direction === "left" ? 40 : direction === "right" ? -40 : 0,
-      opacity: 0,
-    },
-    visible: {
-      y: 0,
-      x: 0,
-      opacity: 1,
-      transition: {
-        duration: 0.5,
-        delay: delay,
-        ease: [0, 0, 0.58, 1] as const,
-      },
-    },
-  });
 
   const loadCaseStudies = async () => {
     try {
@@ -123,7 +132,7 @@ const CaseStudies: React.FC = () => {
         activeFilters.featured || undefined
       );
       if (response.success) {
-        setCaseStudies(response.data.caseStudies || []);
+        setCaseStudies(Array.isArray(response.data.caseStudies) ? response.data.caseStudies : []);
         setTotalPages(response.data.totalPages || 1);
       } else {
         console.error('Failed to load case studies:', response.error);
@@ -146,18 +155,10 @@ const CaseStudies: React.FC = () => {
         caseStudyAPI.getFields()
       ]);
 
-      if (categoriesResult.success) {
-        setCategories(categoriesResult.data || []);
-      }
-      if (outcomesResult.success) {
-        setOutcomes(outcomesResult.data || []);
-      }
-      if (countriesResult.success) {
-        setCountries(countriesResult.data || []);
-      }
-      if (fieldsResult.success) {
-        setFields(fieldsResult.data || []);
-      }
+      if (categoriesResult.success && Array.isArray(categoriesResult.data)) setCategories(categoriesResult.data);
+      if (outcomesResult.success && Array.isArray(outcomesResult.data)) setOutcomes(outcomesResult.data);
+      if (countriesResult.success && Array.isArray(countriesResult.data)) setCountries(countriesResult.data);
+      if (fieldsResult.success && Array.isArray(fieldsResult.data)) setFields(fieldsResult.data);
     } catch (error) {
       console.error('Error loading filter options:', error);
       // Set mock data if API fails
@@ -176,7 +177,7 @@ const CaseStudies: React.FC = () => {
     loadFilterOptions();
   }, []);
 
-  // Mock data for development
+  // Mock data for development if empty
   useEffect(() => {
     if (caseStudies.length === 0 && !loading) {
       setCaseStudies([
@@ -194,14 +195,14 @@ const CaseStudies: React.FC = () => {
           scholarship_amount: 250000,
           scholarship_currency: "USD",
           application_year: 2023,
-          story_content: "Sarah's journey began at a local community college where she excelled in her pre-medical courses despite working part-time to support her family. Through determination, strategic planning, and the right guidance, she transferred to a four-year university and eventually gained acceptance to one of the most prestigious medical schools in the world.",
-          challenges_faced: ["Financial constraints", "Limited research opportunities", "First-generation college student"],
-          strategies_used: ["Community college transfer pathway", "Extensive volunteering", "Research partnerships", "Strong personal statement"],
-          advice_given: ["Start early with planning", "Build strong relationships with mentors", "Don't let background define your limits"],
+          story_content: "Sarah's journey began at a local community college where she excelled in her pre-medical courses...",
+          challenges_faced: ["Financial constraints", "Limited research opportunities"],
+          strategies_used: ["Community college transfer pathway", "Research partnerships"],
+          advice_given: ["Start early with planning", "Build strong relationships with mentors"],
           featured: true,
           category: "Medical School",
           field_of_study: "Medicine",
-          tags: ["Harvard", "Medical School", "Scholarship", "First-generation"],
+          tags: ["Harvard", "Medical School", "Scholarship"],
           reading_time: 8,
           views: 15420,
           likes: 892,
@@ -216,20 +217,16 @@ const CaseStudies: React.FC = () => {
           student_background: "Small town in Gujarat, India",
           previous_education: "Local Engineering College",
           target_program: "MS in Computer Science",
-          target_university: "Massachusetts Institute of Technology",
+          target_university: "MIT",
           target_country: "United States",
           outcome: "Accepted with Research Assistantship",
           scholarship_amount: 45000,
           scholarship_currency: "USD",
           application_year: 2023,
-          story_content: "Coming from a small town with limited resources, Raj had to overcome language barriers, financial constraints, and intense competition. His passion for technology and innovative projects helped him stand out among thousands of applicants.",
-          challenges_faced: ["Language barriers", "Limited resources", "Intense competition", "Visa process"],
-          strategies_used: ["Open source contributions", "Strong GRE scores", "Compelling SOP", "Professor connections"],
-          advice_given: ["Focus on practical projects", "Network with alumni", "Prepare thoroughly for standardized tests"],
           featured: true,
           category: "Graduate School",
           field_of_study: "Computer Science",
-          tags: ["MIT", "Engineering", "International Student", "Research"],
+          tags: ["MIT", "Engineering", "International Student"],
           reading_time: 10,
           views: 12350,
           likes: 743,
@@ -244,20 +241,16 @@ const CaseStudies: React.FC = () => {
           student_background: "Tech Startup Founder",
           previous_education: "State University Business Degree",
           target_program: "MBA",
-          target_university: "Stanford Graduate School of Business",
+          target_university: "Stanford GSB",
           target_country: "United States",
           outcome: "Accepted with Merit Scholarship",
           scholarship_amount: 75000,
           scholarship_currency: "USD",
           application_year: 2023,
-          story_content: "Maria founded her first startup at 22 and scaled it to a multi-million dollar company. Her unique entrepreneurial journey and leadership experience made her a standout candidate for Stanford's competitive MBA program.",
-          challenges_faced: ["Balancing work and applications", "Competitive applicant pool", "GMAT preparation"],
-          strategies_used: ["Unique entrepreneurial story", "Strong leadership examples", "Alumni networking", "Compelling essays"],
-          advice_given: ["Leverage unique experiences", "Show clear career goals", "Connect with current students"],
           featured: false,
           category: "Business School",
           field_of_study: "Business Administration",
-          tags: ["Stanford", "MBA", "Entrepreneur", "Leadership"],
+          tags: ["Stanford", "MBA", "Entrepreneur"],
           reading_time: 7,
           views: 9876,
           likes: 567,
@@ -265,21 +258,13 @@ const CaseStudies: React.FC = () => {
           created_at: "2023-12-15T00:00:00Z"
         }
       ]);
-      // Only set filter options if they haven't been set yet
-      if (categories.length === 0) {
-        setCategories(["Medical School", "Graduate School", "Business School", "Law School"]);
-      }
-      if (outcomes.length === 0) {
-        setOutcomes(["Accepted with Full Scholarship", "Accepted with Merit Scholarship", "Accepted with Research Assistantship", "Accepted"]);
-      }
-      if (countries.length === 0) {
-        setCountries(["United States", "United Kingdom", "Canada", "Australia", "Germany"]);
-      }
-      if (fields.length === 0) {
-        setFields(["Medicine", "Computer Science", "Business Administration", "Engineering", "Law"]);
-      }
+      // Also set mock filters if empty
+      if (categories.length === 0) setCategories(["Medical School", "Graduate School", "Business School", "Law School"]);
+      if (outcomes.length === 0) setOutcomes(["Accepted with Full Scholarship", "Accepted with Merit Scholarship", "Accepted with Research Assistantship", "Accepted"]);
+      if (countries.length === 0) setCountries(["United States", "United Kingdom", "Canada", "Australia", "Germany"]);
+      if (fields.length === 0) setFields(["Medicine", "Computer Science", "Business Administration", "Engineering", "Law"]);
     }
-  }, [caseStudies, loading, categories.length, outcomes.length, countries.length, fields.length]);
+  }, [caseStudies, loading, categories.length]);
 
   const toggleFilter = (filterType: keyof typeof activeFilters, value: any) => {
     setActiveFilters(prev => ({
@@ -301,28 +286,72 @@ const CaseStudies: React.FC = () => {
     setCurrentPage(1);
   };
 
-  const openModal = (caseStudy: CaseStudy) => {
-    setSelectedCaseStudy(caseStudy);
-    setShowModal(true);
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const closeModal = () => {
-    setShowModal(false);
-    setSelectedCaseStudy(null);
+  const getCategoryIcon = (category: string) => {
+    if (!category) return <IconComponent icon={FaGraduationCap} className="text-gray-500" />;
+    
+    const lowerCat = category.toLowerCase();
+    if (lowerCat.includes('medical')) return <IconComponent icon={FaHeart} className="text-red-500" />;
+    if (lowerCat.includes('business')) return <IconComponent icon={FaChartLine} className="text-blue-500" />;
+    if (lowerCat.includes('law')) return <IconComponent icon={FaBook} className="text-yellow-500" />;
+    if (lowerCat.includes('graduate')) return <IconComponent icon={FaGraduationCap} className="text-green-500" />;
+    if (lowerCat.includes('engineering') || lowerCat.includes('computer')) return <IconComponent icon={FaChartLine} className="text-indigo-500" />;
+    
+    return <IconComponent icon={FaGraduationCap} className="text-gray-500" />;
   };
+
+  const activeFilterCount = (
+    (activeFilters.category ? 1 : 0) + 
+    (activeFilters.outcome ? 1 : 0) + 
+    (activeFilters.country ? 1 : 0) + 
+    (activeFilters.field ? 1 : 0) + 
+    (activeFilters.featured ? 1 : 0) + 
+    (searchQuery ? 1 : 0)
+  );
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="flex flex-col min-h-screen bg-[#050505] text-white overflow-hidden font-sans selection:bg-purple-500 selection:text-white">
       <Header />
-      <main className="flex-grow">
-        <PageHeader
-          title="Success Stories"
-          subtitle="Inspiring journeys of students who achieved their dreams"
-          height="sm"
-        >
-          {/* Search Bar - Desktop only */}
-          <div className="max-w-2xl mx-auto hidden lg:block">
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-2 shadow-2xl border border-white/20">
+      
+      {/* Floating Particles Background */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        {[...Array(30)].map((_, i) => (
+          <FloatingParticle 
+            key={i} 
+            delay={i * 0.2} 
+            size={Math.random() * 3 + 1}
+            color="bg-white"
+          />
+        ))}
+      </div>
+
+      <main className="flex-grow relative z-10 pt-20">
+        {/* Page Header */}
+        <div className="text-center mb-12 py-16 px-4">
+            <motion.h1 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="text-4xl md:text-5xl font-bold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60"
+            >
+                {t('caseStudies.title') || "Success Stories"}
+            </motion.h1>
+            <motion.p 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="text-lg text-gray-400 max-w-2xl mx-auto"
+            >
+                {t('caseStudies.subtitle') || "Inspiring journeys of students who achieved their dreams"}
+            </motion.p>
+          
+          {/* Enhanced Search Bar - Desktop only */}
+          <div className="max-w-2xl mx-auto hidden lg:block mt-8">
+            <div className="bg-white/5 backdrop-blur-md rounded-2xl p-2 shadow-2xl border border-white/10">
               <div className="flex gap-2">
                 <div className="flex-1 relative">
                   <input
@@ -330,19 +359,20 @@ const CaseStudies: React.FC = () => {
                     placeholder={t('caseStudies.searchPlaceholder') || 'Search success stories...'}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-6 py-4 pl-12 bg-white/90 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white transition-all text-lg placeholder-gray-500"
+                    className="w-full px-6 py-4 pl-12 bg-[#0A0A0A]/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:bg-[#0A0A0A] transition-all text-lg placeholder-gray-500 border border-white/5"
                   />
                   <IconComponent icon={FaSearch} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
                 </div>
-                <button className="px-6 py-4 bg-white/20 hover:bg-white/30 text-white rounded-xl font-medium transition-colors flex items-center gap-2 border border-white/30">
+                <button className="px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium transition-colors flex items-center gap-2 shadow-lg shadow-purple-500/20">
                   <IconComponent icon={FaSearch} />
                   <span className="hidden sm:inline">Search</span>
                 </button>
               </div>
             </div>
           </div>
-        </PageHeader>
+        </div>
 
+        {/* Main Content */}
         <section className="py-8 sm:py-12">
           <div className="container mx-auto px-4">
             {/* Mobile Search and Action Bar - Show on mobile only */}
@@ -354,13 +384,13 @@ const CaseStudies: React.FC = () => {
                   placeholder="Search success stories..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-10 py-3 bg-[#0A0A0A] border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
                 <IconComponent icon={FaSearch} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
                   >
                     <IconComponent icon={FaTimes} className="h-4 w-4" />
                   </button>
@@ -371,13 +401,13 @@ const CaseStudies: React.FC = () => {
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowMobileFilters(true)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-lg shadow-purple-500/20"
                 >
                   <IconComponent icon={FaFilter} className="h-4 w-4" />
                   <span>Filters</span>
-                  {((activeFilters.category ? 1 : 0) + (activeFilters.outcome ? 1 : 0) + (activeFilters.country ? 1 : 0) + (activeFilters.field ? 1 : 0) + (activeFilters.featured ? 1 : 0) + (searchQuery ? 1 : 0)) > 0 && (
+                  {activeFilterCount > 0 && (
                     <span className="bg-purple-800 text-white text-xs px-2 py-1 rounded-full">
-                      {(activeFilters.category ? 1 : 0) + (activeFilters.outcome ? 1 : 0) + (activeFilters.country ? 1 : 0) + (activeFilters.field ? 1 : 0) + (activeFilters.featured ? 1 : 0) + (searchQuery ? 1 : 0)}
+                      {activeFilterCount}
                     </span>
                   )}
                 </button>
@@ -385,7 +415,7 @@ const CaseStudies: React.FC = () => {
                 {/* View Mode Toggle */}
                 <button
                   onClick={() => setMobileViewMode(mobileViewMode === 'grid' ? 'list' : 'grid')}
-                  className="px-3 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all flex items-center justify-center"
+                  className="px-3 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all flex items-center justify-center"
                 >
                   <IconComponent icon={mobileViewMode === 'grid' ? FaTh : FaList} className="h-4 w-4" />
                 </button>
@@ -400,622 +430,682 @@ const CaseStudies: React.FC = () => {
               </div>
             </div>
 
-            {/* Desktop Search and Filters Section - Hidden on mobile */}
-            <section className="hidden lg:block py-8 bg-white border-b border-gray-200 shadow-sm rounded-xl mb-6">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-4">
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Success Stories</h2>
-                    <p className="text-gray-600">
-                      Showing {caseStudies.length} success stor{caseStudies.length !== 1 ? 'ies' : 'y'}
-                    </p>
-                  </div>
-                  
-                  <div className="flex items-center gap-4 mt-4 lg:mt-0">
-                    {/* View Mode Toggle - Desktop */}
-                    <div className="flex items-center gap-2">
+            {/* Mobile Filter Modal */}
+            <AnimatePresence>
+              {showMobileFilters && (
+                <motion.div
+                  className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[10000] lg:hidden"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setShowMobileFilters(false)}
+                >
+                  <motion.div
+                    className="fixed inset-y-0 right-0 w-full max-w-md bg-[#0A0A0A] shadow-2xl border-l border-white/10"
+                    initial={{ x: '100%' }}
+                    animate={{ x: 0 }}
+                    exit={{ x: '100%' }}
+                    transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Header */}
+                    <div className="sticky top-0 bg-[#0A0A0A] border-b border-white/10 px-4 py-4 flex justify-between items-center z-10">
+                      <h3 className="text-lg font-semibold text-white">Filters</h3>
                       <button
-                        onClick={() => setViewMode('grid')}
-                        className={`p-2 rounded ${viewMode === 'grid' ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-500'}`}
+                        onClick={() => setShowMobileFilters(false)}
+                        className="p-2 hover:bg-white/10 rounded-lg transition-colors bg-white/5 border border-white/10"
                       >
-                        <IconComponent icon={FaTh} />
-                      </button>
-                      <button
-                        onClick={() => setViewMode('list')}
-                        className={`p-2 rounded ${viewMode === 'list' ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-500'}`}
-                      >
-                        <IconComponent icon={FaList} />
+                        <IconComponent icon={FaTimes} className="h-5 w-5 text-gray-400" />
                       </button>
                     </div>
 
-                    {/* Sort Dropdown */}
-                    <div className="flex items-center gap-2">
-                      <IconComponent icon={FaSort} className="text-gray-500" />
-                      <select
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value as 'newest' | 'popular' | 'scholarship' | 'university')}
-                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                    {/* Content */}
+                    <div className="p-4 pb-20 overflow-y-auto h-full">
+                      {/* Search */}
+                      <div className="mb-6">
+                        <label className="block text-sm font-medium text-gray-400 mb-2">Search</label>
+                        <div className="relative">
+                            <IconComponent 
+                                icon={FaSearch} 
+                                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4"
+                            />
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Search success stories..."
+                                className="w-full pl-10 pr-4 py-3 border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all duration-200 text-sm bg-white/5 text-white placeholder-gray-500"
+                            />
+                        </div>
+                      </div>
+
+                      {/* Categories */}
+                      <div className="mb-6">
+                        <label className="block text-sm font-medium text-gray-400 mb-2">Target Level</label>
+                        <select
+                          value={activeFilters.category}
+                          onChange={(e) => toggleFilter('category', e.target.value)}
+                          className="w-full px-3 py-2 bg-[#0A0A0A] border border-white/10 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        >
+                          <option value="">All Levels</option>
+                          {categories.map(category => (
+                            <option key={category} value={category}>
+                              {category}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Outcomes */}
+                      <div className="mb-6">
+                        <label className="block text-sm font-medium text-gray-400 mb-2">Outcome</label>
+                        <select
+                          value={activeFilters.outcome}
+                          onChange={(e) => toggleFilter('outcome', e.target.value)}
+                          className="w-full px-3 py-2 bg-[#0A0A0A] border border-white/10 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        >
+                          <option value="">All Outcomes</option>
+                          {outcomes.map(outcome => (
+                            <option key={outcome} value={outcome}>
+                              {outcome}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Destination */}
+                      <div className="mb-6">
+                        <label className="block text-sm font-medium text-gray-400 mb-2">Destination</label>
+                        <div className="flex flex-wrap gap-2">
+                            {countries.map(country => (
+                                <button
+                                    key={country}
+                                    className={`text-xs font-medium px-3 py-2 rounded-full transition-colors border ${
+                                        activeFilters.country === country
+                                        ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                                        : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10 hover:text-white'
+                                    }`}
+                                    onClick={() => toggleFilter('country', country)}
+                                >
+                                    {country}
+                                </button>
+                            ))}
+                        </div>
+                      </div>
+
+                      {/* Sort By */}
+                      <div className="mb-6">
+                        <label className="block text-sm font-medium text-gray-400 mb-2">Sort By</label>
+                        <select
+                          value={sortBy}
+                          onChange={(e) => setSortBy(e.target.value as any)}
+                          className="w-full px-3 py-2 bg-[#0A0A0A] border border-white/10 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        >
+                          <option value="newest">Newest First</option>
+                          <option value="popular">Most Popular</option>
+                          <option value="scholarship">Highest Scholarship</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-[#0A0A0A] border-t border-white/10 px-4 py-3 flex gap-3 z-10">
+                      <button
+                        onClick={clearAllFilters}
+                        className="flex-1 px-4 py-2 border border-white/10 text-gray-300 rounded-lg hover:bg-white/5 transition-colors"
                       >
-                        <option value="newest">Newest First</option>
-                        <option value="oldest">Oldest First</option>
-                        <option value="popular">Most Popular</option>
-                        <option value="featured">Featured First</option>
-                      </select>
+                        Reset
+                      </button>
+                      <button
+                        onClick={() => setShowMobileFilters(false)}
+                        className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-lg shadow-purple-500/20"
+                      >
+                        Apply
+                      </button>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {loading ? (
+               <div className="flex flex-col lg:flex-row gap-8">
+                {/* Desktop Sidebar Skeleton */}
+                <div className="hidden lg:block lg:w-1/4">
+                  <div className="bg-white/5 border border-white/10 rounded-xl p-6 animate-pulse">
+                    <div className="space-y-4">
+                      <div className="h-10 bg-white/10 rounded"></div>
+                      <div className="h-10 bg-white/10 rounded"></div>
+                      <div className="h-10 bg-white/10 rounded"></div>
                     </div>
                   </div>
                 </div>
-
-                <motion.div 
-                  className="flex flex-col lg:flex-row gap-6 items-center"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6 }}
-                >
-                  {/* Filter Buttons */}
-                  <motion.div 
-                    className="flex flex-wrap gap-3"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.6, delay: 0.2 }}
-                  >
-                    <select
-                      value={activeFilters.category}
-                      onChange={(e) => toggleFilter('category', e.target.value)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white transition-all duration-200 hover:border-purple-300"
-                    >
-                      <option value="">All Categories</option>
-                      {Array.isArray(categories) && categories.map(category => (
-                        <option key={category} value={category}>{category}</option>
+                {/* Main Content Skeleton */}
+                <div className="lg:w-3/4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {[...Array(6)].map((_, index) => (
+                        <CaseStudiesSkeleton key={index} dark={true} />
                       ))}
-                    </select>
-
-                    <select
-                      value={activeFilters.outcome}
-                      onChange={(e) => toggleFilter('outcome', e.target.value)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white transition-all duration-200 hover:border-purple-300"
-                    >
-                      <option value="">All Outcomes</option>
-                      {Array.isArray(outcomes) && outcomes.map(outcome => (
-                        <option key={outcome} value={outcome}>{outcome}</option>
-                      ))}
-                    </select>
-
-                    <select
-                      value={activeFilters.country}
-                      onChange={(e) => toggleFilter('country', e.target.value)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white transition-all duration-200 hover:border-purple-300"
-                    >
-                      <option value="">All Countries</option>
-                      {Array.isArray(countries) && countries.map(country => (
-                        <option key={country} value={country}>{country}</option>
-                      ))}
-                    </select>
-
-                    <select
-                      value={activeFilters.field}
-                      onChange={(e) => toggleFilter('field', e.target.value)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white transition-all duration-200 hover:border-purple-300"
-                    >
-                      <option value="">All Fields</option>
-                      {Array.isArray(fields) && fields.map(field => (
-                        <option key={field} value={field}>{field}</option>
-                      ))}
-                    </select>
-
-                    <button
-                      onClick={() => toggleFilter('featured', !activeFilters.featured)}
-                      className={`px-4 py-2 rounded-lg transition-all duration-200 font-medium ${
-                        activeFilters.featured
-                          ? 'bg-purple-600 text-white shadow-lg'
-                          : 'bg-white border border-gray-300 text-gray-700 hover:border-purple-300 hover:text-purple-600'
-                      }`}
-                    >
-                      ⭐ Featured
-                    </button>
-
-                    {/* Clear Filters Button */}
-                    {((activeFilters.category || activeFilters.outcome || activeFilters.country || activeFilters.field || activeFilters.featured || searchQuery) && (
-                      <button
-                        onClick={clearAllFilters}
-                        className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-all duration-200 flex items-center gap-2"
-                      >
-                        <IconComponent icon={FaTimesCircle} />
-                        Clear All
-                      </button>
-                    ))}
-                  </motion.div>
-                </motion.div>
+                    </div>
+                </div>
               </div>
-            </section>
+            ) : (
+              <div className="flex flex-col lg:flex-row gap-8">
+                {/* Desktop Sidebar Filters - Hidden on mobile */}
+                <motion.div 
+                  className="hidden lg:block lg:w-1/4"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
+                >
+                  <div className="bg-[#0A0A0A] border border-white/10 rounded-xl p-6 sticky top-24 backdrop-blur-xl space-y-8">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-lg font-bold text-white">Filters</h3>
+                      {activeFilterCount > 0 && (
+                        <button
+                          onClick={clearAllFilters}
+                          className="text-sm text-purple-400 hover:text-purple-300 font-medium"
+                        >
+                          Clear All
+                        </button>
+                      )}
+                    </div>
 
-            {/* Success Stories Grid */}
-            <section className="py-6 sm:py-12">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                {loading ? (
-                  <CaseStudiesSkeleton viewMode={viewMode} />
-                ) : caseStudies.length > 0 ? (
+                    {/* Categories */}
+                    <div>
+                      <h4 className="text-md font-semibold text-gray-300 mb-3">Target Level</h4>
+                      <div className="space-y-2">
+                        {categories.map((category) => (
+                            <motion.button
+                              key={category}
+                              className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center ${
+                                activeFilters.category === category
+                                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30 font-medium'
+                                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                              }`}
+                              onClick={() => toggleFilter('category', category)}
+                              whileHover={{ x: 2 }}
+                            >
+                              <span className="mr-2">{getCategoryIcon(category)}</span>
+                              {category}
+                            </motion.button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Outcomes */}
+                    <div>
+                      <h4 className="text-md font-semibold text-gray-300 mb-3">Outcome</h4>
+                      <div className="space-y-2">
+                        {outcomes.slice(0, 5).map((outcome) => (
+                            <motion.button
+                              key={outcome}
+                              className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center ${
+                                activeFilters.outcome === outcome
+                                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30 font-medium'
+                                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                              }`}
+                              onClick={() => toggleFilter('outcome', outcome)}
+                              whileHover={{ x: 2 }}
+                            >
+                              <IconComponent icon={FaStar} className="mr-2 text-yellow-500" />
+                              {outcome}
+                            </motion.button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Countries */}
+                    <div>
+                        <h4 className="text-md font-semibold text-gray-300 mb-3">Destination</h4>
+                        <div className="flex flex-wrap gap-2">
+                        {countries.map(country => (
+                            <motion.button
+                            key={country}
+                            className={`text-xs font-medium px-3 py-1 rounded-full transition-colors border ${
+                                activeFilters.country === country
+                                ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                                : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10 hover:text-white'
+                            }`}
+                            onClick={() => toggleFilter('country', country)}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            >
+                            {country}
+                            </motion.button>
+                        ))}
+                        </div>
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* Main Content */}
+                <motion.div 
+                  className="lg:w-3/4"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
+                >
+                  {/* Results Header */}
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 bg-[#0A0A0A] border border-white/10 rounded-xl p-6 backdrop-blur-xl">
+                    <div>
+                      <h2 className="text-2xl font-bold text-white mb-2">
+                        {activeFilters.category || 'All Stories'}
+                        {searchQuery && (
+                          <span className="text-lg font-normal text-gray-400 ml-2">
+                            - Results for "{searchQuery}"
+                          </span>
+                        )}
+                      </h2>
+                      <p className="text-gray-400">
+                        Showing {caseStudies.length} success stor{caseStudies.length !== 1 ? 'ies' : 'y'}
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-center gap-4 mt-4 sm:mt-0">
+                      {/* View Mode Toggle - Desktop */}
+                      <div className="hidden lg:flex items-center gap-2">
+                        <button
+                          onClick={() => setViewMode('grid')}
+                          className={`p-2 rounded ${viewMode === 'grid' ? 'bg-purple-500/20 text-purple-300' : 'bg-white/5 text-gray-400'}`}
+                        >
+                          <IconComponent icon={FaTh} />
+                        </button>
+                        <button
+                          onClick={() => setViewMode('list')}
+                          className={`p-2 rounded ${viewMode === 'list' ? 'bg-purple-500/20 text-purple-300' : 'bg-white/5 text-gray-400'}`}
+                        >
+                          <IconComponent icon={FaList} />
+                        </button>
+                      </div>
+
+                      {/* Sort Dropdown */}
+                      <div className="flex items-center gap-2">
+                        <IconComponent icon={FaSort} className="text-gray-400" />
+                        <select
+                          value={sortBy}
+                          onChange={(e) => setSortBy(e.target.value as any)}
+                          className="px-3 py-2 bg-[#0A0A0A] border border-white/10 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                        >
+                          <option value="newest">Newest First</option>
+                          <option value="popular">Most Popular</option>
+                          <option value="scholarship">Highest Scholarship</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Active Filters Bar */}
+                  {activeFilterCount > 0 && (
+                    <motion.div 
+                      className="mb-6 bg-[#0A0A0A] border border-white/10 rounded-xl p-4 backdrop-blur-xl"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                    >
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm text-gray-400 font-medium">Active filters:</span>
+                        {Object.entries(activeFilters).map(([key, value]) => {
+                            if (!value) return null;
+                            return (
+                                <span key={key} className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-sm flex items-center gap-1 border border-purple-500/30 capitalize">
+                                    {key}: {value.toString()}
+                                    <button onClick={() => toggleFilter(key as any, value)}>
+                                        <IconComponent icon={FaTimes} className="text-xs" />
+                                    </button>
+                                </span>
+                            );
+                        })}
+                        {searchQuery && (
+                            <span className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-sm flex items-center gap-1 border border-purple-500/30">
+                            Search: "{searchQuery}"
+                            <button onClick={() => setSearchQuery('')}>
+                                <IconComponent icon={FaTimes} className="text-xs" />
+                            </button>
+                            </span>
+                        )}
+                        <button
+                          onClick={clearAllFilters}
+                          className="text-gray-400 hover:text-white text-sm underline ml-2"
+                        >
+                          Clear all
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                  
+                  {/* Cards Grid/List */}
                   <motion.div 
-                    className={viewMode === 'grid' 
-                      ? "grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4 lg:gap-8"
-                      : "space-y-6"
+                    className={viewMode === 'grid' ? 
+                      'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 
+                      'space-y-6'
                     }
                     variants={containerVariants}
                     initial="hidden"
                     animate="visible"
                   >
-                    {caseStudies.map((caseStudy) => (
-                      <motion.div
-                        key={caseStudy.id}
-                        className={viewMode === 'grid' 
-                          ? "bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 flex flex-col group cursor-pointer"
-                          : "bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 flex flex-col lg:flex-row group cursor-pointer"
-                        }
-                        variants={itemVariants}
-                        whileHover={{ y: -4, scale: 1.01 }}
-                        onClick={() => openModal(caseStudy)}
+                    {caseStudies.map((study) => (
+                    <HolographicCard
+                      key={study.id}
+                      className={viewMode === 'grid' 
+                        ? "flex flex-col h-full cursor-pointer group"
+                        : "flex flex-col lg:flex-row h-full cursor-pointer group"
+                      }
+                    >
+                      <div
+                        className="flex-1 flex flex-col h-full"
+                        onClick={() => { setSelectedCaseStudy(study); setShowModal(true); }}
                       >
                         {viewMode === 'grid' ? (
-                          // Grid View Layout - Database-style card
+                          // Grid View Layout
                           <>
-                            <div className="relative overflow-hidden">
-                              <img 
-                                src={caseStudy.student_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(caseStudy.student_name)}&background=8B5CF6&color=fff`} 
-                                alt={caseStudy.student_name}
-                                className="w-full h-32 sm:h-48 object-cover group-hover:scale-110 transition-transform duration-300"
-                              />
-                              {caseStudy.reading_time && (
-                                <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded-full text-xs font-bold text-purple-600 shadow-md">
-                                  {caseStudy.reading_time}m
+                            <div className="relative overflow-hidden h-48 flex-shrink-0">
+                                {/* Use a gradient placeholder if no image */}
+                                {study.student_image ? (
+                                    <img 
+                                        src={study.student_image} 
+                                        alt={study.title}
+                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full bg-gradient-to-br from-purple-900 to-blue-900 group-hover:scale-110 transition-transform duration-500 flex items-center justify-center">
+                                        <IconComponent icon={FaGraduationCap} className="text-white/20 text-6xl" />
+                                    </div>
+                                )}
+                              
+                              <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-transparent to-transparent opacity-60" />
+                              
+                              {study.scholarship_amount && (
+                                <div className="absolute top-3 right-3 bg-green-500/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-medium text-green-300 border border-green-500/30 flex items-center gap-1">
+                                  <IconComponent icon={FaMoneyBillWave} />
+                                  {study.scholarship_currency} {study.scholarship_amount.toLocaleString()}
                                 </div>
                               )}
-                              {caseStudy.featured && (
-                                <div className="absolute top-2 left-2 bg-gradient-to-r from-indigo-500 to-red-500 text-white px-2 py-1 rounded-full text-xs font-medium">
+                              
+                              {study.featured && (
+                                <div className="absolute top-3 left-3 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-lg shadow-purple-500/20">
                                   Featured
                                 </div>
                               )}
                             </div>
                             
-                            <div className="p-3 sm:p-6 flex-1 flex flex-col">
-                              <div className="flex items-center gap-1 sm:gap-2 mb-2 sm:mb-3 flex-wrap">
-                                <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2 py-0.5 rounded-full">
-                                  {(caseStudy.target_country || 'International').length > 6 ? 
-                                    (caseStudy.target_country || 'International').substring(0, 6) + '...' : 
-                                    (caseStudy.target_country || 'International')
-                                  }
+                            <div className="p-6 flex-1 flex flex-col">
+                              <div className="flex items-center gap-2 mb-4">
+                                <span className="bg-purple-500/10 text-purple-300 text-xs font-medium px-2.5 py-1 rounded-lg border border-purple-500/20 flex items-center">
+                                  {getCategoryIcon(study.category || '')}
+                                  <span className="ml-1">{study.category}</span>
                                 </span>
-                                {window.innerWidth >= 640 && (
-                                  <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded-full">
-                                    {(caseStudy.field_of_study || 'General').length > 8 ? 
-                                      (caseStudy.field_of_study || 'General').substring(0, 8) + '...' : 
-                                      (caseStudy.field_of_study || 'General')
-                                    }
-                                  </span>
-                                )}
+                                <span className="text-gray-400 text-xs flex items-center gap-1">
+                                    <IconComponent icon={FaMapMarkerAlt} className="text-gray-500" />
+                                    {study.target_country}
+                                </span>
                               </div>
                               
-                              <h3 className="text-xs sm:text-lg font-bold text-gray-800 mb-1 sm:mb-2 line-clamp-2 flex-shrink-0 group-hover:text-purple-600 transition-colors">
-                                {caseStudy.title}
+                              <h3 className="text-xl font-bold text-white mb-2 line-clamp-2 group-hover:text-purple-300 transition-colors">
+                                {study.title}
                               </h3>
                               
-                              <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-4 line-clamp-2 sm:line-clamp-3 flex-grow">
-                                {caseStudy.description}
-                              </p>
-                              
-                              <div className="flex items-center justify-between mt-auto">
-                                <div className="flex items-center gap-1 sm:gap-2">
-                                  <img 
-                                    src={caseStudy.student_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(caseStudy.student_name)}&background=8B5CF6&color=fff`} 
-                                    alt={caseStudy.student_name}
-                                    className="w-4 h-4 sm:w-6 sm:h-6 rounded-full object-cover"
-                                  />
-                                  <span className="text-xs sm:text-sm font-medium text-gray-700 truncate">
-                                    {caseStudy.student_name.length > 12 ? 
-                                      caseStudy.student_name.substring(0, 12) + '...' : 
-                                      caseStudy.student_name
-                                    }
-                                  </span>
+                              <div className="mb-4">
+                                <div className="text-sm text-gray-300 font-medium mb-1">{study.outcome}</div>
+                                <div className="text-xs text-gray-500 flex items-center gap-1">
+                                    <IconComponent icon={FaUniversity} />
+                                    {study.target_university}
                                 </div>
-                                
-                                {caseStudy.scholarship_amount && (
-                                  <div className="text-right">
-                                    <span className="text-xs sm:text-sm font-bold text-green-600">
-                                      ${(caseStudy.scholarship_amount / 1000).toFixed(0)}k
-                                    </span>
-                                    <p className="text-xs text-gray-500 hidden sm:block">Scholarship</p>
+                              </div>
+
+                              <p className="text-gray-400 mb-6 text-sm line-clamp-3 flex-1">{study.description}</p>
+                              
+                              <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/5">
+                                <div className="flex items-center gap-3">
+                                  {/* Avatar placeholder */}
+                                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 flex items-center justify-center text-xs font-bold ring-2 ring-purple-500/20">
+                                    {study.student_name.charAt(0)}
                                   </div>
-                                )}
+                                  <div className="flex flex-col">
+                                    <span className="text-sm font-medium text-gray-200">{study.student_name}</span>
+                                    <span className="text-xs text-gray-500">{study.target_program}</span>
+                                  </div>
+                                </div>
+                                <div className="p-2 rounded-lg bg-white/5 group-hover:bg-purple-500/20 transition-colors">
+                                  <IconComponent icon={FaArrowRight} className="text-gray-400 group-hover:text-purple-300 w-4 h-4" />
+                                </div>
                               </div>
                             </div>
                           </>
                         ) : (
-                          // List View Layout - Database-style horizontal card
-                          <>
-                            <div className="relative overflow-hidden w-full lg:w-80 flex-shrink-0">
-                              <img 
-                                src={caseStudy.student_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(caseStudy.student_name)}&background=8B5CF6&color=fff`} 
-                                alt={caseStudy.student_name}
-                                className="w-full h-32 sm:h-48 lg:h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                              />
-                              {caseStudy.featured && (
-                                <div className="absolute top-2 sm:top-3 left-2 sm:left-3 bg-gradient-to-r from-indigo-500 to-red-500 text-white px-2 sm:px-3 py-1 rounded-full text-xs font-medium">
+                          // List View Layout
+                          <div className="flex flex-col lg:flex-row h-full">
+                            <div className="relative overflow-hidden lg:w-80 h-48 lg:h-auto flex-shrink-0">
+                                {study.student_image ? (
+                                    <img 
+                                        src={study.student_image} 
+                                        alt={study.title}
+                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full bg-gradient-to-br from-purple-900 to-blue-900 group-hover:scale-110 transition-transform duration-500 flex items-center justify-center">
+                                        <IconComponent icon={FaGraduationCap} className="text-white/20 text-6xl" />
+                                    </div>
+                                )}
+                              <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-[#0A0A0A] via-transparent to-transparent opacity-60" />
+                              {study.featured && (
+                                <div className="absolute top-3 left-3 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-lg shadow-purple-500/20">
                                   Featured
                                 </div>
                               )}
                             </div>
                             
-                            <div className="p-3 sm:p-6 flex-1 flex flex-col">
-                              <div className="flex items-center gap-1 sm:gap-2 mb-2 sm:mb-3 flex-wrap">
-                                <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2 py-0.5 rounded-full">
-                                  {caseStudy.target_country || 'International'}
-                                </span>
-                                <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded-full">
-                                  {caseStudy.field_of_study || 'General'}
-                                </span>
-                                {caseStudy.reading_time && (
-                                  <span className="text-gray-500 text-xs hidden sm:inline">
-                                    {caseStudy.reading_time} min read
+                            <div className="p-6 flex-1 flex flex-col justify-between">
+                              <div>
+                                <div className="flex items-center gap-3 mb-3">
+                                  <span className="bg-purple-500/10 text-purple-300 text-xs font-medium px-2.5 py-1 rounded-lg border border-purple-500/20">
+                                    {study.category}
                                   </span>
-                                )}
-                              </div>
-                              
-                              <h3 className="text-base sm:text-xl font-bold text-gray-800 mb-2 group-hover:text-purple-600 transition-colors line-clamp-2">
-                                {caseStudy.title}
-                              </h3>
-                              <p className="text-gray-600 mb-3 sm:mb-4 line-clamp-2 flex-1 text-sm sm:text-base">{caseStudy.description}</p>
-                              
-                              <div className="flex items-center justify-between mb-3 sm:mb-4 flex-wrap gap-2">
-                                <div className="flex items-center">
-                                  <img 
-                                    src={caseStudy.student_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(caseStudy.student_name)}&background=8B5CF6&color=fff`}
-                                    alt={caseStudy.student_name}
-                                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-full mr-2 sm:mr-3"
-                                  />
-                                  <div className="min-w-0">
-                                    <p className="text-xs sm:text-sm font-medium text-gray-800 truncate">{caseStudy.student_name}</p>
-                                    <p className="text-xs text-gray-600 truncate">{caseStudy.target_university || 'University'}</p>
-                                  </div>
+                                  <span className="text-gray-400 text-xs flex items-center gap-1">
+                                    <IconComponent icon={FaMapMarkerAlt} />
+                                    {study.target_country}
+                                  </span>
+                                  <span className="text-gray-400 text-xs">
+                                    {study.application_year}
+                                  </span>
                                 </div>
                                 
-                                {/* Database-style dual buttons */}
-                                <div className="flex items-center gap-2">
-                                  <motion.button
-                                    className="bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-700 hover:to-indigo-800 text-white py-1.5 sm:py-2 px-3 sm:px-4 rounded-lg font-medium transition-all text-xs sm:text-sm shadow-lg"
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      openModal(caseStudy);
-                                    }}
-                                  >
-                                    Read
-                                  </motion.button>
-                                  <motion.button
-                                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 py-1.5 sm:py-2 px-3 sm:px-4 rounded-lg font-medium transition-all text-xs sm:text-sm"
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      // Handle bookmark functionality
-                                    }}
-                                  >
-                                    Save
-                                  </motion.button>
+                                <h3 className="text-2xl font-bold text-white mb-2 group-hover:text-purple-300 transition-colors">
+                                  {study.title}
+                                </h3>
+                                
+                                <div className="mb-3 flex flex-wrap gap-4 text-sm">
+                                    <div className="text-green-400 font-medium">
+                                        {study.outcome}
+                                    </div>
+                                    <div className="text-gray-300 flex items-center gap-1">
+                                        <IconComponent icon={FaUniversity} className="text-gray-500" />
+                                        {study.target_university}
+                                    </div>
+                                    {study.scholarship_amount && (
+                                        <div className="text-green-300 flex items-center gap-1">
+                                            <IconComponent icon={FaMoneyBillWave} />
+                                            {study.scholarship_currency} {study.scholarship_amount.toLocaleString()}
+                                        </div>
+                                    )}
                                 </div>
+
+                                <p className="text-gray-400 mb-4 line-clamp-2">{study.description}</p>
                               </div>
                               
-                              {/* Outcome Badge */}
-                              <div className="flex items-center justify-between flex-wrap gap-2">
-                                <span className={`inline-block px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${
-                                  caseStudy.outcome?.toLowerCase().includes('accepted') 
-                                    ? 'bg-green-100 text-green-800'
-                                    : caseStudy.outcome?.toLowerCase().includes('scholarship')
-                                      ? 'bg-yellow-100 text-yellow-800'
-                                      : 'bg-blue-100 text-blue-800'
-                                }`}>
-                                  {caseStudy.outcome}
+                              <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                                <div className="flex items-center gap-3">
+                                   <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 flex items-center justify-center text-xs font-bold ring-2 ring-purple-500/20">
+                                    {study.student_name.charAt(0)}
+                                  </div>
+                                  <span className="text-sm font-medium text-gray-200">{study.student_name}</span>
+                                </div>
+                                <span className="flex items-center text-purple-400 text-sm font-medium group-hover:translate-x-1 transition-transform">
+                                  Read Full Story <IconComponent icon={FaArrowRight} className="ml-2 w-4 h-4" />
                                 </span>
-                                {caseStudy.scholarship_amount && (
-                                  <span className="text-xs sm:text-sm font-bold text-green-600">
-                                    ${caseStudy.scholarship_amount.toLocaleString()} Scholarship
-                                  </span>
-                                )}
                               </div>
                             </div>
-                          </>
+                          </div>
                         )}
-                      </motion.div>
+                      </div>
+                    </HolographicCard>
                     ))}
                   </motion.div>
-                ) : (
-                  <div className="text-center py-20">
-                    <div className="max-w-md mx-auto">
-                      <IconComponent icon={FaTimesCircle} className="text-6xl text-gray-300 mb-6 mx-auto" />
-                      <h3 className="text-xl font-bold text-gray-700 mb-2">No success stories found</h3>
-                      <p className="text-gray-600 mb-4">Try adjusting your search or filters to find relevant success stories.</p>
-                      <button
-                        onClick={clearAllFilters}
-                        className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                      >
-                        Clear Filters
-                      </button>
-                    </div>
-                  </div>
-                )}
 
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex justify-center mt-12">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                        disabled={currentPage === 1}
-                        className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                      >
-                        Previous
-                      </button>
-                      
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        const page = i + 1;
-                        return (
-                          <button
-                            key={page}
-                            onClick={() => setCurrentPage(page)}
-                            className={`px-4 py-2 rounded-lg ${
-                              currentPage === page
-                                ? 'bg-purple-600 text-white'
-                                : 'border border-gray-300 hover:bg-gray-50'
-                            }`}
-                          >
-                            {page}
-                          </button>
-                        );
-                      })}
-                      
-                      <button
-                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                        disabled={currentPage === totalPages}
-                        className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </div>
-                )}
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <motion.div 
+                      className="mt-8 flex justify-center"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handlePageChange(currentPage - 1)}
+                          disabled={currentPage === 1}
+                          className="px-4 py-2 text-sm font-medium text-gray-400 bg-[#0A0A0A] border border-white/10 rounded-lg hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Previous
+                        </button>
+                        
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                          const pageNum = i + 1;
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => handlePageChange(pageNum)}
+                              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                currentPage === pageNum
+                                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
+                                  : 'text-gray-400 bg-[#0A0A0A] border border-white/10 hover:bg-white/5'
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        })}
+                        
+                        <button
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                          className="px-4 py-2 text-sm font-medium text-gray-400 bg-[#0A0A0A] border border-white/10 rounded-lg hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </motion.div>
               </div>
-            </section>
+            )}
           </div>
         </section>
       </main>
+      <Footer />
 
-      {/* Modal for detailed view */}
-      {showModal && selectedCaseStudy && (
-        <motion.div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={closeModal}
-        >
-          <motion.div 
-            className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto"
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">{selectedCaseStudy.title}</h2>
-                <button
-                  onClick={closeModal}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <IconComponent icon={FaTimes} className="text-2xl" />
-                </button>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Student Information</h3>
-                  <div className="space-y-2">
-                    <p><span className="font-medium">Name:</span> {selectedCaseStudy.student_name}</p>
-                    <p><span className="font-medium">Background:</span> {selectedCaseStudy.student_background}</p>
-                    <p><span className="font-medium">Previous Education:</span> {selectedCaseStudy.previous_education}</p>
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Target Application</h3>
-                  <div className="space-y-2">
-                    <p><span className="font-medium">Program:</span> {selectedCaseStudy.target_program}</p>
-                    <p><span className="font-medium">University:</span> {selectedCaseStudy.target_university}</p>
-                    <p><span className="font-medium">Country:</span> {selectedCaseStudy.target_country}</p>
-                    <p><span className="font-medium">Year:</span> {selectedCaseStudy.application_year}</p>
-                  </div>
-                </div>
-              </div>
-              
-              {selectedCaseStudy.story_content && (
-                <div className="mt-6">
-                  <h3 className="text-lg font-semibold mb-3">Success Story</h3>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-gray-700">{selectedCaseStudy.story_content}</p>
-                  </div>
-                </div>
-              )}
-              
-              {selectedCaseStudy.strategies_used && selectedCaseStudy.strategies_used.length > 0 && (
-                <div className="mt-6">
-                  <h3 className="text-lg font-semibold mb-3">Strategies Used</h3>
-                  <ul className="list-disc list-inside space-y-1">
-                    {selectedCaseStudy.strategies_used.map((strategy, index) => (
-                      <li key={index} className="text-gray-700">{strategy}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              
-              {selectedCaseStudy.advice_given && selectedCaseStudy.advice_given.length > 0 && (
-                <div className="mt-6">
-                  <h3 className="text-lg font-semibold mb-3">Advice Given</h3>
-                  <ul className="list-disc list-inside space-y-1">
-                    {selectedCaseStudy.advice_given.map((advice, index) => (
-                      <li key={index} className="text-gray-700">{advice}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-      
-      {/* Mobile Filter Modal */}
-      <AnimatePresence>
-        {showFilters && (
-          <motion.div
-            className="fixed inset-0 bg-black bg-opacity-50 z-[10000] lg:hidden"
+        {/* Modal for Case Study Details - Keeping minimal for now or reuse existing modal logic */}
+        <AnimatePresence>
+        {showModal && selectedCaseStudy && (
+            <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setShowMobileFilters(false)}
-          >
-            <motion.div
-              className="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-xl"
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            onClick={() => setShowModal(false)}
             >
-              {/* Header */}
-              <div className="sticky top-0 bg-white border-b px-4 py-4 flex justify-between items-center z-10">
-                <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
-                <button
-                  onClick={() => setShowMobileFilters(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors bg-gray-50 border border-gray-200"
-                >
-                  <IconComponent icon={FaTimes} className="h-5 w-5 text-gray-700" />
-                </button>
-              </div>
-
-              {/* Content */}
-              <div className="p-4 pb-20">
-                {/* Category */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                  <select
-                    value={activeFilters.category}
-                    onChange={(e) => toggleFilter('category', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    <option value="">All Categories</option>
-                    {Array.isArray(categories) && categories.map(category => (
-                      <option key={category} value={category}>{category}</option>
-                    ))}
-                  </select>
+            <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-[#0A0A0A] border border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+                onClick={e => e.stopPropagation()}
+            >
+                <div className="relative">
+                    <div className="h-48 bg-gradient-to-r from-purple-900 to-blue-900 relative">
+                         {selectedCaseStudy.student_image && (
+                             <img src={selectedCaseStudy.student_image} alt="" className="w-full h-full object-cover opacity-50" />
+                         )}
+                         <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] to-transparent" />
+                         <button 
+                            onClick={() => setShowModal(false)}
+                            className="absolute top-4 right-4 bg-black/50 p-2 rounded-full text-white hover:bg-white/20 transition-colors"
+                        >
+                            <IconComponent icon={FaTimes} />
+                        </button>
+                    </div>
+                    <div className="p-8 -mt-20 relative">
+                         <div className="bg-[#111] border border-white/10 rounded-xl p-6 shadow-xl mb-6">
+                            <div className="flex flex-wrap gap-2 mb-4">
+                                <span className="px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 text-sm border border-purple-500/30">
+                                    {selectedCaseStudy.category}
+                                </span>
+                                <span className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-sm border border-blue-500/30">
+                                    {selectedCaseStudy.outcome}
+                                </span>
+                            </div>
+                            <h2 className="text-3xl font-bold text-white mb-2">{selectedCaseStudy.title}</h2>
+                            <p className="text-xl text-gray-300 mb-4">{selectedCaseStudy.description}</p>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 border-t border-white/10 pt-6">
+                                <div>
+                                    <h3 className="text-lg font-bold text-white mb-3">Student Profile</h3>
+                                    <ul className="space-y-2 text-gray-400">
+                                        <li className="flex items-center gap-2">
+                                            <span className="text-gray-500">Name:</span> {selectedCaseStudy.student_name}
+                                        </li>
+                                        <li className="flex items-center gap-2">
+                                            <span className="text-gray-500">Target:</span> {selectedCaseStudy.target_university}
+                                        </li>
+                                         <li className="flex items-center gap-2">
+                                            <span className="text-gray-500">Program:</span> {selectedCaseStudy.target_program}
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-white mb-3">Key Achievements</h3>
+                                     <ul className="space-y-2 text-gray-400">
+                                        {selectedCaseStudy.scholarship_amount && (
+                                            <li className="flex items-center gap-2 text-green-400">
+                                                <IconComponent icon={FaMoneyBillWave} />
+                                                Scholarship: {selectedCaseStudy.scholarship_currency} {selectedCaseStudy.scholarship_amount.toLocaleString()}
+                                            </li>
+                                        )}
+                                    </ul>
+                                </div>
+                            </div>
+                         </div>
+                         
+                         <div className="prose prose-invert max-w-none">
+                             <h3 className="text-2xl font-bold text-white mb-4">The Journey</h3>
+                             <p className="text-gray-300 leading-relaxed mb-6">{selectedCaseStudy.story_content || selectedCaseStudy.description}</p>
+                             
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                 <div>
+                                     <h4 className="text-xl font-bold text-white mb-3">Challenges Faced</h4>
+                                     <ul className="list-disc pl-5 text-gray-400 space-y-1">
+                                         {selectedCaseStudy.challenges_faced?.map((challenge, i) => (
+                                             <li key={i}>{challenge}</li>
+                                         ))}
+                                     </ul>
+                                 </div>
+                                 <div>
+                                      <h4 className="text-xl font-bold text-white mb-3">Strategies Used</h4>
+                                     <ul className="list-disc pl-5 text-gray-400 space-y-1">
+                                         {selectedCaseStudy.strategies_used?.map((strategy, i) => (
+                                             <li key={i}>{strategy}</li>
+                                         ))}
+                                     </ul>
+                                 </div>
+                             </div>
+                         </div>
+                    </div>
                 </div>
-
-                {/* Outcome */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Outcome</label>
-                  <select
-                    value={activeFilters.outcome}
-                    onChange={(e) => toggleFilter('outcome', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    <option value="">All Outcomes</option>
-                    {Array.isArray(outcomes) && outcomes.map(outcome => (
-                      <option key={outcome} value={outcome}>{outcome}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Country */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
-                  <select
-                    value={activeFilters.country}
-                    onChange={(e) => toggleFilter('country', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    <option value="">All Countries</option>
-                    {Array.isArray(countries) && countries.map(country => (
-                      <option key={country} value={country}>{country}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Field of Study */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Field of Study</label>
-                  <select
-                    value={activeFilters.field}
-                    onChange={(e) => toggleFilter('field', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    <option value="">All Fields</option>
-                    {Array.isArray(fields) && fields.map(field => (
-                      <option key={field} value={field}>{field}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Quick Filters */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Quick Filters</label>
-                  <div className="space-y-2">
-                    <button
-                      onClick={() => {
-                        toggleFilter('featured', true);
-                      }}
-                      className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                      ⭐ Featured Stories
-                    </button>
-                    <button
-                      onClick={() => {
-                        toggleFilter('category', 'Medical School');
-                      }}
-                      className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                      🏥 Medical School
-                    </button>
-                    <button
-                      onClick={() => {
-                        toggleFilter('category', 'Graduate School');
-                      }}
-                      className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                      🎓 Graduate School
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="absolute bottom-0 left-0 right-0 bg-white border-t px-4 py-3 flex gap-3">
-                <button
-                  onClick={clearAllFilters}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Reset
-                </button>
-                <button
-                  onClick={() => setShowMobileFilters(false)}
-                  className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                >
-                  Apply
-                </button>
-              </div>
             </motion.div>
-          </motion.div>
+            </motion.div>
         )}
-      </AnimatePresence>
-      
-      <Footer />
+        </AnimatePresence>
     </div>
   );
 };
 
-export default CaseStudies; 
+export default CaseStudies;

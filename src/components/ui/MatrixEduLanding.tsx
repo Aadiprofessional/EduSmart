@@ -2,37 +2,22 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { FaPlay, FaUpload, FaBolt, FaCheckCircle, FaSearch, FaFileAlt, FaMobileAlt, FaLaptop, FaCheck, FaChevronDown, FaChevronUp, FaBook, FaTimes } from 'react-icons/fa';
-import { Header } from '../layout';
-import DarkSvg from '../../assets/Dark.svg';
-import ScrollingBalls3D from './ScrollingBalls3D';
 import HowItWorksScroll from './HowItWorksScroll';
 import VideoDemoScroll from './VideoDemoScroll';
-import { TypewriterText, RotatingCircle } from './RotatingWordsCircle';
 import { ModelPositionProvider, useModelPosition } from '../../utils/ModelPositionContext';
+import ReflectHero from './ReflectHero';
 
 const MatrixEduLandingContent: React.FC = () => {
   const navigate = useNavigate();
   const { registerComponent, unregisterComponent } = useModelPosition();
-  const heroRef = useRef<HTMLElement>(null);
+  // heroRef removed as it is now inside ReflectHero
   const howItWorksRef = useRef<HTMLDivElement>(null);
   const whatYouCanDoRef = useRef<HTMLElement>(null);
   const accessAnywhereRef = useRef<HTMLElement>(null);
   const comparisonRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    if (heroRef.current) {
-      registerComponent('landing-hero', heroRef.current, {
-        pencil: {
-          x: 600, y: -100, z: 1, scale: 3.0, rotation: { x: 0, y: 0, z: 0.1 }, visible: true
-        },
-        eraser: {
-          x: -600, y: 100, z: 1, scale: 1.5, visible: false
-        },
-        sharpener: {
-          x: 0, y: -300, z: 1, scale: 0.03, visible: false
-        }
-      });
-    }
+    // landing-hero registration removed
 
     // how-it-works registration moved to HowItWorksScroll.tsx for per-step positioning
 
@@ -61,7 +46,7 @@ const MatrixEduLandingContent: React.FC = () => {
     }
 
     return () => {
-        unregisterComponent('landing-hero');
+        // unregisterComponent('landing-hero');
         unregisterComponent('how-it-works');
         unregisterComponent('what-you-can-do');
         unregisterComponent('access-anywhere');
@@ -75,46 +60,8 @@ const MatrixEduLandingContent: React.FC = () => {
     setOpenFaqIndex(openFaqIndex === index ? null : index);
   };
 
-  // Star styles including twinkling static stars and shooting stars
+  // Styles for scrolling logos
   const starStyles = `
-    @keyframes twinkle {
-        0%, 100% { opacity: 0.2; transform: scale(0.8); }
-        50% { opacity: 1; transform: scale(1.2); }
-    }
-    .static-star {
-        position: absolute;
-        border-radius: 50%;
-        animation: twinkle 3s ease-in-out infinite;
-    }
-    @keyframes shooting {
-      0% {
-        transform: translateX(0) translateY(0);
-        opacity: 1;
-      }
-      70% {
-        opacity: 1;
-      }
-      100% {
-        transform: translateX(400px) translateY(400px);
-        opacity: 0;
-      }
-    }
-    .shooting-star {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      height: 4px;
-      width: 4px;
-      background: #6366f1;
-      border-radius: 50%;
-      box-shadow: 0 0 10px #6366f1, 0 0 20px #6366f1;
-      animation: shooting 4s ease-in-out infinite;
-      opacity: 0;
-    }
-    html.dark .shooting-star {
-      background: #fff;
-      box-shadow: 0 0 10px #fff, 0 0 20px #fff;
-    }
     @keyframes scroll {
       0% { transform: translateX(0); }
       100% { transform: translateX(-50%); }
@@ -127,82 +74,11 @@ const MatrixEduLandingContent: React.FC = () => {
     }
   `;
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.5 }
-    }
-  };
-  
-  const [activeIndex, setActiveIndex] = useState(0);
-
   return (
     <div className="min-h-screen bg-white dark:bg-[#050505] text-gray-900 dark:text-white font-sans selection:bg-indigo-500 selection:text-white overflow-x-hidden">
       <style>{starStyles}</style>
       
-      <Header />
-
-      {/* Hero Section */}
-      <section ref={heroRef} className="relative pt-20 pb-10 md:pt-32 md:pb-20 overflow-hidden min-h-screen flex flex-col items-center justify-center bg-[#111]">
-        
-        {/* Doodle Background */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
-            <img src={DarkSvg} alt="Doodle Background" className="w-full h-full object-cover opacity-50" />
-        </div>
-
-        {/* Background Rotating Circle - Centered */}
-        <RotatingCircle activeIndex={activeIndex} />
-
-        <div className="container mx-auto px-4 relative z-10 text-center">
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className="max-w-5xl mx-auto"
-            >
-
-              <motion.h1 variants={itemVariants} className="text-4xl md:text-6xl lg:text-7xl font-permanent-marker leading-tight mb-8 tracking-widest text-white">
-                Create accurate <br />
-                <TypewriterText 
-                    words={['explainers', 'flashcards', 'quizzes', 'notes', 'summaries', 'mindmaps', 'schedule', 'chat', 'analytics', 'research']} 
-                    onIndexChange={setActiveIndex}
-                /> <br /> from your course material in seconds.
-              </motion.h1>
-
-              <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-6 justify-center mb-12">
-                <button 
-                  onClick={() => navigate('/signup')}
-                  className="px-10 py-4 bg-indigo-600 text-white rounded-full font-bold text-xl hover:bg-indigo-700 transition-all duration-300 transform hover:-translate-y-1 shadow-[0_0_20px_rgba(99,102,241,0.5)]"
-                >
-                  Try For Free
-                </button>
-              </motion.div>
-
-              <motion.div variants={itemVariants} className="mt-12 flex justify-center items-center gap-2 text-sm text-gray-400">
-                 <div className="flex -space-x-2">
-                    {[1,2,3,4,5].map(i => (
-                        <div key={i} className={`w-8 h-8 rounded-full border-2 border-white bg-gradient-to-br from-indigo-${i}00 to-purple-${i}00 flex items-center justify-center text-xs text-black font-bold`}>
-                            {String.fromCharCode(64+i)}
-                        </div>
-                    ))}
-                 </div>
-                 <span>Loved by 1,000,000+ students</span>
-              </motion.div>
-            </motion.div>
-        </div>
-      </section>
+      <ReflectHero />
 
       {/* Trusted By Section */}
       <section className="py-10 border-y border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-white/[0.02] overflow-hidden">
@@ -539,7 +415,6 @@ const MatrixEduLandingContent: React.FC = () => {
 const MatrixEduLanding: React.FC = () => {
   return (
     <ModelPositionProvider>
-      <ScrollingBalls3D />
       <MatrixEduLandingContent />
     </ModelPositionProvider>
   );

@@ -1,12 +1,53 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AiOutlineCheck, AiOutlineCrown, AiOutlineStar, AiOutlineQuestionCircle } from 'react-icons/ai';
+import { AiOutlineCheck, AiOutlineCrown, AiOutlineStar } from 'react-icons/ai';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { useAuth } from '../utils/AuthContext';
 import { subscriptionAPI, SubscriptionPlan } from '../utils/subscriptionAPI';
 import { Header } from '../components/layout';
 import { Skeleton } from '../components/ui/Skeleton';
+
+// Floating Particle Component
+const FloatingParticle = ({ delay = 0, size = 4, color = "bg-white" }: { delay?: number, size?: number, color?: string }) => (
+  <motion.div
+    className={`absolute ${color} rounded-full opacity-20`}
+    style={{
+      width: size,
+      height: size,
+      left: Math.random() * 100 + '%',
+      top: Math.random() * 100 + '%'
+    }}
+    animate={{
+      y: [0, -100],
+      opacity: [0, 0.5, 0]
+    }}
+    transition={{
+      duration: 3 + Math.random() * 2,
+      repeat: Infinity,
+      delay: delay,
+      ease: "linear"
+    }}
+  />
+);
+
+// Holographic Card Component
+const HolographicCard = ({ children, className = "", ...props }: { children: React.ReactNode, className?: string } & React.ComponentProps<typeof motion.div>) => (
+  <motion.div
+    className={`relative group ${className} h-full`}
+    whileHover={{ y: -5 }}
+    transition={{ duration: 0.3 }}
+    {...props}
+  >
+    <div className="absolute inset-0 bg-gradient-to-b from-purple-500/10 to-transparent rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100" />
+    <div className="relative h-full bg-[#0A0A0A] backdrop-blur-xl border border-white/5 rounded-2xl overflow-hidden group-hover:border-purple-500/30 transition-all duration-300">
+      <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+      <div className="relative z-10 h-full flex flex-col">
+        {children}
+      </div>
+    </div>
+  </motion.div>
+);
 
 const PricingPage: React.FC = () => {
   const { user, session } = useAuth();
@@ -78,23 +119,36 @@ const PricingPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-white font-sans">
+    <div className="flex flex-col min-h-screen bg-[#050505] text-white overflow-hidden font-sans selection:bg-purple-500 selection:text-white">
       <Header />
       
-      <main className="pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      {/* Floating Particles Background */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        {[...Array(30)].map((_, i) => (
+          <FloatingParticle 
+            key={i} 
+            delay={i * 0.2} 
+            size={Math.random() * 3 + 1}
+            color="bg-white"
+          />
+        ))}
+      </div>
+
+      <main className="flex-grow relative z-10 pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
         <div className="text-center mb-16">
           <motion.h1 
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600 dark:from-blue-400 dark:to-purple-500"
+            transition={{ duration: 0.5 }}
+            className="text-4xl md:text-6xl font-bold tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60"
           >
             Choose Your Plan
           </motion.h1>
           <motion.p 
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto"
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed"
           >
             Unlock the full potential of your AI learning companion with our premium plans.
           </motion.p>
@@ -103,22 +157,22 @@ const PricingPage: React.FC = () => {
         {loading ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {[1, 2].map((i) => (
-              <div key={i} className="bg-white dark:bg-[#1a1a1a] rounded-2xl p-8 border border-gray-200 dark:border-white/10 h-96 flex flex-col">
-                <Skeleton className="w-1/2 h-8 mb-4" />
-                <Skeleton className="w-1/3 h-12 mb-8" />
+              <div key={i} className="bg-[#0A0A0A] rounded-2xl p-8 border border-white/10 h-96 flex flex-col">
+                <Skeleton className="w-1/2 h-8 mb-4" dark={true} />
+                <Skeleton className="w-1/3 h-12 mb-8" dark={true} />
                 <div className="space-y-4 flex-1">
-                  <Skeleton className="w-full h-4" />
-                  <Skeleton className="w-full h-4" />
-                  <Skeleton className="w-3/4 h-4" />
+                  <Skeleton className="w-full h-4" dark={true} />
+                  <Skeleton className="w-full h-4" dark={true} />
+                  <Skeleton className="w-3/4 h-4" dark={true} />
                 </div>
-                <Skeleton className="w-full h-12 rounded-xl mt-8" />
+                <Skeleton className="w-full h-12 rounded-xl mt-8" dark={true} />
               </div>
             ))}
           </div>
         ) : error ? (
-          <div className="text-center p-8 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-200 dark:border-red-800 max-w-2xl mx-auto">
-            <h3 className="text-lg font-bold text-red-600 dark:text-red-400 mb-2">Error Loading Plans</h3>
-            <p className="text-gray-600 dark:text-gray-300">{error}</p>
+          <div className="text-center p-8 bg-red-900/10 rounded-xl border border-red-800 max-w-2xl mx-auto backdrop-blur-sm">
+            <h3 className="text-lg font-bold text-red-400 mb-2">Error Loading Plans</h3>
+            <p className="text-gray-300">{error}</p>
           </div>
         ) : (
           <motion.div 
@@ -128,107 +182,106 @@ const PricingPage: React.FC = () => {
             className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto"
           >
             {plans.map((plan) => (
-              <motion.div
+              <HolographicCard
                 key={plan.id}
                 variants={itemVariants}
-                className={`relative overflow-hidden bg-white dark:bg-[#1a1a1a] rounded-3xl p-8 border transition-all duration-300 hover:shadow-2xl ${
-                  plan.name.toLowerCase().includes('pro') 
-                    ? 'border-purple-500/50 dark:border-purple-500/50 shadow-purple-500/10 scale-105 z-10' 
-                    : 'border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20'
-                }`}
+                className={plan.name.toLowerCase().includes('pro') ? 'border-purple-500/30' : ''}
               >
-                {plan.name.toLowerCase().includes('pro') && (
-                  <div className="absolute top-0 right-0 bg-gradient-to-l from-purple-600 to-blue-600 text-white text-xs font-bold px-4 py-1 rounded-bl-xl">
-                    POPULAR
-                  </div>
-                )}
-
-                <div className="mb-8">
-                  <h3 className="text-2xl font-bold mb-2 flex items-center">
+                <div className="p-8 flex flex-col h-full">
                     {plan.name.toLowerCase().includes('pro') && (
-                      <AiOutlineCrown className="text-purple-500 mr-2" />
-                    )}
-                    {plan.name}
-                  </h3>
-                  <div className="flex items-baseline mb-4">
-                    <span className="text-4xl font-extrabold">${plan.price}</span>
-                    <span className="text-gray-500 dark:text-gray-400 ml-2">/{plan.type || 'month'}</span>
-                  </div>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    {plan.description || 'Unlock premium features and accelerate your learning.'}
-                  </p>
-                </div>
-
-                <ul className="space-y-4 mb-8">
-                  {plan.coins && (
-                    <li className="flex items-start">
-                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-yellow-500/10 flex items-center justify-center mt-0.5 mr-3">
-                        <span className="text-xs">🪙</span>
+                      <div className="absolute top-0 right-0 bg-gradient-to-l from-purple-600 to-blue-600 text-white text-xs font-bold px-4 py-1 rounded-bl-xl z-20">
+                        POPULAR
                       </div>
-                      <span className="text-gray-700 dark:text-gray-300 font-medium">
-                        {plan.coins} Coins included
-                      </span>
-                    </li>
-                  )}
-                  <li className="flex items-start">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center mt-0.5 mr-3">
-                      <AiOutlineCheck className="w-3.5 h-3.5 text-green-500" />
-                    </div>
-                    <span className="text-gray-700 dark:text-gray-300">
-                      Duration: {plan.duration_days} days
-                    </span>
-                  </li>
-                  {/* Add more features based on plan type if available, or static features */}
-                  <li className="flex items-start">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center mt-0.5 mr-3">
-                      <AiOutlineCheck className="w-3.5 h-3.5 text-green-500" />
-                    </div>
-                    <span className="text-gray-700 dark:text-gray-300">
-                      Full Access to AI Tutor
-                    </span>
-                  </li>
-                  <li className="flex items-start">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center mt-0.5 mr-3">
-                      <AiOutlineCheck className="w-3.5 h-3.5 text-green-500" />
-                    </div>
-                    <span className="text-gray-700 dark:text-gray-300">
-                      Unlimited Study Sets
-                    </span>
-                  </li>
-                </ul>
+                    )}
 
-                <button
-                  onClick={() => handleSubscribe(plan)}
-                  disabled={!!subscribing}
-                  className={`w-full py-4 rounded-xl font-bold text-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${
-                    plan.name.toLowerCase().includes('pro')
-                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40'
-                      : 'bg-white dark:bg-white/10 text-gray-900 dark:text-white border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/20'
-                  }`}
-                >
-                  {subscribing === plan.id ? 'Processing...' : (user ? 'Subscribe Now' : 'Log in to Subscribe')}
-                </button>
-              </motion.div>
+                    <div className="mb-8">
+                      <h3 className="text-2xl font-bold mb-2 flex items-center text-white">
+                        {plan.name.toLowerCase().includes('pro') && (
+                          <AiOutlineCrown className="text-purple-500 mr-2" />
+                        )}
+                        {plan.name}
+                      </h3>
+                      <div className="flex items-baseline mb-4">
+                        <span className="text-4xl font-extrabold text-white">${plan.price}</span>
+                        <span className="text-gray-400 ml-2">/{plan.type || 'month'}</span>
+                      </div>
+                      <p className="text-gray-400">
+                        {plan.description || 'Unlock premium features and accelerate your learning.'}
+                      </p>
+                    </div>
+
+                    <ul className="space-y-4 mb-8 flex-grow">
+                      {plan.coins && (
+                        <li className="flex items-start">
+                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-yellow-500/10 flex items-center justify-center mt-0.5 mr-3">
+                            <span className="text-xs">🪙</span>
+                          </div>
+                          <span className="text-gray-300 font-medium">
+                            {plan.coins} Coins included
+                          </span>
+                        </li>
+                      )}
+                      <li className="flex items-start">
+                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center mt-0.5 mr-3">
+                          <AiOutlineCheck className="w-3.5 h-3.5 text-green-500" />
+                        </div>
+                        <span className="text-gray-300">
+                          Duration: {plan.duration_days} days
+                        </span>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center mt-0.5 mr-3">
+                          <AiOutlineCheck className="w-3.5 h-3.5 text-green-500" />
+                        </div>
+                        <span className="text-gray-300">
+                          Full Access to AI Tutor
+                        </span>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center mt-0.5 mr-3">
+                          <AiOutlineCheck className="w-3.5 h-3.5 text-green-500" />
+                        </div>
+                        <span className="text-gray-300">
+                          Unlimited Study Sets
+                        </span>
+                      </li>
+                    </ul>
+
+                    <button
+                      onClick={() => handleSubscribe(plan)}
+                      disabled={!!subscribing}
+                      className={`w-full py-4 rounded-xl font-bold text-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${
+                        plan.name.toLowerCase().includes('pro')
+                          ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40'
+                          : 'bg-white/10 text-white border border-white/10 hover:bg-white/20'
+                      }`}
+                    >
+                      {subscribing === plan.id ? 'Processing...' : (user ? 'Subscribe Now' : 'Log in to Subscribe')}
+                    </button>
+                </div>
+              </HolographicCard>
             ))}
           </motion.div>
         )}
 
         {/* Features Grid */}
         <div className="mt-24 mb-16">
-            <h2 className="text-3xl font-bold text-center mb-12 dark:text-white">Why MatrixEdu Pro?</h2>
+            <h2 className="text-3xl font-bold text-center mb-12 text-white">Why MatrixEdu Pro?</h2>
             <div className="grid md:grid-cols-3 gap-8">
                 {[
                     { title: "Advanced AI Models", desc: "Access to GPT-4 and Claude 3 Opus for superior reasoning.", icon: <AiOutlineStar className="w-8 h-8 text-yellow-500" /> },
                     { title: "Priority Support", desc: "Get your questions answered faster with our priority queue.", icon: <AiOutlineCrown className="w-8 h-8 text-purple-500" /> },
                     { title: "Unlimited History", desc: "Save and search through all your past learning sessions.", icon: <AiOutlineCheck className="w-8 h-8 text-green-500" /> }
                 ].map((feature, i) => (
-                    <div key={i} className="bg-white dark:bg-[#1a1a1a] p-6 rounded-2xl border border-gray-200 dark:border-white/10 text-center hover:shadow-lg transition-shadow">
-                        <div className="bg-gray-50 dark:bg-white/5 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                            {feature.icon}
+                    <HolographicCard key={i}>
+                        <div className="p-6 text-center h-full flex flex-col items-center">
+                            <div className="bg-white/5 w-16 h-16 rounded-full flex items-center justify-center mb-4">
+                                {feature.icon}
+                            </div>
+                            <h3 className="text-xl font-bold mb-2 text-white">{feature.title}</h3>
+                            <p className="text-gray-400">{feature.desc}</p>
                         </div>
-                        <h3 className="text-xl font-bold mb-2 dark:text-white">{feature.title}</h3>
-                        <p className="text-gray-600 dark:text-gray-400">{feature.desc}</p>
-                    </div>
+                    </HolographicCard>
                 ))}
             </div>
         </div>
@@ -236,8 +289,8 @@ const PricingPage: React.FC = () => {
         {/* FAQ Section */}
         <div className="mt-12 max-w-3xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4 dark:text-white">Frequently Asked Questions</h2>
-            <p className="text-gray-600 dark:text-gray-400">Everything you need to know about our plans.</p>
+            <h2 className="text-3xl font-bold mb-4 text-white">Frequently Asked Questions</h2>
+            <p className="text-gray-400">Everything you need to know about our plans.</p>
           </div>
           
           <div className="space-y-4">
@@ -247,12 +300,18 @@ const PricingPage: React.FC = () => {
               { q: "Do you offer student discounts?", a: "Yes! We offer special rates for students. Please contact our support team with your valid student ID." },
               { q: "Is my payment information secure?", a: "Absolutely. We use industry-standard encryption and do not store your credit card details on our servers." }
             ].map((faq, index) => (
-              <div key={index} className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden">
+              <motion.div 
+                key={index} 
+                className="bg-[#0A0A0A] rounded-xl border border-white/10 overflow-hidden"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+              >
                 <button
                   onClick={() => toggleFaq(index)}
-                  className="w-full px-6 py-4 flex items-center justify-between text-left focus:outline-none"
+                  className="w-full px-6 py-4 flex items-center justify-between text-left focus:outline-none hover:bg-white/5 transition-colors"
                 >
-                  <span className="font-semibold text-lg dark:text-white">{faq.q}</span>
+                  <span className="font-semibold text-lg text-white">{faq.q}</span>
                   {openFaq === index ? <FaChevronUp className="text-blue-500" /> : <FaChevronDown className="text-gray-400" />}
                 </button>
                 <AnimatePresence>
@@ -264,11 +323,11 @@ const PricingPage: React.FC = () => {
                       transition={{ duration: 0.3 }}
                       className="px-6 pb-4"
                     >
-                      <p className="text-gray-600 dark:text-gray-400 pt-2 border-t border-gray-100 dark:border-white/5">{faq.a}</p>
+                      <p className="text-gray-400 pt-2 border-t border-white/5">{faq.a}</p>
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
