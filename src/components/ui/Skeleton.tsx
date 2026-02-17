@@ -45,6 +45,43 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   );
 };
 
+// Study Set Card Skeleton for Dashboard
+export const StudySetCardSkeleton: React.FC = () => {
+    return (
+        <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl p-6 shadow-sm dark:shadow-none animate-pulse">
+            <div className="flex justify-between items-start mb-4 md:mb-6">
+                <div className="h-6 w-3/4 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                <div className="flex gap-2">
+                    <div className="h-5 w-5 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                    <div className="h-5 w-5 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                </div>
+            </div>
+
+            <div className="space-y-2 mb-4 md:mb-6">
+                <div className="h-8 w-full bg-gray-100 dark:bg-gray-900 rounded"></div>
+                <div className="h-8 w-full bg-gray-100 dark:bg-gray-900 rounded"></div>
+                <div className="h-8 w-full bg-gray-100 dark:bg-gray-900 rounded"></div>
+            </div>
+
+            <div className="space-y-3 md:space-y-4">
+                <div className="flex justify-between">
+                    <div className="h-3 w-24 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                </div>
+                <div className="flex items-center gap-3 md:gap-4">
+                    <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-800 rounded-full"></div>
+                    <div className="h-4 w-8 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                </div>
+                
+                <div className="flex gap-2 pt-1">
+                    <div className="h-6 w-6 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                    <div className="h-6 w-6 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                    <div className="h-6 w-6 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // University Card Skeleton for Database page
 export const UniversityCardSkeleton: React.FC<{ isMobile?: boolean }> = ({ isMobile = false }) => {
   if (isMobile) {
@@ -103,6 +140,7 @@ export const UniversityCardSkeleton: React.FC<{ isMobile?: boolean }> = ({ isMob
           <div className="h-6 w-24 bg-gray-300 animate-skeleton-shimmer rounded-full"></div>
           <div className="h-6 w-16 bg-gray-300 animate-skeleton-shimmer rounded-full"></div>
         </div>
+
         
         <div className="text-xs mb-4 space-y-2">
           <div className="flex justify-between">

@@ -6,7 +6,7 @@ import ActionCards from '../components/dashboard/ActionCards';
 import StudySetList from '../components/dashboard/StudySetList';
 import { UploadModal, PasteModal, RecordModal, CreateFolderModal, MoveDocumentModal } from '../components/dashboard/DashboardModals';
 import { useAuth } from '../utils/AuthContext';
-import { FaBars, FaFolder, FaGraduationCap } from 'react-icons/fa';
+import { FaBars, FaFolder } from 'react-icons/fa';
 import { supabase } from '../utils/supabase';
 import { StudySet } from '../components/dashboard/StudySetCard';
 
@@ -82,6 +82,7 @@ const MatrixEduDashboard: React.FC = () => {
   const [studySets, setStudySets] = useState<StudySet[]>([]);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const ITEMS_PER_PAGE = 12;
 
@@ -106,9 +107,115 @@ const MatrixEduDashboard: React.FC = () => {
     fetchFolders();
   }, [user]);
 
+  const enrichStudySetsWithStats = async (sets: StudySet[]): Promise<StudySet[]> => {
+    if (!user) return sets;
+
+    const enrichedSets = await Promise.all(sets.map(async (set) => {
+      let unfamiliar = 0;
+      let learning = 0;
+      let mastered = 0;
+      let total = 0;
+
+      // 1. Flashcards
+      if (set.flashcards) {
+        const { data } = await supabase
+          .from('flashcard_documents')
+          .select('flashcards_data')
+          .eq('document_id', set.id)
+          .eq('uid', user.id)
+          .maybeSingle();
+        
+        if (data?.flashcards_data && Array.isArray(data.flashcards_data)) {
+           data.flashcards_data.forEach((item: any) => {
+             total++;
+             if (item.status === 'mastered') mastered++;
+             else if (item.status === 'learning') learning++;
+             else unfamiliar++;
+           });
+        }
+      }
+
+      // 2. Multiple Choice
+      if (set.multiple_choice) {
+        const { data } = await supabase
+          .from('mcq_documents')
+          .select('mcq_data')
+          .eq('document_id', set.id)
+          .eq('uid', user.id)
+          .maybeSingle();
+
+        if (data?.mcq_data && Array.isArray(data.mcq_data)) {
+           data.mcq_data.forEach((item: any) => {
+             total++;
+             if (item.status === 'mastered') mastered++;
+             else if (item.status === 'learning') learning++;
+             else unfamiliar++;
+           });
+        }
+      }
+
+      // 3. Fill in the Blanks
+      if (set.fill_in_the_blanks) {
+         const { data } = await supabase
+          .from('fill_in_blank_documents')
+          .select('generated_json')
+          .eq('document_id', set.id)
+          .eq('uid', user.id)
+          .maybeSingle();
+
+         if (data?.generated_json && Array.isArray(data.generated_json)) {
+           data.generated_json.forEach((item: any) => {
+             total++;
+             if (item.status === 'mastered') mastered++;
+             else if (item.status === 'learning') learning++;
+             else unfamiliar++;
+           });
+        }
+      }
+
+      // 4. Written Tests
+      if (set.written_tests) {
+         const { data } = await supabase
+          .from('written_test_documents')
+          .select('test_data')
+          .eq('document_id', set.id)
+          .eq('uid', user.id)
+          .maybeSingle();
+
+         if (data?.test_data && Array.isArray(data.test_data)) {
+           data.test_data.forEach((item: any) => {
+             total++;
+             if (item.status === 'submitted') mastered++;
+             else unfamiliar++;
+           });
+        }
+      }
+
+      // Calculate progress
+      const progress = total > 0 ? Math.round(((mastered + (learning * 0.5)) / total) * 100) : 0;
+
+      return {
+        ...set,
+        stats: {
+          unfamiliar,
+          learning,
+          mastered
+        },
+        progress,
+        totalCards: total
+      };
+    }));
+
+    return enrichedSets;
+  };
+
   const fetchStudySets = async (pageNumber = 0, isLoadMore = false) => {
       if (!user) return;
-      if (isLoadMore) setLoadingMore(true);
+      if (isLoadMore) {
+          setLoadingMore(true);
+      } else {
+          setLoading(true);
+      }
       
       try {
           const from = pageNumber * ITEMS_PER_PAGE;
@@ -141,11 +248,10 @@ const MatrixEduDashboard: React.FC = () => {
           if (data) {
               const mappedSets: StudySet[] = data.map((doc: any) => ({
                   id: doc.document_id,
-                  title: doc.document_type ? doc.document_type.charAt(0).toUpperCase() + doc.document_type.slice(1) : (doc.title || 'Untitled Study Set'),
+                  title: doc.document_name || (doc.document_type ? doc.document_type.charAt(0).toUpperCase() + doc.document_type.slice(1) : 'Untitled Study Set'),
                   stats: {
                       unfamiliar: 0,
                       learning: 0,
-                      familiar: 0,
                       mastered: 0
                   },
                   progress: 0,
@@ -153,20 +259,26 @@ const MatrixEduDashboard: React.FC = () => {
                   ...doc // Keep original fields
               }));
 
+              const enrichedSets = await enrichStudySetsWithStats(mappedSets);
+
               if (data.length < ITEMS_PER_PAGE) {
                   setHasMore(false);
               }
 
               if (isLoadMore) {
-                  setStudySets(prev => [...prev, ...mappedSets]);
+                  setStudySets(prev => [...prev, ...enrichedSets]);
               } else {
-                  setStudySets(mappedSets);
+                  setStudySets(enrichedSets);
               }
           }
       } catch (error) {
           console.error('Error fetching study sets:', error);
       } finally {
-          if (isLoadMore) setLoadingMore(false);
+          if (isLoadMore) {
+            setLoadingMore(false);
+          } else {
+            setLoading(false);
+          }
       }
   };
 
@@ -186,13 +298,90 @@ const MatrixEduDashboard: React.FC = () => {
       if (!user) return;
       const { data, error } = await supabase
         .from('folders')
-        .insert([{ user_id: user.id, name, document_ids: [], color }])
-        .select();
+        .insert([{ name, color, user_id: user.id, document_ids: [] }])
+        .select()
+        .single();
 
       if (data) {
-          fetchFolders();
-          setActiveModal(null);
+        setFolders(prev => [{...data, count: 0, document_ids: []}, ...prev]);
+        setActiveModal(null);
       }
+  };
+
+  const handleRenameStudySet = async (set: StudySet, newName: string) => {
+    if (!user) return;
+
+    // Optimistic update
+    setStudySets(prev => prev.map(s => s.id === set.id ? { ...s, title: newName } : s));
+
+    const { error } = await supabase
+      .from('upload_document')
+      .update({ document_name: newName })
+      .eq('document_id', set.id)
+      .eq('uid', user.id);
+
+    if (error) {
+      console.error('Error renaming study set:', error);
+      // Revert if error
+      setStudySets(prev => prev.map(s => s.id === set.id ? { ...s, title: set.title } : s));
+    }
+  };
+
+  const handleDeleteStudySet = async (set: StudySet) => {
+    if (!user) return;
+
+    // Optimistic update
+    setStudySets(prev => prev.filter(s => s.id !== set.id));
+
+    const { error } = await supabase
+      .from('upload_document')
+      .delete()
+      .eq('document_id', set.id)
+      .eq('uid', user.id);
+
+    if (error) {
+      console.error('Error deleting study set:', error);
+      fetchStudySets(0, false); 
+    }
+  };
+
+  const handleRenameFolder = async (folderId: string, newName: string) => {
+    if (!user) return;
+
+    // Optimistic update
+    setFolders(prev => prev.map(f => f.id === folderId ? { ...f, name: newName } : f));
+
+    const { error } = await supabase
+      .from('folders')
+      .update({ name: newName })
+      .eq('id', folderId)
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Error renaming folder:', error);
+      fetchFolders(); // Revert/Refresh
+    }
+  };
+
+  const handleDeleteFolder = async (folderId: string) => {
+    if (!user) return;
+
+    // Optimistic update
+    setFolders(prev => prev.filter(f => f.id !== folderId));
+    if (selectedFolderId === folderId) {
+      setSelectedFolderId(null);
+    }
+
+    const { error } = await supabase
+      .from('folders')
+      .delete()
+      .eq('id', folderId)
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Error deleting folder:', error);
+      fetchFolders(); // Revert/Refresh
+    }
   };
 
   const handleMoveDocument = async (targetFolderId: string | null, documentId: string) => {
@@ -346,13 +535,14 @@ const MatrixEduDashboard: React.FC = () => {
                 className="px-4 md:px-8 lg:px-12 pb-24 w-full mx-auto min-h-screen"
             >
                 <StudySetList 
-                    studySets={studySets} 
-                    onSetClick={(set: any) => {
-                        navigate(`/study-set/${set.id}`, { state: { studySetData: set } });
-                    }}
-                    onDragStart={handleDragStart}
-                    onMove={handleMoveClick}
-                />
+              studySets={studySets} 
+              loading={loading}
+              onSetClick={(set) => navigate(`/study-set/${set.id}`)}
+              onDragStart={handleDragStart}
+              onMove={handleMoveClick}
+              onRename={handleRenameStudySet}
+              onDelete={handleDeleteStudySet}
+            />
                 
                 {loadingMore && (
                     <div className="flex justify-center mt-8 mb-8">
@@ -373,6 +563,8 @@ const MatrixEduDashboard: React.FC = () => {
         onMoveDocument={handleMoveDocument}
         selectedFolderId={selectedFolderId}
         onSelectFolder={setSelectedFolderId}
+        onRenameFolder={handleRenameFolder}
+        onDeleteFolder={handleDeleteFolder}
       />
 
       {/* Modals */}

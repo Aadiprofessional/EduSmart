@@ -36,9 +36,36 @@ import * as pdfjsLib from 'pdfjs-dist';
 // Use unpkg for reliable worker loading matching the installed version
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
+// --- Configuration Interfaces ---
+interface MethodConfig {
+    notes: { customInstructions: string };
+    multipleChoice: { numQuestions: string; difficulty: string; customInstructions: string };
+    flashcards: { numCards: string; difficulty: string; customInstructions: string };
+    podcast: { length: string; personality: string; host1: string; host2: string };
+    writtenTests: { numQuestions: string; difficulty: string; customInstructions: string };
+    fillBlanks: { numQuestions: string; difficulty: string; customInstructions: string };
+    speechToText: { file: File | null; extractedText: string | null };
+    mindmap: { depth: string };
+}
+
+const defaultMethodConfig: MethodConfig = {
+    notes: { customInstructions: '' },
+    multipleChoice: { numQuestions: 'auto', difficulty: 'auto', customInstructions: '' },
+    flashcards: { numCards: 'auto', difficulty: 'auto', customInstructions: '' },
+    podcast: { length: 'auto', personality: 'default', host1: 'Random', host2: 'Random' },
+    writtenTests: { numQuestions: 'auto', difficulty: 'auto', customInstructions: '' },
+    fillBlanks: { numQuestions: 'auto', difficulty: 'auto', customInstructions: '' },
+    speechToText: { file: null, extractedText: null },
+    mindmap: { depth: 'medium' }
+};
+
 // --- Configuration Components ---
 
-const CustomizeNotes: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+const CustomizeNotes: React.FC<{ 
+    config: MethodConfig['notes']; 
+    onChange: (updates: Partial<MethodConfig['notes']>) => void;
+    onClose: () => void;
+}> = ({ config, onChange, onClose }) => {
     return (
         <div className="space-y-6">
             <div>
@@ -46,19 +73,33 @@ const CustomizeNotes: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <textarea 
                     className="w-full h-32 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl p-4 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-[#c2410c] focus:border-transparent outline-none resize-none placeholder-gray-400 dark:placeholder-gray-600"
                     placeholder="Focus on definitions, include more diagrams..."
+                    value={config.customInstructions}
+                    onChange={(e) => onChange({ customInstructions: e.target.value })}
                 />
             </div>
             <div className="flex justify-between items-center pt-4">
-                <button className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-sm font-medium transition-colors">Clear Selection</button>
+                <button 
+                    onClick={() => onChange({ customInstructions: '' })}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-sm font-medium transition-colors"
+                >
+                    Clear Selection
+                </button>
                 <button onClick={onClose} className="bg-[#c2410c] hover:bg-[#9a3412] text-white px-6 py-2 rounded-lg font-bold transition-colors">Done</button>
             </div>
         </div>
     );
 };
 
-const CustomizeMultipleChoice: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const [numQuestions, setNumQuestions] = useState('auto');
-    const [difficulty, setDifficulty] = useState('auto');
+const CustomizeMultipleChoice: React.FC<{ 
+    config: MethodConfig['multipleChoice']; 
+    onChange: (updates: Partial<MethodConfig['multipleChoice']>) => void;
+    onClose: () => void;
+}> = ({ config, onChange, onClose }) => {
+    const { numQuestions, difficulty, customInstructions } = config;
+
+    const updateConfig = (updates: Partial<MethodConfig['multipleChoice']>) => {
+        onChange(updates);
+    };
 
     const OptionButton = ({ id, label, subLabel, icon, active, onClick }: any) => (
         <button 
@@ -82,28 +123,28 @@ const CustomizeMultipleChoice: React.FC<{ onClose: () => void }> = ({ onClose })
                 <div className="grid grid-cols-4 gap-3">
                     <OptionButton 
                         active={numQuestions === 'auto'} 
-                        onClick={() => setNumQuestions('auto')}
+                        onClick={() => updateConfig({ numQuestions: 'auto' })}
                         label="Auto" 
                         subLabel="Smart"
                         icon={<FaMagic />} 
                     />
                     <OptionButton 
                         active={numQuestions === 'few'} 
-                        onClick={() => setNumQuestions('few')}
+                        onClick={() => updateConfig({ numQuestions: 'few' })}
                         label="Few" 
                         subLabel="1-15"
                         icon={<FaListUl />} 
                     />
                     <OptionButton 
                         active={numQuestions === 'standard'} 
-                        onClick={() => setNumQuestions('standard')}
+                        onClick={() => updateConfig({ numQuestions: 'standard' })}
                         label="Standard" 
                         subLabel="20-40"
                         icon={<FaBook />} 
                     />
                     <OptionButton 
                         active={numQuestions === 'many'} 
-                        onClick={() => setNumQuestions('many')}
+                        onClick={() => updateConfig({ numQuestions: 'many' })}
                         label="Many" 
                         subLabel="50+"
                         icon={<FaLayerGroup />} 
@@ -116,25 +157,25 @@ const CustomizeMultipleChoice: React.FC<{ onClose: () => void }> = ({ onClose })
                 <div className="grid grid-cols-4 gap-3">
                     <OptionButton 
                         active={difficulty === 'auto'} 
-                        onClick={() => setDifficulty('auto')}
+                        onClick={() => updateConfig({ difficulty: 'auto' })}
                         label="Auto" 
                         icon={<FaMagic />} 
                     />
                     <OptionButton 
                         active={difficulty === 'easy'} 
-                        onClick={() => setDifficulty('easy')}
+                        onClick={() => updateConfig({ difficulty: 'easy' })}
                         label="Easy" 
                         icon={<FaLeaf />} 
                     />
                     <OptionButton 
                         active={difficulty === 'medium'} 
-                        onClick={() => setDifficulty('medium')}
+                        onClick={() => updateConfig({ difficulty: 'medium' })}
                         label="Medium" 
                         icon={<FaBullseye />} 
                     />
                     <OptionButton 
                         active={difficulty === 'hard'} 
-                        onClick={() => setDifficulty('hard')}
+                        onClick={() => updateConfig({ difficulty: 'hard' })}
                         label="Hard" 
                         icon={<FaFire />} 
                     />
@@ -146,21 +187,34 @@ const CustomizeMultipleChoice: React.FC<{ onClose: () => void }> = ({ onClose })
                 <textarea 
                     className="w-full h-24 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl p-4 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-[#c2410c] focus:border-transparent outline-none resize-none placeholder-gray-400 dark:placeholder-gray-600"
                     placeholder="Focus on chapter 5, include more examples..."
+                    value={customInstructions}
+                    onChange={(e) => updateConfig({ customInstructions: e.target.value })}
                 />
             </div>
 
             <div className="flex justify-between items-center pt-2">
-                <button className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-sm font-medium transition-colors">Clear Selection</button>
+                <button 
+                    onClick={() => updateConfig({ numQuestions: 'auto', difficulty: 'auto', customInstructions: '' })}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-sm font-medium transition-colors"
+                >
+                    Clear Selection
+                </button>
                 <button onClick={onClose} className="bg-[#c2410c] hover:bg-[#9a3412] text-white px-6 py-2 rounded-lg font-bold transition-colors">Done</button>
             </div>
         </div>
     );
 };
 
-const CustomizeFlashcards: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    // Reusing similar structure to Multiple Choice
-    const [numCards, setNumCards] = useState('auto');
-    const [difficulty, setDifficulty] = useState('auto');
+const CustomizeFlashcards: React.FC<{ 
+    config: MethodConfig['flashcards']; 
+    onChange: (updates: Partial<MethodConfig['flashcards']>) => void;
+    onClose: () => void;
+}> = ({ config, onChange, onClose }) => {
+    const { numCards, difficulty, customInstructions } = config;
+
+    const updateConfig = (updates: Partial<MethodConfig['flashcards']>) => {
+        onChange(updates);
+    };
 
     const OptionButton = ({ id, label, subLabel, icon, active, onClick }: any) => (
         <button 
@@ -184,28 +238,28 @@ const CustomizeFlashcards: React.FC<{ onClose: () => void }> = ({ onClose }) => 
                 <div className="grid grid-cols-4 gap-3">
                     <OptionButton 
                         active={numCards === 'auto'} 
-                        onClick={() => setNumCards('auto')}
+                        onClick={() => updateConfig({ numCards: 'auto' })}
                         label="Auto" 
                         subLabel="Smart"
                         icon={<FaMagic />} 
                     />
                     <OptionButton 
                         active={numCards === 'few'} 
-                        onClick={() => setNumCards('few')}
+                        onClick={() => updateConfig({ numCards: 'few' })}
                         label="Few" 
                         subLabel="1-15"
                         icon={<FaListUl />} 
                     />
                     <OptionButton 
                         active={numCards === 'standard'} 
-                        onClick={() => setNumCards('standard')}
+                        onClick={() => updateConfig({ numCards: 'standard' })}
                         label="Standard" 
                         subLabel="20-40"
                         icon={<FaBook />} 
                     />
                     <OptionButton 
                         active={numCards === 'many'} 
-                        onClick={() => setNumCards('many')}
+                        onClick={() => updateConfig({ numCards: 'many' })}
                         label="Many" 
                         subLabel="50+"
                         icon={<FaLayerGroup />} 
@@ -218,25 +272,25 @@ const CustomizeFlashcards: React.FC<{ onClose: () => void }> = ({ onClose }) => 
                 <div className="grid grid-cols-4 gap-3">
                     <OptionButton 
                         active={difficulty === 'auto'} 
-                        onClick={() => setDifficulty('auto')}
+                        onClick={() => updateConfig({ difficulty: 'auto' })}
                         label="Auto" 
                         icon={<FaMagic />} 
                     />
                     <OptionButton 
                         active={difficulty === 'easy'} 
-                        onClick={() => setDifficulty('easy')}
+                        onClick={() => updateConfig({ difficulty: 'easy' })}
                         label="Easy" 
                         icon={<FaLeaf />} 
                     />
                     <OptionButton 
                         active={difficulty === 'medium'} 
-                        onClick={() => setDifficulty('medium')}
+                        onClick={() => updateConfig({ difficulty: 'medium' })}
                         label="Medium" 
                         icon={<FaBullseye />} 
                     />
                     <OptionButton 
                         active={difficulty === 'hard'} 
-                        onClick={() => setDifficulty('hard')}
+                        onClick={() => updateConfig({ difficulty: 'hard' })}
                         label="Hard" 
                         icon={<FaFire />} 
                     />
@@ -248,20 +302,34 @@ const CustomizeFlashcards: React.FC<{ onClose: () => void }> = ({ onClose }) => 
                 <textarea 
                     className="w-full h-24 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl p-4 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-[#c2410c] focus:border-transparent outline-none resize-none placeholder-gray-400 dark:placeholder-gray-600"
                     placeholder="Focus on chapter 5, include more examples..."
+                    value={customInstructions}
+                    onChange={(e) => updateConfig({ customInstructions: e.target.value })}
                 />
             </div>
 
             <div className="flex justify-between items-center pt-2">
-                <button className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-sm font-medium transition-colors">Clear Selection</button>
+                <button 
+                    onClick={() => updateConfig({ numCards: 'auto', difficulty: 'auto', customInstructions: '' })}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-sm font-medium transition-colors"
+                >
+                    Clear Selection
+                </button>
                 <button onClick={onClose} className="bg-[#c2410c] hover:bg-[#9a3412] text-white px-6 py-2 rounded-lg font-bold transition-colors">Done</button>
             </div>
         </div>
     );
 };
 
-const CustomizePodcast: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const [length, setLength] = useState('auto');
-    const [personality, setPersonality] = useState('default');
+const CustomizePodcast: React.FC<{ 
+    config: MethodConfig['podcast']; 
+    onChange: (updates: Partial<MethodConfig['podcast']>) => void;
+    onClose: () => void;
+}> = ({ config, onChange, onClose }) => {
+    const { length, personality } = config;
+
+    const updateConfig = (updates: Partial<MethodConfig['podcast']>) => {
+        onChange(updates);
+    };
 
     const OptionButton = ({ id, label, subLabel, icon, active, onClick, wide }: any) => (
         <button 
@@ -305,25 +373,25 @@ const CustomizePodcast: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <div className="grid grid-cols-4 gap-3">
                     <OptionButton 
                         active={length === 'auto'} 
-                        onClick={() => setLength('auto')}
+                        onClick={() => updateConfig({ length: 'auto' })}
                         label="Auto" 
                         subLabel="Smart"
                     />
                     <OptionButton 
                         active={length === 'short'} 
-                        onClick={() => setLength('short')}
+                        onClick={() => updateConfig({ length: 'short' })}
                         label="Short" 
                         subLabel="5-8 min"
                     />
                     <OptionButton 
                         active={length === 'medium'} 
-                        onClick={() => setLength('medium')}
+                        onClick={() => updateConfig({ length: 'medium' })}
                         label="Medium" 
                         subLabel="10-15 min"
                     />
                     <OptionButton 
                         active={length === 'long'} 
-                        onClick={() => setLength('long')}
+                        onClick={() => updateConfig({ length: 'long' })}
                         label="Long" 
                         subLabel="18-25 min"
                     />
@@ -335,37 +403,37 @@ const CustomizePodcast: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <div className="grid grid-cols-3 gap-3">
                     <OptionButton 
                         active={personality === 'default'} 
-                        onClick={() => setPersonality('default')}
+                        onClick={() => updateConfig({ personality: 'default' })}
                         label="Default" 
                         icon={<FaUser />}
                     />
                     <OptionButton 
                         active={personality === 'sassy'} 
-                        onClick={() => setPersonality('sassy')}
+                        onClick={() => updateConfig({ personality: 'sassy' })}
                         label="Sassy" 
                         icon={<FaMagic />}
                     />
                     <OptionButton 
                         active={personality === 'annoyed'} 
-                        onClick={() => setPersonality('annoyed')}
+                        onClick={() => updateConfig({ personality: 'annoyed' })}
                         label="Annoyed" 
                         icon={<FaMeh />}
                     />
                      <OptionButton 
                         active={personality === 'angry'} 
-                        onClick={() => setPersonality('angry')}
+                        onClick={() => updateConfig({ personality: 'angry' })}
                         label="Angry" 
                         icon={<FaAngry />}
                     />
                     <OptionButton 
                         active={personality === 'gaslighter'} 
-                        onClick={() => setPersonality('gaslighter')}
+                        onClick={() => updateConfig({ personality: 'gaslighter' })}
                         label="Gaslighter" 
                         icon={<FaFrown />}
                     />
                     <OptionButton 
                         active={personality === 'corny'} 
-                        onClick={() => setPersonality('corny')}
+                        onClick={() => updateConfig({ personality: 'corny' })}
                         label="Corny" 
                         icon={<FaSmile />}
                     />
@@ -373,7 +441,12 @@ const CustomizePodcast: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </div>
 
             <div className="flex justify-between items-center pt-2">
-                <button className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-sm font-medium transition-colors">Clear Selection</button>
+                <button 
+                    onClick={() => updateConfig({ length: 'auto', personality: 'default' })}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-sm font-medium transition-colors"
+                >
+                    Clear Selection
+                </button>
                 <button onClick={onClose} className="bg-[#c2410c] hover:bg-[#9a3412] text-white px-6 py-2 rounded-lg font-bold transition-colors">Done</button>
             </div>
         </div>
@@ -381,9 +454,16 @@ const CustomizePodcast: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 };
 
 
-const CustomizeWrittenTests: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const [numQuestions, setNumQuestions] = useState('auto');
-    const [difficulty, setDifficulty] = useState('auto');
+const CustomizeWrittenTests: React.FC<{ 
+    config: MethodConfig['writtenTests']; 
+    onChange: (updates: Partial<MethodConfig['writtenTests']>) => void;
+    onClose: () => void;
+}> = ({ config, onChange, onClose }) => {
+    const { numQuestions, difficulty, customInstructions } = config;
+
+    const updateConfig = (updates: Partial<MethodConfig['writtenTests']>) => {
+        onChange(updates);
+    };
 
     const OptionButton = ({ id, label, subLabel, icon, active, onClick }: any) => (
         <button 
@@ -407,28 +487,28 @@ const CustomizeWrittenTests: React.FC<{ onClose: () => void }> = ({ onClose }) =
                 <div className="grid grid-cols-4 gap-3">
                     <OptionButton 
                         active={numQuestions === 'auto'} 
-                        onClick={() => setNumQuestions('auto')}
+                        onClick={() => updateConfig({ numQuestions: 'auto' })}
                         label="Auto" 
                         subLabel="Smart"
                         icon={<FaMagic />} 
                     />
                     <OptionButton 
                         active={numQuestions === 'few'} 
-                        onClick={() => setNumQuestions('few')}
+                        onClick={() => updateConfig({ numQuestions: 'few' })}
                         label="Few" 
                         subLabel="1-15"
                         icon={<FaListUl />} 
                     />
                     <OptionButton 
                         active={numQuestions === 'standard'} 
-                        onClick={() => setNumQuestions('standard')}
+                        onClick={() => updateConfig({ numQuestions: 'standard' })}
                         label="Standard" 
                         subLabel="20-40"
                         icon={<FaBook />} 
                     />
                     <OptionButton 
                         active={numQuestions === 'many'} 
-                        onClick={() => setNumQuestions('many')}
+                        onClick={() => updateConfig({ numQuestions: 'many' })}
                         label="Many" 
                         subLabel="50+"
                         icon={<FaLayerGroup />} 
@@ -441,25 +521,25 @@ const CustomizeWrittenTests: React.FC<{ onClose: () => void }> = ({ onClose }) =
                 <div className="grid grid-cols-4 gap-3">
                     <OptionButton 
                         active={difficulty === 'auto'} 
-                        onClick={() => setDifficulty('auto')}
+                        onClick={() => updateConfig({ difficulty: 'auto' })}
                         label="Auto" 
                         icon={<FaMagic />} 
                     />
                     <OptionButton 
                         active={difficulty === 'easy'} 
-                        onClick={() => setDifficulty('easy')}
+                        onClick={() => updateConfig({ difficulty: 'easy' })}
                         label="Easy" 
                         icon={<FaLeaf />} 
                     />
                     <OptionButton 
                         active={difficulty === 'medium'} 
-                        onClick={() => setDifficulty('medium')}
+                        onClick={() => updateConfig({ difficulty: 'medium' })}
                         label="Medium" 
                         icon={<FaBullseye />} 
                     />
                     <OptionButton 
                         active={difficulty === 'hard'} 
-                        onClick={() => setDifficulty('hard')}
+                        onClick={() => updateConfig({ difficulty: 'hard' })}
                         label="Hard" 
                         icon={<FaFire />} 
                     />
@@ -471,21 +551,35 @@ const CustomizeWrittenTests: React.FC<{ onClose: () => void }> = ({ onClose }) =
                 <textarea 
                     className="w-full h-24 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl p-4 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-[#c2410c] focus:border-transparent outline-none resize-none placeholder-gray-400 dark:placeholder-gray-600"
                     placeholder="Focus on chapter 5, include more examples..."
+                    value={customInstructions}
+                    onChange={(e) => updateConfig({ customInstructions: e.target.value })}
                 />
             </div>
 
             <div className="flex justify-between items-center pt-2">
-                <button className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-sm font-medium transition-colors">Clear Selection</button>
+                <button 
+                    onClick={() => updateConfig({ numQuestions: 'auto', difficulty: 'auto', customInstructions: '' })}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-sm font-medium transition-colors"
+                >
+                    Clear Selection
+                </button>
                 <button onClick={onClose} className="bg-[#c2410c] hover:bg-[#9a3412] text-white px-6 py-2 rounded-lg font-bold transition-colors">Done</button>
             </div>
         </div>
     );
 };
 
-const CustomizeFillBlanks: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+const CustomizeFillBlanks: React.FC<{ 
+    config: MethodConfig['fillBlanks']; 
+    onChange: (updates: Partial<MethodConfig['fillBlanks']>) => void;
+    onClose: () => void;
+}> = ({ config, onChange, onClose }) => {
     // Reusing structure for Fill in the Blanks
-    const [numQuestions, setNumQuestions] = useState('auto');
-    const [difficulty, setDifficulty] = useState('auto');
+    const { numQuestions, difficulty, customInstructions } = config;
+
+    const updateConfig = (updates: Partial<MethodConfig['fillBlanks']>) => {
+        onChange(updates);
+    };
 
     const OptionButton = ({ id, label, subLabel, icon, active, onClick }: any) => (
         <button 
@@ -509,28 +603,28 @@ const CustomizeFillBlanks: React.FC<{ onClose: () => void }> = ({ onClose }) => 
                 <div className="grid grid-cols-4 gap-3">
                     <OptionButton 
                         active={numQuestions === 'auto'} 
-                        onClick={() => setNumQuestions('auto')}
+                        onClick={() => updateConfig({ numQuestions: 'auto' })}
                         label="Auto" 
                         subLabel="Smart"
                         icon={<FaMagic />} 
                     />
                     <OptionButton 
                         active={numQuestions === 'few'} 
-                        onClick={() => setNumQuestions('few')}
+                        onClick={() => updateConfig({ numQuestions: 'few' })}
                         label="Few" 
                         subLabel="1-15"
                         icon={<FaListUl />} 
                     />
                     <OptionButton 
                         active={numQuestions === 'standard'} 
-                        onClick={() => setNumQuestions('standard')}
+                        onClick={() => updateConfig({ numQuestions: 'standard' })}
                         label="Standard" 
                         subLabel="20-40"
                         icon={<FaBook />} 
                     />
                     <OptionButton 
                         active={numQuestions === 'many'} 
-                        onClick={() => setNumQuestions('many')}
+                        onClick={() => updateConfig({ numQuestions: 'many' })}
                         label="Many" 
                         subLabel="50+"
                         icon={<FaLayerGroup />} 
@@ -543,25 +637,25 @@ const CustomizeFillBlanks: React.FC<{ onClose: () => void }> = ({ onClose }) => 
                 <div className="grid grid-cols-4 gap-3">
                     <OptionButton 
                         active={difficulty === 'auto'} 
-                        onClick={() => setDifficulty('auto')}
+                        onClick={() => updateConfig({ difficulty: 'auto' })}
                         label="Auto" 
                         icon={<FaMagic />} 
                     />
                     <OptionButton 
                         active={difficulty === 'easy'} 
-                        onClick={() => setDifficulty('easy')}
+                        onClick={() => updateConfig({ difficulty: 'easy' })}
                         label="Easy" 
                         icon={<FaLeaf />} 
                     />
                     <OptionButton 
                         active={difficulty === 'medium'} 
-                        onClick={() => setDifficulty('medium')}
+                        onClick={() => updateConfig({ difficulty: 'medium' })}
                         label="Medium" 
                         icon={<FaBullseye />} 
                     />
                     <OptionButton 
                         active={difficulty === 'hard'} 
-                        onClick={() => setDifficulty('hard')}
+                        onClick={() => updateConfig({ difficulty: 'hard' })}
                         label="Hard" 
                         icon={<FaFire />} 
                     />
@@ -573,11 +667,18 @@ const CustomizeFillBlanks: React.FC<{ onClose: () => void }> = ({ onClose }) => 
                 <textarea 
                     className="w-full h-24 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl p-4 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-[#c2410c] focus:border-transparent outline-none resize-none placeholder-gray-400 dark:placeholder-gray-600"
                     placeholder="Focus on chapter 5, include more examples..."
+                    value={customInstructions}
+                    onChange={(e) => updateConfig({ customInstructions: e.target.value })}
                 />
             </div>
 
             <div className="flex justify-between items-center pt-2">
-                <button className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-sm font-medium transition-colors">Clear Selection</button>
+                <button 
+                    onClick={() => updateConfig({ numQuestions: 'auto', difficulty: 'auto', customInstructions: '' })}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-sm font-medium transition-colors"
+                >
+                    Clear Selection
+                </button>
                 <button onClick={onClose} className="bg-[#c2410c] hover:bg-[#9a3412] text-white px-6 py-2 rounded-lg font-bold transition-colors">Done</button>
             </div>
         </div>
@@ -585,15 +686,24 @@ const CustomizeFillBlanks: React.FC<{ onClose: () => void }> = ({ onClose }) => 
 };
 
 
-const CustomizeSpeechToText: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const [file, setFile] = useState<File | null>(null);
+const CustomizeSpeechToText: React.FC<{ 
+    config: MethodConfig['speechToText']; 
+    onChange: (updates: Partial<MethodConfig['speechToText']>) => void;
+    onClose: () => void;
+}> = ({ config, onChange, onClose }) => {
+    const { file, extractedText } = config;
     const [isProcessing, setIsProcessing] = useState(false);
-    const [extractedText, setExtractedText] = useState<string | null>(null);
+
+    const updateConfig = (updates: Partial<MethodConfig['speechToText']>) => {
+        onChange(updates);
+    };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
-            setFile(e.target.files[0]);
-            setExtractedText(null);
+            updateConfig({ 
+                file: e.target.files[0],
+                extractedText: null 
+            });
         }
     };
 
@@ -603,7 +713,9 @@ const CustomizeSpeechToText: React.FC<{ onClose: () => void }> = ({ onClose }) =
         // Simulate processing
         setTimeout(() => {
             setIsProcessing(false);
-            setExtractedText("Extracted text preview: This is a simulation of the extracted text from " + file.name);
+            updateConfig({ 
+                extractedText: "Extracted text preview: This is a simulation of the extracted text from " + file.name 
+            });
         }, 2000);
     };
 
@@ -646,15 +758,23 @@ const CustomizeSpeechToText: React.FC<{ onClose: () => void }> = ({ onClose }) =
             )}
 
             <div className="flex justify-between items-center pt-2">
-                <button onClick={() => setFile(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-sm font-medium transition-colors">Clear</button>
+                <button onClick={() => updateConfig({ file: null, extractedText: null })} className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-sm font-medium transition-colors">Clear</button>
                 <button onClick={onClose} className="bg-[#c2410c] hover:bg-[#9a3412] text-white px-6 py-2 rounded-lg font-bold transition-colors">Done</button>
             </div>
         </div>
     );
 };
 
-const CustomizeMindmap: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const [depth, setDepth] = useState('medium');
+const CustomizeMindmap: React.FC<{ 
+    config: MethodConfig['mindmap']; 
+    onChange: (updates: Partial<MethodConfig['mindmap']>) => void;
+    onClose: () => void;
+}> = ({ config, onChange, onClose }) => {
+    const { depth } = config;
+
+    const updateConfig = (updates: Partial<MethodConfig['mindmap']>) => {
+        onChange(updates);
+    };
 
     const OptionButton = ({ label, active, onClick }: any) => (
         <button 
@@ -676,24 +796,29 @@ const CustomizeMindmap: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <div className="grid grid-cols-3 gap-3">
                     <OptionButton 
                         active={depth === 'simple'} 
-                        onClick={() => setDepth('simple')}
+                        onClick={() => updateConfig({ depth: 'simple' })}
                         label="Simple" 
                     />
                     <OptionButton 
                         active={depth === 'medium'} 
-                        onClick={() => setDepth('medium')}
+                        onClick={() => updateConfig({ depth: 'medium' })}
                         label="Detailed" 
                     />
                     <OptionButton 
                         active={depth === 'complex'} 
-                        onClick={() => setDepth('complex')}
+                        onClick={() => updateConfig({ depth: 'complex' })}
                         label="Complex" 
                     />
                 </div>
             </div>
 
             <div className="flex justify-between items-center pt-2">
-                <button className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-sm font-medium transition-colors">Reset</button>
+                <button 
+                    onClick={() => updateConfig({ depth: 'medium' })}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-sm font-medium transition-colors"
+                >
+                    Reset
+                </button>
                 <button onClick={onClose} className="bg-[#c2410c] hover:bg-[#9a3412] text-white px-6 py-2 rounded-lg font-bold transition-colors">Done</button>
             </div>
         </div>
@@ -715,6 +840,7 @@ const MethodSelectionPage: React.FC = () => {
         }
         return ['tutor-lesson'];
     }); 
+    const [methodConfig, setMethodConfig] = useState<MethodConfig>(defaultMethodConfig);
     const [activeConfigMethod, setActiveConfigMethod] = useState<string | null>(null);
     const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
     const [selectedLanguage, setSelectedLanguage] = useState({ code: 'US', name: 'English', flag: '🇺🇸' });
@@ -949,6 +1075,8 @@ const MethodSelectionPage: React.FC = () => {
 
                 const payload = {
                     ...currentPayload,
+                    file_name: getFileName(),
+                    configuration: methodConfig,
                     mindmap: selectedMethods.includes('mindmap'),
                     notes: selectedMethods.includes('notes'),
                     multiple_choice: selectedMethods.includes('multiple-choice'),
@@ -1087,24 +1215,63 @@ const MethodSelectionPage: React.FC = () => {
         setActiveConfigMethod(methodId);
     };
 
+    const updateMethodConfig = <K extends keyof MethodConfig>(method: K, updates: Partial<MethodConfig[K]>) => {
+        setMethodConfig(prev => ({
+            ...prev,
+            [method]: { ...prev[method], ...updates }
+        }));
+    };
+
     const renderModalContent = () => {
         switch(activeConfigMethod) {
             case 'notes':
-                return <CustomizeNotes onClose={() => setActiveConfigMethod(null)} />;
+                return <CustomizeNotes 
+                    config={methodConfig.notes} 
+                    onChange={(updates) => updateMethodConfig('notes', updates)} 
+                    onClose={() => setActiveConfigMethod(null)} 
+                />;
             case 'multiple-choice':
-                return <CustomizeMultipleChoice onClose={() => setActiveConfigMethod(null)} />;
+                return <CustomizeMultipleChoice 
+                    config={methodConfig.multipleChoice} 
+                    onChange={(updates) => updateMethodConfig('multipleChoice', updates)} 
+                    onClose={() => setActiveConfigMethod(null)} 
+                />;
             case 'flashcards':
-                return <CustomizeFlashcards onClose={() => setActiveConfigMethod(null)} />;
+                return <CustomizeFlashcards 
+                    config={methodConfig.flashcards} 
+                    onChange={(updates) => updateMethodConfig('flashcards', updates)} 
+                    onClose={() => setActiveConfigMethod(null)} 
+                />;
             case 'podcast':
-                return <CustomizePodcast onClose={() => setActiveConfigMethod(null)} />;
+                return <CustomizePodcast 
+                    config={methodConfig.podcast} 
+                    onChange={(updates) => updateMethodConfig('podcast', updates)} 
+                    onClose={() => setActiveConfigMethod(null)} 
+                />;
             case 'written-tests':
-                return <CustomizeWrittenTests onClose={() => setActiveConfigMethod(null)} />;
+                return <CustomizeWrittenTests 
+                    config={methodConfig.writtenTests} 
+                    onChange={(updates) => updateMethodConfig('writtenTests', updates)} 
+                    onClose={() => setActiveConfigMethod(null)} 
+                />;
             case 'fill-blanks':
-                return <CustomizeFillBlanks onClose={() => setActiveConfigMethod(null)} />;
+                return <CustomizeFillBlanks 
+                    config={methodConfig.fillBlanks} 
+                    onChange={(updates) => updateMethodConfig('fillBlanks', updates)} 
+                    onClose={() => setActiveConfigMethod(null)} 
+                />;
             case 'speech-to-text':
-                return <CustomizeSpeechToText onClose={() => setActiveConfigMethod(null)} />;
+                return <CustomizeSpeechToText 
+                    config={methodConfig.speechToText} 
+                    onChange={(updates) => updateMethodConfig('speechToText', updates)} 
+                    onClose={() => setActiveConfigMethod(null)} 
+                />;
             case 'mindmap':
-                return <CustomizeMindmap onClose={() => setActiveConfigMethod(null)} />;
+                return <CustomizeMindmap 
+                    config={methodConfig.mindmap} 
+                    onChange={(updates) => updateMethodConfig('mindmap', updates)} 
+                    onClose={() => setActiveConfigMethod(null)} 
+                />;
             default:
                 return (
                     <div className="py-8 text-center text-gray-400">

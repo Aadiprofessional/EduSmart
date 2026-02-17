@@ -175,9 +175,9 @@ const StudyMaterialPage: React.FC = () => {
         const fetchUpdates = async () => {
             if (!id) return;
             const { data } = await supabase
-                .from('documents')
+                .from('upload_document')
                 .select('*')
-                .eq('id', id)
+                .eq('document_id', id)
                 .single();
             
             if (data) {
@@ -327,9 +327,9 @@ const StudyMaterialPage: React.FC = () => {
         if (!studySetData && id) {
              const fetchData = async () => {
                 const { data, error } = await supabase
-                    .from('documents')
+                    .from('upload_document')
                     .select('*')
-                    .eq('id', id)
+                    .eq('document_id', id)
                     .single();
                 if (data) {
                     setStudySetData(data);
@@ -341,7 +341,7 @@ const StudyMaterialPage: React.FC = () => {
     }, [id, studySetData]);
 
     // Determine title
-    const title = studySetData?.title || studySetData?.file_name || studySetData?.name || "Study Set";
+    const title = studySetData?.document_name || (studySetData?.document_type ? studySetData.document_type.charAt(0).toUpperCase() + studySetData.document_type.slice(1) : (studySetData?.title || studySetData?.file_name || studySetData?.name || "Study Set"));
 
     const methods = allMethods.filter(method => {
         if (!studySetData) return true; 

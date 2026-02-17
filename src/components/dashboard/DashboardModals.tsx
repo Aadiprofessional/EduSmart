@@ -62,6 +62,116 @@ export const BaseModal: React.FC<BaseModalProps> = ({ isOpen, onClose, title, su
   );
 };
 
+// --- Rename Modal ---
+export interface RenameModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onRename: (newName: string) => void;
+  currentName: string;
+  title?: string;
+}
+
+export const RenameModal: React.FC<RenameModalProps> = ({ isOpen, onClose, onRename, currentName, title = "Rename" }) => {
+  const [name, setName] = useState(currentName);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setName(currentName);
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [isOpen, currentName]);
+
+  const handleSubmit = () => {
+    if (name.trim()) {
+      onRename(name);
+      onClose();
+    }
+  };
+
+  return (
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={title}
+      width="max-w-md"
+    >
+      <div className="space-y-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Name
+          </label>
+          <input
+            ref={inputRef}
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+            className="w-full px-4 py-3 bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-gray-900 dark:text-white"
+          />
+        </div>
+
+        <div className="flex gap-3 justify-end mt-8">
+          <button
+            onClick={onClose}
+            className="px-6 py-2.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-medium transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={!name.trim() || name === currentName}
+            className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </BaseModal>
+  );
+};
+
+// --- Delete Modal ---
+export interface DeleteModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  message: string;
+}
+
+export const DeleteModal: React.FC<DeleteModalProps> = ({ isOpen, onClose, onConfirm, title, message }) => {
+  return (
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={title}
+      width="max-w-md"
+    >
+      <div className="space-y-6">
+        <p className="text-gray-600 dark:text-gray-300">
+          {message}
+        </p>
+
+        <div className="flex gap-3 justify-end mt-8">
+          <button
+            onClick={onClose}
+            className="px-6 py-2.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-medium transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => { onConfirm(); onClose(); }}
+            className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-red-500/20"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </BaseModal>
+  );
+};
+
 // --- Upload Modal ---
 export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void; onNext: (payload: UploadPayload) => void }> = ({ isOpen, onClose, onNext }) => {
   const { user } = useAuth();

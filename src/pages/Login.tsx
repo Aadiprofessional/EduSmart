@@ -19,6 +19,20 @@ const Login: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
+  // Set body background color to match the page background to prevent white background on overscroll
+  React.useEffect(() => {
+    // Save the original background color
+    const originalBackgroundColor = document.body.style.backgroundColor;
+    
+    // Set the body background color to match the login page
+    document.body.style.backgroundColor = '#050505';
+    
+    // Cleanup function to restore the original background color
+    return () => {
+      document.body.style.backgroundColor = originalBackgroundColor;
+    };
+  }, []);
+
   // Animation for the "black hole" particles
   const particles = Array.from({ length: 50 }).map((_, i) => ({
     id: i,
@@ -197,13 +211,15 @@ const Login: React.FC = () => {
           >
             {/* Logo */}
             <div className="text-center mb-8">
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-sm font-medium text-purple-200 backdrop-blur-md mb-6">
-                  <FaMagic className="text-purple-400" />
-                  Study smarter using AI
-                </div>
-                <h1 className="text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
-                  MatrixEdu
-                </h1>
+                <Link to="/" className="inline-block group cursor-pointer">
+                  <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-sm font-medium text-purple-200 backdrop-blur-md mb-6 group-hover:bg-white/10 transition-colors">
+                    <FaMagic className="text-purple-400" />
+                    Study smarter using AI
+                  </div>
+                  <h1 className="text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60 group-hover:to-white/80 transition-all">
+                    MatrixEdu
+                  </h1>
+                </Link>
             </div>
 
             {/* Login Form Container */}
@@ -212,14 +228,13 @@ const Login: React.FC = () => {
               variants={itemVariants}
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#151515]">
-                 <div className="flex items-center gap-2">
+              <div className="relative flex items-center justify-center px-6 py-4 border-b border-white/5 bg-[#151515]">
+                 <div className="absolute left-6 flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50"></div>
                     <div className="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/50"></div>
                     <div className="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50"></div>
                  </div>
-                 <div className="text-xs text-gray-500">{t('auth.login.welcomeBackToMatrixEdu')}</div>
-                 <div className="w-4"></div>
+                 <div className="text-xs text-gray-500 font-medium">{t('auth.login.welcomeBackToMatrixEdu')}</div>
               </div>
               
               <div className="p-6 sm:p-8">

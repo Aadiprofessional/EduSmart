@@ -1,16 +1,41 @@
 import React, { useState } from 'react';
 import { FaTh, FaList } from 'react-icons/fa';
 import StudySetCard, { StudySet } from './StudySetCard';
+import { StudySetCardSkeleton } from '../ui/Skeleton';
 
 interface StudySetListProps {
   studySets: StudySet[];
+  loading?: boolean;
   onSetClick?: (set: StudySet) => void;
   onDragStart?: (e: React.DragEvent, set: StudySet) => void;
   onMove?: (set: StudySet) => void;
+  onRename?: (set: StudySet, newName: string) => void;
+  onDelete?: (set: StudySet) => void;
 }
 
-const StudySetList: React.FC<StudySetListProps> = ({ studySets, onSetClick, onDragStart, onMove }) => {
+const StudySetList: React.FC<StudySetListProps> = ({ studySets, loading = false, onSetClick, onDragStart, onMove, onRename, onDelete }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  if (loading) {
+    return (
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+                <div className="w-1 h-6 bg-indigo-600 dark:bg-white rounded-full"></div>
+                <div className="h-8 w-48 bg-gray-200 dark:bg-gray-800 rounded animate-pulse"></div>
+            </div>
+            <div className="flex bg-gray-100 dark:bg-[#1a1a1a] rounded-lg p-1 border border-gray-200 dark:border-white/10">
+                <div className="h-8 w-16 bg-gray-200 dark:bg-gray-800 rounded animate-pulse"></div>
+            </div>
+        </div>
+        <div className={`grid gap-6 ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
+            {[...Array(6)].map((_, i) => (
+                <StudySetCardSkeleton key={i} />
+            ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mb-8">
@@ -45,6 +70,8 @@ const StudySetList: React.FC<StudySetListProps> = ({ studySets, onSetClick, onDr
                     onClick={() => onSetClick?.(set)}
                     onDragStart={onDragStart}
                     onMove={onMove}
+                    onRename={(newName) => onRename?.(set, newName)}
+                    onDelete={() => onDelete?.(set)}
                 />
             ))}
         </div>

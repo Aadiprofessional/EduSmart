@@ -27,9 +27,9 @@ const StudyContent: React.FC = () => {
         const fetchData = async () => {
             try {
                 const { data, error } = await supabase
-                    .from('documents')
+                    .from('upload_document')
                     .select('document_text, document_url, document_type')
-                    .eq('id', id)
+                    .eq('document_id', id)
                     .single();
 
                 if (error) {

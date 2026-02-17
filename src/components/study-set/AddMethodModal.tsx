@@ -61,9 +61,9 @@ export const AddMethodModal: React.FC<AddMethodModalProps> = ({ isOpen, onClose,
             
             // If text is missing in studySetData, fetch it
             const { data } = await supabase
-                .from('documents')
+                .from('upload_document')
                 .select('document_text')
-                .eq('id', documentId)
+                .eq('document_id', documentId)
                 .single();
             
             if (data?.document_text) {

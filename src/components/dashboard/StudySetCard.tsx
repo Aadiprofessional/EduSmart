@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   FaEllipsisH, 
   FaLayerGroup, 
@@ -17,6 +17,7 @@ import {
   FaGraduationCap,
   FaFolderOpen
 } from 'react-icons/fa';
+import { RenameModal, DeleteModal } from './DashboardModals';
 
 export interface StudySet {
   id: number | string;
@@ -24,7 +25,6 @@ export interface StudySet {
   stats: {
     unfamiliar: number;
     learning: number;
-    familiar: number;
     mastered: number;
   };
   progress: number;
@@ -49,9 +49,41 @@ interface StudySetCardProps {
   onClick?: () => void;
   onDragStart?: (e: React.DragEvent, set: StudySet) => void;
   onMove?: (set: StudySet) => void;
+  onRename?: (newName: string) => void;
+  onDelete?: () => void;
 }
 
-const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid', onClick, onDragStart, onMove }) => {
+const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid', onClick, onDragStart, onMove, onRename, onDelete }) => {
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+
+    if (showDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showDropdown]);
+
+  const handleRename = (newName: string) => {
+    onRename?.(newName);
+    setShowRenameModal(false);
+  };
+
+  const handleDelete = () => {
+    onDelete?.();
+    setShowDeleteModal(false);
+  };
 
   const renderActionButtons = (size: number = 14) => {
       return (
@@ -98,7 +130,6 @@ const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid', onC
                 <div className="flex flex-wrap gap-4 justify-center md:justify-end">
                     <StatRow count={set.stats.unfamiliar} label="Unfamiliar" color="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/20" compact />
                     <StatRow count={set.stats.learning} label="Learning" color="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/20" compact />
-                    <StatRow count={set.stats.familiar} label="Familiar" color="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-500/20" compact />
                     <StatRow count={set.stats.mastered} label="Mastered" color="bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 border-green-200 dark:border-green-500/20" compact />
                 </div>
 
@@ -113,9 +144,41 @@ const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid', onC
                         <FaFolderOpen />
                       </button>
                     )}
-                    <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded hover:text-gray-900 dark:hover:text-white transition-colors ml-2 flex-shrink-0">
+                    <div className="relative" ref={dropdownRef}>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setShowDropdown(!showDropdown); }}
+                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded hover:text-gray-900 dark:hover:text-white transition-colors ml-2 flex-shrink-0"
+                      >
                         <FaEllipsisH />
-                    </button>
+                      </button>
+                      
+                      {showDropdown && (
+                        <div className="absolute right-0 bottom-full mb-2 w-48 bg-white dark:bg-[#1a1a1a] rounded-xl shadow-xl border border-gray-200 dark:border-white/10 py-2 z-50">
+                          <button 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              setShowDropdown(false);
+                              setShowRenameModal(true);
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 flex items-center gap-2"
+                          >
+                            <FaPen size={12} />
+                            Rename
+                          </button>
+                          <button 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              setShowDropdown(false);
+                              setShowDeleteModal(true);
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                          >
+                            <FaTrash size={12} />
+                            Remove
+                          </button>
+                        </div>
+                      )}
+                    </div>
                 </div>
             </div>
         </div>
@@ -123,12 +186,13 @@ const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid', onC
   }
 
   return (
-    <div 
+    <>
+      <div 
         draggable={!!onDragStart}
         onDragStart={(e) => onDragStart?.(e, set)}
         onClick={onClick}
-        className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl p-6 hover:border-gray-300 dark:hover:border-white/20 transition-colors group shadow-sm dark:shadow-none cursor-pointer"
-    >
+        className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl p-6 hover:border-gray-300 dark:hover:border-white/20 transition-colors group shadow-sm dark:shadow-none cursor-pointer relative"
+      >
         <div className="flex justify-between items-start mb-4 md:mb-6">
             <h3 className="text-base md:text-lg font-bold text-gray-900 dark:text-white truncate pr-2">{set.title}</h3>
             <div className="flex gap-2 flex-shrink-0 items-center">
@@ -141,14 +205,47 @@ const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid', onC
                   <FaFolderOpen />
                 </button>
               )}
-              <button className="text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white"><FaEllipsisH /></button>
+              <div className="relative" ref={viewMode === 'grid' ? dropdownRef : undefined}>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setShowDropdown(!showDropdown); }}
+                  className="text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white"
+                >
+                  <FaEllipsisH />
+                </button>
+
+                {showDropdown && (
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-[#1a1a1a] rounded-xl shadow-xl border border-gray-200 dark:border-white/10 py-2 z-50">
+                    <button 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        setShowDropdown(false);
+                        setShowRenameModal(true);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 flex items-center gap-2"
+                    >
+                      <FaPen size={12} />
+                      Rename
+                    </button>
+                    <button 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        setShowDropdown(false);
+                        setShowDeleteModal(true);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                    >
+                      <FaTrash size={12} />
+                      Remove
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
         </div>
 
         <div className="space-y-2 mb-4 md:mb-6">
             <StatRow count={set.stats.unfamiliar} label="Unfamiliar" color="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/20" />
             <StatRow count={set.stats.learning} label="Learning" color="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/20" />
-            <StatRow count={set.stats.familiar} label="Familiar" color="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-500/20" />
             <StatRow count={set.stats.mastered} label="Mastered" color="bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 border-green-200 dark:border-green-500/20" />
         </div>
 
@@ -172,7 +269,24 @@ const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid', onC
                 {renderActionButtons(14)}
             </div>
         </div>
-    </div>
+      </div>
+
+      <RenameModal 
+        isOpen={showRenameModal} 
+        onClose={() => setShowRenameModal(false)} 
+        onRename={handleRename} 
+        currentName={set.title} 
+        title="Rename Study Set"
+      />
+
+      <DeleteModal 
+        isOpen={showDeleteModal} 
+        onClose={() => setShowDeleteModal(false)} 
+        onConfirm={handleDelete} 
+        title="Delete Study Set"
+        message={`Are you sure you want to delete "${set.title}"? This action cannot be undone.`}
+      />
+    </>
   );
 };
 

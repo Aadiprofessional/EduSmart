@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { FaChevronRight, FaPlus, FaFolder } from 'react-icons/fa';
+import React, { useState, useRef, useEffect } from 'react';
+import { FaChevronRight, FaPlus, FaFolder, FaEllipsisH, FaPen, FaTrash } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
+import { RenameModal, DeleteModal } from './DashboardModals';
 
 interface SidebarRightProps {
   className?: string;
@@ -11,6 +12,8 @@ interface SidebarRightProps {
   onMoveDocument?: (folderId: string | null, documentId: string) => void;
   selectedFolderId?: string | null;
   onSelectFolder?: (folderId: string | null) => void;
+  onRenameFolder?: (folderId: string, newName: string) => void;
+  onDeleteFolder?: (folderId: string) => void;
 }
 
 const SidebarRight: React.FC<SidebarRightProps> = ({ 
@@ -21,11 +24,35 @@ const SidebarRight: React.FC<SidebarRightProps> = ({
   onClose,
   onMoveDocument,
   selectedFolderId = null,
-  onSelectFolder
+  onSelectFolder,
+  onRenameFolder,
+  onDeleteFolder
 }) => {
   const [isFoldersOpen, setIsFoldersOpen] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
+  
+  // Dropdown & Modal States
+  const [activeDropdownFolderId, setActiveDropdownFolderId] = useState<string | null>(null);
+  const [folderToRename, setFolderToRename] = useState<{ id: string, name: string } | null>(null);
+  const [folderToDelete, setFolderToDelete] = useState<{ id: string, name: string } | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setActiveDropdownFolderId(null);
+      }
+    };
+
+    if (activeDropdownFolderId) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [activeDropdownFolderId]);
 
   const handleDragOver = (e: React.DragEvent, folderId: string) => {
     e.preventDefault();
@@ -43,6 +70,20 @@ const SidebarRight: React.FC<SidebarRightProps> = ({
     const documentId = e.dataTransfer.getData('documentId');
     if (documentId && onMoveDocument) {
       onMoveDocument(folderId, documentId);
+    }
+  };
+
+  const handleRename = (newName: string) => {
+    if (folderToRename && onRenameFolder) {
+      onRenameFolder(folderToRename.id, newName);
+      setFolderToRename(null);
+    }
+  };
+
+  const handleDelete = () => {
+    if (folderToDelete && onDeleteFolder) {
+      onDeleteFolder(folderToDelete.id);
+      setFolderToDelete(null);
     }
   };
 
@@ -113,17 +154,80 @@ const SidebarRight: React.FC<SidebarRightProps> = ({
                         onDragOver={(e) => handleDragOver(e, folder.id)}
                         onDragLeave={handleDragLeave}
                         onDrop={(e) => handleDrop(e, folder.id)}
-                        className={`flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg cursor-pointer text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap ${selectedFolderId === folder.id ? 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white' : ''} ${dragOverFolderId === folder.id ? 'bg-indigo-100 dark:bg-indigo-900/20' : ''}`}
+                        className={`group/folder relative flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg cursor-pointer text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap ${selectedFolderId === folder.id ? 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white' : ''} ${dragOverFolderId === folder.id ? 'bg-indigo-100 dark:bg-indigo-900/20' : ''}`}
                       >
                          <FaFolder className={`${folder.color ? colorVariants[folder.color] || 'text-gray-400' : 'text-gray-400'} flex-shrink-0`} />
                          <span className="text-sm flex-1 truncate">{folder.name}</span>
                          <span className="text-xs opacity-50 flex-shrink-0">{folder.count}</span>
+                         
+                         {/* Dropdown Trigger */}
+                         <div className="relative" ref={activeDropdownFolderId === folder.id ? dropdownRef : undefined}>
+                           <button 
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               setActiveDropdownFolderId(activeDropdownFolderId === folder.id ? null : folder.id);
+                             }}
+                             className={`p-1 rounded hover:bg-gray-200 dark:hover:bg-white/10 ${activeDropdownFolderId === folder.id ? 'opacity-100' : 'opacity-0 group-hover/folder:opacity-100'} transition-opacity`}
+                           >
+                             <FaEllipsisH size={12} />
+                           </button>
+
+                           {/* Dropdown Menu */}
+                           {activeDropdownFolderId === folder.id && (
+                             <div className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-[#1a1a1a] rounded-lg shadow-xl border border-gray-200 dark:border-white/10 py-1 z-50">
+                               <button 
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   setFolderToRename(folder);
+                                   setActiveDropdownFolderId(null);
+                                 }}
+                                 className="w-full px-3 py-1.5 text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 flex items-center gap-2"
+                               >
+                                 <FaPen size={10} />
+                                 Rename
+                               </button>
+                               <button 
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   setFolderToDelete(folder);
+                                   setActiveDropdownFolderId(null);
+                                 }}
+                                 className="w-full px-3 py-1.5 text-left text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                               >
+                                 <FaTrash size={10} />
+                                 Delete
+                               </button>
+                             </div>
+                           )}
+                         </div>
                       </div>
                     ))}
                   </div>
                 )}
              </div>
         </motion.aside>
+      )}
+
+      {/* Rename Folder Modal */}
+      {folderToRename && (
+        <RenameModal
+          isOpen={!!folderToRename}
+          onClose={() => setFolderToRename(null)}
+          onRename={handleRename}
+          currentName={folderToRename.name}
+          title="Rename Folder"
+        />
+      )}
+
+      {/* Delete Folder Modal */}
+      {folderToDelete && (
+        <DeleteModal
+          isOpen={!!folderToDelete}
+          onClose={() => setFolderToDelete(null)}
+          onConfirm={handleDelete}
+          title="Delete Folder"
+          message={`Are you sure you want to delete "${folderToDelete.name}"? This will not delete the study sets inside it.`}
+        />
       )}
     </AnimatePresence>
   );

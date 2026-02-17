@@ -189,14 +189,13 @@ const ResetPassword: React.FC = () => {
               className="bg-[#111] rounded-2xl border border-white/10 shadow-2xl overflow-hidden relative"
               variants={itemVariants}
             >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#151515]">
-                 <div className="flex items-center gap-2">
+              <div className="relative flex items-center justify-center px-6 py-4 border-b border-white/5 bg-[#151515]">
+                 <div className="absolute left-6 flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50"></div>
                     <div className="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/50"></div>
                     <div className="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50"></div>
                  </div>
-                 <div className="text-xs text-gray-500">{t('auth.updatePassword.title')}</div>
-                 <div className="w-4"></div>
+                 <div className="text-xs text-gray-500 font-medium">{t('auth.updatePassword.title')}</div>
               </div>
 
               <div className="p-6 sm:p-8">
