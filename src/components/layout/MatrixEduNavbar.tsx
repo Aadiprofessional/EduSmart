@@ -85,7 +85,6 @@ const MatrixEduNavbar: React.FC = () => {
           <Link to="/about" className={`hover:text-white transition-colors ${location.pathname === '/about' ? 'text-white' : ''}`}>About</Link>
           <Link to="/pricing" className={`hover:text-white transition-colors ${location.pathname === '/pricing' ? 'text-white' : ''}`}>Pricing</Link>
           <Link to="/blog" className={`hover:text-white transition-colors ${location.pathname === '/blog' ? 'text-white' : ''}`}>Blog</Link>
-          <Link to="/case-studies" className={`hover:text-white transition-colors ${location.pathname === '/case-studies' ? 'text-white' : ''}`}>Success Stories</Link>
       </div>
 
       {/* Auth Buttons & Coins */}
@@ -153,7 +152,6 @@ const MatrixEduNavbar: React.FC = () => {
                     <Link to="/about" className="text-gray-400 hover:text-white text-lg">About</Link>
                     <Link to="/pricing" className="text-gray-400 hover:text-white text-lg">Pricing</Link>
                     <Link to="/blog" className="text-gray-400 hover:text-white text-lg">Blog</Link>
-                    <Link to="/case-studies" className="text-gray-400 hover:text-white text-lg">Success Stories</Link>
                     <div className="h-px bg-white/10 my-2"></div>
                     {user ? (
                         <button 

@@ -60,73 +60,9 @@ const MatrixEduLandingContent: React.FC = () => {
     setOpenFaqIndex(openFaqIndex === index ? null : index);
   };
 
-  // Styles for scrolling logos
-  const starStyles = `
-    @keyframes scroll {
-      0% { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
-    }
-    .animate-scroll {
-      animation: scroll 30s linear infinite;
-    }
-    .animate-scroll:hover {
-      animation-play-state: paused;
-    }
-  `;
-
   return (
     <div className="min-h-screen bg-white dark:bg-[#050505] text-gray-900 dark:text-white font-sans selection:bg-indigo-500 selection:text-white overflow-x-hidden">
-      <style>{starStyles}</style>
-      
       <ReflectHero />
-
-      {/* Trusted By Section */}
-      <section className="py-10 border-y border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-white/[0.02] overflow-hidden">
-        <div className="container mx-auto px-4 text-center mb-8">
-          <p className="text-lg text-gray-500 dark:text-gray-400">Students at leading universities trust our powerful AI study tool</p>
-        </div>
-        
-        <div className="relative w-full overflow-hidden">
-            {/* Mask gradients for smooth fade in/out on sides */}
-            <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-gray-50 dark:from-[#050505] to-transparent z-10"></div>
-            <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-gray-50 dark:from-[#050505] to-transparent z-10"></div>
-
-            <div className="flex w-max animate-scroll hover:pause gap-16 opacity-50 grayscale hover:grayscale-0 transition-all duration-500 items-center">
-                {/* First Set */}
-                <div className="flex gap-16 items-center shrink-0 px-8">
-                    <span className="text-3xl font-serif font-bold text-gray-800 dark:text-white">HARVARD</span>
-                    <span className="text-3xl font-sans font-bold text-gray-800 dark:text-white">Georgia Tech</span>
-                    <span className="text-3xl font-serif font-bold text-gray-800 dark:text-white">Yale</span>
-                    <span className="text-3xl font-serif font-bold text-gray-800 dark:text-white">NYU</span>
-                    <span className="text-3xl font-serif font-bold text-gray-800 dark:text-white">Penn</span>
-                </div>
-                {/* Second Set (Duplicate for seamless scroll) */}
-                <div className="flex gap-16 items-center shrink-0 px-8">
-                    <span className="text-3xl font-serif font-bold text-gray-800 dark:text-white">HARVARD</span>
-                    <span className="text-3xl font-sans font-bold text-gray-800 dark:text-white">Georgia Tech</span>
-                    <span className="text-3xl font-serif font-bold text-gray-800 dark:text-white">Yale</span>
-                    <span className="text-3xl font-serif font-bold text-gray-800 dark:text-white">NYU</span>
-                    <span className="text-3xl font-serif font-bold text-gray-800 dark:text-white">Penn</span>
-                </div>
-                {/* Third Set (Extra buffer for wide screens) */}
-                <div className="flex gap-16 items-center shrink-0 px-8">
-                    <span className="text-3xl font-serif font-bold text-gray-800 dark:text-white">HARVARD</span>
-                    <span className="text-3xl font-sans font-bold text-gray-800 dark:text-white">Georgia Tech</span>
-                    <span className="text-3xl font-serif font-bold text-gray-800 dark:text-white">Yale</span>
-                    <span className="text-3xl font-serif font-bold text-gray-800 dark:text-white">NYU</span>
-                    <span className="text-3xl font-serif font-bold text-gray-800 dark:text-white">Penn</span>
-                </div>
-                {/* Fourth Set (Extra buffer for ultra wide screens) */}
-                <div className="flex gap-16 items-center shrink-0 px-8">
-                     <span className="text-3xl font-serif font-bold text-gray-800 dark:text-white">HARVARD</span>
-                     <span className="text-3xl font-sans font-bold text-gray-800 dark:text-white">Georgia Tech</span>
-                     <span className="text-3xl font-serif font-bold text-gray-800 dark:text-white">Yale</span>
-                     <span className="text-3xl font-serif font-bold text-gray-800 dark:text-white">NYU</span>
-                     <span className="text-3xl font-serif font-bold text-gray-800 dark:text-white">Penn</span>
-                </div>
-            </div>
-        </div>
-      </section>
 
       {/* How it Works Section */}
       <div ref={howItWorksRef}>
@@ -140,8 +76,8 @@ const MatrixEduLandingContent: React.FC = () => {
       <section ref={whatYouCanDoRef} className="py-20 md:py-32 bg-gray-50 dark:bg-black relative overflow-hidden">
         <div className="container mx-auto px-4 relative z-10">
              <div className="text-center mb-16 md:mb-24">
-                 <h2 className="text-4xl md:text-6xl font-permanent-marker mb-6 text-gray-900 dark:text-white">Unlock Your Potential</h2>
-                 <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">One platform, endless possibilities. Everything you need to excel in your studies.</p>
+                 <h2 className="text-4xl md:text-6xl font-permanent-marker mb-6 text-gray-900 dark:text-white">Unlock Your MatrixEdu Workspace</h2>
+                 <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">From dashboard to sidebar tools, manage study sets, solve questions, and write better content in one place.</p>
              </div>
 
              <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
@@ -152,10 +88,10 @@ const MatrixEduLandingContent: React.FC = () => {
                          <div className="w-16 h-16 rounded-2xl bg-green-100 dark:bg-green-500/10 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
                              <FaCheckCircle className="text-green-600 dark:text-green-500 text-3xl" />
                          </div>
-                         <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">Exam Prep Master</h3>
-                         <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-6">Convert any study material into active recall tools. Generate flashcards and quizzes instantly to retain information longer.</p>
+                        <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">Dashboard & Study Sets</h3>
+                        <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-6">Keep your learning organized with study sets, usage insights, and fast access to your active learning workspace.</p>
                          <div className="flex items-center text-green-600 dark:text-green-500 font-bold text-sm">
-                             <span>Start Practicing</span>
+                            <span>Open Dashboard</span>
                              <FaPlay className="ml-2 text-xs group-hover:translate-x-1 transition-transform" />
                          </div>
                      </div>
@@ -168,10 +104,10 @@ const MatrixEduLandingContent: React.FC = () => {
                          <div className="w-16 h-16 rounded-2xl bg-purple-100 dark:bg-purple-500/10 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
                              <FaFileAlt className="text-purple-600 dark:text-purple-500 text-3xl" />
                          </div>
-                         <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">Homework Assistant</h3>
-                         <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-6">Stuck on an assignment? Get instant explanations, summaries, and step-by-step breakdowns for complex topics.</p>
+                        <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">Sidebar AI Tools</h3>
+                        <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-6">Use Solve, Paper Grader, Content Writer, Humanizer, and Study Planner directly from the sidebar workflow.</p>
                          <div className="flex items-center text-purple-600 dark:text-purple-500 font-bold text-sm">
-                             <span>Get Help Now</span>
+                            <span>Use AI Tools</span>
                              <FaPlay className="ml-2 text-xs group-hover:translate-x-1 transition-transform" />
                          </div>
                      </div>
@@ -184,10 +120,10 @@ const MatrixEduLandingContent: React.FC = () => {
                          <div className="w-16 h-16 rounded-2xl bg-blue-100 dark:bg-blue-500/10 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
                              <FaSearch className="text-blue-600 dark:text-blue-500 text-3xl" />
                          </div>
-                         <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Research Companion</h3>
-                         <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-6">Digest long papers and videos in seconds. Extract key insights and organize your research effortlessly.</p>
+                        <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Smarter Practice Flow</h3>
+                        <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-6">Move from question solving to writing and planning with one connected system that supports daily study progress.</p>
                          <div className="flex items-center text-blue-600 dark:text-blue-500 font-bold text-sm">
-                             <span>Start Researching</span>
+                            <span>Start Learning</span>
                              <FaPlay className="ml-2 text-xs group-hover:translate-x-1 transition-transform" />
                          </div>
                      </div>
@@ -206,6 +142,7 @@ const MatrixEduLandingContent: React.FC = () => {
       </section>
 
       {/* Access Anywhere Section */}
+      {false && (
       <section ref={accessAnywhereRef} className="py-20 md:py-32 bg-white dark:bg-[#050505] relative overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-500/10 via-transparent to-transparent opacity-50"></div>
           
@@ -217,8 +154,10 @@ const MatrixEduLandingContent: React.FC = () => {
                           <FaMobileAlt className="inline mr-2" /> Cross-Platform Sync
                       </div>
                       <h2 className="text-4xl md:text-6xl font-permanent-marker mb-6 text-gray-900 dark:text-white leading-tight">
-                          Study Anywhere.<br/>
-                          <span className="text-indigo-600 dark:text-indigo-500">Anytime.</span>
+                          {/* Study Anywhere.<br/>
+                          <span className="text-indigo-600 dark:text-indigo-500">Anytime.</span> */}
+                          Learn Across.<br/>
+                          <span className="text-indigo-600 dark:text-indigo-500">Your Workspace.</span>
                       </h2>
                       <p className="text-xl text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
                           Your study materials follow you. Start on your laptop during class, review on your phone during commute, and polish on your tablet at home.
@@ -279,6 +218,7 @@ const MatrixEduLandingContent: React.FC = () => {
               </div>
           </div>
       </section>
+      )}
 
       {/* Comparison Section */}
       <section ref={comparisonRef} className="py-20 md:py-32 bg-gray-50 dark:bg-black relative">
@@ -373,13 +313,13 @@ const MatrixEduLandingContent: React.FC = () => {
 
               <div className="max-w-3xl mx-auto space-y-4">
                   {[
-                    { q: "What is MatrixEdu AI?", a: "MatrixEdu AI is an advanced AI-powered study assistant designed to help students learn faster and more effectively. It creates personalized study materials like flashcards, quizzes, and summaries from your notes, slides, or textbooks." },
-                    { q: "What is the difference between the free and unlimited?", a: "The free version gives you access to basic features with daily limits. The unlimited plan unlocks all premium features, unlimited content generation, priority support, and advanced study modes." },
-                    { q: "Why was MatrixEdu AI founded?", a: "MatrixEdu AI was founded by students who wanted to make learning more efficient. We believe that with the right tools, anyone can master any subject in less time." },
-                    { q: "Can MatrixEdu AI be used to replace human tutoring?", a: "While MatrixEdu AI is a powerful tool for self-study and clarifying concepts, it is best used as a supplement to human tutoring for complex subjects requiring deep, nuanced understanding." },
-                    { q: "Can I make money promoting MatrixEdu AI?", a: "Yes! We have an affiliate program that allows you to earn commissions by referring new users to MatrixEdu AI. Check out our 'Careers' or 'Affiliate' page for more details." },
-                    { q: "What Makes MatrixEdu AI's AI Study Tool Unique?", a: "Unlike generic AI tools, MatrixEdu AI is specifically fine-tuned for education. It understands academic context, creates active recall materials, and adapts to your learning style over time." },
-                    { q: "How Does the AI Study Tool Personalize My Learning?", a: "Our AI analyzes your performance on quizzes and flashcards to identify your weak areas. It then adjusts future study sessions to focus more on topics you need to improve, ensuring efficient learning." }
+                    { q: "What can I do on MatrixEdu?", a: "MatrixEdu gives you one study workspace with Dashboard, Solve, Paper Grader, Content Writer, Humanizer, and Study Planner tools for daily learning tasks." },
+                    { q: "What is available in the dashboard?", a: "The dashboard is your main hub for study sets and progress tracking, so you can continue where you left off and keep your learning organized." },
+                    { q: "How does the sidebar help me study faster?", a: "The sidebar gives direct access to core tools, so you can switch between solving, grading, writing, and planning without losing context." },
+                    { q: "Can I upload materials and get AI help?", a: "Yes. You can work with your study material and use AI features to generate explanations, improve writing, and build better study sessions." },
+                    { q: "Do you offer free and paid plans?", a: "Yes. You can start with the free experience and upgrade when you need higher limits and premium capabilities." },
+                    { q: "How can I manage my account and payments?", a: "Use your profile and transaction history areas to review account details and billing activity." },
+                    { q: "How do I contact support?", a: "You can reach the team through the platform contact channels for account, billing, or product-related help." }
                   ].map((item, index) => (
                       <div key={index} className="border-b border-gray-200 dark:border-white/10 last:border-0">
                           <button 

@@ -5,17 +5,9 @@ import {
   FaLayerGroup, 
   FaBullseye, 
   FaFileAlt, 
-  FaMobileAlt, 
-  FaCog, 
-  FaBookOpen, 
-  FaGift, 
-  FaCommentDots, 
-  FaEnvelope, 
   FaSignOutAlt, 
-  FaDesktop, 
   FaSun, 
   FaMoon, 
-  FaGraduationCap,
   FaChevronDown,
   FaChevronUp,
   FaHistory,
@@ -42,7 +34,6 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -60,8 +51,6 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
           exit={{ width: 0, opacity: 0 }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
           className={`bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-white/10 flex flex-col justify-between h-full p-4 flex-shrink-0 group text-gray-900 dark:text-white ${className}`}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
         >
           <div className="overflow-hidden whitespace-nowrap">
             {/* Logo */}
@@ -124,11 +113,6 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
                 active={isActive('/study-planner')} 
                 onClick={() => navigate('/study-planner')}
               />
-              <NavItem 
-                icon={<FaMobileAlt />} 
-                label="App" 
-                onClick={() => {}} // Placeholder
-              />
             </nav>
           </div>
 
@@ -163,12 +147,7 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
                         className="overflow-hidden"
                     >
                         <div className="space-y-1 border-t border-gray-200 dark:border-white/5 pt-4">
-                            <NavItem icon={<FaCog />} label="Settings" onClick={() => navigate('/profile')} />
                             <NavItem icon={<FaHistory />} label="Transaction History" onClick={() => navigate('/transaction-history')} />
-                            <NavItem icon={<FaBookOpen />} label="Quick Guide" onClick={() => navigate('/resources')} />
-                            <NavItem icon={<FaGift />} label="Earn" badge="NEW" onClick={() => navigate('/referral')} />
-                            <NavItem icon={<FaCommentDots />} label="Give Feedback" onClick={() => window.location.href = 'mailto:feedback@matrixaiglobal.com'} />
-                            <NavItem icon={<FaEnvelope />} label="Contact Us" onClick={() => window.location.href = 'mailto:info@matrixaiglobal.com'} />
                             <button onClick={handleSignOut} className="w-full flex items-center gap-3 px-3 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors text-sm">
                                 <FaSignOutAlt />
                                 <span>Sign out</span>
