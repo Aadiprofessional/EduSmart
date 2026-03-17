@@ -7,12 +7,15 @@ import { useSubscription } from '../../utils/SubscriptionContext';
 import { supabase } from '../../utils/supabase';
 import matrixLogo from '../../assets/matrixedu.png';
 import coinIcon from '../../assets/assets_coin.png';
+import { useLanguage } from '../../utils/LanguageContext';
+import LanguageSelector from '../ui/LanguageSelector';
 
 const MatrixEduNavbar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
   const { subscriptionStatus, loading: subLoading } = useSubscription();
+  const { t } = useLanguage();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [coins, setCoins] = useState<number>(0);
 
@@ -74,25 +77,26 @@ const MatrixEduNavbar: React.FC = () => {
       <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
           {/* Logo */}
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-[0_0_15px_rgba(99,102,241,0.5)]">
-              <img src={matrixLogo} alt="MatrixEdu Logo" className="w-5 h-5" />
+              <img src={matrixLogo} alt={t('matrixEduNavbar.logoAlt')} className="w-5 h-5" />
           </div>
           <span className="text-xl font-semibold tracking-tight text-white">MatrixEdu</span>
       </div>
 
       {/* Desktop Menu */}
       <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-400 absolute left-1/2 transform -translate-x-1/2">
-          <Link to="/" className={`hover:text-white transition-colors ${location.pathname === '/' ? 'text-white' : ''}`}>Home</Link>
-          <Link to="/about" className={`hover:text-white transition-colors ${location.pathname === '/about' ? 'text-white' : ''}`}>About</Link>
-          <Link to="/pricing" className={`hover:text-white transition-colors ${location.pathname === '/pricing' ? 'text-white' : ''}`}>Pricing</Link>
-          <Link to="/blog" className={`hover:text-white transition-colors ${location.pathname === '/blog' ? 'text-white' : ''}`}>Blog</Link>
+          <Link to="/" className={`hover:text-white transition-colors ${location.pathname === '/' ? 'text-white' : ''}`}>{t('nav.home')}</Link>
+          <Link to="/about" className={`hover:text-white transition-colors ${location.pathname === '/about' ? 'text-white' : ''}`}>{t('nav.about')}</Link>
+          <Link to="/pricing" className={`hover:text-white transition-colors ${location.pathname === '/pricing' ? 'text-white' : ''}`}>{t('nav.pricing')}</Link>
+          <Link to="/blog" className={`hover:text-white transition-colors ${location.pathname === '/blog' ? 'text-white' : ''}`}>{t('nav.blog')}</Link>
       </div>
 
       {/* Auth Buttons & Coins */}
       <div className="hidden md:flex items-center gap-4">
+          <LanguageSelector />
           {user && !subLoading && (
             subscriptionStatus?.hasActiveSubscription ? (
                 <div className="flex items-center px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/30 rounded-full text-yellow-400 backdrop-blur-sm">
-                    <img src={coinIcon} alt="Coins" className="w-4 h-4 mr-1.5" />
+                    <img src={coinIcon} alt={t('matrixEduNavbar.coinsAlt')} className="w-4 h-4 mr-1.5" />
                     <span className="font-bold text-sm">{coins}</span>
                 </div>
             ) : (
@@ -101,7 +105,7 @@ const MatrixEduNavbar: React.FC = () => {
                 className="px-3 py-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white rounded-full font-bold text-xs uppercase tracking-wider transition-all shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transform hover:-translate-y-0.5 flex items-center gap-2"
                 >
                 <FaBolt className="text-yellow-300" />
-                Upgrade
+                {t('matrixEduNavbar.upgrade')}
                 </button>
             )
           )}
@@ -111,13 +115,13 @@ const MatrixEduNavbar: React.FC = () => {
                   onClick={() => navigate('/dashboard')} 
                   className="text-sm font-medium px-4 py-2 bg-[#6366f1] hover:bg-[#5558dd] text-white rounded-lg transition-all shadow-[0_0_15px_rgba(99,102,241,0.5)] hover:shadow-[0_0_20px_rgba(99,102,241,0.7)]"
               >
-                  Dashboard
+                  {t('nav.dashboard')}
               </button>
           ) : (
               <>
-                  <button onClick={() => navigate('/login')} className="text-sm font-medium text-gray-400 hover:text-white transition-colors">Login</button>
+                  <button onClick={() => navigate('/login')} className="text-sm font-medium text-gray-400 hover:text-white transition-colors">{t('nav.login')}</button>
                   <button onClick={() => navigate('/signup')} className="text-sm font-medium px-4 py-2 bg-[#6366f1] hover:bg-[#5558dd] text-white rounded-lg transition-all shadow-[0_0_15px_rgba(99,102,241,0.5)] hover:shadow-[0_0_20px_rgba(99,102,241,0.7)]">
-                      Sign Up
+                      {t('nav.signup')}
                   </button>
               </>
           )}
@@ -125,10 +129,11 @@ const MatrixEduNavbar: React.FC = () => {
 
       {/* Mobile Menu Toggle */}
       <div className="flex items-center gap-3 md:hidden">
+         <LanguageSelector />
          {/* Mobile Coins Display */}
          {user && !subLoading && subscriptionStatus?.hasActiveSubscription && (
             <div className="flex items-center px-2 py-1 bg-yellow-500/10 border border-yellow-500/30 rounded-full text-yellow-400 backdrop-blur-sm">
-                <img src={coinIcon} alt="Coins" className="w-3.5 h-3.5 mr-1" />
+                <img src={coinIcon} alt={t('matrixEduNavbar.coinsAlt')} className="w-3.5 h-3.5 mr-1" />
                 <span className="font-bold text-xs">{coins}</span>
             </div>
          )}
@@ -148,22 +153,22 @@ const MatrixEduNavbar: React.FC = () => {
                 className="absolute top-full left-0 right-0 bg-[#050505] border-b border-white/10 overflow-hidden md:hidden shadow-xl"
             >
                 <div className="flex flex-col p-6 gap-4">
-                    <Link to="/" className="text-gray-400 hover:text-white text-lg">Home</Link>
-                    <Link to="/about" className="text-gray-400 hover:text-white text-lg">About</Link>
-                    <Link to="/pricing" className="text-gray-400 hover:text-white text-lg">Pricing</Link>
-                    <Link to="/blog" className="text-gray-400 hover:text-white text-lg">Blog</Link>
+                    <Link to="/" className="text-gray-400 hover:text-white text-lg">{t('nav.home')}</Link>
+                    <Link to="/about" className="text-gray-400 hover:text-white text-lg">{t('nav.about')}</Link>
+                    <Link to="/pricing" className="text-gray-400 hover:text-white text-lg">{t('nav.pricing')}</Link>
+                    <Link to="/blog" className="text-gray-400 hover:text-white text-lg">{t('nav.blog')}</Link>
                     <div className="h-px bg-white/10 my-2"></div>
                     {user ? (
                         <button 
                             onClick={() => navigate('/dashboard')} 
                             className="w-full py-3 bg-[#6366f1] text-white rounded-lg font-bold"
                         >
-                            Dashboard
+                            {t('nav.dashboard')}
                         </button>
                     ) : (
                         <div className="flex flex-col gap-3">
-                            <button onClick={() => navigate('/login')} className="w-full py-3 text-gray-300 hover:text-white border border-white/10 rounded-lg">Login</button>
-                            <button onClick={() => navigate('/signup')} className="w-full py-3 bg-[#6366f1] text-white rounded-lg font-bold">Sign Up</button>
+                            <button onClick={() => navigate('/login')} className="w-full py-3 text-gray-300 hover:text-white border border-white/10 rounded-lg">{t('nav.login')}</button>
+                            <button onClick={() => navigate('/signup')} className="w-full py-3 bg-[#6366f1] text-white rounded-lg font-bold">{t('nav.signup')}</button>
                         </div>
                     )}
                 </div>

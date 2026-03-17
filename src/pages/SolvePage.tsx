@@ -13,6 +13,7 @@ import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
 import 'katex/dist/katex.min.css'; // Ensure katex CSS is imported for math rendering
 import coinIcon from '../assets/assets_coin.png';
+import { useLanguage } from '../utils/LanguageContext';
 
 // Type definitions for PDF.js
 interface PDFPageProxy {
@@ -80,6 +81,7 @@ interface DBMessage {
 }
 
 const SolvePage: React.FC = () => {
+  const { t } = useLanguage();
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(window.innerWidth >= 1024);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
 
@@ -98,7 +100,17 @@ const SolvePage: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const subjects = ['Psychology', 'Physics', 'Biology', 'Math', 'General', 'Chemistry', 'Language', 'History', 'Economics'];
+  const subjects = [
+    { id: 'Psychology', label: t('solvePage.subjects.psychology') },
+    { id: 'Physics', label: t('solvePage.subjects.physics') },
+    { id: 'Biology', label: t('solvePage.subjects.biology') },
+    { id: 'Math', label: t('solvePage.subjects.math') },
+    { id: 'General', label: t('solvePage.subjects.general') },
+    { id: 'Chemistry', label: t('solvePage.subjects.chemistry') },
+    { id: 'Language', label: t('solvePage.subjects.language') },
+    { id: 'History', label: t('solvePage.subjects.history') },
+    { id: 'Economics', label: t('solvePage.subjects.economics') }
+  ];
   const [selectedSubject, setSelectedSubject] = useState('General');
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [previewAttachment, setPreviewAttachment] = useState<any>(null);
@@ -222,7 +234,7 @@ const SolvePage: React.FC = () => {
         content: m.content,
         timestamp: new Date(m.created_at),
         attachment: m.file_url ? {
-          name: m.file_name || 'Attachment',
+          name: m.file_name || t('solvePage.attachment'),
           type: m.file_type || 'unknown',
           url: m.file_url
         } : undefined,
@@ -325,7 +337,7 @@ const SolvePage: React.FC = () => {
           setPdfPageCount(0);
         }
       } else {
-        alert('Please select a valid file (Image (no GIF), PDF, DOC, DOCX, TXT, XLSX, or CSV)');
+        alert(t('solvePage.invalidFileType'));
         // Reset input
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
@@ -341,7 +353,7 @@ const SolvePage: React.FC = () => {
   // Helper to upload file to Supabase
   const uploadToSupabase = async (file: File | Blob, fileName: string): Promise<string | null> => {
     try {
-      setProcessingStatus('Uploading file...');
+      setProcessingStatus(t('solvePage.uploadingFile'));
       // Use chat-attachments bucket
       const sanitizedFileName = sanitizeFileName(fileName);
       const filePath = `${user?.id || 'anonymous'}/${Date.now()}_${sanitizedFileName}`;
@@ -368,7 +380,7 @@ const SolvePage: React.FC = () => {
   // Convert PDF to images using PDF.js
   const convertPdfToImages = async (file: File): Promise<string[]> => {
     try {
-      setProcessingStatus('Processing PDF...');
+      setProcessingStatus(t('solvePage.processingPdf'));
       
       const arrayBuffer = await file.arrayBuffer();
       
@@ -383,10 +395,10 @@ const SolvePage: React.FC = () => {
       const pdf = await loadingTask.promise as PDFDocumentProxy;
       const images: string[] = [];
       
-      setProcessingStatus(`Converting ${pdf.numPages} pages to images...`);
+      setProcessingStatus(t('solvePage.convertingPagesToImages', { values: { pages: pdf.numPages } }));
       
       for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-        setProcessingStatus(`Converting page ${pageNum} of ${pdf.numPages}...`);
+        setProcessingStatus(t('solvePage.convertingPage', { values: { page: pageNum, total: pdf.numPages } }));
         
         const page = await pdf.getPage(pageNum);
         const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better quality
@@ -414,11 +426,11 @@ const SolvePage: React.FC = () => {
         images.push(imageDataUrl);
       }
       
-      setProcessingStatus('PDF conversion completed!');
+      setProcessingStatus(t('solvePage.pdfConversionCompleted'));
       return images;
     } catch (error) {
       console.error('PDF URL conversion error:', error);
-      setProcessingStatus('Error converting PDF');
+      setProcessingStatus(t('solvePage.errorConvertingPdf'));
       throw error;
     }
   };
@@ -454,7 +466,7 @@ const SolvePage: React.FC = () => {
     const doc = new jsPDF();
     const splitText = doc.splitTextToSize(content, 180);
     doc.text(splitText, 10, 10);
-    doc.save('solution.pdf');
+    doc.save(t('solvePage.solutionFileName'));
   };
 
   const handleSendMessage = async () => {
@@ -609,7 +621,7 @@ const SolvePage: React.FC = () => {
           const { error: chatError } = await supabase.from('solve_chats').insert({
             id: currentChatId,
             owner: user?.id,
-            title: inputValue.substring(0, 50) || (attachedFile ? attachedFile.name : 'New Chat'),
+            title: inputValue.substring(0, 50) || (attachedFile ? attachedFile.name : t('solvePage.newChat')),
             metadata: { subject: selectedSubject },
             service_type: 'solve'
           });
@@ -722,7 +734,7 @@ const SolvePage: React.FC = () => {
       setMessages(prev => [...prev, {
         id: Date.now().toString(),
         type: 'ai',
-        content: 'Sorry, I encountered an error while processing your request. Please try again.',
+        content: t('solvePage.processingErrorMessage'),
         timestamp: new Date()
       }]);
     } finally {
@@ -791,7 +803,7 @@ const SolvePage: React.FC = () => {
              <button 
                onClick={handleNewChat}
                className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-               title="New Chat"
+               title={t('solvePage.newChat')}
              >
                 <FaRegEdit size={22} />
              </button>
@@ -800,7 +812,7 @@ const SolvePage: React.FC = () => {
            <button 
              onClick={() => setIsHistoryOpen(!isHistoryOpen)}
              className={`absolute top-6 right-6 p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors z-20 ${isHistoryOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
-             title="History"
+             title={t('solvePage.history')}
            >
               <FaHistory size={22} />
            </button>
@@ -812,8 +824,8 @@ const SolvePage: React.FC = () => {
                <div className="max-w-3xl w-full flex flex-col items-center">
                    
                    {/* Header Section */}
-                   <div className="w-full flex justify-start items-center mb-16 px-4">
-                       <h1 className="text-4xl font-bold text-left mt-2 tracking-tight">What do you want to solve?</h1>
+                  <div className="w-full flex justify-center items-center mb-16 px-4">
+                      <h1 className="text-4xl font-bold text-center mt-2 tracking-tight">{t('solvePage.whatDoYouWantToSolve')}</h1>
                    </div>
 
                    {/* Subject Pills */}
@@ -827,18 +839,18 @@ const SolvePage: React.FC = () => {
                         className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth px-2"
                         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                        >
-                           {subjects.map(subject => (
+                           {subjects.map((subject) => (
                                <button 
-                                 key={subject}
-                                 ref={el => subjectRefs.current[subject] = el}
-                                 onClick={() => setSelectedSubject(subject)}
+                                 key={subject.id}
+                                 ref={el => subjectRefs.current[subject.id] = el}
+                                 onClick={() => setSelectedSubject(subject.id)}
                                  className={`px-5 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 ${
-                                    selectedSubject === subject 
+                                   selectedSubject === subject.id
                                     ? 'bg-gray-900 text-white dark:bg-[#27272a] dark:text-white' 
                                     : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
                                 }`}
                                >
-                                   {subject}
+                                  {subject.label}
                                </button>
                            ))}
                        </div>
@@ -872,8 +884,8 @@ const SolvePage: React.FC = () => {
                           </div>
                           <span className="text-[10px] lg:text-sm text-center px-4 text-gray-500 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-400 transition-colors leading-tight">
                             {attachedFile 
-                              ? `Attached: ${attachedFile.name}`
-                              : 'Drag & drop or click to add an image, pdf, docs, xlsx, etc.'}
+                              ? t('solvePage.attachedFile', { values: { name: attachedFile.name } })
+                              : t('solvePage.dragDropUpload')}
                           </span>
                       </div>
                        
@@ -889,7 +901,7 @@ const SolvePage: React.FC = () => {
                                      if (!isSendDisabled) handleSendMessage();
                                    }
                                  }}
-                                 placeholder="Type your question here..." 
+                                placeholder={t('solvePage.typeYourQuestionHere')}
                                  className="w-full bg-transparent text-gray-800 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none text-lg resize-none py-4 px-4 pr-12 min-h-[64px]"
                                  rows={1}
                                />
@@ -937,7 +949,7 @@ const SolvePage: React.FC = () => {
                           >
                             {msg.attachment.type.startsWith('image/') && msg.attachment.url ? (
                               <>
-                                <img src={msg.attachment.url} alt="Attachment" className="w-full h-full object-cover" />
+                                <img src={msg.attachment.url} alt={t('solvePage.attachment')} className="w-full h-full object-cover" />
                                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
                                   <FaExpand className="text-white opacity-0 group-hover:opacity-100 transform scale-75 group-hover:scale-100 transition-all" size={24} />
                                 </div>
@@ -1030,16 +1042,16 @@ const SolvePage: React.FC = () => {
                                     <button 
                                       onClick={() => handleCopy(msg.content)}
                                       className="flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors"
-                                      title="Copy to clipboard"
+                                      title={t('solvePage.copyToClipboard')}
                                     >
-                                      <FaCopy /> Copy
+                                      <FaCopy /> {t('solvePage.copy')}
                                     </button>
                                     <button 
                                       onClick={() => handleExportPDF(msg.content)}
                                       className="flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors"
-                                      title="Export as PDF"
+                                      title={t('solvePage.exportAsPdf')}
                                     >
-                                      <FaFilePdf /> Export PDF
+                                      <FaFilePdf /> {t('solvePage.exportPdf')}
                                     </button>
                                   </div>
                                 </>
@@ -1069,7 +1081,7 @@ const SolvePage: React.FC = () => {
                                if (!isSendDisabled) handleSendMessage();
                              }
                            }}
-                           placeholder="Ask a follow-up question..." 
+                           placeholder={t('solvePage.askFollowUpQuestion')}
                            className="w-full bg-transparent text-gray-300 placeholder-gray-500 focus:outline-none text-lg resize-none py-3 px-4 pr-12 min-h-[56px]"
                            rows={1}
                          />
@@ -1114,7 +1126,7 @@ const SolvePage: React.FC = () => {
                    <p className="text-xl font-medium">{previewAttachment.name}</p>
                    {previewAttachment.url && (
                        <a href={previewAttachment.url} target="_blank" rel="noopener noreferrer" className="inline-block mt-4 bg-white text-black px-6 py-2 rounded-full font-bold hover:bg-gray-200 transition-colors">
-                          Download File
+                          {t('solvePage.downloadFile')}
                        </a>
                    )}
                 </div>
@@ -1133,7 +1145,7 @@ const SolvePage: React.FC = () => {
       >
         <div className="p-6 h-full flex flex-col">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Solve History</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('solvePage.solveHistory')}</h2>
             <button 
               onClick={() => setIsHistoryOpen(false)}
               className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -1158,11 +1170,11 @@ const SolvePage: React.FC = () => {
                      </div>
                      <div className="flex-1 min-w-0">
                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[#ff5500] text-[10px] font-bold uppercase tracking-wider">{item.metadata?.subject || 'GENERAL'}</span>
+                         <span className="text-[#ff5500] text-[10px] font-bold uppercase tracking-wider">{item.metadata?.subject || t('solvePage.subjects.general')}</span>
                           <span className="text-gray-500 dark:text-gray-600 text-[10px]">{new Date(item.created_at).toLocaleDateString()}</span>
                        </div>
-                       <h3 className="text-gray-900 dark:text-gray-200 text-sm font-medium truncate mb-1">{item.title || 'Untitled Chat'}</h3>
-                       <p className="text-gray-500 text-xs truncate">View conversation</p>
+                       <h3 className="text-gray-900 dark:text-gray-200 text-sm font-medium truncate mb-1">{item.title || t('solvePage.untitledChat')}</h3>
+                       <p className="text-gray-500 text-xs truncate">{t('solvePage.viewConversation')}</p>
                      </div>
                   </div>
                </div>

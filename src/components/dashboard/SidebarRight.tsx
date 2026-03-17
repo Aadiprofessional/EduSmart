@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { FaChevronRight, FaPlus, FaFolder, FaEllipsisH, FaPen, FaTrash } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RenameModal, DeleteModal } from './DashboardModals';
+import { useLanguage } from '../../utils/LanguageContext';
 
 interface SidebarRightProps {
   className?: string;
@@ -28,6 +29,7 @@ const SidebarRight: React.FC<SidebarRightProps> = ({
   onRenameFolder,
   onDeleteFolder
 }) => {
+  const { t } = useLanguage();
   const [isFoldersOpen, setIsFoldersOpen] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
@@ -111,8 +113,8 @@ const SidebarRight: React.FC<SidebarRightProps> = ({
           onMouseLeave={() => setIsHovered(false)}
         >
           <div className="flex items-center justify-between mb-6 text-gray-500 dark:text-gray-400 overflow-hidden whitespace-nowrap">
-             <span className="font-medium">Folders</span>
-             <button onClick={onClose} className="hover:text-gray-900 dark:hover:text-white" title="Close Sidebar">
+             <span className="font-medium">{t('sidebar.folders')}</span>
+             <button onClick={onClose} className="hover:text-gray-900 dark:hover:text-white" title={t('sidebar.closeSidebar')}>
                  <FaChevronRight size={16} />
              </button>
           </div>
@@ -123,7 +125,7 @@ const SidebarRight: React.FC<SidebarRightProps> = ({
                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors whitespace-nowrap shadow-sm"
                  >
                      <FaPlus size={12} />
-                     <span>Create New Folder</span>
+                    <span>{t('sidebar.createNewFolder')}</span>
                  </button>
 
                  <div 
@@ -135,15 +137,15 @@ const SidebarRight: React.FC<SidebarRightProps> = ({
                 >
                     <FaFolder className="text-gray-400 flex-shrink-0" />
                     <div className="flex-1 overflow-hidden">
-                        <p className="text-sm font-medium truncate text-gray-900 dark:text-white">All Study Sets</p>
+                        <p className="text-sm font-medium truncate text-gray-900 dark:text-white">{t('sidebar.allStudySets')}</p>
                     </div>
                 </div>
 
                 {folders.length === 0 ? (
                   <div className="text-center py-12">
                       <FaFolder size={48} className="text-gray-300 dark:text-[#333] mx-auto mb-4" />
-                      <p className="text-sm text-gray-500 mb-1">No folders yet</p>
-                      <p className="text-xs text-gray-400 dark:text-gray-600">Create your first folder to organize your study sets</p>
+                      <p className="text-sm text-gray-500 mb-1">{t('sidebar.noFoldersYet')}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-600">{t('sidebar.createFirstFolder')}</p>
                   </div>
                 ) : (
                   <div className="space-y-2 overflow-y-auto max-h-[calc(100vh-300px)] custom-scrollbar">
@@ -184,7 +186,7 @@ const SidebarRight: React.FC<SidebarRightProps> = ({
                                  className="w-full px-3 py-1.5 text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 flex items-center gap-2"
                                >
                                  <FaPen size={10} />
-                                 Rename
+                                 {t('sidebar.rename')}
                                </button>
                                <button 
                                  onClick={(e) => {
@@ -195,7 +197,7 @@ const SidebarRight: React.FC<SidebarRightProps> = ({
                                  className="w-full px-3 py-1.5 text-left text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
                                >
                                  <FaTrash size={10} />
-                                 Delete
+                                 {t('common.delete')}
                                </button>
                              </div>
                            )}
@@ -215,7 +217,7 @@ const SidebarRight: React.FC<SidebarRightProps> = ({
           onClose={() => setFolderToRename(null)}
           onRename={handleRename}
           currentName={folderToRename.name}
-          title="Rename Folder"
+          title={t('sidebar.renameFolder')}
         />
       )}
 
@@ -225,8 +227,8 @@ const SidebarRight: React.FC<SidebarRightProps> = ({
           isOpen={!!folderToDelete}
           onClose={() => setFolderToDelete(null)}
           onConfirm={handleDelete}
-          title="Delete Folder"
-          message={`Are you sure you want to delete "${folderToDelete.name}"? This will not delete the study sets inside it.`}
+          title={t('sidebar.deleteFolder')}
+          message={t('sidebar.deleteFolderMessage', { values: { folderName: folderToDelete.name } })}
         />
       )}
     </AnimatePresence>

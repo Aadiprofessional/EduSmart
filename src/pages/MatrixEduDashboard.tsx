@@ -9,9 +9,11 @@ import { useAuth } from '../utils/AuthContext';
 import { FaBars, FaFolder } from 'react-icons/fa';
 import { supabase } from '../utils/supabase';
 import { StudySet } from '../components/dashboard/StudySetCard';
+import { useLanguage } from '../utils/LanguageContext';
 
 const MatrixEduDashboard: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const scrollRef = useRef<HTMLDivElement>(null);
   const studySetListRef = useRef<HTMLDivElement>(null);
@@ -248,7 +250,7 @@ const MatrixEduDashboard: React.FC = () => {
           if (data) {
               const mappedSets: StudySet[] = data.map((doc: any) => ({
                   id: doc.document_id,
-                  title: doc.document_name || (doc.document_type ? doc.document_type.charAt(0).toUpperCase() + doc.document_type.slice(1) : 'Untitled Study Set'),
+                  title: doc.document_name || (doc.document_type ? doc.document_type.charAt(0).toUpperCase() + doc.document_type.slice(1) : t('matrixDashboard.untitledStudySet')),
                   stats: {
                       unfamiliar: 0,
                       learning: 0,
@@ -502,7 +504,7 @@ const MatrixEduDashboard: React.FC = () => {
                             {!isRightSidebarOpen && (
                                 <button onClick={() => setIsRightSidebarOpen(true)} className="flex items-center gap-2 px-3 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-none transition-colors">
                                     <FaFolder size={16} />
-                                    <span className="text-sm font-medium hidden sm:inline">Folders</span>
+                                    <span className="text-sm font-medium hidden sm:inline">{t('sidebar.folders')}</span>
                                 </button>
                             )}
                         </div>
@@ -514,8 +516,8 @@ const MatrixEduDashboard: React.FC = () => {
             <div className="w-full mx-auto px-4 md:px-8 lg:px-12 relative mb-8">
                 {/* Header Title */}
                 <div className={`text-center transition-all duration-300 overflow-hidden ${isScrolled ? 'opacity-0 h-0 margin-0' : 'opacity-100 h-auto mb-8 md:mb-12 mt-4'}`}>
-                    <h1 className="text-2xl md:text-4xl font-bold mb-3 text-gray-900 dark:text-white">Hey {user?.email?.split('@')[0] || 'AI'}, what do you wanna master?</h1>
-                    <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 px-4">Upload anything and get interactive notes, flashcards, quizzes, and more</p>
+                    <h1 className="text-2xl md:text-4xl font-bold mb-3 text-gray-900 dark:text-white">{t('matrixDashboard.heroTitle', { values: { name: user?.email?.split('@')[0] || t('sidebar.user') } })}</h1>
+                    <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 px-4">{t('matrixDashboard.heroSubtitle')}</p>
                 </div>
 
                 {/* Expanded Action Cards */}

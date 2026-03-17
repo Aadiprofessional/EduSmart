@@ -17,6 +17,7 @@ import {
   FaChevronLeft
 } from 'react-icons/fa';
 import { useAuth } from '../../utils/AuthContext';
+import { useLanguage } from '../../utils/LanguageContext';
 
 import { useTheme } from '../../utils/ThemeContext';
 
@@ -32,6 +33,7 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
   const navigate = useNavigate();
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const { t } = useLanguage();
   const { theme, setTheme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -57,7 +59,7 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
             <div className="flex items-center justify-between mb-8 px-2">
               <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-[0_0_15px_rgba(99,102,241,0.5)]">
-                    <img src={matrixLogo} alt="MatrixEdu Logo" className="w-5 h-5" />
+                    <img src={matrixLogo} alt={t('sidebar.logoAlt')} className="w-5 h-5" />
                 </div>
                 <motion.span 
                   initial={{ opacity: 0 }}
@@ -69,7 +71,7 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
                 </motion.span>
               </div>
 
-              <button onClick={onClose} className="hover:text-gray-900 dark:hover:text-white text-gray-400" title="Close Sidebar">
+              <button onClick={onClose} className="hover:text-gray-900 dark:hover:text-white text-gray-400" title={t('sidebar.closeSidebar')}>
                   <FaChevronLeft size={16} />
               </button>
             </div>
@@ -78,38 +80,38 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
             <nav className="space-y-1">
               <NavItem 
                 icon={<FaLayerGroup />} 
-                label="Study Sets" 
+                label={t('sidebar.studySets')}
                 active={isActive('/dashboard')} 
                 onClick={() => navigate('/dashboard')}
               />
             
               <NavItem 
                 icon={<FaBullseye />} 
-                label="Solve" 
+                label={t('sidebar.solve')}
                 active={isActive('/solve')}
                 onClick={() => navigate('/solve')} 
               />
               <NavItem 
                 icon={<FaFileAlt />} 
-                label="Paper Grader" 
+                label={t('sidebar.paperGrader')}
                 active={isActive('/paper-grader')}
                 onClick={() => navigate('/paper-grader')} 
               />
               <NavItem 
                 icon={<FaPenNib />} 
-                label="Content Writer" 
+                label={t('sidebar.contentWriter')}
                 active={isActive('/content-writer')}
                 onClick={() => navigate('/content-writer')} 
               />
               <NavItem 
                 icon={<FaUserCheck />} 
-                label="Humanizer" 
+                label={t('sidebar.humanizer')}
                 active={isActive('/humanizer')}
                 onClick={() => navigate('/humanizer')} 
               />
                 <NavItem 
                 icon={<FaCalendarAlt />} 
-                label="Study Planner" 
+                label={t('sidebar.studyPlanner')}
                 active={isActive('/study-planner')} 
                 onClick={() => navigate('/study-planner')}
               />
@@ -123,14 +125,14 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
                 <button 
                   onClick={() => setTheme('light')}
                   className={`flex-1 p-1.5 rounded flex justify-center transition-colors ${theme === 'light' ? 'bg-white shadow text-gray-900' : 'text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/10'}`}
-                  title="Light Mode"
+                  title={t('sidebar.lightMode')}
                 >
                   <FaSun size={14} />
                 </button>
                 <button 
                    onClick={() => setTheme('dark')}
                    className={`flex-1 p-1.5 rounded flex justify-center transition-colors ${theme === 'dark' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/10'}`}
-                   title="Dark Mode"
+                   title={t('sidebar.darkMode')}
                 >
                   <FaMoon size={14} />
                 </button>
@@ -147,10 +149,10 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
                         className="overflow-hidden"
                     >
                         <div className="space-y-1 border-t border-gray-200 dark:border-white/5 pt-4">
-                            <NavItem icon={<FaHistory />} label="Transaction History" onClick={() => navigate('/transaction-history')} />
+                            <NavItem icon={<FaHistory />} label={t('sidebar.transactionHistory')} onClick={() => navigate('/transaction-history')} />
                             <button onClick={handleSignOut} className="w-full flex items-center gap-3 px-3 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors text-sm">
                                 <FaSignOutAlt />
-                                <span>Sign out</span>
+                                <span>{t('nav.logout')}</span>
                             </button>
                         </div>
                     </motion.div>
@@ -166,7 +168,7 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
                   {user?.email?.substring(0, 2).toUpperCase() || 'AI'}
                 </div>
                 <div className="flex-1 overflow-hidden">
-                  <p className="text-sm font-medium truncate text-gray-900 dark:text-white">{user?.email?.split('@')[0] || 'User'}</p>
+                  <p className="text-sm font-medium truncate text-gray-900 dark:text-white">{user?.email?.split('@')[0] || t('sidebar.user')}</p>
                 </div>
                 {isMenuOpen ? <FaChevronUp size={12} className="text-gray-500 flex-shrink-0" /> : <FaChevronDown size={12} className="text-gray-500 flex-shrink-0" />}
             </div>

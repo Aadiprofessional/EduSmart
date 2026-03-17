@@ -1,61 +1,18 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { motion, useScroll, useTransform, useSpring, useInView } from 'framer-motion';
+import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import { FaUpload, FaBolt, FaBrain, FaPencilAlt, FaSitemap, FaCalendarAlt, FaFileAlt } from 'react-icons/fa';
 import { useModelPosition } from '../../utils/ModelPositionContext';
+import { useLanguage } from '../../utils/LanguageContext';
 
-const steps = [
-  {
-    id: 1,
-    title: "Upload or Paste Content",
-    description: "Whether it is your class notes, a YouTube video, or a webpage. Simply upload your materials and let our AI analyze them instantly.",
-    icon: FaUpload,
-    videoPlaceholder: "Upload Demo Video" 
-  },
-  {
-    id: 2,
-    title: "Instant Flashcards",
-    description: "Turn hours of study into minutes. Our AI automatically generates comprehensive flashcards from your study materials to help you memorize key concepts.",
-    icon: FaBolt,
-    videoPlaceholder: "Flashcards Demo Video"
-  },
-  {
-    id: 3,
-    title: "Smart Quizzes",
-    description: "Test your knowledge with adaptive quizzes. Get detailed AI explanations for every answer to understand where you went wrong and how to improve.",
-    icon: FaBrain,
-    videoPlaceholder: "Quiz Demo Video"
-  },
-  {
-    id: 4,
-    title: "Written Tests",
-    description: "Practice for written exams with AI-graded essay questions. Receive instant feedback on your writing style, accuracy, and completeness.",
-    icon: FaPencilAlt,
-    videoPlaceholder: "Written Test Demo Video"
-  },
-  {
-    id: 5,
-    title: "Interactive Mind Maps",
-    description: "Visualize connections between concepts with auto-generated mind maps. Perfect for understanding complex topics and structural relationships.",
-    icon: FaSitemap,
-    videoPlaceholder: "Mind Map Demo Video"
-  },
-  {
-    id: 6,
-    title: "Smart Study Planner",
-    description: "Get a personalized study schedule tailored to your exam date and learning pace. Stay organized and cover every topic efficiently.",
-    icon: FaCalendarAlt,
-    videoPlaceholder: "Planner Demo Video"
-  },
-  {
-    id: 7,
-    title: "AI Note Generation",
-    description: "Instantly convert long lectures or documents into concise, structured study notes. Focus on learning, not just transcribing.",
-    icon: FaFileAlt,
-    videoPlaceholder: "Notes Demo Video"
-  }
-];
+interface StepItem {
+  id: number;
+  title: string;
+  description: string;
+  videoPlaceholder: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+}
 
-const Step = ({ step, index, isActive }: { step: typeof steps[0], index: number, isActive: boolean }) => {
+const Step = ({ step, index, isActive, t }: { step: StepItem, index: number, isActive: boolean, t: (key: string) => string }) => {
   const isEven = index % 2 === 0;
 
   return (
@@ -75,7 +32,7 @@ const Step = ({ step, index, isActive }: { step: typeof steps[0], index: number,
              </div>
              <h3 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white font-permanent-marker">{step.title}</h3>
           </div>
-          <p className="text-lg text-gray-600 dark:text-gray-400 leading-relaxed text-left md:text-inherit">
+          <p className={`text-lg text-gray-600 dark:text-gray-400 leading-relaxed ${isEven ? 'md:text-right' : 'md:text-left'} text-left`}>
             {step.description}
           </p>
         </motion.div>
@@ -114,7 +71,7 @@ const Step = ({ step, index, isActive }: { step: typeof steps[0], index: number,
               <div className={`text-center z-0 transition-opacity duration-500 ${isActive ? 'opacity-100' : 'opacity-50'}`}>
                   <step.icon size={48} className="mx-auto mb-4 text-indigo-400" />
                   <p className="font-bold text-lg mb-2">{step.videoPlaceholder}</p>
-                  <p className="text-xs text-gray-400">Video Simulation</p>
+                  <p className="text-xs text-gray-400">{t('howItWorks.videoSimulation')}</p>
               </div>
 
               {isActive && (
@@ -138,6 +95,59 @@ const HowItWorksScroll: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeStep, setActiveStep] = useState(0);
   const { registerComponent } = useModelPosition();
+  const { t } = useLanguage();
+
+  const steps: StepItem[] = [
+    {
+      id: 1,
+      title: t('howItWorks.steps.0.title'),
+      description: t('howItWorks.steps.0.description'),
+      icon: FaUpload,
+      videoPlaceholder: t('howItWorks.steps.0.videoPlaceholder')
+    },
+    {
+      id: 2,
+      title: t('howItWorks.steps.1.title'),
+      description: t('howItWorks.steps.1.description'),
+      icon: FaBolt,
+      videoPlaceholder: t('howItWorks.steps.1.videoPlaceholder')
+    },
+    {
+      id: 3,
+      title: t('howItWorks.steps.2.title'),
+      description: t('howItWorks.steps.2.description'),
+      icon: FaBrain,
+      videoPlaceholder: t('howItWorks.steps.2.videoPlaceholder')
+    },
+    {
+      id: 4,
+      title: t('howItWorks.steps.3.title'),
+      description: t('howItWorks.steps.3.description'),
+      icon: FaPencilAlt,
+      videoPlaceholder: t('howItWorks.steps.3.videoPlaceholder')
+    },
+    {
+      id: 5,
+      title: t('howItWorks.steps.4.title'),
+      description: t('howItWorks.steps.4.description'),
+      icon: FaSitemap,
+      videoPlaceholder: t('howItWorks.steps.4.videoPlaceholder')
+    },
+    {
+      id: 6,
+      title: t('howItWorks.steps.5.title'),
+      description: t('howItWorks.steps.5.description'),
+      icon: FaCalendarAlt,
+      videoPlaceholder: t('howItWorks.steps.5.videoPlaceholder')
+    },
+    {
+      id: 7,
+      title: t('howItWorks.steps.6.title'),
+      description: t('howItWorks.steps.6.description'),
+      icon: FaFileAlt,
+      videoPlaceholder: t('howItWorks.steps.6.videoPlaceholder')
+    }
+  ];
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -235,10 +245,10 @@ const HowItWorksScroll: React.FC = () => {
         {/* Section Header */}
         <div className="text-center mb-24 relative z-10">
             <h2 className="text-4xl md:text-6xl font-permanent-marker mb-6 text-gray-900 dark:text-white">
-                How It Works
+                {t('howItWorks.title')}
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                Master any subject in minutes with our comprehensive process.
+                {t('howItWorks.subtitle')}
             </p>
         </div>
 
@@ -254,7 +264,7 @@ const HowItWorksScroll: React.FC = () => {
         <div className="relative z-10 mt-12">
             {steps.map((step, index) => (
                 <div key={step.id} className="step-container min-h-[50vh] flex items-center">
-                    <Step step={step} index={index} isActive={activeStep === index} />
+                    <Step step={step} index={index} isActive={activeStep === index} t={t} />
                 </div>
             ))}
         </div>

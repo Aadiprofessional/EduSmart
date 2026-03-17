@@ -18,10 +18,46 @@ export const zhCN = {
     profile: "个人资料",
     settings: "设置",
     dashboard: "仪表板",
+    pricing: "价格",
     proMember: "专业会员",
     left: "剩余",
     buyMore: "购买更多回复",
     upgradeToPro: "升级到专业版"
+  },
+  matrixEduNavbar: {
+    logoAlt: "MatrixEdu 标志",
+    coinsAlt: "积分",
+    upgrade: "升级"
+  },
+  appHeader: {
+    logoAlt: "MatrixEdu 标志",
+    careers: "职业发展",
+    hiring: "招聘中",
+    features: "功能",
+    toggleDarkMode: "切换深色模式"
+  },
+  sidebar: {
+    logoAlt: "MatrixEdu 标志",
+    closeSidebar: "关闭侧边栏",
+    studySets: "学习集",
+    solve: "解题",
+    paperGrader: "论文评分",
+    contentWriter: "内容写作",
+    humanizer: "润色器",
+    studyPlanner: "学习规划",
+    transactionHistory: "交易记录",
+    user: "用户",
+    lightMode: "浅色模式",
+    darkMode: "深色模式",
+    folders: "文件夹",
+    createNewFolder: "新建文件夹",
+    allStudySets: "全部学习集",
+    noFoldersYet: "还没有文件夹",
+    createFirstFolder: "创建你的第一个文件夹来整理学习集",
+    rename: "重命名",
+    renameFolder: "重命名文件夹",
+    deleteFolder: "删除文件夹",
+    deleteFolderMessage: "确定要删除“{{folderName}}”吗？这不会删除其中的学习集。"
   },
 
   // Common UI elements
@@ -63,6 +99,7 @@ export const zhCN = {
     print: "打印",
     export: "导出",
     import: "导入",
+    history: "历史",
     notifications: "通知",
     noNotifications: "暂无通知",
     allCaughtUp: "您已查看所有内容！"
@@ -467,7 +504,134 @@ export const zhCN = {
     subtitle: "通过AI革命性地改变教育",
     description: "MatrixEdu站在教育创新的前沿，将人工智能与经过验证的学习方法相结合，创造个性化、有效且引人入胜的教育体验。",
     mission: "我们的使命是通过利用AI技术为全球学生提供个性化学习体验，实现高质量教育的民主化。",
-    vision: "我们设想一个世界，每个学生都能够接触到理解其独特学习风格并帮助他们实现学术目标的个人AI导师。"
+    vision: "我们设想一个世界，每个学生都能够接触到理解其独特学习风格并帮助他们实现学术目标的个人AI导师。",
+    badge: "关于 MatrixEdu",
+    heroDescription: "MatrixEdu 是一个 AI 学习工作台，帮助学生在同一平台完成规划、练习、写作与提升。",
+    missionTitle: "我们的使命",
+    missionDescription2: "从仪表盘整理到解题、论文评分、写作优化、文本润色与学习计划，MatrixEdu 用实用 AI 工具支持学生的日常效率。",
+    stats: {
+      coreAiTools: "核心 AI 工具",
+      unifiedWorkspace: "统一工作台"
+    },
+    pillars: {
+      smartStudyFlow: {
+        title: "智能学习流",
+        description: "连接日常学习工具"
+      },
+      anywhereAccess: {
+        title: "随时访问",
+        description: "以网页为中心的学习工作台"
+      },
+      reliableWorkspace: {
+        title: "稳定工作台",
+        description: "为持续学习场景打造"
+      },
+      fasterExecution: {
+        title: "更快执行",
+        description: "在任务间快速切换"
+      }
+    },
+    platformCapabilities: {
+      title: "平台能力",
+      subtitle: "一套完整工具，支持你的学业从开始到完成。",
+      cards: {
+        dashboard: {
+          title: "仪表盘与学习集",
+          description: "集中整理学习资料，快速访问学习集，并清晰追踪进度。"
+        },
+        solve: {
+          title: "解题工作台",
+          description: "在 AI 辅助下完成题目，并在难点处获得更清晰解释。"
+        },
+        paperGrader: {
+          title: "论文评分",
+          description: "审阅书面作业并获得结构化反馈，提升质量与表达。"
+        },
+        contentWriter: {
+          title: "内容写作",
+          description: "更快生成并优化学术草稿，保持思路清晰。"
+        },
+        humanizer: {
+          title: "润色器",
+          description: "优化语气与可读性，让文字更自然易懂。"
+        },
+        studyPlanner: {
+          title: "学习规划",
+          description: "制定可执行计划，结构化学习并保持稳定节奏。"
+        }
+      }
+    },
+    values: {
+      innovation: {
+        title: "创新",
+        description: "持续突破教育科技边界。"
+      },
+      accessibility: {
+        title: "普惠",
+        description: "让高质量学习支持触达每个人。"
+      },
+      excellence: {
+        title: "卓越",
+        description: "在每个细节坚持高标准。"
+      }
+    },
+    cta: {
+      title: "准备好用 MatrixEdu 更聪明地学习了吗？",
+      subtitle: "从仪表盘开始，配合侧边工具，在同一平台建立更强学习节奏。",
+      button: "立即开始"
+    }
+  },
+  pricingPage: {
+    chooseYourPlan: "选择你的方案",
+    subtitle: "通过我们的高级方案，解锁 AI 学习助手的全部潜力。",
+    failedToLoadPlans: "加载订阅方案失败",
+    unexpectedError: "发生了意外错误",
+    errorLoadingPlans: "加载方案出错",
+    popular: "热门",
+    month: "月",
+    defaultPlanDescription: "解锁高级功能，加速你的学习。",
+    coinsIncluded: "包含 {{coins}} 积分",
+    durationDays: "时长：{{days}} 天",
+    fullAccessToAiTutor: "AI 导师完整访问权限",
+    unlimitedStudySets: "无限学习集",
+    processing: "处理中...",
+    subscribeNow: "立即订阅",
+    loginToSubscribe: "登录后订阅",
+    whyPro: "为什么选择 MatrixEdu Pro？",
+    features: {
+      advancedAiModels: {
+        title: "高级 AI 模型",
+        description: "使用 GPT-4 与 Claude 3 Opus，获得更强推理能力。"
+      },
+      prioritySupport: {
+        title: "优先支持",
+        description: "通过优先队列更快获得问题解答。"
+      },
+      unlimitedHistory: {
+        title: "无限历史记录",
+        description: "保存并搜索所有历史学习会话。"
+      }
+    },
+    faqTitle: "常见问题",
+    faqSubtitle: "你需要了解的方案信息都在这里。",
+    faq: {
+      cancelAnytime: {
+        question: "我可以随时取消订阅吗？",
+        answer: "可以。你可随时取消，当前计费周期结束前仍可继续使用。"
+      },
+      unusedCoins: {
+        question: "未使用的积分会怎样？",
+        answer: "在订阅持续有效的情况下，未使用积分会结转到下个月。"
+      },
+      studentDiscount: {
+        question: "有学生优惠吗？",
+        answer: "有。请联系支持团队并提供有效学生证以获取优惠。"
+      },
+      paymentSecurity: {
+        question: "支付信息安全吗？",
+        answer: "当然。我们使用行业标准加密，不在服务器中存储你的信用卡信息。"
+      }
+    }
   },
 
   // AI Study Tools
@@ -498,6 +662,20 @@ export const zhCN = {
     contentWriter: "内容写作器",
     citationGenerator: "引用生成器",
     documentSummarizer: "文件摘要器",
+    humanizer: "润色器",
+    workspaceBadge: "AI 学习工作台",
+    proActive: "Pro 已激活",
+    creditsLeft: "剩余积分",
+    upgradePro: "升级 Pro",
+    toolDescriptions: {
+      uploadHomework: "即时分析与帮助",
+      mistakeChecker: "语法与逻辑检查",
+      studyPlanner: "个性化学习路线",
+      flashcards: "智能间隔记忆",
+      contentWriter: "AI 辅助写作",
+      humanizer: "让 AI 文本更自然",
+      documentSummarizer: "提取关键洞察"
+    },
     
     // Upload Homework Component
     submitYourQuestion: "提交您的问题",
@@ -517,14 +695,14 @@ export const zhCN = {
     
     // Upgrade Modal
     upgradeModal: {
-      title: "解锁高级功能",
-      notProDescription: "升级到专业版以访问所有AI驱动的学习工具和无限响应。",
-      limitReachedDescription: "您已达到每月响应限制。升级到专业版以获得无限访问权限。",
+      title: "解锁 Pro 潜力",
+      notProDescription: "获取进阶 AI 导师、作文写作和个性化学习计划的无限访问权限。",
+      limitReachedDescription: "您今日额度已用完。升级或明天再继续学习。",
       features: {
-        generousAllowance: "丰富的月度配额",
-        advancedTutoring: "高级AI辅导",
-        contentGeneration: "内容生成工具",
-        prioritySupport: "优先支持"
+        generousAllowance: "无限 AI 回复",
+        advancedTutoring: "高级 GPT-4o 模型访问",
+        contentGeneration: "个性化学习路线图",
+        prioritySupport: "优先处理速度"
       },
       maybeLaterBtn: "稍后再说",
       upgradeNowBtn: "立即升级"
@@ -1024,12 +1202,41 @@ export const zhCN = {
 
   // Blog
   blog: {
-    title: "博客与洞察",
-    subtitle: "了解教育和技术的最新趋势",
+    title: "最新洞察与动态",
+    subtitle: "通过专家建议、教育趋势和 MatrixEdu 平台更新保持领先。",
     searchPlaceholder: "搜索文章...",
     readMore: "阅读更多",
+    readArticle: "阅读文章",
     categories: "类别",
+    category: "分类",
+    allCategories: "全部分类",
+    popularTags: "热门标签",
     tags: "标签",
+    quickFilters: "快捷筛选",
+    clearAll: "清除全部",
+    latestArticles: "最新文章",
+    featuredArticles: "📌 精选文章",
+    featured: "精选",
+    activeFilters: "当前筛选：",
+    resultsFor: "搜索结果：",
+    showing: "显示",
+    articleSingular: "篇文章",
+    articlesPlural: "篇文章",
+    sortBy: "排序方式",
+    sortNewest: "最新优先",
+    sortOldest: "最早优先",
+    sortPopular: "最受欢迎",
+    sortTitle: "标题",
+    author: "作者",
+    anonymous: "匿名",
+    readTime: "阅读时长",
+    read: "阅读",
+    date: "日期",
+    published: "发布时间",
+    minRead: "分钟阅读",
+    saveForLater: "稍后保存",
+    like: "点赞",
+    share: "分享",
     recentPosts: "最新文章",
     relatedPosts: "相关文章"
   },
@@ -1162,7 +1369,417 @@ export const zhCN = {
       professional: "专业",
       conversational: "对话式",
       persuasive: "说服性"
+    },
+    creative: "创意",
+    enthusiastic: "热情",
+    historyUntitled: "未命名",
+    confirmDeleteHistoryItem: "确定要删除这条历史记录吗？",
+    historyItemDeleted: "历史记录已删除",
+    failedToDeleteHistoryItem: "删除历史记录失败",
+    createTab: "创建",
+    editorTab: "编辑器",
+    length: "长度",
+    words: "字",
+    quickStart: "快速开始",
+    autoFill: "自动填充",
+    clickToUse: "点击使用",
+    pasteLinkHere: "在此粘贴链接...",
+    imageUrl: "图片 URL...",
+    add: "添加",
+    craftingYourMasterpiece: "正在雕琢你的佳作",
+    aiAnalyzingPatterns: "AI 正在分析模式...",
+    yourRecentGenerations: "你最近的生成记录",
+    noHistoryYet: "暂无历史记录"
+  },
+  studyPlannerPage: {
+    roadmapHistory: "路线图历史",
+    noHistory: "暂无历史",
+    noHistoryDescription: "生成你的第一个 AI 路线图后会显示在这里。",
+    untitledRoadmap: "未命名路线图"
+  },
+  transactionHistoryPage: {
+    title: "交易记录",
+    failedToLoad: "加载交易记录失败",
+    unexpectedError: "发生了意外错误",
+    couldNotLoad: "无法加载历史记录",
+    tryAgain: "重试",
+    noTransactions: "暂无交易记录",
+    noTransactionsDescription: "你还没有任何购买记录。",
+    transactionFallback: "交易",
+    notAvailable: "暂无",
+    coinsAmount: "{{amount}} 积分",
+    columns: {
+      description: "描述",
+      dateTime: "日期与时间",
+      amount: "金额",
+      type: "类型"
     }
+  },
+  solvePage: {
+    newChat: "新对话",
+    history: "历史",
+    whatDoYouWantToSolve: "你想解决什么问题？",
+    attachment: "附件",
+    invalidFileType: "请选择有效文件（图片（不含 GIF）、PDF、DOC、DOCX、TXT、XLSX 或 CSV）",
+    uploadingFile: "正在上传文件...",
+    processingPdf: "正在处理 PDF...",
+    convertingPagesToImages: "正在将 {{pages}} 页转换为图片...",
+    convertingPage: "正在转换第 {{page}} 页，共 {{total}} 页...",
+    pdfConversionCompleted: "PDF 转换完成！",
+    errorConvertingPdf: "PDF 转换失败",
+    solutionFileName: "解答.pdf",
+    processingErrorMessage: "抱歉，处理你的请求时出现错误。请重试。",
+    dragDropUpload: "拖放或点击添加图片、PDF、文档、XLSX 等",
+    attachedFile: "已附加：{{name}}",
+    typeYourQuestionHere: "在这里输入你的问题...",
+    askFollowUpQuestion: "继续追问...",
+    copyToClipboard: "复制到剪贴板",
+    copy: "复制",
+    exportAsPdf: "导出为 PDF",
+    exportPdf: "导出 PDF",
+    downloadFile: "下载文件",
+    solveHistory: "解题历史",
+    untitledChat: "未命名对话",
+    viewConversation: "查看对话",
+    subjects: {
+      psychology: "心理学",
+      physics: "物理",
+      biology: "生物",
+      math: "数学",
+      general: "通用",
+      chemistry: "化学",
+      language: "语言",
+      history: "历史",
+      economics: "经济学"
+    }
+  },
+  matrixDashboard: {
+    heroTitle: "嗨 {{name}}，你今天想精通什么？",
+    heroSubtitle: "上传任意资料，即可获得交互式笔记、抽认卡、测验等内容",
+    untitledStudySet: "未命名学习集",
+    studySetCard: {
+      unfamiliar: "不熟悉",
+      learning: "学习中",
+      mastered: "已掌握",
+      moveToFolder: "移动到文件夹",
+      pathToMastery: "你的掌握进度",
+      renameStudySet: "重命名学习集",
+      deleteStudySet: "删除学习集",
+      deleteStudySetMessage: "确定要删除“{{title}}”吗？此操作无法撤销。"
+    },
+    actionCards: {
+      upload: {
+        title: "上传",
+        description: "图片、文件、音频、视频"
+      },
+      paste: {
+        title: "粘贴",
+        description: "YouTube、网站、文本"
+      },
+      record: {
+        title: "录音",
+        description: "录制实时讲课"
+      }
+    },
+    modals: {
+      rename: {
+        defaultTitle: "重命名",
+        nameLabel: "名称",
+        saveChanges: "保存更改"
+      },
+      upload: {
+        title: "请上传你的文件",
+        subtitle: "我们会将你的文件转化为超强学习资料",
+        maxFilesError: "最多只能上传 5 个文件。",
+        singleNonImageError: "每次只能上传 1 个非图片文件。",
+        mixedFileTypeError: "上传多个文件时，不能将图片与其他文件类型混合。",
+        signInError: "请先登录后再上传文件。",
+        pdfDetected: "检测到 PDF",
+        processPdf: "处理 PDF",
+        uploadFailed: "上传失败，请重试。",
+        clickOrDrag: "点击上传或拖拽最多 5 个文件",
+        supportedFileTypes: "支持图片、PDF、Word、PowerPoint、音频或视频文件",
+        uploadComplete: "上传完成",
+        uploading: "上传中...",
+        file: "个文件",
+        pdfOptions: {
+          includeImagesTitle: "包含图片（AI 视觉）",
+          includeImagesDescription: "适合幻灯片/图表。费用：2 积分/页。",
+          ocrTitle: "OCR",
+          ocrDescription: "适合扫描文档。费用：1 积分/页。",
+          extractTextTitle: "提取文本",
+          extractTextDescription: "仅提取文本。标准文档处理。"
+        }
+      },
+      paste: {
+        signInError: "请先登录。",
+        title: "添加内容",
+        subtitle: "输入 URL 或粘贴文本来创建你的学习集",
+        enterUrlLabel: "输入 YouTube/网站 URL",
+        urlPlaceholder: "https://youtu.be/...",
+        or: "或",
+        copyPasteLabel: "复制并粘贴文本作为内容",
+        notesPlaceholder: "在这里粘贴你的笔记"
+      },
+      record: {
+        title: "录制音频",
+        subtitle: "录制你的讲课、笔记或学习资料",
+        microphoneAccessError: "无法访问麦克风。",
+        uploadFailed: "上传录音失败。",
+        recording: "录制中...",
+        readyToRecord: "准备开始录制",
+        clickMic: "点击麦克风开始录制",
+        recordingComplete: "录制完成",
+        discardAndRecordAgain: "丢弃并重新录制"
+      },
+      methodSelection: {
+        title: "你想包含哪些内容？",
+        subtitle: "请选择要包含在学习集中的所有方法：",
+        languageEnglish: "英语",
+        generate: "生成"
+      },
+      createFolder: {
+        folderName: "文件夹名称",
+        placeholder: "例如：生物 101",
+        colorCode: "颜色",
+        createButton: "创建文件夹"
+      },
+      moveDocument: {
+        title: "移动“{{documentTitle}}”",
+        subtitle: "选择要将此文档移动到的文件夹",
+        document: "文档",
+        defaultLocation: "默认位置",
+        itemsCount: "{{count}} 项",
+        moveButton: "移动文档"
+      }
+    }
+  },
+  studyMaterialPage: {
+    addMethod: "添加方法",
+    studyMaterial: "学习资料",
+    studyTimer: "学习计时器",
+    addToChat: "加入聊天",
+    methods: {
+      notes: "笔记",
+      multipleChoice: "选择题",
+      flashcards: "抽认卡",
+      podcast: "播客",
+      speechToText: "语音转文字",
+      mindmap: "思维导图",
+      fillInTheBlanks: "填空题",
+      writtenTest: "书面测试",
+      tutorLesson: "导师课程",
+      content: "内容"
+    },
+    methodLabels: {
+      notes: "笔记",
+      multipleChoice: "选择题",
+      flashcards: "抽认卡"
+    }
+  },
+  methodSelection: {
+    customInstructionsOptional: "自定义说明（可选）",
+    customInstructionsPlaceholderDefinitions: "聚焦定义，加入更多图示...",
+    customInstructionsPlaceholderChapter: "聚焦第 5 章，加入更多示例...",
+    clearSelection: "清除选择",
+    done: "完成",
+    numberOfQuestions: "题目数量",
+    numberOfCards: "卡片数量",
+    difficultyLevel: "难度级别",
+    auto: "自动",
+    smart: "智能",
+    few: "较少",
+    standard: "标准",
+    many: "较多",
+    easy: "简单",
+    medium: "中等",
+    hard: "困难",
+    speakers: "讲者",
+    random: "随机",
+    speaker1: "讲者 1",
+    speaker2: "讲者 2",
+    podcastLength: "播客时长",
+    short: "短",
+    long: "长",
+    personality: "风格",
+    default: "默认",
+    sassy: "俏皮",
+    annoyed: "不耐烦",
+    angry: "生气",
+    gaslighter: "PUA 风格",
+    corny: "土味",
+    uploadAudioOrDocument: "上传音频或文档",
+    clickOrDragUpload: "点击或拖拽上传音频/文件",
+    supportedFormats: "支持 MP3、WAV、PDF、DOCX",
+    processing: "处理中...",
+    extractText: "提取文本",
+    extractedTextPreview: "提取文本预览：这是从 {{name}} 提取文本的模拟内容",
+    clear: "清除",
+    mindmapDepth: "思维导图深度",
+    simple: "简单",
+    detailed: "详细",
+    complex: "复杂",
+    reset: "重置",
+    newStudySet: "新学习集",
+    insufficientBalance: "余额不足",
+    failedToInitiateGeneration: "启动生成失败，请重试。",
+    orderSummary: "订单摘要",
+    reviewSelection: "请确认你的选择与预估花费。",
+    sourceMaterial: "源资料",
+    pdfPages: "PDF（{{count}} 页）",
+    pdfOcrPages: "PDF（OCR）（{{count}} 页）",
+    image: "图片",
+    audioVideoMins: "音频/视频（{{count}} 分钟）",
+    textOrUrl: "文本 / URL",
+    totalCost: "总费用",
+    insufficientBalanceNeedMore: "余额不足。你还需要 {{count}} 积分。",
+    generating: "生成中...",
+    payAndGenerate: "支付并生成",
+    configurationComingSoon: "该方法的配置即将上线。",
+    whatToInclude: "你想包含哪些内容？",
+    chooseMethods: "选择你希望加入学习集的所有方法：",
+    generatingDescription: "我们正在为你生成个性化学习资料。为保证质量，此过程大约需要 3 分钟。",
+    methodLabels: {
+      podcast: "播客",
+      tutorLesson: "导师课程",
+      writtenTests: "书面测验",
+      fillBlanks: "填空题",
+      speechToText: "语音转文字",
+      mindmap: "思维导图"
+    },
+    modalTitles: {
+      customize: "自定义",
+      customizeNotes: "自定义笔记",
+      customizeMultipleChoice: "自定义选择题",
+      customizeFlashcards: "自定义抽认卡",
+      chooseHosts: "选择你的主持人",
+      speechToText: "语音转文字",
+      customizeMindmap: "自定义思维导图"
+    },
+    modalSubtitles: {
+      notes: "添加用于生成内容的自定义说明",
+      multipleChoice: "调整题目数量和难度",
+      flashcards: "调整卡片数量和难度",
+      podcast: "选择讲者和播客时长",
+      speechToText: "上传音频或文档以提取文本",
+      mindmap: "调整思维导图复杂度和风格"
+    },
+    loading: {
+      initializing: "初始化中...",
+      analyzingFiles: "正在分析你的文件...",
+      generatingNotes: "正在生成完整笔记...",
+      creatingQuestions: "正在创建有挑战性的问题...",
+      formulatingFlashcards: "正在整理抽认卡...",
+      polishingStudySet: "正在优化你的学习集...",
+      almostThere: "快完成了...",
+      highTraffic: "由于当前流量较高，耗时可能更长，请不要离开页面。",
+      longerThanExpected: "所需时间比预期更长...",
+      waitLonger: "请再稍等一下..."
+    }
+  },
+  addMethodModal: {
+    addStudyMethod: "添加学习方法",
+    summary: "摘要",
+    selectAdditionalMethods: "为这个学习集选择要额外生成的方法",
+    reviewSelection: "确认你的选择",
+    added: "已添加",
+    insufficientBalance: "余额不足",
+    missingUserOrDocumentText: "缺少用户或文档文本",
+    failedToGenerateMethods: "生成方法失败，请重试。",
+    selectedMethods: "已选方法",
+    oneCoin: "1 积分",
+    totalCost: "总费用",
+    coins: "积分",
+    yourBalance: "你的余额",
+    generate: "生成",
+    methods: {
+      notes: "笔记",
+      multipleChoice: "选择题",
+      flashcards: "抽认卡",
+      podcast: "播客",
+      tutorLesson: "导师课程",
+      writtenTests: "书面测验",
+      fillBlanks: "填空题"
+    }
+  },
+  studyRightPanel: {
+    defaultChatTitle: "学习集聊天",
+    defaultSubject: "通用",
+    chatError: "抱歉，出现错误，请重试。",
+    askAboutStudySet: "你可以问我任何关于这个学习集的问题...",
+    askAnything: "想问什么都可以...",
+    chatTab: "聊天",
+    contentTab: "内容",
+    notesTab: "笔记"
+  },
+  studyContent: {
+    audioContent: "音频内容",
+    audioNotSupported: "你的浏览器不支持音频播放。",
+    videoNotSupported: "你的浏览器不支持视频播放。",
+    officePreviewTitle: "Office 文档预览",
+    openOriginalFile: "打开原始文件",
+    noContentAvailable: "暂无可显示内容。",
+    originalFile: "原始文件",
+    extractedText: "提取文本"
+  },
+  humanizer: {
+    title: "润色器",
+    inputTab: "输入",
+    resultTab: "结果",
+    sourceContent: "源内容",
+    inputPlaceholder: "粘贴你想润色的 AI 生成文本...",
+    detector: "检测器",
+    mode: "模式",
+    rephrase: "改写",
+    business: "商务",
+    multilingual: "多语言",
+    humanizing: "润色中...",
+    humanizeText: "润色文本",
+    humanizedResult: "润色结果",
+    readyToHumanize: "准备开始润色",
+    readyDescription: "在左侧粘贴 AI 生成文本，然后点击“润色文本”开始。",
+    characterLimitExceeded: "字符超限（最多 10,000）",
+    failedToHumanize: "润色失败，请重试。",
+    tones: {
+      standard: "标准",
+      natural: "自然",
+      professional: "专业",
+      casual: "轻松",
+      academic: "学术"
+    }
+  },
+  gradePage: {
+    backToDashboard: "返回仪表板",
+    whatDoYouWantToGrade: "你想批改什么？",
+    subtitle: "根据你的评分标准批改论文",
+    upload: "上传",
+    uploadFormats: "PDF、Word 文档",
+    paste: "粘贴",
+    pasteDescription: "复制并粘贴文本",
+    yourGrades: "你的批改",
+    noGradesYet: "还没有批改记录。请上传或粘贴文本开始。",
+    gradingReport: "批改报告",
+    viewDetailedReport: "查看详细批改报告与反馈...",
+    viewDetails: "查看详情",
+    rubric: "评分标准",
+    copyToClipboard: "复制到剪贴板",
+    exportAsPdf: "导出为 PDF",
+    exportPdf: "导出 PDF",
+    uploadPaper: "上传论文",
+    pastePaper: "粘贴论文",
+    uploadRubric: "上传评分标准",
+    uploadRubricDescription: "上传评分标准以帮助 AI 更准确地批改。",
+    clickToUploadRubric: "点击上传评分标准",
+    rubricFormats: "PDF 或 Word（可选）",
+    skipRubric: "跳过评分标准",
+    uploadPaperDescription: "上传你要批改的学生论文或答题纸。",
+    clickToUploadPaper: "点击上传论文",
+    paperFormats: "PDF、Word 或图片",
+    gradePaper: "批改论文",
+    pastePaperContent: "粘贴论文内容",
+    pastePaperContentDescription: "粘贴你要批改的论文文本内容。",
+    pasteYourTextHere: "在此粘贴文本...",
+    downloadFile: "下载文件"
   },
 
   // Mistake Checker
@@ -1212,6 +1829,106 @@ export const zhCN = {
     studyProgress: "学习进度",
     notifications: "通知",
     viewAll: "查看全部"
+  },
+  dashboardPro: {
+    title: "Pro 仪表板",
+    proMember: "Pro 会员",
+    upgradeDescription: "升级到 Pro 以访问你的仪表板",
+    upgradeToPro: "升级到 Pro",
+    welcomeBack: "欢迎回来，{{name}}！",
+    aiResponseUsage: "AI 回复使用情况",
+    responsesLeft: "剩余回复",
+    usedLabel: "已使用：{{count}}",
+    totalLabel: "总计：{{count}}",
+    used: "已使用",
+    remaining: "剩余",
+    total: "总计",
+    daysLeft: "剩余天数",
+    responsesLeftTitle: "剩余回复",
+    ofTotal: "共 {{count}}",
+    aiQueries: "AI 查询",
+    thisMonth: "本月",
+    transactions: "交易",
+    allTime: "全部时间",
+    untilRenewal: "距续费",
+    subscriptionStatus: "订阅状态",
+    plan: "套餐",
+    proPlan: "Pro 套餐",
+    status: "状态",
+    validUntil: "有效期至",
+    autoRenewal: "自动续费",
+    active: "有效",
+    expired: "已过期",
+    recentActivity: "最近活动",
+    all: "全部",
+    responsesCount: "{{count}} 次回复",
+    remainingCount: "剩余 {{count}}",
+    noActivityFound: "未找到活动记录",
+    showingEntries: "显示第 {{start}} 到 {{end}} 条，共 {{total}} 条",
+    transactionHistory: "交易历史",
+    subscription: "订阅",
+    coinsAmount: "{{count}} 积分",
+    aiResponseHistory: "AI 回复历史",
+    query: "查询",
+    noAiResponsesFound: "未找到 AI 回复记录",
+    usageLogs: "使用日志",
+    responsesUsed: "已使用回复",
+    impact: "影响",
+    noUsageLogsFound: "未找到使用日志",
+    startUsingAiFeatures: "开始使用 AI 功能后可在此查看活动",
+    transactionDetails: "交易详情",
+    aiResponseDetails: "AI 回复详情",
+    usageLogDetails: "使用日志详情",
+    subscriptionPurchase: "订阅购买",
+    transactionId: "交易 ID",
+    dateTime: "日期与时间",
+    paymentMethod: "支付方式",
+    creditCard: "信用卡",
+    subscriptionPeriod: "订阅周期",
+    daysCount: "{{count}} 天",
+    planFeatures: "套餐功能",
+    unlimited: "不限",
+    aiResponses: "AI 回复",
+    daysAccess: "可用天数",
+    totalCost: "总费用",
+    responsesUsedCount: "已使用 {{count}} 次回复",
+    responseId: "回复 ID",
+    queryInformation: "查询信息",
+    mode: "模式",
+    fileName: "文件名",
+    fileSize: "文件大小",
+    fileType: "文件类型",
+    inputText: "输入文本",
+    subject: "学科",
+    difficulty: "难度",
+    additionalData: "附加数据",
+    usageActivity: "使用活动",
+    remainingAfter: "操作后剩余",
+    logId: "日志 ID",
+    activityDescription: "活动描述",
+    responseUsageImpact: "回复使用影响",
+    before: "之前",
+    after: "之后",
+    tabs: {
+      overview: "概览",
+      transactions: "交易",
+      aiResponses: "AI 回复",
+      usageLogs: "使用日志"
+    },
+    responseTypes: {
+      mistakeChecker: "错误检查",
+      documentSummary: "文档总结",
+      contentGeneration: "内容生成",
+      flashcardGeneration: "抽认卡生成",
+      homeworkSolution: "作业解答",
+      aiTutorChat: "AI 导师聊天",
+      citationGenerator: "引用生成",
+      studyPlanner: "学习计划",
+      textAnalyzer: "文本分析",
+      languageTranslator: "语言翻译",
+      mathSolver: "数学解题",
+      scienceAssistant: "科学助手"
+    }
   },
 
   // Footer
@@ -1406,6 +2123,144 @@ export const zhCN = {
   processing: "处理中",
   error: "错误",
   pending: "待处理",
+  reflectHero: {
+    badge: "用 AI 更聪明地学习",
+    title: "在 MatrixEdu 更高效地思考",
+    subtitle: "你的全能 AI 学习伙伴，不再错过任何概念、截止日期或成绩。",
+    mockupLabel: "MatrixEdu"
+  },
+  howItWorks: {
+    title: "如何运作",
+    subtitle: "通过完整流程，在几分钟内掌握任何学科。",
+    videoSimulation: "视频模拟",
+    steps: {
+      0: {
+        title: "上传或粘贴内容",
+        description: "无论是课堂笔记、YouTube 视频还是网页内容，只需上传资料，AI 会立即分析。",
+        videoPlaceholder: "上传演示视频"
+      },
+      1: {
+        title: "即时闪卡",
+        description: "把数小时学习压缩为几分钟。AI 会自动从学习资料生成完整闪卡，帮你记住重点。",
+        videoPlaceholder: "闪卡演示视频"
+      },
+      2: {
+        title: "智能测验",
+        description: "通过自适应测验检验理解程度，并获得每题 AI 解析，知道错在哪里以及如何改进。",
+        videoPlaceholder: "测验演示视频"
+      },
+      3: {
+        title: "书面测验",
+        description: "用 AI 评分的主观题练习书写考试，立即获得文风、准确性和完整度反馈。",
+        videoPlaceholder: "书面测验演示视频"
+      },
+      4: {
+        title: "交互式思维导图",
+        description: "通过自动生成的思维导图可视化概念联系，特别适合理解复杂主题与结构关系。",
+        videoPlaceholder: "思维导图演示视频"
+      },
+      5: {
+        title: "智能学习计划",
+        description: "根据考试日期与学习节奏创建个性化学习日程，保持有条理并高效覆盖全部主题。",
+        videoPlaceholder: "计划演示视频"
+      },
+      6: {
+        title: "AI 笔记生成",
+        description: "立即将冗长讲义或文档整理为精炼且结构化的学习笔记，专注学习而非抄写。",
+        videoPlaceholder: "笔记演示视频"
+      }
+    }
+  },
+  videoDemo: {
+    title: "实际看看",
+    subtitle: "体验 AI 学习平台带来的未来感。",
+    demoUrl: "edusmart.ai/demo",
+    interactiveTitle: "交互演示",
+    clickToStart: "点击开始导览"
+  },
+  matrixEduLanding: {
+    workspace: {
+      title: "解锁你的 MatrixEdu 工作区",
+      subtitle: "从仪表盘到侧边栏工具，在同一处管理学习集、解题与内容写作。",
+      tryFree: "免费试用 MatrixEdu",
+      cards: {
+        dashboard: {
+          title: "仪表盘与学习集",
+          description: "通过学习集、使用洞察和快捷入口，保持系统化学习节奏。",
+          action: "打开仪表盘"
+        },
+        aiTools: {
+          title: "侧边栏 AI 工具",
+          description: "可直接使用解题、论文评分、内容写作、润色与学习计划等工具。",
+          action: "使用 AI 工具"
+        },
+        practiceFlow: {
+          title: "更聪明的练习流程",
+          description: "从解题到写作与规划，一套串联流程支持每日学习进度。",
+          action: "开始学习"
+        }
+      }
+    },
+    comparison: {
+      title: "为什么 MatrixEdu 更胜一筹",
+      subtitle: "不要更辛苦地学习，用 AI 更聪明地学习。",
+      versus: "对比",
+      cta: "立即加入 1,000,000+ 名学生",
+      disclaimer: "无需信用卡 • 提供免费方案",
+      oldWay: {
+        title: "传统方式",
+        items: {
+          0: "花大量时间被动阅读与划重点",
+          1: "手动做闪卡（很枯燥）",
+          2: "写答案却没有反馈",
+          3: "笔记分散在各种笔记本里"
+        }
+      },
+      matrixEduWay: {
+        title: "MatrixEdu 方式",
+        recommended: "推荐",
+        items: {
+          0: "即时生成主动回忆学习素材",
+          1: "几秒生成 AI 闪卡",
+          2: "即时评分与解析",
+          3: "所有资料同步且有条理"
+        }
+      }
+    },
+    faq: {
+      title: "常见问题",
+      items: {
+        0: {
+          question: "我可以在 MatrixEdu 做什么？",
+          answer: "MatrixEdu 提供一体化学习工作区，包含仪表盘、解题、论文评分、内容写作、润色和学习计划等日常工具。"
+        },
+        1: {
+          question: "仪表盘里有哪些功能？",
+          answer: "仪表盘是你的学习中枢，可管理学习集并追踪进度，让你从上次中断处继续。"
+        },
+        2: {
+          question: "侧边栏如何帮我更快学习？",
+          answer: "侧边栏可直达核心工具，让你在解题、评分、写作和规划之间快速切换而不丢失上下文。"
+        },
+        3: {
+          question: "我可以上传资料并获得 AI 帮助吗？",
+          answer: "可以。你可以使用自己的学习资料，并通过 AI 生成功能获取解释、优化写作和建立更高效的学习流程。"
+        },
+        4: {
+          question: "有免费和付费方案吗？",
+          answer: "有。你可以先从免费体验开始，需要更高配额和进阶功能时再升级。"
+        },
+        5: {
+          question: "如何管理账号与付款信息？",
+          answer: "可通过个人资料与交易记录页面查看账户信息和账务活动。"
+        },
+        6: {
+          question: "我要如何联系客服？",
+          answer: "可通过平台的联系渠道与团队沟通，处理账号、付款或产品相关问题。"
+        }
+      }
+    }
+  },
 
   // Database
   database: {

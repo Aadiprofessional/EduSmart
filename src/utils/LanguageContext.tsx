@@ -1,11 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Language, translations, getTranslation } from './i18n';
+import { Language, translations, getTranslation, TranslationOptions } from './i18n';
 
 interface LanguageContextType {
   language: Language;
   setLanguage: (language: Language) => void;
-  t: (key: string) => string;
+  t: (key: string, options?: TranslationOptions) => string;
   tArray: (key: string) => string[];
+  formatDate: (value: Date | number | string, options?: Intl.DateTimeFormatOptions) => string;
+  formatTime: (value: Date | number | string, options?: Intl.DateTimeFormatOptions) => string;
+  formatDateTime: (value: Date | number | string, options?: Intl.DateTimeFormatOptions) => string;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -30,8 +33,24 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
                                    newLanguage === 'zh-TW' ? 'zh-Hant' : 'en';
   };
 
-  const t = (key: string): string => {
-    return getTranslation(language, key);
+  const locale = language === 'en' ? 'en-US' : language;
+
+  const t = (key: string, options?: TranslationOptions): string => {
+    return getTranslation(language, key, options);
+  };
+
+  const formatDate = (value: Date | number | string, options?: Intl.DateTimeFormatOptions): string => {
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return new Intl.DateTimeFormat(locale, options).format(date);
+  };
+
+  const formatTime = (value: Date | number | string, options?: Intl.DateTimeFormatOptions): string => {
+    return formatDate(value, options || { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const formatDateTime = (value: Date | number | string, options?: Intl.DateTimeFormatOptions): string => {
+    return formatDate(value, options || { dateStyle: 'medium', timeStyle: 'short' });
   };
 
   const tArray = (key: string): string[] => {
@@ -69,6 +88,9 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     setLanguage,
     t,
     tArray,
+    formatDate,
+    formatTime,
+    formatDateTime,
   };
 
   return (

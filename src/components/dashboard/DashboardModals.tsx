@@ -4,6 +4,7 @@ import { FaTimes, FaUpload, FaLink, FaMicrophone, FaCheck, FaBook, FaListUl, FaL
 import { useAuth } from '../../utils/AuthContext';
 import { jsPDF } from 'jspdf';
 import { uploadService, UploadPayload } from '../../services/uploadService';
+import { useLanguage } from '../../utils/LanguageContext';
 
 // Helper for reading file
 const readFileAsDataURL = (file: File): Promise<string> => {
@@ -71,7 +72,8 @@ export interface RenameModalProps {
   title?: string;
 }
 
-export const RenameModal: React.FC<RenameModalProps> = ({ isOpen, onClose, onRename, currentName, title = "Rename" }) => {
+export const RenameModal: React.FC<RenameModalProps> = ({ isOpen, onClose, onRename, currentName, title }) => {
+  const { t } = useLanguage();
   const [name, setName] = useState(currentName);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -93,13 +95,13 @@ export const RenameModal: React.FC<RenameModalProps> = ({ isOpen, onClose, onRen
     <BaseModal
       isOpen={isOpen}
       onClose={onClose}
-      title={title}
+      title={title || t('matrixDashboard.modals.rename.defaultTitle')}
       width="max-w-md"
     >
       <div className="space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Name
+            {t('matrixDashboard.modals.rename.nameLabel')}
           </label>
           <input
             ref={inputRef}
@@ -116,14 +118,14 @@ export const RenameModal: React.FC<RenameModalProps> = ({ isOpen, onClose, onRen
             onClick={onClose}
             className="px-6 py-2.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-medium transition-colors"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             onClick={handleSubmit}
             disabled={!name.trim() || name === currentName}
             className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Save Changes
+            {t('matrixDashboard.modals.rename.saveChanges')}
           </button>
         </div>
       </div>
@@ -141,6 +143,7 @@ export interface DeleteModalProps {
 }
 
 export const DeleteModal: React.FC<DeleteModalProps> = ({ isOpen, onClose, onConfirm, title, message }) => {
+  const { t } = useLanguage();
   return (
     <BaseModal
       isOpen={isOpen}
@@ -158,13 +161,13 @@ export const DeleteModal: React.FC<DeleteModalProps> = ({ isOpen, onClose, onCon
             onClick={onClose}
             className="px-6 py-2.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-medium transition-colors"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             onClick={() => { onConfirm(); onClose(); }}
             className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-red-500/20"
           >
-            Delete
+            {t('common.delete')}
           </button>
         </div>
       </div>
@@ -175,6 +178,7 @@ export const DeleteModal: React.FC<DeleteModalProps> = ({ isOpen, onClose, onCon
 // --- Upload Modal ---
 export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void; onNext: (payload: UploadPayload) => void }> = ({ isOpen, onClose, onNext }) => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [uploadState, setUploadState] = useState<'idle' | 'uploading' | 'complete' | 'error'>('idle');
   const [progress, setProgress] = useState(0);
   const [payload, setPayload] = useState<UploadPayload | null>(null);
@@ -252,17 +256,17 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void; onNex
         const nonImageFiles = files.filter(f => !f.type.startsWith('image/'));
 
         if (files.length > 5) {
-             alert("You can upload up to 5 files maximum.");
+             alert(t('matrixDashboard.modals.upload.maxFilesError'));
              return;
         }
 
         if (nonImageFiles.length > 1) {
-             alert("You can only upload 1 non-image file at a time.");
+             alert(t('matrixDashboard.modals.upload.singleNonImageError'));
              return;
         }
         
         if (nonImageFiles.length === 1 && imageFiles.length > 0) {
-             alert("You cannot mix images with other file types when uploading multiple files.");
+             alert(t('matrixDashboard.modals.upload.mixedFileTypeError'));
              return;
         }
 
@@ -275,7 +279,7 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void; onNex
 
         processFiles(files, 'pdf_vision');
     } else if (!user) {
-        alert("Please sign in to upload files.");
+        alert(t('matrixDashboard.modals.upload.signInError'));
     }
   };
 
@@ -287,8 +291,8 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void; onNex
     <BaseModal 
         isOpen={isOpen} 
         onClose={onClose} 
-        title="Please upload your file" 
-        subtitle="We will turn your file into insane study material"
+        title={t('matrixDashboard.modals.upload.title')} 
+        subtitle={t('matrixDashboard.modals.upload.subtitle')}
     >
       <input 
         type="file" 
@@ -304,7 +308,7 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void; onNex
             <div className="w-16 h-16 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
                 <FaBook className="text-2xl" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">PDF Detected</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">{t('matrixDashboard.modals.upload.pdfDetected')}</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{pendingFile.name}</p>
             
             <div className="grid grid-cols-1 gap-3 mb-8 w-full max-w-lg mx-auto">
@@ -318,8 +322,8 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void; onNex
                             {pdfProcessType === 'pdf_vision' && <FaCheck className="text-white text-xs" />}
                         </div>
                         <div className="text-left">
-                            <span className="block text-gray-900 dark:text-white font-medium">Include Images (AI Vision)</span>
-                            <span className="block text-xs text-gray-500 mt-1">Best for slides/diagrams. Cost: 2 coins/page.</span>
+                            <span className="block text-gray-900 dark:text-white font-medium">{t('matrixDashboard.modals.upload.pdfOptions.includeImagesTitle')}</span>
+                            <span className="block text-xs text-gray-500 mt-1">{t('matrixDashboard.modals.upload.pdfOptions.includeImagesDescription')}</span>
                         </div>
                     </div>
                 </div>
@@ -334,8 +338,8 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void; onNex
                             {pdfProcessType === 'ocr' && <FaCheck className="text-white text-xs" />}
                         </div>
                         <div className="text-left">
-                            <span className="block text-gray-900 dark:text-white font-medium">OCR</span>
-                            <span className="block text-xs text-gray-500 mt-1">Best for scanned docs. Cost: 1 coin/page.</span>
+                            <span className="block text-gray-900 dark:text-white font-medium">{t('matrixDashboard.modals.upload.pdfOptions.ocrTitle')}</span>
+                            <span className="block text-xs text-gray-500 mt-1">{t('matrixDashboard.modals.upload.pdfOptions.ocrDescription')}</span>
                         </div>
                     </div>
                 </div>
@@ -350,8 +354,8 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void; onNex
                             {pdfProcessType === 'document' && <FaCheck className="text-white text-xs" />}
                         </div>
                         <div className="text-left">
-                            <span className="block text-gray-900 dark:text-white font-medium">Extract Text</span>
-                            <span className="block text-xs text-gray-500 mt-1">Extract text only. Standard document processing.</span>
+                            <span className="block text-gray-900 dark:text-white font-medium">{t('matrixDashboard.modals.upload.pdfOptions.extractTextTitle')}</span>
+                            <span className="block text-xs text-gray-500 mt-1">{t('matrixDashboard.modals.upload.pdfOptions.extractTextDescription')}</span>
                         </div>
                     </div>
                 </div>
@@ -363,14 +367,14 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void; onNex
                     disabled={uploadState === 'uploading'}
                     className={`px-4 py-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 ${uploadState === 'uploading' ? 'cursor-not-allowed opacity-50' : ''}`}
                 >
-                    Cancel
+                    {t('common.cancel')}
                 </button>
                 <button 
                     onClick={() => processFiles([pendingFile], pdfProcessType)}
                     disabled={uploadState === 'uploading'}
                     className={`px-6 py-2 bg-[#c2410c] hover:bg-[#9a3412] text-white rounded-lg font-medium transition-colors ${uploadState === 'uploading' ? 'cursor-not-allowed opacity-70' : ''}`}
                 >
-                    {uploadState === 'uploading' ? 'Processing...' : 'Process PDF'}
+                    {uploadState === 'uploading' ? t('common.processing') : t('matrixDashboard.modals.upload.processPdf')}
                 </button>
             </div>
         </div>
@@ -382,13 +386,13 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void; onNex
             <div className={`w-16 h-16 ${uploadState === 'error' ? 'bg-red-100 dark:bg-red-900/40 text-red-500' : 'bg-indigo-50 dark:bg-[#2a1a10] text-indigo-500'} rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
             {uploadState === 'error' ? <FaTimes className="text-2xl" /> : <FaUpload className="text-2xl" />}
             </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">{uploadState === 'error' ? 'Upload Failed. Try Again.' : 'Click to upload or drag and drop up to 5 files'}</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Image, PDF, Word, PowerPoint, Audio, or Video files</p>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">{uploadState === 'error' ? t('matrixDashboard.modals.upload.uploadFailed') : t('matrixDashboard.modals.upload.clickOrDrag')}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t('matrixDashboard.modals.upload.supportedFileTypes')}</p>
         </div>
       ) : (
         <div className="bg-white dark:bg-[#111] border border-dashed border-gray-200 dark:border-white/10 rounded-xl p-8">
             <div className="flex justify-between items-center mb-4">
-                <span className="text-gray-700 dark:text-gray-300 font-medium">{uploadState === 'complete' ? 'Upload Complete' : 'Uploading...'} 1 file</span>
+                <span className="text-gray-700 dark:text-gray-300 font-medium">{uploadState === 'complete' ? t('matrixDashboard.modals.upload.uploadComplete') : t('matrixDashboard.modals.upload.uploading')} 1 {t('matrixDashboard.modals.upload.file')}</span>
                 <span className="text-gray-500 dark:text-gray-400 text-sm">{progress}%</span>
             </div>
             <div className="w-full h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
@@ -407,7 +411,7 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void; onNex
             disabled={uploadState !== 'complete'}
             className={`px-8 py-2.5 rounded-lg font-medium transition-colors ${uploadState === 'complete' ? 'bg-[#c2410c] hover:bg-[#9a3412] text-white' : 'bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed'}`}
         >
-            Next
+            {t('common.next')}
         </button>
       </div>
       )}
@@ -418,13 +422,14 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void; onNex
 // --- Paste Modal ---
 export const PasteModal: React.FC<{ isOpen: boolean; onClose: () => void; onNext: (payload: UploadPayload) => void }> = ({ isOpen, onClose, onNext }) => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [url, setUrl] = useState('');
   const [text, setText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleNext = async () => {
     if (!user) {
-        alert("Please sign in.");
+        alert(t('matrixDashboard.modals.paste.signInError'));
         return;
     }
 
@@ -439,10 +444,10 @@ export const PasteModal: React.FC<{ isOpen: boolean; onClose: () => void; onNext
   };
 
   return (
-    <BaseModal isOpen={isOpen} onClose={onClose} title="Add Content" subtitle="Enter a URL or paste text to create your study set">
+    <BaseModal isOpen={isOpen} onClose={onClose} title={t('matrixDashboard.modals.paste.title')} subtitle={t('matrixDashboard.modals.paste.subtitle')}>
       <div className="space-y-6">
          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Enter a YouTube/Website URL</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('matrixDashboard.modals.paste.enterUrlLabel')}</label>
             <div className="relative">
                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <FaLink className="text-gray-400 dark:text-gray-500" />
@@ -452,7 +457,7 @@ export const PasteModal: React.FC<{ isOpen: boolean; onClose: () => void; onNext
                  value={url}
                  onChange={(e) => setUrl(e.target.value)}
                  disabled={!!text}
-                 placeholder="https://youtu.be/..." 
+                 placeholder={t('matrixDashboard.modals.paste.urlPlaceholder')} 
                  className="w-full bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-lg py-3 pl-10 pr-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-indigo-500/50 transition-colors disabled:opacity-50"
                />
             </div>
@@ -460,17 +465,17 @@ export const PasteModal: React.FC<{ isOpen: boolean; onClose: () => void; onNext
 
          <div className="relative flex items-center py-2">
             <div className="flex-grow border-t border-gray-200 dark:border-white/10"></div>
-            <span className="flex-shrink-0 mx-4 text-gray-500 text-sm">or</span>
+            <span className="flex-shrink-0 mx-4 text-gray-500 text-sm">{t('matrixDashboard.modals.paste.or')}</span>
             <div className="flex-grow border-t border-gray-200 dark:border-white/10"></div>
          </div>
 
          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Copy and paste text to add as content</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('matrixDashboard.modals.paste.copyPasteLabel')}</label>
             <textarea 
                value={text}
                onChange={(e) => setText(e.target.value)}
                disabled={!!url}
-               placeholder="Paste your notes here" 
+               placeholder={t('matrixDashboard.modals.paste.notesPlaceholder')} 
                className="w-full h-40 bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-lg p-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-indigo-500/50 transition-colors resize-none disabled:opacity-50"
             ></textarea>
             <div className="flex justify-end mt-2">
@@ -484,7 +489,7 @@ export const PasteModal: React.FC<{ isOpen: boolean; onClose: () => void; onNext
                 disabled={(!url && !text) || !user || isLoading}
                 className={`px-8 py-2.5 rounded-lg font-medium transition-colors ${(!url && !text) || !user || isLoading ? 'bg-gray-200 dark:bg-gray-800 text-gray-400 cursor-not-allowed' : 'bg-[#c2410c] hover:bg-[#9a3412] text-white'}`}
             >
-               {isLoading ? 'Processing...' : 'Next'}
+               {isLoading ? t('common.processing') : t('common.next')}
             </button>
          </div>
       </div>
@@ -495,6 +500,7 @@ export const PasteModal: React.FC<{ isOpen: boolean; onClose: () => void; onNext
 // --- Record Modal ---
 export const RecordModal: React.FC<{ isOpen: boolean; onClose: () => void; onNext: (payload: UploadPayload) => void }> = ({ isOpen, onClose, onNext }) => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -537,7 +543,7 @@ export const RecordModal: React.FC<{ isOpen: boolean; onClose: () => void; onNex
 
     } catch (err) {
         console.error("Error accessing microphone:", err);
-        alert("Could not access microphone.");
+        alert(t('matrixDashboard.modals.record.microphoneAccessError'));
     }
   };
 
@@ -566,14 +572,14 @@ export const RecordModal: React.FC<{ isOpen: boolean; onClose: () => void; onNex
         onNext(payload);
     } catch (error) {
         console.error("Error uploading recording:", error);
-        alert("Failed to upload recording.");
+        alert(t('matrixDashboard.modals.record.uploadFailed'));
     } finally {
         setIsProcessing(false);
     }
   };
 
   return (
-    <BaseModal isOpen={isOpen} onClose={onClose} title="Record Audio" subtitle="Record your lecture, notes, or study material">
+    <BaseModal isOpen={isOpen} onClose={onClose} title={t('matrixDashboard.modals.record.title')} subtitle={t('matrixDashboard.modals.record.subtitle')}>
        <div className="py-12 flex flex-col items-center justify-center">
           {!audioBlob ? (
               <>
@@ -583,17 +589,17 @@ export const RecordModal: React.FC<{ isOpen: boolean; onClose: () => void; onNex
                 >
                     {isRecording ? <FaStop className="text-4xl text-white" /> : <FaMicrophone className="text-4xl text-white" />}
                 </button>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{isRecording ? 'Recording...' : 'Ready to Record'}</h3>
-                <p className="text-gray-500 dark:text-gray-400">{isRecording ? formatTime(timer) : 'Click the microphone to start recording'}</p>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{isRecording ? t('matrixDashboard.modals.record.recording') : t('matrixDashboard.modals.record.readyToRecord')}</h3>
+                <p className="text-gray-500 dark:text-gray-400">{isRecording ? formatTime(timer) : t('matrixDashboard.modals.record.clickMic')}</p>
               </>
           ) : (
               <div className="text-center">
                   <div className="w-24 h-24 rounded-full bg-green-500 flex items-center justify-center shadow-lg shadow-green-900/20 mx-auto mb-6">
                       <FaCheck className="text-4xl text-white" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Recording Complete</h3>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('matrixDashboard.modals.record.recordingComplete')}</h3>
                   <p className="text-gray-500 dark:text-gray-400 mb-4">{formatTime(timer)}</p>
-                  <button onClick={() => setAudioBlob(null)} className="text-sm text-red-500 hover:underline">Discard and Record Again</button>
+                  <button onClick={() => setAudioBlob(null)} className="text-sm text-red-500 hover:underline">{t('matrixDashboard.modals.record.discardAndRecordAgain')}</button>
               </div>
           )}
        </div>
@@ -603,7 +609,7 @@ export const RecordModal: React.FC<{ isOpen: boolean; onClose: () => void; onNex
                 disabled={!audioBlob || isProcessing}
                 className={`px-8 py-2.5 rounded-lg font-medium transition-colors ${!audioBlob || isProcessing ? 'bg-gray-200 dark:bg-gray-800 text-gray-400 cursor-not-allowed' : 'bg-[#c2410c] hover:bg-[#9a3412] text-white'}`}
             >
-               {isProcessing ? 'Processing...' : 'Next'}
+               {isProcessing ? t('common.processing') : t('common.next')}
             </button>
        </div>
     </BaseModal>
@@ -618,16 +624,17 @@ interface MethodOption {
 }
 
 export const MethodSelectionModal: React.FC<{ isOpen: boolean; onClose: () => void; onGenerate: (selectedMethods: string[]) => void }> = ({ isOpen, onClose, onGenerate }) => {
+    const { t } = useLanguage();
     const [selectedMethods, setSelectedMethods] = useState<string[]>([]);
     
     const methods: MethodOption[] = [
-        { id: 'notes', label: 'Notes', icon: <FaBook /> },
-        { id: 'multiple-choice', label: 'Multiple Choice', icon: <FaListUl /> },
-        { id: 'flashcards', label: 'Flashcards', icon: <FaLayerGroup /> },
-        { id: 'podcast', label: 'Podcast', icon: <FaPodcast /> },
-        { id: 'tutor-lesson', label: 'Tutor Lesson', icon: <FaChalkboardTeacher /> },
-        { id: 'written-tests', label: 'Written Tests', icon: <FaPencilAlt /> },
-        { id: 'fill-blanks', label: 'Fill in the Blanks', icon: <FaEdit /> },
+        { id: 'notes', label: t('addMethodModal.methods.notes'), icon: <FaBook /> },
+        { id: 'multiple-choice', label: t('addMethodModal.methods.multipleChoice'), icon: <FaListUl /> },
+        { id: 'flashcards', label: t('addMethodModal.methods.flashcards'), icon: <FaLayerGroup /> },
+        { id: 'podcast', label: t('addMethodModal.methods.podcast'), icon: <FaPodcast /> },
+        { id: 'tutor-lesson', label: t('addMethodModal.methods.tutorLesson'), icon: <FaChalkboardTeacher /> },
+        { id: 'written-tests', label: t('addMethodModal.methods.writtenTests'), icon: <FaPencilAlt /> },
+        { id: 'fill-blanks', label: t('addMethodModal.methods.fillBlanks'), icon: <FaEdit /> },
     ];
 
     const toggleMethod = (id: string) => {
@@ -639,7 +646,7 @@ export const MethodSelectionModal: React.FC<{ isOpen: boolean; onClose: () => vo
     };
 
     return (
-        <BaseModal isOpen={isOpen} onClose={onClose} title="What would you like to include?" subtitle="Choose all the methods you want included in your study set:" width="max-w-4xl">
+        <BaseModal isOpen={isOpen} onClose={onClose} title={t('matrixDashboard.modals.methodSelection.title')} subtitle={t('matrixDashboard.modals.methodSelection.subtitle')} width="max-w-4xl">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
                 {methods.map((method) => {
                     const isSelected = selectedMethods.includes(method.id);
@@ -670,8 +677,7 @@ export const MethodSelectionModal: React.FC<{ isOpen: boolean; onClose: () => vo
                  {/* Language Selector */}
                  <div className="relative">
                     <button className="flex items-center gap-2 bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 px-4 py-2 rounded-lg text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-[#252525] transition-colors">
-                        <span>🇺🇸</span>
-                        <span>English</span>
+                        <span>{t('matrixDashboard.modals.methodSelection.languageEnglish')}</span>
                         <FaChevronDown size={10} className="text-gray-500 ml-2" />
                     </button>
                  </div>
@@ -680,7 +686,7 @@ export const MethodSelectionModal: React.FC<{ isOpen: boolean; onClose: () => vo
                     onClick={() => onGenerate(selectedMethods)}
                     className="bg-[#c2410c] hover:bg-[#9a3412] text-white px-10 py-3 rounded-lg font-bold transition-colors"
                  >
-                    Generate
+                    {t('matrixDashboard.modals.methodSelection.generate')}
                  </button>
             </div>
         </BaseModal>
@@ -696,6 +702,7 @@ export interface CreateFolderModalProps {
 }
 
 export const CreateFolderModal: React.FC<CreateFolderModalProps> = ({ isOpen, onClose, onCreate }) => {
+  const { t } = useLanguage();
   const [folderName, setFolderName] = useState('');
   const [selectedColor, setSelectedColor] = useState('blue');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -729,13 +736,13 @@ export const CreateFolderModal: React.FC<CreateFolderModalProps> = ({ isOpen, on
     <BaseModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Create New Folder"
+      title={t('sidebar.createNewFolder')}
       width="max-w-md"
     >
       <div className="space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Folder Name
+            {t('matrixDashboard.modals.createFolder.folderName')}
           </label>
           <input
             ref={inputRef}
@@ -743,14 +750,14 @@ export const CreateFolderModal: React.FC<CreateFolderModalProps> = ({ isOpen, on
             value={folderName}
             onChange={(e) => setFolderName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-            placeholder="e.g. Biology 101"
+            placeholder={t('matrixDashboard.modals.createFolder.placeholder')}
             className="w-full px-4 py-3 bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-gray-900 dark:text-white"
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Color Code
+            {t('matrixDashboard.modals.createFolder.colorCode')}
           </label>
           <div className="flex flex-wrap gap-3">
             {colors.map((color) => (
@@ -768,14 +775,14 @@ export const CreateFolderModal: React.FC<CreateFolderModalProps> = ({ isOpen, on
             onClick={onClose}
             className="px-6 py-2.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-medium transition-colors"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             onClick={handleSubmit}
             disabled={!folderName.trim()}
             className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Create Folder
+            {t('matrixDashboard.modals.createFolder.createButton')}
           </button>
         </div>
       </div>
@@ -792,6 +799,7 @@ export interface MoveDocumentModalProps {
 }
 
 export const MoveDocumentModal: React.FC<MoveDocumentModalProps> = ({ isOpen, onClose, folders, onMove, documentTitle }) => {
+  const { t } = useLanguage();
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -820,8 +828,8 @@ export const MoveDocumentModal: React.FC<MoveDocumentModalProps> = ({ isOpen, on
     <BaseModal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Move "${documentTitle || 'Document'}"`}
-      subtitle="Select a folder to move this document to"
+      title={t('matrixDashboard.modals.moveDocument.title', { values: { documentTitle: documentTitle || t('matrixDashboard.modals.moveDocument.document') } })}
+      subtitle={t('matrixDashboard.modals.moveDocument.subtitle')}
       width="max-w-md"
     >
       <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
@@ -837,8 +845,8 @@ export const MoveDocumentModal: React.FC<MoveDocumentModalProps> = ({ isOpen, on
             <FaLayerGroup />
           </div>
           <div className="text-left">
-            <p className="font-medium text-gray-900 dark:text-white">All Study Sets</p>
-            <p className="text-xs text-gray-500">Default location</p>
+            <p className="font-medium text-gray-900 dark:text-white">{t('sidebar.allStudySets')}</p>
+            <p className="text-xs text-gray-500">{t('matrixDashboard.modals.moveDocument.defaultLocation')}</p>
           </div>
           {selectedFolderId === null && <FaCheck className="ml-auto text-indigo-500" />}
         </button>
@@ -858,7 +866,7 @@ export const MoveDocumentModal: React.FC<MoveDocumentModalProps> = ({ isOpen, on
             </div>
             <div className="text-left">
               <p className="font-medium text-gray-900 dark:text-white">{folder.name}</p>
-              <p className="text-xs text-gray-500">{folder.count} items</p>
+              <p className="text-xs text-gray-500">{t('matrixDashboard.modals.moveDocument.itemsCount', { values: { count: folder.count } })}</p>
             </div>
             {selectedFolderId === folder.id && <FaCheck className="ml-auto text-indigo-500" />}
           </button>
@@ -870,13 +878,13 @@ export const MoveDocumentModal: React.FC<MoveDocumentModalProps> = ({ isOpen, on
           onClick={onClose}
           className="px-6 py-2.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-medium transition-colors"
         >
-          Cancel
+          {t('common.cancel')}
         </button>
         <button
           onClick={handleMove}
           className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-indigo-500/20"
         >
-          Move Document
+          {t('matrixDashboard.modals.moveDocument.moveButton')}
         </button>
       </div>
     </BaseModal>

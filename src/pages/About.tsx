@@ -118,7 +118,7 @@ const About: React.FC = () => {
                 transition={{ duration: 0.8, delay: 0.2 }}
                 className="inline-block mb-6 px-4 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-300 text-sm font-medium backdrop-blur-sm"
               >
-                About MatrixEdu
+                {t('about.badge')}
               </motion.div>
               
               <h1 className="text-5xl md:text-7xl font-bold mb-8 tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-white via-white to-white/40">
@@ -126,7 +126,7 @@ const About: React.FC = () => {
               </h1>
               
               <p className="text-xl text-gray-400 mb-12 leading-relaxed max-w-2xl mx-auto">
-                MatrixEdu is an AI learning workspace that helps students plan, practice, write, and improve faster with one connected platform.
+                {t('about.heroDescription')}
               </p>
             </motion.div>
           </div>
@@ -144,23 +144,23 @@ const About: React.FC = () => {
                   viewport={{ once: true }}
                 >
                   <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">
-                    Our Mission
+                    {t('about.missionTitle')}
                   </h2>
                   <div className="space-y-6 text-lg text-gray-400 leading-relaxed">
                     <p>
                       {t('about.description') || "At MatrixEdu, our mission is to make effective learning simple, structured, and accessible. We bring core study workflows into one place so students can spend more time learning and less time switching tools."}
                     </p>
                     <p>
-                      From dashboard organization to solving questions, grading papers, improving writing, humanizing text, and planning study schedules, MatrixEdu is built to support day-to-day student productivity with practical AI tools.
+                      {t('about.missionDescription2')}
                     </p>
                     <div className="pt-6 grid grid-cols-2 gap-8">
                       <div>
                         <div className="text-3xl font-bold text-white mb-2">6</div>
-                        <div className="text-sm text-gray-500 uppercase tracking-wider">Core AI Tools</div>
+                        <div className="text-sm text-gray-500 uppercase tracking-wider">{t('about.stats.coreAiTools')}</div>
                       </div>
                       <div>
                         <div className="text-3xl font-bold text-white mb-2">1</div>
-                        <div className="text-sm text-gray-500 uppercase tracking-wider">Unified Workspace</div>
+                        <div className="text-sm text-gray-500 uppercase tracking-wider">{t('about.stats.unifiedWorkspace')}</div>
                       </div>
                     </div>
                   </div>
@@ -179,25 +179,25 @@ const About: React.FC = () => {
                       <div className="space-y-4">
                         <div className="bg-[#111] p-4 rounded-xl border border-white/5">
                           <IconComponent icon={FaBrain} className="text-2xl text-purple-400 mb-3" />
-                          <h3 className="text-white font-medium">Smart Study Flow</h3>
-                          <p className="text-xs text-gray-500 mt-1">Connected daily learning tools</p>
+                          <h3 className="text-white font-medium">{t('about.pillars.smartStudyFlow.title')}</h3>
+                          <p className="text-xs text-gray-500 mt-1">{t('about.pillars.smartStudyFlow.description')}</p>
                         </div>
                         <div className="bg-[#111] p-4 rounded-xl border border-white/5 translate-x-4">
                           <IconComponent icon={FaGlobe} className="text-2xl text-blue-400 mb-3" />
-                          <h3 className="text-white font-medium">Anywhere Access</h3>
-                          <p className="text-xs text-gray-500 mt-1">Web-first learning workspace</p>
+                          <h3 className="text-white font-medium">{t('about.pillars.anywhereAccess.title')}</h3>
+                          <p className="text-xs text-gray-500 mt-1">{t('about.pillars.anywhereAccess.description')}</p>
                         </div>
                       </div>
                       <div className="space-y-4 pt-8">
                         <div className="bg-[#111] p-4 rounded-xl border border-white/5">
                           <IconComponent icon={FaShieldAlt} className="text-2xl text-green-400 mb-3" />
-                          <h3 className="text-white font-medium">Reliable Workspace</h3>
-                          <p className="text-xs text-gray-500 mt-1">Designed for consistent study use</p>
+                          <h3 className="text-white font-medium">{t('about.pillars.reliableWorkspace.title')}</h3>
+                          <p className="text-xs text-gray-500 mt-1">{t('about.pillars.reliableWorkspace.description')}</p>
                         </div>
                         <div className="bg-[#111] p-4 rounded-xl border border-white/5 translate-x-4">
                           <IconComponent icon={FaRocket} className="text-2xl text-pink-400 mb-3" />
-                          <h3 className="text-white font-medium">Faster Execution</h3>
-                          <p className="text-xs text-gray-500 mt-1">Move from task to task quickly</p>
+                          <h3 className="text-white font-medium">{t('about.pillars.fasterExecution.title')}</h3>
+                          <p className="text-xs text-gray-500 mt-1">{t('about.pillars.fasterExecution.description')}</p>
                         </div>
                       </div>
                     </div>
@@ -213,9 +213,9 @@ const About: React.FC = () => {
           <section className="py-24 relative bg-black/20">
             <div className="container mx-auto px-4">
               <div className="text-center mb-16">
-                <h2 className="text-3xl md:text-5xl font-bold mb-6 text-white">Platform Capabilities</h2>
+                <h2 className="text-3xl md:text-5xl font-bold mb-6 text-white">{t('about.platformCapabilities.title')}</h2>
                 <p className="text-gray-400 max-w-2xl mx-auto">
-                  A comprehensive suite of tools designed to support your academic journey from start to finish.
+                  {t('about.platformCapabilities.subtitle')}
                 </p>
               </div>
               
@@ -229,33 +229,33 @@ const About: React.FC = () => {
                 {[
                   {
                     icon: FaBrain,
-                    title: "Dashboard & Study Sets",
-                    description: "Organize your learning materials, access study sets quickly, and keep your progress visible in one central hub."
+                    title: t('about.platformCapabilities.cards.dashboard.title'),
+                    description: t('about.platformCapabilities.cards.dashboard.description')
                   },
                   {
                     icon: FaRocket,
-                    title: "Solve Workspace",
-                    description: "Work through questions with AI assistance and get clearer explanations when topics become difficult."
+                    title: t('about.platformCapabilities.cards.solve.title'),
+                    description: t('about.platformCapabilities.cards.solve.description')
                   },
                   {
                     icon: FaCode,
-                    title: "Paper Grader",
-                    description: "Review written work and get structured feedback to improve quality, clarity, and overall performance."
+                    title: t('about.platformCapabilities.cards.paperGrader.title'),
+                    description: t('about.platformCapabilities.cards.paperGrader.description')
                   },
                   {
                     icon: FaLightbulb,
-                    title: "Content Writer",
-                    description: "Generate and refine academic writing drafts faster while keeping your ideas organized and on-topic."
+                    title: t('about.platformCapabilities.cards.contentWriter.title'),
+                    description: t('about.platformCapabilities.cards.contentWriter.description')
                   },
                   {
                     icon: FaShieldAlt,
-                    title: "Humanizer",
-                    description: "Rewrite and improve tone or readability so your writing feels natural and easier to understand."
+                    title: t('about.platformCapabilities.cards.humanizer.title'),
+                    description: t('about.platformCapabilities.cards.humanizer.description')
                   },
                   {
                     icon: FaUsers,
-                    title: "Study Planner",
-                    description: "Create practical study plans, structure your sessions, and stay consistent with your daily goals."
+                    title: t('about.platformCapabilities.cards.studyPlanner.title'),
+                    description: t('about.platformCapabilities.cards.studyPlanner.description')
                   }
                 ].map((feature, index) => (
                   <motion.div key={index} variants={cardVariants}>
@@ -283,18 +283,18 @@ const About: React.FC = () => {
                 {[
                   {
                     number: "01",
-                    title: "Innovation",
-                    desc: "Pushing boundaries of what's possible in EdTech."
+                    title: t('about.values.innovation.title'),
+                    desc: t('about.values.innovation.description')
                   },
                   {
                     number: "02",
-                    title: "Accessibility",
-                    desc: "Making elite guidance available to everyone."
+                    title: t('about.values.accessibility.title'),
+                    desc: t('about.values.accessibility.description')
                   },
                   {
                     number: "03",
-                    title: "Excellence",
-                    desc: "Setting the highest standards in everything we do."
+                    title: t('about.values.excellence.title'),
+                    desc: t('about.values.excellence.description')
                   }
                 ].map((value, i) => (
                   <motion.div 
@@ -331,10 +331,10 @@ const About: React.FC = () => {
                 className="max-w-3xl mx-auto"
               >
                 <h2 className="text-4xl md:text-5xl font-bold mb-8 text-white">
-                  Ready to Study Smarter with MatrixEdu?
+                  {t('about.cta.title')}
                 </h2>
                 <p className="text-xl text-gray-400 mb-10">
-                  Start with your dashboard, use the sidebar tools, and build a stronger study routine in one platform.
+                  {t('about.cta.subtitle')}
                 </p>
                 <motion.button
                   className="px-8 py-4 bg-white text-black rounded-full font-bold text-lg hover:bg-gray-200 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_30px_rgba(255,255,255,0.5)]"
@@ -342,7 +342,7 @@ const About: React.FC = () => {
                   whileTap={{ scale: 0.95 }}
                   onClick={() => window.location.href = '/signup'}
                 >
-                  Get Started Now
+                  {t('about.cta.button')}
                 </motion.button>
               </motion.div>
             </div>

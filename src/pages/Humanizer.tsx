@@ -20,8 +20,10 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import IconComponent from '../components/ui/IconComponent';
 import { useNotification } from '../utils/NotificationContext';
 import SidebarLeft from '../components/dashboard/SidebarLeft';
+import { useLanguage } from '../utils/LanguageContext';
 
 const Humanizer: React.FC = () => {
+  const { t } = useLanguage();
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(window.innerWidth >= 1024);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   
@@ -82,7 +84,7 @@ const Humanizer: React.FC = () => {
       if (data) {
         const formattedHistory = data.map(item => ({
           id: item.id || item.created_at,
-          title: item.title || 'Untitled',
+          title: item.title || t('contentWriter.historyUntitled'),
           date: new Date(item.created_at).toLocaleDateString(),
           content: item.humanized_text,
           template: item.tags && item.tags.length > 0 ? item.tags[0] : 'Standard', // Use tag or default
@@ -192,7 +194,7 @@ const Humanizer: React.FC = () => {
   const handleGenerateContent = async () => {
     if (!prompt.trim()) return;
     if (prompt.length > 10000) {
-        showError('Character limit exceeded (max 10,000)');
+        showError(t('humanizer.characterLimitExceeded'));
         return;
     }
     
@@ -251,7 +253,7 @@ const Humanizer: React.FC = () => {
 
     } catch (error) {
       console.error('Error generating content:', error);
-      showError('Failed to humanize content. Please try again.');
+      showError(t('humanizer.failedToHumanize'));
     } finally {
       setIsGenerating(false);
     }
@@ -285,12 +287,12 @@ const Humanizer: React.FC = () => {
   const handleCopyContent = () => {
       if (!editorRef.current) return;
       navigator.clipboard.writeText(editorRef.current.innerText);
-      showSuccess('Content copied to clipboard!');
+      showSuccess(t('contentWriter.copied'));
   };
 
   const handleDeleteHistory = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!window.confirm('Are you sure you want to delete this history item?')) return;
+    if (!window.confirm(t('contentWriter.confirmDeleteHistoryItem'))) return;
     
     try {
       const { error } = await supabase
@@ -301,10 +303,10 @@ const Humanizer: React.FC = () => {
       if (error) throw error;
 
       setContentHistory(prev => prev.filter(item => item.id !== id));
-      showSuccess('History item deleted');
+      showSuccess(t('contentWriter.historyItemDeleted'));
     } catch (error) {
       console.error('Error deleting history:', error);
-      showError('Failed to delete history item');
+      showError(t('contentWriter.failedToDeleteHistoryItem'));
     }
   };
 
@@ -332,7 +334,7 @@ const Humanizer: React.FC = () => {
   }, [isGenerating, isMobile]);
 
   return (
-    <div className="h-screen bg-[#050505] text-white flex font-sans overflow-hidden relative selection:bg-indigo-500/30">
+    <div className="h-screen bg-gray-50 dark:bg-[#050505] text-gray-900 dark:text-white flex font-sans overflow-hidden relative selection:bg-indigo-500/30">
       
       {/* Background Gradients */}
       <div className="fixed inset-0 z-0 pointer-events-none">
@@ -353,31 +355,31 @@ const Humanizer: React.FC = () => {
       <SidebarLeft 
         isOpen={isLeftSidebarOpen} 
         onClose={() => setIsLeftSidebarOpen(false)}
-        className="fixed inset-y-0 left-0 z-50 lg:relative lg:z-0 shadow-2xl lg:shadow-none h-full border-r border-white/5 bg-[#0a0a0a]"
+        className="fixed inset-y-0 left-0 z-50 lg:relative lg:z-0 shadow-2xl lg:shadow-none h-full border-r border-gray-200 dark:border-white/5 bg-white dark:bg-[#0a0a0a]"
       />
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-full relative overflow-hidden z-10">
         
         {/* Header / Mobile Nav */}
-        <header className="h-16 border-b border-white/5 bg-[#0a0a0a]/80 backdrop-blur-xl flex items-center justify-between px-4 lg:px-6 shrink-0 z-20">
+        <header className="h-16 border-b border-gray-200 dark:border-white/5 bg-white/90 dark:bg-[#0a0a0a]/80 backdrop-blur-xl flex items-center justify-between px-4 lg:px-6 shrink-0 z-20">
             <div className="flex items-center gap-4">
                 <button 
                     onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)} 
-                    className="lg:hidden w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 text-white flex items-center justify-center transition-colors"
+                    className="lg:hidden w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-900 dark:text-white flex items-center justify-center transition-colors"
                 >
                     <IconComponent icon={FiMenu} className="w-5 h-5" />
                 </button>
-                <h1 className="text-lg lg:text-xl font-bold text-white flex items-center gap-3">
+                <h1 className="text-lg lg:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
                         <FaUserCheck size={14} className="text-white" />
                     </div>
-                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">Humanizer</span>
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-500 dark:from-white dark:to-gray-400">{t('humanizer.title')}</span>
                 </h1>
             </div>
 
             {/* Mobile Tab Switcher */}
-            <div className="flex lg:hidden bg-white/5 p-1 rounded-full border border-white/5 relative">
+            <div className="flex lg:hidden bg-gray-100 dark:bg-white/5 p-1 rounded-full border border-gray-200 dark:border-white/5 relative">
                 <div 
                     className={`absolute inset-y-1 rounded-full bg-indigo-600 shadow-lg shadow-indigo-500/20 transition-all duration-300 ease-out ${mobileTab === 'generator' ? 'left-1 w-[calc(50%-4px)]' : 'left-[calc(50%)] w-[calc(50%-4px)]'}`}
                 />
@@ -385,13 +387,13 @@ const Humanizer: React.FC = () => {
                     onClick={() => setMobileTab('generator')}
                     className={`relative z-10 px-5 py-1.5 text-xs font-semibold rounded-full transition-colors ${mobileTab === 'generator' ? 'text-white' : 'text-gray-400 hover:text-white'}`}
                 >
-                    Input
+                    {t('humanizer.inputTab')}
                 </button>
                 <button 
                     onClick={() => setMobileTab('editor')}
                     className={`relative z-10 px-5 py-1.5 text-xs font-semibold rounded-full transition-colors ${mobileTab === 'editor' ? 'text-white' : 'text-gray-400 hover:text-white'}`}
                 >
-                    Result
+                    {t('humanizer.resultTab')}
                 </button>
             </div>
 
@@ -400,10 +402,10 @@ const Humanizer: React.FC = () => {
                  <button 
                   onClick={() => setIsHistoryOpen(!isHistoryOpen)}
                   className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-all ${isHistoryOpen ? 'bg-white/10 text-white' : ''}`}
-                  title="History"
+                  title={t('common.history')}
                 >
                    <FaHistory size={14} />
-                   <span>History</span>
+                   <span>{t('common.history')}</span>
                 </button>
             </div>
         </header>
@@ -415,11 +417,11 @@ const Humanizer: React.FC = () => {
             <div className={`${mobileTab === 'generator' ? 'flex' : 'hidden'} lg:flex w-full lg:w-1/2 flex-col gap-4 relative z-10 h-full overflow-y-auto`}>
                 
                 {/* Input Card */}
-                <div className="flex-1 bg-[#111] border border-white/10 rounded-2xl p-1 flex flex-col shadow-xl min-h-[300px]">
-                    <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
+                <div className="flex-1 bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl p-1 flex flex-col shadow-xl min-h-[300px]">
+                    <div className="px-4 py-3 border-b border-gray-200 dark:border-white/5 flex items-center justify-between">
                          <div className="flex items-center gap-2">
                             <span className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]"></span>
-                            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Source Content</span>
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('humanizer.sourceContent')}</span>
                          </div>
                          <div className="flex items-center gap-3">
                             <span className={`text-xs font-mono ${inputCharCount > 10000 ? 'text-red-500' : 'text-gray-500'}`}>
@@ -428,9 +430,9 @@ const Humanizer: React.FC = () => {
                             {prompt && (
                                 <button 
                                     onClick={() => setPrompt('')}
-                                    className="text-xs text-gray-500 hover:text-white transition-colors flex items-center gap-1"
+                                    className="text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center gap-1"
                                 >
-                                    <FaTrash size={10} /> Clear
+                                    <FaTrash size={10} /> {t('common.clear')}
                                 </button>
                             )}
                          </div>
@@ -442,24 +444,24 @@ const Humanizer: React.FC = () => {
                                 setPrompt(e.target.value);
                             }
                         }}
-                        placeholder="Paste the AI-generated text you want to humanize here..."
-                        className="flex-1 w-full p-4 bg-transparent border-none focus:ring-0 resize-none text-gray-300 placeholder-gray-600 text-sm leading-relaxed scrollbar-thin scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20"
+                        placeholder={t('humanizer.inputPlaceholder')}
+                        className="flex-1 w-full p-4 bg-transparent border-none focus:ring-0 resize-none text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-600 text-sm leading-relaxed scrollbar-thin scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20"
                         spellCheck={false}
                     />
                 </div>
 
                 {/* Controls Card */}
-                <div className="bg-[#111] border border-white/10 rounded-2xl p-5 shadow-xl space-y-5 shrink-0">
+                <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl p-5 shadow-xl space-y-5 shrink-0">
                     
                     <div className="grid grid-cols-2 gap-4">
                         {/* Detector Select */}
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider pl-1">Detector</label>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider pl-1">{t('humanizer.detector')}</label>
                             <div className="relative group">
                                 <select 
                                     value={detector}
                                     onChange={(e) => setDetector(e.target.value)}
-                                    className="w-full appearance-none p-3 pl-4 pr-10 bg-white/[0.03] border border-white/10 rounded-xl text-sm text-gray-200 outline-none focus:border-indigo-500/30 focus:bg-white/[0.05] transition-all cursor-pointer shadow-sm hover:border-indigo-500/30 capitalize"
+                                    className="w-full appearance-none p-3 pl-4 pr-10 bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/10 rounded-xl text-sm text-gray-800 dark:text-gray-200 outline-none focus:border-indigo-500/30 focus:bg-white dark:focus:bg-white/[0.05] transition-all cursor-pointer shadow-sm hover:border-indigo-500/30 capitalize"
                                 >
                                     {supportedDetectors.map(d => (
                                         <option key={d} value={d}>{d}</option>
@@ -471,12 +473,12 @@ const Humanizer: React.FC = () => {
 
                         {/* Mode Select */}
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider pl-1">Mode</label>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider pl-1">{t('humanizer.mode')}</label>
                             <div className="relative group">
                                 <select 
                                     value={mode}
                                     onChange={(e) => setMode(e.target.value)}
-                                    className="w-full appearance-none p-3 pl-4 pr-10 bg-white/[0.03] border border-white/10 rounded-xl text-sm text-gray-200 outline-none focus:border-indigo-500/30 focus:bg-white/[0.05] transition-all cursor-pointer shadow-sm hover:border-indigo-500/30"
+                                    className="w-full appearance-none p-3 pl-4 pr-10 bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/10 rounded-xl text-sm text-gray-800 dark:text-gray-200 outline-none focus:border-indigo-500/30 focus:bg-white dark:focus:bg-white/[0.05] transition-all cursor-pointer shadow-sm hover:border-indigo-500/30"
                                 >
                                     {modes.map(m => (
                                         <option key={m} value={m}>{m}</option>
@@ -488,18 +490,18 @@ const Humanizer: React.FC = () => {
 
                         {/* Tone Select */}
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider pl-1">Tone</label>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider pl-1">{t('contentWriter.tone')}</label>
                             <div className="relative group">
                                 <select 
                                     value={tone}
                                     onChange={(e) => setTone(e.target.value)}
-                                    className="w-full appearance-none p-3 pl-4 pr-10 bg-white/[0.03] border border-white/10 rounded-xl text-sm text-gray-200 outline-none focus:border-indigo-500/30 focus:bg-white/[0.05] transition-all cursor-pointer shadow-sm hover:border-indigo-500/30"
+                                    className="w-full appearance-none p-3 pl-4 pr-10 bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/10 rounded-xl text-sm text-gray-800 dark:text-gray-200 outline-none focus:border-indigo-500/30 focus:bg-white dark:focus:bg-white/[0.05] transition-all cursor-pointer shadow-sm hover:border-indigo-500/30"
                                 >
-                                    <option value="Standard">Standard</option>
-                                    <option value="Natural">Natural</option>
-                                    <option value="Professional">Professional</option>
-                                    <option value="Casual">Casual</option>
-                                    <option value="Academic">Academic</option>
+                                    <option value="Standard">{t('humanizer.tones.standard')}</option>
+                                    <option value="Natural">{t('humanizer.tones.natural')}</option>
+                                    <option value="Professional">{t('humanizer.tones.professional')}</option>
+                                    <option value="Casual">{t('humanizer.tones.casual')}</option>
+                                    <option value="Academic">{t('humanizer.tones.academic')}</option>
                                 </select>
                                 <FaChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 text-xs pointer-events-none group-hover:text-indigo-400 transition-colors" />
                             </div>
@@ -513,7 +515,7 @@ const Humanizer: React.FC = () => {
                                 <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform ${rephrase ? 'translate-x-4' : 'translate-x-0'}`} />
                             </div>
                             <input type="checkbox" checked={rephrase} onChange={e => setRephrase(e.target.checked)} className="hidden" />
-                            <span className="text-sm text-gray-400 group-hover:text-gray-200 transition-colors">Rephrase</span>
+                            <span className="text-sm text-gray-400 group-hover:text-gray-200 transition-colors">{t('humanizer.rephrase')}</span>
                         </label>
 
                         <label className="flex items-center gap-2 cursor-pointer group">
@@ -521,7 +523,7 @@ const Humanizer: React.FC = () => {
                                 <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform ${business ? 'translate-x-4' : 'translate-x-0'}`} />
                             </div>
                             <input type="checkbox" checked={business} onChange={e => setBusiness(e.target.checked)} className="hidden" />
-                            <span className="text-sm text-gray-400 group-hover:text-gray-200 transition-colors">Business</span>
+                            <span className="text-sm text-gray-400 group-hover:text-gray-200 transition-colors">{t('humanizer.business')}</span>
                         </label>
 
                         <label className="flex items-center gap-2 cursor-pointer group">
@@ -529,7 +531,7 @@ const Humanizer: React.FC = () => {
                                 <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform ${isMultilingual ? 'translate-x-4' : 'translate-x-0'}`} />
                             </div>
                             <input type="checkbox" checked={isMultilingual} onChange={e => setIsMultilingual(e.target.checked)} className="hidden" />
-                            <span className="text-sm text-gray-400 group-hover:text-gray-200 transition-colors">Multilingual</span>
+                            <span className="text-sm text-gray-400 group-hover:text-gray-200 transition-colors">{t('humanizer.multilingual')}</span>
                         </label>
                     </div>
 
@@ -541,12 +543,12 @@ const Humanizer: React.FC = () => {
                         {isGenerating ? (
                             <>
                                 <FiRefreshCw className="animate-spin" />
-                                <span>Humanizing...</span>
+                                <span>{t('humanizer.humanizing')}</span>
                             </>
                         ) : (
                             <>
                                 <FaMagic className="group-hover:rotate-12 transition-transform" />
-                                <span>Humanize Text</span>
+                                <span>{t('humanizer.humanizeText')}</span>
                             </>
                         )}
                         
@@ -559,17 +561,17 @@ const Humanizer: React.FC = () => {
 
             {/* RIGHT PANEL: OUTPUT */}
             <div className={`${mobileTab === 'editor' ? 'flex' : 'hidden'} lg:flex w-full lg:w-1/2 flex-col relative z-10 h-full`}>
-                <div className="flex-1 bg-[#111] border border-white/10 rounded-2xl flex flex-col shadow-xl overflow-hidden relative">
+                <div className="flex-1 bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl flex flex-col shadow-xl overflow-hidden relative">
                     
                     {/* Output Header */}
-                    <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between bg-white/[0.02] shrink-0">
+                    <div className="px-4 py-3 border-b border-gray-200 dark:border-white/5 flex items-center justify-between bg-gray-50 dark:bg-white/[0.02] shrink-0">
                         <div className="flex items-center gap-2">
                              <div className={`w-2 h-2 rounded-full ${editedContent ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-gray-600'}`}></div>
-                             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Humanized Result</span>
+                             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('humanizer.humanizedResult')}</span>
                         </div>
                         
                         {/* Minimal Toolbar */}
-                        <div className="flex items-center gap-1 bg-white/5 rounded-lg p-0.5 border border-white/5">
+                        <div className="flex items-center gap-1 bg-gray-100 dark:bg-white/5 rounded-lg p-0.5 border border-gray-200 dark:border-white/5">
                             <ToolbarButton icon={<FaBold size={12} />} command="bold" label="" />
                             <ToolbarButton icon={<FaItalic size={12} />} command="italic" label="" />
                             <ToolbarButton icon={<FaUnderline size={12} />} command="underline" label="" />
@@ -580,15 +582,15 @@ const Humanizer: React.FC = () => {
                         <div className="flex items-center gap-2">
                              <button 
                                 onClick={handleCopyContent}
-                                className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                                title="Copy"
+                                className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors"
+                                title={t('common.copy')}
                              >
                                 <FiCopy size={14} />
                              </button>
                              <button 
                                 onClick={handleExportPdf}
-                                className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                                title="Export PDF"
+                                className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors"
+                                title={t('common.export')}
                              >
                                 <FaFilePdf size={14} />
                              </button>
@@ -596,19 +598,19 @@ const Humanizer: React.FC = () => {
                     </div>
 
                     {/* Output Content */}
-                    <div className="flex-1 relative bg-[#0a0a0a] overflow-hidden">
+                    <div className="flex-1 relative bg-white dark:bg-[#0a0a0a] overflow-hidden">
                         {!editedContent && !isGenerating ? (
                             <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 p-8 text-center">
                                 <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-4">
                                     <FaUserCheck size={24} className="text-gray-600" />
                                 </div>
-                                <h3 className="text-lg font-medium text-gray-400 mb-2">Ready to Humanize</h3>
-                                <p className="text-sm text-gray-600 max-w-xs">Paste your AI-generated text on the left and click "Humanize Text" to get started.</p>
+                                <h3 className="text-lg font-medium text-gray-400 mb-2">{t('humanizer.readyToHumanize')}</h3>
+                                <p className="text-sm text-gray-600 max-w-xs">{t('humanizer.readyDescription')}</p>
                             </div>
                         ) : (
                             <div 
                                 ref={editorRef}
-                                className="absolute inset-0 p-6 lg:p-8 overflow-y-auto focus:outline-none prose prose-invert prose-sm lg:prose-base max-w-none scrollbar-thin scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20"
+                                className="absolute inset-0 p-6 lg:p-8 overflow-y-auto focus:outline-none prose dark:prose-invert prose-sm lg:prose-base max-w-none scrollbar-thin scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20"
                                 contentEditable
                                 suppressContentEditableWarning
                                 onInput={(e) => {
@@ -631,17 +633,17 @@ const Humanizer: React.FC = () => {
                         animate={{ x: 0, opacity: 1 }}
                         exit={{ x: '100%', opacity: 0 }}
                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        className="absolute inset-y-0 right-0 z-50 w-full lg:w-80 bg-[#111] border-l border-white/10 shadow-2xl"
+                        className="absolute inset-y-0 right-0 z-50 w-full lg:w-80 bg-white dark:bg-[#111] border-l border-gray-200 dark:border-white/10 shadow-2xl"
                     >
                         <div className="flex flex-col h-full">
                             <div className="p-4 border-b border-white/5 flex items-center justify-center relative">
-                                <h3 className="font-semibold text-white flex items-center gap-2">
+                                <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                                     <FaHistory className="text-indigo-400" />
-                                    History
+                                    {t('common.history')}
                                 </h3>
                                 <button 
                                     onClick={() => setIsHistoryOpen(false)}
-                                    className="absolute right-4 p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg"
+                                    className="absolute right-4 p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg"
                                 >
                                     <FiX />
                                 </button>
@@ -649,17 +651,17 @@ const Humanizer: React.FC = () => {
                             <div className="flex-1 overflow-y-auto p-4 space-y-3">
                                 {contentHistory.length === 0 ? (
                                     <div className="text-center text-gray-500 py-10">
-                                        <p className="text-sm">No history yet.</p>
+                                        <p className="text-sm">{t('contentWriter.noHistoryYet')}</p>
                                     </div>
                                 ) : (
                                     contentHistory.map((item) => (
                                         <div 
                                             key={item.id}
                                             onClick={() => loadFromHistory(item)}
-                                            className="group p-3 rounded-xl bg-white/5 border border-white/5 hover:border-indigo-500/30 hover:bg-white/10 transition-all cursor-pointer relative"
+                                            className="group p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5 hover:border-indigo-500/30 hover:bg-gray-100 dark:hover:bg-white/10 transition-all cursor-pointer relative"
                                         >
                                             <div className="flex justify-between items-start mb-1">
-                                                <h4 className="text-sm font-medium text-gray-200 line-clamp-1 pr-6">{item.prompt || 'Untitled'}</h4>
+                                                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 line-clamp-1 pr-6">{item.prompt || t('contentWriter.historyUntitled')}</h4>
                                                 <button 
                                                     onClick={(e) => handleDeleteHistory(item.id, e)}
                                                     className="text-gray-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 absolute right-2 top-2"

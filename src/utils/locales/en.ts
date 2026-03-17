@@ -24,6 +24,41 @@ export const en = {
     buyMore: "Buy More Responses",
     upgradeToPro: "Upgrade to Pro"
   },
+  matrixEduNavbar: {
+    logoAlt: "MatrixEdu Logo",
+    coinsAlt: "Coins",
+    upgrade: "Upgrade"
+  },
+  appHeader: {
+    logoAlt: "MatrixEdu Logo",
+    careers: "Careers",
+    hiring: "Hiring",
+    features: "Features",
+    toggleDarkMode: "Toggle dark mode"
+  },
+  sidebar: {
+    logoAlt: "MatrixEdu Logo",
+    closeSidebar: "Close sidebar",
+    studySets: "Study Sets",
+    solve: "Solve",
+    paperGrader: "Paper Grader",
+    contentWriter: "Content Writer",
+    humanizer: "Humanizer",
+    studyPlanner: "Study Planner",
+    transactionHistory: "Transaction History",
+    user: "User",
+    lightMode: "Light mode",
+    darkMode: "Dark mode",
+    folders: "Folders",
+    createNewFolder: "Create New Folder",
+    allStudySets: "All Study Sets",
+    noFoldersYet: "No folders yet",
+    createFirstFolder: "Create your first folder to organize your study sets",
+    rename: "Rename",
+    renameFolder: "Rename Folder",
+    deleteFolder: "Delete Folder",
+    deleteFolderMessage: "Are you sure you want to delete \"{{folderName}}\"? This will not delete the study sets inside it."
+  },
 
   // Common UI
   common: {
@@ -64,6 +99,7 @@ export const en = {
     print: "Print",
     export: "Export",
     import: "Import",
+    history: "History",
     notifications: 'Notifications',
     noNotifications: 'No notifications',
     allCaughtUp: 'You\'re all caught up!'
@@ -496,7 +532,134 @@ export const en = {
     subtitle: "Revolutionizing Education Through AI",
     description: "MatrixEdu is at the forefront of educational innovation, combining artificial intelligence with proven learning methodologies to create personalized, effective, and engaging educational experiences.",
     mission: "Our mission is to democratize access to high-quality education by leveraging AI technology to provide personalized learning experiences for students worldwide.",
-    vision: "We envision a world where every student has access to a personal AI tutor that understands their unique learning style and helps them achieve their academic goals."
+    vision: "We envision a world where every student has access to a personal AI tutor that understands their unique learning style and helps them achieve their academic goals.",
+    badge: "About MatrixEdu",
+    heroDescription: "MatrixEdu is an AI learning workspace that helps students plan, practice, write, and improve faster with one connected platform.",
+    missionTitle: "Our Mission",
+    missionDescription2: "From dashboard organization to solving questions, grading papers, improving writing, humanizing text, and planning study schedules, MatrixEdu is built to support day-to-day student productivity with practical AI tools.",
+    stats: {
+      coreAiTools: "Core AI Tools",
+      unifiedWorkspace: "Unified Workspace"
+    },
+    pillars: {
+      smartStudyFlow: {
+        title: "Smart Study Flow",
+        description: "Connected daily learning tools"
+      },
+      anywhereAccess: {
+        title: "Anywhere Access",
+        description: "Web-first learning workspace"
+      },
+      reliableWorkspace: {
+        title: "Reliable Workspace",
+        description: "Designed for consistent study use"
+      },
+      fasterExecution: {
+        title: "Faster Execution",
+        description: "Move from task to task quickly"
+      }
+    },
+    platformCapabilities: {
+      title: "Platform Capabilities",
+      subtitle: "A comprehensive suite of tools designed to support your academic journey from start to finish.",
+      cards: {
+        dashboard: {
+          title: "Dashboard & Study Sets",
+          description: "Organize your learning materials, access study sets quickly, and keep your progress visible in one central hub."
+        },
+        solve: {
+          title: "Solve Workspace",
+          description: "Work through questions with AI assistance and get clearer explanations when topics become difficult."
+        },
+        paperGrader: {
+          title: "Paper Grader",
+          description: "Review written work and get structured feedback to improve quality, clarity, and overall performance."
+        },
+        contentWriter: {
+          title: "Content Writer",
+          description: "Generate and refine academic writing drafts faster while keeping your ideas organized and on-topic."
+        },
+        humanizer: {
+          title: "Humanizer",
+          description: "Rewrite and improve tone or readability so your writing feels natural and easier to understand."
+        },
+        studyPlanner: {
+          title: "Study Planner",
+          description: "Create practical study plans, structure your sessions, and stay consistent with your daily goals."
+        }
+      }
+    },
+    values: {
+      innovation: {
+        title: "Innovation",
+        description: "Pushing boundaries of what's possible in EdTech."
+      },
+      accessibility: {
+        title: "Accessibility",
+        description: "Making elite guidance available to everyone."
+      },
+      excellence: {
+        title: "Excellence",
+        description: "Setting the highest standards in everything we do."
+      }
+    },
+    cta: {
+      title: "Ready to Study Smarter with MatrixEdu?",
+      subtitle: "Start with your dashboard, use the sidebar tools, and build a stronger study routine in one platform.",
+      button: "Get Started Now"
+    }
+  },
+  pricingPage: {
+    chooseYourPlan: "Choose Your Plan",
+    subtitle: "Unlock the full potential of your AI learning companion with our premium plans.",
+    failedToLoadPlans: "Failed to load subscription plans",
+    unexpectedError: "An unexpected error occurred",
+    errorLoadingPlans: "Error Loading Plans",
+    popular: "POPULAR",
+    month: "month",
+    defaultPlanDescription: "Unlock premium features and accelerate your learning.",
+    coinsIncluded: "{{coins}} Coins included",
+    durationDays: "Duration: {{days}} days",
+    fullAccessToAiTutor: "Full Access to AI Tutor",
+    unlimitedStudySets: "Unlimited Study Sets",
+    processing: "Processing...",
+    subscribeNow: "Subscribe Now",
+    loginToSubscribe: "Log in to Subscribe",
+    whyPro: "Why MatrixEdu Pro?",
+    features: {
+      advancedAiModels: {
+        title: "Advanced AI Models",
+        description: "Access to GPT-4 and Claude 3 Opus for superior reasoning."
+      },
+      prioritySupport: {
+        title: "Priority Support",
+        description: "Get your questions answered faster with our priority queue."
+      },
+      unlimitedHistory: {
+        title: "Unlimited History",
+        description: "Save and search through all your past learning sessions."
+      }
+    },
+    faqTitle: "Frequently Asked Questions",
+    faqSubtitle: "Everything you need to know about our plans.",
+    faq: {
+      cancelAnytime: {
+        question: "Can I cancel my subscription at any time?",
+        answer: "Yes, you can cancel your subscription at any time. Your access will continue until the end of your current billing period."
+      },
+      unusedCoins: {
+        question: "What happens to my unused coins?",
+        answer: "Unused coins roll over to the next month as long as you maintain an active subscription."
+      },
+      studentDiscount: {
+        question: "Do you offer student discounts?",
+        answer: "Yes! We offer special rates for students. Please contact our support team with your valid student ID."
+      },
+      paymentSecurity: {
+        question: "Is my payment information secure?",
+        answer: "Absolutely. We use industry-standard encryption and do not store your credit card details on our servers."
+      }
+    }
   },
 
   // AI Study Tools
@@ -528,6 +691,20 @@ export const en = {
     contentWriter: "Content Writer",
     citationGenerator: "Citation Generator",
     documentSummarizer: "Document Summarizer",
+    humanizer: "Humanizer",
+    workspaceBadge: "AI Powered Workspace",
+    proActive: "Pro Active",
+    creditsLeft: "Credits Left",
+    upgradePro: "Upgrade Pro",
+    toolDescriptions: {
+      uploadHomework: "Instant analysis and help",
+      mistakeChecker: "Grammar and logic check",
+      studyPlanner: "Personalized roadmap",
+      flashcards: "Smart spaced repetition",
+      contentWriter: "AI-assisted writing",
+      humanizer: "Naturalize AI text",
+      documentSummarizer: "Extract key insights"
+    },
     
     // Upload Homework Component
     submitYourQuestion: "Submit Your Question",
@@ -547,14 +724,14 @@ export const en = {
     
     // Upgrade Modal
     upgradeModal: {
-      title: "Unlock Premium Features",
-      notProDescription: "Upgrade to Pro to access all AI-powered study tools and unlimited responses.",
-      limitReachedDescription: "You've reached your monthly response limit. Upgrade to Pro for unlimited access.",
+      title: "Unlock Pro Potential",
+      notProDescription: "Get unlimited access to advanced AI tutors, essay writing, and personalized study plans.",
+      limitReachedDescription: "You've hit your daily limit. Upgrade or wait until tomorrow to continue learning.",
       features: {
-        generousAllowance: "Generous monthly allowance",
-        advancedTutoring: "Advanced AI tutoring",
-        contentGeneration: "Content generation tools",
-        prioritySupport: "Priority support"
+        generousAllowance: "Unlimited AI Responses",
+        advancedTutoring: "Advanced GPT-4o Model Access",
+        contentGeneration: "Personalized Learning Roadmap",
+        prioritySupport: "Priority Processing Speed"
       },
       maybeLaterBtn: "Maybe Later",
       upgradeNowBtn: "Upgrade Now"
@@ -964,6 +1141,26 @@ export const en = {
       conversational: "Conversational",
       persuasive: "Persuasive"
     },
+    creative: "Creative",
+    enthusiastic: "Enthusiastic",
+    historyUntitled: "Untitled",
+    confirmDeleteHistoryItem: "Are you sure you want to delete this history item?",
+    historyItemDeleted: "History item deleted",
+    failedToDeleteHistoryItem: "Failed to delete history item",
+    createTab: "Create",
+    editorTab: "Editor",
+    length: "Length",
+    words: "words",
+    quickStart: "Quick Start",
+    autoFill: "Auto-fill",
+    clickToUse: "Click to use",
+    pasteLinkHere: "Paste link here...",
+    imageUrl: "Image URL...",
+    add: "Add",
+    craftingYourMasterpiece: "Crafting your Masterpiece",
+    aiAnalyzingPatterns: "AI is analyzing patterns...",
+    yourRecentGenerations: "Your recent generations",
+    noHistoryYet: "No history yet",
 
     // Content Writer Component specific
     collegeApplicationEssay: "College Application Essay",
@@ -976,6 +1173,396 @@ export const en = {
     researchPaperOutlinePrompt: "Generate an outline for a research paper on the impact of artificial intelligence in education",
     collegeApplicationTemplate: "Write a compelling college application essay about my passion for computer science and how it has shaped my future goals.",
     researchPaperTemplate: "Generate an outline for a research paper on the impact of artificial intelligence in education."
+  },
+  studyPlannerPage: {
+    roadmapHistory: "Roadmap History",
+    noHistory: "No history yet",
+    noHistoryDescription: "Generate your first AI roadmap to see it here.",
+    untitledRoadmap: "Untitled Roadmap"
+  },
+  transactionHistoryPage: {
+    title: "Transaction History",
+    failedToLoad: "Failed to load transaction history",
+    unexpectedError: "An unexpected error occurred",
+    couldNotLoad: "Could not load history",
+    tryAgain: "Try Again",
+    noTransactions: "No transactions found",
+    noTransactionsDescription: "You haven't made any purchases yet.",
+    transactionFallback: "Transaction",
+    notAvailable: "N/A",
+    coinsAmount: "{{amount}} Coins",
+    columns: {
+      description: "Description",
+      dateTime: "Date & Time",
+      amount: "Amount",
+      type: "Type"
+    }
+  },
+  solvePage: {
+    newChat: "New Chat",
+    history: "History",
+    whatDoYouWantToSolve: "What do you want to solve?",
+    attachment: "Attachment",
+    invalidFileType: "Please select a valid file (Image (no GIF), PDF, DOC, DOCX, TXT, XLSX, or CSV)",
+    uploadingFile: "Uploading file...",
+    processingPdf: "Processing PDF...",
+    convertingPagesToImages: "Converting {{pages}} pages to images...",
+    convertingPage: "Converting page {{page}} of {{total}}...",
+    pdfConversionCompleted: "PDF conversion completed!",
+    errorConvertingPdf: "Error converting PDF",
+    solutionFileName: "solution.pdf",
+    processingErrorMessage: "Sorry, I encountered an error while processing your request. Please try again.",
+    dragDropUpload: "Drag & drop or click to add an image, pdf, docs, xlsx, etc.",
+    attachedFile: "Attached: {{name}}",
+    typeYourQuestionHere: "Type your question here...",
+    askFollowUpQuestion: "Ask a follow-up question...",
+    copyToClipboard: "Copy to clipboard",
+    copy: "Copy",
+    exportAsPdf: "Export as PDF",
+    exportPdf: "Export PDF",
+    downloadFile: "Download File",
+    solveHistory: "Solve History",
+    untitledChat: "Untitled Chat",
+    viewConversation: "View conversation",
+    subjects: {
+      psychology: "Psychology",
+      physics: "Physics",
+      biology: "Biology",
+      math: "Math",
+      general: "General",
+      chemistry: "Chemistry",
+      language: "Language",
+      history: "History",
+      economics: "Economics"
+    }
+  },
+  matrixDashboard: {
+    heroTitle: "Hey {{name}}, what do you wanna master?",
+    heroSubtitle: "Upload anything and get interactive notes, flashcards, quizzes, and more",
+    untitledStudySet: "Untitled Study Set",
+    studySetCard: {
+      unfamiliar: "Unfamiliar",
+      learning: "Learning",
+      mastered: "Mastered",
+      moveToFolder: "Move to Folder",
+      pathToMastery: "Your path to mastery",
+      renameStudySet: "Rename Study Set",
+      deleteStudySet: "Delete Study Set",
+      deleteStudySetMessage: "Are you sure you want to delete \"{{title}}\"? This action cannot be undone."
+    },
+    actionCards: {
+      upload: {
+        title: "Upload",
+        description: "Image, file, audio, video"
+      },
+      paste: {
+        title: "Paste",
+        description: "YouTube, website, text"
+      },
+      record: {
+        title: "Record",
+        description: "Record live lecture"
+      }
+    },
+    modals: {
+      rename: {
+        defaultTitle: "Rename",
+        nameLabel: "Name",
+        saveChanges: "Save Changes"
+      },
+      upload: {
+        title: "Please upload your file",
+        subtitle: "We will turn your file into insane study material",
+        maxFilesError: "You can upload up to 5 files maximum.",
+        singleNonImageError: "You can only upload 1 non-image file at a time.",
+        mixedFileTypeError: "You cannot mix images with other file types when uploading multiple files.",
+        signInError: "Please sign in to upload files.",
+        pdfDetected: "PDF Detected",
+        processPdf: "Process PDF",
+        uploadFailed: "Upload Failed. Try Again.",
+        clickOrDrag: "Click to upload or drag and drop up to 5 files",
+        supportedFileTypes: "Image, PDF, Word, PowerPoint, Audio, or Video files",
+        uploadComplete: "Upload Complete",
+        uploading: "Uploading...",
+        file: "file",
+        pdfOptions: {
+          includeImagesTitle: "Include Images (AI Vision)",
+          includeImagesDescription: "Best for slides/diagrams. Cost: 2 coins/page.",
+          ocrTitle: "OCR",
+          ocrDescription: "Best for scanned docs. Cost: 1 coin/page.",
+          extractTextTitle: "Extract Text",
+          extractTextDescription: "Extract text only. Standard document processing."
+        }
+      },
+      paste: {
+        signInError: "Please sign in.",
+        title: "Add Content",
+        subtitle: "Enter a URL or paste text to create your study set",
+        enterUrlLabel: "Enter a YouTube/Website URL",
+        urlPlaceholder: "https://youtu.be/...",
+        or: "or",
+        copyPasteLabel: "Copy and paste text to add as content",
+        notesPlaceholder: "Paste your notes here"
+      },
+      record: {
+        title: "Record Audio",
+        subtitle: "Record your lecture, notes, or study material",
+        microphoneAccessError: "Could not access microphone.",
+        uploadFailed: "Failed to upload recording.",
+        recording: "Recording...",
+        readyToRecord: "Ready to Record",
+        clickMic: "Click the microphone to start recording",
+        recordingComplete: "Recording Complete",
+        discardAndRecordAgain: "Discard and Record Again"
+      },
+      methodSelection: {
+        title: "What would you like to include?",
+        subtitle: "Choose all the methods you want included in your study set:",
+        languageEnglish: "English",
+        generate: "Generate"
+      },
+      createFolder: {
+        folderName: "Folder Name",
+        placeholder: "e.g. Biology 101",
+        colorCode: "Color Code",
+        createButton: "Create Folder"
+      },
+      moveDocument: {
+        title: "Move \"{{documentTitle}}\"",
+        subtitle: "Select a folder to move this document to",
+        document: "Document",
+        defaultLocation: "Default location",
+        itemsCount: "{{count}} items",
+        moveButton: "Move Document"
+      }
+    }
+  },
+  studyMaterialPage: {
+    addMethod: "ADD METHOD",
+    studyMaterial: "Study Material",
+    studyTimer: "Study Timer",
+    addToChat: "Add to Chat",
+    methods: {
+      notes: "Notes",
+      multipleChoice: "Multiple Choice",
+      flashcards: "Flashcards",
+      podcast: "Podcast",
+      speechToText: "Speech to Text",
+      mindmap: "Mindmap",
+      fillInTheBlanks: "Fill in the Blanks",
+      writtenTest: "Written Test",
+      tutorLesson: "Tutor Lesson",
+      content: "Content"
+    },
+    methodLabels: {
+      notes: "Notes",
+      multipleChoice: "Multiple Choice",
+      flashcards: "Flashcards"
+    }
+  },
+  methodSelection: {
+    customInstructionsOptional: "Custom Instructions (optional)",
+    customInstructionsPlaceholderDefinitions: "Focus on definitions, include more diagrams...",
+    customInstructionsPlaceholderChapter: "Focus on chapter 5, include more examples...",
+    clearSelection: "Clear Selection",
+    done: "Done",
+    numberOfQuestions: "Number of Questions",
+    numberOfCards: "Number of Cards",
+    difficultyLevel: "Difficulty Level",
+    auto: "Auto",
+    smart: "Smart",
+    few: "Few",
+    standard: "Standard",
+    many: "Many",
+    easy: "Easy",
+    medium: "Medium",
+    hard: "Hard",
+    speakers: "Speakers",
+    random: "Random",
+    speaker1: "Speaker 1",
+    speaker2: "Speaker 2",
+    podcastLength: "Podcast Length",
+    short: "Short",
+    long: "Long",
+    personality: "Personality",
+    default: "Default",
+    sassy: "Sassy",
+    annoyed: "Annoyed",
+    angry: "Angry",
+    gaslighter: "Gaslighter",
+    corny: "Corny",
+    uploadAudioOrDocument: "Upload Audio or Document",
+    clickOrDragUpload: "Click or Drag to Upload Audio/File",
+    supportedFormats: "Supports MP3, WAV, PDF, DOCX",
+    processing: "Processing...",
+    extractText: "Extract Text",
+    extractedTextPreview: "Extracted text preview: This is a simulation of the extracted text from {{name}}",
+    clear: "Clear",
+    mindmapDepth: "Mindmap Depth",
+    simple: "Simple",
+    detailed: "Detailed",
+    complex: "Complex",
+    reset: "Reset",
+    newStudySet: "New Study Set",
+    insufficientBalance: "Insufficient balance",
+    failedToInitiateGeneration: "Failed to initiate generation. Please try again.",
+    orderSummary: "Order Summary",
+    reviewSelection: "Review your selection and estimated cost.",
+    sourceMaterial: "Source Material",
+    pdfPages: "PDF ({{count}} pages)",
+    pdfOcrPages: "PDF (OCR) ({{count}} pages)",
+    image: "Image",
+    audioVideoMins: "Audio/Video ({{count}} mins)",
+    textOrUrl: "Text / URL",
+    totalCost: "Total Cost",
+    insufficientBalanceNeedMore: "Insufficient balance. You need {{count}} more coins.",
+    generating: "Generating...",
+    payAndGenerate: "Pay & Generate",
+    configurationComingSoon: "Configuration for this method is coming soon.",
+    whatToInclude: "What would you like to include?",
+    chooseMethods: "Choose all the methods you want included in your study set:",
+    generatingDescription: "We're crafting your personalized study materials. This process takes about 3 minutes to ensure high quality.",
+    methodLabels: {
+      podcast: "Podcast",
+      tutorLesson: "Tutor Lesson",
+      writtenTests: "Written Tests",
+      fillBlanks: "Fill in the Blanks",
+      speechToText: "Speech to Text",
+      mindmap: "Mindmap"
+    },
+    modalTitles: {
+      customize: "Customize",
+      customizeNotes: "Customize Notes",
+      customizeMultipleChoice: "Customize Multiple Choice",
+      customizeFlashcards: "Customize Flashcards",
+      chooseHosts: "Choose Your Hosts",
+      speechToText: "Speech to Text",
+      customizeMindmap: "Customize Mindmap"
+    },
+    modalSubtitles: {
+      notes: "Add custom instructions for generation",
+      multipleChoice: "Adjust the number and difficulty of questions",
+      flashcards: "Adjust the number and difficulty of questions",
+      podcast: "Select speakers and podcast length",
+      speechToText: "Upload an audio file or document to extract text",
+      mindmap: "Adjust mindmap complexity and style"
+    },
+    loading: {
+      initializing: "Initializing...",
+      analyzingFiles: "Analyzing your files...",
+      generatingNotes: "Generating comprehensive notes...",
+      creatingQuestions: "Creating challenging questions...",
+      formulatingFlashcards: "Formulating flashcards...",
+      polishingStudySet: "Polishing your study set...",
+      almostThere: "Almost there...",
+      highTraffic: "Sometimes taking longer due to high traffic, please don't leave the page.",
+      longerThanExpected: "Taking longer than expected...",
+      waitLonger: "Please wait a little longer..."
+    }
+  },
+  addMethodModal: {
+    addStudyMethod: "Add Study Method",
+    summary: "Summary",
+    selectAdditionalMethods: "Select additional methods to generate for this study set",
+    reviewSelection: "Review your selection",
+    added: "Added",
+    insufficientBalance: "Insufficient balance",
+    missingUserOrDocumentText: "Missing user or document text",
+    failedToGenerateMethods: "Failed to generate methods. Please try again.",
+    selectedMethods: "Selected Methods",
+    oneCoin: "1 Coin",
+    totalCost: "Total Cost",
+    coins: "Coins",
+    yourBalance: "Your Balance",
+    generate: "Generate",
+    methods: {
+      notes: "Notes",
+      multipleChoice: "Multiple Choice",
+      flashcards: "Flashcards",
+      podcast: "Podcast",
+      tutorLesson: "Tutor Lesson",
+      writtenTests: "Written Tests",
+      fillBlanks: "Fill in the Blanks"
+    }
+  },
+  studyRightPanel: {
+    defaultChatTitle: "Study Set Chat",
+    defaultSubject: "General",
+    chatError: "Sorry, I encountered an error. Please try again.",
+    askAboutStudySet: "Ask me anything about this study set...",
+    askAnything: "Ask me anything...",
+    chatTab: "Chat",
+    contentTab: "Content",
+    notesTab: "Notes"
+  },
+  studyContent: {
+    audioContent: "Audio Content",
+    audioNotSupported: "Your browser does not support the audio element.",
+    videoNotSupported: "Your browser does not support the video tag.",
+    officePreviewTitle: "Office Document Preview",
+    openOriginalFile: "Open Original File",
+    noContentAvailable: "No content available to display.",
+    originalFile: "Original File",
+    extractedText: "Extracted Text"
+  },
+  humanizer: {
+    title: "Humanizer",
+    inputTab: "Input",
+    resultTab: "Result",
+    sourceContent: "Source Content",
+    inputPlaceholder: "Paste the AI-generated text you want to humanize here...",
+    detector: "Detector",
+    mode: "Mode",
+    rephrase: "Rephrase",
+    business: "Business",
+    multilingual: "Multilingual",
+    humanizing: "Humanizing...",
+    humanizeText: "Humanize Text",
+    humanizedResult: "Humanized Result",
+    readyToHumanize: "Ready to Humanize",
+    readyDescription: "Paste your AI-generated text on the left and click \"Humanize Text\" to get started.",
+    characterLimitExceeded: "Character limit exceeded (max 10,000)",
+    failedToHumanize: "Failed to humanize content. Please try again.",
+    tones: {
+      standard: "Standard",
+      natural: "Natural",
+      professional: "Professional",
+      casual: "Casual",
+      academic: "Academic"
+    }
+  },
+  gradePage: {
+    backToDashboard: "Back to Dashboard",
+    whatDoYouWantToGrade: "What do you want to grade?",
+    subtitle: "Grade your paper based on your rubric",
+    upload: "Upload",
+    uploadFormats: "PDF, Word documents",
+    paste: "Paste",
+    pasteDescription: "Copy and paste text",
+    yourGrades: "Your grades",
+    noGradesYet: "No grades yet. Upload or paste text to start.",
+    gradingReport: "Grading Report",
+    viewDetailedReport: "View detailed grading report and feedback...",
+    viewDetails: "View Details",
+    rubric: "Rubric",
+    copyToClipboard: "Copy to clipboard",
+    exportAsPdf: "Export as PDF",
+    exportPdf: "Export PDF",
+    uploadPaper: "Upload Paper",
+    pastePaper: "Paste Paper",
+    uploadRubric: "Upload Rubric",
+    uploadRubricDescription: "Upload a grading rubric to help the AI grade your paper accurately.",
+    clickToUploadRubric: "Click to upload rubric",
+    rubricFormats: "PDF or Word (Optional)",
+    skipRubric: "Skip Rubric",
+    uploadPaperDescription: "Upload the student paper or answer sheet you want to grade.",
+    clickToUploadPaper: "Click to upload paper",
+    paperFormats: "PDF, Word, or Image",
+    gradePaper: "Grade Paper",
+    pastePaperContent: "Paste Paper Content",
+    pastePaperContentDescription: "Paste the text content of the paper you want to grade.",
+    pasteYourTextHere: "Paste your text here...",
+    downloadFile: "Download File"
   },
 
   // Chat Bot
@@ -1065,12 +1652,41 @@ export const en = {
 
   // Blog
   blog: {
-    title: "Blog & Insights",
-    subtitle: "Stay updated with the latest trends in education and technology",
+    title: "Latest Insights & Updates",
+    subtitle: "Stay ahead with expert advice, educational trends, and MatrixEdu platform updates.",
     searchPlaceholder: "Search articles...",
     readMore: "Read More",
+    readArticle: "Read Article",
     categories: "Categories",
+    category: "Category",
+    allCategories: "All Categories",
+    popularTags: "Popular Tags",
     tags: "Tags",
+    quickFilters: "Quick Filters",
+    clearAll: "Clear All",
+    latestArticles: "Latest Articles",
+    featuredArticles: "📌 Featured Articles",
+    featured: "Featured",
+    activeFilters: "Active filters:",
+    resultsFor: "Results for",
+    showing: "Showing",
+    articleSingular: "article",
+    articlesPlural: "articles",
+    sortBy: "Sort By",
+    sortNewest: "Newest First",
+    sortOldest: "Oldest First",
+    sortPopular: "Most Popular",
+    sortTitle: "Title",
+    author: "Author",
+    anonymous: "Anonymous",
+    readTime: "Read time",
+    read: "Read",
+    date: "Date",
+    published: "Published",
+    minRead: "min read",
+    saveForLater: "Save for Later",
+    like: "Like",
+    share: "Share",
     recentPosts: "Recent Posts",
     relatedPosts: "Related Posts"
   },
@@ -1183,6 +1799,106 @@ export const en = {
     notifications: "Notifications",
     viewAll: "View All"
   },
+  dashboardPro: {
+    title: "Pro Dashboard",
+    proMember: "Pro Member",
+    upgradeDescription: "Upgrade to Pro to access your dashboard",
+    upgradeToPro: "Upgrade to Pro",
+    welcomeBack: "Welcome back, {{name}}!",
+    aiResponseUsage: "AI Response Usage",
+    responsesLeft: "responses left",
+    usedLabel: "Used: {{count}}",
+    totalLabel: "Total: {{count}}",
+    used: "Used",
+    remaining: "Remaining",
+    total: "Total",
+    daysLeft: "Days Left",
+    responsesLeftTitle: "Responses Left",
+    ofTotal: "of {{count}} total",
+    aiQueries: "AI Queries",
+    thisMonth: "This month",
+    transactions: "Transactions",
+    allTime: "All time",
+    untilRenewal: "Until renewal",
+    subscriptionStatus: "Subscription Status",
+    plan: "Plan",
+    proPlan: "Pro Plan",
+    status: "Status",
+    validUntil: "Valid Until",
+    autoRenewal: "Auto Renewal",
+    active: "Active",
+    expired: "Expired",
+    recentActivity: "Recent Activity",
+    all: "All",
+    responsesCount: "{{count}} responses",
+    remainingCount: "{{count}} remaining",
+    noActivityFound: "No activity found",
+    showingEntries: "Showing {{start}} to {{end}} of {{total}} entries",
+    transactionHistory: "Transaction History",
+    subscription: "Subscription",
+    coinsAmount: "{{count}} Coins",
+    aiResponseHistory: "AI Response History",
+    query: "Query",
+    noAiResponsesFound: "No AI responses found",
+    usageLogs: "Usage Logs",
+    responsesUsed: "responses used",
+    impact: "Impact",
+    noUsageLogsFound: "No usage logs found",
+    startUsingAiFeatures: "Start using AI features to see your activity here",
+    transactionDetails: "Transaction Details",
+    aiResponseDetails: "AI Response Details",
+    usageLogDetails: "Usage Log Details",
+    subscriptionPurchase: "Subscription Purchase",
+    transactionId: "Transaction ID",
+    dateTime: "Date & Time",
+    paymentMethod: "Payment Method",
+    creditCard: "Credit Card",
+    subscriptionPeriod: "Subscription Period",
+    daysCount: "{{count}} days",
+    planFeatures: "Plan Features",
+    unlimited: "Unlimited",
+    aiResponses: "AI Responses",
+    daysAccess: "Days Access",
+    totalCost: "Total Cost",
+    responsesUsedCount: "{{count}} responses used",
+    responseId: "Response ID",
+    queryInformation: "Query Information",
+    mode: "Mode",
+    fileName: "File Name",
+    fileSize: "File Size",
+    fileType: "File Type",
+    inputText: "Input Text",
+    subject: "Subject",
+    difficulty: "Difficulty",
+    additionalData: "Additional Data",
+    usageActivity: "Usage Activity",
+    remainingAfter: "Remaining After",
+    logId: "Log ID",
+    activityDescription: "Activity Description",
+    responseUsageImpact: "Response Usage Impact",
+    before: "Before",
+    after: "After",
+    tabs: {
+      overview: "Overview",
+      transactions: "Transactions",
+      aiResponses: "AI Responses",
+      usageLogs: "Usage Logs"
+    },
+    responseTypes: {
+      mistakeChecker: "Mistake Checker",
+      documentSummary: "Document Summary",
+      contentGeneration: "Content Generation",
+      flashcardGeneration: "Flashcard Generation",
+      homeworkSolution: "Homework Solution",
+      aiTutorChat: "AI Tutor Chat",
+      citationGenerator: "Citation Generator",
+      studyPlanner: "Study Planner",
+      textAnalyzer: "Text Analyzer",
+      languageTranslator: "Language Translator",
+      mathSolver: "Math Solver",
+      scienceAssistant: "Science Assistant"
+    }
+  },
 
   // Footer
   footer: {
@@ -1209,6 +1925,16 @@ export const en = {
       email: "info@matrixaiglobal.com",
       address: "Hong Kong"
     },
+    contactAddresses: {
+      hongKongLine1: "Unit G1, 35/F, Legend Tower",
+      hongKongLine2: "7 Shing Yip Street, Kwun Tong, KLN",
+      shenzhenLine1: "Qianhai Guiwan 3rd Road, Shenzhen-Hong Kong Youth Innovation Hub",
+      shenzhenLine2: "HKU Youth Innovation Academy, 4/F"
+    },
+    contactPhones: {
+      hongKong: "+852 66359879",
+      shenzhen: "+86 13266989879"
+    },
     
     // Resource links
     resourceLinks: {
@@ -1217,7 +1943,8 @@ export const en = {
       privacyPolicy: "Privacy Policy",
       termsOfService: "Terms of Service",
       faq: "FAQ"
-    }
+    },
+    copyright: "© 2024 MatrixEdu. All rights reserved."
   },
 
   // Error Messages
@@ -1415,6 +2142,144 @@ export const en = {
   processing: "Processing",
   error: "Error",
   pending: "Pending",
+  reflectHero: {
+    badge: "Study smarter using AI",
+    title: "Think better with MatrixEdu",
+    subtitle: "Your all-in-one AI study companion. Never miss a concept, deadline, or grade.",
+    mockupLabel: "MatrixEdu"
+  },
+  howItWorks: {
+    title: "How It Works",
+    subtitle: "Master any subject in minutes with our comprehensive process.",
+    videoSimulation: "Video Simulation",
+    steps: {
+      0: {
+        title: "Upload or Paste Content",
+        description: "Whether it is your class notes, a YouTube video, or a webpage. Simply upload your materials and let our AI analyze them instantly.",
+        videoPlaceholder: "Upload Demo Video"
+      },
+      1: {
+        title: "Instant Flashcards",
+        description: "Turn hours of study into minutes. Our AI automatically generates comprehensive flashcards from your study materials to help you memorize key concepts.",
+        videoPlaceholder: "Flashcards Demo Video"
+      },
+      2: {
+        title: "Smart Quizzes",
+        description: "Test your knowledge with adaptive quizzes. Get detailed AI explanations for every answer to understand where you went wrong and how to improve.",
+        videoPlaceholder: "Quiz Demo Video"
+      },
+      3: {
+        title: "Written Tests",
+        description: "Practice for written exams with AI-graded essay questions. Receive instant feedback on your writing style, accuracy, and completeness.",
+        videoPlaceholder: "Written Test Demo Video"
+      },
+      4: {
+        title: "Interactive Mind Maps",
+        description: "Visualize connections between concepts with auto-generated mind maps. Perfect for understanding complex topics and structural relationships.",
+        videoPlaceholder: "Mind Map Demo Video"
+      },
+      5: {
+        title: "Smart Study Planner",
+        description: "Get a personalized study schedule tailored to your exam date and learning pace. Stay organized and cover every topic efficiently.",
+        videoPlaceholder: "Planner Demo Video"
+      },
+      6: {
+        title: "AI Note Generation",
+        description: "Instantly convert long lectures or documents into concise, structured study notes. Focus on learning, not just transcribing.",
+        videoPlaceholder: "Notes Demo Video"
+      }
+    }
+  },
+  videoDemo: {
+    title: "See It In Action",
+    subtitle: "Experience the future of learning with our AI-powered platform.",
+    demoUrl: "edusmart.ai/demo",
+    interactiveTitle: "Interactive Demo",
+    clickToStart: "Click to start the tour"
+  },
+  matrixEduLanding: {
+    workspace: {
+      title: "Unlock Your MatrixEdu Workspace",
+      subtitle: "From dashboard to sidebar tools, manage study sets, solve questions, and write better content in one place.",
+      tryFree: "Try MatrixEdu Free",
+      cards: {
+        dashboard: {
+          title: "Dashboard & Study Sets",
+          description: "Keep your learning organized with study sets, usage insights, and fast access to your active learning workspace.",
+          action: "Open Dashboard"
+        },
+        aiTools: {
+          title: "Sidebar AI Tools",
+          description: "Use Solve, Paper Grader, Content Writer, Humanizer, and Study Planner directly from the sidebar workflow.",
+          action: "Use AI Tools"
+        },
+        practiceFlow: {
+          title: "Smarter Practice Flow",
+          description: "Move from question solving to writing and planning with one connected system that supports daily study progress.",
+          action: "Start Learning"
+        }
+      }
+    },
+    comparison: {
+      title: "Why MatrixEdu Wins",
+      subtitle: "Stop studying harder. Start studying smarter with the power of AI.",
+      versus: "VS",
+      cta: "Join 1,000,000+ Students Today",
+      disclaimer: "No credit card required • Free plan available",
+      oldWay: {
+        title: "The Old Way",
+        items: {
+          0: "Hours of passive reading and highlighting",
+          1: "Manually creating flashcards (boring!)",
+          2: "No feedback on written answers",
+          3: "Scattered notes across notebooks"
+        }
+      },
+      matrixEduWay: {
+        title: "The MatrixEdu Way",
+        recommended: "RECOMMENDED",
+        items: {
+          0: "Instant active recall materials",
+          1: "AI-generated flashcards in seconds",
+          2: "Real-time grading & explanations",
+          3: "All materials synced & organized"
+        }
+      }
+    },
+    faq: {
+      title: "FAQs",
+      items: {
+        0: {
+          question: "What can I do on MatrixEdu?",
+          answer: "MatrixEdu gives you one study workspace with Dashboard, Solve, Paper Grader, Content Writer, Humanizer, and Study Planner tools for daily learning tasks."
+        },
+        1: {
+          question: "What is available in the dashboard?",
+          answer: "The dashboard is your main hub for study sets and progress tracking, so you can continue where you left off and keep your learning organized."
+        },
+        2: {
+          question: "How does the sidebar help me study faster?",
+          answer: "The sidebar gives direct access to core tools, so you can switch between solving, grading, writing, and planning without losing context."
+        },
+        3: {
+          question: "Can I upload materials and get AI help?",
+          answer: "Yes. You can work with your study material and use AI features to generate explanations, improve writing, and build better study sessions."
+        },
+        4: {
+          question: "Do you offer free and paid plans?",
+          answer: "Yes. You can start with the free experience and upgrade when you need higher limits and premium capabilities."
+        },
+        5: {
+          question: "How can I manage my account and payments?",
+          answer: "Use your profile and transaction history areas to review account details and billing activity."
+        },
+        6: {
+          question: "How do I contact support?",
+          answer: "You can reach the team through the platform contact channels for account, billing, or product-related help."
+        }
+      }
+    }
+  },
 
   // Database
   database: {

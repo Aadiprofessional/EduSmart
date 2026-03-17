@@ -9,12 +9,13 @@ interface LanguageOption {
   code: Language;
   name: string;
   nativeName: string;
+  shortLabel: string;
 }
 
 const languageOptions: LanguageOption[] = [
-  { code: 'en', name: 'English', nativeName: 'English' },
-  { code: 'zh-CN', name: 'Simplified Chinese', nativeName: '简体中文' },
-  { code: 'zh-TW', name: 'Traditional Chinese', nativeName: '繁體中文' },
+  { code: 'en', name: 'English', nativeName: 'English', shortLabel: 'EN' },
+  { code: 'zh-CN', name: 'Simplified Chinese', nativeName: '简体中文', shortLabel: '简中' },
+  { code: 'zh-TW', name: 'Traditional Chinese', nativeName: '繁體中文', shortLabel: '繁中' },
 ];
 
 const LanguageSelector: React.FC = () => {
@@ -113,7 +114,6 @@ const LanguageSelector: React.FC = () => {
   }, [isOpen, isMobile]);
 
   const handleLanguageChange = (langCode: Language) => {
-    console.log('Language change clicked:', langCode);
     setLanguage(langCode);
     setIsOpen(false);
   };
@@ -121,13 +121,12 @@ const LanguageSelector: React.FC = () => {
   const handleToggle = (event: React.MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
-    console.log('Language toggle clicked, current state:', isOpen);
     setIsOpen(!isOpen);
   };
 
   const dropdownContent = isOpen ? (
     <div
-      className={`language-dropdown fixed bg-black/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 py-3 ${
+      className={`language-dropdown fixed bg-[#050505]/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/15 py-3 ${
         isMobile ? 'w-72' : 'w-56'
       }`}
       style={{
@@ -143,37 +142,45 @@ const LanguageSelector: React.FC = () => {
       }`}>
         {t('languageSelector.title')}
       </div>
-      <div className="py-2">
+      <div className="py-2 px-2">
         {languageOptions.map((option) => (
           <button
             key={option.code}
             onMouseDown={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              console.log('Language option mousedown:', option.code);
             }}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              console.log('Language option clicked:', option.code);
               handleLanguageChange(option.code);
             }}
-            className={`w-full flex items-center justify-between px-4 py-3 text-sm hover:bg-white/5 transition-all duration-200 rounded-xl mx-2 ${
+            className={`w-full flex items-center justify-between px-4 py-3 text-sm hover:bg-white/5 transition-all duration-200 rounded-xl ${
               language === option.code
-                ? 'text-indigo-400 bg-white/5'
+                ? 'text-indigo-300 bg-indigo-500/10 border border-indigo-500/20'
                 : 'text-gray-300 hover:text-white'
             } ${isMobile ? 'py-4' : ''}`} // Larger touch targets on mobile
           >
-            <div className="flex flex-col items-start">
-              <span className={`font-medium ${isMobile ? 'text-base' : 'text-sm'}`}>
-                {option.nativeName}
+            <div className="flex items-center gap-3">
+              <span className={`inline-flex items-center justify-center rounded-md border px-2 py-1 font-semibold tracking-wide ${
+                isMobile ? 'text-xs' : 'text-[10px]'
+              } ${
+                language === option.code
+                  ? 'border-indigo-400/40 bg-indigo-500/20 text-indigo-200'
+                  : 'border-white/20 bg-white/5 text-gray-300'
+              }`}>
+                {option.shortLabel}
               </span>
-              {/* Only show English name if it's different from native name */}
-              {option.nativeName !== option.name && (
-                <span className={`text-gray-500 ${isMobile ? 'text-sm' : 'text-xs'}`}>
-                  {option.name}
+              <div className="flex flex-col items-start">
+                <span className={`font-medium ${isMobile ? 'text-base' : 'text-sm'}`}>
+                  {option.nativeName}
                 </span>
-              )}
+                {option.nativeName !== option.name && (
+                  <span className={`text-gray-500 ${isMobile ? 'text-sm' : 'text-xs'}`}>
+                    {option.name}
+                  </span>
+                )}
+              </div>
             </div>
             {language === option.code && (
               <div className={`bg-indigo-400 rounded-full ${isMobile ? 'w-3 h-3' : 'w-2 h-2'}`} />
@@ -190,27 +197,28 @@ const LanguageSelector: React.FC = () => {
         ref={buttonRef}
         onClick={handleToggle}
         onMouseDown={(e) => {
-          e.stopPropagation(); // Prevent header click handlers
+          e.stopPropagation();
         }}
-        className={`flex items-center space-x-2 text-white hover:text-indigo-400 transition-all duration-200 rounded-lg hover:bg-white/10 ${
-          isMobile 
-            ? 'px-3 py-2.5 text-base' // Larger touch target on mobile
-            : 'px-2 py-1.5 text-sm'
+        className={`group flex items-center gap-2 rounded-full border transition-all duration-200 ${
+          isMobile
+            ? 'px-3 py-2.5 border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/30'
+            : 'px-3 py-1.5 border-white/15 bg-white/[0.04] hover:bg-white/10 hover:border-white/30'
         }`}
+        aria-label={t('languageSelector.title')}
       >
-        <IconComponent icon={AiOutlineGlobal} className={`${isMobile ? 'h-5 w-5' : 'h-4 w-4'}`} />
-        <span className={`font-medium ${isMobile ? 'text-base' : 'text-sm'}`}>
-          {isMobile ? currentLanguage.nativeName.split(' ')[0] : currentLanguage.nativeName}
+        <span className={`inline-flex items-center justify-center rounded-md border border-white/20 bg-white/5 px-2 py-1 font-semibold text-white/90 tracking-wide ${isMobile ? 'text-xs' : 'text-[10px]'}`}>
+          {currentLanguage.shortLabel}
         </span>
+        <span className={`font-medium text-white/80 group-hover:text-white ${isMobile ? 'text-sm' : 'text-xs'}`}>{currentLanguage.nativeName}</span>
+        <IconComponent icon={AiOutlineGlobal} className={`${isMobile ? 'h-4 w-4' : 'h-3.5 w-3.5'} text-indigo-300`} />
         <IconComponent 
           icon={AiOutlineDown} 
-          className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''} ${
+          className={`transition-transform duration-200 text-white/70 ${isOpen ? 'rotate-180' : ''} ${
             isMobile ? 'h-4 w-4' : 'h-3 w-3'
           }`} 
         />
       </button>
 
-      {/* Render dropdown using portal to avoid affecting header layout */}
       {typeof window !== 'undefined' && dropdownContent && createPortal(dropdownContent, document.body)}
     </div>
   );

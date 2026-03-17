@@ -1,9 +1,11 @@
 import React, { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { FaPlay } from 'react-icons/fa';
+import { useLanguage } from '../../utils/LanguageContext';
 
 const VideoDemoScroll: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const { t } = useLanguage();
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -23,10 +25,10 @@ const VideoDemoScroll: React.FC = () => {
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-6xl font-permanent-marker mb-6 text-gray-900 dark:text-white">
-            See It In Action
+            {t('videoDemo.title')}
           </h2>
           <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Experience the future of learning with our AI-powered platform.
+            {t('videoDemo.subtitle')}
           </p>
         </div>
 
@@ -49,7 +51,7 @@ const VideoDemoScroll: React.FC = () => {
                     <div className="w-3 h-3 rounded-full bg-green-500"></div>
                 </div>
                 <div className="mx-auto bg-gray-700/50 px-4 py-1 rounded-full text-xs text-gray-300 font-mono">
-                    edusmart.ai/demo
+                    {t('videoDemo.demoUrl')}
                 </div>
             </div>
 
@@ -72,8 +74,8 @@ const VideoDemoScroll: React.FC = () => {
                         <div className="w-24 h-24 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 cursor-pointer">
                             <FaPlay className="text-white text-3xl ml-2" />
                         </div>
-                        <h3 className="text-3xl font-bold text-white mb-2">Interactive Demo</h3>
-                        <p className="text-gray-400">Click to start the tour</p>
+                        <h3 className="text-3xl font-bold text-white mb-2">{t('videoDemo.interactiveTitle')}</h3>
+                        <p className="text-gray-400">{t('videoDemo.clickToStart')}</p>
                     </div>
 
                     {/* Animated UI Elements simulating the app */}

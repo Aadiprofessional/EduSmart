@@ -1,5 +1,6 @@
 import React from 'react';
 import { FaUpload, FaLink, FaMicrophone } from 'react-icons/fa';
+import { useLanguage } from '../../utils/LanguageContext';
 
 interface ActionCardsProps {
     onUpload: () => void;
@@ -9,26 +10,28 @@ interface ActionCardsProps {
 }
 
 const ActionCards: React.FC<ActionCardsProps> = ({ onUpload, onPaste, onRecord, isCompact = false }) => {
+  const { t } = useLanguage();
+
   return (
     <div className={`grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-4 transition-all duration-300 ${isCompact ? 'mb-4' : 'mb-8 md:mb-16'}`}>
         <ActionCard 
            icon={<FaUpload />} 
-           title="Upload" 
-           description="Image, file, audio, video" 
+           title={t('matrixDashboard.actionCards.upload.title')} 
+           description={t('matrixDashboard.actionCards.upload.description')} 
            onClick={onUpload}
            isCompact={isCompact}
         />
         <ActionCard 
            icon={<FaLink />} 
-           title="Paste" 
-           description="YouTube, website, text" 
+           title={t('matrixDashboard.actionCards.paste.title')} 
+           description={t('matrixDashboard.actionCards.paste.description')} 
            onClick={onPaste}
            isCompact={isCompact}
         />
         <ActionCard 
            icon={<FaMicrophone />} 
-           title="Record" 
-           description="Record live lecture" 
+           title={t('matrixDashboard.actionCards.record.title')} 
+           description={t('matrixDashboard.actionCards.record.description')} 
            onClick={onRecord}
            isCompact={isCompact}
         />

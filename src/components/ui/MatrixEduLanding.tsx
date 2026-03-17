@@ -6,10 +6,12 @@ import HowItWorksScroll from './HowItWorksScroll';
 import VideoDemoScroll from './VideoDemoScroll';
 import { ModelPositionProvider, useModelPosition } from '../../utils/ModelPositionContext';
 import ReflectHero from './ReflectHero';
+import { useLanguage } from '../../utils/LanguageContext';
 
 const MatrixEduLandingContent: React.FC = () => {
   const navigate = useNavigate();
   const { registerComponent, unregisterComponent } = useModelPosition();
+  const { t } = useLanguage();
   // heroRef removed as it is now inside ReflectHero
   const howItWorksRef = useRef<HTMLDivElement>(null);
   const whatYouCanDoRef = useRef<HTMLElement>(null);
@@ -60,6 +62,64 @@ const MatrixEduLandingContent: React.FC = () => {
     setOpenFaqIndex(openFaqIndex === index ? null : index);
   };
 
+  const workspaceCards = [
+    {
+      icon: FaCheckCircle,
+      iconWrapperClass: "w-16 h-16 rounded-2xl bg-green-100 dark:bg-green-500/10 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500",
+      iconClass: "text-green-600 dark:text-green-500 text-3xl",
+      cardClass: "group relative bg-white dark:bg-[#0f0f0f] rounded-[2rem] p-8 hover:-translate-y-2 transition-all duration-500 border border-gray-100 dark:border-white/5 shadow-xl hover:shadow-2xl hover:shadow-green-500/10",
+      overlayClass: "absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500",
+      titleClass: "text-2xl font-bold mb-4 text-gray-900 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors",
+      actionClass: "flex items-center text-green-600 dark:text-green-500 font-bold text-sm",
+      title: t('matrixEduLanding.workspace.cards.dashboard.title'),
+      description: t('matrixEduLanding.workspace.cards.dashboard.description'),
+      action: t('matrixEduLanding.workspace.cards.dashboard.action')
+    },
+    {
+      icon: FaFileAlt,
+      iconWrapperClass: "w-16 h-16 rounded-2xl bg-purple-100 dark:bg-purple-500/10 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500",
+      iconClass: "text-purple-600 dark:text-purple-500 text-3xl",
+      cardClass: "group relative bg-white dark:bg-[#0f0f0f] rounded-[2rem] p-8 hover:-translate-y-2 transition-all duration-500 border border-gray-100 dark:border-white/5 shadow-xl hover:shadow-2xl hover:shadow-purple-500/10",
+      overlayClass: "absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500",
+      titleClass: "text-2xl font-bold mb-4 text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors",
+      actionClass: "flex items-center text-purple-600 dark:text-purple-500 font-bold text-sm",
+      title: t('matrixEduLanding.workspace.cards.aiTools.title'),
+      description: t('matrixEduLanding.workspace.cards.aiTools.description'),
+      action: t('matrixEduLanding.workspace.cards.aiTools.action')
+    },
+    {
+      icon: FaSearch,
+      iconWrapperClass: "w-16 h-16 rounded-2xl bg-blue-100 dark:bg-blue-500/10 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500",
+      iconClass: "text-blue-600 dark:text-blue-500 text-3xl",
+      cardClass: "group relative bg-white dark:bg-[#0f0f0f] rounded-[2rem] p-8 hover:-translate-y-2 transition-all duration-500 border border-gray-100 dark:border-white/5 shadow-xl hover:shadow-2xl hover:shadow-blue-500/10",
+      overlayClass: "absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500",
+      titleClass: "text-2xl font-bold mb-4 text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors",
+      actionClass: "flex items-center text-blue-600 dark:text-blue-500 font-bold text-sm",
+      title: t('matrixEduLanding.workspace.cards.practiceFlow.title'),
+      description: t('matrixEduLanding.workspace.cards.practiceFlow.description'),
+      action: t('matrixEduLanding.workspace.cards.practiceFlow.action')
+    }
+  ];
+
+  const oldWayItems = [
+    t('matrixEduLanding.comparison.oldWay.items.0'),
+    t('matrixEduLanding.comparison.oldWay.items.1'),
+    t('matrixEduLanding.comparison.oldWay.items.2'),
+    t('matrixEduLanding.comparison.oldWay.items.3')
+  ];
+
+  const matrixEduWayItems = [
+    t('matrixEduLanding.comparison.matrixEduWay.items.0'),
+    t('matrixEduLanding.comparison.matrixEduWay.items.1'),
+    t('matrixEduLanding.comparison.matrixEduWay.items.2'),
+    t('matrixEduLanding.comparison.matrixEduWay.items.3')
+  ];
+
+  const faqItems = Array.from({ length: 7 }, (_, index) => ({
+    q: t(`matrixEduLanding.faq.items.${index}.question`),
+    a: t(`matrixEduLanding.faq.items.${index}.answer`)
+  }));
+
   return (
     <div className="min-h-screen bg-white dark:bg-[#050505] text-gray-900 dark:text-white font-sans selection:bg-indigo-500 selection:text-white overflow-x-hidden">
       <ReflectHero />
@@ -76,58 +136,27 @@ const MatrixEduLandingContent: React.FC = () => {
       <section ref={whatYouCanDoRef} className="py-20 md:py-32 bg-gray-50 dark:bg-black relative overflow-hidden">
         <div className="container mx-auto px-4 relative z-10">
              <div className="text-center mb-16 md:mb-24">
-                 <h2 className="text-4xl md:text-6xl font-permanent-marker mb-6 text-gray-900 dark:text-white">Unlock Your MatrixEdu Workspace</h2>
-                 <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">From dashboard to sidebar tools, manage study sets, solve questions, and write better content in one place.</p>
+                 <h2 className="text-4xl md:text-6xl font-permanent-marker mb-6 text-gray-900 dark:text-white">{t('matrixEduLanding.workspace.title')}</h2>
+                 <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">{t('matrixEduLanding.workspace.subtitle')}</p>
              </div>
 
              <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
-                 {/* Card 1 */}
-                 <div className="group relative bg-white dark:bg-[#0f0f0f] rounded-[2rem] p-8 hover:-translate-y-2 transition-all duration-500 border border-gray-100 dark:border-white/5 shadow-xl hover:shadow-2xl hover:shadow-green-500/10">
-                     <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                     <div className="relative z-10">
-                         <div className="w-16 h-16 rounded-2xl bg-green-100 dark:bg-green-500/10 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
-                             <FaCheckCircle className="text-green-600 dark:text-green-500 text-3xl" />
-                         </div>
-                        <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">Dashboard & Study Sets</h3>
-                        <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-6">Keep your learning organized with study sets, usage insights, and fast access to your active learning workspace.</p>
-                         <div className="flex items-center text-green-600 dark:text-green-500 font-bold text-sm">
-                            <span>Open Dashboard</span>
-                             <FaPlay className="ml-2 text-xs group-hover:translate-x-1 transition-transform" />
-                         </div>
-                     </div>
-                 </div>
-
-                 {/* Card 2 */}
-                 <div className="group relative bg-white dark:bg-[#0f0f0f] rounded-[2rem] p-8 hover:-translate-y-2 transition-all duration-500 border border-gray-100 dark:border-white/5 shadow-xl hover:shadow-2xl hover:shadow-purple-500/10">
-                     <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                     <div className="relative z-10">
-                         <div className="w-16 h-16 rounded-2xl bg-purple-100 dark:bg-purple-500/10 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
-                             <FaFileAlt className="text-purple-600 dark:text-purple-500 text-3xl" />
-                         </div>
-                        <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">Sidebar AI Tools</h3>
-                        <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-6">Use Solve, Paper Grader, Content Writer, Humanizer, and Study Planner directly from the sidebar workflow.</p>
-                         <div className="flex items-center text-purple-600 dark:text-purple-500 font-bold text-sm">
-                            <span>Use AI Tools</span>
-                             <FaPlay className="ml-2 text-xs group-hover:translate-x-1 transition-transform" />
-                         </div>
-                     </div>
-                 </div>
-
-                 {/* Card 3 */}
-                 <div className="group relative bg-white dark:bg-[#0f0f0f] rounded-[2rem] p-8 hover:-translate-y-2 transition-all duration-500 border border-gray-100 dark:border-white/5 shadow-xl hover:shadow-2xl hover:shadow-blue-500/10">
-                     <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                     <div className="relative z-10">
-                         <div className="w-16 h-16 rounded-2xl bg-blue-100 dark:bg-blue-500/10 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
-                             <FaSearch className="text-blue-600 dark:text-blue-500 text-3xl" />
-                         </div>
-                        <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Smarter Practice Flow</h3>
-                        <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-6">Move from question solving to writing and planning with one connected system that supports daily study progress.</p>
-                         <div className="flex items-center text-blue-600 dark:text-blue-500 font-bold text-sm">
-                            <span>Start Learning</span>
-                             <FaPlay className="ml-2 text-xs group-hover:translate-x-1 transition-transform" />
-                         </div>
-                     </div>
-                 </div>
+                {workspaceCards.map((card) => (
+                  <div key={card.title} className={card.cardClass}>
+                    <div className={card.overlayClass}></div>
+                    <div className="relative z-10">
+                      <div className={card.iconWrapperClass}>
+                        <card.icon className={card.iconClass} />
+                      </div>
+                      <h3 className={card.titleClass}>{card.title}</h3>
+                      <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-6">{card.description}</p>
+                      <div className={card.actionClass}>
+                        <span>{card.action}</span>
+                        <FaPlay className="ml-2 text-xs group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
              </div>
 
              <div className="text-center mt-16">
@@ -135,7 +164,7 @@ const MatrixEduLandingContent: React.FC = () => {
                    onClick={() => navigate('/signup')}
                    className="px-8 py-4 bg-black dark:bg-white text-white dark:text-black rounded-full font-bold text-lg hover:scale-105 transition-transform duration-300 shadow-xl"
                  >
-                   Try MatrixEdu Free
+                  {t('matrixEduLanding.workspace.tryFree')}
                  </button>
              </div>
         </div>
@@ -224,14 +253,14 @@ const MatrixEduLandingContent: React.FC = () => {
       <section ref={comparisonRef} className="py-20 md:py-32 bg-gray-50 dark:bg-black relative">
           <div className="container mx-auto px-4">
               <div className="text-center mb-16 md:mb-24">
-                  <h2 className="text-4xl md:text-6xl font-permanent-marker mb-6 text-gray-900 dark:text-white">Why MatrixEdu Wins</h2>
-                  <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">Stop studying harder. Start studying smarter with the power of AI.</p>
+                  <h2 className="text-4xl md:text-6xl font-permanent-marker mb-6 text-gray-900 dark:text-white">{t('matrixEduLanding.comparison.title')}</h2>
+                  <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">{t('matrixEduLanding.comparison.subtitle')}</p>
               </div>
 
               <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8 relative">
                   {/* VS Badge */}
                   <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 hidden md:flex items-center justify-center w-16 h-16 bg-white dark:bg-[#111] rounded-full border-4 border-gray-100 dark:border-[#222] shadow-xl font-black text-xl italic text-gray-900 dark:text-white">
-                      VS
+                      {t('matrixEduLanding.comparison.versus')}
                   </div>
 
                   {/* Traditional Way */}
@@ -240,54 +269,34 @@ const MatrixEduLandingContent: React.FC = () => {
                           <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center">
                               <FaTimes className="text-red-500 text-xl" />
                           </div>
-                          <h3 className="text-2xl font-bold text-gray-900 dark:text-white">The Old Way</h3>
+                          <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{t('matrixEduLanding.comparison.oldWay.title')}</h3>
                       </div>
                       <ul className="space-y-6">
-                          <li className="flex items-start gap-4">
-                              <FaTimes className="text-red-500 mt-1 shrink-0" />
-                              <span className="text-gray-600 dark:text-gray-400 text-lg">Hours of passive reading and highlighting</span>
+                        {oldWayItems.map((item) => (
+                          <li key={item} className="flex items-start gap-4">
+                            <FaTimes className="text-red-500 mt-1 shrink-0" />
+                            <span className="text-gray-600 dark:text-gray-400 text-lg">{item}</span>
                           </li>
-                          <li className="flex items-start gap-4">
-                              <FaTimes className="text-red-500 mt-1 shrink-0" />
-                              <span className="text-gray-600 dark:text-gray-400 text-lg">Manually creating flashcards (boring!)</span>
-                          </li>
-                          <li className="flex items-start gap-4">
-                              <FaTimes className="text-red-500 mt-1 shrink-0" />
-                              <span className="text-gray-600 dark:text-gray-400 text-lg">No feedback on written answers</span>
-                          </li>
-                          <li className="flex items-start gap-4">
-                              <FaTimes className="text-red-500 mt-1 shrink-0" />
-                              <span className="text-gray-600 dark:text-gray-400 text-lg">Scattered notes across notebooks</span>
-                          </li>
+                        ))}
                       </ul>
                   </div>
 
                   {/* MatrixEdu Way */}
                   <div className="bg-white dark:bg-[#0f0f0f] rounded-[2rem] p-8 md:p-12 border-2 border-indigo-500 shadow-2xl shadow-indigo-500/20 relative overflow-hidden transform hover:-translate-y-2 transition-transform duration-300">
-                      <div className="absolute top-0 right-0 bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-bl-xl">RECOMMENDED</div>
+                      <div className="absolute top-0 right-0 bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-bl-xl">{t('matrixEduLanding.comparison.matrixEduWay.recommended')}</div>
                       <div className="flex items-center gap-4 mb-8">
                           <div className="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center">
                               <FaCheck className="text-indigo-600 dark:text-indigo-400 text-xl" />
                           </div>
-                          <h3 className="text-2xl font-bold text-gray-900 dark:text-white">The MatrixEdu Way</h3>
+                          <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{t('matrixEduLanding.comparison.matrixEduWay.title')}</h3>
                       </div>
                       <ul className="space-y-6">
-                          <li className="flex items-start gap-4">
-                              <FaCheckCircle className="text-indigo-500 mt-1 shrink-0" />
-                              <span className="text-gray-600 dark:text-gray-400 text-lg">Instant active recall materials</span>
+                        {matrixEduWayItems.map((item) => (
+                          <li key={item} className="flex items-start gap-4">
+                            <FaCheckCircle className="text-indigo-500 mt-1 shrink-0" />
+                            <span className="text-gray-600 dark:text-gray-400 text-lg">{item}</span>
                           </li>
-                          <li className="flex items-start gap-4">
-                              <FaCheckCircle className="text-indigo-500 mt-1 shrink-0" />
-                              <span className="text-gray-600 dark:text-gray-400 text-lg">AI-generated flashcards in seconds</span>
-                          </li>
-                          <li className="flex items-start gap-4">
-                              <FaCheckCircle className="text-indigo-500 mt-1 shrink-0" />
-                              <span className="text-gray-600 dark:text-gray-400 text-lg">Real-time grading & explanations</span>
-                          </li>
-                          <li className="flex items-start gap-4">
-                              <FaCheckCircle className="text-indigo-500 mt-1 shrink-0" />
-                              <span className="text-gray-600 dark:text-gray-400 text-lg">All materials synced & organized</span>
-                          </li>
+                        ))}
                       </ul>
                   </div>
               </div>
@@ -297,9 +306,9 @@ const MatrixEduLandingContent: React.FC = () => {
                    onClick={() => navigate('/signup')}
                    className="px-10 py-5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full font-bold text-xl hover:shadow-lg hover:shadow-indigo-500/40 hover:scale-105 transition-all duration-300"
                  >
-                   Join 1,000,000+ Students Today
+                  {t('matrixEduLanding.comparison.cta')}
                  </button>
-                 <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">No credit card required • Free plan available</p>
+                <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">{t('matrixEduLanding.comparison.disclaimer')}</p>
              </div>
           </div>
       </section>
@@ -308,19 +317,11 @@ const MatrixEduLandingContent: React.FC = () => {
       <section className="py-12 md:py-24 bg-white dark:bg-[#050505]">
           <div className="container mx-auto px-4">
               <div className="text-center mb-10 md:mb-16">
-                  <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900 dark:text-white">FAQ's</h2>
+                  <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900 dark:text-white">{t('matrixEduLanding.faq.title')}</h2>
               </div>
 
               <div className="max-w-3xl mx-auto space-y-4">
-                  {[
-                    { q: "What can I do on MatrixEdu?", a: "MatrixEdu gives you one study workspace with Dashboard, Solve, Paper Grader, Content Writer, Humanizer, and Study Planner tools for daily learning tasks." },
-                    { q: "What is available in the dashboard?", a: "The dashboard is your main hub for study sets and progress tracking, so you can continue where you left off and keep your learning organized." },
-                    { q: "How does the sidebar help me study faster?", a: "The sidebar gives direct access to core tools, so you can switch between solving, grading, writing, and planning without losing context." },
-                    { q: "Can I upload materials and get AI help?", a: "Yes. You can work with your study material and use AI features to generate explanations, improve writing, and build better study sessions." },
-                    { q: "Do you offer free and paid plans?", a: "Yes. You can start with the free experience and upgrade when you need higher limits and premium capabilities." },
-                    { q: "How can I manage my account and payments?", a: "Use your profile and transaction history areas to review account details and billing activity." },
-                    { q: "How do I contact support?", a: "You can reach the team through the platform contact channels for account, billing, or product-related help." }
-                  ].map((item, index) => (
+                  {faqItems.map((item, index) => (
                       <div key={index} className="border-b border-gray-200 dark:border-white/10 last:border-0">
                           <button 
                              className="w-full py-4 md:py-6 flex items-center justify-between text-left focus:outline-none group"

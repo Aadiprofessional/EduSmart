@@ -102,13 +102,13 @@ const AiStudy: React.FC = () => {
   }, []);
 
   const tools = [
-    { id: 'upload', name: t('aiStudy.uploadHomework'), icon: AiOutlineUpload, requiresPro: true, description: "Instant analysis & help" },
-    { id: 'mistake-checker', name: t('aiStudy.mistakeChecker'), icon: FiCheckCircle, requiresPro: true, description: "Grammar & logic check" },
-    { id: 'study-planner', name: t('aiStudy.studyPlanner'), icon: FiCalendar, requiresPro: true, description: "Personalized roadmap" },
-    { id: 'flashcards', name: t('aiStudy.flashcards'), icon: FiLayers, requiresPro: true, description: "Smart spaced repetition" },
-    { id: 'content-writer', name: t('aiStudy.contentWriter'), icon: FiPenTool, requiresPro: true, description: "AI-assisted writing" },
-    { id: 'humanizer', name: 'Humanizer', icon: AiOutlineUser, requiresPro: true, description: "Naturalize AI text" },
-    { id: 'document-summarizer', name: t('aiStudy.documentSummarizer'), icon: AiOutlineSearch, requiresPro: true, description: "Extract key insights" },
+    { id: 'upload', name: t('aiStudy.uploadHomework'), icon: AiOutlineUpload, requiresPro: true, description: t('aiStudy.toolDescriptions.uploadHomework') },
+    { id: 'mistake-checker', name: t('aiStudy.mistakeChecker'), icon: FiCheckCircle, requiresPro: true, description: t('aiStudy.toolDescriptions.mistakeChecker') },
+    { id: 'study-planner', name: t('aiStudy.studyPlanner'), icon: FiCalendar, requiresPro: true, description: t('aiStudy.toolDescriptions.studyPlanner') },
+    { id: 'flashcards', name: t('aiStudy.flashcards'), icon: FiLayers, requiresPro: true, description: t('aiStudy.toolDescriptions.flashcards') },
+    { id: 'content-writer', name: t('aiStudy.contentWriter'), icon: FiPenTool, requiresPro: true, description: t('aiStudy.toolDescriptions.contentWriter') },
+    { id: 'humanizer', name: t('aiStudy.humanizer'), icon: AiOutlineUser, requiresPro: true, description: t('aiStudy.toolDescriptions.humanizer') },
+    { id: 'document-summarizer', name: t('aiStudy.documentSummarizer'), icon: AiOutlineSearch, requiresPro: true, description: t('aiStudy.toolDescriptions.documentSummarizer') },
   ];
 
   // Modern minimal colors - Slate/Zinc/Indigo palette
@@ -141,11 +141,11 @@ const AiStudy: React.FC = () => {
           >
             <div className="flex items-center justify-center md:justify-start gap-2 mb-3">
               <span className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-medium tracking-wide uppercase">
-                AI Powered Workspace
+                {t('aiStudy.workspaceBadge')}
               </span>
               {isProUser && (
                 <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-medium tracking-wide uppercase flex items-center gap-1">
-                  <FaCrown size={10} /> Pro Active
+                  <FaCrown size={10} /> {t('aiStudy.proActive')}
                 </span>
               )}
             </div>
@@ -166,7 +166,7 @@ const AiStudy: React.FC = () => {
           >
             <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.05] backdrop-blur-sm text-center min-w-[120px]">
               <div className="text-2xl font-bold text-white">{responsesRemaining}</div>
-              <div className="text-xs text-slate-500 uppercase tracking-wider font-medium">Credits Left</div>
+              <div className="text-xs text-slate-500 uppercase tracking-wider font-medium">{t('aiStudy.creditsLeft')}</div>
             </div>
             {!isProUser && (
               <button 
@@ -174,7 +174,7 @@ const AiStudy: React.FC = () => {
                 className="p-4 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white font-medium hover:shadow-lg hover:shadow-indigo-500/25 transition-all active:scale-95 flex flex-col items-center justify-center min-w-[120px]"
               >
                 <FaCrown className="mb-1" />
-                <span className="text-sm">Upgrade Pro</span>
+                <span className="text-sm">{t('aiStudy.upgradePro')}</span>
               </button>
             )}
           </motion.div>
@@ -385,20 +385,20 @@ const AiStudy: React.FC = () => {
                     <FaCrown className="text-white w-8 h-8" />
                   </div>
                   
-                  <h3 className="text-2xl font-bold text-white mb-2">Unlock Pro Potential</h3>
+                  <h3 className="text-2xl font-bold text-white mb-2">{t('aiStudy.upgradeModal.title')}</h3>
                   <p className="text-slate-400 mb-8 max-w-xs mx-auto text-sm leading-relaxed">
                     {!isProUser 
-                      ? "Get unlimited access to advanced AI tutors, essay writing, and personalized study plans."
-                      : "You've hit your daily limit. Upgrade or wait until tomorrow to continue learning."
+                      ? t('aiStudy.upgradeModal.notProDescription')
+                      : t('aiStudy.upgradeModal.limitReachedDescription')
                     }
                   </p>
 
                   <div className="space-y-3 mb-8 text-left bg-white/[0.03] p-6 rounded-xl border border-white/[0.05]">
                     {[
-                      "Unlimited AI Responses",
-                      "Advanced GPT-4o Model Access",
-                      "Priority Processing Speed",
-                      "Personalized Learning Roadmap"
+                      t('aiStudy.upgradeModal.features.generousAllowance'),
+                      t('aiStudy.upgradeModal.features.advancedTutoring'),
+                      t('aiStudy.upgradeModal.features.prioritySupport'),
+                      t('aiStudy.upgradeModal.features.contentGeneration')
                     ].map((feature, i) => (
                       <div key={i} className="flex items-center gap-3 text-sm text-slate-300">
                         <div className="w-5 h-5 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 flex-shrink-0">
@@ -414,7 +414,7 @@ const AiStudy: React.FC = () => {
                       onClick={() => setShowUpgradeModal(false)}
                       className="flex-1 py-3 px-4 rounded-xl font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-colors text-sm"
                     >
-                      Maybe Later
+                      {t('aiStudy.upgradeModal.maybeLaterBtn')}
                     </button>
                     <button
                       onClick={() => {
@@ -423,7 +423,7 @@ const AiStudy: React.FC = () => {
                       }}
                       className="flex-1 py-3 px-4 rounded-xl font-bold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 shadow-lg shadow-indigo-500/25 transition-all active:scale-95 text-sm"
                     >
-                      Upgrade Now
+                      {t('aiStudy.upgradeModal.upgradeNowBtn')}
                     </button>
                   </div>
                 </div>

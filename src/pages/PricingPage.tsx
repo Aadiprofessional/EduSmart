@@ -7,6 +7,7 @@ import { useAuth } from '../utils/AuthContext';
 import { subscriptionAPI, SubscriptionPlan } from '../utils/subscriptionAPI';
 import { Header } from '../components/layout';
 import { Skeleton } from '../components/ui/Skeleton';
+import { useLanguage } from '../utils/LanguageContext';
 
 // Floating Particle Component
 const FloatingParticle = ({ delay = 0, size = 4, color = "bg-white" }: { delay?: number, size?: number, color?: string }) => (
@@ -51,6 +52,7 @@ const HolographicCard = ({ children, className = "", ...props }: { children: Rea
 
 const PricingPage: React.FC = () => {
   const { user, session } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,10 +75,10 @@ const PricingPage: React.FC = () => {
         if (response.success && response.data) {
           setPlans(response.data);
         } else {
-          setError(response.error || 'Failed to load subscription plans');
+          setError(response.error || t('pricingPage.failedToLoadPlans'));
         }
       } catch (err) {
-        setError('An unexpected error occurred');
+        setError(t('pricingPage.unexpectedError'));
         console.error(err);
       } finally {
         setLoading(false);
@@ -142,7 +144,7 @@ const PricingPage: React.FC = () => {
             transition={{ duration: 0.5 }}
             className="text-4xl md:text-6xl font-bold tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60"
           >
-            Choose Your Plan
+            {t('pricingPage.chooseYourPlan')}
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
@@ -150,7 +152,7 @@ const PricingPage: React.FC = () => {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed"
           >
-            Unlock the full potential of your AI learning companion with our premium plans.
+            {t('pricingPage.subtitle')}
           </motion.p>
         </div>
 
@@ -171,7 +173,7 @@ const PricingPage: React.FC = () => {
           </div>
         ) : error ? (
           <div className="text-center p-8 bg-red-900/10 rounded-xl border border-red-800 max-w-2xl mx-auto backdrop-blur-sm">
-            <h3 className="text-lg font-bold text-red-400 mb-2">Error Loading Plans</h3>
+            <h3 className="text-lg font-bold text-red-400 mb-2">{t('pricingPage.errorLoadingPlans')}</h3>
             <p className="text-gray-300">{error}</p>
           </div>
         ) : (
@@ -190,7 +192,7 @@ const PricingPage: React.FC = () => {
                 <div className="p-8 flex flex-col h-full">
                     {plan.name.toLowerCase().includes('pro') && (
                       <div className="absolute top-0 right-0 bg-gradient-to-l from-purple-600 to-blue-600 text-white text-xs font-bold px-4 py-1 rounded-bl-xl z-20">
-                        POPULAR
+                        {t('pricingPage.popular')}
                       </div>
                     )}
 
@@ -203,10 +205,10 @@ const PricingPage: React.FC = () => {
                       </h3>
                       <div className="flex items-baseline mb-4">
                         <span className="text-4xl font-extrabold text-white">${plan.price}</span>
-                        <span className="text-gray-400 ml-2">/{plan.type || 'month'}</span>
+                        <span className="text-gray-400 ml-2">/{plan.type || t('pricingPage.month')}</span>
                       </div>
                       <p className="text-gray-400">
-                        {plan.description || 'Unlock premium features and accelerate your learning.'}
+                        {plan.description || t('pricingPage.defaultPlanDescription')}
                       </p>
                     </div>
 
@@ -217,7 +219,7 @@ const PricingPage: React.FC = () => {
                             <span className="text-xs">🪙</span>
                           </div>
                           <span className="text-gray-300 font-medium">
-                            {plan.coins} Coins included
+                            {t('pricingPage.coinsIncluded', { values: { coins: plan.coins } })}
                           </span>
                         </li>
                       )}
@@ -226,7 +228,7 @@ const PricingPage: React.FC = () => {
                           <AiOutlineCheck className="w-3.5 h-3.5 text-green-500" />
                         </div>
                         <span className="text-gray-300">
-                          Duration: {plan.duration_days} days
+                          {t('pricingPage.durationDays', { values: { days: plan.duration_days } })}
                         </span>
                       </li>
                       <li className="flex items-start">
@@ -234,7 +236,7 @@ const PricingPage: React.FC = () => {
                           <AiOutlineCheck className="w-3.5 h-3.5 text-green-500" />
                         </div>
                         <span className="text-gray-300">
-                          Full Access to AI Tutor
+                          {t('pricingPage.fullAccessToAiTutor')}
                         </span>
                       </li>
                       <li className="flex items-start">
@@ -242,7 +244,7 @@ const PricingPage: React.FC = () => {
                           <AiOutlineCheck className="w-3.5 h-3.5 text-green-500" />
                         </div>
                         <span className="text-gray-300">
-                          Unlimited Study Sets
+                          {t('pricingPage.unlimitedStudySets')}
                         </span>
                       </li>
                     </ul>
@@ -256,7 +258,7 @@ const PricingPage: React.FC = () => {
                           : 'bg-white/10 text-white border border-white/10 hover:bg-white/20'
                       }`}
                     >
-                      {subscribing === plan.id ? 'Processing...' : (user ? 'Subscribe Now' : 'Log in to Subscribe')}
+                      {subscribing === plan.id ? t('pricingPage.processing') : (user ? t('pricingPage.subscribeNow') : t('pricingPage.loginToSubscribe'))}
                     </button>
                 </div>
               </HolographicCard>
@@ -266,12 +268,12 @@ const PricingPage: React.FC = () => {
 
         {/* Features Grid */}
         <div className="mt-24 mb-16">
-            <h2 className="text-3xl font-bold text-center mb-12 text-white">Why MatrixEdu Pro?</h2>
+            <h2 className="text-3xl font-bold text-center mb-12 text-white">{t('pricingPage.whyPro')}</h2>
             <div className="grid md:grid-cols-3 gap-8">
                 {[
-                    { title: "Advanced AI Models", desc: "Access to GPT-4 and Claude 3 Opus for superior reasoning.", icon: <AiOutlineStar className="w-8 h-8 text-yellow-500" /> },
-                    { title: "Priority Support", desc: "Get your questions answered faster with our priority queue.", icon: <AiOutlineCrown className="w-8 h-8 text-purple-500" /> },
-                    { title: "Unlimited History", desc: "Save and search through all your past learning sessions.", icon: <AiOutlineCheck className="w-8 h-8 text-green-500" /> }
+                    { title: t('pricingPage.features.advancedAiModels.title'), desc: t('pricingPage.features.advancedAiModels.description'), icon: <AiOutlineStar className="w-8 h-8 text-yellow-500" /> },
+                    { title: t('pricingPage.features.prioritySupport.title'), desc: t('pricingPage.features.prioritySupport.description'), icon: <AiOutlineCrown className="w-8 h-8 text-purple-500" /> },
+                    { title: t('pricingPage.features.unlimitedHistory.title'), desc: t('pricingPage.features.unlimitedHistory.description'), icon: <AiOutlineCheck className="w-8 h-8 text-green-500" /> }
                 ].map((feature, i) => (
                     <HolographicCard key={i}>
                         <div className="p-6 text-center h-full flex flex-col items-center">
@@ -289,16 +291,16 @@ const PricingPage: React.FC = () => {
         {/* FAQ Section */}
         <div className="mt-12 max-w-3xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4 text-white">Frequently Asked Questions</h2>
-            <p className="text-gray-400">Everything you need to know about our plans.</p>
+            <h2 className="text-3xl font-bold mb-4 text-white">{t('pricingPage.faqTitle')}</h2>
+            <p className="text-gray-400">{t('pricingPage.faqSubtitle')}</p>
           </div>
           
           <div className="space-y-4">
             {[
-              { q: "Can I cancel my subscription at any time?", a: "Yes, you can cancel your subscription at any time. Your access will continue until the end of your current billing period." },
-              { q: "What happens to my unused coins?", a: "Unused coins roll over to the next month as long as you maintain an active subscription." },
-              { q: "Do you offer student discounts?", a: "Yes! We offer special rates for students. Please contact our support team with your valid student ID." },
-              { q: "Is my payment information secure?", a: "Absolutely. We use industry-standard encryption and do not store your credit card details on our servers." }
+              { q: t('pricingPage.faq.cancelAnytime.question'), a: t('pricingPage.faq.cancelAnytime.answer') },
+              { q: t('pricingPage.faq.unusedCoins.question'), a: t('pricingPage.faq.unusedCoins.answer') },
+              { q: t('pricingPage.faq.studentDiscount.question'), a: t('pricingPage.faq.studentDiscount.answer') },
+              { q: t('pricingPage.faq.paymentSecurity.question'), a: t('pricingPage.faq.paymentSecurity.answer') }
             ].map((faq, index) => (
               <motion.div 
                 key={index} 

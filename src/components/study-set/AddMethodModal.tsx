@@ -15,6 +15,7 @@ import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { BaseModal } from '../dashboard/DashboardModals';
 import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
+import { useLanguage } from '../../utils/LanguageContext';
 
 interface AddMethodModalProps {
     isOpen: boolean;
@@ -25,19 +26,20 @@ interface AddMethodModalProps {
 }
 
 const allMethods = [
-    { id: 'notes', label: 'Notes', icon: <FaBook />, key: 'notes' },
-    { id: 'multiple-choice', label: 'Multiple Choice', icon: <FaListUl />, key: 'multiple_choice' },
-    { id: 'flashcards', label: 'Flashcards', icon: <FaLayerGroup />, key: 'flashcards' },
-    { id: 'podcast', label: 'Podcast', icon: <FaPodcast />, key: 'podcast' },
-    { id: 'tutor-lesson', label: 'Tutor Lesson', icon: <FaChalkboardTeacher />, key: 'tutor_lesson' },
-    { id: 'written-tests', label: 'Written Tests', icon: <FaPencilAlt />, key: 'written_tests' },
-    { id: 'fill-blanks', label: 'Fill in the Blanks', icon: <FaEdit />, key: 'fill_in_the_blanks' },
-    { id: 'speech-to-text', label: 'Speech to Text', icon: <FaMicrophone />, key: 'speech_to_text' },
-    { id: 'mindmap', label: 'Mindmap', icon: <FaProjectDiagram />, key: 'mindmap' },
+    { id: 'notes', labelKey: 'studyMaterialPage.methods.notes', icon: <FaBook />, key: 'notes' },
+    { id: 'multiple-choice', labelKey: 'studyMaterialPage.methods.multipleChoice', icon: <FaListUl />, key: 'multiple_choice' },
+    { id: 'flashcards', labelKey: 'studyMaterialPage.methods.flashcards', icon: <FaLayerGroup />, key: 'flashcards' },
+    { id: 'podcast', labelKey: 'studyMaterialPage.methods.podcast', icon: <FaPodcast />, key: 'podcast' },
+    { id: 'tutor-lesson', labelKey: 'studyMaterialPage.methods.tutorLesson', icon: <FaChalkboardTeacher />, key: 'tutor_lesson' },
+    { id: 'written-tests', labelKey: 'studyMaterialPage.methods.writtenTest', icon: <FaPencilAlt />, key: 'written_tests' },
+    { id: 'fill-blanks', labelKey: 'studyMaterialPage.methods.fillInTheBlanks', icon: <FaEdit />, key: 'fill_in_the_blanks' },
+    { id: 'speech-to-text', labelKey: 'studyMaterialPage.methods.speechToText', icon: <FaMicrophone />, key: 'speech_to_text' },
+    { id: 'mindmap', labelKey: 'studyMaterialPage.methods.mindmap', icon: <FaProjectDiagram />, key: 'mindmap' },
 ];
 
 export const AddMethodModal: React.FC<AddMethodModalProps> = ({ isOpen, onClose, studySetData, documentId, onMethodAdded }) => {
     const { user } = useAuth();
+    const { t } = useLanguage();
     const [step, setStep] = useState<'selection' | 'summary'>('selection');
     const [selectedMethods, setSelectedMethods] = useState<string[]>([]);
     const [userCoins, setUserCoins] = useState<number>(0);
@@ -112,12 +114,12 @@ export const AddMethodModal: React.FC<AddMethodModalProps> = ({ isOpen, onClose,
     const handleGenerate = async () => {
         const cost = calculateCost();
         if (userCoins < cost) {
-            alert("Insufficient balance");
+            alert(t('addMethodModal.insufficientBalance'));
             return;
         }
 
         if (!user || !documentText) {
-            alert("Missing user or document text");
+            alert(t('addMethodModal.missingUserOrDocumentText'));
             return;
         }
 
@@ -156,7 +158,7 @@ export const AddMethodModal: React.FC<AddMethodModalProps> = ({ isOpen, onClose,
             
         } catch (error) {
             console.error('Generation failed:', error);
-            alert("Failed to generate methods. Please try again.");
+            alert(t('addMethodModal.failedToGenerateMethods'));
         } finally {
             setIsGenerating(false);
         }
@@ -166,8 +168,8 @@ export const AddMethodModal: React.FC<AddMethodModalProps> = ({ isOpen, onClose,
         <BaseModal
             isOpen={isOpen}
             onClose={onClose}
-            title={step === 'selection' ? "Add Study Method" : "Summary"}
-            subtitle={step === 'selection' ? "Select additional methods to generate for this study set" : "Review your selection"}
+            title={step === 'selection' ? t('addMethodModal.addStudyMethod') : t('addMethodModal.summary')}
+            subtitle={step === 'selection' ? t('addMethodModal.selectAdditionalMethods') : t('addMethodModal.reviewSelection')}
         >
             <div className="space-y-6">
                 {step === 'selection' ? (
@@ -195,8 +197,8 @@ export const AddMethodModal: React.FC<AddMethodModalProps> = ({ isOpen, onClose,
                                         <div className={`text-3xl mb-4 transition-transform duration-300 ${selected ? 'scale-110' : 'group-hover:scale-110'}`}>
                                             {method.icon}
                                         </div>
-                                        <span className="font-bold text-sm text-center">{method.label}</span>
-                                        {disabled && <span className="text-xs mt-2 text-gray-400">(Added)</span>}
+                                        <span className="font-bold text-sm text-center">{t(method.labelKey)}</span>
+                                        {disabled && <span className="text-xs mt-2 text-gray-400">({t('addMethodModal.added')})</span>}
                                         {selected && (
                                             <div className="absolute top-3 right-3 w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center text-white text-xs">
                                                 <FaMagic />
@@ -219,14 +221,14 @@ export const AddMethodModal: React.FC<AddMethodModalProps> = ({ isOpen, onClose,
                                     }
                                 `}
                             >
-                                Next
+                                {t('common.next')}
                             </button>
                         </div>
                     </>
                 ) : (
                     <>
                         <div className="bg-gray-50 dark:bg-white/5 rounded-2xl p-6 border border-gray-100 dark:border-white/10">
-                            <h3 className="font-bold text-gray-900 dark:text-white mb-4">Selected Methods</h3>
+                            <h3 className="font-bold text-gray-900 dark:text-white mb-4">{t('addMethodModal.selectedMethods')}</h3>
                             <div className="space-y-3">
                                 {selectedMethods.map(id => {
                                     const m = allMethods.find(method => method.id === id);
@@ -234,25 +236,25 @@ export const AddMethodModal: React.FC<AddMethodModalProps> = ({ isOpen, onClose,
                                         <div key={id} className="flex items-center justify-between p-3 bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-100 dark:border-white/5">
                                             <div className="flex items-center gap-3">
                                                 <span className="text-indigo-500">{m?.icon}</span>
-                                                <span className="font-medium text-gray-700 dark:text-gray-200">{m?.label}</span>
+                                                <span className="font-medium text-gray-700 dark:text-gray-200">{m ? t(m.labelKey) : ''}</span>
                                             </div>
-                                            <div className="font-bold text-orange-500">1 Coin</div>
+                                            <div className="font-bold text-orange-500">{t('addMethodModal.oneCoin')}</div>
                                         </div>
                                     );
                                 })}
                             </div>
                             
                             <div className="mt-6 pt-4 border-t border-gray-200 dark:border-white/10 flex justify-between items-center">
-                                <span className="text-gray-500 dark:text-gray-400">Total Cost</span>
+                                <span className="text-gray-500 dark:text-gray-400">{t('addMethodModal.totalCost')}</span>
                                 <div className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                    {calculateCost()} <span className="text-sm font-normal text-gray-500">Coins</span>
+                                    {calculateCost()} <span className="text-sm font-normal text-gray-500">{t('addMethodModal.coins')}</span>
                                 </div>
                             </div>
                             
                             <div className="mt-2 flex justify-between items-center">
-                                <span className="text-gray-500 dark:text-gray-400">Your Balance</span>
+                                <span className="text-gray-500 dark:text-gray-400">{t('addMethodModal.yourBalance')}</span>
                                 <div className={`font-bold ${userCoins < calculateCost() ? 'text-red-500' : 'text-green-500'}`}>
-                                    {userCoins} Coins
+                                    {userCoins} {t('addMethodModal.coins')}
                                 </div>
                             </div>
                         </div>
@@ -262,7 +264,7 @@ export const AddMethodModal: React.FC<AddMethodModalProps> = ({ isOpen, onClose,
                                 onClick={() => setStep('selection')}
                                 className="text-gray-500 hover:text-gray-700 dark:hover:text-white font-medium px-4"
                             >
-                                Back
+                                {t('common.back')}
                             </button>
                             <button
                                 onClick={handleGenerate}
@@ -278,12 +280,12 @@ export const AddMethodModal: React.FC<AddMethodModalProps> = ({ isOpen, onClose,
                                 {isGenerating ? (
                                     <>
                                         <AiOutlineLoading3Quarters className="animate-spin" />
-                                        Generating...
+                                        {t('methodSelection.generating')}
                                     </>
                                 ) : (
                                     <>
                                         <FaMagic />
-                                        Generate
+                                        {t('addMethodModal.generate')}
                                     </>
                                 )}
                             </button>

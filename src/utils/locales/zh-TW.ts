@@ -18,10 +18,52 @@ export const zhTW = {
     profile: '個人檔案',
     settings: '設定',
     dashboard: '儀表板',
+    pricing: '方案價格',
     proMember: '專業會員',
     left: '剩餘',
     buyMore: '購買更多回覆',
     upgradeToPro: '升級到專業版'
+  },
+  matrixEduNavbar: {
+    logoAlt: 'MatrixEdu 標誌',
+    coinsAlt: '點數',
+    upgrade: '升級'
+  },
+  appHeader: {
+    logoAlt: 'MatrixEdu 標誌',
+    careers: '職涯',
+    hiring: '招募中',
+    features: '功能特色',
+    toggleDarkMode: '切換深色模式'
+  },
+  sidebar: {
+    logoAlt: 'MatrixEdu 標誌',
+    closeSidebar: '關閉側邊欄',
+    studySets: '學習集',
+    solve: '解題',
+    paperGrader: '論文評分',
+    contentWriter: '內容寫作',
+    humanizer: '潤稿器',
+    studyPlanner: '學習規劃',
+    transactionHistory: '交易紀錄',
+    user: '使用者',
+    lightMode: '淺色模式',
+    darkMode: '深色模式',
+    folders: '資料夾',
+    createNewFolder: '建立新資料夾',
+    allStudySets: '全部學習集',
+    noFoldersYet: '尚無資料夾',
+    createFirstFolder: '建立第一個資料夾來整理學習集',
+    rename: '重新命名',
+    renameFolder: '重新命名資料夾',
+    deleteFolder: '刪除資料夾',
+    deleteFolderMessage: '確定要刪除「{{folderName}}」嗎？這不會刪除其中的學習集。'
+  },
+  languageSelector: {
+    title: '選擇語言',
+    english: 'English',
+    simplifiedChinese: '简体中文',
+    traditionalChinese: '繁體中文'
   },
 
   // Dashboard
@@ -374,9 +416,51 @@ export const zhTW = {
     print: "列印",
     export: "匯出",
     import: "匯入",
+    history: "歷史",
     notifications: '通知',
     noNotifications: '暫無通知',
     allCaughtUp: '您已查看所有內容！'
+  },
+  footer: {
+    about: '透過 AI 驅動的學習體驗與前沿技術，重新定義教育。',
+    browseCourses: '瀏覽課程',
+    findScholarships: '尋找獎學金',
+    quickLinks: '快速連結',
+    resources: '資源',
+    contact: '聯絡方式',
+    contactUs: '聯絡我們',
+    phone: '電話',
+    email: '電子郵件',
+    address: '地址',
+    privacyPolicy: '隱私政策',
+    termsOfService: '服務條款',
+    cookiePolicy: 'Cookie 政策',
+    aiEducation: '為未來而生的 AI 教育',
+    hongKongOffice: '香港辦公室',
+    shenzhenOffice: '深圳辦公室',
+    contactInfo: {
+      phone: '+852 66359879',
+      email: 'info@matrixaiglobal.com',
+      address: '香港'
+    },
+    contactAddresses: {
+      hongKongLine1: 'Unit G1, 35/F, Legend Tower',
+      hongKongLine2: '7 Shing Yip Street, Kwun Tong, KLN',
+      shenzhenLine1: '前海桂灣三路深港青年夢工場',
+      shenzhenLine2: '香港大學青年科創學院 4 樓'
+    },
+    contactPhones: {
+      hongKong: '+852 66359879',
+      shenzhen: '+86 13266989879'
+    },
+    resourceLinks: {
+      scholarships: '獎學金',
+      applicationTracker: '申請追蹤器',
+      privacyPolicy: '隱私政策',
+      termsOfService: '服務條款',
+      faq: '常見問題'
+    },
+    copyright: '© 2024 MatrixEdu. 版權所有。'
   },
 
   // Pages
@@ -581,13 +665,609 @@ export const zhTW = {
   },
 
   about: {
-    title: '關於我們',
-    mission: '我們的使命',
-    missionText: '我們致力於通過創新的AI技術讓每個人都能獲得優質教育。',
-    team: '我們的團隊',
-    values: '我們的價值觀',
-    history: '我們的歷史',
-    contact: '聯絡我們'
+    title: '關於 MatrixEdu',
+    subtitle: '透過 AI 重新定義教育',
+    description: 'MatrixEdu 結合人工智慧與有效學習方法，提供個人化且高效率的學習體驗。',
+    mission: '我們的使命是透過 AI 技術，讓更多學生獲得高品質且可負擔的學習支援。',
+    vision: '我們期待每位學生都能擁有理解其學習風格的 AI 導師，協助達成學習目標。',
+    badge: '關於 MatrixEdu',
+    heroDescription: 'MatrixEdu 是一個 AI 學習工作台，幫助學生在同一平台完成規劃、練習、寫作與提升。',
+    missionTitle: '我們的使命',
+    missionDescription2: '從儀表板整理到解題、論文評分、寫作優化、文字潤稿與讀書規劃，MatrixEdu 以實用 AI 工具支持每天的學習效率。',
+    stats: {
+      coreAiTools: '核心 AI 工具',
+      unifiedWorkspace: '整合工作台'
+    },
+    pillars: {
+      smartStudyFlow: {
+        title: '智慧學習流程',
+        description: '串接每日學習工具'
+      },
+      anywhereAccess: {
+        title: '隨時可用',
+        description: '以網頁為核心的學習工作台'
+      },
+      reliableWorkspace: {
+        title: '穩定工作台',
+        description: '為長期學習使用而設計'
+      },
+      fasterExecution: {
+        title: '更快執行',
+        description: '任務切換更流暢'
+      }
+    },
+    platformCapabilities: {
+      title: '平台能力',
+      subtitle: '完整工具組，支援你從開始到完成的學習歷程。',
+      cards: {
+        dashboard: {
+          title: '儀表板與學習集',
+          description: '集中整理學習資料、快速存取學習集並清楚掌握進度。'
+        },
+        solve: {
+          title: '解題工作台',
+          description: '在 AI 協助下解題，遇到難點也能獲得更清晰說明。'
+        },
+        paperGrader: {
+          title: '論文評分',
+          description: '檢視書面作業並取得結構化回饋，提升品質與表達。'
+        },
+        contentWriter: {
+          title: '內容寫作',
+          description: '更快產出並優化學術草稿，同時保持思路清晰。'
+        },
+        humanizer: {
+          title: '潤稿器',
+          description: '優化語氣與可讀性，讓文字更自然易懂。'
+        },
+        studyPlanner: {
+          title: '學習規劃',
+          description: '建立可執行的讀書計畫，維持穩定學習節奏。'
+        }
+      }
+    },
+    values: {
+      innovation: {
+        title: '創新',
+        description: '持續突破教育科技的可能性。'
+      },
+      accessibility: {
+        title: '普及',
+        description: '讓高品質學習支援觸及每個人。'
+      },
+      excellence: {
+        title: '卓越',
+        description: '在每個細節堅持高標準。'
+      }
+    },
+    cta: {
+      title: '準備好用 MatrixEdu 更聰明地學習了嗎？',
+      subtitle: '從儀表板開始，搭配側邊工具，在同一平台建立更強的學習節奏。',
+      button: '立即開始'
+    }
+  },
+  pricingPage: {
+    chooseYourPlan: '選擇你的方案',
+    subtitle: '透過我們的進階方案，解鎖 AI 學習助手的完整能力。',
+    failedToLoadPlans: '載入訂閱方案失敗',
+    unexpectedError: '發生非預期錯誤',
+    errorLoadingPlans: '載入方案時發生錯誤',
+    popular: '熱門',
+    month: '月',
+    defaultPlanDescription: '解鎖進階功能，加速你的學習。',
+    coinsIncluded: '包含 {{coins}} 點數',
+    durationDays: '期間：{{days}} 天',
+    fullAccessToAiTutor: '完整 AI 導師存取',
+    unlimitedStudySets: '無限學習集',
+    processing: '處理中...',
+    subscribeNow: '立即訂閱',
+    loginToSubscribe: '登入後訂閱',
+    whyPro: '為什麼選擇 MatrixEdu Pro？',
+    features: {
+      advancedAiModels: {
+        title: '進階 AI 模型',
+        description: '可使用 GPT-4 與 Claude 3 Opus，取得更強推理能力。'
+      },
+      prioritySupport: {
+        title: '優先支援',
+        description: '透過優先佇列更快獲得問題回覆。'
+      },
+      unlimitedHistory: {
+        title: '無限歷史紀錄',
+        description: '保存並搜尋所有過往學習紀錄。'
+      }
+    },
+    faqTitle: '常見問題',
+    faqSubtitle: '你需要知道的方案資訊都在這裡。',
+    faq: {
+      cancelAnytime: {
+        question: '我可以隨時取消訂閱嗎？',
+        answer: '可以，你可隨時取消。方案會持續到目前計費週期結束。'
+      },
+      unusedCoins: {
+        question: '未使用的點數會怎樣？',
+        answer: '只要訂閱仍有效，未使用點數會延續到下個月。'
+      },
+      studentDiscount: {
+        question: '有學生優惠嗎？',
+        answer: '有，請聯繫客服並提供有效學生證。'
+      },
+      paymentSecurity: {
+        question: '付款資訊安全嗎？',
+        answer: '當然。我們使用業界標準加密，且不在伺服器儲存你的信用卡資訊。'
+      }
+    }
+  },
+  contentWriter: {
+    title: "AI內容寫作器",
+    subtitle: "使用 AI 生成高品質學術內容",
+    promptPlaceholder: "描述你想生成的內容...例如：寫一篇關於我對電腦科學熱情的大學申請文章。",
+    generateContent: "生成內容",
+    contentWriterGenerating: "正在生成...",
+    viewHistory: "查看歷史",
+    downloadPdf: "下載 PDF",
+    downloadDoc: "下載 DOC",
+    downloadTxt: "下載 TXT",
+    copyToClipboard: "複製到剪貼簿",
+    copied: "已複製到剪貼簿！",
+    templates: "模板",
+    prompt: "提示詞",
+    wordCount: "字數",
+    contentType: "內容類型",
+    tone: "語氣",
+    format: "格式",
+    fontSize: "字體大小",
+    fontFamily: "字體",
+    backToWriter: "返回寫作器",
+    previewMode: "預覽模式",
+    editorMode: "編輯模式",
+    history: "歷史記錄",
+    loadFromHistory: "從歷史記錄載入",
+    deleteHistory: "刪除歷史記錄",
+    downloadOptions: "下載選項",
+    shareContent: "分享內容",
+    aiEditModal: "AI 內容編輯器",
+    aiEditDescription: "描述你想要的具體修改。例如：「把所有 MIT 改成 Stanford」。",
+    aiEditPlaceholder: "例如：把所有 MIT 改成 Stanford，或把籃球例子改成足球...",
+    applyChanges: "套用變更",
+    cancel: "取消",
+    contentWriterAnalyzing: "正在分析內容...",
+    finalizing: "正在完成...",
+    error: "生成內容時發生錯誤，請重試。",
+    templateNames: {
+      collegeApp: "大學申請文章",
+      coverLetter: "求職信",
+      recommendation: "推薦信",
+      researchPaper: "研究論文",
+      scholarship: "獎學金申請文章",
+      personalStatement: "個人陳述"
+    },
+    templatePrompts: {
+      collegeApp: "寫一篇有說服力的大學申請文章，說明我對電腦科學的熱情如何塑造我的未來目標。",
+      coverLetter: "為科技公司實習職位撰寫一封專業求職信，突顯我的程式與團隊合作能力。",
+      recommendation: "為申請研究所的學生撰寫推薦信，強調其研究能力與學術成就。",
+      researchPaper: "為「人工智慧對教育影響」產生研究論文大綱。",
+      scholarship: "撰寫一篇獎學金申請文章，說明我的經濟需求與學術表現。",
+      personalStatement: "撰寫一份個人陳述，說明我就讀醫學相關科系的動機與職涯目標。"
+    },
+    tones: {
+      formal: "正式",
+      informal: "非正式",
+      academic: "學術",
+      professional: "專業",
+      conversational: "對話式",
+      persuasive: "說服式"
+    },
+    creative: "創意",
+    enthusiastic: "熱情",
+    historyUntitled: "未命名",
+    confirmDeleteHistoryItem: "確定要刪除這筆歷史紀錄嗎？",
+    historyItemDeleted: "歷史紀錄已刪除",
+    failedToDeleteHistoryItem: "刪除歷史紀錄失敗",
+    createTab: "建立",
+    editorTab: "編輯器",
+    length: "長度",
+    words: "字",
+    quickStart: "快速開始",
+    autoFill: "自動填入",
+    clickToUse: "點擊使用",
+    pasteLinkHere: "在此貼上連結...",
+    imageUrl: "圖片 URL...",
+    add: "新增",
+    craftingYourMasterpiece: "正在打造你的作品",
+    aiAnalyzingPatterns: "AI 正在分析模式...",
+    yourRecentGenerations: "你最近的生成內容",
+    noHistoryYet: "尚無歷史紀錄"
+  },
+  studyPlannerPage: {
+    roadmapHistory: "路線圖歷史",
+    noHistory: "尚無歷史",
+    noHistoryDescription: "生成第一個 AI 路線圖後，會顯示在這裡。",
+    untitledRoadmap: "未命名路線圖"
+  },
+  transactionHistoryPage: {
+    title: "交易紀錄",
+    failedToLoad: "載入交易紀錄失敗",
+    unexpectedError: "發生非預期錯誤",
+    couldNotLoad: "無法載入歷史紀錄",
+    tryAgain: "再試一次",
+    noTransactions: "找不到交易紀錄",
+    noTransactionsDescription: "你目前還沒有任何購買紀錄。",
+    transactionFallback: "交易",
+    notAvailable: "無資料",
+    coinsAmount: "{{amount}} 點數",
+    columns: {
+      description: "描述",
+      dateTime: "日期與時間",
+      amount: "金額",
+      type: "類型"
+    }
+  },
+  solvePage: {
+    newChat: "新對話",
+    history: "歷史",
+    whatDoYouWantToSolve: "你想解什麼題目？",
+    attachment: "附件",
+    invalidFileType: "請選擇有效檔案（圖片（不含 GIF）、PDF、DOC、DOCX、TXT、XLSX 或 CSV）",
+    uploadingFile: "正在上傳檔案...",
+    processingPdf: "正在處理 PDF...",
+    convertingPagesToImages: "正在將 {{pages}} 頁轉成圖片...",
+    convertingPage: "正在轉換第 {{page}} 頁／共 {{total}} 頁...",
+    pdfConversionCompleted: "PDF 轉換完成！",
+    errorConvertingPdf: "PDF 轉換失敗",
+    solutionFileName: "解答.pdf",
+    processingErrorMessage: "抱歉，處理你的請求時發生錯誤，請再試一次。",
+    dragDropUpload: "拖放或點擊以上傳圖片、PDF、文件、XLSX 等",
+    attachedFile: "已附加：{{name}}",
+    typeYourQuestionHere: "在這裡輸入你的問題...",
+    askFollowUpQuestion: "繼續追問...",
+    copyToClipboard: "複製到剪貼簿",
+    copy: "複製",
+    exportAsPdf: "匯出為 PDF",
+    exportPdf: "匯出 PDF",
+    downloadFile: "下載檔案",
+    solveHistory: "解題歷史",
+    untitledChat: "未命名對話",
+    viewConversation: "查看對話",
+    subjects: {
+      psychology: "心理學",
+      physics: "物理",
+      biology: "生物",
+      math: "數學",
+      general: "通用",
+      chemistry: "化學",
+      language: "語言",
+      history: "歷史",
+      economics: "經濟學"
+    }
+  },
+  matrixDashboard: {
+    heroTitle: "嗨 {{name}}，你今天想精通什麼？",
+    heroSubtitle: "上傳任何內容，即可取得互動筆記、抽認卡、測驗等",
+    untitledStudySet: "未命名學習集",
+    studySetCard: {
+      unfamiliar: "不熟悉",
+      learning: "學習中",
+      mastered: "已掌握",
+      moveToFolder: "移動到資料夾",
+      pathToMastery: "你的掌握進度",
+      renameStudySet: "重新命名學習集",
+      deleteStudySet: "刪除學習集",
+      deleteStudySetMessage: "確定要刪除「{{title}}」嗎？此操作無法復原。"
+    },
+    actionCards: {
+      upload: {
+        title: "上傳",
+        description: "圖片、檔案、音訊、影片"
+      },
+      paste: {
+        title: "貼上",
+        description: "YouTube、網站、文字"
+      },
+      record: {
+        title: "錄音",
+        description: "錄製即時講課"
+      }
+    },
+    modals: {
+      rename: {
+        defaultTitle: "重新命名",
+        nameLabel: "名稱",
+        saveChanges: "儲存變更"
+      },
+      upload: {
+        title: "請上傳你的檔案",
+        subtitle: "我們會把你的檔案轉成超強學習資料",
+        maxFilesError: "最多只能上傳 5 個檔案。",
+        singleNonImageError: "每次只能上傳 1 個非圖片檔案。",
+        mixedFileTypeError: "上傳多個檔案時，不能將圖片與其他檔案類型混合。",
+        signInError: "請先登入再上傳檔案。",
+        pdfDetected: "偵測到 PDF",
+        processPdf: "處理 PDF",
+        uploadFailed: "上傳失敗，請再試一次。",
+        clickOrDrag: "點擊上傳或拖曳最多 5 個檔案",
+        supportedFileTypes: "支援圖片、PDF、Word、PowerPoint、音訊或影片檔案",
+        uploadComplete: "上傳完成",
+        uploading: "上傳中...",
+        file: "個檔案",
+        pdfOptions: {
+          includeImagesTitle: "包含圖片（AI 視覺）",
+          includeImagesDescription: "適合投影片/圖表。費用：2 點數/頁。",
+          ocrTitle: "OCR",
+          ocrDescription: "適合掃描文件。費用：1 點數/頁。",
+          extractTextTitle: "擷取文字",
+          extractTextDescription: "僅擷取文字。標準文件處理。"
+        }
+      },
+      paste: {
+        signInError: "請先登入。",
+        title: "新增內容",
+        subtitle: "輸入 URL 或貼上文字來建立你的學習集",
+        enterUrlLabel: "輸入 YouTube/網站 URL",
+        urlPlaceholder: "https://youtu.be/...",
+        or: "或",
+        copyPasteLabel: "複製並貼上文字作為內容",
+        notesPlaceholder: "在這裡貼上你的筆記"
+      },
+      record: {
+        title: "錄製音訊",
+        subtitle: "錄製你的講課、筆記或學習資料",
+        microphoneAccessError: "無法存取麥克風。",
+        uploadFailed: "上傳錄音失敗。",
+        recording: "錄製中...",
+        readyToRecord: "準備開始錄製",
+        clickMic: "點擊麥克風開始錄製",
+        recordingComplete: "錄製完成",
+        discardAndRecordAgain: "捨棄並重新錄製"
+      },
+      methodSelection: {
+        title: "你想包含哪些內容？",
+        subtitle: "請選擇要包含在學習集中的所有方法：",
+        languageEnglish: "英文",
+        generate: "生成"
+      },
+      createFolder: {
+        folderName: "資料夾名稱",
+        placeholder: "例如：生物 101",
+        colorCode: "顏色",
+        createButton: "建立資料夾"
+      },
+      moveDocument: {
+        title: "移動「{{documentTitle}}」",
+        subtitle: "選擇要將此文件移動到的資料夾",
+        document: "文件",
+        defaultLocation: "預設位置",
+        itemsCount: "{{count}} 項",
+        moveButton: "移動文件"
+      }
+    }
+  },
+  studyMaterialPage: {
+    addMethod: "新增方法",
+    studyMaterial: "學習內容",
+    studyTimer: "學習計時器",
+    addToChat: "加入聊天",
+    methods: {
+      notes: "筆記",
+      multipleChoice: "選擇題",
+      flashcards: "抽認卡",
+      podcast: "播客",
+      speechToText: "語音轉文字",
+      mindmap: "心智圖",
+      fillInTheBlanks: "填空題",
+      writtenTest: "書面測驗",
+      tutorLesson: "導師課程",
+      content: "內容"
+    },
+    methodLabels: {
+      notes: "筆記",
+      multipleChoice: "選擇題",
+      flashcards: "抽認卡"
+    }
+  },
+  methodSelection: {
+    customInstructionsOptional: "自訂指示（可選）",
+    customInstructionsPlaceholderDefinitions: "著重定義，加入更多圖解...",
+    customInstructionsPlaceholderChapter: "著重第 5 章，加入更多範例...",
+    clearSelection: "清除選擇",
+    done: "完成",
+    numberOfQuestions: "題目數量",
+    numberOfCards: "卡片數量",
+    difficultyLevel: "難度等級",
+    auto: "自動",
+    smart: "智慧",
+    few: "較少",
+    standard: "標準",
+    many: "較多",
+    easy: "簡單",
+    medium: "中等",
+    hard: "困難",
+    speakers: "講者",
+    random: "隨機",
+    speaker1: "講者 1",
+    speaker2: "講者 2",
+    podcastLength: "Podcast 長度",
+    short: "短",
+    long: "長",
+    personality: "風格",
+    default: "預設",
+    sassy: "俏皮",
+    annoyed: "不耐煩",
+    angry: "生氣",
+    gaslighter: "PUA 風格",
+    corny: "尷尬風",
+    uploadAudioOrDocument: "上傳音訊或文件",
+    clickOrDragUpload: "點擊或拖曳以上傳音訊/檔案",
+    supportedFormats: "支援 MP3、WAV、PDF、DOCX",
+    processing: "處理中...",
+    extractText: "擷取文字",
+    extractedTextPreview: "擷取文字預覽：這是從 {{name}} 提取文字的模擬內容",
+    clear: "清除",
+    mindmapDepth: "心智圖深度",
+    simple: "簡單",
+    detailed: "詳細",
+    complex: "複雜",
+    reset: "重設",
+    newStudySet: "新的學習集",
+    insufficientBalance: "餘額不足",
+    failedToInitiateGeneration: "啟動生成失敗，請再試一次。",
+    orderSummary: "訂單摘要",
+    reviewSelection: "請確認你的選擇與預估花費。",
+    sourceMaterial: "來源資料",
+    pdfPages: "PDF（{{count}} 頁）",
+    pdfOcrPages: "PDF（OCR）（{{count}} 頁）",
+    image: "圖片",
+    audioVideoMins: "音訊/影片（{{count}} 分鐘）",
+    textOrUrl: "文字 / URL",
+    totalCost: "總費用",
+    insufficientBalanceNeedMore: "餘額不足。你還需要 {{count}} 點數。",
+    generating: "生成中...",
+    payAndGenerate: "付款並生成",
+    configurationComingSoon: "此方法的設定即將推出。",
+    whatToInclude: "你想包含哪些內容？",
+    chooseMethods: "選擇你想加入學習集的所有方法：",
+    generatingDescription: "我們正在為你建立個人化學習資料。為了確保品質，此流程大約需要 3 分鐘。",
+    methodLabels: {
+      podcast: "播客",
+      tutorLesson: "導師課程",
+      writtenTests: "書面測驗",
+      fillBlanks: "填空題",
+      speechToText: "語音轉文字",
+      mindmap: "心智圖"
+    },
+    modalTitles: {
+      customize: "自訂",
+      customizeNotes: "自訂筆記",
+      customizeMultipleChoice: "自訂選擇題",
+      customizeFlashcards: "自訂抽認卡",
+      chooseHosts: "選擇你的主持人",
+      speechToText: "語音轉文字",
+      customizeMindmap: "自訂心智圖"
+    },
+    modalSubtitles: {
+      notes: "加入用於生成內容的自訂指示",
+      multipleChoice: "調整題目數量與難度",
+      flashcards: "調整卡片數量與難度",
+      podcast: "選擇講者與 Podcast 長度",
+      speechToText: "上傳音訊或文件以擷取文字",
+      mindmap: "調整心智圖複雜度與風格"
+    },
+    loading: {
+      initializing: "初始化中...",
+      analyzingFiles: "正在分析你的檔案...",
+      generatingNotes: "正在產生完整筆記...",
+      creatingQuestions: "正在建立具挑戰性的題目...",
+      formulatingFlashcards: "正在整理抽認卡...",
+      polishingStudySet: "正在優化你的學習集...",
+      almostThere: "快完成了...",
+      highTraffic: "目前流量較高，處理時間可能較長，請勿離開頁面。",
+      longerThanExpected: "處理時間比預期更長...",
+      waitLonger: "請再稍等一下..."
+    }
+  },
+  addMethodModal: {
+    addStudyMethod: "新增學習方法",
+    summary: "摘要",
+    selectAdditionalMethods: "為這個學習集選擇要額外生成的方法",
+    reviewSelection: "確認你的選擇",
+    added: "已加入",
+    insufficientBalance: "餘額不足",
+    missingUserOrDocumentText: "缺少使用者或文件文字",
+    failedToGenerateMethods: "生成方法失敗，請再試一次。",
+    selectedMethods: "已選方法",
+    oneCoin: "1 點數",
+    totalCost: "總費用",
+    coins: "點數",
+    yourBalance: "你的餘額",
+    generate: "生成",
+    methods: {
+      notes: "筆記",
+      multipleChoice: "選擇題",
+      flashcards: "抽認卡",
+      podcast: "播客",
+      tutorLesson: "導師課程",
+      writtenTests: "書面測驗",
+      fillBlanks: "填空題"
+    }
+  },
+  studyRightPanel: {
+    defaultChatTitle: "學習集聊天",
+    defaultSubject: "一般",
+    chatError: "抱歉，發生錯誤，請再試一次。",
+    askAboutStudySet: "可以詢問任何與此學習集相關的問題...",
+    askAnything: "想問什麼都可以...",
+    chatTab: "聊天",
+    contentTab: "內容",
+    notesTab: "筆記"
+  },
+  studyContent: {
+    audioContent: "音訊內容",
+    audioNotSupported: "你的瀏覽器不支援音訊播放。",
+    videoNotSupported: "你的瀏覽器不支援影片播放。",
+    officePreviewTitle: "Office 文件預覽",
+    openOriginalFile: "開啟原始檔案",
+    noContentAvailable: "目前沒有可顯示的內容。",
+    originalFile: "原始檔案",
+    extractedText: "擷取文字"
+  },
+  humanizer: {
+    title: "潤稿器",
+    inputTab: "輸入",
+    resultTab: "結果",
+    sourceContent: "原始內容",
+    inputPlaceholder: "貼上你想潤稿的 AI 生成文字...",
+    detector: "偵測器",
+    mode: "模式",
+    rephrase: "改寫",
+    business: "商務",
+    multilingual: "多語言",
+    humanizing: "潤稿中...",
+    humanizeText: "開始潤稿",
+    humanizedResult: "潤稿結果",
+    readyToHumanize: "準備開始潤稿",
+    readyDescription: "在左側貼上 AI 生成文字，然後點擊「開始潤稿」。",
+    characterLimitExceeded: "字數超出限制（最多 10,000）",
+    failedToHumanize: "潤稿失敗，請再試一次。",
+    tones: {
+      standard: "標準",
+      natural: "自然",
+      professional: "專業",
+      casual: "輕鬆",
+      academic: "學術"
+    }
+  },
+  gradePage: {
+    backToDashboard: "返回儀表板",
+    whatDoYouWantToGrade: "你想批改什麼？",
+    subtitle: "依照你的評分規準批改內容",
+    upload: "上傳",
+    uploadFormats: "PDF、Word 文件",
+    paste: "貼上",
+    pasteDescription: "複製並貼上文字",
+    yourGrades: "你的批改紀錄",
+    noGradesYet: "目前沒有批改紀錄。請先上傳或貼上內容。",
+    gradingReport: "批改報告",
+    viewDetailedReport: "查看詳細批改報告與回饋...",
+    viewDetails: "查看詳情",
+    rubric: "評分規準",
+    copyToClipboard: "複製到剪貼簿",
+    exportAsPdf: "匯出為 PDF",
+    exportPdf: "匯出 PDF",
+    uploadPaper: "上傳試卷",
+    pastePaper: "貼上試卷",
+    uploadRubric: "上傳評分規準",
+    uploadRubricDescription: "上傳評分規準可幫助 AI 更準確地批改。",
+    clickToUploadRubric: "點擊以上傳評分規準",
+    rubricFormats: "PDF 或 Word（可選）",
+    skipRubric: "略過評分規準",
+    uploadPaperDescription: "上傳你要批改的學生作答或試卷。",
+    clickToUploadPaper: "點擊以上傳試卷",
+    paperFormats: "PDF、Word 或圖片",
+    gradePaper: "批改試卷",
+    pastePaperContent: "貼上試卷內容",
+    pastePaperContentDescription: "貼上你要批改的文字內容。",
+    pasteYourTextHere: "在此貼上文字...",
+    downloadFile: "下載檔案"
   },
 
   courses: {
@@ -610,19 +1290,148 @@ export const zhTW = {
     inProgress: '進行中',
     notStarted: '未開始'
   },
+  dashboardPro: {
+    title: "Pro 儀表板",
+    proMember: "Pro 會員",
+    upgradeDescription: "升級到 Pro 以存取你的儀表板",
+    upgradeToPro: "升級到 Pro",
+    welcomeBack: "歡迎回來，{{name}}！",
+    aiResponseUsage: "AI 回覆使用情況",
+    responsesLeft: "剩餘回覆",
+    usedLabel: "已使用：{{count}}",
+    totalLabel: "總計：{{count}}",
+    used: "已使用",
+    remaining: "剩餘",
+    total: "總計",
+    daysLeft: "剩餘天數",
+    responsesLeftTitle: "剩餘回覆",
+    ofTotal: "共 {{count}}",
+    aiQueries: "AI 查詢",
+    thisMonth: "本月",
+    transactions: "交易",
+    allTime: "全部時間",
+    untilRenewal: "距離續約",
+    subscriptionStatus: "訂閱狀態",
+    plan: "方案",
+    proPlan: "Pro 方案",
+    status: "狀態",
+    validUntil: "有效至",
+    autoRenewal: "自動續約",
+    active: "啟用中",
+    expired: "已到期",
+    recentActivity: "最近活動",
+    all: "全部",
+    responsesCount: "{{count}} 次回覆",
+    remainingCount: "剩餘 {{count}}",
+    noActivityFound: "找不到活動紀錄",
+    showingEntries: "顯示第 {{start}} 到 {{end}} 筆，共 {{total}} 筆",
+    transactionHistory: "交易紀錄",
+    subscription: "訂閱",
+    coinsAmount: "{{count}} 點數",
+    aiResponseHistory: "AI 回覆歷史",
+    query: "查詢",
+    noAiResponsesFound: "找不到 AI 回覆紀錄",
+    usageLogs: "使用紀錄",
+    responsesUsed: "已使用回覆",
+    impact: "影響",
+    noUsageLogsFound: "找不到使用紀錄",
+    startUsingAiFeatures: "開始使用 AI 功能後，你的活動會顯示在這裡",
+    transactionDetails: "交易詳情",
+    aiResponseDetails: "AI 回覆詳情",
+    usageLogDetails: "使用紀錄詳情",
+    subscriptionPurchase: "訂閱購買",
+    transactionId: "交易 ID",
+    dateTime: "日期與時間",
+    paymentMethod: "付款方式",
+    creditCard: "信用卡",
+    subscriptionPeriod: "訂閱期間",
+    daysCount: "{{count}} 天",
+    planFeatures: "方案功能",
+    unlimited: "不限",
+    aiResponses: "AI 回覆",
+    daysAccess: "可用天數",
+    totalCost: "總費用",
+    responsesUsedCount: "已使用 {{count}} 次回覆",
+    responseId: "回覆 ID",
+    queryInformation: "查詢資訊",
+    mode: "模式",
+    fileName: "檔案名稱",
+    fileSize: "檔案大小",
+    fileType: "檔案類型",
+    inputText: "輸入文字",
+    subject: "科目",
+    difficulty: "難度",
+    additionalData: "其他資料",
+    usageActivity: "使用活動",
+    remainingAfter: "使用後剩餘",
+    logId: "紀錄 ID",
+    activityDescription: "活動描述",
+    responseUsageImpact: "回覆使用影響",
+    before: "之前",
+    after: "之後",
+    tabs: {
+      overview: "總覽",
+      transactions: "交易",
+      aiResponses: "AI 回覆",
+      usageLogs: "使用紀錄"
+    },
+    responseTypes: {
+      mistakeChecker: "錯誤檢查",
+      documentSummary: "文件摘要",
+      contentGeneration: "內容生成",
+      flashcardGeneration: "抽認卡生成",
+      homeworkSolution: "作業解題",
+      aiTutorChat: "AI 導師對話",
+      citationGenerator: "引用生成",
+      studyPlanner: "學習規劃",
+      textAnalyzer: "文字分析",
+      languageTranslator: "語言翻譯",
+      mathSolver: "數學解題",
+      scienceAssistant: "科學助手"
+    }
+  },
 
   blog: {
-    title: '部落格',
-    latestPosts: '最新文章',
-    readMore: '閱讀更多',
-    categories: '類別',
-    tags: '標籤',
-    author: '作者',
-    publishedOn: '發佈於',
-    relatedPosts: '相關文章',
-    comments: '留言',
-    addComment: '新增留言',
-    share: '分享文章'
+    title: "最新洞察與更新",
+    subtitle: "透過專家建議、教育趨勢與 MatrixEdu 平台更新保持領先。",
+    searchPlaceholder: "搜尋文章...",
+    readMore: "閱讀更多",
+    readArticle: "閱讀文章",
+    categories: "類別",
+    category: "分類",
+    allCategories: "所有分類",
+    popularTags: "熱門標籤",
+    tags: "標籤",
+    quickFilters: "快速篩選",
+    clearAll: "清除全部",
+    latestArticles: "最新文章",
+    featuredArticles: "📌 精選文章",
+    featured: "精選",
+    activeFilters: "啟用篩選：",
+    resultsFor: "搜尋結果：",
+    showing: "顯示",
+    articleSingular: "篇文章",
+    articlesPlural: "篇文章",
+    sortBy: "排序方式",
+    sortNewest: "最新優先",
+    sortOldest: "最舊優先",
+    sortPopular: "最受歡迎",
+    sortTitle: "標題",
+    author: "作者",
+    anonymous: "匿名",
+    readTime: "閱讀時間",
+    read: "閱讀",
+    date: "日期",
+    published: "發佈",
+    minRead: "分鐘閱讀",
+    saveForLater: "稍後儲存",
+    like: "按讚",
+    share: "分享",
+    latestPosts: "最新文章",
+    relatedPosts: "相關文章",
+    comments: "留言",
+    addComment: "新增留言",
+    publishedOn: "發佈於"
   },
 
   profile: {
@@ -666,17 +1475,31 @@ export const zhTW = {
     contentWriter: "內容寫作器",
     citationGenerator: "引用生成器",
     documentSummarizer: "文件摘要器",
+    humanizer: "潤稿器",
+    workspaceBadge: "AI 學習工作區",
+    proActive: "Pro 已啟用",
+    creditsLeft: "剩餘點數",
+    upgradePro: "升級 Pro",
+    toolDescriptions: {
+      uploadHomework: "即時分析與解題協助",
+      mistakeChecker: "語法與邏輯檢查",
+      studyPlanner: "個人化學習路線",
+      flashcards: "智慧間隔複習",
+      contentWriter: "AI 輔助寫作",
+      humanizer: "讓 AI 文字更自然",
+      documentSummarizer: "提取關鍵重點"
+    },
     
     // Upgrade Modal
     upgradeModal: {
-      title: "解鎖高級功能",
-      notProDescription: "升級到專業版以存取所有AI驅動的學習工具和無限回應。",
-      limitReachedDescription: "您已達到每月回應限制。升級到專業版以獲得無限存取權限。",
+      title: "解鎖 Pro 潛能",
+      notProDescription: "解鎖進階 AI 導師、作文寫作與個人化讀書計畫，享受更完整學習體驗。",
+      limitReachedDescription: "你今天的使用額度已用完。立即升級或明天再繼續學習。",
       features: {
-        generousAllowance: "豐富的月度配額",
-        advancedTutoring: "進階AI輔導",
-        contentGeneration: "內容生成工具",
-        prioritySupport: "優先支援"
+        generousAllowance: "無限 AI 回覆",
+        advancedTutoring: "進階 GPT-4o 模型存取",
+        contentGeneration: "個人化學習路線圖",
+        prioritySupport: "優先處理速度"
       },
       maybeLaterBtn: "稍後再說",
       upgradeNowBtn: "立即升級"
@@ -1012,7 +1835,145 @@ export const zhTW = {
   yourSolutionWillAppearHere: "提交作業問題後，您的解答將顯示在這裡。",
   processing: "處理中",
   error: "錯誤",
-  pending: "待處理"
+  pending: "待處理",
+  reflectHero: {
+    badge: '使用 AI 更聰明地學習',
+    title: '在 MatrixEdu 思考得更好',
+    subtitle: '你的全方位 AI 學習夥伴，不再錯過任何概念、截止日期或成績。',
+    mockupLabel: 'MatrixEdu'
+  },
+  howItWorks: {
+    title: '運作方式',
+    subtitle: '透過完整流程，在幾分鐘內掌握任何學科。',
+    videoSimulation: '影片模擬',
+    steps: {
+      0: {
+        title: '上傳或貼上內容',
+        description: '無論是課堂筆記、YouTube 影片或網頁，只需上傳資料，AI 即可立即分析。',
+        videoPlaceholder: '上傳示範影片'
+      },
+      1: {
+        title: '即時閃卡',
+        description: '把數小時的學習縮短為數分鐘。AI 會自動從學習資料產生完整閃卡，幫助你記憶重點。',
+        videoPlaceholder: '閃卡示範影片'
+      },
+      2: {
+        title: '智慧測驗',
+        description: '透過自適應測驗檢驗理解程度，並獲得每題 AI 詳解，知道錯在哪裡以及如何改進。',
+        videoPlaceholder: '測驗示範影片'
+      },
+      3: {
+        title: '書寫測驗',
+        description: '以 AI 評分的申論題練習書寫考試，立即獲得文風、準確性與完整度回饋。',
+        videoPlaceholder: '書寫測驗示範影片'
+      },
+      4: {
+        title: '互動心智圖',
+        description: '用自動產生的心智圖視覺化概念關聯，特別適合理解複雜主題與結構關係。',
+        videoPlaceholder: '心智圖示範影片'
+      },
+      5: {
+        title: '智慧讀書計畫',
+        description: '依照考試日期與學習節奏建立個人化讀書時程，維持有條理並高效覆蓋所有主題。',
+        videoPlaceholder: '計畫示範影片'
+      },
+      6: {
+        title: 'AI 筆記生成',
+        description: '立即將長篇講義或文件整理成精簡且有結構的學習筆記，專注在學習而非抄寫。',
+        videoPlaceholder: '筆記示範影片'
+      }
+    }
+  },
+  videoDemo: {
+    title: '實際看看',
+    subtitle: '體驗 AI 學習平台帶來的未來感。',
+    demoUrl: 'edusmart.ai/demo',
+    interactiveTitle: '互動示範',
+    clickToStart: '點擊開始導覽'
+  },
+  matrixEduLanding: {
+    workspace: {
+      title: '解鎖你的 MatrixEdu 工作區',
+      subtitle: '從儀表板到側邊欄工具，在同一處管理學習集、解題與內容寫作。',
+      tryFree: '免費試用 MatrixEdu',
+      cards: {
+        dashboard: {
+          title: '儀表板與學習集',
+          description: '透過學習集、使用洞察與快速入口，維持有系統的學習節奏。',
+          action: '開啟儀表板'
+        },
+        aiTools: {
+          title: '側邊欄 AI 工具',
+          description: '可直接使用解題、作業評分、內容寫作、潤稿與讀書計畫等工具。',
+          action: '使用 AI 工具'
+        },
+        practiceFlow: {
+          title: '更聰明的練習流程',
+          description: '從解題到寫作與規劃，一套串連流程支援每日學習進度。',
+          action: '開始學習'
+        }
+      }
+    },
+    comparison: {
+      title: '為什麼 MatrixEdu 更勝一籌',
+      subtitle: '不要再更辛苦地讀書，運用 AI 更聰明地學習。',
+      versus: '對比',
+      cta: '立即加入 1,000,000+ 位學生',
+      disclaimer: '無需信用卡 • 提供免費方案',
+      oldWay: {
+        title: '傳統方式',
+        items: {
+          0: '花大量時間被動閱讀與畫重點',
+          1: '手動做閃卡（很枯燥）',
+          2: '書寫答案沒有回饋',
+          3: '筆記分散在各種筆記本'
+        }
+      },
+      matrixEduWay: {
+        title: 'MatrixEdu 方式',
+        recommended: '推薦',
+        items: {
+          0: '即時產生活躍回憶素材',
+          1: '幾秒內生成 AI 閃卡',
+          2: '即時評分與解析',
+          3: '所有資料同步且有條理'
+        }
+      }
+    },
+    faq: {
+      title: '常見問題',
+      items: {
+        0: {
+          question: '我可以在 MatrixEdu 做什麼？',
+          answer: 'MatrixEdu 提供整合式學習工作區，包含儀表板、解題、作業評分、內容寫作、潤稿與讀書計畫等日常工具。'
+        },
+        1: {
+          question: '儀表板裡有哪些功能？',
+          answer: '儀表板是你的學習中樞，可管理學習集與追蹤進度，讓你從上次中斷處繼續。'
+        },
+        2: {
+          question: '側邊欄如何幫助我更快學習？',
+          answer: '側邊欄可直達核心工具，讓你在解題、評分、寫作與規劃間快速切換而不失去脈絡。'
+        },
+        3: {
+          question: '我可以上傳資料並取得 AI 協助嗎？',
+          answer: '可以。你可使用自己的學習資料，並透過 AI 生成解釋、優化寫作與建立更有效的學習流程。'
+        },
+        4: {
+          question: '有提供免費與付費方案嗎？',
+          answer: '有。你可先從免費體驗開始，當需要更高配額與進階功能時再升級。'
+        },
+        5: {
+          question: '如何管理帳號與付款資訊？',
+          answer: '可透過個人檔案與交易紀錄頁查看帳戶資訊與帳務活動。'
+        },
+        6: {
+          question: '我要如何聯絡客服？',
+          answer: '可透過平台聯絡管道與團隊聯繫，處理帳號、付款或產品相關問題。'
+        }
+      }
+    }
+  }
 };
 
 export default zhTW; 

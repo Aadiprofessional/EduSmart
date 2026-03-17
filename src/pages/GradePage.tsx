@@ -13,6 +13,7 @@ import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
 import 'katex/dist/katex.min.css';
 import coinIcon from '../assets/assets_coin.png';
+import { useLanguage } from '../utils/LanguageContext';
 
 // Type definitions for PDF.js
 interface PDFPageProxy {
@@ -78,6 +79,7 @@ interface DBMessage {
 }
 
 const GradePage: React.FC = () => {
+  const { t } = useLanguage();
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(window.innerWidth >= 1024);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
 
@@ -912,13 +914,13 @@ const GradePage: React.FC = () => {
                  className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors bg-white/80 dark:bg-black/50 backdrop-blur-sm px-3 py-2 rounded-lg shadow-sm"
                >
                   <FaChevronRight className="rotate-180" size={12} /> 
-                  <span className="hidden sm:inline">Back to Dashboard</span>
+                  <span className="hidden sm:inline">{t('gradePage.backToDashboard')}</span>
                </button>
             ) : (
                <button 
                   onClick={handleNewChat}
                   className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors bg-white/80 dark:bg-black/50 backdrop-blur-sm rounded-full shadow-sm"
-                  title="New Chat"
+                  title={t('solvePage.newChat')}
                 >
                    <FaRegEdit size={20} />
                 </button>
@@ -932,8 +934,8 @@ const GradePage: React.FC = () => {
            >
              <div className="max-w-4xl mx-auto w-full pt-20 lg:pt-24">
              <div className="text-center mb-16">
-                 <h1 className="text-4xl font-bold mb-3 text-gray-900 dark:text-white">What do you want to grade?</h1>
-                 <p className="text-gray-500 dark:text-gray-400">Grade your paper based on your rubric</p>
+                 <h1 className="text-4xl font-bold mb-3 text-gray-900 dark:text-white">{t('gradePage.whatDoYouWantToGrade')}</h1>
+                 <p className="text-gray-500 dark:text-gray-400">{t('gradePage.subtitle')}</p>
              </div>
 
              {/* Action Cards */}
@@ -945,8 +947,8 @@ const GradePage: React.FC = () => {
                      <div className="mb-4 text-gray-400 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
                          <FaUpload size={24} />
                      </div>
-                     <h3 className="text-lg font-bold mb-1 text-gray-900 dark:text-white">Upload</h3>
-                     <p className="text-sm text-gray-500">PDF, Word documents</p>
+                     <h3 className="text-lg font-bold mb-1 text-gray-900 dark:text-white">{t('gradePage.upload')}</h3>
+                     <p className="text-sm text-gray-500">{t('gradePage.uploadFormats')}</p>
                  </button>
 
                  <button 
@@ -956,18 +958,18 @@ const GradePage: React.FC = () => {
                      <div className="mb-4 text-gray-400 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
                          <FaFileAlt size={24} />
                      </div>
-                     <h3 className="text-lg font-bold mb-1 text-gray-900 dark:text-white">Paste</h3>
-                     <p className="text-sm text-gray-500">Copy and paste text</p>
+                     <h3 className="text-lg font-bold mb-1 text-gray-900 dark:text-white">{t('gradePage.paste')}</h3>
+                     <p className="text-sm text-gray-500">{t('gradePage.pasteDescription')}</p>
                  </button>
              </div>
 
              {/* Your Grades Section */}
              <div>
-                 <h2 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">Your grades</h2>
+                 <h2 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">{t('gradePage.yourGrades')}</h2>
                  
                  {history.length === 0 ? (
                     <div className="text-center text-gray-500 py-8">
-                      No grades yet. Upload or paste text to start.
+                     {t('gradePage.noGradesYet')}
                     </div>
                  ) : (
                     <div className="grid gap-4">
@@ -983,7 +985,7 @@ const GradePage: React.FC = () => {
                                          ✍️
                                      </div>
                                      <div>
-                                         <h3 className="font-bold mb-1 text-gray-900 dark:text-white">{item.title || 'Grading Report'}</h3>
+                                        <h3 className="font-bold mb-1 text-gray-900 dark:text-white">{item.title || t('gradePage.gradingReport')}</h3>
                                          <p className="text-xs text-gray-500">{new Date(item.created_at).toLocaleDateString()}</p>
                                      </div>
                                  </div>
@@ -991,12 +993,12 @@ const GradePage: React.FC = () => {
                              </div>
                              
                              <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-6 line-clamp-2">
-                                 View detailed grading report and feedback...
+                                {t('gradePage.viewDetailedReport')}
                              </p>
         
                              <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-white/5">
                                  <button className="flex items-center gap-2 text-sm text-gray-900 dark:text-white font-medium hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                                     View Details <FaChevronRight size={10} />
+                                    {t('gradePage.viewDetails')} <FaChevronRight size={10} />
                                  </button>
                                  {item.rubric_url && (
                                      <a 
@@ -1007,7 +1009,7 @@ const GradePage: React.FC = () => {
                                         className="flex items-center gap-1 text-xs bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors border border-indigo-100 dark:border-indigo-500/20"
                                      >
                                         <FaFileAlt size={10} />
-                                        {item.rubric_name || 'Rubric'}
+                                       {item.rubric_name || t('gradePage.rubric')}
                                      </a>
                                  )}
                              </div>
@@ -1132,16 +1134,16 @@ const GradePage: React.FC = () => {
                                   <button 
                                     onClick={() => handleCopy(msg.content)}
                                     className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
-                                    title="Copy to clipboard"
+                                    title={t('gradePage.copyToClipboard')}
                                   >
-                                    <FaCopy /> Copy
+                                    <FaCopy /> {t('common.copy')}
                                   </button>
                                   <button 
                                     onClick={() => handleExportPDF(msg.content)}
                                     className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
-                                    title="Export as PDF"
+                                    title={t('gradePage.exportAsPdf')}
                                   >
-                                    <FaFilePdf /> Export PDF
+                                    <FaFilePdf /> {t('gradePage.exportPdf')}
                                   </button>
                                 </div>
                               </>
@@ -1168,7 +1170,7 @@ const GradePage: React.FC = () => {
                        <div className="w-6 h-6 lg:w-8 lg:h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
                          <FaUpload className="text-gray-300 group-hover:text-white w-3 h-3 lg:w-3.5 lg:h-3.5" />
                        </div>
-                       <span className="text-xs lg:text-base font-medium">Upload Paper</span>
+                       <span className="text-xs lg:text-base font-medium">{t('gradePage.uploadPaper')}</span>
                    </button>
                    
                    <button 
@@ -1178,7 +1180,7 @@ const GradePage: React.FC = () => {
                        <div className="w-6 h-6 lg:w-8 lg:h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
                          <FaFileAlt className="text-gray-300 group-hover:text-white w-3 h-3 lg:w-3.5 lg:h-3.5" />
                        </div>
-                       <span className="text-xs lg:text-base font-medium">Paste Paper</span>
+                       <span className="text-xs lg:text-base font-medium">{t('gradePage.pastePaper')}</span>
                    </button>
               </div>
 
@@ -1190,9 +1192,9 @@ const GradePage: React.FC = () => {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
             <div className="p-6 border-b border-gray-100 dark:border-white/5">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Upload Rubric</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">{t('gradePage.uploadRubric')}</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Upload a grading rubric to help the AI grade your paper accurately.
+                {t('gradePage.uploadRubricDescription')}
               </p>
             </div>
             
@@ -1230,8 +1232,8 @@ const GradePage: React.FC = () => {
                     <FaUpload className="text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-white" size={24} />
                   </div>
                   <div className="text-center">
-                    <p className="font-medium text-gray-900 dark:text-white mb-1">Click to upload rubric</p>
-                    <p className="text-xs text-gray-500">PDF or Word (Optional)</p>
+                    <p className="font-medium text-gray-900 dark:text-white mb-1">{t('gradePage.clickToUploadRubric')}</p>
+                    <p className="text-xs text-gray-500">{t('gradePage.rubricFormats')}</p>
                   </div>
                 </button>
               )}
@@ -1242,13 +1244,13 @@ const GradePage: React.FC = () => {
                 onClick={handleSkipRubric}
                 className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium px-4 py-2"
               >
-                Skip Rubric
+                {t('gradePage.skipRubric')}
               </button>
               <button 
                 onClick={handleNextRubric}
                 className="bg-gray-900 dark:bg-white text-white dark:text-black px-6 py-2 rounded-lg font-bold hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Next
+                {t('common.next')}
               </button>
             </div>
           </div>
@@ -1260,9 +1262,9 @@ const GradePage: React.FC = () => {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
             <div className="p-6 border-b border-gray-100 dark:border-white/5">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Upload Paper</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">{t('gradePage.uploadPaper')}</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Upload the student paper or answer sheet you want to grade.
+                {t('gradePage.uploadPaperDescription')}
               </p>
             </div>
             
@@ -1300,8 +1302,8 @@ const GradePage: React.FC = () => {
                     <FaUpload className="text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-white" size={24} />
                   </div>
                   <div className="text-center">
-                    <p className="font-medium text-gray-900 dark:text-white mb-1">Click to upload paper</p>
-                    <p className="text-xs text-gray-500">PDF, Word, or Image</p>
+                    <p className="font-medium text-gray-900 dark:text-white mb-1">{t('gradePage.clickToUploadPaper')}</p>
+                    <p className="text-xs text-gray-500">{t('gradePage.paperFormats')}</p>
                   </div>
                 </button>
               )}
@@ -1312,14 +1314,14 @@ const GradePage: React.FC = () => {
                 onClick={() => setShowPaperModal(false)}
                 className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium px-4 py-2"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button 
                 onClick={handleGenerateGrading}
                 disabled={!paperFile}
                 className="bg-gray-900 dark:bg-white text-white dark:text-black px-6 py-2 rounded-lg font-bold hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                Grade Paper
+                {t('gradePage.gradePaper')}
                 {paperFile && paperCost > 0 && (
                    <>
                      <span className="text-sm font-bold ml-1">-{paperCost}</span>
@@ -1336,9 +1338,9 @@ const GradePage: React.FC = () => {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl">
             <div className="p-6 border-b border-gray-100 dark:border-white/5">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Paste Paper Content</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">{t('gradePage.pastePaperContent')}</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Paste the text content of the paper you want to grade.
+                {t('gradePage.pastePaperContentDescription')}
               </p>
             </div>
             
@@ -1346,7 +1348,7 @@ const GradePage: React.FC = () => {
               <textarea
                 value={pastedContent}
                 onChange={(e) => setPastedContent(e.target.value)}
-                placeholder="Paste your text here..."
+                placeholder={t('gradePage.pasteYourTextHere')}
                 className="w-full h-64 bg-white dark:bg-[#1f1f23] text-gray-900 dark:text-gray-200 border border-gray-200 dark:border-white/10 rounded-xl p-4 focus:outline-none focus:border-indigo-500 dark:focus:border-white/30 resize-none"
               />
             </div>
@@ -1356,14 +1358,14 @@ const GradePage: React.FC = () => {
                 onClick={() => setShowPasteModal(false)}
                 className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium px-4 py-2"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button 
                 onClick={handlePasteSubmit}
                 disabled={!pastedContent.trim()}
                 className="bg-gray-900 dark:bg-white text-white dark:text-black px-6 py-2 rounded-lg font-bold hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                Grade Paper
+                {t('gradePage.gradePaper')}
                 {pastedContent.trim() && (
                    <>
                      <span className="text-sm font-bold ml-1">-{pasteCost}</span>
@@ -1394,7 +1396,7 @@ const GradePage: React.FC = () => {
                    <p className="text-xl font-medium">{previewAttachment.name}</p>
                    {previewAttachment.url && (
                        <a href={previewAttachment.url} target="_blank" rel="noopener noreferrer" className="inline-block mt-4 bg-white text-black px-6 py-2 rounded-full font-bold hover:bg-gray-200 transition-colors">
-                          Download File
+                         {t('gradePage.downloadFile')}
                        </a>
                    )}
                 </div>

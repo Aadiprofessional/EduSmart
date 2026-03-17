@@ -2,8 +2,10 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { FaMagic } from 'react-icons/fa';
 import MatrixEduNavbar from '../layout/MatrixEduNavbar';
+import { useLanguage } from '../../utils/LanguageContext';
 
 const ReflectHero: React.FC = () => {
+  const { t } = useLanguage();
   // Animation for the "black hole" particles
   const particles = Array.from({ length: 50 }).map((_, i) => ({
     id: i,
@@ -31,7 +33,7 @@ const ReflectHero: React.FC = () => {
             className="mb-8 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-sm font-medium text-purple-200 backdrop-blur-md hover:bg-white/10 transition-colors cursor-pointer"
         >
             <FaMagic className="text-purple-400" />
-            Study smarter using AI
+            {t('reflectHero.badge')}
         </motion.div>
 
         {/* Title */}
@@ -41,7 +43,7 @@ const ReflectHero: React.FC = () => {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="text-5xl md:text-7xl font-bold tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60"
         >
-            Think better with MatrixEdu
+            {t('reflectHero.title')}
         </motion.h1>
 
         {/* Subtitle */}
@@ -51,7 +53,7 @@ const ReflectHero: React.FC = () => {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="text-lg md:text-xl text-gray-400 mb-12 max-w-lg mx-auto"
         >
-            Your all-in-one AI study companion. Never miss a concept, deadline, or grade.
+            {t('reflectHero.subtitle')}
         </motion.p>
 
         {/* Black Hole / Event Horizon Effect */}
@@ -108,7 +110,7 @@ const ReflectHero: React.FC = () => {
                         <div className="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/50"></div>
                         <div className="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50"></div>
                     </div>
-                    <div className="text-xs text-gray-500">MatrixEdu</div>
+                    <div className="text-xs text-gray-500">{t('reflectHero.mockupLabel')}</div>
                     <div className="w-4"></div>
                 </div>
                 {/* Mockup Content */}

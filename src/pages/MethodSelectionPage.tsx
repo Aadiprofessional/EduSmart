@@ -31,6 +31,7 @@ import { useAuth } from '../utils/AuthContext';
 import { supabase } from '../utils/supabase';
 import coinIcon from '../assets/assets_coin.png';
 import * as pdfjsLib from 'pdfjs-dist';
+import { useLanguage } from '../utils/LanguageContext';
 
 // Initialize PDF.js worker
 // Use unpkg for reliable worker loading matching the installed version
@@ -66,13 +67,14 @@ const CustomizeNotes: React.FC<{
     onChange: (updates: Partial<MethodConfig['notes']>) => void;
     onClose: () => void;
 }> = ({ config, onChange, onClose }) => {
+    const { t } = useLanguage();
     return (
         <div className="space-y-6">
             <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Custom Instructions (optional)</label>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">{t('methodSelection.customInstructionsOptional')}</label>
                 <textarea 
                     className="w-full h-32 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl p-4 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-[#c2410c] focus:border-transparent outline-none resize-none placeholder-gray-400 dark:placeholder-gray-600"
-                    placeholder="Focus on definitions, include more diagrams..."
+                    placeholder={t('methodSelection.customInstructionsPlaceholderDefinitions')}
                     value={config.customInstructions}
                     onChange={(e) => onChange({ customInstructions: e.target.value })}
                 />
@@ -82,9 +84,9 @@ const CustomizeNotes: React.FC<{
                     onClick={() => onChange({ customInstructions: '' })}
                     className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-sm font-medium transition-colors"
                 >
-                    Clear Selection
+                    {t('methodSelection.clearSelection')}
                 </button>
-                <button onClick={onClose} className="bg-[#c2410c] hover:bg-[#9a3412] text-white px-6 py-2 rounded-lg font-bold transition-colors">Done</button>
+                <button onClick={onClose} className="bg-[#c2410c] hover:bg-[#9a3412] text-white px-6 py-2 rounded-lg font-bold transition-colors">{t('methodSelection.done')}</button>
             </div>
         </div>
     );
@@ -95,6 +97,7 @@ const CustomizeMultipleChoice: React.FC<{
     onChange: (updates: Partial<MethodConfig['multipleChoice']>) => void;
     onClose: () => void;
 }> = ({ config, onChange, onClose }) => {
+    const { t } = useLanguage();
     const { numQuestions, difficulty, customInstructions } = config;
 
     const updateConfig = (updates: Partial<MethodConfig['multipleChoice']>) => {
@@ -119,33 +122,33 @@ const CustomizeMultipleChoice: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Number of Questions</label>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">{t('methodSelection.numberOfQuestions')}</label>
                 <div className="grid grid-cols-4 gap-3">
                     <OptionButton 
                         active={numQuestions === 'auto'} 
                         onClick={() => updateConfig({ numQuestions: 'auto' })}
-                        label="Auto" 
-                        subLabel="Smart"
+                        label={t('methodSelection.auto')} 
+                        subLabel={t('methodSelection.smart')}
                         icon={<FaMagic />} 
                     />
                     <OptionButton 
                         active={numQuestions === 'few'} 
                         onClick={() => updateConfig({ numQuestions: 'few' })}
-                        label="Few" 
+                        label={t('methodSelection.few')} 
                         subLabel="1-15"
                         icon={<FaListUl />} 
                     />
                     <OptionButton 
                         active={numQuestions === 'standard'} 
                         onClick={() => updateConfig({ numQuestions: 'standard' })}
-                        label="Standard" 
+                        label={t('methodSelection.standard')} 
                         subLabel="20-40"
                         icon={<FaBook />} 
                     />
                     <OptionButton 
                         active={numQuestions === 'many'} 
                         onClick={() => updateConfig({ numQuestions: 'many' })}
-                        label="Many" 
+                        label={t('methodSelection.many')} 
                         subLabel="50+"
                         icon={<FaLayerGroup />} 
                     />
@@ -153,40 +156,40 @@ const CustomizeMultipleChoice: React.FC<{
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Difficulty Level</label>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">{t('methodSelection.difficultyLevel')}</label>
                 <div className="grid grid-cols-4 gap-3">
                     <OptionButton 
                         active={difficulty === 'auto'} 
                         onClick={() => updateConfig({ difficulty: 'auto' })}
-                        label="Auto" 
+                        label={t('methodSelection.auto')} 
                         icon={<FaMagic />} 
                     />
                     <OptionButton 
                         active={difficulty === 'easy'} 
                         onClick={() => updateConfig({ difficulty: 'easy' })}
-                        label="Easy" 
+                        label={t('methodSelection.easy')} 
                         icon={<FaLeaf />} 
                     />
                     <OptionButton 
                         active={difficulty === 'medium'} 
                         onClick={() => updateConfig({ difficulty: 'medium' })}
-                        label="Medium" 
+                        label={t('methodSelection.medium')} 
                         icon={<FaBullseye />} 
                     />
                     <OptionButton 
                         active={difficulty === 'hard'} 
                         onClick={() => updateConfig({ difficulty: 'hard' })}
-                        label="Hard" 
+                        label={t('methodSelection.hard')} 
                         icon={<FaFire />} 
                     />
                 </div>
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Custom Instructions (optional)</label>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">{t('methodSelection.customInstructionsOptional')}</label>
                 <textarea 
                     className="w-full h-24 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl p-4 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-[#c2410c] focus:border-transparent outline-none resize-none placeholder-gray-400 dark:placeholder-gray-600"
-                    placeholder="Focus on chapter 5, include more examples..."
+                    placeholder={t('methodSelection.customInstructionsPlaceholderChapter')}
                     value={customInstructions}
                     onChange={(e) => updateConfig({ customInstructions: e.target.value })}
                 />
@@ -197,9 +200,9 @@ const CustomizeMultipleChoice: React.FC<{
                     onClick={() => updateConfig({ numQuestions: 'auto', difficulty: 'auto', customInstructions: '' })}
                     className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-sm font-medium transition-colors"
                 >
-                    Clear Selection
+                    {t('methodSelection.clearSelection')}
                 </button>
-                <button onClick={onClose} className="bg-[#c2410c] hover:bg-[#9a3412] text-white px-6 py-2 rounded-lg font-bold transition-colors">Done</button>
+                <button onClick={onClose} className="bg-[#c2410c] hover:bg-[#9a3412] text-white px-6 py-2 rounded-lg font-bold transition-colors">{t('methodSelection.done')}</button>
             </div>
         </div>
     );
@@ -210,6 +213,7 @@ const CustomizeFlashcards: React.FC<{
     onChange: (updates: Partial<MethodConfig['flashcards']>) => void;
     onClose: () => void;
 }> = ({ config, onChange, onClose }) => {
+    const { t } = useLanguage();
     const { numCards, difficulty, customInstructions } = config;
 
     const updateConfig = (updates: Partial<MethodConfig['flashcards']>) => {
@@ -234,33 +238,33 @@ const CustomizeFlashcards: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Number of Cards</label>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">{t('methodSelection.numberOfCards')}</label>
                 <div className="grid grid-cols-4 gap-3">
                     <OptionButton 
                         active={numCards === 'auto'} 
                         onClick={() => updateConfig({ numCards: 'auto' })}
-                        label="Auto" 
-                        subLabel="Smart"
+                        label={t('methodSelection.auto')} 
+                        subLabel={t('methodSelection.smart')}
                         icon={<FaMagic />} 
                     />
                     <OptionButton 
                         active={numCards === 'few'} 
                         onClick={() => updateConfig({ numCards: 'few' })}
-                        label="Few" 
+                        label={t('methodSelection.few')} 
                         subLabel="1-15"
                         icon={<FaListUl />} 
                     />
                     <OptionButton 
                         active={numCards === 'standard'} 
                         onClick={() => updateConfig({ numCards: 'standard' })}
-                        label="Standard" 
+                        label={t('methodSelection.standard')} 
                         subLabel="20-40"
                         icon={<FaBook />} 
                     />
                     <OptionButton 
                         active={numCards === 'many'} 
                         onClick={() => updateConfig({ numCards: 'many' })}
-                        label="Many" 
+                        label={t('methodSelection.many')} 
                         subLabel="50+"
                         icon={<FaLayerGroup />} 
                     />
@@ -268,40 +272,40 @@ const CustomizeFlashcards: React.FC<{
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Difficulty Level</label>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">{t('methodSelection.difficultyLevel')}</label>
                 <div className="grid grid-cols-4 gap-3">
                     <OptionButton 
                         active={difficulty === 'auto'} 
                         onClick={() => updateConfig({ difficulty: 'auto' })}
-                        label="Auto" 
+                        label={t('methodSelection.auto')} 
                         icon={<FaMagic />} 
                     />
                     <OptionButton 
                         active={difficulty === 'easy'} 
                         onClick={() => updateConfig({ difficulty: 'easy' })}
-                        label="Easy" 
+                        label={t('methodSelection.easy')} 
                         icon={<FaLeaf />} 
                     />
                     <OptionButton 
                         active={difficulty === 'medium'} 
                         onClick={() => updateConfig({ difficulty: 'medium' })}
-                        label="Medium" 
+                        label={t('methodSelection.medium')} 
                         icon={<FaBullseye />} 
                     />
                     <OptionButton 
                         active={difficulty === 'hard'} 
                         onClick={() => updateConfig({ difficulty: 'hard' })}
-                        label="Hard" 
+                        label={t('methodSelection.hard')} 
                         icon={<FaFire />} 
                     />
                 </div>
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Custom Instructions (optional)</label>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">{t('methodSelection.customInstructionsOptional')}</label>
                 <textarea 
                     className="w-full h-24 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl p-4 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-[#c2410c] focus:border-transparent outline-none resize-none placeholder-gray-400 dark:placeholder-gray-600"
-                    placeholder="Focus on chapter 5, include more examples..."
+                    placeholder={t('methodSelection.customInstructionsPlaceholderChapter')}
                     value={customInstructions}
                     onChange={(e) => updateConfig({ customInstructions: e.target.value })}
                 />
@@ -312,9 +316,9 @@ const CustomizeFlashcards: React.FC<{
                     onClick={() => updateConfig({ numCards: 'auto', difficulty: 'auto', customInstructions: '' })}
                     className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-sm font-medium transition-colors"
                 >
-                    Clear Selection
+                    {t('methodSelection.clearSelection')}
                 </button>
-                <button onClick={onClose} className="bg-[#c2410c] hover:bg-[#9a3412] text-white px-6 py-2 rounded-lg font-bold transition-colors">Done</button>
+                <button onClick={onClose} className="bg-[#c2410c] hover:bg-[#9a3412] text-white px-6 py-2 rounded-lg font-bold transition-colors">{t('methodSelection.done')}</button>
             </div>
         </div>
     );
@@ -325,6 +329,7 @@ const CustomizePodcast: React.FC<{
     onChange: (updates: Partial<MethodConfig['podcast']>) => void;
     onClose: () => void;
 }> = ({ config, onChange, onClose }) => {
+    const { t } = useLanguage();
     const { length, personality } = config;
 
     const updateConfig = (updates: Partial<MethodConfig['podcast']>) => {
@@ -361,80 +366,80 @@ const CustomizePodcast: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Speakers</label>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">{t('methodSelection.speakers')}</label>
                 <div className="space-y-3">
-                    <HostOption label="Random" subLabel="Speaker 1" />
-                    <HostOption label="Random" subLabel="Speaker 2" />
+                    <HostOption label={t('methodSelection.random')} subLabel={t('methodSelection.speaker1')} />
+                    <HostOption label={t('methodSelection.random')} subLabel={t('methodSelection.speaker2')} />
                 </div>
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Podcast Length</label>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">{t('methodSelection.podcastLength')}</label>
                 <div className="grid grid-cols-4 gap-3">
                     <OptionButton 
                         active={length === 'auto'} 
                         onClick={() => updateConfig({ length: 'auto' })}
-                        label="Auto" 
-                        subLabel="Smart"
+                        label={t('methodSelection.auto')} 
+                        subLabel={t('methodSelection.smart')}
                     />
                     <OptionButton 
                         active={length === 'short'} 
                         onClick={() => updateConfig({ length: 'short' })}
-                        label="Short" 
+                        label={t('methodSelection.short')} 
                         subLabel="5-8 min"
                     />
                     <OptionButton 
                         active={length === 'medium'} 
                         onClick={() => updateConfig({ length: 'medium' })}
-                        label="Medium" 
+                        label={t('methodSelection.medium')} 
                         subLabel="10-15 min"
                     />
                     <OptionButton 
                         active={length === 'long'} 
                         onClick={() => updateConfig({ length: 'long' })}
-                        label="Long" 
+                        label={t('methodSelection.long')} 
                         subLabel="18-25 min"
                     />
                 </div>
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Personality</label>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">{t('methodSelection.personality')}</label>
                 <div className="grid grid-cols-3 gap-3">
                     <OptionButton 
                         active={personality === 'default'} 
                         onClick={() => updateConfig({ personality: 'default' })}
-                        label="Default" 
+                        label={t('methodSelection.default')} 
                         icon={<FaUser />}
                     />
                     <OptionButton 
                         active={personality === 'sassy'} 
                         onClick={() => updateConfig({ personality: 'sassy' })}
-                        label="Sassy" 
+                        label={t('methodSelection.sassy')} 
                         icon={<FaMagic />}
                     />
                     <OptionButton 
                         active={personality === 'annoyed'} 
                         onClick={() => updateConfig({ personality: 'annoyed' })}
-                        label="Annoyed" 
+                        label={t('methodSelection.annoyed')} 
                         icon={<FaMeh />}
                     />
                      <OptionButton 
                         active={personality === 'angry'} 
                         onClick={() => updateConfig({ personality: 'angry' })}
-                        label="Angry" 
+                        label={t('methodSelection.angry')} 
                         icon={<FaAngry />}
                     />
                     <OptionButton 
                         active={personality === 'gaslighter'} 
                         onClick={() => updateConfig({ personality: 'gaslighter' })}
-                        label="Gaslighter" 
+                        label={t('methodSelection.gaslighter')} 
                         icon={<FaFrown />}
                     />
                     <OptionButton 
                         active={personality === 'corny'} 
                         onClick={() => updateConfig({ personality: 'corny' })}
-                        label="Corny" 
+                        label={t('methodSelection.corny')} 
                         icon={<FaSmile />}
                     />
                 </div>
@@ -445,9 +450,9 @@ const CustomizePodcast: React.FC<{
                     onClick={() => updateConfig({ length: 'auto', personality: 'default' })}
                     className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-sm font-medium transition-colors"
                 >
-                    Clear Selection
+                    {t('methodSelection.clearSelection')}
                 </button>
-                <button onClick={onClose} className="bg-[#c2410c] hover:bg-[#9a3412] text-white px-6 py-2 rounded-lg font-bold transition-colors">Done</button>
+                <button onClick={onClose} className="bg-[#c2410c] hover:bg-[#9a3412] text-white px-6 py-2 rounded-lg font-bold transition-colors">{t('methodSelection.done')}</button>
             </div>
         </div>
     );
@@ -459,6 +464,7 @@ const CustomizeWrittenTests: React.FC<{
     onChange: (updates: Partial<MethodConfig['writtenTests']>) => void;
     onClose: () => void;
 }> = ({ config, onChange, onClose }) => {
+    const { t } = useLanguage();
     const { numQuestions, difficulty, customInstructions } = config;
 
     const updateConfig = (updates: Partial<MethodConfig['writtenTests']>) => {
@@ -483,33 +489,33 @@ const CustomizeWrittenTests: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Number of Questions</label>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">{t('methodSelection.numberOfQuestions')}</label>
                 <div className="grid grid-cols-4 gap-3">
                     <OptionButton 
                         active={numQuestions === 'auto'} 
                         onClick={() => updateConfig({ numQuestions: 'auto' })}
-                        label="Auto" 
-                        subLabel="Smart"
+                        label={t('methodSelection.auto')} 
+                        subLabel={t('methodSelection.smart')}
                         icon={<FaMagic />} 
                     />
                     <OptionButton 
                         active={numQuestions === 'few'} 
                         onClick={() => updateConfig({ numQuestions: 'few' })}
-                        label="Few" 
+                        label={t('methodSelection.few')} 
                         subLabel="1-15"
                         icon={<FaListUl />} 
                     />
                     <OptionButton 
                         active={numQuestions === 'standard'} 
                         onClick={() => updateConfig({ numQuestions: 'standard' })}
-                        label="Standard" 
+                        label={t('methodSelection.standard')} 
                         subLabel="20-40"
                         icon={<FaBook />} 
                     />
                     <OptionButton 
                         active={numQuestions === 'many'} 
                         onClick={() => updateConfig({ numQuestions: 'many' })}
-                        label="Many" 
+                        label={t('methodSelection.many')} 
                         subLabel="50+"
                         icon={<FaLayerGroup />} 
                     />
@@ -517,40 +523,40 @@ const CustomizeWrittenTests: React.FC<{
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Difficulty Level</label>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">{t('methodSelection.difficultyLevel')}</label>
                 <div className="grid grid-cols-4 gap-3">
                     <OptionButton 
                         active={difficulty === 'auto'} 
                         onClick={() => updateConfig({ difficulty: 'auto' })}
-                        label="Auto" 
+                        label={t('methodSelection.auto')} 
                         icon={<FaMagic />} 
                     />
                     <OptionButton 
                         active={difficulty === 'easy'} 
                         onClick={() => updateConfig({ difficulty: 'easy' })}
-                        label="Easy" 
+                        label={t('methodSelection.easy')} 
                         icon={<FaLeaf />} 
                     />
                     <OptionButton 
                         active={difficulty === 'medium'} 
                         onClick={() => updateConfig({ difficulty: 'medium' })}
-                        label="Medium" 
+                        label={t('methodSelection.medium')} 
                         icon={<FaBullseye />} 
                     />
                     <OptionButton 
                         active={difficulty === 'hard'} 
                         onClick={() => updateConfig({ difficulty: 'hard' })}
-                        label="Hard" 
+                        label={t('methodSelection.hard')} 
                         icon={<FaFire />} 
                     />
                 </div>
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Custom Instructions (optional)</label>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">{t('methodSelection.customInstructionsOptional')}</label>
                 <textarea 
                     className="w-full h-24 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl p-4 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-[#c2410c] focus:border-transparent outline-none resize-none placeholder-gray-400 dark:placeholder-gray-600"
-                    placeholder="Focus on chapter 5, include more examples..."
+                    placeholder={t('methodSelection.customInstructionsPlaceholderChapter')}
                     value={customInstructions}
                     onChange={(e) => updateConfig({ customInstructions: e.target.value })}
                 />
@@ -561,9 +567,9 @@ const CustomizeWrittenTests: React.FC<{
                     onClick={() => updateConfig({ numQuestions: 'auto', difficulty: 'auto', customInstructions: '' })}
                     className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-sm font-medium transition-colors"
                 >
-                    Clear Selection
+                    {t('methodSelection.clearSelection')}
                 </button>
-                <button onClick={onClose} className="bg-[#c2410c] hover:bg-[#9a3412] text-white px-6 py-2 rounded-lg font-bold transition-colors">Done</button>
+                <button onClick={onClose} className="bg-[#c2410c] hover:bg-[#9a3412] text-white px-6 py-2 rounded-lg font-bold transition-colors">{t('methodSelection.done')}</button>
             </div>
         </div>
     );
@@ -574,6 +580,7 @@ const CustomizeFillBlanks: React.FC<{
     onChange: (updates: Partial<MethodConfig['fillBlanks']>) => void;
     onClose: () => void;
 }> = ({ config, onChange, onClose }) => {
+    const { t } = useLanguage();
     // Reusing structure for Fill in the Blanks
     const { numQuestions, difficulty, customInstructions } = config;
 
@@ -599,33 +606,33 @@ const CustomizeFillBlanks: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Number of Questions</label>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">{t('methodSelection.numberOfQuestions')}</label>
                 <div className="grid grid-cols-4 gap-3">
                     <OptionButton 
                         active={numQuestions === 'auto'} 
                         onClick={() => updateConfig({ numQuestions: 'auto' })}
-                        label="Auto" 
-                        subLabel="Smart"
+                        label={t('methodSelection.auto')} 
+                        subLabel={t('methodSelection.smart')}
                         icon={<FaMagic />} 
                     />
                     <OptionButton 
                         active={numQuestions === 'few'} 
                         onClick={() => updateConfig({ numQuestions: 'few' })}
-                        label="Few" 
+                        label={t('methodSelection.few')} 
                         subLabel="1-15"
                         icon={<FaListUl />} 
                     />
                     <OptionButton 
                         active={numQuestions === 'standard'} 
                         onClick={() => updateConfig({ numQuestions: 'standard' })}
-                        label="Standard" 
+                        label={t('methodSelection.standard')} 
                         subLabel="20-40"
                         icon={<FaBook />} 
                     />
                     <OptionButton 
                         active={numQuestions === 'many'} 
                         onClick={() => updateConfig({ numQuestions: 'many' })}
-                        label="Many" 
+                        label={t('methodSelection.many')} 
                         subLabel="50+"
                         icon={<FaLayerGroup />} 
                     />
@@ -633,40 +640,40 @@ const CustomizeFillBlanks: React.FC<{
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Difficulty Level</label>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">{t('methodSelection.difficultyLevel')}</label>
                 <div className="grid grid-cols-4 gap-3">
                     <OptionButton 
                         active={difficulty === 'auto'} 
                         onClick={() => updateConfig({ difficulty: 'auto' })}
-                        label="Auto" 
+                        label={t('methodSelection.auto')} 
                         icon={<FaMagic />} 
                     />
                     <OptionButton 
                         active={difficulty === 'easy'} 
                         onClick={() => updateConfig({ difficulty: 'easy' })}
-                        label="Easy" 
+                        label={t('methodSelection.easy')} 
                         icon={<FaLeaf />} 
                     />
                     <OptionButton 
                         active={difficulty === 'medium'} 
                         onClick={() => updateConfig({ difficulty: 'medium' })}
-                        label="Medium" 
+                        label={t('methodSelection.medium')} 
                         icon={<FaBullseye />} 
                     />
                     <OptionButton 
                         active={difficulty === 'hard'} 
                         onClick={() => updateConfig({ difficulty: 'hard' })}
-                        label="Hard" 
+                        label={t('methodSelection.hard')} 
                         icon={<FaFire />} 
                     />
                 </div>
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Custom Instructions (optional)</label>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">{t('methodSelection.customInstructionsOptional')}</label>
                 <textarea 
                     className="w-full h-24 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl p-4 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-[#c2410c] focus:border-transparent outline-none resize-none placeholder-gray-400 dark:placeholder-gray-600"
-                    placeholder="Focus on chapter 5, include more examples..."
+                    placeholder={t('methodSelection.customInstructionsPlaceholderChapter')}
                     value={customInstructions}
                     onChange={(e) => updateConfig({ customInstructions: e.target.value })}
                 />
@@ -677,9 +684,9 @@ const CustomizeFillBlanks: React.FC<{
                     onClick={() => updateConfig({ numQuestions: 'auto', difficulty: 'auto', customInstructions: '' })}
                     className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-sm font-medium transition-colors"
                 >
-                    Clear Selection
+                    {t('methodSelection.clearSelection')}
                 </button>
-                <button onClick={onClose} className="bg-[#c2410c] hover:bg-[#9a3412] text-white px-6 py-2 rounded-lg font-bold transition-colors">Done</button>
+                <button onClick={onClose} className="bg-[#c2410c] hover:bg-[#9a3412] text-white px-6 py-2 rounded-lg font-bold transition-colors">{t('methodSelection.done')}</button>
             </div>
         </div>
     );
@@ -691,6 +698,7 @@ const CustomizeSpeechToText: React.FC<{
     onChange: (updates: Partial<MethodConfig['speechToText']>) => void;
     onClose: () => void;
 }> = ({ config, onChange, onClose }) => {
+    const { t } = useLanguage();
     const { file, extractedText } = config;
     const [isProcessing, setIsProcessing] = useState(false);
 
@@ -714,7 +722,7 @@ const CustomizeSpeechToText: React.FC<{
         setTimeout(() => {
             setIsProcessing(false);
             updateConfig({ 
-                extractedText: "Extracted text preview: This is a simulation of the extracted text from " + file.name 
+                extractedText: t('methodSelection.extractedTextPreview', { values: { name: file.name } })
             });
         }, 2000);
     };
@@ -722,7 +730,7 @@ const CustomizeSpeechToText: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Upload Audio or Document</label>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">{t('methodSelection.uploadAudioOrDocument')}</label>
                 <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-8 hover:border-[#c2410c] transition-colors cursor-pointer relative">
                     <input 
                         type="file" 
@@ -733,9 +741,9 @@ const CustomizeSpeechToText: React.FC<{
                     <div className="text-center">
                         <FaMicrophone className="mx-auto text-4xl text-gray-400 mb-4" />
                         <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-                            {file ? file.name : "Click or Drag to Upload Audio/File"}
+                            {file ? file.name : t('methodSelection.clickOrDragUpload')}
                         </p>
-                        <p className="text-xs text-gray-400 mt-2">Supports MP3, WAV, PDF, DOCX</p>
+                        <p className="text-xs text-gray-400 mt-2">{t('methodSelection.supportedFormats')}</p>
                     </div>
                 </div>
             </div>
@@ -747,7 +755,7 @@ const CustomizeSpeechToText: React.FC<{
                     className="w-full py-3 bg-[#c2410c] hover:bg-[#9a3412] text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
                  >
                     {isProcessing ? <AiOutlineLoading3Quarters className="animate-spin" /> : <FaMicrophone />}
-                    {isProcessing ? 'Processing...' : 'Extract Text'}
+                    {isProcessing ? t('methodSelection.processing') : t('methodSelection.extractText')}
                  </button>
             )}
 
@@ -758,8 +766,8 @@ const CustomizeSpeechToText: React.FC<{
             )}
 
             <div className="flex justify-between items-center pt-2">
-                <button onClick={() => updateConfig({ file: null, extractedText: null })} className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-sm font-medium transition-colors">Clear</button>
-                <button onClick={onClose} className="bg-[#c2410c] hover:bg-[#9a3412] text-white px-6 py-2 rounded-lg font-bold transition-colors">Done</button>
+                <button onClick={() => updateConfig({ file: null, extractedText: null })} className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-sm font-medium transition-colors">{t('methodSelection.clear')}</button>
+                <button onClick={onClose} className="bg-[#c2410c] hover:bg-[#9a3412] text-white px-6 py-2 rounded-lg font-bold transition-colors">{t('methodSelection.done')}</button>
             </div>
         </div>
     );
@@ -770,6 +778,7 @@ const CustomizeMindmap: React.FC<{
     onChange: (updates: Partial<MethodConfig['mindmap']>) => void;
     onClose: () => void;
 }> = ({ config, onChange, onClose }) => {
+    const { t } = useLanguage();
     const { depth } = config;
 
     const updateConfig = (updates: Partial<MethodConfig['mindmap']>) => {
@@ -792,22 +801,22 @@ const CustomizeMindmap: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Mindmap Depth</label>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">{t('methodSelection.mindmapDepth')}</label>
                 <div className="grid grid-cols-3 gap-3">
                     <OptionButton 
                         active={depth === 'simple'} 
                         onClick={() => updateConfig({ depth: 'simple' })}
-                        label="Simple" 
+                        label={t('methodSelection.simple')} 
                     />
                     <OptionButton 
                         active={depth === 'medium'} 
                         onClick={() => updateConfig({ depth: 'medium' })}
-                        label="Detailed" 
+                        label={t('methodSelection.detailed')} 
                     />
                     <OptionButton 
                         active={depth === 'complex'} 
                         onClick={() => updateConfig({ depth: 'complex' })}
-                        label="Complex" 
+                        label={t('methodSelection.complex')} 
                     />
                 </div>
             </div>
@@ -817,9 +826,9 @@ const CustomizeMindmap: React.FC<{
                     onClick={() => updateConfig({ depth: 'medium' })}
                     className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-sm font-medium transition-colors"
                 >
-                    Reset
+                    {t('methodSelection.reset')}
                 </button>
-                <button onClick={onClose} className="bg-[#c2410c] hover:bg-[#9a3412] text-white px-6 py-2 rounded-lg font-bold transition-colors">Done</button>
+                <button onClick={onClose} className="bg-[#c2410c] hover:bg-[#9a3412] text-white px-6 py-2 rounded-lg font-bold transition-colors">{t('methodSelection.done')}</button>
             </div>
         </div>
     );
@@ -828,6 +837,7 @@ const CustomizeMindmap: React.FC<{
 
 // --- Main Page Component ---
 const MethodSelectionPage: React.FC = () => {
+    const { t } = useLanguage();
     const navigate = useNavigate();
     const location = useLocation();
     const state = location.state as { uploadPayload?: UploadPayload } | null;
@@ -852,7 +862,7 @@ const MethodSelectionPage: React.FC = () => {
 
     // Progress Bar State
     const [progress, setProgress] = useState(0);
-    const [loadingText, setLoadingText] = useState('Initializing...');
+    const [loadingText, setLoadingText] = useState(t('methodSelection.loading.initializing'));
 
     // Progress bar simulation
     React.useEffect(() => {
@@ -872,36 +882,36 @@ const MethodSelectionPage: React.FC = () => {
                 setProgress(newProgress);
 
                 // Update text based on progress
-                if (newProgress < 5) setLoadingText('Initializing...');
-                else if (newProgress < 15) setLoadingText('Analyzing your files...');
-                else if (newProgress < 30) setLoadingText('Generating comprehensive notes...');
-                else if (newProgress < 45) setLoadingText('Creating challenging questions...');
-                else if (newProgress < 60) setLoadingText('Formulating flashcards...');
-                else if (newProgress < 80) setLoadingText('Polishing your study set...');
-                else if (newProgress < 99) setLoadingText('Almost there...');
+                if (newProgress < 5) setLoadingText(t('methodSelection.loading.initializing'));
+                else if (newProgress < 15) setLoadingText(t('methodSelection.loading.analyzingFiles'));
+                else if (newProgress < 30) setLoadingText(t('methodSelection.loading.generatingNotes'));
+                else if (newProgress < 45) setLoadingText(t('methodSelection.loading.creatingQuestions'));
+                else if (newProgress < 60) setLoadingText(t('methodSelection.loading.formulatingFlashcards'));
+                else if (newProgress < 80) setLoadingText(t('methodSelection.loading.polishingStudySet'));
+                else if (newProgress < 99) setLoadingText(t('methodSelection.loading.almostThere'));
                 else {
                     // Stalled at 99%
                     const stallTime = elapsed - duration;
                     if (stallTime > 40000) {
-                         setLoadingText('Sometimes taking longer due to high traffic, please don\'t leave the page.');
+                         setLoadingText(t('methodSelection.loading.highTraffic'));
                     } else if (stallTime > 20000) {
-                         setLoadingText('Taking longer than expected...');
+                         setLoadingText(t('methodSelection.loading.longerThanExpected'));
                     } else {
-                         setLoadingText('Please wait a little longer...');
+                         setLoadingText(t('methodSelection.loading.waitLonger'));
                     }
                 }
             }, 100);
         } else {
             setProgress(0);
-            setLoadingText('Initializing...');
+            setLoadingText(t('methodSelection.loading.initializing'));
         }
 
         return () => clearInterval(interval);
-    }, [isGenerating]);
+    }, [isGenerating, t]);
 
     // Helper to extract file name from payload
     const getFileName = () => {
-        if (!state?.uploadPayload) return "New Study Set";
+        if (!state?.uploadPayload) return t('methodSelection.newStudySet');
         const { uploadPayload } = state;
         
         // Check for audio_name (from audio/video uploads)
@@ -916,7 +926,7 @@ const MethodSelectionPage: React.FC = () => {
             }
         }
         
-        return "New Study Set";
+        return t('methodSelection.newStudySet');
     };
 
     // Fetch user coins
@@ -1017,15 +1027,15 @@ const MethodSelectionPage: React.FC = () => {
     ];
 
     const methods = [
-        { id: 'notes', label: 'Notes', icon: <FaBook /> },
-        { id: 'multiple-choice', label: 'Multiple Choice', icon: <FaListUl /> },
-        { id: 'flashcards', label: 'Flashcards', icon: <FaLayerGroup /> },
-        { id: 'podcast', label: 'Podcast', icon: <FaPodcast /> },
-        { id: 'tutor-lesson', label: 'Tutor Lesson', icon: <FaChalkboardTeacher /> },
-        { id: 'written-tests', label: 'Written Tests', icon: <FaPencilAlt /> },
-        { id: 'fill-blanks', label: 'Fill in the Blanks', icon: <FaEdit /> },
-        { id: 'speech-to-text', label: 'Speech to Text', icon: <FaMicrophone /> },
-        { id: 'mindmap', label: 'Mindmap', icon: <FaProjectDiagram /> },
+        { id: 'notes', label: t('studyMaterialPage.methodLabels.notes'), icon: <FaBook /> },
+        { id: 'multiple-choice', label: t('studyMaterialPage.methodLabels.multipleChoice'), icon: <FaListUl /> },
+        { id: 'flashcards', label: t('studyMaterialPage.methodLabels.flashcards'), icon: <FaLayerGroup /> },
+        { id: 'podcast', label: t('methodSelection.methodLabels.podcast'), icon: <FaPodcast /> },
+        { id: 'tutor-lesson', label: t('methodSelection.methodLabels.tutorLesson'), icon: <FaChalkboardTeacher /> },
+        { id: 'written-tests', label: t('methodSelection.methodLabels.writtenTests'), icon: <FaPencilAlt /> },
+        { id: 'fill-blanks', label: t('methodSelection.methodLabels.fillBlanks'), icon: <FaEdit /> },
+        { id: 'speech-to-text', label: t('methodSelection.methodLabels.speechToText'), icon: <FaMicrophone /> },
+        { id: 'mindmap', label: t('methodSelection.methodLabels.mindmap'), icon: <FaProjectDiagram /> },
     ];
 
     const visibleMethods = methods.filter(m => {
@@ -1053,7 +1063,7 @@ const MethodSelectionPage: React.FC = () => {
     const handleGenerate = async () => {
         const { total } = calculateCosts();
         if (userCoins < total) {
-            alert("Insufficient balance");
+            alert(t('methodSelection.insufficientBalance'));
             return;
         }
 
@@ -1119,7 +1129,7 @@ const MethodSelectionPage: React.FC = () => {
                 }
             } catch (error) {
                 console.error("Failed to send webhook", error);
-                alert("Failed to initiate generation. Please try again.");
+                alert(t('methodSelection.failedToInitiateGeneration'));
                 setIsGenerating(false);
             }
         } else {
@@ -1134,21 +1144,21 @@ const MethodSelectionPage: React.FC = () => {
         return (
             <div className="space-y-8">
                 <div className="text-center mb-8">
-                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">Order Summary</h2>
-                    <p className="text-gray-500 dark:text-gray-400">Review your selection and estimated cost.</p>
+                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">{t('methodSelection.orderSummary')}</h2>
+                    <p className="text-gray-500 dark:text-gray-400">{t('methodSelection.reviewSelection')}</p>
                 </div>
 
                 <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-200 dark:border-white/10 overflow-hidden">
                     {/* Source Material */}
                     <div className="p-6 border-b border-gray-200 dark:border-white/10 flex justify-between items-center">
                         <div>
-                            <h3 className="font-bold text-lg">Source Material</h3>
+                            <h3 className="font-bold text-lg">{t('methodSelection.sourceMaterial')}</h3>
                             <p className="text-sm text-gray-500">
-                                {(state?.uploadPayload?.uploadedFileType === 'pdf' || state?.uploadPayload?.uploadedFileType === 'pdf_vision') ? `PDF (${metaData.pageCount || 1} pages)` :
-                                 state?.uploadPayload?.uploadedFileType === 'ocr' ? `PDF (OCR) (${metaData.pageCount || 1} pages)` :
-                                 state?.uploadPayload?.uploadedFileType === 'image' ? 'Image' :
-                                 (state?.uploadPayload?.uploadedFileType === 'audio' || state?.uploadPayload?.uploadedFileType === 'video' || (state?.uploadPayload?.uploadedFileType === 'url' && metaData.duration)) ? `Audio/Video (${Math.ceil((metaData.duration || 60) / 60)} mins)` :
-                                 'Text / URL'}
+                                {(state?.uploadPayload?.uploadedFileType === 'pdf' || state?.uploadPayload?.uploadedFileType === 'pdf_vision') ? t('methodSelection.pdfPages', { count: metaData.pageCount || 1 }) :
+                                 state?.uploadPayload?.uploadedFileType === 'ocr' ? t('methodSelection.pdfOcrPages', { count: metaData.pageCount || 1 }) :
+                                 state?.uploadPayload?.uploadedFileType === 'image' ? t('methodSelection.image') :
+                                 (state?.uploadPayload?.uploadedFileType === 'audio' || state?.uploadPayload?.uploadedFileType === 'video' || (state?.uploadPayload?.uploadedFileType === 'url' && metaData.duration)) ? t('methodSelection.audioVideoMins', { count: Math.ceil((metaData.duration || 60) / 60) }) :
+                                 t('methodSelection.textOrUrl')}
                             </p>
                         </div>
                         <div className="flex items-center gap-1 font-bold text-lg text-red-500">
@@ -1175,7 +1185,7 @@ const MethodSelectionPage: React.FC = () => {
 
                     {/* Total */}
                     <div className="p-6 bg-gray-50 dark:bg-[#111] flex justify-between items-center">
-                        <span className="font-bold text-xl">Total Cost</span>
+                        <span className="font-bold text-xl">{t('methodSelection.totalCost')}</span>
                         <div className="flex items-center gap-2 font-bold text-2xl text-[#c2410c]">
                             <span>{total}</span>
                             <img src={coinIcon} className="w-6 h-6" alt="coins" />
@@ -1186,7 +1196,7 @@ const MethodSelectionPage: React.FC = () => {
                 {/* Balance Warning */}
                 {!canGenerate && (
                     <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-xl text-center font-medium">
-                        Insufficient balance. You need {total - userCoins} more coins.
+                        {t('methodSelection.insufficientBalanceNeedMore', { count: total - userCoins })}
                     </div>
                 )}
 
@@ -1195,7 +1205,7 @@ const MethodSelectionPage: React.FC = () => {
                         onClick={() => setStep('selection')}
                         className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white font-medium px-6"
                     >
-                        Back
+                        {t('common.back')}
                     </button>
                     <button 
                         onClick={handleGenerate}
@@ -1203,7 +1213,7 @@ const MethodSelectionPage: React.FC = () => {
                         className={`bg-[#c2410c] hover:bg-[#9a3412] text-white px-12 py-3 rounded-lg font-bold transition-colors flex items-center gap-2 ${(isGenerating || !canGenerate) ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         {isGenerating && <AiOutlineLoading3Quarters className="animate-spin" />}
-                        {isGenerating ? 'Generating...' : `Pay & Generate`}
+                        {isGenerating ? t('methodSelection.generating') : t('methodSelection.payAndGenerate')}
                     </button>
                 </div>
             </div>
@@ -1275,9 +1285,9 @@ const MethodSelectionPage: React.FC = () => {
             default:
                 return (
                     <div className="py-8 text-center text-gray-400">
-                        Configuration for this method is coming soon.
+                        {t('methodSelection.configurationComingSoon')}
                         <div className="mt-6 flex justify-center">
-                            <button onClick={() => setActiveConfigMethod(null)} className="bg-[#c2410c] text-white px-6 py-2 rounded-lg">Close</button>
+                            <button onClick={() => setActiveConfigMethod(null)} className="bg-[#c2410c] text-white px-6 py-2 rounded-lg">{t('common.close')}</button>
                         </div>
                     </div>
                 );
@@ -1286,24 +1296,24 @@ const MethodSelectionPage: React.FC = () => {
 
     const getModalTitle = () => {
         switch(activeConfigMethod) {
-            case 'notes': return 'Customize Notes';
-            case 'multiple-choice': return 'Customize Multiple Choice';
-            case 'flashcards': return 'Customize Flashcards';
-            case 'podcast': return 'Choose Your Hosts';
-            case 'speech-to-text': return 'Speech to Text';
-            case 'mindmap': return 'Customize Mindmap';
-            default: return `Customize ${methods.find(m => m.id === activeConfigMethod)?.label}`;
+            case 'notes': return t('methodSelection.modalTitles.customizeNotes');
+            case 'multiple-choice': return t('methodSelection.modalTitles.customizeMultipleChoice');
+            case 'flashcards': return t('methodSelection.modalTitles.customizeFlashcards');
+            case 'podcast': return t('methodSelection.modalTitles.chooseHosts');
+            case 'speech-to-text': return t('methodSelection.modalTitles.speechToText');
+            case 'mindmap': return t('methodSelection.modalTitles.customizeMindmap');
+            default: return `${t('methodSelection.modalTitles.customize')} ${methods.find(m => m.id === activeConfigMethod)?.label || ''}`;
         }
     };
 
     const getModalSubtitle = () => {
         switch(activeConfigMethod) {
-            case 'notes': return 'Add custom instructions for generation';
-            case 'multiple-choice': return 'Adjust the number and difficulty of questions';
-            case 'flashcards': return 'Adjust the number and difficulty of questions';
-            case 'podcast': return 'Select speakers and podcast length';
-            case 'speech-to-text': return 'Upload an audio file or document to extract text';
-            case 'mindmap': return 'Adjust mindmap complexity and style';
+            case 'notes': return t('methodSelection.modalSubtitles.notes');
+            case 'multiple-choice': return t('methodSelection.modalSubtitles.multipleChoice');
+            case 'flashcards': return t('methodSelection.modalSubtitles.flashcards');
+            case 'podcast': return t('methodSelection.modalSubtitles.podcast');
+            case 'speech-to-text': return t('methodSelection.modalSubtitles.speechToText');
+            case 'mindmap': return t('methodSelection.modalSubtitles.mindmap');
             default: return '';
         }
     };
@@ -1359,7 +1369,7 @@ const MethodSelectionPage: React.FC = () => {
                                     {loadingText}
                                 </h2>
                                 <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs mx-auto">
-                                    We're crafting your personalized study materials. This process takes about 3 minutes to ensure high quality.
+                                    {t('methodSelection.generatingDescription')}
                                 </p>
                             </div>
                         </div>
@@ -1368,8 +1378,8 @@ const MethodSelectionPage: React.FC = () => {
                         {step === 'summary' ? renderSummary() : (
                             <>
                         <div className="text-center mb-12">
-                            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">What would you like to include?</h2>
-                            <p className="text-gray-500 dark:text-gray-400">Choose all the methods you want included in your study set:</p>
+                            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">{t('methodSelection.whatToInclude')}</h2>
+                            <p className="text-gray-500 dark:text-gray-400">{t('methodSelection.chooseMethods')}</p>
                         </div>
 
                         {/* First Row: 4 items in 2x2 grid on all screens */}
@@ -1490,7 +1500,7 @@ const MethodSelectionPage: React.FC = () => {
                                 onClick={() => setStep('summary')}
                                 className="bg-[#c2410c] hover:bg-[#9a3412] text-white px-12 py-3 rounded-lg font-bold transition-colors flex items-center gap-2"
                             >
-                                Next
+                                {t('common.next')}
                             </button>
                         </div>
                         </>

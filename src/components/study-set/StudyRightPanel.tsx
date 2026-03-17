@@ -11,6 +11,7 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
 import 'katex/dist/katex.min.css';
+import { useLanguage } from '../../utils/LanguageContext';
 
 // --- Types ---
 
@@ -54,6 +55,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
     const [isProcessing, setIsProcessing] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const { user } = useAuth();
+    const { t } = useLanguage();
     const inputRef = useRef<HTMLInputElement>(null);
 
     // Focus input when attachment is added
@@ -157,7 +159,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
              const { error: chatError } = await supabase.from('solve_chats').insert({
                 id: documentId,
                 owner: user?.id,
-                title: 'Study Set Chat', // Default title
+                title: t('studyRightPanel.defaultChatTitle'),
                 service_type: 'study_chat',
                 metadata: { type: 'study_set_chat' }
             }).select();
@@ -195,7 +197,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
                     roleDescription: "",
                     timestamp: timestamp,
                     chatid: documentId,
-                    subject: 'General' // Default subject
+                    subject: t('studyRightPanel.defaultSubject')
                 }]
             };
 
@@ -284,7 +286,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
             setMessages(prev => [...prev, {
                 id: uuidv4(),
                 type: 'ai',
-                content: 'Sorry, I encountered an error. Please try again.',
+                content: t('studyRightPanel.chatError'),
                 timestamp: new Date()
             }]);
         } finally {
@@ -310,7 +312,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
                         <div className="w-16 h-16 bg-gray-100 dark:bg-[#1a1a1a] rounded-full flex items-center justify-center mb-4">
                             <FaBook className="text-gray-400 dark:text-gray-600" size={24} />
                         </div>
-                        <p className="text-sm">Ask me anything about this study set...</p>
+                        <p className="text-sm">{t('studyRightPanel.askAboutStudySet')}</p>
                     </div>
                 ) : (
                     messages.map((msg) => (
@@ -411,7 +413,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
                                handleSendMessage();
                            }
                        }}
-                       placeholder="Ask me anything..." 
+                       placeholder={t('studyRightPanel.askAnything')}
                        disabled={isProcessing}
                        className="w-full bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl py-3 pl-4 pr-12 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-600 focus:outline-none focus:border-indigo-500 dark:focus:border-white/20 disabled:opacity-50"
                     />
@@ -438,6 +440,7 @@ interface StudyRightPanelProps {
 }
 
 const StudyRightPanel: React.FC<StudyRightPanelProps> = ({ activeMethod, documentId, attachment, onClearAttachment }) => {
+    const { t } = useLanguage();
     const [activeTab, setActiveTab] = useState<'chat' | 'content' | 'notes'>('chat');
     // Initialize width based on screen size, max 450px on desktop, full width on mobile
     const [width, setWidth] = useState(() => {
@@ -544,7 +547,7 @@ const StudyRightPanel: React.FC<StudyRightPanelProps> = ({ activeMethod, documen
                         : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                     }`}
                 >
-                    Chat
+                    {t('studyRightPanel.chatTab')}
                 </button>
                 <button 
                     onClick={handleSecondTabClick}
@@ -554,7 +557,7 @@ const StudyRightPanel: React.FC<StudyRightPanelProps> = ({ activeMethod, documen
                         : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                     }`}
                 >
-                    {activeMethod === 'content' ? 'Notes' : 'Content'}
+                    {activeMethod === 'content' ? t('studyRightPanel.notesTab') : t('studyRightPanel.contentTab')}
                 </button>
             </div>
 

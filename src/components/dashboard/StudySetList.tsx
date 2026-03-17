@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FaTh, FaList } from 'react-icons/fa';
 import StudySetCard, { StudySet } from './StudySetCard';
 import { StudySetCardSkeleton } from '../ui/Skeleton';
+import { useLanguage } from '../../utils/LanguageContext';
 
 interface StudySetListProps {
   studySets: StudySet[];
@@ -15,6 +16,7 @@ interface StudySetListProps {
 
 const StudySetList: React.FC<StudySetListProps> = ({ studySets, loading = false, onSetClick, onDragStart, onMove, onRename, onDelete }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const { t } = useLanguage();
 
   if (loading) {
     return (
@@ -42,7 +44,7 @@ const StudySetList: React.FC<StudySetListProps> = ({ studySets, loading = false,
         <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
                 <div className="w-1 h-6 bg-indigo-600 dark:bg-white rounded-full"></div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">All Study Sets</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('sidebar.allStudySets')}</h2>
             </div>
             <div className="flex bg-gray-100 dark:bg-[#1a1a1a] rounded-lg p-1 border border-gray-200 dark:border-white/10">
                 <button 

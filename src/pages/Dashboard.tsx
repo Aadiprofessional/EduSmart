@@ -16,10 +16,12 @@ import IconComponent from '../components/ui/IconComponent';
 import { useAuth } from '../utils/AuthContext';
 import { useSubscription } from '../utils/SubscriptionContext';
 import { subscriptionAPI, Transaction, ResponseUsage, UsageLog } from '../utils/subscriptionAPI';
+import { useLanguage } from '../utils/LanguageContext';
 
 const Dashboard: React.FC = () => {
   const { user, session } = useAuth();
   const { subscriptionStatus, refreshStatus } = useSubscription();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'responses' | 'logs'>('overview');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [responses, setResponses] = useState<ResponseUsage[]>([]);
@@ -74,73 +76,73 @@ const Dashboard: React.FC = () => {
     const types: { [key: string]: { icon: any; name: string; color: string; bgColor: string } } = {
       'mistake_checker': { 
         icon: FaSpellCheck, 
-        name: 'Mistake Checker', 
+        name: t('dashboardPro.responseTypes.mistakeChecker'), 
         color: 'text-red-400',
         bgColor: 'bg-red-500/20'
       },
       'document_summary': { 
         icon: FaFileAlt, 
-        name: 'Document Summary', 
+        name: t('dashboardPro.responseTypes.documentSummary'), 
         color: 'text-blue-400',
         bgColor: 'bg-blue-500/20'
       },
       'content_generation': { 
         icon: FaPenFancy, 
-        name: 'Content Generation', 
+        name: t('dashboardPro.responseTypes.contentGeneration'), 
         color: 'text-green-400',
         bgColor: 'bg-green-500/20'
       },
       'flashcard_ai_generation': { 
         icon: FaLayerGroup, 
-        name: 'Flashcard Generation', 
+        name: t('dashboardPro.responseTypes.flashcardGeneration'), 
         color: 'text-purple-400',
         bgColor: 'bg-purple-500/20'
       },
       'homework_solution': { 
         icon: FaGraduationCap, 
-        name: 'Homework Solution', 
+        name: t('dashboardPro.responseTypes.homeworkSolution'), 
         color: 'text-yellow-400',
         bgColor: 'bg-yellow-500/20'
       },
       'ai_tutor_chat': { 
         icon: FaComments, 
-        name: 'AI Tutor Chat', 
+        name: t('dashboardPro.responseTypes.aiTutorChat'), 
         color: 'text-cyan-400',
         bgColor: 'bg-cyan-500/20'
       },
       'citation_generator': { 
         icon: FaBookOpen, 
-        name: 'Citation Generator', 
+        name: t('dashboardPro.responseTypes.citationGenerator'), 
         color: 'text-indigo-400',
         bgColor: 'bg-indigo-500/20'
       },
       'study_planner': { 
         icon: FaCalendarAlt, 
-        name: 'Study Planner', 
+        name: t('dashboardPro.responseTypes.studyPlanner'), 
         color: 'text-pink-400',
         bgColor: 'bg-pink-500/20'
       },
       'text_analyzer': { 
         icon: FaBrain, 
-        name: 'Text Analyzer', 
+        name: t('dashboardPro.responseTypes.textAnalyzer'), 
         color: 'text-indigo-400',
         bgColor: 'bg-indigo-500/20'
       },
       'language_translator': { 
         icon: FaLanguage, 
-        name: 'Language Translator', 
+        name: t('dashboardPro.responseTypes.languageTranslator'), 
         color: 'text-teal-400',
         bgColor: 'bg-teal-500/20'
       },
       'math_solver': { 
         icon: FaCalculator, 
-        name: 'Math Solver', 
+        name: t('dashboardPro.responseTypes.mathSolver'), 
         color: 'text-emerald-400',
         bgColor: 'bg-emerald-500/20'
       },
       'science_assistant': { 
         icon: FaFlask, 
-        name: 'Science Assistant', 
+        name: t('dashboardPro.responseTypes.scienceAssistant'), 
         color: 'text-violet-400',
         bgColor: 'bg-violet-500/20'
       }
@@ -277,10 +279,10 @@ const Dashboard: React.FC = () => {
   };
 
   const tabs = [
-    { id: 'overview', name: 'Overview', icon: FaChartLine },
-    { id: 'transactions', name: 'Transactions', icon: FaHistory },
-    { id: 'responses', name: 'AI Responses', icon: FaRocket },
-    { id: 'logs', name: 'Usage Logs', icon: FaCalendarAlt },
+    { id: 'overview', name: t('dashboardPro.tabs.overview'), icon: FaChartLine },
+    { id: 'transactions', name: t('dashboardPro.tabs.transactions'), icon: FaHistory },
+    { id: 'responses', name: t('dashboardPro.tabs.aiResponses'), icon: FaRocket },
+    { id: 'logs', name: t('dashboardPro.tabs.usageLogs'), icon: FaCalendarAlt },
   ];
 
   const openModal = (item: any) => {
@@ -301,13 +303,13 @@ const Dashboard: React.FC = () => {
         <div className="pt-20 pb-16 flex items-center justify-center min-h-screen">
           <div className="text-center">
             <IconComponent icon={FaCrown} className="w-16 h-16 text-yellow-400 mx-auto mb-6" />
-            <h1 className="text-3xl font-bold text-white mb-4">Pro Dashboard</h1>
-            <p className="text-gray-400 mb-8">Upgrade to Pro to access your dashboard</p>
+            <h1 className="text-3xl font-bold text-white mb-4">{t('dashboardPro.title')}</h1>
+            <p className="text-gray-400 mb-8">{t('dashboardPro.upgradeDescription')}</p>
             <button
               onClick={() => window.location.href = '/subscription'}
               className="px-8 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-bold hover:from-indigo-600 hover:to-purple-700 transition-all duration-300"
             >
-              Upgrade to Pro
+              {t('dashboardPro.upgradeToPro')}
             </button>
           </div>
         </div>
@@ -349,10 +351,10 @@ const Dashboard: React.FC = () => {
               </motion.div>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-400 via-purple-500 to-pink-500 bg-clip-text text-transparent mb-4">
-              Pro Dashboard
+              {t('dashboardPro.title')}
             </h1>
             <p className="text-xl text-gray-300">
-              Welcome back, {user?.user_metadata?.name || 'Pro Member'}!
+              {t('dashboardPro.welcomeBack').replace('{{name}}', user?.user_metadata?.name || t('dashboardPro.proMember'))}
             </p>
           </motion.div>
 
@@ -365,21 +367,21 @@ const Dashboard: React.FC = () => {
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-2xl font-bold text-white flex items-center">
                   <IconComponent icon={FaRocket} className="w-6 h-6 mr-3 text-blue-400" />
-                  AI Response Usage
+                  {t('dashboardPro.aiResponseUsage')}
                 </h3>
                 <div className="text-right">
                   <p className="text-3xl font-bold text-white">
                     {subscriptionStatus.responsesRemaining}
                   </p>
-                  <p className="text-gray-400 text-sm">responses left</p>
+                  <p className="text-gray-400 text-sm">{t('dashboardPro.responsesLeft')}</p>
                 </div>
               </div>
               
               {/* Animated Progress Bar */}
               <div className="relative">
                 <div className="flex justify-between text-sm text-gray-400 mb-2">
-                  <span>Used: {responsesUsed}</span>
-                  <span>Total: {subscriptionStatus.totalResponses}</span>
+                  <span>{t('dashboardPro.usedLabel').replace('{{count}}', String(responsesUsed))}</span>
+                  <span>{t('dashboardPro.totalLabel').replace('{{count}}', String(subscriptionStatus.totalResponses))}</span>
                 </div>
                 
                 <div className="relative h-6 bg-gray-800 rounded-full overflow-hidden border border-white/10">
@@ -419,15 +421,15 @@ const Dashboard: React.FC = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
                   <div className="text-center p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
                     <p className="text-emerald-400 font-bold text-lg">{responsesUsed}</p>
-                    <p className="text-gray-400 text-xs">Used</p>
+                    <p className="text-gray-400 text-xs">{t('dashboardPro.used')}</p>
                   </div>
                   <div className="text-center p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
                     <p className="text-blue-400 font-bold text-lg">{subscriptionStatus.responsesRemaining}</p>
-                    <p className="text-gray-400 text-xs">Remaining</p>
+                    <p className="text-gray-400 text-xs">{t('dashboardPro.remaining')}</p>
                   </div>
                   <div className="text-center p-4 bg-purple-500/10 rounded-lg border border-purple-500/20">
                     <p className="text-purple-400 font-bold text-lg">{subscriptionStatus.totalResponses}</p>
-                    <p className="text-gray-400 text-xs">Total</p>
+                    <p className="text-gray-400 text-xs">{t('dashboardPro.total')}</p>
                   </div>
                   <div className="text-center p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
                     <p className="text-yellow-400 font-bold text-lg">
@@ -436,7 +438,7 @@ const Dashboard: React.FC = () => {
                         : 0
                       }
                     </p>
-                    <p className="text-gray-400 text-xs">Days Left</p>
+                    <p className="text-gray-400 text-xs">{t('dashboardPro.daysLeft')}</p>
                   </div>
                 </div>
               </div>
@@ -453,8 +455,8 @@ const Dashboard: React.FC = () => {
                 <IconComponent icon={FaRocket} className="w-8 h-8 text-blue-400" />
                 <span className="text-2xl font-bold text-white">{subscriptionStatus.responsesRemaining}</span>
               </div>
-              <h3 className="text-gray-400 text-sm">Responses Left</h3>
-              <p className="text-white font-medium">of {subscriptionStatus.totalResponses} total</p>
+              <h3 className="text-gray-400 text-sm">{t('dashboardPro.responsesLeftTitle')}</h3>
+              <p className="text-white font-medium">{t('dashboardPro.ofTotal').replace('{{count}}', String(subscriptionStatus.totalResponses))}</p>
             </div>
 
             <div className="bg-black/20 backdrop-blur-xl rounded-xl border border-white/10 p-6">
@@ -462,8 +464,8 @@ const Dashboard: React.FC = () => {
                 <IconComponent icon={FaChartLine} className="w-8 h-8 text-green-400" />
                 <span className="text-2xl font-bold text-white">{responses.length}</span>
               </div>
-              <h3 className="text-gray-400 text-sm">AI Queries</h3>
-              <p className="text-white font-medium">This month</p>
+              <h3 className="text-gray-400 text-sm">{t('dashboardPro.aiQueries')}</h3>
+              <p className="text-white font-medium">{t('dashboardPro.thisMonth')}</p>
             </div>
 
             <div className="bg-black/20 backdrop-blur-xl rounded-xl border border-white/10 p-6">
@@ -471,8 +473,8 @@ const Dashboard: React.FC = () => {
                 <IconComponent icon={FaHistory} className="w-8 h-8 text-purple-400" />
                 <span className="text-2xl font-bold text-white">{transactions.length}</span>
               </div>
-              <h3 className="text-gray-400 text-sm">Transactions</h3>
-              <p className="text-white font-medium">All time</p>
+              <h3 className="text-gray-400 text-sm">{t('dashboardPro.transactions')}</h3>
+              <p className="text-white font-medium">{t('dashboardPro.allTime')}</p>
             </div>
 
             <div className="bg-black/20 backdrop-blur-xl rounded-xl border border-white/10 p-6">
@@ -485,8 +487,8 @@ const Dashboard: React.FC = () => {
                   }
                 </span>
               </div>
-              <h3 className="text-gray-400 text-sm">Days Left</h3>
-              <p className="text-white font-medium">Until renewal</p>
+              <h3 className="text-gray-400 text-sm">{t('dashboardPro.daysLeft')}</h3>
+              <p className="text-white font-medium">{t('dashboardPro.untilRenewal')}</p>
             </div>
           </motion.div>
 
@@ -528,30 +530,30 @@ const Dashboard: React.FC = () => {
                   <div className="bg-black/20 backdrop-blur-xl rounded-2xl border border-white/10 p-8">
                     <h3 className="text-2xl font-bold text-white mb-6 flex items-center">
                       <IconComponent icon={FaCrown} className="w-6 h-6 mr-3 text-yellow-400" />
-                      Subscription Status
+                      {t('dashboardPro.subscriptionStatus')}
                     </h3>
                     {subscriptionStatus.subscription && (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                          <p className="text-gray-400 mb-2">Plan</p>
+                          <p className="text-gray-400 mb-2">{t('dashboardPro.plan')}</p>
                           <p className="text-white font-medium text-lg">
-                            {subscriptionStatus.subscription.subscription_plans?.name || 'Pro Plan'}
+                            {subscriptionStatus.subscription.subscription_plans?.name || t('dashboardPro.proPlan')}
                           </p>
                         </div>
                         <div>
-                          <p className="text-gray-400 mb-2">Status</p>
+                          <p className="text-gray-400 mb-2">{t('dashboardPro.status')}</p>
                           <p className={`font-medium text-lg ${getStatusColor(subscriptionStatus.subscription.status)}`}>
                             {subscriptionStatus.subscription.status.charAt(0).toUpperCase() + subscriptionStatus.subscription.status.slice(1)}
                           </p>
                         </div>
                         <div>
-                          <p className="text-gray-400 mb-2">Valid Until</p>
+                          <p className="text-gray-400 mb-2">{t('dashboardPro.validUntil')}</p>
                           <p className="text-white font-medium">{formatDate(subscriptionStatus.subscription.end_date)}</p>
                         </div>
                         <div>
-                          <p className="text-gray-400 mb-2">Auto Renewal</p>
+                          <p className="text-gray-400 mb-2">{t('dashboardPro.autoRenewal')}</p>
                           <p className="text-white font-medium">
-                            {new Date(subscriptionStatus.subscription.end_date) > new Date() ? 'Active' : 'Expired'}
+                            {new Date(subscriptionStatus.subscription.end_date) > new Date() ? t('dashboardPro.active') : t('dashboardPro.expired')}
                           </p>
                         </div>
                       </div>
@@ -561,7 +563,7 @@ const Dashboard: React.FC = () => {
                   {/* Recent Activity */}
                   <div className="bg-black/20 backdrop-blur-xl rounded-2xl border border-white/10 p-8">
                     <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-2xl font-bold text-white">Recent Activity</h3>
+                      <h3 className="text-2xl font-bold text-white">{t('dashboardPro.recentActivity')}</h3>
                       <div className="flex items-center space-x-2">
                         {/* Filter Toggle */}
                         <button
@@ -603,7 +605,7 @@ const Dashboard: React.FC = () => {
                                   : 'bg-white/10 text-gray-400 hover:text-white'
                               }`}
                             >
-                              All
+                              {t('dashboardPro.all')}
                             </button>
                             {getActivityTypes().map((type) => {
                               const typeInfo = getResponseTypeInfo(type);
@@ -663,10 +665,10 @@ const Dashboard: React.FC = () => {
                             <div className="text-right">
                               <div className="flex items-center space-x-2 mb-1">
                                 <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full">
-                                  {log.responses_count} responses
+                                  {t('dashboardPro.responsesCount').replace('{{count}}', String(log.responses_count))}
                                 </span>
                               </div>
-                              <p className="text-gray-400 text-sm">{log.remaining_responses} remaining</p>
+                              <p className="text-gray-400 text-sm">{t('dashboardPro.remainingCount').replace('{{count}}', String(log.remaining_responses))}</p>
                             </div>
                           </motion.div>
                         );
@@ -675,7 +677,7 @@ const Dashboard: React.FC = () => {
                       {getPaginatedActivity().items.length === 0 && (
                         <div className="text-center py-8 text-gray-400">
                           <IconComponent icon={FaHistory} className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                          <p>No activity found</p>
+                          <p>{t('dashboardPro.noActivityFound')}</p>
                         </div>
                       )}
                     </div>
@@ -684,7 +686,10 @@ const Dashboard: React.FC = () => {
                     {getPaginatedActivity().totalPages > 1 && (
                       <div className="flex items-center justify-between">
                         <div className="text-sm text-gray-400">
-                          Showing {((activityPage - 1) * activityPerPage) + 1} to {Math.min(activityPage * activityPerPage, getPaginatedActivity().total)} of {getPaginatedActivity().total} entries
+                          {t('dashboardPro.showingEntries')
+                            .replace('{{start}}', String(((activityPage - 1) * activityPerPage) + 1))
+                            .replace('{{end}}', String(Math.min(activityPage * activityPerPage, getPaginatedActivity().total)))
+                            .replace('{{total}}', String(getPaginatedActivity().total))}
                         </div>
                         
                         <div className="flex items-center space-x-2">
@@ -746,10 +751,10 @@ const Dashboard: React.FC = () => {
                   className="bg-black/20 backdrop-blur-xl rounded-2xl border border-white/10 p-8"
                 >
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-2xl font-bold text-white">Transaction History</h3>
+                    <h3 className="text-2xl font-bold text-white">{t('dashboardPro.transactionHistory')}</h3>
                     <button className="flex items-center px-4 py-2 bg-purple-500/20 text-purple-400 rounded-lg hover:bg-purple-500/30 transition-all duration-200">
                       <IconComponent icon={FaDownload} className="w-4 h-4 mr-2" />
-                      Export
+                      {t('common.export')}
                     </button>
                   </div>
                   
@@ -769,13 +774,13 @@ const Dashboard: React.FC = () => {
                           />
                           <div>
                             <p className="text-white font-medium">
-                              {transaction.description || transaction.subscription_plans?.name || 'Subscription'}
+                              {transaction.description || transaction.subscription_plans?.name || t('dashboardPro.subscription')}
                             </p>
                             <p className="text-gray-400 text-sm">{formatDate(transaction.created_at)}</p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-white font-medium">{Math.abs(transaction.amount)} Coins</p>
+                          <p className="text-white font-medium">{t('dashboardPro.coinsAmount').replace('{{count}}', String(Math.abs(transaction.amount)))}</p>
                           <p className={`text-sm ${getStatusColor(displayStatus)}`}>
                             {displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)}
                           </p>
@@ -794,7 +799,7 @@ const Dashboard: React.FC = () => {
                   exit={{ opacity: 0, y: -20 }}
                   className="bg-black/20 backdrop-blur-xl rounded-2xl border border-white/10 p-8"
                 >
-                  <h3 className="text-2xl font-bold text-white mb-6">AI Response History</h3>
+                  <h3 className="text-2xl font-bold text-white mb-6">{t('dashboardPro.aiResponseHistory')}</h3>
                   
                   <div className="space-y-4">
                     {responses.map((response) => {
@@ -821,13 +826,13 @@ const Dashboard: React.FC = () => {
                             </div>
                             <div className="text-right">
                               <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full">
-                                {response.responses_used} responses
+                                {t('dashboardPro.responsesCount').replace('{{count}}', String(response.responses_used))}
                               </span>
                             </div>
                           </div>
                           {response.query_data && (
                             <p className="text-gray-300 text-sm truncate">
-                              Query: {JSON.stringify(response.query_data).substring(0, 100)}...
+                              {t('dashboardPro.query')}: {JSON.stringify(response.query_data).substring(0, 100)}...
                             </p>
                           )}
                         </div>
@@ -837,7 +842,7 @@ const Dashboard: React.FC = () => {
                     {responses.length === 0 && (
                       <div className="text-center py-8 text-gray-400">
                         <IconComponent icon={FaRocket} className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                        <p>No AI responses found</p>
+                        <p>{t('dashboardPro.noAiResponsesFound')}</p>
                       </div>
                     )}
                   </div>
@@ -852,7 +857,7 @@ const Dashboard: React.FC = () => {
                   exit={{ opacity: 0, y: -20 }}
                   className="bg-black/20 backdrop-blur-xl rounded-2xl border border-white/10 p-8"
                 >
-                  <h3 className="text-2xl font-bold text-white mb-6">Usage Logs</h3>
+                  <h3 className="text-2xl font-bold text-white mb-6">{t('dashboardPro.usageLogs')}</h3>
                   
                   <div className="space-y-4">
                     {logs.map((log) => {
@@ -890,7 +895,7 @@ const Dashboard: React.FC = () => {
                                   -{log.responses_count}
                                 </span>
                               </div>
-                              <p className="text-gray-400 text-xs">responses used</p>
+                              <p className="text-gray-400 text-xs">{t('dashboardPro.responsesUsed')}</p>
                             </div>
                           </div>
                           
@@ -904,11 +909,11 @@ const Dashboard: React.FC = () => {
                             <div className="flex items-center space-x-6">
                               <div className="text-center">
                                 <p className="text-xl font-bold text-red-400">{log.responses_count}</p>
-                                <p className="text-gray-400 text-xs">Used</p>
+                                <p className="text-gray-400 text-xs">{t('dashboardPro.used')}</p>
                               </div>
                               <div className="text-center">
                                 <p className="text-xl font-bold text-green-400">{log.remaining_responses}</p>
-                                <p className="text-gray-400 text-xs">Remaining</p>
+                                <p className="text-gray-400 text-xs">{t('dashboardPro.remaining')}</p>
                               </div>
                             </div>
                             
@@ -923,7 +928,7 @@ const Dashboard: React.FC = () => {
                                 />
                               </div>
                               <div className="flex justify-between text-xs text-gray-400 mt-1">
-                                <span>Impact</span>
+                                <span>{t('dashboardPro.impact')}</span>
                                 <span>{Math.round((log.responses_count / (log.remaining_responses + log.responses_count)) * 100)}%</span>
                               </div>
                             </div>
@@ -935,8 +940,8 @@ const Dashboard: React.FC = () => {
                     {logs.length === 0 && (
                       <div className="text-center py-12 text-gray-400">
                         <IconComponent icon={FaCalendarAlt} className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                        <p className="text-lg">No usage logs found</p>
-                        <p className="text-sm">Start using AI features to see your activity here</p>
+                        <p className="text-lg">{t('dashboardPro.noUsageLogsFound')}</p>
+                        <p className="text-sm">{t('dashboardPro.startUsingAiFeatures')}</p>
                       </div>
                     )}
                   </div>
@@ -962,9 +967,9 @@ const Dashboard: React.FC = () => {
                 >
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-2xl font-bold text-white">
-                      {activeTab === 'transactions' && 'Transaction Details'}
-                      {activeTab === 'responses' && 'AI Response Details'}
-                      {activeTab === 'logs' && 'Usage Log Details'}
+                      {activeTab === 'transactions' && t('dashboardPro.transactionDetails')}
+                      {activeTab === 'responses' && t('dashboardPro.aiResponseDetails')}
+                      {activeTab === 'logs' && t('dashboardPro.usageLogDetails')}
                     </h3>
                     <button
                       onClick={() => setShowModal(false)}
@@ -988,7 +993,7 @@ const Dashboard: React.FC = () => {
                           </div>
                           <div>
                             <h4 className="text-xl font-bold text-white">
-                              {selectedItem.subscription_plans?.name || 'Subscription Purchase'}
+                              {selectedItem.subscription_plans?.name || t('dashboardPro.subscriptionPurchase')}
                             </h4>
                             <p className="text-green-400 font-medium">
                               {formatCurrency(selectedItem.amount)}
@@ -1009,21 +1014,21 @@ const Dashboard: React.FC = () => {
                       {/* Transaction Info Grid */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                          <h5 className="text-gray-400 text-sm mb-2">Transaction ID</h5>
+                          <h5 className="text-gray-400 text-sm mb-2">{t('dashboardPro.transactionId')}</h5>
                           <p className="text-white font-mono text-sm break-all">{selectedItem.id}</p>
                         </div>
                         <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                          <h5 className="text-gray-400 text-sm mb-2">Date & Time</h5>
+                          <h5 className="text-gray-400 text-sm mb-2">{t('dashboardPro.dateTime')}</h5>
                           <p className="text-white">{formatDate(selectedItem.created_at)}</p>
                         </div>
                         <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                          <h5 className="text-gray-400 text-sm mb-2">Payment Method</h5>
-                          <p className="text-white">{selectedItem.payment_method || 'Credit Card'}</p>
+                          <h5 className="text-gray-400 text-sm mb-2">{t('dashboardPro.paymentMethod')}</h5>
+                          <p className="text-white">{selectedItem.payment_method || t('dashboardPro.creditCard')}</p>
                         </div>
                         <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                          <h5 className="text-gray-400 text-sm mb-2">Subscription Period</h5>
+                          <h5 className="text-gray-400 text-sm mb-2">{t('dashboardPro.subscriptionPeriod')}</h5>
                           <p className="text-white">
-                            {selectedItem.subscription_plans?.duration_days || 30} days
+                            {t('dashboardPro.daysCount').replace('{{count}}', String(selectedItem.subscription_plans?.duration_days || 30))}
                           </p>
                         </div>
                       </div>
@@ -1031,25 +1036,25 @@ const Dashboard: React.FC = () => {
                       {/* Plan Details */}
                       {selectedItem.subscription_plans && (
                         <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                          <h5 className="text-lg font-bold text-white mb-4">Plan Features</h5>
+                          <h5 className="text-lg font-bold text-white mb-4">{t('dashboardPro.planFeatures')}</h5>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="text-center p-4 bg-purple-500/10 rounded-lg">
                               <p className="text-purple-400 font-bold text-2xl">
-                                {selectedItem.subscription_plans.responses || 'Unlimited'}
+                                {selectedItem.subscription_plans.responses || t('dashboardPro.unlimited')}
                               </p>
-                              <p className="text-gray-400 text-sm">AI Responses</p>
+                              <p className="text-gray-400 text-sm">{t('dashboardPro.aiResponses')}</p>
                             </div>
                             <div className="text-center p-4 bg-blue-500/10 rounded-lg">
                               <p className="text-blue-400 font-bold text-2xl">
                                 {selectedItem.subscription_plans.duration_days || 30}
                               </p>
-                              <p className="text-gray-400 text-sm">Days Access</p>
+                              <p className="text-gray-400 text-sm">{t('dashboardPro.daysAccess')}</p>
                             </div>
                             <div className="text-center p-4 bg-green-500/10 rounded-lg">
                               <p className="text-green-400 font-bold text-2xl">
                                 {formatCurrency(selectedItem.subscription_plans.price || selectedItem.amount)}
                               </p>
-                              <p className="text-gray-400 text-sm">Total Cost</p>
+                              <p className="text-gray-400 text-sm">{t('dashboardPro.totalCost')}</p>
                             </div>
                           </div>
                         </div>
@@ -1074,7 +1079,7 @@ const Dashboard: React.FC = () => {
                               {getResponseTypeInfo(selectedItem.response_type).name}
                             </h4>
                             <p className="text-blue-400 font-medium">
-                              {selectedItem.responses_used} response{selectedItem.responses_used !== 1 ? 's' : ''} used
+                              {t('dashboardPro.responsesUsedCount').replace('{{count}}', String(selectedItem.responses_used))}
                             </p>
                           </div>
                         </div>
@@ -1086,11 +1091,11 @@ const Dashboard: React.FC = () => {
                       {/* Response Info */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                          <h5 className="text-gray-400 text-sm mb-2">Response ID</h5>
+                          <h5 className="text-gray-400 text-sm mb-2">{t('dashboardPro.responseId')}</h5>
                           <p className="text-white font-mono text-sm break-all">{selectedItem.id}</p>
                         </div>
                         <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                          <h5 className="text-gray-400 text-sm mb-2">Responses Used</h5>
+                          <h5 className="text-gray-400 text-sm mb-2">{t('dashboardPro.responsesUsed')}</h5>
                           <div className="flex items-center">
                             <span className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-sm font-medium">
                               {selectedItem.responses_used}
@@ -1102,11 +1107,11 @@ const Dashboard: React.FC = () => {
                       {/* Query Data */}
                       {selectedItem.query_data && (
                         <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                          <h5 className="text-lg font-bold text-white mb-4">Query Information</h5>
+                          <h5 className="text-lg font-bold text-white mb-4">{t('dashboardPro.queryInformation')}</h5>
                           <div className="space-y-4">
                             {selectedItem.query_data.mode && (
                               <div>
-                                <p className="text-gray-400 text-sm mb-1">Mode</p>
+                                <p className="text-gray-400 text-sm mb-1">{t('dashboardPro.mode')}</p>
                                 <span className="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-full text-sm font-medium">
                                   {selectedItem.query_data.mode}
                                 </span>
@@ -1114,7 +1119,7 @@ const Dashboard: React.FC = () => {
                             )}
                             {selectedItem.query_data.fileName && (
                               <div>
-                                <p className="text-gray-400 text-sm mb-1">File Name</p>
+                                <p className="text-gray-400 text-sm mb-1">{t('dashboardPro.fileName')}</p>
                                 <p className="text-white font-medium flex items-center">
                                   <IconComponent icon={FaFileAlt} className="w-4 h-4 mr-2 text-blue-400" />
                                   {selectedItem.query_data.fileName}
@@ -1123,7 +1128,7 @@ const Dashboard: React.FC = () => {
                             )}
                             {selectedItem.query_data.fileSize && (
                               <div>
-                                <p className="text-gray-400 text-sm mb-1">File Size</p>
+                                <p className="text-gray-400 text-sm mb-1">{t('dashboardPro.fileSize')}</p>
                                 <p className="text-white">
                                   {(selectedItem.query_data.fileSize / 1024).toFixed(1)} KB
                                 </p>
@@ -1131,7 +1136,7 @@ const Dashboard: React.FC = () => {
                             )}
                             {selectedItem.query_data.fileType && (
                               <div>
-                                <p className="text-gray-400 text-sm mb-1">File Type</p>
+                                <p className="text-gray-400 text-sm mb-1">{t('dashboardPro.fileType')}</p>
                                 <span className="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-sm font-medium">
                                   {selectedItem.query_data.fileType}
                                 </span>
@@ -1139,7 +1144,7 @@ const Dashboard: React.FC = () => {
                             )}
                             {selectedItem.query_data.text && (
                               <div>
-                                <p className="text-gray-400 text-sm mb-1">Input Text</p>
+                                <p className="text-gray-400 text-sm mb-1">{t('dashboardPro.inputText')}</p>
                                 <div className="bg-black/20 p-4 rounded-lg max-h-32 overflow-y-auto">
                                   <p className="text-white text-sm">{selectedItem.query_data.text}</p>
                                 </div>
@@ -1147,7 +1152,7 @@ const Dashboard: React.FC = () => {
                             )}
                             {selectedItem.query_data.subject && (
                               <div>
-                                <p className="text-gray-400 text-sm mb-1">Subject</p>
+                                <p className="text-gray-400 text-sm mb-1">{t('dashboardPro.subject')}</p>
                                 <span className="px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-sm font-medium">
                                   {selectedItem.query_data.subject}
                                 </span>
@@ -1155,7 +1160,7 @@ const Dashboard: React.FC = () => {
                             )}
                             {selectedItem.query_data.difficulty && (
                               <div>
-                                <p className="text-gray-400 text-sm mb-1">Difficulty</p>
+                                <p className="text-gray-400 text-sm mb-1">{t('dashboardPro.difficulty')}</p>
                                 <span className="px-3 py-1 bg-indigo-500/20 text-indigo-400 rounded-full text-sm font-medium">
                                   {selectedItem.query_data.difficulty}
                                 </span>
@@ -1170,7 +1175,7 @@ const Dashboard: React.FC = () => {
                         !['mode', 'fileName', 'fileSize', 'fileType', 'text', 'subject', 'difficulty'].includes(key)
                       ) && (
                         <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                          <h5 className="text-lg font-bold text-white mb-4">Additional Data</h5>
+                          <h5 className="text-lg font-bold text-white mb-4">{t('dashboardPro.additionalData')}</h5>
                           <div className="bg-black/20 p-4 rounded-lg">
                             <pre className="text-gray-300 text-sm overflow-x-auto">
                               {JSON.stringify(
@@ -1200,7 +1205,7 @@ const Dashboard: React.FC = () => {
                           </div>
                           <div>
                             <h4 className="text-xl font-bold text-white">{selectedItem.action}</h4>
-                            <p className="text-indigo-400 font-medium">Usage Activity</p>
+                            <p className="text-indigo-400 font-medium">{t('dashboardPro.usageActivity')}</p>
                           </div>
                         </div>
                         <div className="text-right">
@@ -1211,22 +1216,22 @@ const Dashboard: React.FC = () => {
                       {/* Usage Info Grid */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="bg-white/5 rounded-xl p-6 border border-white/10 text-center">
-                          <h5 className="text-gray-400 text-sm mb-2">Responses Used</h5>
+                          <h5 className="text-gray-400 text-sm mb-2">{t('dashboardPro.responsesUsed')}</h5>
                           <p className="text-3xl font-bold text-red-400">{selectedItem.responses_count}</p>
                         </div>
                         <div className="bg-white/5 rounded-xl p-6 border border-white/10 text-center">
-                          <h5 className="text-gray-400 text-sm mb-2">Remaining After</h5>
+                          <h5 className="text-gray-400 text-sm mb-2">{t('dashboardPro.remainingAfter')}</h5>
                           <p className="text-3xl font-bold text-green-400">{selectedItem.remaining_responses}</p>
                         </div>
                         <div className="bg-white/5 rounded-xl p-6 border border-white/10 text-center">
-                          <h5 className="text-gray-400 text-sm mb-2">Log ID</h5>
+                          <h5 className="text-gray-400 text-sm mb-2">{t('dashboardPro.logId')}</h5>
                           <p className="text-white font-mono text-xs break-all">{selectedItem.id}</p>
                         </div>
                       </div>
 
                       {/* Description */}
                       <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                        <h5 className="text-lg font-bold text-white mb-4">Activity Description</h5>
+                        <h5 className="text-lg font-bold text-white mb-4">{t('dashboardPro.activityDescription')}</h5>
                         <div className="bg-black/20 p-4 rounded-lg">
                           <p className="text-gray-300">{selectedItem.description}</p>
                         </div>
@@ -1234,13 +1239,13 @@ const Dashboard: React.FC = () => {
 
                       {/* Timeline Visualization */}
                       <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                        <h5 className="text-lg font-bold text-white mb-4">Response Usage Impact</h5>
+                        <h5 className="text-lg font-bold text-white mb-4">{t('dashboardPro.responseUsageImpact')}</h5>
                         <div className="flex items-center justify-between p-4 bg-black/20 rounded-lg">
                           <div className="text-center">
                             <p className="text-2xl font-bold text-blue-400">
                               {selectedItem.remaining_responses + selectedItem.responses_count}
                             </p>
-                            <p className="text-gray-400 text-sm">Before</p>
+                            <p className="text-gray-400 text-sm">{t('dashboardPro.before')}</p>
                           </div>
                           <div className="flex-1 mx-4">
                             <div className="relative">
@@ -1257,7 +1262,7 @@ const Dashboard: React.FC = () => {
                           </div>
                           <div className="text-center">
                             <p className="text-2xl font-bold text-green-400">{selectedItem.remaining_responses}</p>
-                            <p className="text-gray-400 text-sm">After</p>
+                            <p className="text-gray-400 text-sm">{t('dashboardPro.after')}</p>
                           </div>
                         </div>
                       </div>
@@ -1270,7 +1275,7 @@ const Dashboard: React.FC = () => {
                       onClick={() => setShowModal(false)}
                       className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-medium hover:from-purple-600 hover:to-pink-600 transition-all duration-200"
                     >
-                      Close
+                      {t('common.close')}
                     </button>
                   </div>
                 </motion.div>

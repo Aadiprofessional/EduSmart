@@ -10,11 +10,13 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
 import 'katex/dist/katex.min.css';
+import { useLanguage } from '../../utils/LanguageContext';
 
 const StudyContent: React.FC = () => {
     const location = useLocation();
     const { id } = useParams<{ id: string }>();
     const { user } = useAuth();
+    const { t } = useLanguage();
     
     const [contentData, setContentData] = useState<any>(location.state?.studySetData || null);
     const [loading, setLoading] = useState(!location.state?.studySetData);
@@ -54,6 +56,14 @@ const StudyContent: React.FC = () => {
     const supportedTextTypes = ['pdf_vision', 'ocr', 'image', 'document'];
     const showToggle = documentUrl && documentText && supportedTextTypes.includes(documentType);
 
+    useEffect(() => {
+        if (!contentData?.document_url || !contentData?.document_text) return;
+        const inferredType = contentData.document_type || getFileType(contentData.document_url);
+        if (inferredType === 'office') {
+            setViewMode('text');
+        }
+    }, [contentData]);
+
     // Preprocess LaTeX to convert OpenAI format to react-markdown format
     const preprocessLaTeX = (text: string) => {
         if (typeof text !== 'string') return '';
@@ -67,12 +77,23 @@ const StudyContent: React.FC = () => {
     };
 
     // Helper to determine file type from URL extension if documentType is generic 'url' or missing
+    const getFileExtension = (url: string) => {
+        try {
+            const pathname = new URL(url).pathname;
+            return pathname.split('.').pop()?.toLowerCase() || '';
+        } catch {
+            const pathname = url.split('?')[0];
+            return pathname.split('.').pop()?.toLowerCase() || '';
+        }
+    };
+
     const getFileType = (url: string) => {
-        const extension = url.split('.').pop()?.toLowerCase();
+        const extension = getFileExtension(url);
         if (['mp3', 'wav', 'ogg', 'm4a'].includes(extension || '')) return 'audio';
         if (['mp4', 'webm', 'ogg', 'mov'].includes(extension || '')) return 'video';
         if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) return 'image';
         if (['pdf'].includes(extension || '')) return 'pdf';
+        if (['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'].includes(extension || '')) return 'office';
         return 'text';
     };
 
@@ -139,10 +160,10 @@ const StudyContent: React.FC = () => {
             if (type === 'audio' || type === 'audio_file' || getFileType(documentUrl) === 'audio') {
                 return (
                     <div className="flex flex-col items-center justify-center w-full max-w-2xl mx-auto p-8 bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl">
-                         <h3 className="text-xl font-bold text-white mb-6">Audio Content</h3>
+                         <h3 className="text-xl font-bold text-white mb-6">{t('studyContent.audioContent')}</h3>
                          <audio controls className="w-full">
                              <source src={documentUrl} />
-                             Your browser does not support the audio element.
+                             {t('studyContent.audioNotSupported')}
                          </audio>
                     </div>
                 );
@@ -154,7 +175,7 @@ const StudyContent: React.FC = () => {
                     <div className="w-full max-w-4xl mx-auto aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-white/10">
                         <video controls className="w-full h-full">
                             <source src={documentUrl} />
-                            Your browser does not support the video tag.
+                            {t('studyContent.videoNotSupported')}
                         </video>
                     </div>
                 );
@@ -174,12 +195,33 @@ const StudyContent: React.FC = () => {
             }
 
             // PDF / Document
-            if (type === 'pdf' || type === 'pdf_file' || type === 'document' || getFileType(documentUrl) === 'pdf') {
+            if (type === 'pdf' || type === 'pdf_file' || getFileType(documentUrl) === 'pdf') {
                  return (
                     <div className="w-full h-full min-h-[80vh] bg-black/40 backdrop-blur-xl border border-white/10 rounded-lg shadow-lg overflow-hidden">
                         <PDFViewer url={documentUrl} />
                     </div>
                  );
+            }
+
+            if (type === 'document' || getFileType(documentUrl) === 'office') {
+                const officePreviewUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(documentUrl)}`;
+                return (
+                    <div className="w-full h-full min-h-[80vh] bg-black/40 backdrop-blur-xl border border-white/10 rounded-lg shadow-lg overflow-hidden relative">
+                        <iframe
+                            src={officePreviewUrl}
+                            className="w-full h-full border-none"
+                            title={t('studyContent.officePreviewTitle')}
+                        />
+                        <a
+                            href={documentUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="absolute top-4 right-4 px-3 py-2 text-xs rounded-lg bg-black/60 text-white hover:bg-black/80 transition-colors"
+                        >
+                            {t('studyContent.openOriginalFile')}
+                        </a>
+                    </div>
+                );
             }
             
             // Fallback for generic URLs (websites)
@@ -196,7 +238,7 @@ const StudyContent: React.FC = () => {
 
         return (
             <div className="flex items-center justify-center h-64 text-gray-500">
-                No content available to display.
+                {t('studyContent.noContentAvailable')}
             </div>
         );
     };
@@ -213,7 +255,7 @@ const StudyContent: React.FC = () => {
                                  : 'text-white/60 hover:text-white hover:bg-white/5'
                          }`}
                      >
-                         Original File
+                        {t('studyContent.originalFile')}
                      </button>
                      <button
                          onClick={() => setViewMode('text')}
@@ -223,7 +265,7 @@ const StudyContent: React.FC = () => {
                                  : 'text-white/60 hover:text-white hover:bg-white/5'
                          }`}
                      >
-                         Extracted Text
+                        {t('studyContent.extractedText')}
                      </button>
                  </div>
              )}

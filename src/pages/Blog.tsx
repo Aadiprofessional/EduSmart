@@ -441,7 +441,7 @@ const Blog: React.FC = () => {
                 transition={{ duration: 0.5 }}
                 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60"
             >
-                {t('blog.title') || "Latest Insights & Updates"}
+                {t('blog.title')}
             </motion.h1>
             <motion.p 
                 initial={{ opacity: 0, y: 20 }}
@@ -449,7 +449,7 @@ const Blog: React.FC = () => {
                 transition={{ duration: 0.5, delay: 0.1 }}
                 className="text-lg text-gray-400 max-w-2xl mx-auto"
             >
-                {t('blog.subtitle') || "Stay ahead with expert advice, educational trends, and MatrixEdu platform updates."}
+                {t('blog.subtitle')}
             </motion.p>
           
           {/* Enhanced Search Bar - Desktop only */}
@@ -459,7 +459,7 @@ const Blog: React.FC = () => {
                 <div className="flex-1 relative">
                   <input
                     type="text"
-                    placeholder={t('blog.searchPlaceholder') || 'Search articles...'}
+                    placeholder={t('blog.searchPlaceholder')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full px-6 py-4 pl-12 bg-[#0A0A0A]/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:bg-[#0A0A0A] transition-all text-lg placeholder-gray-500 border border-white/5"
@@ -468,7 +468,7 @@ const Blog: React.FC = () => {
                 </div>
                 <button className="px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium transition-colors flex items-center gap-2 shadow-lg shadow-purple-500/20">
                   <IconComponent icon={FaSearch} />
-                  <span className="hidden sm:inline">Search</span>
+                  <span className="hidden sm:inline">{t('common.search')}</span>
                 </button>
               </div>
             </div>
@@ -484,7 +484,7 @@ const Blog: React.FC = () => {
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Search articles..."
+                  placeholder={t('blog.searchPlaceholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-10 py-3 bg-[#0A0A0A] border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -507,7 +507,7 @@ const Blog: React.FC = () => {
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-lg shadow-purple-500/20"
                 >
                   <IconComponent icon={FaFilter} className="h-4 w-4" />
-                  <span>Filters</span>
+                  <span>{t('common.filter')}</span>
                   {((activeCategory !== 'all' ? 1 : 0) + (selectedTag ? 1 : 0) + (searchQuery ? 1 : 0)) > 0 && (
                     <span className="bg-purple-800 text-white text-xs px-2 py-1 rounded-full">
                       {(activeCategory !== 'all' ? 1 : 0) + (selectedTag ? 1 : 0) + (searchQuery ? 1 : 0)}
@@ -538,11 +538,11 @@ const Blog: React.FC = () => {
               <MobileFilterPanel
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
-                searchPlaceholder="Search articles..."
+                searchPlaceholder={t('blog.searchPlaceholder')}
                 filters={[
                   {
                     key: 'category',
-                    label: 'Category',
+                    label: t('blog.category'),
                     value: activeCategory === 'all' ? '' : activeCategory,
                     options: categories.filter(cat => cat !== 'all').map(category => ({ 
                       value: category, 
@@ -553,10 +553,10 @@ const Blog: React.FC = () => {
                   }
                 ]}
                 sortOptions={[
-                  { value: 'newest', label: 'Newest First' },
-                  { value: 'oldest', label: 'Oldest First' },
-                  { value: 'popular', label: 'Most Popular' },
-                  { value: 'title', label: 'Title' }
+                  { value: 'newest', label: t('blog.sortNewest') },
+                  { value: 'oldest', label: t('blog.sortOldest') },
+                  { value: 'popular', label: t('blog.sortPopular') },
+                  { value: 'title', label: t('blog.sortTitle') }
                 ]}
                 sortBy={sortBy}
                 onSortChange={setSortBy}
@@ -623,20 +623,20 @@ const Blog: React.FC = () => {
                 >
                   <div className="bg-[#0A0A0A] border border-white/10 rounded-xl p-6 sticky top-24 backdrop-blur-xl">
                     <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-lg font-bold text-white">Filters</h3>
+                      <h3 className="text-lg font-bold text-white">{t('common.filter')}</h3>
                       {(searchQuery || activeCategory !== 'all') && (
                         <button
                           onClick={clearAllFilters}
                           className="text-sm text-purple-400 hover:text-purple-300 font-medium"
                         >
-                          Clear All
+                          {t('blog.clearAll')}
                         </button>
                       )}
                     </div>
 
                     {/* Categories */}
                     <div className="mb-6">
-                      <h4 className="text-md font-semibold text-gray-300 mb-3">Categories</h4>
+                      <h4 className="text-md font-semibold text-gray-300 mb-3">{t('blog.categories')}</h4>
                       <div className="space-y-2">
                         <motion.button
                           className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
@@ -647,7 +647,7 @@ const Blog: React.FC = () => {
                           onClick={() => setActiveCategory('all')}
                           whileHover={{ x: 2 }}
                         >
-                          All Categories ({blogPosts.length})
+                          {t('blog.allCategories')} ({blogPosts.length})
                         </motion.button>
                         {categories.filter(cat => cat !== 'all').map((category) => {
                           // Use all blogs for count, not filtered ones
@@ -673,7 +673,7 @@ const Blog: React.FC = () => {
 
                     {/* Popular Tags */}
                     <div>
-                      <h4 className="text-md font-semibold text-gray-300 mb-3">Popular Tags</h4>
+                      <h4 className="text-md font-semibold text-gray-300 mb-3">{t('blog.popularTags')}</h4>
                       <div className="flex flex-wrap gap-2">
                         {tags.slice(0, 10).map(tag => (
                           <motion.button
@@ -706,15 +706,15 @@ const Blog: React.FC = () => {
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 bg-[#0A0A0A] border border-white/10 rounded-xl p-6 backdrop-blur-xl">
                     <div>
                       <h2 className="text-2xl font-bold text-white mb-2">
-                        {activeCategory === 'all' ? 'Latest Articles' : activeCategory}
+                        {activeCategory === 'all' ? t('blog.latestArticles') : activeCategory}
                         {searchQuery && (
                           <span className="text-lg font-normal text-gray-400 ml-2">
-                            - Results for "{searchQuery}"
+                            - {t('blog.resultsFor')} "{searchQuery}"
                           </span>
                         )}
                       </h2>
                       <p className="text-gray-400">
-                        Showing {sortedBlogs.length} article{sortedBlogs.length !== 1 ? 's' : ''}
+                        {t('blog.showing')} {sortedBlogs.length} {sortedBlogs.length !== 1 ? t('blog.articlesPlural') : t('blog.articleSingular')}
                       </p>
                     </div>
                     
@@ -743,10 +743,10 @@ const Blog: React.FC = () => {
                           onChange={(e) => setSortBy(e.target.value)}
                           className="px-3 py-2 bg-[#0A0A0A] border border-white/10 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
                         >
-                          <option value="newest">Newest First</option>
-                          <option value="oldest">Oldest First</option>
-                          <option value="popular">Most Popular</option>
-                          <option value="title">Title</option>
+                          <option value="newest">{t('blog.sortNewest')}</option>
+                          <option value="oldest">{t('blog.sortOldest')}</option>
+                          <option value="popular">{t('blog.sortPopular')}</option>
+                          <option value="title">{t('blog.sortTitle')}</option>
                         </select>
                       </div>
                     </div>
@@ -760,10 +760,10 @@ const Blog: React.FC = () => {
                       animate={{ opacity: 1 }}
                     >
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm text-gray-400 font-medium">Active filters:</span>
+                        <span className="text-sm text-gray-400 font-medium">{t('blog.activeFilters')}</span>
                         {searchQuery && (
                           <span className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-sm flex items-center gap-1 border border-purple-500/30">
-                            Search: "{searchQuery}"
+                            {t('common.search')}: "{searchQuery}"
                             <button onClick={() => setSearchQuery('')}>
                               <IconComponent icon={FaTimes} className="text-xs" />
                             </button>
@@ -771,7 +771,7 @@ const Blog: React.FC = () => {
                         )}
                         {activeCategory !== 'all' && (
                           <span className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-sm flex items-center gap-1 border border-purple-500/30">
-                            Category: {activeCategory}
+                            {t('blog.category')}: {activeCategory}
                             <button onClick={() => setActiveCategory('all')}>
                               <IconComponent icon={FaTimes} className="text-xs" />
                             </button>
@@ -779,7 +779,7 @@ const Blog: React.FC = () => {
                         )}
                         {selectedTag && (
                           <span className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-sm flex items-center gap-1 border border-purple-500/30">
-                            Tag: #{selectedTag}
+                            {t('blog.tags')}: #{selectedTag}
                             <button onClick={() => setSelectedTag('')}>
                               <IconComponent icon={FaTimes} className="text-xs" />
                             </button>
@@ -789,7 +789,7 @@ const Blog: React.FC = () => {
                           onClick={clearAllFilters}
                           className="text-gray-400 hover:text-white text-sm underline ml-2"
                         >
-                          Clear all
+                          {t('blog.clearAll')}
                         </button>
                       </div>
                     </motion.div>
@@ -833,7 +833,7 @@ const Blog: React.FC = () => {
                                 </div>
                                 {post.featured && (
                                   <div className="absolute top-3 left-3 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-lg shadow-purple-500/20">
-                                    Featured
+                                    {t('blog.featured')}
                                   </div>
                                 )}
                               </div>
@@ -863,7 +863,7 @@ const Blog: React.FC = () => {
                                     />
                                     <div className="flex flex-col">
                                       <span className="text-sm font-medium text-gray-200">{post.author?.name || 'Anonymous'}</span>
-                                      <span className="text-xs text-gray-500">Author</span>
+                                      <span className="text-xs text-gray-500">{t('blog.author')}</span>
                                     </div>
                                   </div>
                                   <div className="p-2 rounded-lg bg-white/5 group-hover:bg-purple-500/20 transition-colors">
@@ -884,7 +884,7 @@ const Blog: React.FC = () => {
                                 <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-[#0A0A0A] via-transparent to-transparent opacity-60" />
                                 {post.featured && (
                                   <div className="absolute top-3 left-3 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-lg shadow-purple-500/20">
-                                    Featured
+                                    {t('blog.featured')}
                                   </div>
                                 )}
                               </div>
@@ -898,7 +898,7 @@ const Blog: React.FC = () => {
                                     </span>
                                     <span className="text-gray-400 text-xs flex items-center gap-1">
                                       <IconComponent icon={FaClock} className="w-3 h-3" />
-                                      {post.read_time || calculateReadTime(post.content || '')} min read
+                                      {post.read_time || calculateReadTime(post.content || '')} {t('blog.minRead')}
                                     </span>
                                   </div>
                                   
@@ -939,7 +939,7 @@ const Blog: React.FC = () => {
                                       openBlogModal(post);
                                     }}
                                   >
-                                    Read Article
+                                    {t('blog.readArticle')}
                                   </button>
                                 </div>
                               </div>
@@ -984,20 +984,20 @@ const Blog: React.FC = () => {
                               </p>
                               <div className="space-y-1 text-xs mb-3">
                                 <div className="flex justify-between items-center">
-                                  <span className="text-gray-500">Author:</span>
-                                  <span className="font-medium text-purple-400 truncate">{post.author?.name || 'Anonymous'}</span>
+                                  <span className="text-gray-500">{t('blog.author')}:</span>
+                                  <span className="font-medium text-purple-400 truncate">{post.author?.name || t('blog.anonymous')}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                  <span className="text-gray-500">Read time:</span>
+                                  <span className="text-gray-500">{t('blog.readTime')}:</span>
                                   <span className="font-medium text-purple-400">{post.read_time || calculateReadTime(post.content || '')} min</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                  <span className="text-gray-500">Date:</span>
+                                  <span className="text-gray-500">{t('blog.date')}:</span>
                                   <span className="font-medium text-gray-300">{formatDate(post.created_at)}</span>
                                 </div>
                               </div>
                               <button className="w-full px-3 py-1.5 bg-purple-600/20 text-purple-300 border border-purple-500/30 text-xs font-medium rounded-md hover:bg-purple-600 hover:text-white transition-colors">
-                                Read Article
+                                {t('blog.readArticle')}
                               </button>
                             </div>
                           </motion.div>
@@ -1036,15 +1036,15 @@ const Blog: React.FC = () => {
                                 </p>
                                 <div className="grid grid-cols-2 gap-2 text-xs">
                                   <div>
-                                    <span className="text-gray-500">Author: </span>
-                                    <span className="font-medium text-purple-400">{post.author?.name || 'Anonymous'}</span>
+                                    <span className="text-gray-500">{t('blog.author')}: </span>
+                                    <span className="font-medium text-purple-400">{post.author?.name || t('blog.anonymous')}</span>
                                   </div>
                                   <div>
-                                    <span className="text-gray-500">Read: </span>
+                                    <span className="text-gray-500">{t('blog.read')}: </span>
                                     <span className="font-medium text-purple-400">{post.read_time || calculateReadTime(post.content || '')} min</span>
                                   </div>
                                   <div className="col-span-2">
-                                    <span className="text-gray-500">Published: </span>
+                                    <span className="text-gray-500">{t('blog.published')}: </span>
                                     <span className="font-medium text-gray-300">{formatDate(post.created_at)}</span>
                                   </div>
                                 </div>
@@ -1078,7 +1078,7 @@ const Blog: React.FC = () => {
                           disabled={pagination.currentPage === 1}
                           className="px-4 py-2 text-sm font-medium text-gray-400 bg-[#0A0A0A] border border-white/10 rounded-lg hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
-                          Previous
+                          {t('common.previous')}
                         </button>
                         
                         {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
@@ -1119,7 +1119,7 @@ const Blog: React.FC = () => {
                           disabled={pagination.currentPage === pagination.totalPages}
                           className="px-4 py-2 text-sm font-medium text-gray-400 bg-[#0A0A0A] border border-white/10 rounded-lg hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
-                          Next
+                          {t('common.next')}
                         </button>
                       </div>
                     </motion.div>
@@ -1171,7 +1171,7 @@ const Blog: React.FC = () => {
                   </span>
                   <span className="text-gray-400 text-xs sm:text-sm flex items-center">
                     <IconComponent icon={FaClock} className="mr-1 h-3 w-3" />
-                    {selectedBlog.read_time || calculateReadTime(selectedBlog.content || selectedBlog.excerpt)} min read
+                    {selectedBlog.read_time || calculateReadTime(selectedBlog.content || selectedBlog.excerpt)} {t('blog.minRead')}
                   </span>
                   {selectedBlog.views && (
                     <span className="text-gray-400 text-xs sm:text-sm flex items-center">
@@ -1190,7 +1190,7 @@ const Blog: React.FC = () => {
                     className="w-10 h-10 sm:w-12 sm:h-12 rounded-full mr-3 sm:mr-4 ring-2 ring-purple-500/20"
                   />
                   <div>
-                    <p className="font-medium text-white text-sm sm:text-base">{selectedBlog.author?.name || 'Anonymous'}</p>
+                    <p className="font-medium text-white text-sm sm:text-base">{selectedBlog.author?.name || t('blog.anonymous')}</p>
                     <p className="text-gray-400 text-xs sm:text-sm">{formatDate(selectedBlog.created_at)}</p>
                   </div>
                 </div>
@@ -1212,15 +1212,15 @@ const Blog: React.FC = () => {
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 border-t border-white/10 pt-6">
                   <button className="flex items-center justify-center gap-2 bg-purple-600 text-white px-4 py-2.5 rounded-lg hover:bg-purple-700 transition-colors text-sm sm:text-base shadow-lg shadow-purple-500/20">
                     <IconComponent icon={FaShare} className="h-4 w-4" />
-                    Share
+                    {t('blog.share')}
                   </button>
                   <button className="flex items-center justify-center gap-2 bg-white/5 text-gray-300 px-4 py-2.5 rounded-lg hover:bg-white/10 transition-colors text-sm sm:text-base border border-white/10">
                     <IconComponent icon={FaBookmark} className="h-4 w-4" />
-                    Save for Later
+                    {t('blog.saveForLater')}
                   </button>
                   <button className="flex items-center justify-center gap-2 bg-green-500/10 text-green-400 px-4 py-2.5 rounded-lg hover:bg-green-500/20 transition-colors text-sm sm:text-base border border-green-500/20">
                     <IconComponent icon={FaHeart} className="h-4 w-4" />
-                    Like
+                    {t('blog.like')}
                   </button>
                 </div>
               </div>
@@ -1249,7 +1249,7 @@ const Blog: React.FC = () => {
             >
               {/* Header */}
               <div className="sticky top-0 bg-[#0A0A0A] border-b border-white/10 px-4 py-4 flex justify-between items-center z-10">
-                <h3 className="text-lg font-semibold text-white">Filters</h3>
+                <h3 className="text-lg font-semibold text-white">{t('common.filter')}</h3>
                 <button
                   onClick={() => setShowFilters(false)}
                   className="p-2 hover:bg-white/10 rounded-lg transition-colors bg-white/5 border border-white/10"
@@ -1262,13 +1262,13 @@ const Blog: React.FC = () => {
               <div className="p-4 pb-20">
                 {/* Categories */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Category</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">{t('blog.category')}</label>
                   <select
                     value={activeCategory}
                     onChange={(e) => setActiveCategory(e.target.value)}
                     className="w-full px-3 py-2 bg-[#0A0A0A] border border-white/10 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                   >
-                    <option value="all">All Categories</option>
+                    <option value="all">{t('blog.allCategories')}</option>
                     {categories.filter(cat => cat !== 'all').map(category => (
                       <option key={category} value={category}>
                         {category} ({blogPosts.filter(p => p.category === category).length})
@@ -1279,22 +1279,22 @@ const Blog: React.FC = () => {
 
                 {/* Sort By */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Sort By</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">{t('blog.sortBy')}</label>
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
                     className="w-full px-3 py-2 bg-[#0A0A0A] border border-white/10 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                   >
-                    <option value="newest">Newest First</option>
-                    <option value="oldest">Oldest First</option>
-                    <option value="popular">Most Popular</option>
-                    <option value="title">Title</option>
+                    <option value="newest">{t('blog.sortNewest')}</option>
+                    <option value="oldest">{t('blog.sortOldest')}</option>
+                    <option value="popular">{t('blog.sortPopular')}</option>
+                    <option value="title">{t('blog.sortTitle')}</option>
                   </select>
                 </div>
 
                 {/* Popular Tags */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Popular Tags</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">{t('blog.popularTags')}</label>
                   <div className="flex flex-wrap gap-2">
                     {tags.slice(0, 15).map(tag => (
                       <button
@@ -1314,7 +1314,7 @@ const Blog: React.FC = () => {
 
                 {/* Quick Filters */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Quick Filters</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">{t('blog.quickFilters')}</label>
                   <div className="space-y-2">
                     <button
                       onClick={() => {
@@ -1323,7 +1323,7 @@ const Blog: React.FC = () => {
                       }}
                       className="w-full text-left px-3 py-2 text-sm bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg transition-colors border border-white/10"
                     >
-                      📌 Featured Articles
+                      {t('blog.featuredArticles')}
                     </button>
                     <button
                       onClick={() => {
@@ -1332,7 +1332,7 @@ const Blog: React.FC = () => {
                       }}
                       className="w-full text-left px-3 py-2 text-sm bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg transition-colors border border-white/10"
                     >
-                      🔥 Most Popular
+                      {t('blog.sortPopular')}
                     </button>
                     <button
                       onClick={() => {
@@ -1341,7 +1341,7 @@ const Blog: React.FC = () => {
                       }}
                       className="w-full text-left px-3 py-2 text-sm bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg transition-colors border border-white/10"
                     >
-                      🆕 Latest Articles
+                      {t('blog.latestArticles')}
                     </button>
                   </div>
                 </div>
@@ -1353,13 +1353,13 @@ const Blog: React.FC = () => {
                   onClick={clearAllFilters}
                   className="flex-1 px-4 py-2 border border-white/10 text-gray-300 rounded-lg hover:bg-white/5 transition-colors"
                 >
-                  Reset
+                  {t('methodSelection.reset')}
                 </button>
                 <button
                   onClick={() => setShowFilters(false)}
                   className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-lg shadow-purple-500/20"
                 >
-                  Apply
+                  {t('common.submit')}
                 </button>
               </div>
             </motion.div>

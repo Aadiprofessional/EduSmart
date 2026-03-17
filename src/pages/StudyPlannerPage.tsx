@@ -6,9 +6,11 @@ import StudyPlannerComponent, { StudyPlannerComponentHandle, StudyPlannerHistory
 import { supabase } from '../utils/supabase';
 import { useAuth } from '../utils/AuthContext';
 import IconComponent from '../components/ui/IconComponent';
+import { useLanguage } from '../utils/LanguageContext';
 
 const StudyPlannerPage: React.FC = () => {
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(window.innerWidth >= 1024);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   
@@ -147,7 +149,7 @@ const StudyPlannerPage: React.FC = () => {
                   <div className="p-2 rounded-lg bg-amber-500/10 mr-3">
                     <IconComponent icon={FiClock} className="h-5 w-5 text-amber-500" />
                   </div>
-                  Roadmap History
+                  {t('studyPlannerPage.roadmapHistory')}
                 </h2>
                 <motion.button
                   onClick={() => setIsHistoryOpen(false)}
@@ -169,9 +171,9 @@ const StudyPlannerPage: React.FC = () => {
                     <div className="w-20 h-20 bg-gray-100 dark:bg-white/5 rounded-full flex items-center justify-center mb-4 border border-gray-200 dark:border-white/5">
                         <IconComponent icon={FiClock} className="h-8 w-8 text-gray-400" />
                     </div>
-                    <p className="text-gray-900 dark:text-white font-medium mb-1 text-lg">No history yet</p>
+                    <p className="text-gray-900 dark:text-white font-medium mb-1 text-lg">{t('studyPlannerPage.noHistory')}</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs mx-auto">
-                        Generate your first AI roadmap to see it here.
+                        {t('studyPlannerPage.noHistoryDescription')}
                     </p>
                   </div>
                 ) : (
@@ -189,12 +191,12 @@ const StudyPlannerPage: React.FC = () => {
                         <div className="flex justify-between items-start relative z-10">
                           <div className="flex-1 pr-4">
                             <h3 className="font-semibold text-gray-900 dark:text-white mb-2 text-lg group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors line-clamp-2">
-                              {item.title || 'Untitled Roadmap'}
+                              {item.title || t('studyPlannerPage.untitledRoadmap')}
                             </h3>
                             <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 space-x-4">
                                 <span className="flex items-center bg-gray-100 dark:bg-black/30 px-2 py-1 rounded-md">
                                     <IconComponent icon={FiCalendar} className="mr-1.5 h-3.5 w-3.5 text-gray-400" />
-                                    {new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    {new Date(item.created_at).toLocaleDateString(language, { month: 'short', day: 'numeric', year: 'numeric' })}
                                 </span>
                                 <span className="flex items-center bg-gray-100 dark:bg-black/30 px-2 py-1 rounded-md">
                                     <IconComponent icon={FiClock} className="mr-1.5 h-3.5 w-3.5 text-gray-400" />

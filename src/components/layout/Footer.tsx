@@ -335,9 +335,9 @@ const Footer: React.FC = () => {
                   <span className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full mr-2"></span>
                   {t('footer.hongKongOffice')}
                 </p>
-                <p className="text-sm leading-relaxed">Unit G1, 35/F, Legend Tower<br />
-                7 Shing Yip Street, Kwun Tong, KLN<br />
-                <span className="text-blue-600 dark:text-blue-400">+852 66359879</span></p>
+                <p className="text-sm leading-relaxed">{t('footer.contactAddresses.hongKongLine1')}<br />
+                {t('footer.contactAddresses.hongKongLine2')}<br />
+                <span className="text-blue-600 dark:text-blue-400">{t('footer.contactPhones.hongKong')}</span></p>
               </div>
               
               {/* Shenzhen Office */}
@@ -346,9 +346,9 @@ const Footer: React.FC = () => {
                   <span className="w-2 h-2 bg-purple-500 dark:bg-purple-400 rounded-full mr-2"></span>
                   {t('footer.shenzhenOffice')}
                 </p>
-                <p className="text-sm leading-relaxed">前海桂湾三路深港青年夢工場<br />
-                香港大學青年科創學院4樓<br />
-                <span className="text-purple-600 dark:text-purple-400">+86 13266989879</span></p>
+                <p className="text-sm leading-relaxed">{t('footer.contactAddresses.shenzhenLine1')}<br />
+                {t('footer.contactAddresses.shenzhenLine2')}<br />
+                <span className="text-purple-600 dark:text-purple-400">{t('footer.contactPhones.shenzhen')}</span></p>
               </div>
               
               {/* Email */}
@@ -358,8 +358,8 @@ const Footer: React.FC = () => {
                   {t('footer.email')}
                 </p>
                 <p className="text-sm">
-                  <a href="mailto:info@matrixaiglobal.com" className="text-pink-600 dark:text-pink-400 hover:text-pink-500 dark:hover:text-pink-300 transition-colors duration-300">
-                    info@matrixaiglobal.com
+                  <a href={`mailto:${t('footer.contactInfo.email')}`} className="text-pink-600 dark:text-pink-400 hover:text-pink-500 dark:hover:text-pink-300 transition-colors duration-300">
+                    {t('footer.contactInfo.email')}
                   </a>
                 </p>
               </div>
@@ -377,7 +377,7 @@ const Footer: React.FC = () => {
         >
           <div className="flex flex-col sm:flex-row justify-between items-center text-center sm:text-left">
             <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mb-4 sm:mb-0">
-              © 2024 MatrixEdu. All rights reserved.
+              {t('footer.copyright')}
             </p>
             <div className="flex flex-wrap justify-center sm:justify-end gap-4 sm:gap-6 text-xs sm:text-sm">
               <Link to="/privacy" className="text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white transition-colors duration-300">

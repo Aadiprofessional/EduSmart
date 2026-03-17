@@ -20,8 +20,10 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import IconComponent from '../components/ui/IconComponent';
 import { useNotification } from '../utils/NotificationContext';
 import SidebarLeft from '../components/dashboard/SidebarLeft';
+import { useLanguage } from '../utils/LanguageContext';
 
 const ContentWriter: React.FC = () => {
+  const { t } = useLanguage();
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(window.innerWidth >= 1024);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   
@@ -69,7 +71,7 @@ const ContentWriter: React.FC = () => {
       if (data) {
         const formattedHistory = data.map(item => ({
           id: item.id || item.created_at, // Fallback to created_at if id is missing (table issue)
-          title: item.title || 'Untitled',
+          title: item.title || t('contentWriter.historyUntitled'),
           date: new Date(item.created_at).toLocaleDateString(),
           content: item.content,
           template: item.content_type || 'custom',
@@ -95,12 +97,12 @@ const ContentWriter: React.FC = () => {
   ];
 
   const templates = [
-    { id: 'college-app', name: 'College App Essay', icon: FaUserGraduate },
-    { id: 'cover-letter', name: 'Cover Letter', icon: FaFileAlt },
-    { id: 'recommendation', name: 'Recommendation', icon: FaEnvelope },
-    { id: 'research-paper', name: 'Research Paper', icon: FaClipboard },
-    { id: 'scholarship', name: 'Scholarship App', icon: FaFileContract },
-    { id: 'personal-statement', name: 'Personal Statement', icon: FaPenNib },
+    { id: 'college-app', name: t('contentWriter.templateNames.collegeApp'), icon: FaUserGraduate },
+    { id: 'cover-letter', name: t('contentWriter.templateNames.coverLetter'), icon: FaFileAlt },
+    { id: 'recommendation', name: t('contentWriter.templateNames.recommendation'), icon: FaEnvelope },
+    { id: 'research-paper', name: t('contentWriter.templateNames.researchPaper'), icon: FaClipboard },
+    { id: 'scholarship', name: t('contentWriter.templateNames.scholarship'), icon: FaFileContract },
+    { id: 'personal-statement', name: t('contentWriter.templateNames.personalStatement'), icon: FaPenNib },
   ];
 
   useEffect(() => {
@@ -267,7 +269,7 @@ const ContentWriter: React.FC = () => {
 
     } catch (error) {
       console.error('Error generating content:', error);
-      showError('Failed to generate content. Please try again.');
+      showError(t('contentWriter.error'));
     } finally {
       setIsGenerating(false);
     }
@@ -277,12 +279,12 @@ const ContentWriter: React.FC = () => {
     setActiveTemplate(templateId);
     let templatePrompt = '';
     switch(templateId) {
-      case 'college-app': templatePrompt = 'Write a compelling college application essay about my passion for computer science...'; break;
-      case 'cover-letter': templatePrompt = 'Create a professional cover letter for an internship position...'; break;
-      case 'recommendation': templatePrompt = 'Write a recommendation letter for a student applying to graduate school...'; break;
-      case 'research-paper': templatePrompt = 'Generate an outline for a research paper on AI in education...'; break;
-      case 'scholarship': templatePrompt = 'Create a scholarship application essay...'; break;
-      case 'personal-statement': templatePrompt = 'Write a personal statement for medical school...'; break;
+      case 'college-app': templatePrompt = t('contentWriter.templatePrompts.collegeApp'); break;
+      case 'cover-letter': templatePrompt = t('contentWriter.templatePrompts.coverLetter'); break;
+      case 'recommendation': templatePrompt = t('contentWriter.templatePrompts.recommendation'); break;
+      case 'research-paper': templatePrompt = t('contentWriter.templatePrompts.researchPaper'); break;
+      case 'scholarship': templatePrompt = t('contentWriter.templatePrompts.scholarship'); break;
+      case 'personal-statement': templatePrompt = t('contentWriter.templatePrompts.personalStatement'); break;
     }
     setPrompt(templatePrompt);
   };
@@ -311,12 +313,12 @@ const ContentWriter: React.FC = () => {
   const handleCopyContent = () => {
       if (!editorRef.current) return;
       navigator.clipboard.writeText(editorRef.current.innerText);
-      showSuccess('Content copied to clipboard!');
+      showSuccess(t('contentWriter.copied'));
   };
 
   const handleDeleteHistory = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!window.confirm('Are you sure you want to delete this history item?')) return;
+    if (!window.confirm(t('contentWriter.confirmDeleteHistoryItem'))) return;
     
     try {
       // Determine if we are deleting by UUID or using created_at as fallback
@@ -344,10 +346,10 @@ const ContentWriter: React.FC = () => {
       if (error) throw error;
 
       setContentHistory(prev => prev.filter(item => item.id !== id));
-      showSuccess('History item deleted');
+      showSuccess(t('contentWriter.historyItemDeleted'));
     } catch (error) {
       console.error('Error deleting history:', error);
-      showError('Failed to delete history item');
+      showError(t('contentWriter.failedToDeleteHistoryItem'));
     }
   };
 
@@ -377,7 +379,7 @@ const ContentWriter: React.FC = () => {
   }, [isGenerating, isMobile]);
 
   return (
-    <div className="h-screen bg-[#050505] text-white flex font-sans overflow-hidden relative selection:bg-indigo-500/30">
+    <div className="h-screen bg-gray-50 dark:bg-[#050505] text-gray-900 dark:text-white flex font-sans overflow-hidden relative selection:bg-indigo-500/30">
       
       {/* Background Gradients */}
       <div className="fixed inset-0 z-0 pointer-events-none">
@@ -398,31 +400,31 @@ const ContentWriter: React.FC = () => {
       <SidebarLeft 
         isOpen={isLeftSidebarOpen} 
         onClose={() => setIsLeftSidebarOpen(false)}
-        className="fixed inset-y-0 left-0 z-50 lg:relative lg:z-0 shadow-2xl lg:shadow-none h-full border-r border-white/5 bg-[#0a0a0a]"
+        className="fixed inset-y-0 left-0 z-50 lg:relative lg:z-0 shadow-2xl lg:shadow-none h-full border-r border-gray-200 dark:border-white/5 bg-white dark:bg-[#0a0a0a]"
       />
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-full relative overflow-hidden z-10">
         
         {/* Header / Mobile Nav */}
-        <header className="h-16 border-b border-white/5 bg-[#0a0a0a]/80 backdrop-blur-xl flex items-center justify-between px-4 lg:px-6 shrink-0 z-20">
+        <header className="h-16 border-b border-gray-200 dark:border-white/5 bg-white/90 dark:bg-[#0a0a0a]/80 backdrop-blur-xl flex items-center justify-between px-4 lg:px-6 shrink-0 z-20">
             <div className="flex items-center gap-4">
                 <button 
                     onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)} 
-                    className="lg:hidden w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 text-white flex items-center justify-center transition-colors"
+                    className="lg:hidden w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-900 dark:text-white flex items-center justify-center transition-colors"
                 >
                     <IconComponent icon={FiMenu} className="w-5 h-5" />
                 </button>
-                <h1 className="text-lg lg:text-xl font-bold text-white flex items-center gap-3">
+                <h1 className="text-lg lg:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
                         <FaPenNib size={14} className="text-white" />
                     </div>
-                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">Content Writer</span>
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-500 dark:from-white dark:to-gray-400">{t('contentWriter.title')}</span>
                 </h1>
             </div>
 
             {/* Mobile Tab Switcher - Segmented Control Style */}
-            <div className="flex lg:hidden bg-white/5 p-1 rounded-full border border-white/5 relative">
+            <div className="flex lg:hidden bg-gray-100 dark:bg-white/5 p-1 rounded-full border border-gray-200 dark:border-white/5 relative">
                 <div 
                     className={`absolute inset-y-1 rounded-full bg-indigo-600 shadow-lg shadow-indigo-500/20 transition-all duration-300 ease-out ${mobileTab === 'generator' ? 'left-1 w-[calc(50%-4px)]' : 'left-[calc(50%)] w-[calc(50%-4px)]'}`}
                 />
@@ -430,13 +432,13 @@ const ContentWriter: React.FC = () => {
                     onClick={() => setMobileTab('generator')}
                     className={`relative z-10 px-5 py-1.5 text-xs font-semibold rounded-full transition-colors ${mobileTab === 'generator' ? 'text-white' : 'text-gray-400 hover:text-white'}`}
                 >
-                    Create
+                    {t('contentWriter.createTab')}
                 </button>
                 <button 
                     onClick={() => setMobileTab('editor')}
                     className={`relative z-10 px-5 py-1.5 text-xs font-semibold rounded-full transition-colors ${mobileTab === 'editor' ? 'text-white' : 'text-gray-400 hover:text-white'}`}
                 >
-                    Editor
+                    {t('contentWriter.editorTab')}
                 </button>
             </div>
 
@@ -445,10 +447,10 @@ const ContentWriter: React.FC = () => {
                  <button 
                   onClick={() => setIsHistoryOpen(!isHistoryOpen)}
                   className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-all ${isHistoryOpen ? 'bg-white/10 text-white' : ''}`}
-                  title="History"
+                  title={t('contentWriter.history')}
                 >
                    <FaHistory size={14} />
-                   <span>History</span>
+                   <span>{t('contentWriter.history')}</span>
                 </button>
             </div>
         </header>
@@ -457,22 +459,22 @@ const ContentWriter: React.FC = () => {
         <div className="flex-1 flex overflow-hidden relative">
             
             {/* GENERATOR PANEL (Left) */}
-            <div className={`${mobileTab === 'generator' ? 'flex' : 'hidden'} lg:flex w-full lg:w-[400px] flex-col border-r border-white/5 bg-[#0a0a0a] relative z-10`}>
+            <div className={`${mobileTab === 'generator' ? 'flex' : 'hidden'} lg:flex w-full lg:w-[400px] flex-col border-r border-gray-200 dark:border-white/5 bg-white dark:bg-[#0a0a0a] relative z-10`}>
                 <div className="flex-1 overflow-y-auto p-5 lg:p-8 space-y-8 scrollbar-thin scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20">
                     
                     {/* Prompt Section */}
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                            <label className="text-sm font-semibold text-gray-200 flex items-center gap-2">
+                            <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
                                 <FaMagic className="text-indigo-400" size={12} />
-                                Your Prompt
+                                {t('contentWriter.prompt')}
                             </label>
                             {prompt && (
                                 <button 
                                     onClick={() => setPrompt('')}
-                                    className="text-xs text-gray-500 hover:text-white transition-colors"
+                                    className="text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
                                 >
-                                    Clear
+                                    {t('common.clear')}
                                 </button>
                             )}
                         </div>
@@ -481,8 +483,8 @@ const ContentWriter: React.FC = () => {
                             <textarea
                                 value={prompt}
                                 onChange={(e) => setPrompt(e.target.value)}
-                                placeholder="What would you like to write about today? Be specific for better results..."
-                                className="relative w-full p-5 bg-white/[0.03] border border-white/10 rounded-2xl focus:outline-none focus:border-indigo-500/30 text-sm leading-relaxed min-h-[160px] resize-none placeholder-gray-600 text-gray-200 transition-all shadow-inner"
+                                placeholder={t('contentWriter.promptPlaceholder')}
+                                className="relative w-full p-5 bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/10 rounded-2xl focus:outline-none focus:border-indigo-500/30 text-sm leading-relaxed min-h-[160px] resize-none placeholder-gray-400 dark:placeholder-gray-600 text-gray-800 dark:text-gray-200 transition-all shadow-inner"
                             />
                         </div>
                     </div>
@@ -490,35 +492,35 @@ const ContentWriter: React.FC = () => {
                     {/* Controls */}
                     <div className="grid grid-cols-2 gap-5">
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider pl-1">Tone</label>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider pl-1">{t('contentWriter.tone')}</label>
                             <div className="relative group">
                                 <select 
                                     value={tone}
                                     onChange={(e) => setTone(e.target.value)}
-                                    className="w-full appearance-none p-3 pl-4 pr-10 bg-white/[0.03] border border-white/10 rounded-xl text-sm text-gray-200 outline-none focus:border-indigo-500/30 focus:bg-white/[0.05] transition-all cursor-pointer shadow-sm"
+                                    className="w-full appearance-none p-3 pl-4 pr-10 bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/10 rounded-xl text-sm text-gray-800 dark:text-gray-200 outline-none focus:border-indigo-500/30 focus:bg-white dark:focus:bg-white/[0.05] transition-all cursor-pointer shadow-sm"
                                 >
-                                    <option value="professional">Professional</option>
-                                    <option value="casual">Casual</option>
-                                    <option value="academic">Academic</option>
-                                    <option value="creative">Creative</option>
-                                    <option value="enthusiastic">Enthusiastic</option>
+                                    <option value="professional">{t('contentWriter.tones.professional')}</option>
+                                    <option value="casual">{t('contentWriter.tones.informal')}</option>
+                                    <option value="academic">{t('contentWriter.tones.academic')}</option>
+                                    <option value="creative">{t('contentWriter.creative')}</option>
+                                    <option value="enthusiastic">{t('contentWriter.enthusiastic')}</option>
                                 </select>
                                 <FaChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 text-xs pointer-events-none group-hover:text-gray-400 transition-colors" />
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider pl-1">Length</label>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider pl-1">{t('contentWriter.length')}</label>
                             <div className="relative group">
                                 <input 
                                     type="number"
                                     value={targetWordCount}
                                     onChange={(e) => setTargetWordCount(Number(e.target.value))}
-                                    className="w-full p-3 bg-white/[0.03] border border-white/10 rounded-xl text-sm text-gray-200 outline-none focus:border-indigo-500/30 focus:bg-white/[0.05] transition-all shadow-sm"
+                                    className="w-full p-3 bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/10 rounded-xl text-sm text-gray-800 dark:text-gray-200 outline-none focus:border-indigo-500/30 focus:bg-white dark:focus:bg-white/[0.05] transition-all shadow-sm"
                                     step={100}
                                     min={100}
                                     max={3000}
                                 />
-                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-600 font-medium">words</span>
+                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-600 font-medium">{t('contentWriter.words')}</span>
                             </div>
                         </div>
                     </div>
@@ -530,28 +532,28 @@ const ContentWriter: React.FC = () => {
                         className="w-full py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-[length:200%_auto] hover:bg-right text-white rounded-xl font-bold shadow-xl shadow-indigo-500/20 transition-all duration-500 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group relative overflow-hidden transform hover:-translate-y-0.5"
                     >
                         {isGenerating ? <FiRefreshCw className="animate-spin text-lg" /> : <FaMagic className="text-lg group-hover:rotate-12 transition-transform" />}
-                        <span className="relative tracking-wide">{isGenerating ? 'Generating...' : 'Generate Content'}</span>
+                        <span className="relative tracking-wide">{isGenerating ? t('contentWriter.contentWriterGenerating') : t('contentWriter.generateContent')}</span>
                     </button>
 
                     {/* Templates Grid */}
-                    <div className="pt-6 border-t border-white/5">
+                    <div className="pt-6 border-t border-gray-200 dark:border-white/5">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Quick Start</h3>
-                            <span className="text-[10px] bg-white/5 px-2 py-1 rounded-md text-gray-500">Auto-fill</span>
+                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t('contentWriter.quickStart')}</h3>
+                            <span className="text-[10px] bg-gray-100 dark:bg-white/5 px-2 py-1 rounded-md text-gray-500">{t('contentWriter.autoFill')}</span>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
-                            {templates.map(t => (
+                            {templates.map((template) => (
                                 <button
-                                    key={t.id}
-                                    onClick={() => selectTemplate(t.id)}
-                                    className={`p-4 rounded-xl border text-left transition-all group relative overflow-hidden flex flex-col gap-3 ${activeTemplate === t.id ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-white/[0.02] border-white/5 hover:border-white/10 hover:bg-white/[0.04]'}`}
+                                    key={template.id}
+                                    onClick={() => selectTemplate(template.id)}
+                                    className={`p-4 rounded-xl border text-left transition-all group relative overflow-hidden flex flex-col gap-3 ${activeTemplate === template.id ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-white dark:bg-white/[0.02] border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/10 hover:bg-gray-50 dark:hover:bg-white/[0.04]'}`}
                                 >
-                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${activeTemplate === t.id ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30' : 'bg-white/5 text-gray-500 group-hover:bg-white/10 group-hover:text-gray-300'} transition-all duration-300`}>
-                                        <t.icon size={14} />
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${activeTemplate === template.id ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30' : 'bg-white/5 text-gray-500 group-hover:bg-white/10 group-hover:text-gray-300'} transition-all duration-300`}>
+                                        <template.icon size={14} />
                                     </div>
                                     <div>
-                                        <span className={`block text-xs font-bold mb-0.5 ${activeTemplate === t.id ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}`}>{t.name}</span>
-                                        <span className="block text-[10px] text-gray-600 group-hover:text-gray-500">Click to use</span>
+                                        <span className={`block text-xs font-bold mb-0.5 ${activeTemplate === template.id ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}`}>{template.name}</span>
+                                        <span className="block text-[10px] text-gray-600 group-hover:text-gray-500">{t('contentWriter.clickToUse')}</span>
                                     </div>
                                 </button>
                             ))}
@@ -561,22 +563,22 @@ const ContentWriter: React.FC = () => {
             </div>
 
             {/* EDITOR PANEL (Right) */}
-            <div className={`${mobileTab === 'editor' ? 'flex' : 'hidden'} lg:flex flex-1 relative bg-[#050505] flex-col h-full overflow-hidden`}>
+            <div className={`${mobileTab === 'editor' ? 'flex' : 'hidden'} lg:flex flex-1 relative bg-gray-50 dark:bg-[#050505] flex-col h-full overflow-hidden`}>
                 
                 {/* Editor Top Bar (Toolbar) */}
                 <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 max-w-[95%] w-fit transition-all duration-300">
-                    <div className="rounded-2xl px-2 py-1.5 border border-white/10 shadow-2xl backdrop-blur-xl bg-[#151515]/90 flex items-center gap-1 overflow-x-auto scrollbar-none max-w-full">
+                    <div className="rounded-2xl px-2 py-1.5 border border-gray-200 dark:border-white/10 shadow-2xl backdrop-blur-xl bg-white/90 dark:bg-[#151515]/90 flex items-center gap-1 overflow-x-auto scrollbar-none max-w-full">
                         {/* Font Family */}
                         <div className="relative group/font">
                             <button 
                                 onClick={() => setActivePopup(activePopup === 'font' ? null : 'font')}
-                                className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-300 hover:bg-white/10 hover:text-white rounded-xl transition-all"
+                                className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white rounded-xl transition-all"
                             >
                                 <span className="max-w-[80px] truncate">{currentFont.name}</span>
                                 <FaChevronDown size={8} className="opacity-50" />
                             </button>
                             {activePopup === 'font' && (
-                                <div className="absolute top-full left-0 mt-2 py-1 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl z-50 w-48 backdrop-blur-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                <div className="absolute top-full left-0 mt-2 py-1 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl shadow-2xl z-50 w-48 backdrop-blur-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                                     {fonts.map((font) => (
                                         <button
                                             key={font.value}
@@ -585,7 +587,7 @@ const ContentWriter: React.FC = () => {
                                                 setCurrentFont(font);
                                                 setActivePopup(null);
                                             }}
-                                            className="w-full text-left px-4 py-2.5 text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-colors flex items-center justify-between group/item"
+                                            className="w-full text-left px-4 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-colors flex items-center justify-between group/item"
                                             style={{ fontFamily: font.value }}
                                         >
                                             {font.name}
@@ -618,18 +620,18 @@ const ContentWriter: React.FC = () => {
 
                     {/* Popup Input */}
                     {activePopup && activePopup !== 'font' && (
-                        <div className="absolute top-full left-0 mt-3 p-2 bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-2xl z-50 flex items-center gap-2 w-72 backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div className="absolute top-full left-0 mt-3 p-2 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl z-50 flex items-center gap-2 w-72 backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-200">
                             <form onSubmit={handlePopupSubmit} className="flex items-center gap-2 w-full p-1">
                                 <input
                                     type="text"
                                     value={popupValue}
                                     onChange={(e) => setPopupValue(e.target.value)}
-                                    placeholder={activePopup === 'link' ? "Paste link here..." : "Image URL..."}
-                                    className="flex-1 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition-all placeholder-gray-600"
+                                    placeholder={activePopup === 'link' ? t('contentWriter.pasteLinkHere') : t('contentWriter.imageUrl')}
+                                    className="flex-1 bg-gray-50 dark:bg-black/30 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-indigo-500/50 transition-all placeholder-gray-400 dark:placeholder-gray-600"
                                     autoFocus
                                 />
-                                <button type="submit" className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-lg font-bold shadow-lg shadow-indigo-500/20 transition-all">Add</button>
-                                <button type="button" onClick={() => setActivePopup(null)} className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+                                <button type="submit" className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-lg font-bold shadow-lg shadow-indigo-500/20 transition-all">{t('contentWriter.add')}</button>
+                                <button type="button" onClick={() => setActivePopup(null)} className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors">
                                     <FiX size={14} />
                                 </button>
                             </form>
@@ -639,7 +641,7 @@ const ContentWriter: React.FC = () => {
 
                 {/* Editor Area */}
                 <div className="flex-1 overflow-y-auto px-4 lg:px-16 pb-32 pt-28 scrollbar-thin scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20">
-                    <div className="max-w-4xl mx-auto w-full min-h-[800px] bg-[#0f0f0f] border border-white/5 rounded-xl p-8 lg:p-12 shadow-2xl relative transition-all duration-500">
+                    <div className="max-w-4xl mx-auto w-full min-h-[800px] bg-white dark:bg-[#0f0f0f] border border-gray-200 dark:border-white/5 rounded-xl p-8 lg:p-12 shadow-2xl relative transition-all duration-500">
                         {/* Subtle paper texture/noise overlay could go here */}
                         
                         {isGenerating ? (
@@ -650,25 +652,35 @@ const ContentWriter: React.FC = () => {
                                         <FaMagic className="text-3xl text-indigo-400 animate-pulse" />
                                     </div>
                                 </div>
-                                <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 mb-3">Crafting your Masterpiece</h2>
-                                <p className="text-gray-500 text-sm font-medium tracking-wide uppercase">AI is analyzing patterns...</p>
+                                <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 mb-3">{t('contentWriter.craftingYourMasterpiece')}</h2>
+                                <p className="text-gray-500 text-sm font-medium tracking-wide uppercase">{t('contentWriter.aiAnalyzingPatterns')}</p>
                             </div>
                         ) : (
                             <>
                                 <style>{`
-                                    .content-writer-editor { font-size: 1.125rem; color: #d4d4d8; line-height: 1.8; }
-                                    .content-writer-editor h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 1.5rem; margin-top: 1rem; color: #fff; letter-spacing: -0.02em; line-height: 1.1; }
-                                    .content-writer-editor h2 { font-size: 1.875rem; font-weight: 700; margin-bottom: 1rem; margin-top: 2rem; color: #f4f4f5; letter-spacing: -0.01em; }
-                                    .content-writer-editor h3 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.75rem; margin-top: 1.5rem; color: #e4e4e7; }
+                                    .content-writer-editor { font-size: 1.125rem; color: #374151; line-height: 1.8; }
+                                    .dark .content-writer-editor { color: #d4d4d8; }
+                                    .content-writer-editor h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 1.5rem; margin-top: 1rem; color: #111827; letter-spacing: -0.02em; line-height: 1.1; }
+                                    .dark .content-writer-editor h1 { color: #ffffff; }
+                                    .content-writer-editor h2 { font-size: 1.875rem; font-weight: 700; margin-bottom: 1rem; margin-top: 2rem; color: #1f2937; letter-spacing: -0.01em; }
+                                    .dark .content-writer-editor h2 { color: #f4f4f5; }
+                                    .content-writer-editor h3 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.75rem; margin-top: 1.5rem; color: #374151; }
+                                    .dark .content-writer-editor h3 { color: #e4e4e7; }
                                     .content-writer-editor p { margin-bottom: 1.5em; }
-                                    .content-writer-editor ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 1.5em; color: #a1a1aa; }
-                                    .content-writer-editor ol { list-style-type: decimal; padding-left: 1.5em; margin-bottom: 1.5em; color: #a1a1aa; }
-                                    .content-writer-editor blockquote { border-left: 3px solid #6366f1; padding-left: 1.5em; font-style: italic; margin: 2em 0; color: #d4d4d8; }
-                                    .content-writer-editor pre { background: #18181b; padding: 1.5em; border-radius: 0.75rem; overflow-x: auto; margin-bottom: 2em; border: 1px solid #27272a; font-size: 0.9em; }
-                                    .content-writer-editor code { font-family: 'JetBrains Mono', monospace; background: #27272a; padding: 0.2em 0.4em; border-radius: 0.3em; font-size: 0.85em; color: #e4e4e7; }
+                                    .content-writer-editor ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 1.5em; color: #4b5563; }
+                                    .dark .content-writer-editor ul { color: #a1a1aa; }
+                                    .content-writer-editor ol { list-style-type: decimal; padding-left: 1.5em; margin-bottom: 1.5em; color: #4b5563; }
+                                    .dark .content-writer-editor ol { color: #a1a1aa; }
+                                    .content-writer-editor blockquote { border-left: 3px solid #6366f1; padding-left: 1.5em; font-style: italic; margin: 2em 0; color: #374151; }
+                                    .dark .content-writer-editor blockquote { color: #d4d4d8; }
+                                    .content-writer-editor pre { background: #f3f4f6; padding: 1.5em; border-radius: 0.75rem; overflow-x: auto; margin-bottom: 2em; border: 1px solid #e5e7eb; font-size: 0.9em; }
+                                    .dark .content-writer-editor pre { background: #18181b; border-color: #27272a; }
+                                    .content-writer-editor code { font-family: 'JetBrains Mono', monospace; background: #e5e7eb; padding: 0.2em 0.4em; border-radius: 0.3em; font-size: 0.85em; color: #1f2937; }
+                                    .dark .content-writer-editor code { background: #27272a; color: #e4e4e7; }
                                     .content-writer-editor a { color: #818cf8; text-decoration: none; border-bottom: 1px solid rgba(129, 140, 248, 0.3); transition: border-color 0.2s; }
                                     .content-writer-editor a:hover { border-bottom-color: #818cf8; }
-                                    .content-writer-editor img { max-width: 100%; border-radius: 0.75rem; margin: 2em 0; border: 1px solid #27272a; }
+                                    .content-writer-editor img { max-width: 100%; border-radius: 0.75rem; margin: 2em 0; border: 1px solid #e5e7eb; }
+                                    .dark .content-writer-editor img { border-color: #27272a; }
                                 `}</style>
                                 <div 
                                     ref={editorRef}
@@ -682,7 +694,7 @@ const ContentWriter: React.FC = () => {
                                 />
                                 {(!editedContent && !isGenerating) && (
                                     <div className="absolute top-12 left-12 right-12 pointer-events-none opacity-10 select-none">
-                                        <h1 className="text-5xl font-bold text-gray-500 mb-8 font-serif">Untitled</h1>
+                                        <h1 className="text-5xl font-bold text-gray-500 mb-8 font-serif">{t('contentWriter.historyUntitled')}</h1>
                                         <div className="space-y-4">
                                             <div className="h-4 w-full bg-gray-500 rounded-full"></div>
                                             <div className="h-4 w-5/6 bg-gray-500 rounded-full"></div>
@@ -697,19 +709,19 @@ const ContentWriter: React.FC = () => {
 
                 {/* Bottom Action Bar */}
                 <div className="absolute bottom-8 left-0 right-0 flex justify-center pointer-events-none z-30">
-                    <div className="flex items-center gap-1.5 pointer-events-auto bg-[#1a1a1a]/80 backdrop-blur-xl p-1.5 rounded-full border border-white/10 shadow-2xl transform hover:scale-105 transition-transform duration-300">
+                    <div className="flex items-center gap-1.5 pointer-events-auto bg-white/90 dark:bg-[#1a1a1a]/80 backdrop-blur-xl p-1.5 rounded-full border border-gray-200 dark:border-white/10 shadow-2xl transform hover:scale-105 transition-transform duration-300">
                         <button 
                             onClick={handleCopyContent}
-                            className="px-5 py-2.5 text-sm font-semibold text-gray-300 hover:text-white hover:bg-white/10 rounded-full transition-all flex items-center gap-2"
+                            className="px-5 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-all flex items-center gap-2"
                         >
-                            <FiCopy size={16} /> <span>Copy</span>
+                            <FiCopy size={16} /> <span>{t('common.copy')}</span>
                         </button>
-                        <div className="w-px h-5 bg-white/10"></div>
+                        <div className="w-px h-5 bg-gray-200 dark:bg-white/10"></div>
                         <button 
                             onClick={handleExportPdf}
                             className="px-6 py-2.5 text-sm font-semibold bg-white text-black hover:bg-gray-200 rounded-full shadow-lg shadow-white/10 transition-all flex items-center gap-2"
                         >
-                            <FaFilePdf size={16} /> <span>Export</span>
+                            <FaFilePdf size={16} /> <span>{t('common.export')}</span>
                         </button>
                     </div>
                 </div>
@@ -737,45 +749,45 @@ const ContentWriter: React.FC = () => {
                animate={{ x: 0 }}
                exit={{ x: '100%' }}
                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-               className="fixed top-0 right-0 h-full w-80 lg:w-[450px] bg-[#0a0a0a] shadow-2xl z-50 border-l border-white/10 flex flex-col"
+               className="fixed top-0 right-0 h-full w-80 lg:w-[450px] bg-white dark:bg-[#0a0a0a] shadow-2xl z-50 border-l border-gray-200 dark:border-white/10 flex flex-col"
              >
-                <div className="p-6 border-b border-white/5 flex justify-between items-center bg-[#0a0a0a]/50 backdrop-blur-md">
+                <div className="p-6 border-b border-gray-200 dark:border-white/5 flex justify-between items-center bg-white/80 dark:bg-[#0a0a0a]/50 backdrop-blur-md">
                    <div>
-                       <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                       <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
                          <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-400">
                             <FaHistory size={18} />
                          </div>
-                         History
+                         {t('contentWriter.history')}
                        </h3>
-                       <p className="text-xs text-gray-500 mt-1 ml-11">Your recent generations</p>
+                       <p className="text-xs text-gray-500 mt-1 ml-11">{t('contentWriter.yourRecentGenerations')}</p>
                    </div>
                    <button 
                      onClick={() => setIsHistoryOpen(false)}
-                     className="p-2.5 text-gray-400 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
+                     className="p-2.5 text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
                    >
                      <FiX size={20} />
                    </button>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-[#0a0a0a]">
+                <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-white dark:bg-[#0a0a0a]">
                     {contentHistory.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-gray-500 space-y-4 opacity-50">
                             <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center">
                                 <FaHistory className="text-3xl" />
                             </div>
-                            <p className="text-sm font-medium">No history yet</p>
+                            <p className="text-sm font-medium">{t('contentWriter.noHistoryYet')}</p>
                         </div>
                     ) : (
                         contentHistory.map((item, idx) => (
                             <div 
                                 key={item.id || idx} 
                                 onClick={() => loadFromHistory(item)} 
-                                className="group p-5 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] hover:border-indigo-500/20 cursor-pointer transition-all duration-300 relative overflow-hidden shadow-sm hover:shadow-md"
+                            className="group p-5 rounded-2xl border border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-white/[0.02] hover:bg-gray-100 dark:hover:bg-white/[0.04] hover:border-indigo-500/20 cursor-pointer transition-all duration-300 relative overflow-hidden shadow-sm hover:shadow-md"
                             >
                                 <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                 
                                 <div className="flex justify-between items-start mb-3 relative z-10">
-                                    <h4 className="font-semibold text-gray-200 line-clamp-1 pr-8 text-base group-hover:text-indigo-300 transition-colors">{item.title}</h4>
+                                    <h4 className="font-semibold text-gray-700 dark:text-gray-200 line-clamp-1 pr-8 text-base group-hover:text-indigo-500 dark:group-hover:text-indigo-300 transition-colors">{item.title}</h4>
                                     <span className="text-[10px] text-gray-500 font-mono bg-white/5 px-2 py-1 rounded-md">{item.date}</span>
                                 </div>
                                 <p className="text-xs text-gray-400 line-clamp-2 mb-4 leading-relaxed relative z-10">{item.prompt}</p>
@@ -788,7 +800,7 @@ const ContentWriter: React.FC = () => {
                                 <button
                                     onClick={(e) => handleDeleteHistory(item.id, e)}
                                     className="absolute top-4 right-4 p-2 text-gray-500 hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100 z-20"
-                                    title="Delete"
+                                    title={t('common.delete')}
                                 >
                                     <FaTrash size={12} />
                                 </button>

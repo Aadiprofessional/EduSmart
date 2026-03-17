@@ -23,6 +23,7 @@ import {
 } from 'react-icons/fa';
 import { useAuth } from '../utils/AuthContext';
 import { supabase } from '../utils/supabase';
+import { useLanguage } from '../utils/LanguageContext';
 
 // Import Study Set Components
 import StudyNotes from '../components/study-set/StudyNotes';
@@ -51,21 +52,22 @@ interface StudySidebarProps {
 }
 
 const allMethods = [
-    { id: 'notes', label: 'Notes', icon: <FaBook />, key: 'notes' },
-    { id: 'multiple-choice', label: 'Multiple Choice', icon: <FaListUl />, key: 'multiple_choice' },
-    { id: 'flashcards', label: 'Flashcards', icon: <FaLayerGroup />, key: 'flashcards' },
-    { id: 'podcast', label: 'Podcast', icon: <FaPodcast />, key: 'podcast' },
-    { id: 'speech-to-text', label: 'Speech to Text', icon: <FaMicrophone />, key: 'speech_to_text' },
-    { id: 'mindmap', label: 'Mindmap', icon: <FaProjectDiagram />, key: 'mindmap' },
-    { id: 'fill-blanks', label: 'Fill in the Blanks', icon: <FaEdit />, key: 'fill_in_the_blanks' },
-    { id: 'written-tests', label: 'Written Test', icon: <FaPencilAlt />, key: 'written_tests' },
-    { id: 'tutor-lesson', label: 'Tutor Lesson', icon: <FaGraduationCap />, key: 'tutor_lesson' },
-    { id: 'content', label: 'Content', icon: <FaFileAlt />, key: 'content' },
+    { id: 'notes', labelKey: 'studyMaterialPage.methods.notes', icon: <FaBook />, key: 'notes' },
+    { id: 'multiple-choice', labelKey: 'studyMaterialPage.methods.multipleChoice', icon: <FaListUl />, key: 'multiple_choice' },
+    { id: 'flashcards', labelKey: 'studyMaterialPage.methods.flashcards', icon: <FaLayerGroup />, key: 'flashcards' },
+    { id: 'podcast', labelKey: 'studyMaterialPage.methods.podcast', icon: <FaPodcast />, key: 'podcast' },
+    { id: 'speech-to-text', labelKey: 'studyMaterialPage.methods.speechToText', icon: <FaMicrophone />, key: 'speech_to_text' },
+    { id: 'mindmap', labelKey: 'studyMaterialPage.methods.mindmap', icon: <FaProjectDiagram />, key: 'mindmap' },
+    { id: 'fill-blanks', labelKey: 'studyMaterialPage.methods.fillInTheBlanks', icon: <FaEdit />, key: 'fill_in_the_blanks' },
+    { id: 'written-tests', labelKey: 'studyMaterialPage.methods.writtenTest', icon: <FaPencilAlt />, key: 'written_tests' },
+    { id: 'tutor-lesson', labelKey: 'studyMaterialPage.methods.tutorLesson', icon: <FaGraduationCap />, key: 'tutor_lesson' },
+    { id: 'content', labelKey: 'studyMaterialPage.methods.content', icon: <FaFileAlt />, key: 'content' },
 ];
 
 const StudySidebar: React.FC<StudySidebarProps> = ({ activeMethod, onSelectMethod, onAddMethod, allowedMethods, isOpen, onClose }) => {
     const navigate = useNavigate();
     const { user } = useAuth();
+    const { t } = useLanguage();
 
     const methods = allMethods.filter(method => {
         if (!allowedMethods) return true; 
@@ -84,7 +86,7 @@ const StudySidebar: React.FC<StudySidebarProps> = ({ activeMethod, onSelectMetho
                 <div className="p-4 border-b border-gray-200 dark:border-white/5 flex justify-between items-center">
                     <div className="flex flex-col">
                         <div className="flex items-center gap-2 mb-1 cursor-pointer" onClick={() => navigate('/dashboard')}>
-                           <div className="text-indigo-600 dark:text-indigo-500 text-xl font-bold">MatrixEdu</div>
+                           <div className="text-indigo-600 dark:text-indigo-500 text-xl font-bold">{t('home.hero.title')}</div>
                         </div>
                         
                         <button 
@@ -92,7 +94,7 @@ const StudySidebar: React.FC<StudySidebarProps> = ({ activeMethod, onSelectMetho
                             className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors text-sm font-medium"
                         >
                             <FaArrowLeft size={10} />
-                            <span>Back</span>
+                            <span>{t('common.back')}</span>
                         </button>
                     </div>
                     {/* Close Button on Mobile */}
@@ -117,7 +119,7 @@ const StudySidebar: React.FC<StudySidebarProps> = ({ activeMethod, onSelectMetho
                             }`}
                         >
                             <span className={activeMethod === method.id ? 'text-indigo-600 dark:text-white' : 'text-gray-500'}>{method.icon}</span>
-                            <span>{method.label}</span>
+                            <span>{t(method.labelKey)}</span>
                         </button>
                     ))}
 
@@ -126,7 +128,7 @@ const StudySidebar: React.FC<StudySidebarProps> = ({ activeMethod, onSelectMetho
                         className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-colors mt-4"
                     >
                         <FaPlus size={12} />
-                        <span>ADD METHOD</span>
+                        <span>{t('studyMaterialPage.addMethod')}</span>
                     </button>
                 </nav>
 
@@ -137,7 +139,7 @@ const StudySidebar: React.FC<StudySidebarProps> = ({ activeMethod, onSelectMetho
                             {user?.email?.substring(0, 2).toUpperCase() || 'AI'}
                         </div>
                         <div className="flex-1 overflow-hidden">
-                            <p className="text-sm font-medium truncate text-gray-900 dark:text-white">{user?.email?.split('@')[0] || 'User'}</p>
+                            <p className="text-sm font-medium truncate text-gray-900 dark:text-white">{user?.email?.split('@')[0] || t('sidebar.user')}</p>
                         </div>
                         <FaChevronDown size={12} className="text-gray-500" />
                     </div>
@@ -152,6 +154,7 @@ const StudyMaterialPage: React.FC = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
+    const { t } = useLanguage();
     const [studySetData, setStudySetData] = useState(location.state?.studySetData);
     const [pollingMethods, setPollingMethods] = useState<string[]>([]);
 
@@ -214,7 +217,7 @@ const StudyMaterialPage: React.FC = () => {
     // Helper to get source label
     const getSourceLabel = (methodId: string) => {
         const method = allMethods.find(m => m.id === methodId);
-        return method ? method.label : 'Study Material';
+        return method ? t(method.labelKey) : t('studyMaterialPage.studyMaterial');
     };
 
     // Handle text selection
@@ -478,7 +481,7 @@ const StudyMaterialPage: React.FC = () => {
                         <button
                             onClick={() => setIsTimerOpen(!isTimerOpen)}
                             className={`p-2 rounded-lg transition-colors ${isTimerOpen ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'}`}
-                            title="Study Timer"
+                            title={t('studyMaterialPage.studyTimer')}
                         >
                             <FaStopwatch size={18} />
                         </button>
@@ -490,7 +493,7 @@ const StudyMaterialPage: React.FC = () => {
                                 className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
                             >
                                 <FaBook size={14} />
-                                <span className="hidden sm:inline">Resources</span>
+                                <span className="hidden sm:inline">{t('common.resources')}</span>
                             </button>
                          )}
                     </div>
@@ -511,7 +514,7 @@ const StudyMaterialPage: React.FC = () => {
                                 }`}
                             >
                                 <span>{method.icon}</span>
-                                <span>{method.label}</span>
+                                <span>{t(method.labelKey)}</span>
                             </button>
                         ))}
                     </div>
@@ -564,7 +567,7 @@ const StudyMaterialPage: React.FC = () => {
                     className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-indigo-700 transition-all animate-in fade-in zoom-in duration-200"
                 >
                     <FaCommentDots />
-                    <span className="text-sm font-medium">Add to Chat</span>
+                    <span className="text-sm font-medium">{t('studyMaterialPage.addToChat')}</span>
                     <span className="text-xs opacity-75 bg-indigo-800 px-1.5 py-0.5 rounded ml-1">⌘U</span>
                 </button>
             )}

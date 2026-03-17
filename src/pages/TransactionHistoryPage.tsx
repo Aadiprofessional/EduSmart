@@ -6,10 +6,12 @@ import { useAuth } from '../utils/AuthContext';
 import { subscriptionAPI, Transaction } from '../utils/subscriptionAPI';
 import { Header } from '../components/layout';
 import { Skeleton } from '../components/ui/Skeleton';
+import { useLanguage } from '../utils/LanguageContext';
 
 
 const TransactionHistoryPage: React.FC = () => {
   const { user, session } = useAuth();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,10 +36,10 @@ const TransactionHistoryPage: React.FC = () => {
             
           setTransactions(transactionsData);
         } else {
-          setError(response.error || 'Failed to load transaction history');
+          setError(response.error || t('transactionHistoryPage.failedToLoad'));
         }
       } catch (err) {
-        setError('An unexpected error occurred');
+        setError(t('transactionHistoryPage.unexpectedError'));
         console.error(err);
       } finally {
         setLoading(false);
@@ -95,7 +97,7 @@ const TransactionHistoryPage: React.FC = () => {
           >
             <AiOutlineArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-3xl font-bold">Transaction History</h1>
+          <h1 className="text-3xl font-bold">{t('transactionHistoryPage.title')}</h1>
         </div>
 
         <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-200 dark:border-white/10 overflow-hidden shadow-sm">
@@ -120,13 +122,13 @@ const TransactionHistoryPage: React.FC = () => {
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 text-red-500 mb-4">
                 <AiOutlineCloseCircle className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-bold mb-2">Could not load history</h3>
+              <h3 className="text-lg font-bold mb-2">{t('transactionHistoryPage.couldNotLoad')}</h3>
               <p className="text-gray-500 dark:text-gray-400 mb-6">{error}</p>
               <button 
                 onClick={() => window.location.reload()}
                 className="px-4 py-2 bg-white dark:bg-white/10 border border-gray-200 dark:border-white/10 rounded-lg hover:bg-gray-50 dark:hover:bg-white/20 transition-colors"
               >
-                Try Again
+                {t('transactionHistoryPage.tryAgain')}
               </button>
             </div>
           ) : !transactions || transactions.length === 0 ? (
@@ -134,18 +136,18 @@ const TransactionHistoryPage: React.FC = () => {
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 text-gray-400 mb-4">
                 <AiOutlineCalendar className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-bold mb-2">No transactions found</h3>
-              <p className="text-gray-500 dark:text-gray-400">You haven't made any purchases yet.</p>
+              <h3 className="text-lg font-bold mb-2">{t('transactionHistoryPage.noTransactions')}</h3>
+              <p className="text-gray-500 dark:text-gray-400">{t('transactionHistoryPage.noTransactionsDescription')}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-gray-50 dark:bg-white/5 border-b border-gray-200 dark:border-white/10">
                   <tr>
-                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Description</th>
-                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date & Time</th>
-                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Amount</th>
-                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('transactionHistoryPage.columns.description')}</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('transactionHistoryPage.columns.dateTime')}</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('transactionHistoryPage.columns.amount')}</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('transactionHistoryPage.columns.type')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-white/5">
@@ -163,7 +165,7 @@ const TransactionHistoryPage: React.FC = () => {
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
-                              {transaction.description || transaction.subscription_plans?.name || 'Transaction'}
+                              {transaction.description || transaction.subscription_plans?.name || t('transactionHistoryPage.transactionFallback')}
                             </div>
                           </div>
                         </div>
@@ -171,18 +173,18 @@ const TransactionHistoryPage: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                           <AiOutlineCalendar className="mr-2 w-4 h-4 opacity-70" />
-                          {transaction.created_at ? new Date(transaction.created_at).toLocaleDateString('en-US', { 
+                          {transaction.created_at ? new Date(transaction.created_at).toLocaleDateString(language, { 
                             year: 'numeric', 
                             month: 'short', 
                             day: 'numeric',
                             hour: '2-digit',
                             minute: '2-digit'
-                          }) : 'N/A'}
+                          }) : t('transactionHistoryPage.notAvailable')}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-bold text-gray-900 dark:text-white">
-                          {typeof transaction.amount === 'number' ? Math.abs(transaction.amount).toFixed(0) : '0'} Coins
+                          {t('transactionHistoryPage.coinsAmount', { values: { amount: typeof transaction.amount === 'number' ? Math.abs(transaction.amount).toFixed(0) : '0' } })}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

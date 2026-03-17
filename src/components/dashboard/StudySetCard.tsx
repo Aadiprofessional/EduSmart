@@ -18,6 +18,7 @@ import {
   FaFolderOpen
 } from 'react-icons/fa';
 import { RenameModal, DeleteModal } from './DashboardModals';
+import { useLanguage } from '../../utils/LanguageContext';
 
 export interface StudySet {
   id: number | string;
@@ -54,6 +55,7 @@ interface StudySetCardProps {
 }
 
 const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid', onClick, onDragStart, onMove, onRename, onDelete }) => {
+  const { t } = useLanguage();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showRenameModal, setShowRenameModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -128,9 +130,9 @@ const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid', onC
 
             <div className="flex flex-col gap-3 w-full md:w-auto">
                 <div className="flex flex-wrap gap-4 justify-center md:justify-end">
-                    <StatRow count={set.stats.unfamiliar} label="Unfamiliar" color="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/20" compact />
-                    <StatRow count={set.stats.learning} label="Learning" color="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/20" compact />
-                    <StatRow count={set.stats.mastered} label="Mastered" color="bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 border-green-200 dark:border-green-500/20" compact />
+                    <StatRow count={set.stats.unfamiliar} label={t('matrixDashboard.studySetCard.unfamiliar')} color="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/20" compact />
+                    <StatRow count={set.stats.learning} label={t('matrixDashboard.studySetCard.learning')} color="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/20" compact />
+                    <StatRow count={set.stats.mastered} label={t('matrixDashboard.studySetCard.mastered')} color="bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 border-green-200 dark:border-green-500/20" compact />
                 </div>
 
                 <div className="flex gap-2 text-gray-400 dark:text-gray-500 w-full md:w-auto justify-center md:justify-end items-center overflow-x-auto no-scrollbar pb-1 md:pb-0">
@@ -139,7 +141,7 @@ const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid', onC
                       <button 
                         onClick={(e) => { e.stopPropagation(); onMove(set); }}
                         className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/10 rounded hover:text-gray-900 dark:hover:text-white transition-colors ml-2 flex-shrink-0"
-                        title="Move to Folder"
+                        title={t('matrixDashboard.studySetCard.moveToFolder')}
                       >
                         <FaFolderOpen />
                       </button>
@@ -163,7 +165,7 @@ const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid', onC
                             className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 flex items-center gap-2"
                           >
                             <FaPen size={12} />
-                            Rename
+                            {t('sidebar.rename')}
                           </button>
                           <button 
                             onClick={(e) => { 
@@ -174,7 +176,7 @@ const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid', onC
                             className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
                           >
                             <FaTrash size={12} />
-                            Remove
+                            {t('common.remove')}
                           </button>
                         </div>
                       )}
@@ -200,7 +202,7 @@ const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid', onC
                 <button 
                   onClick={(e) => { e.stopPropagation(); onMove(set); }}
                   className="text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white"
-                  title="Move to Folder"
+                  title={t('matrixDashboard.studySetCard.moveToFolder')}
                 >
                   <FaFolderOpen />
                 </button>
@@ -224,7 +226,7 @@ const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid', onC
                       className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 flex items-center gap-2"
                     >
                       <FaPen size={12} />
-                      Rename
+                      {t('sidebar.rename')}
                     </button>
                     <button 
                       onClick={(e) => { 
@@ -235,7 +237,7 @@ const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid', onC
                       className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
                     >
                       <FaTrash size={12} />
-                      Remove
+                      {t('common.remove')}
                     </button>
                   </div>
                 )}
@@ -244,14 +246,14 @@ const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid', onC
         </div>
 
         <div className="space-y-2 mb-4 md:mb-6">
-            <StatRow count={set.stats.unfamiliar} label="Unfamiliar" color="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/20" />
-            <StatRow count={set.stats.learning} label="Learning" color="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/20" />
-            <StatRow count={set.stats.mastered} label="Mastered" color="bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 border-green-200 dark:border-green-500/20" />
+            <StatRow count={set.stats.unfamiliar} label={t('matrixDashboard.studySetCard.unfamiliar')} color="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/20" />
+            <StatRow count={set.stats.learning} label={t('matrixDashboard.studySetCard.learning')} color="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/20" />
+            <StatRow count={set.stats.mastered} label={t('matrixDashboard.studySetCard.mastered')} color="bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 border-green-200 dark:border-green-500/20" />
         </div>
 
         <div className="space-y-3 md:space-y-4">
             <div className="flex justify-between text-xs text-gray-500">
-                <span>Your path to mastery</span>
+                <span>{t('matrixDashboard.studySetCard.pathToMastery')}</span>
             </div>
             {/* Progress Bar Row */}
             <div className="flex items-center gap-3 md:gap-4">
@@ -276,15 +278,15 @@ const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid', onC
         onClose={() => setShowRenameModal(false)} 
         onRename={handleRename} 
         currentName={set.title} 
-        title="Rename Study Set"
+        title={t('matrixDashboard.studySetCard.renameStudySet')}
       />
 
       <DeleteModal 
         isOpen={showDeleteModal} 
         onClose={() => setShowDeleteModal(false)} 
         onConfirm={handleDelete} 
-        title="Delete Study Set"
-        message={`Are you sure you want to delete "${set.title}"? This action cannot be undone.`}
+        title={t('matrixDashboard.studySetCard.deleteStudySet')}
+        message={t('matrixDashboard.studySetCard.deleteStudySetMessage', { values: { title: set.title } })}
       />
     </>
   );
