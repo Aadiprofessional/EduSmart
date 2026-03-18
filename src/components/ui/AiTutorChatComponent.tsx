@@ -389,7 +389,7 @@ const AiTutorChatComponent: React.FC<AiTutorChatComponentProps> = ({ className =
       const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || '4ca49c30-f9e7-467e-8269-cc156c131881'}`,
+            'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || ''}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({

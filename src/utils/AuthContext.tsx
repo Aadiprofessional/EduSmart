@@ -47,20 +47,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
-      
-      // Handle OAuth sign-in completion
-      if (event === 'SIGNED_IN' && session?.user) {
-        // Check if this is an OAuth user (Google, Facebook, etc.)
-        const provider = session.user.app_metadata?.provider;
-        if (provider && provider !== 'email') {
-          console.log('OAuth sign-in detected:', provider);
-          // The profile will be created automatically by the backend
-          // when the user makes their first authenticated request
-        }
-      }
     });
 
     return () => {
@@ -70,10 +58,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const signUp = async (email: string, password: string, name: string) => {
     try {
-      console.log('🔄 Starting signup process...', { email, name });
-      
-      // Only create the user account - no profile creation
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -83,21 +68,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         },
       });
 
-      console.log('✅ Auth signup response:', { data, error });
-
       if (error) {
-        console.error('❌ Auth signup error:', error);
+        console.error('Auth signup error:', error);
         return { 
           success: false, 
           error: error.message 
         };
       }
 
-      console.log('✅ Signup completed successfully - no profile creation attempted');
       return { success: true, error: null };
       
     } catch (error: any) {
-      console.error('❌ Signup process failed:', error);
+      console.error('Signup process failed:', error);
       return { 
         success: false, 
         error: error.message || 'Signup failed' 
@@ -131,7 +113,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const signInWithGoogle = async () => {
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           queryParams: {
@@ -145,8 +127,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.error('Google OAuth error:', error);
         throw error;
       }
-      
-      console.log('Google OAuth initiated successfully');
     } catch (error: any) {
       console.error('Error signing in with Google:', error.message);
       throw error;
@@ -155,7 +135,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const signInWithApple = async () => {
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'apple',
         options: {
           queryParams: {
@@ -169,8 +149,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.error('Apple OAuth error:', error);
         throw error;
       }
-      
-      console.log('Apple OAuth initiated successfully');
     } catch (error: any) {
       console.error('Error signing in with Apple:', error.message);
       throw error;

@@ -3,21 +3,15 @@
 
 // Function to get the API base URL based on environment
 export const getApiBaseUrl = (): string => {
-  // Check if we have an environment variable set
   if (process.env.REACT_APP_API_BASE_URL) {
     return process.env.REACT_APP_API_BASE_URL;
   }
 
-  // Development vs Production detection
   if (process.env.NODE_ENV === 'development') {
-    // For local development
     return 'http://localhost:8000';
   }
 
-  // For production - you should set REACT_APP_API_BASE_URL in your deployment environment
-  // This is a fallback that might need CORS configuration
-  // Note: Update this to your actual production domain when deployed
-  return 'http://localhost:8000';
+  return window.location.origin;
 };
 
 // Export the base URL
@@ -113,9 +107,3 @@ export const getAuthHeaders = (user?: any, session?: any) => {
 
   return headers;
 };
-
-console.log('API Configuration:', {
-  baseUrl: API_BASE_URL,
-  environment: process.env.NODE_ENV,
-  hasCustomUrl: !!process.env.REACT_APP_API_BASE_URL,
-}); 

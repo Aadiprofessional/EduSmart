@@ -73,13 +73,13 @@ const MatrixEduNavbar: React.FC = () => {
   // The ReflectHero had: fixed top-0 left-0 right-0 z-50 ... backdrop-blur-sm bg-[#050505]/50
   
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 w-full backdrop-blur-sm bg-[#050505]/80 border-b border-white/5 transition-all duration-300">
-      <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+    <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 md:px-6 py-3.5 md:py-4 w-full backdrop-blur-sm bg-[#050505]/80 border-b border-white/5 transition-all duration-300">
+      <div className="flex items-center gap-2 cursor-pointer shrink-0" onClick={() => navigate('/')}>
           {/* Logo */}
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-[0_0_15px_rgba(99,102,241,0.5)]">
               <img src={matrixLogo} alt={t('matrixEduNavbar.logoAlt')} className="w-5 h-5" />
           </div>
-          <span className="text-xl font-semibold tracking-tight text-white">MatrixEdu</span>
+          <span className="text-lg md:text-xl font-semibold tracking-tight text-white hidden min-[390px]:inline">MatrixEdu</span>
       </div>
 
       {/* Desktop Menu */}
@@ -127,9 +127,7 @@ const MatrixEduNavbar: React.FC = () => {
           )}
       </div>
 
-      {/* Mobile Menu Toggle */}
-      <div className="flex items-center gap-3 md:hidden">
-         <LanguageSelector />
+      <div className="flex items-center gap-2 md:hidden shrink-0">
          {/* Mobile Coins Display */}
          {user && !subLoading && subscriptionStatus?.hasActiveSubscription && (
             <div className="flex items-center px-2 py-1 bg-yellow-500/10 border border-yellow-500/30 rounded-full text-yellow-400 backdrop-blur-sm">
@@ -137,8 +135,10 @@ const MatrixEduNavbar: React.FC = () => {
                 <span className="font-bold text-xs">{coins}</span>
             </div>
          )}
+
+        <LanguageSelector compactMobile />
          
-        <button className="text-gray-300 hover:text-white" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+        <button className="text-gray-300 hover:text-white p-1.5" onClick={() => setIsMenuOpen(!isMenuOpen)}>
             {isMenuOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
         </button>
       </div>
@@ -152,23 +152,32 @@ const MatrixEduNavbar: React.FC = () => {
                 exit={{ opacity: 0, height: 0 }}
                 className="absolute top-full left-0 right-0 bg-[#050505] border-b border-white/10 overflow-hidden md:hidden shadow-xl"
             >
-                <div className="flex flex-col p-6 gap-4">
-                    <Link to="/" className="text-gray-400 hover:text-white text-lg">{t('nav.home')}</Link>
-                    <Link to="/about" className="text-gray-400 hover:text-white text-lg">{t('nav.about')}</Link>
-                    <Link to="/pricing" className="text-gray-400 hover:text-white text-lg">{t('nav.pricing')}</Link>
-                    <Link to="/blog" className="text-gray-400 hover:text-white text-lg">{t('nav.blog')}</Link>
+                <div className="flex flex-col p-5 gap-4">
+                    <Link to="/" onClick={() => setIsMenuOpen(false)} className="text-gray-400 hover:text-white text-lg">{t('nav.home')}</Link>
+                    <Link to="/about" onClick={() => setIsMenuOpen(false)} className="text-gray-400 hover:text-white text-lg">{t('nav.about')}</Link>
+                    <Link to="/pricing" onClick={() => setIsMenuOpen(false)} className="text-gray-400 hover:text-white text-lg">{t('nav.pricing')}</Link>
+                    <Link to="/blog" onClick={() => setIsMenuOpen(false)} className="text-gray-400 hover:text-white text-lg">{t('nav.blog')}</Link>
                     <div className="h-px bg-white/10 my-2"></div>
                     {user ? (
                         <button 
-                            onClick={() => navigate('/dashboard')} 
+                            onClick={() => {
+                              setIsMenuOpen(false);
+                              navigate('/dashboard');
+                            }} 
                             className="w-full py-3 bg-[#6366f1] text-white rounded-lg font-bold"
                         >
                             {t('nav.dashboard')}
                         </button>
                     ) : (
                         <div className="flex flex-col gap-3">
-                            <button onClick={() => navigate('/login')} className="w-full py-3 text-gray-300 hover:text-white border border-white/10 rounded-lg">{t('nav.login')}</button>
-                            <button onClick={() => navigate('/signup')} className="w-full py-3 bg-[#6366f1] text-white rounded-lg font-bold">{t('nav.signup')}</button>
+                            <button onClick={() => {
+                              setIsMenuOpen(false);
+                              navigate('/login');
+                            }} className="w-full py-3 text-gray-300 hover:text-white border border-white/10 rounded-lg">{t('nav.login')}</button>
+                            <button onClick={() => {
+                              setIsMenuOpen(false);
+                              navigate('/signup');
+                            }} className="w-full py-3 bg-[#6366f1] text-white rounded-lg font-bold">{t('nav.signup')}</button>
                         </div>
                     )}
                 </div>

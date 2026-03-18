@@ -6,22 +6,8 @@ const apiCall = async (method: string, endpoint: string, data: any = null, sessi
   try {
     const headers = getDefaultHeaders(!!session, session);
 
-    // Debug logging for session
-    console.log('🔐 Session debug info:', {
-      hasSession: !!session,
-      hasAccessToken: !!session?.access_token,
-      userId: session?.user?.id,
-      sessionUserId: session?.user?.id,
-      tokenLength: session?.access_token?.length,
-      userEmail: session?.user?.email,
-      sessionObject: session ? 'Session exists' : 'No session',
-      accessTokenPreview: session?.access_token ? `${session.access_token.substring(0, 20)}...` : 'No token'
-    });
-
-    // Additional check for authentication if required
     if (requireAuth) {
       if (!session) {
-        console.warn('⚠️ No session provided to API call');
         return { 
           success: false, 
           error: 'No authentication session provided',
@@ -30,7 +16,6 @@ const apiCall = async (method: string, endpoint: string, data: any = null, sessi
       }
 
       if (!session.access_token) {
-        console.warn('⚠️ Session exists but no access token');
         return { 
           success: false, 
           error: 'No access token in session',
@@ -45,23 +30,14 @@ const apiCall = async (method: string, endpoint: string, data: any = null, sessi
       headers,
       ...(data && { data })
     };
-
-    console.log(`Making ${method} request to ${API_BASE_URL}${endpoint}`);
-    console.log('Request headers:', headers);
-    console.log('Request data:', data);
     
     const axios = (await import('axios')).default;
     const response = await axios(config);
-    
-    console.log(`API Response for ${endpoint}:`, response.data);
-    
-    // Check if the response has the expected structure
+
     if (response.data && typeof response.data === 'object') {
-      // If the response already has success/data structure, return it as is
       if (response.data.hasOwnProperty('success') && response.data.hasOwnProperty('data')) {
         return response.data;
       }
-      // If the response is direct data, wrap it in success structure
       return { success: true, data: response.data };
     }
     
@@ -114,6 +90,9 @@ export interface AddonPlan {
   description: string;
   price: number;
   additional_responses: number;
+  coins?: number;
+  duration_days?: number;
+  type?: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -214,7 +193,35 @@ export const subscriptionAPI = {
   },
 
   getAddons: async (session?: Session | null): Promise<{ success: boolean; data?: AddonPlan[]; error?: string }> => {
-    return apiCall('GET', '/api/subscriptions/addons', null, session, false);
+    const plansResult = await subscriptionAPI.getPlans(session);
+
+    if (!plansResult.success) {
+      return {
+        success: false,
+        error: plansResult.error
+      };
+    }
+
+    const addons: AddonPlan[] = (plansResult.data || [])
+      .filter((plan) => plan.type === 'addon')
+      .map((plan) => ({
+        id: plan.id,
+        name: plan.name,
+        description: plan.description || '',
+        price: plan.price,
+        additional_responses: plan.coins ?? plan.response_limit ?? 0,
+        coins: plan.coins,
+        duration_days: plan.duration_days,
+        type: plan.type,
+        is_active: plan.is_active,
+        created_at: plan.created_at,
+        updated_at: plan.updated_at || plan.created_at
+      }));
+
+    return {
+      success: true,
+      data: addons
+    };
   },
 
   createCheckoutSession: async (planId: string, session?: Session | null): Promise<{ success: boolean; data?: { checkoutUrl: string }; error?: string }> => {

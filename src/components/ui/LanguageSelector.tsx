@@ -12,13 +12,17 @@ interface LanguageOption {
   shortLabel: string;
 }
 
+interface LanguageSelectorProps {
+  compactMobile?: boolean;
+}
+
 const languageOptions: LanguageOption[] = [
   { code: 'en', name: 'English', nativeName: 'English', shortLabel: 'EN' },
   { code: 'zh-CN', name: 'Simplified Chinese', nativeName: '简体中文', shortLabel: '简中' },
   { code: 'zh-TW', name: 'Traditional Chinese', nativeName: '繁體中文', shortLabel: '繁中' },
 ];
 
-const LanguageSelector: React.FC = () => {
+const LanguageSelector: React.FC<LanguageSelectorProps> = ({ compactMobile = false }) => {
   const { language, setLanguage, t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
@@ -44,15 +48,14 @@ const LanguageSelector: React.FC = () => {
   const updateDropdownPosition = () => {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
+      const dropdownWidth = isMobile ? (compactMobile ? 240 : 280) : 224;
       
       if (isMobile) {
-        // On mobile, position relative to button but allow it to move with header scroll
         setDropdownPosition({
-          top: rect.bottom + 12, // More gap on mobile
-          right: Math.max(16, window.innerWidth - rect.left - 280), // Center with min 16px margin
+          top: rect.bottom + 12,
+          right: Math.max(16, window.innerWidth - rect.left - dropdownWidth),
         });
       } else {
-        // On desktop, align to right edge of button
         setDropdownPosition({
           top: rect.bottom + 8,
           right: window.innerWidth - rect.right,
@@ -127,7 +130,7 @@ const LanguageSelector: React.FC = () => {
   const dropdownContent = isOpen ? (
     <div
       className={`language-dropdown fixed bg-[#050505]/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/15 py-3 ${
-        isMobile ? 'w-72' : 'w-56'
+        isMobile ? (compactMobile ? 'w-60' : 'w-72') : 'w-56'
       }`}
       style={{
         top: `${dropdownPosition.top}px`,
@@ -199,17 +202,23 @@ const LanguageSelector: React.FC = () => {
         onMouseDown={(e) => {
           e.stopPropagation();
         }}
-        className={`group flex items-center gap-2 rounded-full border transition-all duration-200 ${
+        className={`group flex items-center rounded-full border transition-all duration-200 ${
           isMobile
-            ? 'px-3 py-2.5 border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/30'
-            : 'px-3 py-1.5 border-white/15 bg-white/[0.04] hover:bg-white/10 hover:border-white/30'
+            ? compactMobile
+              ? 'gap-1.5 px-2.5 py-2 border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/30'
+              : 'gap-2 px-3 py-2.5 border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/30'
+            : 'gap-2 px-3 py-1.5 border-white/15 bg-white/[0.04] hover:bg-white/10 hover:border-white/30'
         }`}
         aria-label={t('languageSelector.title')}
       >
-        <span className={`inline-flex items-center justify-center rounded-md border border-white/20 bg-white/5 px-2 py-1 font-semibold text-white/90 tracking-wide ${isMobile ? 'text-xs' : 'text-[10px]'}`}>
+        <span className={`inline-flex items-center justify-center rounded-md border border-white/20 bg-white/5 font-semibold text-white/90 tracking-wide ${
+          isMobile ? (compactMobile ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-1 text-xs') : 'px-2 py-1 text-[10px]'
+        }`}>
           {currentLanguage.shortLabel}
         </span>
-        <span className={`font-medium text-white/80 group-hover:text-white ${isMobile ? 'text-sm' : 'text-xs'}`}>{currentLanguage.nativeName}</span>
+        {!(isMobile && compactMobile) && (
+          <span className={`font-medium text-white/80 group-hover:text-white ${isMobile ? 'text-sm' : 'text-xs'}`}>{currentLanguage.nativeName}</span>
+        )}
         <IconComponent icon={AiOutlineGlobal} className={`${isMobile ? 'h-4 w-4' : 'h-3.5 w-3.5'} text-indigo-300`} />
         <IconComponent 
           icon={AiOutlineDown} 

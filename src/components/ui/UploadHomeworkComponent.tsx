@@ -588,7 +588,6 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
       setIsProcessingStarted(false); // Reset processing state
     }, 1000);
     
-    console.log('✅ History loaded successfully');
   };
 
   // Function to delete history item - updated to delete from database
@@ -1265,7 +1264,7 @@ Format your response as a clear, organized list of knowledge points that would h
       const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || 'sk-4d21243994a04bb09f431cb2471cdd6c'}`,
+          'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || ''}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestPayload)
@@ -1369,7 +1368,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
       const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || 'sk-4d21243994a04bb09f431cb2471cdd6c'}`,
+          'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || ''}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestPayload)

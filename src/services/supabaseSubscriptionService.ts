@@ -97,8 +97,6 @@ class SupabaseSubscriptionService {
    */
   async getUserSubscription(userId: string): Promise<SubscriptionWithAddons> {
     try {
-      console.log('🔍 Fetching subscription data for user:', userId);
-
       // Fetch user subscription (get the most recent active one)
       const { data: supabaseSubscriptions, error: subscriptionError } = await supabase
         .from('user_subscriptions')
@@ -121,7 +119,6 @@ class SupabaseSubscriptionService {
 
       // Self-healing: If user has Pro Plan ID but low responses (likely from the bug/trial setup), fix it.
       if (supabaseSubscription && PRO_PLAN_IDS.includes(supabaseSubscription.plan_id) && supabaseSubscription.responses_total === 5) {
-        console.log('🔧 Fixing incorrect response limit for Pro user...');
         const { error: updateError } = await supabase
             .from('user_subscriptions')
             .update({ 
@@ -154,14 +151,6 @@ class SupabaseSubscriptionService {
       // Determine if user has active subscription
       const hasActiveSubscription = !!subscription || addons.length > 0;
       const isPro = subscription?.is_pro || false;
-
-      console.log('📊 Subscription calculation:', {
-        subscriptionResponses,
-        addonResponses,
-        totalResponsesRemaining,
-        hasActiveSubscription,
-        isPro
-      });
 
       return {
         subscription,
@@ -217,7 +206,6 @@ class SupabaseSubscriptionService {
           throw error;
         }
 
-        console.log('✅ Created default subscription for user:', userId);
         return this.convertSupabaseSubscription(data);
       } catch (insertError) {
         console.error('Error in createDefaultSubscription:', insertError);
@@ -234,8 +222,6 @@ class SupabaseSubscriptionService {
    */
   async updateUserResponses(userId: string, responsesUsed: number): Promise<boolean> {
     try {
-      console.log('🔄 Updating responses for user:', userId, 'Used:', responsesUsed);
-
       // Get current subscription
       const { data: subscription, error: fetchError } = await supabase
         .from('user_subscriptions')
@@ -277,7 +263,6 @@ class SupabaseSubscriptionService {
         return false;
       }
 
-      console.log('✅ Successfully updated responses for user:', userId);
       return true;
     } catch (error) {
       console.error('Error in updateUserResponses:', error);
@@ -290,8 +275,6 @@ class SupabaseSubscriptionService {
    */
   async addResponsesToUser(userId: string, additionalResponses: number, addonId?: string): Promise<boolean> {
     try {
-      console.log('➕ Adding responses to user:', userId, 'Amount:', additionalResponses);
-
       // Since user_subscription_addons table doesn't exist, always add to main subscription
       const { data: subscription, error: fetchError } = await supabase
         .from('user_subscriptions')
@@ -322,7 +305,6 @@ class SupabaseSubscriptionService {
         return false;
       }
 
-      console.log('✅ Successfully added responses to user:', userId);
       return true;
     } catch (error) {
       console.error('Error in addResponsesToUser:', error);
@@ -335,8 +317,6 @@ class SupabaseSubscriptionService {
    */
   async upgradeUserToPro(userId: string, responses: number = 1000): Promise<boolean> {
     try {
-      console.log('⬆️ Upgrading user to pro:', userId);
-
       // Create a UUID for pro plan_id since it's required to be UUID
       const proPlanId = '00000000-0000-0000-0000-000000000002'; // Use a consistent UUID for pro plan
 
@@ -360,7 +340,6 @@ class SupabaseSubscriptionService {
         return false;
       }
 
-      console.log('✅ Successfully upgraded user to pro:', userId);
       return true;
     } catch (error) {
       console.error('Error in upgradeUserToPro:', error);

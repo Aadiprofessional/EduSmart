@@ -42,7 +42,7 @@ interface MethodConfig {
     notes: { customInstructions: string };
     multipleChoice: { numQuestions: string; difficulty: string; customInstructions: string };
     flashcards: { numCards: string; difficulty: string; customInstructions: string };
-    podcast: { length: string; personality: string; host1: string; host2: string };
+    podcast: { length: string; personality: string; host1: string; host2: string; language: string };
     writtenTests: { numQuestions: string; difficulty: string; customInstructions: string };
     fillBlanks: { numQuestions: string; difficulty: string; customInstructions: string };
     speechToText: { file: File | null; extractedText: string | null };
@@ -53,7 +53,7 @@ const defaultMethodConfig: MethodConfig = {
     notes: { customInstructions: '' },
     multipleChoice: { numQuestions: 'auto', difficulty: 'auto', customInstructions: '' },
     flashcards: { numCards: 'auto', difficulty: 'auto', customInstructions: '' },
-    podcast: { length: 'auto', personality: 'default', host1: 'Random', host2: 'Random' },
+    podcast: { length: 'auto', personality: 'default', host1: 'Random', host2: 'Random', language: 'english' },
     writtenTests: { numQuestions: 'auto', difficulty: 'auto', customInstructions: '' },
     fillBlanks: { numQuestions: 'auto', difficulty: 'auto', customInstructions: '' },
     speechToText: { file: null, extractedText: null },
@@ -330,7 +330,7 @@ const CustomizePodcast: React.FC<{
     onClose: () => void;
 }> = ({ config, onChange, onClose }) => {
     const { t } = useLanguage();
-    const { length, personality } = config;
+    const { length, personality, host1, host2, language } = config;
 
     const updateConfig = (updates: Partial<MethodConfig['podcast']>) => {
         onChange(updates);
@@ -351,14 +351,33 @@ const CustomizePodcast: React.FC<{
         </button>
     );
 
-    const HostOption = ({ label, subLabel }: any) => (
-        <div className="flex items-center p-4 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/5 rounded-xl">
-             <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mr-4">
-                <FaRandom className="text-gray-500 dark:text-gray-400" />
+    const podcastLanguages = [
+        { value: 'english', label: t('methodSelection.podcastLanguages.english') },
+        { value: 'cantonese', label: t('methodSelection.podcastLanguages.cantonese') },
+        { value: 'traditional_chinese', label: t('methodSelection.podcastLanguages.traditionalChinese') },
+        { value: 'simplified_chinese', label: t('methodSelection.podcastLanguages.simplifiedChinese') },
+        { value: 'hindi', label: t('methodSelection.podcastLanguages.hindi') },
+        { value: 'japanese', label: t('methodSelection.podcastLanguages.japanese') }
+    ];
+
+    const renderHostInput = (value: string, subLabel: string, onValueChange: (nextValue: string) => void) => (
+        <div className="flex items-center p-4 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/5 rounded-xl gap-3">
+             <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                {value === 'Random' ? (
+                    <FaRandom className="text-gray-500 dark:text-gray-400" />
+                ) : (
+                    <FaUser className="text-gray-500 dark:text-gray-400" />
+                )}
              </div>
-             <div>
-                 <div className="font-bold text-gray-900 dark:text-white text-sm">{label}</div>
-                 <div className="text-xs text-gray-500">{subLabel}</div>
+             <div className="w-full">
+                 <div className="text-xs text-gray-500 mb-1">{subLabel}</div>
+                 <input
+                    type="text"
+                    value={value}
+                    onChange={(e) => onValueChange(e.target.value)}
+                    placeholder={t('methodSelection.enterHostName')}
+                    className="w-full bg-transparent text-sm font-bold text-gray-900 dark:text-white outline-none"
+                 />
              </div>
         </div>
     );
@@ -368,9 +387,24 @@ const CustomizePodcast: React.FC<{
             <div>
                 <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">{t('methodSelection.speakers')}</label>
                 <div className="space-y-3">
-                    <HostOption label={t('methodSelection.random')} subLabel={t('methodSelection.speaker1')} />
-                    <HostOption label={t('methodSelection.random')} subLabel={t('methodSelection.speaker2')} />
+                    {renderHostInput(host1, t('methodSelection.speaker1'), (value: string) => updateConfig({ host1: value }))}
+                    {renderHostInput(host2, t('methodSelection.speaker2'), (value: string) => updateConfig({ host2: value }))}
                 </div>
+            </div>
+
+            <div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">{t('methodSelection.podcastLanguage')}</label>
+                <select
+                    value={language}
+                    onChange={(e) => updateConfig({ language: e.target.value })}
+                    className="w-full px-4 py-3 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-[#c2410c] focus:border-transparent outline-none"
+                >
+                    {podcastLanguages.map((option) => (
+                        <option key={option.value} value={option.value}>
+                            {option.label}
+                        </option>
+                    ))}
+                </select>
             </div>
 
             <div>
@@ -447,7 +481,7 @@ const CustomizePodcast: React.FC<{
 
             <div className="flex justify-between items-center pt-2">
                 <button 
-                    onClick={() => updateConfig({ length: 'auto', personality: 'default' })}
+                    onClick={() => updateConfig({ length: 'auto', personality: 'default', host1: 'Random', host2: 'Random', language: 'english' })}
                     className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-sm font-medium transition-colors"
                 >
                     {t('methodSelection.clearSelection')}
@@ -1087,6 +1121,10 @@ const MethodSelectionPage: React.FC = () => {
                     ...currentPayload,
                     file_name: getFileName(),
                     configuration: methodConfig,
+                    selected_language: selectedLanguage.name,
+                    selected_language_code: selectedLanguage.code,
+                    podcast_language: methodConfig.podcast.language,
+                    podcast_hosts: [methodConfig.podcast.host1, methodConfig.podcast.host2],
                     mindmap: selectedMethods.includes('mindmap'),
                     notes: selectedMethods.includes('notes'),
                     multiple_choice: selectedMethods.includes('multiple-choice'),

@@ -77,7 +77,6 @@ const ContentWriter: React.FC = () => {
           template: item.content_type || 'custom',
           prompt: item.prompt
         }));
-        console.log('History loaded:', formattedHistory);
         setContentHistory(formattedHistory);
       }
     } catch (error) {

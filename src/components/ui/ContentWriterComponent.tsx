@@ -12,6 +12,7 @@ import { useResponseCheck, ResponseUpgradeModal } from '../../utils/responseChec
 import { useNotification } from '../../utils/NotificationContext';
 import { useLanguage } from '../../utils/LanguageContext';
 import { useAuth } from '../../utils/AuthContext';
+import { API_BASE } from '../../config/api';
 
 // Import markdown and math libraries
 import ReactMarkdown from 'react-markdown';
@@ -23,9 +24,7 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import 'katex/dist/katex.min.css';
 
 // API Configuration
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'http://localhost:8000/api' 
-  : 'http://localhost:8000/api';
+const API_BASE_URL = API_BASE;
 
 // Get user ID from authentication context or localStorage - proper authentication
 const getUserId = (user?: any, session?: any): string | null => {
@@ -447,7 +446,7 @@ const ContentWriterComponent: React.FC<ContentWriterComponentProps> = ({ classNa
         const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || '4ca49c30-f9e7-467e-8269-cc156c131881'}`,
+          'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || ''}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -943,7 +942,7 @@ Please return the edited content with the requested changes applied. Maintain th
       const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || '4ca49c30-f9e7-467e-8269-cc156c131881'}`,
+            'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || ''}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -1163,7 +1162,7 @@ Please provide a helpful response or suggestion for improving this text.`;
       const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || 'sk-4d21243994a04bb09f431cb2471cdd6c'}`,
+          'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || ''}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({

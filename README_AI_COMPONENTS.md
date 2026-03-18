@@ -110,7 +110,7 @@ const makeAPICall = async (prompt: string, isVision = false) => {
   const response = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': 'Bearer 95fad12c-0768-4de2-a4c2-83247337ea89',
+      'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({

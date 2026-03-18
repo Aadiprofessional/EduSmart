@@ -1598,6 +1598,16 @@ export const zhCN = {
     random: "随机",
     speaker1: "讲者 1",
     speaker2: "讲者 2",
+    enterHostName: "输入主持人姓名",
+    podcastLanguage: "播客语言",
+    podcastLanguages: {
+      english: "英语",
+      cantonese: "粤语",
+      traditionalChinese: "繁体中文",
+      simplifiedChinese: "简体中文",
+      hindi: "印地语",
+      japanese: "日语"
+    },
     podcastLength: "播客时长",
     short: "短",
     long: "长",

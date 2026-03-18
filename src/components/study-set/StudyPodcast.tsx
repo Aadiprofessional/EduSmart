@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
 import { 
     FaPlay, FaPause, FaStepBackward, FaStepForward, 
-    FaVolumeUp, FaDownload, FaMagic, FaRedo, FaCommentDots 
+    FaVolumeUp, FaDownload, FaMagic, FaRedo, FaCommentDots, FaPodcast
 } from 'react-icons/fa';
 import { Skeleton } from '../ui/Skeleton';
 import ReactMarkdown from 'react-markdown';
@@ -42,6 +42,17 @@ const StudyPodcast: React.FC<StudyPodcastProps> = ({ onDiscuss }) => {
     const isUserScrolling = useRef(false);
     const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
     const isAutoScrolling = useRef(false);
+    const speakerAlignment = useMemo(() => {
+        const speakerOrder = Array.from(new Set(transcript.map((item) => item.speaker)));
+        return speakerOrder.reduce<Record<string, 'left' | 'right'>>((acc, speaker, index) => {
+            acc[speaker] = index % 2 === 0 ? 'left' : 'right';
+            return acc;
+        }, {});
+    }, [transcript]);
+    const activeSegment = useMemo(() => {
+        return transcript.find((item) => currentTime >= item.start_seconds && currentTime < item.end_seconds) || null;
+    }, [transcript, currentTime]);
+    const activeSpeaker = activeSegment?.speaker || transcript[0]?.speaker || null;
 
     // Preprocess LaTeX to convert various formats to react-markdown compatible format
     const preprocessLaTeX = (text: string) => {
@@ -356,7 +367,11 @@ const StudyPodcast: React.FC<StudyPodcastProps> = ({ onDiscuss }) => {
                         <div className="flex items-center gap-3 w-full">
                             {/* Icon */}
                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center overflow-hidden flex-shrink-0">
-                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Podcast" alt="Podcast" className="w-full h-full object-cover opacity-80" />
+                                {activeSpeaker ? (
+                                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${activeSpeaker}`} alt={activeSpeaker} className="w-full h-full object-cover" />
+                                ) : (
+                                    <FaPodcast className="text-white text-sm" />
+                                )}
                             </div>
                             
                             {/* Controls */}
@@ -395,7 +410,11 @@ const StudyPodcast: React.FC<StudyPodcastProps> = ({ onDiscuss }) => {
                             <div className="flex flex-col md:flex-row items-center md:items-start justify-between mb-4 md:mb-6 gap-4">
                                 <div className="flex items-center gap-4 w-full">
                                     <div className="w-14 h-14 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-lg">
-                                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Podcast" alt="Podcast" className="w-full h-full object-cover opacity-80" />
+                                        {activeSpeaker ? (
+                                            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${activeSpeaker}`} alt={activeSpeaker} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <FaPodcast className="text-white text-xl md:text-2xl" />
+                                        )}
                                     </div>
                                     <div className="min-w-0 flex-1">
                                         <h3 className="font-bold text-gray-900 dark:text-white text-lg md:text-xl truncate">Study Podcast</h3>
@@ -465,10 +484,11 @@ const StudyPodcast: React.FC<StudyPodcastProps> = ({ onDiscuss }) => {
             <div ref={scrollRef} className={`absolute inset-0 overflow-y-auto custom-scrollbar px-4 md:px-8 pb-8 transition-all duration-300 overscroll-contain ${isCompact ? 'pt-[100px]' : 'pt-[280px] md:pt-[280px]'}`}>
                 {transcript.map((item, index) => {
                     const isActive = currentTime >= item.start_seconds && currentTime < item.end_seconds;
+                    const isRightAligned = speakerAlignment[item.speaker] === 'right';
                     return (
                         <div 
                             key={index} 
-                            className={`flex gap-4 transition-opacity duration-300 ${index === 0 ? 'mt-6' : ''} ${item.speaker === 'Sam' ? 'flex-row-reverse' : ''} ${isActive ? 'opacity-100 scale-[1.02]' : 'opacity-50 hover:opacity-80'}`}
+                            className={`flex gap-4 transition-opacity duration-300 ${index === 0 ? 'mt-6' : ''} ${isRightAligned ? 'flex-row-reverse' : ''} ${isActive ? 'opacity-100 scale-[1.02]' : 'opacity-50 hover:opacity-80'}`}
                         >
                             <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-800 flex-shrink-0 border border-white/10">
                                 <img 
@@ -477,11 +497,11 @@ const StudyPodcast: React.FC<StudyPodcastProps> = ({ onDiscuss }) => {
                                     className="w-full h-full object-cover" 
                                 />
                             </div>
-                            <div className={`max-w-[80%] ${item.speaker === 'Sam' ? 'items-end' : 'items-start'} flex flex-col relative`}>
+                            <div className={`max-w-[80%] ${isRightAligned ? 'items-end' : 'items-start'} flex flex-col relative`}>
                                 <span className="text-xs text-gray-500 mb-1 px-1">{item.speaker}</span>
                                 <div 
                                     className={`p-4 rounded-2xl border text-xs md:text-sm leading-relaxed transition-colors duration-300 cursor-pointer relative ${
-                                        item.speaker === 'Sam' ? 'rounded-tr-none' : 'rounded-tl-none'
+                                        isRightAligned ? 'rounded-tr-none' : 'rounded-tl-none'
                                     } ${
                                         isActive 
                                             ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-500/50 text-indigo-700 dark:text-white shadow-lg shadow-indigo-500/10 dark:shadow-[0_0_15px_rgba(99,102,241,0.2)]' 
@@ -511,7 +531,7 @@ const StudyPodcast: React.FC<StudyPodcastProps> = ({ onDiscuss }) => {
                                                 const content = `Context from Podcast (${item.speaker} at ${formatTime(item.start_seconds)}): "${item.text}"`;
                                                 onDiscuss(content);
                                             }}
-                                            className={`absolute -top-3 ${item.speaker === 'Sam' ? '-left-3' : '-right-3'} group/btn flex items-center gap-2 bg-indigo-600 text-white p-2 rounded-full shadow-lg hover:bg-indigo-700 transition-all duration-200 z-10`}
+                                            className={`absolute -top-3 ${isRightAligned ? '-left-3' : '-right-3'} group/btn flex items-center gap-2 bg-indigo-600 text-white p-2 rounded-full shadow-lg hover:bg-indigo-700 transition-all duration-200 z-10`}
                                             title="Discuss in Chat"
                                         >
                                             <FaCommentDots size={12} />

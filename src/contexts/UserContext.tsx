@@ -1,6 +1,5 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '../utils/supabase';
 import { useAuth } from '../utils/AuthContext';
 
 export interface User {
@@ -41,11 +40,8 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 
   // Sync with AuthContext
   useEffect(() => {
-    console.log('🔄 Syncing UserContext with AuthContext...', { authUser, authLoading });
-    
     if (!authLoading) {
       if (authUser) {
-        console.log('✅ Setting user from AuthContext:', authUser);
         const userData: User = {
           id: authUser.id,
           email: authUser.email,
@@ -54,7 +50,6 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         };
         setUser(userData);
       } else {
-        console.log('❌ No user in AuthContext, setting to null');
         setUser(null);
       }
       setIsLoading(false);

@@ -7,8 +7,8 @@ export const ANTOM_CONFIG = {
   
   // URLs for payment flow
   // Note: Update these URLs to your actual domain for production
-  notifyUrl: process.env.REACT_APP_ANTOM_NOTIFY_URL || 'http://localhost:8000/api/antom/payment-notification',
-  redirectUrl: process.env.REACT_APP_ANTOM_REDIRECT_URL || 'http://localhost:3000/payment-result',
+  notifyUrl: process.env.REACT_APP_ANTOM_NOTIFY_URL || `${window.location.origin}/api/antom/payment-notification`,
+  redirectUrl: process.env.REACT_APP_ANTOM_REDIRECT_URL || `${window.location.origin}/payment-result`,
   
   // SDK settings
   locale: 'en_US',

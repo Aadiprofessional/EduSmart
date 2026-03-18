@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
-import { subscriptionAPI, SubscriptionStatus } from './subscriptionAPI';
+import { SubscriptionStatus } from './subscriptionAPI';
 import { PRO_PLAN_IDS } from '../services/supabaseSubscriptionService';
 
 interface ProStatusContextType {
@@ -56,11 +56,6 @@ export const ProStatusProvider: React.FC<{ children: ReactNode }> = ({ children 
           setIsProUser(cachedProStatus === 'true');
           setResponsesRemaining(parseInt(cachedResponses));
           setLastChecked(lastCheckedDate);
-          console.log('Loaded PRO status from cache:', {
-            isProUser: cachedProStatus === 'true',
-            responsesRemaining: parseInt(cachedResponses),
-            lastChecked: lastCheckedDate
-          });
           return true;
         }
       }
@@ -108,9 +103,7 @@ export const ProStatusProvider: React.FC<{ children: ReactNode }> = ({ children 
 
     try {
       setLoading(true);
-      console.log('Fetching fresh PRO status from Supabase...');
       
-      // 1. Fetch User Subscription
       const { data: subscriptionData, error: subError } = await supabase
         .from('user_subscriptions')
         .select(`
@@ -125,8 +118,6 @@ export const ProStatusProvider: React.FC<{ children: ReactNode }> = ({ children 
         console.error('Error fetching subscription:', subError);
       }
 
-      // 2. Fetch Active Addons
-      // We fetch addons and plans separately to avoid foreign key relationship errors (PGRST200)
       const { data: rawAddonsData, error: addonsError } = await supabase
         .from('user_addons')
         .select('*')
@@ -139,7 +130,6 @@ export const ProStatusProvider: React.FC<{ children: ReactNode }> = ({ children 
 
       let activeAddons: any[] = rawAddonsData || [];
 
-      // Manual join with addon_plans if we have active addons
       if (activeAddons.length > 0) {
         try {
           const addonIds = activeAddons.map((addon: any) => addon.addon_id).filter(Boolean);
@@ -153,7 +143,6 @@ export const ProStatusProvider: React.FC<{ children: ReactNode }> = ({ children 
             if (plansError) {
               console.error('Error fetching addon plans for join:', plansError);
             } else if (plansData) {
-              // Attach plan details to each addon
               activeAddons = activeAddons.map((addon: any) => {
                 const plan = plansData.find((p: any) => p.id === addon.addon_id);
                 return {
@@ -167,25 +156,18 @@ export const ProStatusProvider: React.FC<{ children: ReactNode }> = ({ children 
           console.error('Error performing manual join for addons:', joinError);
         }
       }
-      const subscription = subscriptionData as any; // Cast to avoid strict type checks on join
+      const subscription = subscriptionData as any;
 
-      // Calculate totals
       let totalResponsesFromAddons = 0;
       activeAddons.forEach((addon: any) => {
         totalResponsesFromAddons += addon.responses_added || 0;
       });
 
-      // Check if user has active subscription or addons
       const hasActiveSubscription = !!subscription || activeAddons.length > 0;
-      
-      // Check if user is Pro
       const isPro = !!(subscription?.is_pro || (subscription?.plan_id && PRO_PLAN_IDS.includes(subscription.plan_id)));
-      
-      // Get remaining responses
       const subscriptionResponses = subscription?.responses_remaining || 0;
-      const totalResponses = subscriptionResponses; // Addon responses usually added to this or tracked separately, simplifying for now
+      const totalResponses = subscriptionResponses;
 
-      // Create processed status object
       const processedStatus: SubscriptionStatus = {
         hasActiveSubscription,
         isPro,
@@ -198,19 +180,10 @@ export const ProStatusProvider: React.FC<{ children: ReactNode }> = ({ children 
       setSubscriptionStatus(processedStatus);
       setIsProUser(isPro);
       setResponsesRemaining(totalResponses);
-      
-      // Save to cache
       saveToCache(isPro, totalResponses);
-      
-      console.log('Updated PRO status from Supabase:', {
-        isPro: isPro,
-        responsesRemaining: totalResponses,
-        hasActiveSubscription
-      });
 
     } catch (error) {
       console.error('Error fetching subscription status:', error);
-      // Fallback to cache if fails
       loadFromCache();
     } finally {
       setLoading(false);
@@ -225,19 +198,18 @@ export const ProStatusProvider: React.FC<{ children: ReactNode }> = ({ children 
   // Initialize on mount and when user changes
   useEffect(() => {
     fetchProStatus(true);
-  }, [user, session]);
+  }, [user, session?.user?.id]);
 
   // Periodically refresh if data is getting stale
   useEffect(() => {
     const interval = setInterval(() => {
       if (user && session && isStale()) {
-        console.log('PRO status cache is stale, refreshing...');
         fetchProStatus(false);
       }
     }, 60000); // Check every minute
 
     return () => clearInterval(interval);
-  }, [user, session, lastChecked]);
+  }, [user, session?.user?.id, lastChecked]);
 
   const value: ProStatusContextType = {
     isProUser,

@@ -1381,6 +1381,16 @@ export const en = {
     random: "Random",
     speaker1: "Speaker 1",
     speaker2: "Speaker 2",
+    enterHostName: "Enter host name",
+    podcastLanguage: "Podcast Language",
+    podcastLanguages: {
+      english: "English",
+      cantonese: "Cantonese",
+      traditionalChinese: "Traditional Chinese",
+      simplifiedChinese: "Simplified Chinese",
+      hindi: "Hindi",
+      japanese: "Japanese"
+    },
     podcastLength: "Podcast Length",
     short: "Short",
     long: "Long",

@@ -32,21 +32,28 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
   // Load subscription plans and addons (authenticated data)
   const loadPlansAndAddons = async () => {
     try {
-      console.log('Loading plans and addons...');
-      const [plansResult, addonsResult] = await Promise.all([
-        subscriptionAPI.getPlans(session),
-        subscriptionAPI.getAddons(session)
-      ]);
-
-      console.log('Plans API Response:', plansResult);
-      console.log('Addons API Response:', addonsResult);
+      const plansResult = await subscriptionAPI.getPlans(session);
 
       if (plansResult.success && plansResult.data) {
-        console.log('Setting plans:', plansResult.data);
         setPlans(plansResult.data);
+        setAddons(
+          plansResult.data
+            .filter((plan) => plan.type === 'addon')
+            .map((plan) => ({
+              id: plan.id,
+              name: plan.name,
+              description: plan.description || '',
+              price: plan.price,
+              additional_responses: plan.coins ?? plan.response_limit ?? 0,
+              coins: plan.coins,
+              duration_days: plan.duration_days,
+              type: plan.type,
+              is_active: plan.is_active,
+              created_at: plan.created_at,
+              updated_at: plan.updated_at || plan.created_at
+            }))
+        );
       } else {
-        console.warn('Plans API failed, using fallback data:', plansResult.error);
-        // Provide fallback plans data when API fails
         setPlans([
           {
             id: 'basic',
@@ -71,14 +78,6 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
             updated_at: new Date().toISOString()
           }
         ]);
-      }
-
-      if (addonsResult.success && addonsResult.data) {
-        console.log('Setting addons:', addonsResult.data);
-        setAddons(addonsResult.data);
-      } else {
-        console.warn('Addons API failed, using fallback data:', addonsResult.error);
-        // Provide fallback addons data when API fails
         setAddons([
           {
             id: 'extra-responses',
@@ -93,8 +92,7 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
         ]);
       }
     } catch (error) {
-      console.error('Error loading plans and addons, using fallback data:', error);
-      // Provide fallback data for both plans and addons
+      console.error('Error loading plans and addons:', error);
       setPlans([
         {
           id: 'basic',
@@ -115,9 +113,7 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
   // Load subscription status from Supabase (single source of truth)
   const loadSubscriptionStatus = async () => {
     try {
-      // Handle unauthenticated users with demo access
       if (!effectiveUserId) {
-        console.log('No effective user ID found - providing demo access');
         setSubscriptionStatus({
           hasActiveSubscription: false,
           isPro: false,
@@ -129,21 +125,12 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
         return;
       }
 
-      console.log('🔍 Loading subscription status for user:', effectiveUserId);
-
-      // Fetch subscription data from Supabase (single source of truth)
       const supabaseData: SubscriptionWithAddons = await supabaseSubscriptionService.getUserSubscription(effectiveUserId);
-      
-      console.log('📊 Supabase subscription data:', supabaseData);
 
-      // If no subscription found, create default one for new users
       if (!supabaseData.subscription && !supabaseData.addons.length) {
-        console.log('🆕 Creating default subscription for new user');
         try {
           await supabaseSubscriptionService.createDefaultSubscription(effectiveUserId);
-          // Refetch after creating default subscription
           const newData = await supabaseSubscriptionService.getUserSubscription(effectiveUserId);
-          console.log('📊 New subscription data after creation:', newData);
           
           setSubscriptionStatus({
             hasActiveSubscription: newData.hasActiveSubscription,
@@ -166,8 +153,6 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
           });
         }
       } else {
-        // Use existing subscription data from Supabase
-        console.log('✅ Using existing subscription data from Supabase');
         setSubscriptionStatus({
           hasActiveSubscription: supabaseData.hasActiveSubscription,
           isPro: supabaseData.isPro,
@@ -195,13 +180,11 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
   // Refresh subscription status
   const refreshStatus = async () => {
     if (!effectiveUser || !effectiveUserId) {
-      console.log('No user or user ID for refresh');
       return;
     }
 
     setLoading(true);
     try {
-      console.log('🔄 Refreshing subscription status from Supabase...');
       const subscriptionData = await supabaseSubscriptionService.getUserSubscription(effectiveUserId);
       
       const status: SubscriptionStatus = {
@@ -214,7 +197,6 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
        };
       
       setSubscriptionStatus(status);
-      console.log('✅ Subscription status refreshed from Supabase:', status);
     } catch (error) {
       console.error('Error refreshing subscription status from Supabase:', error);
     } finally {
@@ -224,50 +206,26 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
 
   // Use response function with Supabase
   const consumeResponse = async (responseType: string, queryData: any, responsesUsed: number = 1): Promise<boolean> => {
-    console.log('🔄 consumeResponse called:', {
-      responseType,
-      responsesUsed,
-      effectiveUser: !!effectiveUser,
-      effectiveUserId,
-      hasActiveSubscription: subscriptionStatus?.hasActiveSubscription,
-      responsesRemaining: subscriptionStatus?.responsesRemaining
-    });
-
     if (!effectiveUser || !effectiveUserId || !subscriptionStatus?.hasActiveSubscription) {
-      console.log('❌ Cannot consume response - missing requirements:', {
-        effectiveUser: !!effectiveUser,
-        effectiveUserId: !!effectiveUserId,
-        hasActiveSubscription: subscriptionStatus?.hasActiveSubscription
-      });
       return false;
     }
 
-    // Check if user has enough responses
     if (subscriptionStatus.responsesRemaining < responsesUsed) {
-      console.log('❌ Not enough responses remaining:', subscriptionStatus.responsesRemaining, 'needed:', responsesUsed);
       return false;
     }
 
     try {
-      console.log('🔄 Updating responses in Supabase...');
-      
-      // Use Supabase service to update responses
       const success = await supabaseSubscriptionService.updateUserResponses(effectiveUserId, responsesUsed);
       
       if (success) {
-        console.log('✅ Supabase response consumption successful');
-        
-        // Update local subscription status by decrementing responses
         const updatedStatus: SubscriptionStatus = {
           ...subscriptionStatus,
           responsesRemaining: subscriptionStatus.responsesRemaining - responsesUsed
         };
         
         setSubscriptionStatus(updatedStatus);
-        console.log('✅ Local state updated. Remaining responses:', updatedStatus.responsesRemaining);
         return true;
       } else {
-        console.error('❌ Supabase response consumption failed');
         return false;
       }
     } catch (error) {
@@ -288,7 +246,7 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
     };
 
     loadData();
-  }, [effectiveUserId, session]);
+  }, [effectiveUserId, session?.user?.id]);
 
   const value = {
     subscriptionStatus,

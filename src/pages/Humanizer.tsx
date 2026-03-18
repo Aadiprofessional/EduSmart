@@ -21,6 +21,7 @@ import IconComponent from '../components/ui/IconComponent';
 import { useNotification } from '../utils/NotificationContext';
 import SidebarLeft from '../components/dashboard/SidebarLeft';
 import { useLanguage } from '../utils/LanguageContext';
+import { API_BASE_URL } from '../config/api';
 
 const Humanizer: React.FC = () => {
   const { t } = useLanguage();
@@ -90,7 +91,6 @@ const Humanizer: React.FC = () => {
           template: item.tags && item.tags.length > 0 ? item.tags[0] : 'Standard', // Use tag or default
           prompt: item.original_text
         }));
-        console.log('History loaded:', formattedHistory);
         setContentHistory(formattedHistory);
       }
     } catch (error) {
@@ -206,7 +206,7 @@ const Humanizer: React.FC = () => {
       const uid = user?.id || "0a147ebe-af99-481b-bcaf-ae70c9aeb8d8";
 
       // Using the new API endpoint
-      const response = await fetch('http://localhost:8000/api/humanizer/createHumanization', {
+      const response = await fetch(`${API_BASE_URL}/api/humanizer/createHumanization`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

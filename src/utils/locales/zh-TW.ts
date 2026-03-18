@@ -1086,6 +1086,16 @@ export const zhTW = {
     random: "隨機",
     speaker1: "講者 1",
     speaker2: "講者 2",
+    enterHostName: "輸入主持人姓名",
+    podcastLanguage: "Podcast 語言",
+    podcastLanguages: {
+      english: "英語",
+      cantonese: "粵語",
+      traditionalChinese: "繁體中文",
+      simplifiedChinese: "簡體中文",
+      hindi: "印地語",
+      japanese: "日語"
+    },
     podcastLength: "Podcast 長度",
     short: "短",
     long: "長",
