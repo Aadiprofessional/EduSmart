@@ -1637,19 +1637,19 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
         backgroundStyle: { color: 'rgba(180, 180, 180, 0.1)' }
       }]
     };
-  }, [aiSuggestionResult]);
+  }, [aiSuggestionResult, t]);
 
   const workloadChartOption = useMemo(() => {
     if (!aiSuggestionResult?.workloadDistribution) return null;
     return {
       tooltip: { trigger: 'axis' },
-      legend: { data: ['Study', 'Application'], textStyle: { color: '#9CA3AF' }, bottom: 0 },
+      legend: { data: [t('aiStudy.studyLabel'), t('aiStudy.applicationLabel')], textStyle: { color: '#9CA3AF' }, bottom: 0 },
       grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
       xAxis: { type: 'category', data: aiSuggestionResult.workloadDistribution.map(w => w.week), axisLabel: { color: '#9CA3AF' } },
       yAxis: { type: 'value', axisLabel: { color: '#9CA3AF' }, splitLine: { lineStyle: { color: '#374151', type: 'dashed', opacity: 0.3 } } },
       series: [
         {
-          name: 'Study',
+          name: t('aiStudy.studyLabel'),
           type: 'line',
           smooth: true,
           data: aiSuggestionResult.workloadDistribution.map(w => parseInt(w.studyHours) || 0),
@@ -1657,7 +1657,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
           itemStyle: { color: '#3B82F6' }
         },
         {
-          name: 'Application',
+          name: t('aiStudy.applicationLabel'),
           type: 'line',
           smooth: true,
           data: aiSuggestionResult.workloadDistribution.map(w => parseInt(w.applicationHours) || 0),
@@ -1682,7 +1682,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
       tooltip: { trigger: 'item' },
       legend: { bottom: '0%', textStyle: { color: '#9CA3AF' } },
       series: [{
-        name: 'Task Priority',
+        name: t('aiStudy.taskPriorities'),
         type: 'pie',
         radius: ['40%', '70%'],
         avoidLabelOverlap: false,
@@ -1690,13 +1690,13 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
         label: { show: false, position: 'center' },
         emphasis: { label: { show: true, fontSize: '18', fontWeight: 'bold', color: '#9CA3AF' } },
         data: [
-          { value: stats.High, name: 'High', itemStyle: { color: '#EF4444' } },
-          { value: stats.Medium, name: 'Medium', itemStyle: { color: '#F59E0B' } },
-          { value: stats.Low, name: 'Low', itemStyle: { color: '#10B981' } }
+          { value: stats.High, name: t('aiStudy.chartHigh'), itemStyle: { color: '#EF4444' } },
+          { value: stats.Medium, name: t('aiStudy.chartMedium'), itemStyle: { color: '#F59E0B' } },
+          { value: stats.Low, name: t('aiStudy.chartLow'), itemStyle: { color: '#10B981' } }
         ]
       }]
     };
-  }, [aiSuggestionResult]);
+  }, [aiSuggestionResult, t]);
 
   return (
     <motion.div
@@ -1746,10 +1746,10 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
               variants={buttonVariants}
               whileHover="hover"
               whileTap="tap"
-              title="View History"
+              title={t('aiStudy.history')}
             >
               <IconComponent icon={FiClock} className="h-4 w-4 mr-2" />
-              History
+              {t('aiStudy.history')}
             </motion.button>
             <motion.button
               onClick={() => setShowAddForm(!showAddForm)}
@@ -2156,7 +2156,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-bold text-purple-600 dark:text-purple-400 flex items-center">
                     <IconComponent icon={FaBrain} className="mr-2" />
-                    AI Timetable Import
+                    {t('aiStudy.aiTimetableImport')}
                   </h2>
                   <motion.button
                     onClick={closeAIModal}
@@ -2168,7 +2168,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                   </motion.button>
                 </div>
                 <p className="text-gray-600 dark:text-gray-400 mt-2">
-                  Upload your timetable image and let AI analyze it to automatically create study tasks with predicted priorities.
+                  {t('aiStudy.aiTimetableImportDescription')}
                 </p>
               </div>
               
@@ -2193,13 +2193,13 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                         </div>
                         <div>
                           <p className="text-lg font-medium text-gray-900 dark:text-gray-300 mb-2">
-                            {isUploading ? 'Processing...' : 'Upload Timetable Image'}
+                            {isUploading ? t('aiStudy.analyzing') : t('aiStudy.uploadTimetableImage')}
                           </p>
                           <p className="text-gray-500 dark:text-gray-400 text-sm">
-                            Drag and drop or click to select an image file
+                            {t('aiStudy.dragDropOrClickImage')}
                           </p>
                           <p className="text-gray-400 dark:text-gray-500 text-xs mt-2">
-                            Supports: JPG, PNG, GIF (Max 10MB)
+                            {t('aiStudy.supportedImageFormats')}
                           </p>
                         </div>
                       </label>
@@ -2210,7 +2210,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                     {/* File Preview */}
                     <div className="bg-white dark:bg-[#1f1f23] rounded-xl p-4 border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-none">
                       <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-300">Uploaded File</h3>
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-300">{t('aiStudy.uploadedFile')}</h3>
                         <motion.button
                           onClick={() => setUploadedFile(null)}
                           className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
@@ -2226,7 +2226,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                           {uploadedFile.file.type.startsWith('image/') ? (
                             <img 
                               src={uploadedFile.base64} 
-                              alt="Uploaded timetable" 
+                              alt={t('aiStudy.uploadedTimetableAlt')} 
                               className="w-full h-full object-cover"
                             />
                           ) : (
@@ -2240,7 +2240,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                           </p>
                           {uploadedFile.extractedText && (
                             <p className="text-green-600 dark:text-green-400 text-sm mt-1">
-                              ✓ Text extracted successfully
+                              ✓ {t('aiStudy.textExtractedSuccessfully')}
                             </p>
                           )}
                         </div>
@@ -2252,7 +2252,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                       <div className="bg-white dark:bg-[#1f1f23] rounded-xl p-4 border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-none">
                         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-300 mb-4 flex items-center">
                           <IconComponent icon={AiOutlineRobot} className="mr-2 text-purple-600 dark:text-purple-400" />
-                          AI Analysis Results
+                          {t('aiStudy.aiAnalysisResults')}
                         </h3>
                         
                         <div className="space-y-3 max-h-60 overflow-y-auto">
@@ -2265,7 +2265,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                                   task.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border border-yellow-500/30' :
                                   'bg-green-500/20 text-green-600 dark:text-green-400 border border-green-500/30'
                                 }`}>
-                                  {task.priority} priority
+                                  {t('aiStudy.priorityText', { values: { priority: task.priority } })}
                                 </span>
                               </div>
                               <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
@@ -2277,7 +2277,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                                   <IconComponent icon={FiClock} className="h-3 w-3 mr-1" />
                                   {task.estimatedHours || 2}h
                                 </span>
-                                <span className="text-cyan-600 dark:text-cyan-400">{task.subject || 'General'}</span>
+                                <span className="text-cyan-600 dark:text-cyan-400">{task.subject || t('aiStudy.general')}</span>
                               </div>
                             </div>
                           ))}
@@ -2293,7 +2293,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                       >
-                        Close
+                        {t('aiStudy.close')}
                       </motion.button>
 
                       <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
@@ -2327,7 +2327,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                             whileTap={{ scale: 0.95 }}
                           >
                             <IconComponent icon={FiCheck} className="h-4 w-4 mr-2" />
-                            Add {aiAnalysisResult.length} Tasks
+                            {t('aiStudy.addTasks', { count: aiAnalysisResult.length })}
                           </motion.button>
                         )}
                       </div>
@@ -2366,7 +2366,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                   <div className="p-2 rounded-lg bg-amber-500/10 mr-3">
                     <IconComponent icon={FiClock} className="h-5 w-5 text-amber-500" />
                   </div>
-                  Roadmap History
+                  {t('aiStudy.roadmapHistory')}
                 </h2>
                 <motion.button
                   onClick={() => setShowHistoryModal(false)}
@@ -2388,9 +2388,9 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                     <div className="w-20 h-20 bg-gray-100 dark:bg-white/5 rounded-full flex items-center justify-center mb-4 border border-gray-200 dark:border-white/5">
                         <IconComponent icon={FiClock} className="h-8 w-8 text-gray-400" />
                     </div>
-                    <p className="text-gray-900 dark:text-white font-medium mb-1 text-lg">No history yet</p>
+                    <p className="text-gray-900 dark:text-white font-medium mb-1 text-lg">{t('aiStudy.noHistoryYet')}</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs mx-auto">
-                        Generate your first AI roadmap to see it here.
+                        {t('aiStudy.generateFirstRoadmapHint')}
                     </p>
                   </div>
                 ) : (
@@ -2408,7 +2408,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                         <div className="flex justify-between items-start relative z-10">
                           <div className="flex-1 pr-4">
                             <h3 className="font-semibold text-gray-900 dark:text-white mb-2 text-lg group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors line-clamp-2">
-                              {item.title || 'Untitled Roadmap'}
+                              {item.title || t('aiStudy.untitledRoadmap')}
                             </h3>
                             <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 space-x-4">
                                 <span className="flex items-center bg-gray-100 dark:bg-black/30 px-2 py-1 rounded-md">
@@ -2456,7 +2456,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                     {t('aiStudy.aiStudyRoadmapGenerator')}
                   </h2>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Generate a personalized study plan based on your tasks
+                    {t('aiStudy.generatePersonalizedStudyPlan')}
                   </p>
                 </div>
                 <motion.button
@@ -2474,12 +2474,12 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                 <div className="space-y-3">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
                     <IconComponent icon={FiCalendar} className="mr-2 text-emerald-500" />
-                    Select Date Range
+                    {t('aiStudy.selectDateRange')}
                   </label>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <span className="text-gray-500 text-xs">Start</span>
+                        <span className="text-gray-500 text-xs">{t('aiStudy.start')}</span>
                       </div>
                       <input
                         type="date"
@@ -2491,7 +2491,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                     </div>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <span className="text-gray-500 text-xs">End</span>
+                        <span className="text-gray-500 text-xs">{t('aiStudy.end')}</span>
                       </div>
                       <input
                         type="date"
@@ -2508,12 +2508,12 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                 <div className="space-y-3">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
                     <IconComponent icon={FiEdit} className="mr-2 text-blue-500" />
-                    Additional Context (Optional)
+                    {t('aiStudy.additionalContextOptional')}
                   </label>
                   <textarea
                     value={customPrompt}
                     onChange={(e) => setCustomPrompt(e.target.value)}
-                    placeholder="E.g., I want to focus more on Math this week, or I have an exam on Friday..."
+                    placeholder={t('aiStudy.additionalContextPlaceholder')}
                     className="w-full h-24 bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600"
                   />
                 </div>
@@ -2532,12 +2532,12 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                   {isGeneratingSuggestion ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                      Generating Roadmap...
+                      {t('aiStudy.generatingRoadmap')}
                     </>
                   ) : (
                     <>
                       <IconComponent icon={FaBrain} className="h-4 w-4 mr-2" />
-                      Generate Study Roadmap
+                      {t('aiStudy.generateStudyRoadmap')}
                     </>
                   )}
                 </motion.button>
@@ -2565,7 +2565,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                     {t('aiStudy.aiStudyRoadmap')}
                   </h2>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    Your personalized AI-generated study strategy
+                    {t('aiStudy.roadmapStrategyDescription')}
                   </p>
                 </div>
                 <div className="flex items-center space-x-3">
@@ -2591,7 +2591,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="font-semibold text-gray-900 dark:text-white flex items-center">
                           <IconComponent icon={FiFilter} className="mr-2 text-purple-500" />
-                          Task Priorities
+                          {t('aiStudy.taskPriorities')}
                         </h3>
                       </div>
                       <div className="h-48 w-full">
@@ -2604,7 +2604,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="font-semibold text-gray-900 dark:text-white flex items-center">
                           <IconComponent icon={FiClock} className="mr-2 text-blue-500" />
-                          Timeline Distribution
+                          {t('aiStudy.timelineDistribution')}
                         </h3>
                       </div>
                       <div className="h-48 w-full">
@@ -2617,7 +2617,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="font-semibold text-gray-900 dark:text-white flex items-center">
                           <IconComponent icon={FiCheck} className="mr-2 text-emerald-500" />
-                          Workload Balance
+                          {t('aiStudy.workloadBalance')}
                         </h3>
                       </div>
                       <div className="h-48 w-full">
@@ -2644,7 +2644,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                               <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center justify-between">
                                 {category.category}
                                 <span className="text-xs font-normal bg-gray-200 dark:bg-white/10 px-2 py-1 rounded-full text-gray-600 dark:text-gray-400">
-                                  {category.tasks.length} tasks
+                                  {t('aiStudy.taskCount', { count: category.tasks.length })}
                                 </span>
                               </h5>
                               <div className="space-y-2">
@@ -2691,12 +2691,12 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                               <div className="bg-gray-50 dark:bg-white/5 rounded-xl p-3 mt-2">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                   <div>
-                                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">Tasks</p>
+                                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">{t('aiStudy.tasksLabel')}</p>
                                     <ul className="space-y-1">
                                       {item.tasks.map((task, i) => {
                                         const isObj = typeof task === 'object' && task !== null;
                                         const description = isObj ? (task as any).description : task;
-                                        const priority = isObj ? (task as any).priority : 'Medium';
+                                        const priority = isObj ? (task as any).priority : t('aiStudy.chartMedium');
                                         
                                         return (
                                           <li key={i} className="text-xs text-gray-600 dark:text-gray-300 flex items-start">
@@ -2708,7 +2708,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                                     </ul>
                                   </div>
                                   <div>
-                                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">Milestones</p>
+                                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">{t('aiStudy.milestonesLabel')}</p>
                                     <ul className="space-y-1">
                                       {item.milestones.map((ms, i) => (
                                         <li key={i} className="text-xs text-gray-600 dark:text-gray-300 flex items-start">
@@ -2748,7 +2748,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                                 {item.actions.map((action, i) => {
                                   const isObj = typeof action === 'object' && action !== null;
                                   const description = isObj ? (action as any).description : action;
-                                  const priority = isObj ? (action as any).priority : 'Medium';
+                                  const priority = isObj ? (action as any).priority : t('aiStudy.chartMedium');
                                   const deadline = isObj ? (action as any).deadline : '';
                                   
                                   return (
@@ -2763,7 +2763,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                                           {priority}
                                         </span>
                                         <span>{description}</span>
-                                        {deadline && <span className="ml-2 text-xs text-gray-500">Due: {deadline}</span>}
+                                        {deadline && <span className="ml-2 text-xs text-gray-500">{t('aiStudy.due')}: {deadline}</span>}
                                       </div>
                                     </div>
                                   );
@@ -2781,7 +2781,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                         <div className="p-5 border-b border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
                           <h3 className="font-bold text-gray-900 dark:text-white flex items-center text-lg">
                             <IconComponent icon={FiCalendar} className="mr-2 text-red-500" />
-                            Deadline Management
+                            {t('aiStudy.deadlineManagement')}
                           </h3>
                         </div>
                         <div className="p-5 space-y-4 flex-1 overflow-y-auto max-h-[400px]">
@@ -2790,7 +2790,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                               <div className="flex justify-between items-start mb-3">
                                 <div>
                                   <h5 className="text-sm font-bold text-gray-900 dark:text-white">{item.type}</h5>
-                                  <span className="text-xs text-red-600 dark:text-red-400 font-medium">Due: {item.deadline}</span>
+                                  <span className="text-xs text-red-600 dark:text-red-400 font-medium">{t('aiStudy.due')}: {item.deadline}</span>
                                 </div>
                                 <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
                                   item.priority === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
@@ -2801,7 +2801,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                                 </span>
                               </div>
                               <div className="space-y-1">
-                                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Actions</p>
+                                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('aiStudy.actionsLabel')}</p>
                                 {item.actions.map((action, i) => (
                                   <div key={i} className="flex items-start text-sm text-gray-700 dark:text-gray-300">
                                     <IconComponent icon={FiCheck} className="mt-1 mr-2 flex-shrink-0 text-red-500" />
@@ -2829,11 +2829,11 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                             {aiSuggestionResult.studyOptimization.map((subject, idx) => (
                               <div key={idx} className="bg-amber-50/50 dark:bg-amber-900/10 rounded-xl p-4 border border-amber-100 dark:border-amber-500/20">
                                 <h5 className="text-sm font-bold text-gray-900 dark:text-white mb-2">{subject.subject}</h5>
-                                <p className="text-sm text-gray-700 dark:text-gray-300 mb-2"><span className="font-semibold">Strategy:</span> {subject.strategy}</p>
-                                <p className="text-sm text-gray-700 dark:text-gray-300 mb-2"><span className="font-semibold">Time:</span> {subject.timeAllocation}</p>
+                                <p className="text-sm text-gray-700 dark:text-gray-300 mb-2"><span className="font-semibold">{t('aiStudy.strategy')}:</span> {subject.strategy}</p>
+                                <p className="text-sm text-gray-700 dark:text-gray-300 mb-2"><span className="font-semibold">{t('aiStudy.time')}:</span> {subject.timeAllocation}</p>
                                 {subject.resources && subject.resources.length > 0 && (
                                   <div className="mt-2">
-                                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Resources</span>
+                                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('aiStudy.resources')}</span>
                                     <div className="flex flex-wrap gap-2 mt-1">
                                       {subject.resources.map((res, i) => (
                                         <span key={i} className="text-xs bg-white dark:bg-black/20 px-2 py-1 rounded border border-amber-200 dark:border-amber-500/30 text-gray-600 dark:text-gray-400">
@@ -2865,7 +2865,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                               <h5 className="text-sm font-bold text-red-700 dark:text-red-400 mb-1">{risk.risk}</h5>
                               <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">{risk.impact}</p>
                               <div className="bg-white dark:bg-black/20 rounded-lg p-3 text-sm">
-                                <span className="font-medium text-gray-700 dark:text-gray-200">Mitigation: </span>
+                                <span className="font-medium text-gray-700 dark:text-gray-200">{t('aiStudy.mitigation')}: </span>
                                 <ul className="list-disc pl-4 mt-1 space-y-1">
                                   {risk.mitigation.map((m, i) => (
                                     <li key={i} className="text-gray-600 dark:text-gray-400">{m}</li>
@@ -2959,7 +2959,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                   <IconComponent icon={FaBell} className="mr-2" />
                   {(() => {
                     const task = studyTasks.find(t => t.id === reminderModal.taskId);
-                    return task?.reminder ? 'Update Reminder' : 'Set Reminder';
+                    return task?.reminder ? t('aiStudy.updateReminder') : t('aiStudy.setReminder');
                   })()}
                 </h2>
                 {(() => {
@@ -2968,7 +2968,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                     const reminderDateTime = new Date(task.reminderDate);
                     return (
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                        Current reminder: {reminderDateTime.toLocaleDateString()} at {reminderDateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {t('aiStudy.currentReminder')}: {reminderDateTime.toLocaleDateString()} {t('aiStudy.atTime')} {reminderDateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     );
                   }
@@ -2980,7 +2980,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Reminder Date
+                      {t('aiStudy.reminderDateLabel')}
                     </label>
                     <input
                       type="date"
@@ -2993,7 +2993,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Reminder Time
+                      {t('aiStudy.reminderTimeLabel')}
                     </label>
                     <input
                       type="time"
@@ -3014,7 +3014,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    Cancel
+                    {t('aiStudy.cancel')}
                   </motion.button>
                   {(() => {
                     const task = studyTasks.find(t => t.id === reminderModal.taskId);
@@ -3026,7 +3026,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                         >
-                          Remove Reminder
+                          {t('aiStudy.removeReminder')}
                         </motion.button>
                       );
                     }
@@ -3040,7 +3040,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  Set Reminder
+                  {t('aiStudy.setReminder')}
                 </motion.button>
               </div>
             </motion.div>

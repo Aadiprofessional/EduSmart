@@ -158,11 +158,6 @@ export const ProStatusProvider: React.FC<{ children: ReactNode }> = ({ children 
       }
       const subscription = subscriptionData as any;
 
-      let totalResponsesFromAddons = 0;
-      activeAddons.forEach((addon: any) => {
-        totalResponsesFromAddons += addon.responses_added || 0;
-      });
-
       const hasActiveSubscription = !!subscription || activeAddons.length > 0;
       const isPro = !!(subscription?.is_pro || (subscription?.plan_id && PRO_PLAN_IDS.includes(subscription.plan_id)));
       const subscriptionResponses = subscription?.responses_remaining || 0;

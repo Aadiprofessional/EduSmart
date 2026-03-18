@@ -1,5 +1,5 @@
 import { supabase } from '../utils/supabase';
-import { UserSubscription, UserAddon, SubscriptionStatus } from '../utils/subscriptionAPI';
+import { UserSubscription, UserAddon } from '../utils/subscriptionAPI';
 
 // Supabase-specific interfaces that match our actual database schema
 export interface SupabaseUserSubscription {
