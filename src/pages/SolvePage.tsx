@@ -866,7 +866,7 @@ const SolvePage: React.FC = () => {
                        {/* Drag & Drop Zone */}
                       <div 
                         onClick={handleDropZoneClick}
-                        className="w-[98%] bg-white dark:bg-[#111111] border border-dashed border-gray-300 dark:border-gray-800 rounded-t-3xl rounded-b-lg h-24 lg:h-32 flex flex-col items-center justify-center lg:justify-start pt-0 lg:pt-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 hover:border-gray-400 dark:hover:border-gray-600 transition-all group z-0 mb-[-35px] lg:mb-[-45px]"
+                        className="w-[98%] bg-white dark:bg-[#111111] border border-dashed border-gray-300 dark:border-gray-800 rounded-t-3xl rounded-b-lg h-24 lg:h-32 flex flex-col items-center justify-start pt-3 lg:pt-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 hover:border-gray-400 dark:hover:border-gray-600 transition-all group z-0 mb-[-18px] lg:mb-[-45px]"
                       >
                           <input 
                            type="file" 
@@ -882,7 +882,7 @@ const SolvePage: React.FC = () => {
                                <FaImage className="text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-400 transition-colors w-4 h-4 lg:w-5 lg:h-5" />
                              )}
                           </div>
-                          <span className="text-[10px] lg:text-sm text-center px-4 text-gray-500 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-400 transition-colors leading-tight">
+                          <span className="text-[10px] lg:text-sm text-center px-4 text-gray-500 dark:text-gray-300 group-hover:text-gray-600 dark:group-hover:text-gray-200 transition-colors leading-tight">
                             {attachedFile 
                               ? t('solvePage.attachedFile', { values: { name: attachedFile.name } })
                               : t('solvePage.dragDropUpload')}
@@ -902,26 +902,25 @@ const SolvePage: React.FC = () => {
                                    }
                                  }}
                                 placeholder={t('solvePage.typeYourQuestionHere')}
-                                 className="w-full bg-transparent text-gray-800 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none text-lg resize-none py-4 px-4 pr-12 min-h-[64px]"
+                                 className="w-full bg-transparent text-gray-800 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none text-lg resize-none py-4 px-4 pr-16 min-h-[64px]"
                                  rows={1}
                                />
+                              {!isSendDisabled && cost > 0 && (
+                                <span className="absolute bottom-11 right-0 z-10 inline-flex items-center gap-1 bg-[#ff5500] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                   -{cost}
+                                   <img src={coinIcon} alt="coins" className="w-3 h-3" />
+                                 </span>
+                               )}
                                <button 
                                  onClick={handleSendMessage}
                                  disabled={isSendDisabled}
-                                 className={`absolute bottom-3 right-4 p-2 rounded-full transition-all duration-200 flex items-center justify-center ${
+                                 className={`absolute top-1/2 -translate-y-1/2 right-4 p-2 rounded-full transition-all duration-200 flex items-center justify-center w-8 h-8 ${
                                    isSendDisabled 
-                                     ? 'bg-gray-100 dark:bg-[#27272a] text-gray-400 dark:text-gray-600 cursor-not-allowed w-8 h-8' 
-                                     : 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 w-auto px-3 h-8 gap-1'
+                                     ? 'bg-gray-100 dark:bg-[#27272a] text-gray-400 dark:text-gray-600 cursor-not-allowed' 
+                                     : 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200'
                                  }`}
                                >
-                                   {!isSendDisabled && cost > 0 ? (
-                                     <>
-                                       <span className="text-xs font-bold">-{cost}</span>
-                                       <img src={coinIcon} alt="coins" className="w-4 h-4" />
-                                     </>
-                                   ) : (
-                                     <FaArrowUp size={14} />
-                                   )}
+                                 <FaArrowUp size={14} />
                                </button>
                            </div>
                        </div>
@@ -1082,26 +1081,25 @@ const SolvePage: React.FC = () => {
                              }
                            }}
                            placeholder={t('solvePage.askFollowUpQuestion')}
-                           className="w-full bg-transparent text-gray-300 placeholder-gray-500 focus:outline-none text-lg resize-none py-3 px-4 pr-12 min-h-[56px]"
+                           className="w-full bg-transparent text-gray-300 placeholder-gray-500 focus:outline-none text-lg resize-none py-3 px-4 pr-16 min-h-[56px]"
                            rows={1}
                          />
+                        {!isSendDisabled && cost > 0 && (
+                          <span className="absolute bottom-9 right-0 z-10 inline-flex items-center gap-1 bg-[#ff5500] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                             -{cost}
+                             <img src={coinIcon} alt="coins" className="w-3 h-3" />
+                           </span>
+                         )}
                          <button 
                            onClick={handleSendMessage}
                            disabled={isSendDisabled}
-                           className={`absolute bottom-2 right-4 p-2 rounded-full transition-all duration-200 flex items-center justify-center ${
+                           className={`absolute top-1/2 -translate-y-1/2 right-4 p-2 rounded-full transition-all duration-200 flex items-center justify-center w-8 h-8 ${
                              isSendDisabled 
-                               ? 'bg-[#27272a] text-gray-600 cursor-not-allowed w-8 h-8' 
-                               : 'bg-white text-black hover:bg-gray-200 w-auto px-3 h-8 gap-1'
+                               ? 'bg-[#27272a] text-gray-600 cursor-not-allowed' 
+                               : 'bg-white text-black hover:bg-gray-200'
                            }`}
                          >
-                             {!isSendDisabled && cost > 0 ? (
-                               <>
-                                 <span className="text-xs font-bold">-{cost}</span>
-                                 <img src={coinIcon} alt="coins" className="w-4 h-4" />
-                               </>
-                             ) : (
-                               <FaArrowUp size={14} />
-                             )}
+                           <FaArrowUp size={14} />
                          </button>
                      </div>
                 </div>

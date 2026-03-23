@@ -197,7 +197,7 @@ const StudyContent: React.FC = () => {
             // PDF / Document
             if (type === 'pdf' || type === 'pdf_file' || getFileType(documentUrl) === 'pdf') {
                  return (
-                    <div className="w-full h-full min-h-[80vh] bg-black/40 backdrop-blur-xl border border-white/10 rounded-lg shadow-lg overflow-hidden">
+                    <div className="w-full min-h-[80vh] bg-black/40 backdrop-blur-xl border border-white/10 rounded-lg shadow-lg overflow-hidden">
                         <PDFViewer url={documentUrl} />
                     </div>
                  );
@@ -206,10 +206,10 @@ const StudyContent: React.FC = () => {
             if (type === 'document' || getFileType(documentUrl) === 'office') {
                 const officePreviewUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(documentUrl)}`;
                 return (
-                    <div className="w-full h-full min-h-[80vh] bg-black/40 backdrop-blur-xl border border-white/10 rounded-lg shadow-lg overflow-hidden relative">
+                    <div className="w-full min-h-[80vh] bg-black/40 backdrop-blur-xl border border-white/10 rounded-lg shadow-lg overflow-hidden relative">
                         <iframe
                             src={officePreviewUrl}
-                            className="w-full h-full border-none"
+                            className="w-full h-[80vh] border-none"
                             title={t('studyContent.officePreviewTitle')}
                         />
                         <a
@@ -226,10 +226,10 @@ const StudyContent: React.FC = () => {
             
             // Fallback for generic URLs (websites)
             return (
-                 <div className="w-full h-full min-h-[80vh] bg-black/40 backdrop-blur-xl border border-white/10 rounded-lg shadow-lg overflow-hidden">
+                 <div className="w-full min-h-[80vh] bg-black/40 backdrop-blur-xl border border-white/10 rounded-lg shadow-lg overflow-hidden">
                      <iframe 
                          src={documentUrl} 
-                         className="w-full h-full border-none" 
+                         className="w-full h-[80vh] border-none" 
                          title="Web Content"
                      />
                  </div>

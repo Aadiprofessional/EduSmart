@@ -542,10 +542,11 @@ const StudyMaterialPage: React.FC = () => {
                         <FaTimes size={16} />
                     </button>
                     <StudyRightPanel 
-                        activeMethod={activeMethod} 
+                        activeMethod={activeMethod}
                         documentId={id} 
                         attachment={chatAttachment}
                         onClearAttachment={() => setChatAttachment(null)}
+                        hasNotes={Boolean(studySetData?.notes)}
                     />
                 </div>
             </div>

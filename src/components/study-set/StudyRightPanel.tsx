@@ -12,6 +12,7 @@ import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
 import 'katex/dist/katex.min.css';
 import { useLanguage } from '../../utils/LanguageContext';
+import coinIcon from '../../assets/assets_coin.png';
 
 // --- Types ---
 
@@ -57,6 +58,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
     const { user } = useAuth();
     const { t } = useLanguage();
     const inputRef = useRef<HTMLInputElement>(null);
+    const cost = 1;
 
     // Focus input when attachment is added
     useEffect(() => {
@@ -417,6 +419,12 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
                        disabled={isProcessing}
                        className="w-full bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl py-3 pl-4 pr-12 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-600 focus:outline-none focus:border-indigo-500 dark:focus:border-white/20 disabled:opacity-50"
                     />
+                    {!isProcessing && inputValue.trim() && cost > 0 && (
+                        <span className="absolute bottom-9 right-0 z-10 inline-flex items-center gap-1 bg-[#ff5500] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                            -{cost}
+                            <img src={coinIcon} alt="coins" className="w-3 h-3" />
+                        </span>
+                    )}
                     <button 
                         onClick={handleSendMessage}
                         disabled={!inputValue.trim() || isProcessing}
@@ -437,9 +445,10 @@ interface StudyRightPanelProps {
     documentId?: string;
     attachment?: { type: 'text', content: string, source: string } | null;
     onClearAttachment?: () => void;
+    hasNotes?: boolean;
 }
 
-const StudyRightPanel: React.FC<StudyRightPanelProps> = ({ activeMethod, documentId, attachment, onClearAttachment }) => {
+const StudyRightPanel: React.FC<StudyRightPanelProps> = ({ activeMethod, documentId, attachment, onClearAttachment, hasNotes = false }) => {
     const { t } = useLanguage();
     const [activeTab, setActiveTab] = useState<'chat' | 'content' | 'notes'>('chat');
     // Initialize width based on screen size, max 450px on desktop, full width on mobile
@@ -505,25 +514,17 @@ const StudyRightPanel: React.FC<StudyRightPanelProps> = ({ activeMethod, documen
         };
     }, [isResizing]);
 
-    // Handle tab switching logic based on activeMethod
+    const showNotesTab = activeMethod === 'content' && hasNotes;
+    const showContentTab = activeMethod !== 'content' || !hasNotes;
+
     useEffect(() => {
-        // If the current tab becomes invalid for the new method, switch it
-        if (activeMethod === 'content' && activeTab === 'content') {
-            setActiveTab('notes');
-        } else if (activeMethod !== 'content' && activeTab === 'notes') {
+        if (!showNotesTab && activeTab === 'notes') {
             setActiveTab('content');
         }
-    }, [activeMethod, activeTab]);
-
-    const handleSecondTabClick = () => {
-        if (activeMethod === 'content') {
+        if (!showContentTab && activeTab === 'content') {
             setActiveTab('notes');
-        } else {
-            setActiveTab('content');
         }
-    };
-
-    const isSecondTabActive = activeTab === 'content' || activeTab === 'notes';
+    }, [showNotesTab, showContentTab, activeTab]);
 
     return (
         <aside 
@@ -549,23 +550,37 @@ const StudyRightPanel: React.FC<StudyRightPanelProps> = ({ activeMethod, documen
                 >
                     {t('studyRightPanel.chatTab')}
                 </button>
-                <button 
-                    onClick={handleSecondTabClick}
-                    className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${
-                        isSecondTabActive
-                        ? 'border-indigo-500 text-indigo-600 dark:text-white' 
-                        : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                    }`}
-                >
-                    {activeMethod === 'content' ? t('studyRightPanel.notesTab') : t('studyRightPanel.contentTab')}
-                </button>
+                {showContentTab && (
+                    <button 
+                        onClick={() => setActiveTab('content')}
+                        className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${
+                            activeTab === 'content'
+                            ? 'border-indigo-500 text-indigo-600 dark:text-white' 
+                            : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                        }`}
+                    >
+                        {t('studyRightPanel.contentTab')}
+                    </button>
+                )}
+                {showNotesTab && (
+                    <button 
+                        onClick={() => setActiveTab('notes')}
+                        className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${
+                            activeTab === 'notes'
+                            ? 'border-indigo-500 text-indigo-600 dark:text-white' 
+                            : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                        }`}
+                    >
+                        {t('studyRightPanel.notesTab')}
+                    </button>
+                )}
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto bg-white dark:bg-[#111111]">
+            <div className="flex-1 min-h-0 bg-white dark:bg-[#111111]">
                 {activeTab === 'chat' && <ChatPanel documentId={documentId} attachment={attachment} onClearAttachment={onClearAttachment} />}
-                {activeTab === 'content' && <div className="p-6"><StudyContent /></div>}
-                {activeTab === 'notes' && <div className="p-0 h-full"><StudyNotes /></div>}
+                {activeTab === 'content' && showContentTab && <div className="h-full min-h-0"><StudyContent /></div>}
+                {activeTab === 'notes' && showNotesTab && <div className="h-full min-h-0"><StudyNotes /></div>}
             </div>
         </aside>
     );
