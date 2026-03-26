@@ -131,6 +131,7 @@ export const zhCN = {
       orContinueWith: "或继续使用",
       joinMatrixEduAndGet: "加入MatrixEdu并获得：",
       socialLoginError: "登录失败。请重试。",
+      confirmEmailToLogin: "请先确认您的邮箱后再登录。",
       // Feature descriptions for login page
       features: {
         aiPoweredLearning: {

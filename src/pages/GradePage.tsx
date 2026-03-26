@@ -14,6 +14,7 @@ import rehypeRaw from 'rehype-raw';
 import 'katex/dist/katex.min.css';
 import coinIcon from '../assets/assets_coin.png';
 import { useLanguage } from '../utils/LanguageContext';
+import { useResponseCheck, ResponseUpgradeModal } from '../utils/responseChecker';
 
 // Type definitions for PDF.js
 interface PDFPageProxy {
@@ -119,8 +120,12 @@ const GradePage: React.FC = () => {
   const [pastedContent, setPastedContent] = useState('');
   const [pdfPageCount, setPdfPageCount] = useState(0);
   const [paperPdfPageCount, setPaperPdfPageCount] = useState(0);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState('');
+  const [upgradeCtaType, setUpgradeCtaType] = useState<'coins' | 'subscription'>('subscription');
   
   const { user } = useAuth();
+  const { checkAndUseResponse } = useResponseCheck();
   
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -266,6 +271,23 @@ const GradePage: React.FC = () => {
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
+      const responseCheck = await checkAndUseResponse({
+        responseType: 'paper_grader_upload_access',
+        queryData: { type: 'file_upload' },
+        consumeCredits: false
+      });
+      if (!responseCheck.canProceed) {
+        if (responseCheck.showUpgradeModal) {
+          setUpgradeMessage(responseCheck.message || 'You need an active subscription or coins to upload files.');
+          setUpgradeCtaType(responseCheck.ctaType || 'subscription');
+          setShowUpgradeModal(true);
+        }
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        return;
+      }
+
       const file = e.target.files[0];
       const allowedTypes = [
         'image/jpeg', 
@@ -331,6 +353,23 @@ const GradePage: React.FC = () => {
 
   const handlePaperSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
+      const responseCheck = await checkAndUseResponse({
+        responseType: 'paper_grader_upload_access',
+        queryData: { type: 'paper_upload' },
+        consumeCredits: false
+      });
+      if (!responseCheck.canProceed) {
+        if (responseCheck.showUpgradeModal) {
+          setUpgradeMessage(responseCheck.message || 'You need an active subscription or coins to upload files.');
+          setUpgradeCtaType(responseCheck.ctaType || 'subscription');
+          setShowUpgradeModal(true);
+        }
+        if (paperInputRef.current) {
+          paperInputRef.current.value = '';
+        }
+        return;
+      }
+
       const file = e.target.files[0];
       const allowedTypes = [
         'application/pdf',
@@ -531,6 +570,24 @@ const GradePage: React.FC = () => {
     const fileToSend = manualFile || attachedFile;
     
     if (!contentToSend.trim() && !fileToSend) return;
+    const responseCheck = await checkAndUseResponse({
+      responseType: 'paper_grader',
+      queryData: {
+        message: contentToSend,
+        hasAttachment: !!fileToSend,
+        hasRubric: !!manualRubric
+      },
+      requireCoins: true,
+      noCoinsMessage: 'Please buy more coins to continue.'
+    });
+    if (!responseCheck.canProceed) {
+      if (responseCheck.showUpgradeModal) {
+        setUpgradeMessage(responseCheck.message || 'You need an active subscription or coins to continue.');
+        setUpgradeCtaType(responseCheck.ctaType || 'subscription');
+        setShowUpgradeModal(true);
+      }
+      return;
+    }
 
     if (!chatStarted) {
       setChatStarted(true);
@@ -1404,6 +1461,12 @@ const GradePage: React.FC = () => {
           </div>
         </div>
       )}
+      <ResponseUpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        message={upgradeMessage}
+        ctaType={upgradeCtaType}
+      />
       </main>
     </div>
   );

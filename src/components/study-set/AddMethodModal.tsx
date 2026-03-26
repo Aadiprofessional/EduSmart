@@ -16,6 +16,7 @@ import { BaseModal } from '../dashboard/DashboardModals';
 import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
 import { useLanguage } from '../../utils/LanguageContext';
+import { useResponseCheck, ResponseUpgradeModal } from '../../utils/responseChecker';
 
 interface AddMethodModalProps {
     isOpen: boolean;
@@ -40,11 +41,15 @@ const allMethods = [
 export const AddMethodModal: React.FC<AddMethodModalProps> = ({ isOpen, onClose, studySetData, documentId, onMethodAdded }) => {
     const { user } = useAuth();
     const { t } = useLanguage();
+    const { checkAndUseResponse } = useResponseCheck();
     const [step, setStep] = useState<'selection' | 'summary'>('selection');
     const [selectedMethods, setSelectedMethods] = useState<string[]>([]);
     const [userCoins, setUserCoins] = useState<number>(0);
     const [isGenerating, setIsGenerating] = useState(false);
     const [documentText, setDocumentText] = useState<string>('');
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+    const [upgradeMessage, setUpgradeMessage] = useState('');
+    const [upgradeCtaType, setUpgradeCtaType] = useState<'coins' | 'subscription'>('subscription');
 
     // Fetch user coins and document text
     useEffect(() => {
@@ -113,8 +118,28 @@ export const AddMethodModal: React.FC<AddMethodModalProps> = ({ isOpen, onClose,
 
     const handleGenerate = async () => {
         const cost = calculateCost();
+        const responseCheck = await checkAndUseResponse({
+            responseType: 'study_set_add_method',
+            queryData: {
+                documentId,
+                selectedMethods,
+                cost
+            },
+            requireCoins: true,
+            noCoinsMessage: 'Please buy more coins to continue.'
+        });
+        if (!responseCheck.canProceed) {
+            if (responseCheck.showUpgradeModal) {
+                setUpgradeMessage(responseCheck.message || 'Please buy more coins to continue.');
+                setUpgradeCtaType(responseCheck.ctaType || 'coins');
+                setShowUpgradeModal(true);
+            }
+            return;
+        }
         if (userCoins < cost) {
-            alert(t('addMethodModal.insufficientBalance'));
+            setUpgradeMessage(t('addMethodModal.insufficientBalance'));
+            setUpgradeCtaType('subscription');
+            setShowUpgradeModal(true);
             return;
         }
 
@@ -165,13 +190,14 @@ export const AddMethodModal: React.FC<AddMethodModalProps> = ({ isOpen, onClose,
     };
 
     return (
-        <BaseModal
-            isOpen={isOpen}
-            onClose={onClose}
-            title={step === 'selection' ? t('addMethodModal.addStudyMethod') : t('addMethodModal.summary')}
-            subtitle={step === 'selection' ? t('addMethodModal.selectAdditionalMethods') : t('addMethodModal.reviewSelection')}
-        >
-            <div className="space-y-6">
+        <>
+            <BaseModal
+                isOpen={isOpen}
+                onClose={onClose}
+                title={step === 'selection' ? t('addMethodModal.addStudyMethod') : t('addMethodModal.summary')}
+                subtitle={step === 'selection' ? t('addMethodModal.selectAdditionalMethods') : t('addMethodModal.reviewSelection')}
+            >
+                <div className="space-y-6">
                 {step === 'selection' ? (
                     <>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto p-2">
@@ -268,10 +294,10 @@ export const AddMethodModal: React.FC<AddMethodModalProps> = ({ isOpen, onClose,
                             </button>
                             <button
                                 onClick={handleGenerate}
-                                disabled={isGenerating || userCoins < calculateCost()}
+                                disabled={isGenerating}
                                 className={`
                                     px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2
-                                    ${isGenerating || userCoins < calculateCost()
+                                    ${isGenerating
                                         ? 'bg-gray-100 dark:bg-white/5 text-gray-400 cursor-not-allowed'
                                         : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20'
                                     }
@@ -292,7 +318,14 @@ export const AddMethodModal: React.FC<AddMethodModalProps> = ({ isOpen, onClose,
                         </div>
                     </>
                 )}
-            </div>
-        </BaseModal>
+                </div>
+            </BaseModal>
+            <ResponseUpgradeModal
+                isOpen={showUpgradeModal}
+                onClose={() => setShowUpgradeModal(false)}
+                message={upgradeMessage}
+                ctaType={upgradeCtaType}
+            />
+        </>
     );
 };

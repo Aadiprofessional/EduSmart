@@ -14,6 +14,7 @@ import rehypeRaw from 'rehype-raw';
 import 'katex/dist/katex.min.css'; // Ensure katex CSS is imported for math rendering
 import coinIcon from '../assets/assets_coin.png';
 import { useLanguage } from '../utils/LanguageContext';
+import { useResponseCheck, ResponseUpgradeModal } from '../utils/responseChecker';
 
 // Type definitions for PDF.js
 interface PDFPageProxy {
@@ -167,6 +168,10 @@ const SolvePage: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const ITEMS_PER_PAGE = 10;
+  const { checkAndUseResponse } = useResponseCheck();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState('');
+  const [upgradeCtaType, setUpgradeCtaType] = useState<'coins' | 'subscription'>('subscription');
   
   const { user } = useAuth();
   
@@ -298,6 +303,23 @@ const SolvePage: React.FC = () => {
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
+      const responseCheck = await checkAndUseResponse({
+        responseType: 'solve_upload_access',
+        queryData: { type: 'file_upload' },
+        consumeCredits: false
+      });
+      if (!responseCheck.canProceed) {
+        if (responseCheck.showUpgradeModal) {
+          setUpgradeMessage(responseCheck.message || 'You need an active subscription or coins to upload files.');
+          setUpgradeCtaType(responseCheck.ctaType || 'subscription');
+          setShowUpgradeModal(true);
+        }
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        return;
+      }
+
       const file = e.target.files[0];
       const allowedTypes = [
         'image/jpeg', 
@@ -471,6 +493,24 @@ const SolvePage: React.FC = () => {
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() && !attachedFile) return;
+    const responseCheck = await checkAndUseResponse({
+      responseType: 'solve',
+      queryData: {
+        message: inputValue,
+        subject: selectedSubject,
+        hasAttachment: !!attachedFile
+      },
+      requireCoins: true,
+      noCoinsMessage: 'Please buy more coins to continue.'
+    });
+    if (!responseCheck.canProceed) {
+      if (responseCheck.showUpgradeModal) {
+        setUpgradeMessage(responseCheck.message || 'You need an active subscription or coins to continue.');
+        setUpgradeCtaType(responseCheck.ctaType || 'subscription');
+        setShowUpgradeModal(true);
+      }
+      return;
+    }
 
     if (!chatStarted) {
       setChatStarted(true);
@@ -1186,6 +1226,12 @@ const SolvePage: React.FC = () => {
           </div>
         </div>
       </div>
+      <ResponseUpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        message={upgradeMessage}
+        ctaType={upgradeCtaType}
+      />
       </div>
     </div>
   );

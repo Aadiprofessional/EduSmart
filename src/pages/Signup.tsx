@@ -4,7 +4,6 @@ import { FaEnvelope, FaLock, FaUserAlt, FaGoogle, FaApple, FaEye, FaEyeSlash, Fa
 import { useAuth } from '../utils/AuthContext';
 import { useLanguage } from '../utils/LanguageContext';
 import { motion } from 'framer-motion';
-import { useNotification } from '../utils/NotificationContext';
 
 const Signup: React.FC = () => {
   const navigate = useNavigate();
@@ -22,7 +21,6 @@ const Signup: React.FC = () => {
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const { showSuccess } = useNotification();
 
   // Particle animation configuration
   const particles = Array.from({ length: 50 }).map((_, i) => ({
@@ -103,9 +101,13 @@ const Signup: React.FC = () => {
         const { success, error } = await signUp(formData.email, formData.password, formData.name);
         
         if (success) {
-          // Show success message and redirect to login
-          showSuccess(t('auth.signup.accountCreated'));
-          navigate('/login');
+          navigate('/login', {
+            state: {
+              email: formData.email,
+              password: formData.password,
+              requireEmailConfirmation: true
+            }
+          });
         } else {
           setAuthError(error || t('auth.signup.signUpError'));
         }

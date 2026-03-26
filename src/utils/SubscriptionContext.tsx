@@ -120,7 +120,8 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
           subscription: null,
           addons: [],
           responsesRemaining: 5,
-          totalResponses: 5
+          totalResponses: 5,
+          current_coins: 0
         });
         return;
       }
@@ -138,7 +139,8 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
             subscription: newData.subscription,
             addons: newData.addons,
             responsesRemaining: newData.totalResponsesRemaining,
-            totalResponses: newData.subscription?.responses_total || 5
+            totalResponses: newData.subscription?.responses_total || 5,
+            current_coins: newData.subscription?.current_coins || 0
           });
         } catch (createError) {
           console.error('Error creating default subscription:', createError);
@@ -149,7 +151,8 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
             subscription: null,
             addons: [],
             responsesRemaining: 5,
-            totalResponses: 5
+            totalResponses: 5,
+            current_coins: 0
           });
         }
       } else {
@@ -159,7 +162,8 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
           subscription: supabaseData.subscription,
           addons: supabaseData.addons,
           responsesRemaining: supabaseData.totalResponsesRemaining,
-          totalResponses: supabaseData.subscription?.responses_total || supabaseData.totalResponsesRemaining
+          totalResponses: supabaseData.subscription?.responses_total || supabaseData.totalResponsesRemaining,
+          current_coins: supabaseData.subscription?.current_coins || 0
         });
       }
 
@@ -172,7 +176,8 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
         subscription: null,
         addons: [],
         responsesRemaining: 5,
-        totalResponses: 5
+        totalResponses: 5,
+        current_coins: 0
       });
     }
   };
@@ -192,6 +197,7 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
          isPro: subscriptionData.isPro,
          responsesRemaining: subscriptionData.totalResponsesRemaining,
          totalResponses: subscriptionData.subscription?.responses_total || subscriptionData.totalResponsesRemaining,
+         current_coins: subscriptionData.subscription?.current_coins || 0,
          addons: subscriptionData.addons,
          subscription: subscriptionData.subscription
        };

@@ -22,6 +22,7 @@ import { useNotification } from '../utils/NotificationContext';
 import SidebarLeft from '../components/dashboard/SidebarLeft';
 import { useLanguage } from '../utils/LanguageContext';
 import { API_BASE_URL } from '../config/api';
+import { useResponseCheck, ResponseUpgradeModal } from '../utils/responseChecker';
 
 const Humanizer: React.FC = () => {
   const { t } = useLanguage();
@@ -47,6 +48,7 @@ const Humanizer: React.FC = () => {
   ];
 
   const modes = ['Low', 'Medium', 'High', 'Aggressive'];
+  const selectClassName = "w-full appearance-none p-3 pl-4 pr-10 bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl text-sm text-gray-800 dark:text-gray-200 outline-none focus:border-indigo-500/30 focus:bg-white dark:focus:bg-[#222222] transition-all cursor-pointer shadow-sm hover:border-indigo-500/30 [color-scheme:light] dark:[color-scheme:dark] [&>option]:bg-white dark:[&>option]:bg-[#111111] [&>option]:text-gray-800 dark:[&>option]:text-gray-200";
 
   // Editor State
   const editorRef = useRef<HTMLDivElement>(null);
@@ -99,6 +101,10 @@ const Humanizer: React.FC = () => {
   };
 
   const { showSuccess, showError } = useNotification();
+  const { checkAndUseResponse } = useResponseCheck();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState('');
+  const [upgradeCtaType, setUpgradeCtaType] = useState<'coins' | 'subscription'>('subscription');
 
   const fonts = [
     { name: 'Sans Serif', value: 'Arial' },
@@ -196,6 +202,25 @@ const Humanizer: React.FC = () => {
     if (prompt.length > 10000) {
         showError(t('humanizer.characterLimitExceeded'));
         return;
+    }
+    const responseCheck = await checkAndUseResponse({
+      responseType: 'humanizer',
+      queryData: {
+        prompt,
+        tone,
+        mode,
+        detector
+      },
+      requireCoins: true,
+      noCoinsMessage: 'Please buy more coins to continue.'
+    });
+    if (!responseCheck.canProceed) {
+      if (responseCheck.showUpgradeModal) {
+        setUpgradeMessage(responseCheck.message || 'Please buy more coins to continue.');
+        setUpgradeCtaType(responseCheck.ctaType || 'coins');
+        setShowUpgradeModal(true);
+      }
+      return;
     }
     
     setIsGenerating(true);
@@ -461,10 +486,10 @@ const Humanizer: React.FC = () => {
                                 <select 
                                     value={detector}
                                     onChange={(e) => setDetector(e.target.value)}
-                                    className="w-full appearance-none p-3 pl-4 pr-10 bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/10 rounded-xl text-sm text-gray-800 dark:text-gray-200 outline-none focus:border-indigo-500/30 focus:bg-white dark:focus:bg-white/[0.05] transition-all cursor-pointer shadow-sm hover:border-indigo-500/30 capitalize"
+                                    className={`${selectClassName} capitalize`}
                                 >
                                     {supportedDetectors.map(d => (
-                                        <option key={d} value={d}>{d}</option>
+                                        <option key={d} value={d} className="bg-white dark:bg-[#111111] text-gray-800 dark:text-gray-200">{d}</option>
                                     ))}
                                 </select>
                                 <FaChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 text-xs pointer-events-none group-hover:text-indigo-400 transition-colors" />
@@ -478,10 +503,10 @@ const Humanizer: React.FC = () => {
                                 <select 
                                     value={mode}
                                     onChange={(e) => setMode(e.target.value)}
-                                    className="w-full appearance-none p-3 pl-4 pr-10 bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/10 rounded-xl text-sm text-gray-800 dark:text-gray-200 outline-none focus:border-indigo-500/30 focus:bg-white dark:focus:bg-white/[0.05] transition-all cursor-pointer shadow-sm hover:border-indigo-500/30"
+                                    className={selectClassName}
                                 >
                                     {modes.map(m => (
-                                        <option key={m} value={m}>{m}</option>
+                                        <option key={m} value={m} className="bg-white dark:bg-[#111111] text-gray-800 dark:text-gray-200">{m}</option>
                                     ))}
                                 </select>
                                 <FaChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 text-xs pointer-events-none group-hover:text-indigo-400 transition-colors" />
@@ -495,13 +520,13 @@ const Humanizer: React.FC = () => {
                                 <select 
                                     value={tone}
                                     onChange={(e) => setTone(e.target.value)}
-                                    className="w-full appearance-none p-3 pl-4 pr-10 bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/10 rounded-xl text-sm text-gray-800 dark:text-gray-200 outline-none focus:border-indigo-500/30 focus:bg-white dark:focus:bg-white/[0.05] transition-all cursor-pointer shadow-sm hover:border-indigo-500/30"
+                                    className={selectClassName}
                                 >
-                                    <option value="Standard">{t('humanizer.tones.standard')}</option>
-                                    <option value="Natural">{t('humanizer.tones.natural')}</option>
-                                    <option value="Professional">{t('humanizer.tones.professional')}</option>
-                                    <option value="Casual">{t('humanizer.tones.casual')}</option>
-                                    <option value="Academic">{t('humanizer.tones.academic')}</option>
+                                    <option value="Standard" className="bg-white dark:bg-[#111111] text-gray-800 dark:text-gray-200">{t('humanizer.tones.standard')}</option>
+                                    <option value="Natural" className="bg-white dark:bg-[#111111] text-gray-800 dark:text-gray-200">{t('humanizer.tones.natural')}</option>
+                                    <option value="Professional" className="bg-white dark:bg-[#111111] text-gray-800 dark:text-gray-200">{t('humanizer.tones.professional')}</option>
+                                    <option value="Casual" className="bg-white dark:bg-[#111111] text-gray-800 dark:text-gray-200">{t('humanizer.tones.casual')}</option>
+                                    <option value="Academic" className="bg-white dark:bg-[#111111] text-gray-800 dark:text-gray-200">{t('humanizer.tones.academic')}</option>
                                 </select>
                                 <FaChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 text-xs pointer-events-none group-hover:text-indigo-400 transition-colors" />
                             </div>
@@ -685,6 +710,12 @@ const Humanizer: React.FC = () => {
 
         </div>
       </main>
+      <ResponseUpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        message={upgradeMessage}
+        ctaType={upgradeCtaType}
+      />
     </div>
   );
 };

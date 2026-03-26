@@ -10,10 +10,12 @@ import { FaBars, FaFolder } from 'react-icons/fa';
 import { supabase } from '../utils/supabase';
 import { StudySet } from '../components/dashboard/StudySetCard';
 import { useLanguage } from '../utils/LanguageContext';
+import { useResponseCheck, ResponseUpgradeModal } from '../utils/responseChecker';
 
 const MatrixEduDashboard: React.FC = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const { checkAndUseResponse } = useResponseCheck();
   const navigate = useNavigate();
   const scrollRef = useRef<HTMLDivElement>(null);
   const studySetListRef = useRef<HTMLDivElement>(null);
@@ -24,6 +26,28 @@ const MatrixEduDashboard: React.FC = () => {
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(window.innerWidth >= 1024);
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(window.innerWidth >= 1280);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState('');
+  const [upgradeCtaType, setUpgradeCtaType] = useState<'coins' | 'subscription'>('subscription');
+
+  const handleOpenActionModal = async (modal: 'upload' | 'paste' | 'record') => {
+    const responseCheck = await checkAndUseResponse({
+      responseType: 'dashboard_upload_access',
+      queryData: { action: modal },
+      consumeCredits: false,
+      requireCoins: true,
+      noCoinsMessage: 'Please buy more coins to continue.'
+    });
+    if (!responseCheck.canProceed) {
+      if (responseCheck.showUpgradeModal) {
+        setUpgradeMessage(responseCheck.message || 'You need an active subscription or coins to continue.');
+        setUpgradeCtaType(responseCheck.ctaType || 'subscription');
+        setShowUpgradeModal(true);
+      }
+      return;
+    }
+    setActiveModal(modal);
+  };
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
       const scrollTop = e.currentTarget.scrollTop;
@@ -492,9 +516,9 @@ const MatrixEduDashboard: React.FC = () => {
                         <div className={`flex-1 mx-4 transition-all duration-300 ${isScrolled ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none absolute left-0 right-0'}`}>
                             {isScrolled && (
                                 <ActionCards 
-                                   onUpload={() => setActiveModal('upload')}
-                                   onPaste={() => setActiveModal('paste')}
-                                   onRecord={() => setActiveModal('record')}
+                                   onUpload={() => handleOpenActionModal('upload')}
+                                   onPaste={() => handleOpenActionModal('paste')}
+                                   onRecord={() => handleOpenActionModal('record')}
                                    isCompact={true}
                                 />
                             )}
@@ -523,9 +547,9 @@ const MatrixEduDashboard: React.FC = () => {
                 {/* Expanded Action Cards */}
                 <div className={`transition-all duration-300 ${isScrolled ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100 h-auto'}`}>
                     <ActionCards 
-                       onUpload={() => setActiveModal('upload')}
-                       onPaste={() => setActiveModal('paste')}
-                       onRecord={() => setActiveModal('record')}
+                       onUpload={() => handleOpenActionModal('upload')}
+                       onPaste={() => handleOpenActionModal('paste')}
+                       onRecord={() => handleOpenActionModal('record')}
                        isCompact={false}
                     />
                 </div>
@@ -608,6 +632,12 @@ const MatrixEduDashboard: React.FC = () => {
          folders={folders}
          onMove={handleMoveConfirm}
          documentTitle={documentToMove?.title}
+      />
+      <ResponseUpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        message={upgradeMessage}
+        ctaType={upgradeCtaType}
       />
     </div>
   );

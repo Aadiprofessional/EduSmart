@@ -131,6 +131,7 @@ export const en = {
       orSignInWith: "Or sign in with",
       joinMatrixEduAndGet: "Join MatrixEdu and get:",
       socialLoginError: "login failed. Please try again.",
+      confirmEmailToLogin: "Please confirm your email to log in.",
       // Feature descriptions for login page
       features: {
         aiPoweredLearning: {
@@ -753,6 +754,8 @@ export const en = {
     smartStudyPlannerDescription: "Create optimized study schedules with intelligent deadline management.",
     useHereBtn: "Use Here",
     gotoPlannerBtn: "Go to Planner",
+    generateStudyRoadmap: "Generate Study Roadmap",
+    generatingRoadmap: "Generating roadmap...",
     
     flashcardGeneratorTitle: "Flashcard Generator",
     flashcardsDescription: "Create interactive study flashcards from any content automatically",

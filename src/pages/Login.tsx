@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FaEnvelope, FaLock, FaGoogle, FaApple, FaEye, FaEyeSlash, FaRocket, FaMagic } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import { useAuth } from '../utils/AuthContext';
 import { useLanguage } from '../utils/LanguageContext';
+import { useNotification } from '../utils/NotificationContext';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { signIn, signInWithGoogle, signInWithApple } = useAuth();
   const { t } = useLanguage();
+  const { showInfo } = useNotification();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -32,6 +35,29 @@ const Login: React.FC = () => {
       document.body.style.backgroundColor = originalBackgroundColor;
     };
   }, []);
+
+  React.useEffect(() => {
+    const loginState = location.state as {
+      email?: string;
+      password?: string;
+      requireEmailConfirmation?: boolean;
+    } | null;
+
+    if (!loginState) {
+      return;
+    }
+
+    setFormData(prev => ({
+      email: loginState.email ?? prev.email,
+      password: loginState.password ?? prev.password
+    }));
+
+    if (loginState.requireEmailConfirmation) {
+      showInfo(t('auth.login.confirmEmailToLogin'));
+    }
+
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, location.state, navigate, showInfo, t]);
 
   // Animation for the "black hole" particles
   const particles = Array.from({ length: 50 }).map((_, i) => ({

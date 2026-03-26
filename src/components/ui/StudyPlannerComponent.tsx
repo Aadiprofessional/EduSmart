@@ -10,6 +10,7 @@ import { useAppData, StudyTask } from '../../utils/AppDataContext';
 import { useNotification } from '../../utils/NotificationContext';
 import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
+import { useResponseCheck, ResponseUpgradeModal } from '../../utils/responseChecker';
 import * as echarts from 'echarts';
 
 export interface StudyPlannerHistory {
@@ -159,6 +160,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
   const { t } = useLanguage();
   const { showSuccess, showError, showWarning } = useNotification();
   const { user } = useAuth();
+  const { checkAndUseResponse } = useResponseCheck();
   const { studyTasks, addStudyTask, updateStudyTask, deleteStudyTask, setReminder, unsetReminder, refreshData, isLoading } = useAppData();
   
   const [newTask, setNewTask] = useState({
@@ -222,6 +224,9 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
   const [customPrompt, setCustomPrompt] = useState('');
   const [isGeneratingSuggestion, setIsGeneratingSuggestion] = useState(false);
   const [showRoadmapResultModal, setShowRoadmapResultModal] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState('');
+  const [upgradeCtaType, setUpgradeCtaType] = useState<'coins' | 'subscription'>('subscription');
   const [aiSuggestionResult, setAiSuggestionResult] = useState<{
     priorityMatrix?: Array<{
       category: string; 
@@ -886,6 +891,24 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const responseCheck = await checkAndUseResponse({
+      responseType: 'study_planner_upload_access',
+      queryData: { type: 'file_upload' },
+      consumeCredits: false,
+      requireCoins: true,
+      noCoinsMessage: 'Please buy more coins to continue.'
+    });
+    if (!responseCheck.canProceed) {
+      if (responseCheck.showUpgradeModal) {
+        setUpgradeMessage(responseCheck.message || 'You need an active subscription or coins to upload files.');
+        setUpgradeCtaType(responseCheck.ctaType || 'subscription');
+        setShowUpgradeModal(true);
+      }
+      if (e.target) {
+        e.target.value = '';
+      }
+      return;
+    }
 
     // Check file type (only images for now)
     if (!file.type.startsWith('image/')) {
@@ -979,6 +1002,23 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
 
   const processWithAI = async () => {
     if (!uploadedFile) return;
+    const responseCheck = await checkAndUseResponse({
+      responseType: 'study_planner_analysis',
+      queryData: {
+        hasUploadedFile: true,
+        hasExtractedText: !!uploadedFile.extractedText
+      },
+      requireCoins: true,
+      noCoinsMessage: 'Please buy more coins to continue.'
+    });
+    if (!responseCheck.canProceed) {
+      if (responseCheck.showUpgradeModal) {
+        setUpgradeMessage(responseCheck.message || 'You need an active subscription or coins to continue.');
+        setUpgradeCtaType(responseCheck.ctaType || 'subscription');
+        setShowUpgradeModal(true);
+      }
+      return;
+    }
 
     try {
       setIsProcessingAI(true);
@@ -1142,6 +1182,25 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
 
   // AI Suggestion Functions
   const generateAISuggestion = async () => {
+    const responseCheck = await checkAndUseResponse({
+      responseType: 'study_planner_roadmap',
+      queryData: {
+        startDate: suggestionDateRange.startDate,
+        endDate: suggestionDateRange.endDate,
+        hasCustomPrompt: !!customPrompt.trim()
+      },
+      requireCoins: true,
+      noCoinsMessage: 'Please buy more coins to continue.'
+    });
+    if (!responseCheck.canProceed) {
+      if (responseCheck.showUpgradeModal) {
+        setUpgradeMessage(responseCheck.message || 'You need an active subscription or coins to continue.');
+        setUpgradeCtaType(responseCheck.ctaType || 'subscription');
+        setShowUpgradeModal(true);
+      }
+      return;
+    }
+
     try {
       setIsGeneratingSuggestion(true);
       
@@ -3047,6 +3106,12 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
           </PortalModal>
         )}
       </AnimatePresence>
+      <ResponseUpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        message={upgradeMessage}
+        ctaType={upgradeCtaType}
+      />
     </motion.div>
   );
 });

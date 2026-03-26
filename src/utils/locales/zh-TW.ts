@@ -237,6 +237,7 @@ export const zhTW = {
       orContinueWith: "或繼續使用",
       joinMatrixEduAndGet: "加入MatrixEdu並獲得：",
       socialLoginError: "登入失敗。請重試。",
+      confirmEmailToLogin: "請先確認您的電子郵件後再登入。",
       // Feature descriptions for login page
       features: {
         aiPoweredLearning: {

@@ -21,6 +21,7 @@ import IconComponent from '../components/ui/IconComponent';
 import { useNotification } from '../utils/NotificationContext';
 import SidebarLeft from '../components/dashboard/SidebarLeft';
 import { useLanguage } from '../utils/LanguageContext';
+import { useResponseCheck, ResponseUpgradeModal } from '../utils/responseChecker';
 
 const ContentWriter: React.FC = () => {
   const { t } = useLanguage();
@@ -85,6 +86,9 @@ const ContentWriter: React.FC = () => {
   };
 
   const { showSuccess, showError } = useNotification();
+  const { checkAndUseResponse } = useResponseCheck();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState('');
 
   const fonts = [
     { name: 'Sans Serif', value: 'Arial' },
@@ -173,6 +177,22 @@ const ContentWriter: React.FC = () => {
 
   const handleGenerateContent = async () => {
     if (!prompt.trim()) return;
+    const responseCheck = await checkAndUseResponse({
+      responseType: 'content_writer',
+      queryData: {
+        prompt,
+        template: activeTemplate,
+        tone,
+        targetWordCount
+      }
+    });
+    if (!responseCheck.canProceed) {
+      if (responseCheck.showUpgradeModal) {
+        setUpgradeMessage(responseCheck.message || 'You need an active subscription or coins to continue.');
+        setShowUpgradeModal(true);
+      }
+      return;
+    }
     
     setIsGenerating(true);
     setEditedContent(''); // Clear for streaming
@@ -811,6 +831,11 @@ const ContentWriter: React.FC = () => {
           </>
         )}
       </AnimatePresence>
+      <ResponseUpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        message={upgradeMessage}
+      />
     </div>
   );
 };

@@ -250,6 +250,7 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
   const { checkAndUseResponse } = useResponseCheck();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState('');
+  const [upgradeCtaType, setUpgradeCtaType] = useState<'coins' | 'subscription'>('subscription');
   const { showSuccess } = useNotification();
 
   // Helper to upload file to Supabase
@@ -946,8 +947,27 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
+      const responseCheck = await checkAndUseResponse({
+        responseType: 'homework_upload_access',
+        queryData: { type: 'file_upload' },
+        consumeCredits: false,
+        requireCoins: true,
+        noCoinsMessage: 'Please buy more coins to continue.'
+      });
+      if (!responseCheck.canProceed) {
+        if (responseCheck.showUpgradeModal) {
+          setUpgradeMessage(responseCheck.message || 'You need an active subscription or coins to upload files.');
+          setUpgradeCtaType(responseCheck.ctaType || 'subscription');
+          setShowUpgradeModal(true);
+        }
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        return;
+      }
+
       if (e.target.files.length > 1) {
         // Multiple files selected
         const files = Array.from(e.target.files);
@@ -981,6 +1001,25 @@ const UploadHomeworkComponent: React.FC<UploadHomeworkComponentProps> = ({ class
   const handleGetAnswer = async () => {
     // Prevent multiple clicks
     if (loading || isProcessingStarted) return;
+    const responseCheck = await checkAndUseResponse({
+      responseType: 'homework_solver',
+      queryData: {
+        question,
+        fileName: file?.name,
+        fileType: file?.type,
+        pageCount: documentPages.length
+      },
+      requireCoins: true,
+      noCoinsMessage: 'Please buy more coins to continue.'
+    });
+    if (!responseCheck.canProceed) {
+      if (responseCheck.showUpgradeModal) {
+        setUpgradeMessage(responseCheck.message || 'You need an active subscription or coins to continue.');
+        setUpgradeCtaType(responseCheck.ctaType || 'subscription');
+        setShowUpgradeModal(true);
+      }
+      return;
+    }
     
     console.log('🚀 Starting handleGetAnswer (Webhook)');
     console.log('📝 Question:', question);
@@ -2536,6 +2575,7 @@ please give small bullet points of what knowlegde is needed to solve the problem
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         message={upgradeMessage}
+        ctaType={upgradeCtaType}
       />
     </div>
   );

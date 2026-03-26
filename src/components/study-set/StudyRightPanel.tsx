@@ -13,6 +13,7 @@ import rehypeRaw from 'rehype-raw';
 import 'katex/dist/katex.min.css';
 import { useLanguage } from '../../utils/LanguageContext';
 import coinIcon from '../../assets/assets_coin.png';
+import { useResponseCheck, ResponseUpgradeModal } from '../../utils/responseChecker';
 
 // --- Types ---
 
@@ -57,8 +58,12 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const { user } = useAuth();
     const { t } = useLanguage();
+    const { checkAndUseResponse } = useResponseCheck();
     const inputRef = useRef<HTMLInputElement>(null);
     const cost = 1;
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+    const [upgradeMessage, setUpgradeMessage] = useState('');
+    const [upgradeCtaType, setUpgradeCtaType] = useState<'coins' | 'subscription'>('subscription');
 
     // Focus input when attachment is added
     useEffect(() => {
@@ -120,6 +125,24 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
 
     const handleSendMessage = async () => {
         if ((!inputValue.trim() && !attachment) || !documentId) return;
+        const responseCheck = await checkAndUseResponse({
+            responseType: 'study_right_panel_chat',
+            queryData: {
+                documentId,
+                messageLength: inputValue.trim().length,
+                hasAttachment: !!attachment
+            },
+            requireCoins: true,
+            noCoinsMessage: 'Please buy more coins to continue.'
+        });
+        if (!responseCheck.canProceed) {
+            if (responseCheck.showUpgradeModal) {
+                setUpgradeMessage(responseCheck.message || 'Please buy more coins to continue.');
+                setUpgradeCtaType(responseCheck.ctaType || 'coins');
+                setShowUpgradeModal(true);
+            }
+            return;
+        }
 
         const messageContent = inputValue.trim();
         // Combine attachment with message for the AI
@@ -434,6 +457,12 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
                     </button>
                 </div>
             </div>
+            <ResponseUpgradeModal
+                isOpen={showUpgradeModal}
+                onClose={() => setShowUpgradeModal(false)}
+                message={upgradeMessage}
+                ctaType={upgradeCtaType}
+            />
         </div>
     );
 };

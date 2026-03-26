@@ -182,6 +182,7 @@ export interface SubscriptionStatus {
   addons: UserAddon[];
   responsesRemaining: number;
   totalResponses: number;
+  current_coins?: number;
 }
 
 // Subscription API functions

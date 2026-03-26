@@ -133,6 +133,7 @@ function App() {
                       <Route path="/scholarships" element={<Scholarships />} />
                       <Route path="/scholarship-finder" element={<Scholarships />} />
                       <Route path="/pricing" element={<PricingPage />} />
+                      <Route path="/subscription" element={<PricingPage />} />
                       <Route path="/subscription/buy/:planId" element={
                         <ProtectedRoute>
                           <BuySubscriptionPage />
