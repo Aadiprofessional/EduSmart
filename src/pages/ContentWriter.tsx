@@ -221,50 +221,89 @@ const ContentWriter: React.FC = () => {
       let done = false;
       let accumulatedRaw = '';
       let accumulatedMarkdown = '';
-      
-      while (!done) {
-          const { value, done: doneReading } = await reader.read();
-          done = doneReading;
-          if (value) {
-              const chunkValue = decoder.decode(value, { stream: true });
-              accumulatedRaw += chunkValue;
-              
-              // Split by potential JSON boundaries
-              const parts = accumulatedRaw.split(/(?<=})\s*(?=\{)/);
-              
-              // If not done, keep the last part in buffer
-              const partsToProcess = done ? parts : parts.slice(0, -1);
-              
-              if (!done) {
-                  accumulatedRaw = parts[parts.length - 1];
-              } else {
-                  accumulatedRaw = '';
-              }
 
-              for (const part of partsToProcess) {
-                  try {
-                      const parsed = JSON.parse(part);
-                      // Extract content based on n8n response structure
-                      if (parsed.type === 'item' && parsed.content) {
-                          accumulatedMarkdown += parsed.content;
-                      } else if (parsed.content) {
-                          accumulatedMarkdown += parsed.content;
-                      }
-                  } catch (e) {
-                      // Skip invalid chunks
-                  }
-              }
-              
-              const htmlContent = renderToStaticMarkup(
-                <ReactMarkdown 
-                    remarkPlugins={[remarkGfm, remarkMath]} 
-                    rehypePlugins={[rehypeRaw, rehypeKatex]}
-                >
-                    {accumulatedMarkdown}
-                </ReactMarkdown>
-              );
-              setEditedContent(htmlContent);
+      const updateEditorWithMarkdown = () => {
+        const htmlContent = renderToStaticMarkup(
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm, remarkMath]}
+            rehypePlugins={[rehypeRaw, rehypeKatex]}
+          >
+            {accumulatedMarkdown}
+          </ReactMarkdown>
+        );
+        setEditedContent(htmlContent);
+      };
+
+      const extractTextFromPayload = (payload: string): string | null => {
+        const cleaned = payload.trim();
+        if (!cleaned || cleaned === '[DONE]') return '';
+
+        try {
+          const parsed = JSON.parse(cleaned);
+          if (typeof parsed === 'string') return parsed;
+          if (typeof parsed?.content === 'string') return parsed.content;
+          if (parsed?.type === 'item' && typeof parsed?.content === 'string') return parsed.content;
+          if (typeof parsed?.message?.content === 'string') return parsed.message.content;
+          if (typeof parsed?.delta?.content === 'string') return parsed.delta.content;
+          if (typeof parsed?.choices?.[0]?.delta?.content === 'string') return parsed.choices[0].delta.content;
+          if (typeof parsed?.choices?.[0]?.message?.content === 'string') return parsed.choices[0].message.content;
+          if (typeof parsed?.output === 'string') return parsed.output;
+          if (typeof parsed?.text === 'string') return parsed.text;
+          return '';
+        } catch {
+          return null;
+        }
+      };
+
+      const appendContent = (content: string) => {
+        if (!content) return false;
+        accumulatedMarkdown += content;
+        updateEditorWithMarkdown();
+        return true;
+      };
+
+      while (!done) {
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        if (!value) continue;
+
+        const chunkValue = decoder.decode(value, { stream: true });
+        let appendedInThisChunk = false;
+        accumulatedRaw += chunkValue;
+
+        const lines = accumulatedRaw.split('\n');
+        accumulatedRaw = done ? '' : (lines.pop() || '');
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+
+          const payload = trimmed.startsWith('data:') ? trimmed.slice(5).trim() : trimmed;
+          const extracted = extractTextFromPayload(payload);
+
+          if (extracted === null) continue;
+          if (appendContent(extracted)) {
+            appendedInThisChunk = true;
           }
+        }
+
+        if (!appendedInThisChunk) {
+          const directText = extractTextFromPayload(chunkValue);
+          if (directText === null) {
+            appendContent(chunkValue);
+          } else {
+            appendContent(directText);
+          }
+        }
+      }
+
+      if (accumulatedRaw.trim()) {
+        const tailContent = extractTextFromPayload(accumulatedRaw);
+        if (tailContent === null) {
+          appendContent(accumulatedRaw);
+        } else {
+          appendContent(tailContent);
+        }
       }
       
       setHasUnsavedChanges(true);
@@ -567,12 +606,12 @@ const ContentWriter: React.FC = () => {
                                     onClick={() => selectTemplate(template.id)}
                                     className={`p-4 rounded-xl border text-left transition-all group relative overflow-hidden flex flex-col gap-3 ${activeTemplate === template.id ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-white dark:bg-white/[0.02] border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/10 hover:bg-gray-50 dark:hover:bg-white/[0.04]'}`}
                                 >
-                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${activeTemplate === template.id ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30' : 'bg-white/5 text-gray-500 group-hover:bg-white/10 group-hover:text-gray-300'} transition-all duration-300`}>
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${activeTemplate === template.id ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30' : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-500 group-hover:bg-gray-200 dark:group-hover:bg-white/10 group-hover:text-gray-800 dark:group-hover:text-gray-300'} transition-all duration-300`}>
                                         <template.icon size={14} />
                                     </div>
                                     <div>
-                                        <span className={`block text-xs font-bold mb-0.5 ${activeTemplate === template.id ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}`}>{template.name}</span>
-                                        <span className="block text-[10px] text-gray-600 group-hover:text-gray-500">{t('contentWriter.clickToUse')}</span>
+                                        <span className={`block text-xs font-bold mb-0.5 ${activeTemplate === template.id ? 'text-indigo-700 dark:text-white' : 'text-gray-700 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200'}`}>{template.name}</span>
+                                        <span className="block text-[10px] text-gray-500 dark:text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-400">{t('contentWriter.clickToUse')}</span>
                                     </div>
                                 </button>
                             ))}
@@ -663,19 +702,7 @@ const ContentWriter: React.FC = () => {
                     <div className="max-w-4xl mx-auto w-full min-h-[800px] bg-white dark:bg-[#0f0f0f] border border-gray-200 dark:border-white/5 rounded-xl p-8 lg:p-12 shadow-2xl relative transition-all duration-500">
                         {/* Subtle paper texture/noise overlay could go here */}
                         
-                        {isGenerating ? (
-                            <div className="flex flex-col items-center justify-center py-32 opacity-0 animate-in fade-in duration-700 fill-mode-forwards">
-                                <div className="relative mb-8">
-                                    <div className="absolute inset-0 bg-indigo-500 blur-3xl opacity-20 rounded-full animate-pulse"></div>
-                                    <div className="relative w-20 h-20 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-3xl border border-white/10 backdrop-blur-md flex items-center justify-center shadow-inner">
-                                        <FaMagic className="text-3xl text-indigo-400 animate-pulse" />
-                                    </div>
-                                </div>
-                                <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 mb-3">{t('contentWriter.craftingYourMasterpiece')}</h2>
-                                <p className="text-gray-500 text-sm font-medium tracking-wide uppercase">{t('contentWriter.aiAnalyzingPatterns')}</p>
-                            </div>
-                        ) : (
-                            <>
+                        <>
                                 <style>{`
                                     .content-writer-editor { font-size: 1.125rem; color: #374151; line-height: 1.8; }
                                     .dark .content-writer-editor { color: #d4d4d8; }
@@ -701,6 +728,12 @@ const ContentWriter: React.FC = () => {
                                     .content-writer-editor img { max-width: 100%; border-radius: 0.75rem; margin: 2em 0; border: 1px solid #e5e7eb; }
                                     .dark .content-writer-editor img { border-color: #27272a; }
                                 `}</style>
+                                {isGenerating && (
+                                    <div className="absolute top-5 right-5 z-20 px-3 py-1 text-xs font-semibold rounded-full bg-indigo-500/10 text-indigo-500 dark:text-indigo-300 border border-indigo-500/20 backdrop-blur-sm flex items-center gap-2">
+                                        <FiRefreshCw className="animate-spin" />
+                                        <span>{t('contentWriter.contentWriterGenerating')}</span>
+                                    </div>
+                                )}
                                 <div 
                                     ref={editorRef}
                                     className="content-writer-editor focus:outline-none min-h-[600px] font-serif"
@@ -711,6 +744,18 @@ const ContentWriter: React.FC = () => {
                                         setHasUnsavedChanges(true);
                                     }}
                                 />
+                                {(!editedContent && isGenerating) && (
+                                    <div className="absolute top-0 left-0 right-0 bottom-0 flex flex-col items-center justify-center pointer-events-none">
+                                        <div className="relative mb-8">
+                                            <div className="absolute inset-0 bg-indigo-500 blur-3xl opacity-20 rounded-full animate-pulse"></div>
+                                            <div className="relative w-20 h-20 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-3xl border border-white/10 backdrop-blur-md flex items-center justify-center shadow-inner">
+                                                <FaMagic className="text-3xl text-indigo-400 animate-pulse" />
+                                            </div>
+                                        </div>
+                                        <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 mb-3">{t('contentWriter.craftingYourMasterpiece')}</h2>
+                                        <p className="text-gray-500 text-sm font-medium tracking-wide uppercase">{t('contentWriter.aiAnalyzingPatterns')}</p>
+                                    </div>
+                                )}
                                 {(!editedContent && !isGenerating) && (
                                     <div className="absolute top-12 left-12 right-12 pointer-events-none opacity-10 select-none">
                                         <h1 className="text-5xl font-bold text-gray-500 mb-8 font-serif">{t('contentWriter.historyUntitled')}</h1>
@@ -722,7 +767,6 @@ const ContentWriter: React.FC = () => {
                                     </div>
                                 )}
                             </>
-                        )}
                     </div>
                 </div>
 

@@ -58,6 +58,10 @@ const BuySubscriptionPage: React.FC = () => {
 
     try {
       if (paymentMethod === 'STRIPE') {
+        if (!plan.stripe_product_id) {
+          throw new Error('Stripe is not configured for this plan in production yet. Please contact support or use a different payment method.');
+        }
+
         const origin = window.location.origin;
         const successUrl = `${origin}/thank-you`;
         const cancelUrl = `${origin}/pricing`;

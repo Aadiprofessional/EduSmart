@@ -77,6 +77,7 @@ export interface SubscriptionPlan {
   type?: string;
   price: number;
   coins?: number;
+  stripe_product_id?: string | null;
   duration_days: number;
   response_limit?: number;
   is_active: boolean;
@@ -230,11 +231,51 @@ export const subscriptionAPI = {
   },
 
   createStripeCheckoutSession: async (planId: string, successUrl: string, cancelUrl: string, session?: Session | null): Promise<{ success: boolean; data?: { url: string; sessionId: string }; error?: string }> => {
-    return apiCall('POST', '/api/stripe/create-checkout-session', { 
+    const payload = {
       planId,
       successUrl,
       cancelUrl
-    }, session);
+    };
+
+    const endpoints = [
+      '/api/stripe/create-checkout-session',
+      '/api/stripe/checkout-session'
+    ];
+
+    let lastError = 'Failed to create Stripe checkout session';
+
+    for (const endpoint of endpoints) {
+      const response = await apiCall('POST', endpoint, payload, session);
+
+      if (response.success) {
+        const responseData = response.data || {};
+        const checkoutUrl = responseData.url || responseData.checkoutUrl || responseData.checkout_url;
+
+        if (checkoutUrl) {
+          return {
+            success: true,
+            data: {
+              url: checkoutUrl,
+              sessionId: responseData.sessionId || responseData.session_id || ''
+            }
+          };
+        }
+      }
+
+      lastError = response.error || lastError;
+
+      if (response.status !== 404) {
+        return {
+          success: false,
+          error: lastError
+        };
+      }
+    }
+
+    return {
+      success: false,
+      error: `${lastError}. Stripe checkout endpoint is not available in this environment. Tried endpoints: ${endpoints.join(', ')}`
+    };
   },
 
   // Authenticated endpoints

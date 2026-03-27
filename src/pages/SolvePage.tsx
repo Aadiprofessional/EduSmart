@@ -1121,7 +1121,7 @@ const SolvePage: React.FC = () => {
                              }
                            }}
                            placeholder={t('solvePage.askFollowUpQuestion')}
-                           className="w-full bg-transparent text-gray-300 placeholder-gray-500 focus:outline-none text-lg resize-none py-3 px-4 pr-16 min-h-[56px]"
+                          className="w-full bg-transparent text-gray-800 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none text-lg resize-none py-3 px-4 pr-16 min-h-[56px]"
                            rows={1}
                          />
                         {!isSendDisabled && cost > 0 && (

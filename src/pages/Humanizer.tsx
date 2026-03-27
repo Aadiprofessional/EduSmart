@@ -23,6 +23,7 @@ import SidebarLeft from '../components/dashboard/SidebarLeft';
 import { useLanguage } from '../utils/LanguageContext';
 import { API_BASE_URL } from '../config/api';
 import { useResponseCheck, ResponseUpgradeModal } from '../utils/responseChecker';
+import coinIcon from '../assets/assets_coin.png';
 
 const Humanizer: React.FC = () => {
   const { t } = useLanguage();
@@ -105,6 +106,7 @@ const Humanizer: React.FC = () => {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState('');
   const [upgradeCtaType, setUpgradeCtaType] = useState<'coins' | 'subscription'>('subscription');
+  const [humanizeCoinCost, setHumanizeCoinCost] = useState(40);
 
   const fonts = [
     { name: 'Sans Serif', value: 'Arial' },
@@ -252,15 +254,22 @@ const Humanizer: React.FC = () => {
       }
       
       const data = await response.json();
-      
-      // Assuming the API returns the humanized text in a field like 'humanized_text' or 'result' or just 'text'
-      // Since the user didn't specify the response format, I'll look for common fields
+      const humanization = data?.humanization || data?.data?.humanization;
+      const apiCoinCost = humanization?.coinCost || data?.coinCost;
+      if (typeof apiCoinCost === 'number' && apiCoinCost > 0) {
+        setHumanizeCoinCost(apiCoinCost);
+      }
+
       let generatedText = '';
-      if (data.humanized_text) generatedText = data.humanized_text;
-      else if (data.text) generatedText = data.text;
-      else if (data.result) generatedText = data.result;
+      if (humanization?.humanized_text) generatedText = humanization.humanized_text;
+      else if (data?.humanized_text) generatedText = data.humanized_text;
+      else if (data?.text) generatedText = data.text;
+      else if (data?.result) generatedText = data.result;
       else if (typeof data === 'string') generatedText = data;
-      else generatedText = JSON.stringify(data); // Fallback
+
+      if (!generatedText) {
+        throw new Error('Invalid humanizer response format');
+      }
 
       const htmlContent = renderToStaticMarkup(
         <ReactMarkdown 
@@ -426,7 +435,7 @@ const Humanizer: React.FC = () => {
             <div className="hidden lg:flex items-center gap-3">
                  <button 
                   onClick={() => setIsHistoryOpen(!isHistoryOpen)}
-                  className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-all ${isHistoryOpen ? 'bg-white/10 text-white' : ''}`}
+                  className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-all ${isHistoryOpen ? 'bg-gray-100 text-gray-900 dark:bg-white/10 dark:text-white' : ''}`}
                   title={t('common.history')}
                 >
                    <FaHistory size={14} />
@@ -536,27 +545,27 @@ const Humanizer: React.FC = () => {
                     {/* Toggles */}
                     <div className="flex flex-wrap gap-4 pt-2">
                         <label className="flex items-center gap-2 cursor-pointer group">
-                            <div className={`w-10 h-6 rounded-full p-1 transition-colors ${rephrase ? 'bg-indigo-600' : 'bg-white/10'}`}>
+                            <div className={`w-10 h-6 rounded-full p-1 transition-colors ${rephrase ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-white/10'}`}>
                                 <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform ${rephrase ? 'translate-x-4' : 'translate-x-0'}`} />
                             </div>
                             <input type="checkbox" checked={rephrase} onChange={e => setRephrase(e.target.checked)} className="hidden" />
-                            <span className="text-sm text-gray-400 group-hover:text-gray-200 transition-colors">{t('humanizer.rephrase')}</span>
+                            <span className="text-sm text-gray-700 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">{t('humanizer.rephrase')}</span>
                         </label>
 
                         <label className="flex items-center gap-2 cursor-pointer group">
-                            <div className={`w-10 h-6 rounded-full p-1 transition-colors ${business ? 'bg-indigo-600' : 'bg-white/10'}`}>
+                            <div className={`w-10 h-6 rounded-full p-1 transition-colors ${business ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-white/10'}`}>
                                 <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform ${business ? 'translate-x-4' : 'translate-x-0'}`} />
                             </div>
                             <input type="checkbox" checked={business} onChange={e => setBusiness(e.target.checked)} className="hidden" />
-                            <span className="text-sm text-gray-400 group-hover:text-gray-200 transition-colors">{t('humanizer.business')}</span>
+                            <span className="text-sm text-gray-700 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">{t('humanizer.business')}</span>
                         </label>
 
                         <label className="flex items-center gap-2 cursor-pointer group">
-                            <div className={`w-10 h-6 rounded-full p-1 transition-colors ${isMultilingual ? 'bg-indigo-600' : 'bg-white/10'}`}>
+                            <div className={`w-10 h-6 rounded-full p-1 transition-colors ${isMultilingual ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-white/10'}`}>
                                 <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform ${isMultilingual ? 'translate-x-4' : 'translate-x-0'}`} />
                             </div>
                             <input type="checkbox" checked={isMultilingual} onChange={e => setIsMultilingual(e.target.checked)} className="hidden" />
-                            <span className="text-sm text-gray-400 group-hover:text-gray-200 transition-colors">{t('humanizer.multilingual')}</span>
+                            <span className="text-sm text-gray-700 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">{t('humanizer.multilingual')}</span>
                         </label>
                     </div>
 
@@ -574,6 +583,12 @@ const Humanizer: React.FC = () => {
                             <>
                                 <FaMagic className="group-hover:rotate-12 transition-transform" />
                                 <span>{t('humanizer.humanizeText')}</span>
+                                {prompt.trim() && (
+                                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-white/95">
+                                        <span>-{humanizeCoinCost}</span>
+                                        <img src={coinIcon} alt="coins" className="w-3 h-3" />
+                                    </span>
+                                )}
                             </>
                         )}
                         

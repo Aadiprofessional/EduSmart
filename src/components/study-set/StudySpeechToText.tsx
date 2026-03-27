@@ -870,9 +870,9 @@ const StudySpeechToText: React.FC<StudySpeechToTextProps> = ({ onDiscuss, docume
                 // Try adding left
                 if (start > 0) {
                     const prevWord = transcript[start - 1];
-                    if (currentChars + prevWord.word.length + 1 <= MAX_CHARS) {
+                    if (currentChars + prevWord.word.length <= MAX_CHARS) {
                         start--;
-                        currentChars += prevWord.word.length + 1;
+                        currentChars += prevWord.word.length;
                         added = true;
                     }
                 }
@@ -880,9 +880,9 @@ const StudySpeechToText: React.FC<StudySpeechToTextProps> = ({ onDiscuss, docume
                 // Try adding right
                 if (end < transcript.length - 1) {
                     const nextWord = transcript[end + 1];
-                    if (currentChars + nextWord.word.length + 1 <= MAX_CHARS) {
+                    if (currentChars + nextWord.word.length <= MAX_CHARS) {
                         end++;
-                        currentChars += nextWord.word.length + 1;
+                        currentChars += nextWord.word.length;
                         added = true;
                     }
                 }
@@ -1157,7 +1157,7 @@ const StudySpeechToText: React.FC<StudySpeechToTextProps> = ({ onDiscuss, docume
                                 {/* Subtitles Overlay */}
                                 {currentSubtitle && (
                                     <div className={`absolute left-0 right-0 text-center pointer-events-none z-40 ${isCompact ? 'bottom-12 px-2' : 'bottom-16 px-4'}`}>
-                                        <div className="inline-flex flex-wrap justify-center gap-1 bg-black/60 px-3 py-1.5 rounded-lg backdrop-blur-sm shadow-sm">
+                                        <div className="inline-flex flex-wrap justify-center gap-0 bg-black/60 px-3 py-1.5 rounded-lg backdrop-blur-sm shadow-sm">
                                             {(currentSubtitle as any as Word[]).map((w, i) => {
                                                 const isCurrentWord = currentTime >= w.start && currentTime <= w.end;
                                                 return (
@@ -1234,7 +1234,7 @@ const StudySpeechToText: React.FC<StudySpeechToTextProps> = ({ onDiscuss, docume
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                const text = group.words.map(w => w.word).join(' ');
+                                                const text = group.words.map(w => w.word).join('');
                                                 const content = `Context from Speech to Text (${formatTime(group.start)} - ${formatTime(group.start + 30)}): "${text}"`;
                                                 onDiscuss(content);
                                             }}
@@ -1264,7 +1264,7 @@ const StudySpeechToText: React.FC<StudySpeechToTextProps> = ({ onDiscuss, docume
                                                 p: ({node, ...props}) => <span {...props} />
                                             }}
                                         >
-                                            {preprocessLaTeX(group.words.map(w => w.word).join(' '))}
+                                            {preprocessLaTeX(group.words.map(w => w.word).join(''))}
                                         </ReactMarkdown>
                                     </div>
                                 </div>

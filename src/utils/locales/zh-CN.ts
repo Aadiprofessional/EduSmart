@@ -978,6 +978,9 @@ export const zhCN = {
     // Study Planner Component
     aiImport: "AI导入",
     aiTimetableImport: "AI时间表导入",
+    aiImportProgressTitle: "AI 导入进行中",
+    aiImportApproxTime: "约 3 分钟",
+    aiImportProgressStatus: "预计剩余时间：{{seconds}} 秒",
 
     aiRoadmap: "AI路线图",
     priorityMatrix: "优先级矩阵",
@@ -1663,12 +1666,7 @@ export const zhCN = {
     angry: "生气",
     gaslighter: "PUA 风格",
     corny: "土味",
-    uploadAudioOrDocument: "上传音频或文档",
-    clickOrDragUpload: "点击或拖拽上传音频/文件",
-    supportedFormats: "支持 MP3、WAV、PDF、DOCX",
-    processing: "处理中...",
-    extractText: "提取文本",
-    extractedTextPreview: "提取文本预览：这是从 {{name}} 提取文本的模拟内容",
+    audioLanguage: "音频语言",
     clear: "清除",
     mindmapDepth: "思维导图深度",
     simple: "简单",
@@ -1716,7 +1714,7 @@ export const zhCN = {
       multipleChoice: "调整题目数量和难度",
       flashcards: "调整卡片数量和难度",
       podcast: "选择讲者和播客时长",
-      speechToText: "上传音频或文档以提取文本",
+      speechToText: "选择用于转写的音频语言",
       mindmap: "调整思维导图复杂度和风格"
     },
     loading: {

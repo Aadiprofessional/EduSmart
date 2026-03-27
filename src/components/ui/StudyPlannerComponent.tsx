@@ -213,6 +213,8 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
   const [uploadedFile, setUploadedFile] = useState<{ file: File; base64: string; extractedText: string; imageUrl?: string } | null>(null);
   const [isProcessingAI, setIsProcessingAI] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [aiImportProgress, setAiImportProgress] = useState(0);
+  const aiImportStartTimeRef = useRef<number | null>(null);
   const [aiAnalysisResult, setAiAnalysisResult] = useState<any>(null);
 
   // AI Suggestion state
@@ -928,6 +930,8 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
     }
 
     try {
+      setAiImportProgress(0);
+      aiImportStartTimeRef.current = null;
       setIsUploading(true);
 
       // 1. Upload to Supabase
@@ -1022,6 +1026,8 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
 
     try {
       setIsProcessingAI(true);
+      setAiImportProgress(0);
+      aiImportStartTimeRef.current = null;
 
       // Call Webhook if imageUrl is available
       if (uploadedFile.imageUrl && user) {
@@ -1122,7 +1128,31 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
     setShowAIModal(false);
     setUploadedFile(null);
     setAiAnalysisResult(null);
+    setAiImportProgress(0);
+    aiImportStartTimeRef.current = null;
   };
+
+  useEffect(() => {
+    const isAiImportActive = isUploading || isProcessingAI;
+    if (!isAiImportActive) {
+      setAiImportProgress(0);
+      aiImportStartTimeRef.current = null;
+      return;
+    }
+
+    if (aiImportStartTimeRef.current === null) {
+      aiImportStartTimeRef.current = Date.now();
+    }
+
+    const totalMilliseconds = 180000;
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - (aiImportStartTimeRef.current || Date.now());
+      const progress = Math.min((elapsed / totalMilliseconds) * 100, 95);
+      setAiImportProgress(progress);
+    }, 200);
+
+    return () => clearInterval(interval);
+  }, [isUploading, isProcessingAI]);
 
   // History functions
   const fetchHistory = async () => {
@@ -2254,12 +2284,30 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                           <p className="text-lg font-medium text-gray-900 dark:text-gray-300 mb-2">
                             {isUploading ? t('aiStudy.analyzing') : t('aiStudy.uploadTimetableImage')}
                           </p>
-                          <p className="text-gray-500 dark:text-gray-400 text-sm">
-                            {t('aiStudy.dragDropOrClickImage')}
-                          </p>
-                          <p className="text-gray-400 dark:text-gray-500 text-xs mt-2">
-                            {t('aiStudy.supportedImageFormats')}
-                          </p>
+                          {isUploading ? (
+                            <div className="mt-3 w-full max-w-md mx-auto">
+                              <p className="text-xs text-purple-600 dark:text-purple-300 font-medium mb-2">
+                                {t('aiStudy.aiImportApproxTime')}
+                              </p>
+                              <div className="w-full h-2 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
+                                <motion.div
+                                  className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${aiImportProgress}%` }}
+                                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <p className="text-gray-500 dark:text-gray-400 text-sm">
+                                {t('aiStudy.dragDropOrClickImage')}
+                              </p>
+                              <p className="text-gray-400 dark:text-gray-500 text-xs mt-2">
+                                {t('aiStudy.supportedImageFormats')}
+                              </p>
+                            </>
+                          )}
                         </div>
                       </label>
                     </div>
@@ -2305,6 +2353,27 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                         </div>
                       </div>
                     </div>
+
+                    {isProcessingAI && (
+                      <div className="bg-white dark:bg-[#1f1f23] rounded-xl p-4 border border-purple-200 dark:border-purple-500/30 shadow-sm dark:shadow-none">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                            {t('aiStudy.aiImportProgressTitle')}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {t('aiStudy.aiImportApproxTime')}
+                          </p>
+                        </div>
+                        <div className="w-full h-2 bg-gray-100 dark:bg-black/30 rounded-full overflow-hidden">
+                          <motion.div
+                            className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${aiImportProgress}%` }}
+                            transition={{ duration: 0.4, ease: 'easeOut' }}
+                          />
+                        </div>
+                      </div>
+                    )}
 
                     {/* AI Analysis Results */}
                     {aiAnalysisResult && (

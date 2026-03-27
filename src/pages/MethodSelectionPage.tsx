@@ -45,7 +45,7 @@ interface MethodConfig {
     podcast: { length: string; personality: string; host1: string; host2: string; language: string };
     writtenTests: { numQuestions: string; difficulty: string; customInstructions: string };
     fillBlanks: { numQuestions: string; difficulty: string; customInstructions: string };
-    speechToText: { file: File | null; extractedText: string | null };
+    speechToText: { audioLanguageCode: string; audioLanguageName: string };
     mindmap: { depth: string };
 }
 
@@ -56,7 +56,7 @@ const defaultMethodConfig: MethodConfig = {
     podcast: { length: 'auto', personality: 'default', host1: 'Random', host2: 'Random', language: 'english' },
     writtenTests: { numQuestions: 'auto', difficulty: 'auto', customInstructions: '' },
     fillBlanks: { numQuestions: 'auto', difficulty: 'auto', customInstructions: '' },
-    speechToText: { file: null, extractedText: null },
+    speechToText: { audioLanguageCode: 'en', audioLanguageName: 'English' },
     mindmap: { depth: 'medium' }
 };
 
@@ -729,78 +729,46 @@ const CustomizeFillBlanks: React.FC<{
 
 const CustomizeSpeechToText: React.FC<{ 
     config: MethodConfig['speechToText']; 
+    languages: { code: string; name: string; flag: string }[];
     onChange: (updates: Partial<MethodConfig['speechToText']>) => void;
     onClose: () => void;
-}> = ({ config, onChange, onClose }) => {
+}> = ({ config, languages, onChange, onClose }) => {
     const { t } = useLanguage();
-    const { file, extractedText } = config;
-    const [isProcessing, setIsProcessing] = useState(false);
+    const { audioLanguageCode } = config;
 
     const updateConfig = (updates: Partial<MethodConfig['speechToText']>) => {
         onChange(updates);
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            updateConfig({ 
-                file: e.target.files[0],
-                extractedText: null 
-            });
-        }
-    };
-
-    const handleProcess = () => {
-        if (!file) return;
-        setIsProcessing(true);
-        // Simulate processing
-        setTimeout(() => {
-            setIsProcessing(false);
-            updateConfig({ 
-                extractedText: t('methodSelection.extractedTextPreview', { values: { name: file.name } })
-            });
-        }, 2000);
-    };
-
     return (
         <div className="space-y-6">
             <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">{t('methodSelection.uploadAudioOrDocument')}</label>
-                <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-8 hover:border-[#c2410c] transition-colors cursor-pointer relative">
-                    <input 
-                        type="file" 
-                        onChange={handleFileChange} 
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        accept="audio/*,.pdf,.doc,.docx" 
-                    />
-                    <div className="text-center">
-                        <FaMicrophone className="mx-auto text-4xl text-gray-400 mb-4" />
-                        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-                            {file ? file.name : t('methodSelection.clickOrDragUpload')}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-2">{t('methodSelection.supportedFormats')}</p>
-                    </div>
+                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">{t('methodSelection.audioLanguage')}</label>
+                <div className="grid grid-cols-2 gap-3">
+                    {languages.map((lang) => (
+                        <button
+                            key={lang.code}
+                            onClick={() => updateConfig({ audioLanguageCode: lang.code, audioLanguageName: lang.name })}
+                            className={`flex items-center gap-2 p-3 rounded-xl border transition-all ${
+                                audioLanguageCode === lang.code
+                                ? 'bg-[#c2410c]/10 border-[#c2410c] text-[#c2410c]'
+                                : 'bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-[#252525]'
+                            }`}
+                        >
+                            <span className="text-lg">{lang.flag}</span>
+                            <span className="font-medium text-sm">{lang.name}</span>
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            {file && !extractedText && (
-                 <button 
-                    onClick={handleProcess}
-                    disabled={isProcessing}
-                    className="w-full py-3 bg-[#c2410c] hover:bg-[#9a3412] text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
-                 >
-                    {isProcessing ? <AiOutlineLoading3Quarters className="animate-spin" /> : <FaMicrophone />}
-                    {isProcessing ? t('methodSelection.processing') : t('methodSelection.extractText')}
-                 </button>
-            )}
-
-            {extractedText && (
-                <div className="bg-gray-50 dark:bg-white/5 p-4 rounded-xl text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-white/10">
-                    {extractedText}
-                </div>
-            )}
-
             <div className="flex justify-between items-center pt-2">
-                <button onClick={() => updateConfig({ file: null, extractedText: null })} className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-sm font-medium transition-colors">{t('methodSelection.clear')}</button>
+                <button
+                    onClick={() => updateConfig({ audioLanguageCode: 'en', audioLanguageName: 'English' })}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-sm font-medium transition-colors"
+                >
+                    {t('methodSelection.reset')}
+                </button>
                 <button onClick={onClose} className="bg-[#c2410c] hover:bg-[#9a3412] text-white px-6 py-2 rounded-lg font-bold transition-colors">{t('methodSelection.done')}</button>
             </div>
         </div>
@@ -887,7 +855,7 @@ const MethodSelectionPage: React.FC = () => {
     const [methodConfig, setMethodConfig] = useState<MethodConfig>(defaultMethodConfig);
     const [activeConfigMethod, setActiveConfigMethod] = useState<string | null>(null);
     const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
-    const [selectedLanguage, setSelectedLanguage] = useState({ code: 'US', name: 'English', flag: '🇺🇸' });
+    const [selectedLanguage, setSelectedLanguage] = useState({ code: 'en', name: 'English', flag: '🇺🇸' });
     const [isGenerating, setIsGenerating] = useState(false);
     const [step, setStep] = useState<'selection' | 'summary'>('selection');
     const [metaData, setMetaData] = useState<{ duration?: number; pageCount?: number }>({});
@@ -1050,14 +1018,10 @@ const MethodSelectionPage: React.FC = () => {
     };
 
     const languages = [
-        { code: 'US', name: 'English', flag: '🇺🇸' },
-        { code: 'ES', name: 'Spanish', flag: '🇪🇸' },
-        { code: 'FR', name: 'French', flag: '🇫🇷' },
-        { code: 'DE', name: 'German', flag: '🇩🇪' },
-        { code: 'IT', name: 'Italian', flag: '🇮🇹' },
-        { code: 'PT', name: 'Portuguese', flag: '🇵🇹' },
-        { code: 'CN', name: 'Chinese', flag: '🇨🇳' },
-        { code: 'JP', name: 'Japanese', flag: '🇯🇵' },
+        { code: 'en', name: 'English', flag: '🇺🇸' },
+        { code: 'yue', name: 'Chinese (Cantonese)', flag: '🇭🇰' },
+        { code: 'zh-Hant', name: 'Chinese (Traditional)', flag: '🇹🇼' },
+        { code: 'zh-Hans', name: 'Chinese (Simplified)', flag: '🇨🇳' },
     ];
 
     const methods = [
@@ -1123,6 +1087,8 @@ const MethodSelectionPage: React.FC = () => {
                     configuration: methodConfig,
                     selected_language: selectedLanguage.name,
                     selected_language_code: selectedLanguage.code,
+                    speech_to_text_language: methodConfig.speechToText.audioLanguageName,
+                    speech_to_text_language_code: methodConfig.speechToText.audioLanguageCode,
                     podcast_language: methodConfig.podcast.language,
                     podcast_hosts: [methodConfig.podcast.host1, methodConfig.podcast.host2],
                     mindmap: selectedMethods.includes('mindmap'),
@@ -1311,6 +1277,7 @@ const MethodSelectionPage: React.FC = () => {
             case 'speech-to-text':
                 return <CustomizeSpeechToText 
                     config={methodConfig.speechToText} 
+                    languages={languages}
                     onChange={(updates) => updateMethodConfig('speechToText', updates)} 
                     onClose={() => setActiveConfigMethod(null)} 
                 />;

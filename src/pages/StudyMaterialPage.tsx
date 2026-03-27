@@ -345,6 +345,8 @@ const StudyMaterialPage: React.FC = () => {
 
     // Determine title
     const title = studySetData?.document_name || (studySetData?.document_type ? studySetData.document_type.charAt(0).toUpperCase() + studySetData.document_type.slice(1) : (studySetData?.title || studySetData?.file_name || studySetData?.name || "Study Set"));
+    const TOP_TITLE_MAX_CHARS = 45;
+    const displayTitle = title.length > TOP_TITLE_MAX_CHARS ? `${title.slice(0, TOP_TITLE_MAX_CHARS)}...` : title;
 
     const methods = allMethods.filter(method => {
         if (!studySetData) return true; 
@@ -473,7 +475,7 @@ const StudyMaterialPage: React.FC = () => {
                         <button onClick={() => navigate('/dashboard')} className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hidden md:block">
                             <FaChevronLeft size={12} />
                         </button>
-                        <h1 className="font-bold text-lg truncate text-gray-900 dark:text-white">{title}</h1>
+                        <h1 className="font-bold text-lg truncate text-gray-900 dark:text-white" title={title}>{displayTitle}</h1>
                     </div>
                     
                     <div className="flex items-center gap-2 md:gap-4">

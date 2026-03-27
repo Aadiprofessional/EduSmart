@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FaUpload, FaFileAlt, FaChevronRight, FaArrowUp, FaExpand, FaDownload, FaFilePdf, FaCopy, FaRegEdit, FaHistory, FaTimes } from 'react-icons/fa';
+import { FaUpload, FaFileAlt, FaChevronRight, FaArrowUp, FaExpand, FaDownload, FaFilePdf, FaCopy, FaRegEdit, FaHistory, FaTimes, FaEllipsisV, FaTrash } from 'react-icons/fa';
 import SidebarLeft from '../components/dashboard/SidebarLeft';
 import { supabase } from '../utils/supabase';
 import { v4 as uuidv4 } from 'uuid';
@@ -123,6 +123,7 @@ const GradePage: React.FC = () => {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState('');
   const [upgradeCtaType, setUpgradeCtaType] = useState<'coins' | 'subscription'>('subscription');
+  const [openHistoryMenuId, setOpenHistoryMenuId] = useState<string | null>(null);
   
   const { user } = useAuth();
   const { checkAndUseResponse } = useResponseCheck();
@@ -169,6 +170,15 @@ const GradePage: React.FC = () => {
   };
 
   const [previewAttachment, setPreviewAttachment] = useState<any>(null);
+
+  const getFileMimeType = (fileName?: string | null, fileUrl?: string | null) => {
+    const source = `${fileName || ''} ${fileUrl || ''}`.toLowerCase();
+    if (source.includes('.pdf')) return 'application/pdf';
+    if (source.includes('.png')) return 'image/png';
+    if (source.includes('.jpg') || source.includes('.jpeg')) return 'image/jpeg';
+    if (source.includes('.webp')) return 'image/webp';
+    return 'application/octet-stream';
+  };
 
   const PDFThumbnail = ({ url }: { url: string }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -262,6 +272,35 @@ const GradePage: React.FC = () => {
     setInputValue('');
     setAttachedFile(null);
     setChatId(uuidv4());
+    setOpenHistoryMenuId(null);
+  };
+
+  const handleDeleteHistoryItem = async (chatIdToDelete: string) => {
+    if (!user) return;
+
+    const { error: messageDeleteError } = await supabase
+      .from('solve_messages')
+      .delete()
+      .eq('chat_id', chatIdToDelete);
+
+    if (messageDeleteError) {
+      console.error('Error deleting chat messages:', messageDeleteError);
+      return;
+    }
+
+    const { error: chatDeleteError } = await supabase
+      .from('solve_chats')
+      .delete()
+      .eq('id', chatIdToDelete)
+      .eq('owner', user.id);
+
+    if (chatDeleteError) {
+      console.error('Error deleting chat history item:', chatDeleteError);
+      return;
+    }
+
+    setHistory(prev => prev.filter(item => item.id !== chatIdToDelete));
+    setOpenHistoryMenuId(null);
   };
 
   useEffect(() => {
@@ -1034,7 +1073,7 @@ const GradePage: React.FC = () => {
                         <div 
                           key={item.id} 
                           onClick={() => loadChat(item)}
-                          className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl p-6 hover:border-gray-300 dark:hover:border-white/20 transition-colors cursor-pointer shadow-sm dark:shadow-none"
+                          className="relative bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl p-6 hover:border-gray-300 dark:hover:border-white/20 transition-colors cursor-pointer shadow-sm dark:shadow-none"
                         >
                              <div className="flex items-start justify-between mb-4">
                                  <div className="flex items-center gap-4">
@@ -1046,7 +1085,31 @@ const GradePage: React.FC = () => {
                                          <p className="text-xs text-gray-500">{new Date(item.created_at).toLocaleDateString()}</p>
                                      </div>
                                  </div>
-                                 <button className="text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white">•••</button>
+                                 <div className="relative">
+                                   <button
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       setOpenHistoryMenuId(prev => prev === item.id ? null : item.id);
+                                     }}
+                                     className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                                   >
+                                     <FaEllipsisV size={14} />
+                                   </button>
+                                   {openHistoryMenuId === item.id && (
+                                     <div
+                                       onClick={(e) => e.stopPropagation()}
+                                       className="absolute right-0 top-10 z-30 min-w-[140px] bg-white dark:bg-[#17171a] border border-gray-200 dark:border-white/10 rounded-lg shadow-lg overflow-hidden"
+                                     >
+                                       <button
+                                         onClick={() => handleDeleteHistoryItem(item.id)}
+                                         className="w-full px-3 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2"
+                                       >
+                                         <FaTrash size={12} />
+                                         Delete
+                                       </button>
+                                     </div>
+                                   )}
+                                 </div>
                              </div>
                              
                              <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-6 line-clamp-2">
@@ -1058,16 +1121,20 @@ const GradePage: React.FC = () => {
                                     {t('gradePage.viewDetails')} <FaChevronRight size={10} />
                                  </button>
                                  {item.rubric_url && (
-                                     <a 
-                                        href={item.rubric_url} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        onClick={(e) => e.stopPropagation()}
+                                     <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setPreviewAttachment({
+                                            name: item.rubric_name || t('gradePage.rubric'),
+                                            type: getFileMimeType(item.rubric_name, item.rubric_url),
+                                            url: item.rubric_url
+                                          });
+                                        }}
                                         className="flex items-center gap-1 text-xs bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors border border-indigo-100 dark:border-indigo-500/20"
                                      >
                                         <FaFileAlt size={10} />
-                                       {item.rubric_name || t('gradePage.rubric')}
-                                     </a>
+                                      View File
+                                     </button>
                                  )}
                              </div>
                          </div>

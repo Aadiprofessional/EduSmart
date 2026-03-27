@@ -5,8 +5,6 @@ import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
 import { FaProjectDiagram, FaPlus, FaMinus, FaDownload, FaMagic, FaTimes } from 'react-icons/fa';
 import { Skeleton } from '../ui/Skeleton';
-import katex from 'katex';
-import 'katex/dist/katex.min.css';
 
 const parseXMLToMindmap = (xmlString: string) => {
     try {
@@ -63,46 +61,6 @@ const parseXMLToMindmap = (xmlString: string) => {
         console.error("Error parsing XML mindmap:", e);
         return null;
     }
-};
-
-const renderTextWithMath = (text: string) => {
-    if (!text) return '';
-    // Preprocess: convert \[ \] to $$ $$, \( \) to $ $
-    let processed = text
-        .replace(/\\\[([\s\S]*?)\\\]/g, (_, eq) => `$$${eq}$$`)
-        .replace(/\\\(([\s\S]*?)\\\)/g, (_, eq) => `$${eq}$`)
-        .replace(/\[\s*(\\frac|\\boxed|\\begin|\\sum|\\int|\\partial|\\sqrt|\\mathbf|\\mathrm|\\mathcal|\\mathscr|\\mathfrak|\\mathbb|\\sin|\\cos|\\tan)([\s\S]*?)\]/g, (match, cmd, rest) => `$$${cmd}${rest}$$`);
-
-    // Add heuristic for bare math
-    processed = processed.split(/(\s+)/).map(part => {
-         if (part.trim() === '') return part;
-         if (part.includes('$')) return part;
-         const isMath = part.includes('^') || part.includes('\\') || (part.includes('_') && part.includes('{'));
-         if (isMath) {
-             const match = part.match(/^(.+?)([.,;:]?)$/);
-             if (match) {
-                 const [_, core, punct] = match;
-                 return `$${core}$${punct}`;
-             }
-             return `$${part}$`;
-         }
-         return part;
-    }).join('');
-
-    // Render Math
-    return processed.replace(/\$\$([\s\S]*?)\$\$/g, (_, tex) => {
-        try {
-            return katex.renderToString(tex, { displayMode: true });
-        } catch (e) {
-            return tex;
-        }
-    }).replace(/\$([\s\S]*?)\$/g, (_, tex) => {
-        try {
-            return katex.renderToString(tex, { displayMode: false });
-        } catch (e) {
-            return tex;
-        }
-    });
 };
 
 const cleanLabelText = (text: string) => {
@@ -203,14 +161,20 @@ const getTreeDimensions = (data: any) => {
     let maxDepth = 0;
     let leafCount = 0;
     let maxLeafLabelLength = 0;
+    let maxLeafDescriptionLength = 0;
+    let maxLeafLineCount = 1;
 
     const traverse = (node: any, depth: number) => {
         if (depth > maxDepth) maxDepth = depth;
         
         if (!node.children || node.children.length === 0) {
             leafCount++;
-            const label = node.name || '';
+            const label = cleanLabelText(node.name || '');
+            const description = cleanLabelText(node.value || '');
+            const combinedLines = `${label}\n${description}`.split('\n').filter((line: string) => line.trim().length > 0).length;
             if (label.length > maxLeafLabelLength) maxLeafLabelLength = label.length;
+            if (description.length > maxLeafDescriptionLength) maxLeafDescriptionLength = description.length;
+            if (combinedLines > maxLeafLineCount) maxLeafLineCount = combinedLines;
         } else {
             node.children.forEach((child: any) => traverse(child, depth + 1));
         }
@@ -221,11 +185,45 @@ const getTreeDimensions = (data: any) => {
     // Heuristics for size
     // Width: Depth * 400px + label space + padding
     // We allocate roughly 12px per character for the leaf labels
-    const labelSpace = maxLeafLabelLength * 12;
-    const width = Math.max(maxDepth * 400 + labelSpace + 600, 2400);
-    const height = Math.max(leafCount * 80 + 400, 1200);
+    const labelSpace = maxLeafLabelLength * 11;
+    const descriptionSpace = Math.min(maxLeafDescriptionLength * 8, 1800);
+    const width = Math.max(maxDepth * 420 + labelSpace + descriptionSpace + 700, 3200);
+    const rowHeight = Math.max(maxLeafLineCount * 24, 150);
+    const height = Math.max(leafCount * rowHeight + 700, 1800);
 
     return { width, height, maxLeafLabelLength };
+};
+
+const expandAllTreeNodes = (node: any): any => {
+    if (!node || typeof node !== 'object') return node;
+
+    const expandedNode = {
+        ...node,
+        collapsed: false
+    };
+
+    if (Array.isArray(node.children)) {
+        expandedNode.children = node.children.map((child: any) => expandAllTreeNodes(child));
+    }
+
+    return expandedNode;
+};
+
+const getNodeDescription = (params: any): string => {
+    const valueFromData = params?.data?.value;
+    const valueFromParams = params?.value;
+    const rawDescription = typeof valueFromData === 'string'
+        ? valueFromData
+        : typeof valueFromParams === 'string'
+            ? valueFromParams
+            : '';
+    return cleanLabelText(rawDescription).trim();
+};
+
+const getTreeNodeCount = (node: any): number => {
+    if (!node || typeof node !== 'object') return 0;
+    if (!Array.isArray(node.children) || node.children.length === 0) return 1;
+    return 1 + node.children.reduce((total: number, child: any) => total + getTreeNodeCount(child), 0);
 };
 
 const StudyMindmap: React.FC = () => {
@@ -307,45 +305,46 @@ const StudyMindmap: React.FC = () => {
                 children: []
             }];
 
-            const chartData = mindmapData || defaultData;
+            const sourceData = mindmapData || defaultData;
+            const chartData = Array.isArray(sourceData)
+                ? sourceData.map((node: any) => expandAllTreeNodes(node))
+                : [expandAllTreeNodes(sourceData)];
+            const totalNodeCount = chartData.reduce((total: number, node: any) => total + getTreeNodeCount(node), 0);
+            const dynamicNodeGap = totalNodeCount > 20 ? 110 : 95;
+            const dynamicLayerGap = totalNodeCount > 20 ? 270 : 240;
 
             const option: any = {
                 backgroundColor: isDark ? '#111111' : '#f9fafb',
                 tooltip: {
-                    trigger: 'item',
-                    triggerOn: 'mousemove',
-                    formatter: function (params: any) {
-                        const description = params.value;
-                        if (description) {
-                            return `<div style="text-align: left;">
-                                <div style="font-weight: bold; margin-bottom: 5px;">${params.name}</div>
-                                <div style="max-width: 300px; white-space: normal; font-size: 12px; opacity: 0.9;">${renderTextWithMath(description)}</div>
-                            </div>`;
-                        }
-                        return `<div style="text-align: left;">
-                                <div style="font-weight: bold;">${renderTextWithMath(params.name)}</div>
-                            </div>`;
-                    }
+                    show: false
                 },
                 series: [
                     {
                         type: 'tree',
                         roam: true,
-                        data: Array.isArray(chartData) ? chartData : [chartData],
-                        top: '10%',
-                        left: '15%',
-                        bottom: '10%',
-                        right: '25%',
+                        orient: 'LR',
+                        data: chartData,
+                        top: '4%',
+                        left: '6%',
+                        bottom: '4%',
+                        right: '36%',
                         initialTreeDepth: -1,
-                        symbolSize: 10,
+                        nodeGap: dynamicNodeGap,
+                        layerGap: dynamicLayerGap,
+                        symbolSize: 12,
                         label: {
                             position: 'left',
                             verticalAlign: 'middle',
                             align: 'right',
-                            fontSize: 14,
+                            fontSize: 12,
                             color: isDark ? '#fff' : '#111827',
+                            overflow: 'break',
+                            lineHeight: 22,
+                            width: 460,
                             formatter: function (params: any) {
-                                return cleanLabelText(params.name);
+                                const title = cleanLabelText(params.name || '');
+                                const description = getNodeDescription(params);
+                                return description ? `${title}\n${description}` : title;
                             }
                         },
                         leaves: {
@@ -353,15 +352,20 @@ const StudyMindmap: React.FC = () => {
                                 position: 'right',
                                 verticalAlign: 'middle',
                                 align: 'left',
+                                overflow: 'break',
+                                lineHeight: 22,
+                                width: 620,
                                 formatter: function (params: any) {
-                                    return cleanLabelText(params.name);
+                                    const title = cleanLabelText(params.name || '');
+                                    const description = getNodeDescription(params);
+                                    return description ? `${title}\n${description}` : title;
                                 }
                             }
                         },
                         emphasis: {
                             focus: 'descendant'
                         },
-                        expandAndCollapse: true,
+                        expandAndCollapse: false,
                         animationDuration: 550,
                         animationDurationUpdate: 750,
                         itemStyle: {
@@ -485,28 +489,37 @@ const StudyMindmap: React.FC = () => {
         // Calculate dynamic right margin based on text length
         // 16px font size * ~12px width estimate per char + buffer
         const rightMargin = Math.max(maxLeafLabelLength * 12 + 100, 300);
+        const exportData = expandAllTreeNodes(mindmapData);
 
         chart.setOption({
             backgroundColor: exportBgColor,
             animation: false, // CRITICAL: Disable animation for immediate full render
             series: [{
                 type: 'tree',
-                data: [mindmapData],
-                top: '100px',
-                left: '100px',
-                bottom: '100px',
-                right: `${rightMargin}px`,
+                orient: 'LR',
+                data: [exportData],
+                top: '120px',
+                left: '120px',
+                bottom: '120px',
+                right: `${rightMargin + 700}px`,
+                nodeGap: 130,
+                layerGap: 300,
                 symbolSize: 12,
                 initialTreeDepth: -1, // Expand all
                 label: {
                     position: 'left',
                     verticalAlign: 'middle',
                     align: 'right',
-                    fontSize: 16, // Slightly larger for export
+                    fontSize: 15, // Slightly larger for export
+                    lineHeight: 24,
+                    width: 520,
+                    overflow: 'break',
                     color: exportTextColor,
                     fontFamily: 'sans-serif',
                     formatter: function (params: any) {
-                        return cleanLabelText(params.name);
+                        const title = cleanLabelText(params.name || '');
+                        const description = getNodeDescription(params);
+                        return description ? `${title}\n${description}` : title;
                     }
                 },
                 leaves: {
@@ -514,11 +527,16 @@ const StudyMindmap: React.FC = () => {
                         position: 'right',
                         verticalAlign: 'middle',
                         align: 'left',
-                        fontSize: 16,
+                        fontSize: 15,
+                        lineHeight: 24,
+                        width: 780,
+                        overflow: 'break',
                         color: exportTextColor,
                         fontFamily: 'sans-serif',
                         formatter: function (params: any) {
-                            return cleanLabelText(params.name);
+                            const title = cleanLabelText(params.name || '');
+                            const description = getNodeDescription(params);
+                            return description ? `${title}\n${description}` : title;
                         }
                     }
                 },
@@ -533,7 +551,7 @@ const StudyMindmap: React.FC = () => {
                     width: 2
                 }
             }]
-        });
+        } as any);
 
         // 5. Export with a small timeout to ensure rendering is complete
         // Although SVG render is sync, sometimes DOM updates need a tick
@@ -619,7 +637,7 @@ const StudyMindmap: React.FC = () => {
                         <span className="font-bold">Mindmap View</span>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Visual representation of your study material. Click on nodes to expand or collapse branches.
+                        Visual representation of your study material. All node details are shown directly.
                     </p>
                 </div>
             )}
