@@ -1,14 +1,34 @@
 // API Configuration
 // This file centralizes all API configuration and handles environment-aware URL selection
 
+const sanitizeBaseUrl = (url: string): string =>
+  url
+    .trim()
+    .replace(/^['"`]+|['"`]+$/g, '')
+    .trim();
+
+const normalizeBaseUrl = (url: string): string => {
+  const sanitizedUrl = sanitizeBaseUrl(url);
+  return sanitizedUrl.replace(/\/api\/?$/i, '').replace(/\/+$/, '');
+};
+
 // Function to get the API base URL based on environment
 export const getApiBaseUrl = (): string => {
-  if (process.env.REACT_APP_API_BASE_URL) {
-    return process.env.REACT_APP_API_BASE_URL;
+  const configuredBaseUrl = process.env.REACT_APP_API_BASE_URL || process.env.REACT_APP_BACKEND_URL;
+  if (configuredBaseUrl) {
+    return normalizeBaseUrl(configuredBaseUrl);
   }
 
   if (process.env.NODE_ENV === 'development') {
     return 'http://localhost:8000';
+  }
+
+  const hostname = window.location.hostname.toLowerCase();
+  if (
+    hostname !== 'server.matrixedu.ai' &&
+    (hostname === 'matrixedu.ai' || hostname.endsWith('.matrixedu.ai'))
+  ) {
+    return 'https://server.matrixedu.ai';
   }
 
   return window.location.origin;
@@ -18,8 +38,8 @@ export const getApiBaseUrl = (): string => {
 export const API_BASE_URL = getApiBaseUrl();
 
 // Updated API base configurations to match actual production endpoints
-export const API_BASE = `${getApiBaseUrl()}/api`;
-export const API_V2_BASE = `${getApiBaseUrl()}/api/v2`;
+export const API_BASE = `${API_BASE_URL}/api`;
+export const API_V2_BASE = `${API_BASE_URL}/api/v2`;
 
 // API endpoints
 export const API_ENDPOINTS = {

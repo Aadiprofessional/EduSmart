@@ -3,12 +3,15 @@ import ReactDOM, { flushSync } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AiOutlineUpload, AiOutlineCamera, AiOutlineFullscreen, AiOutlineBulb, AiOutlineFileText, AiOutlineHistory, AiOutlineLoading3Quarters, AiOutlineLeft, AiOutlineRight, AiOutlineClose, AiOutlineCheckCircle, AiOutlineExclamationCircle, AiOutlineBook, AiOutlineDelete, AiOutlineExclamation } from 'react-icons/ai';
 import { FiDownload, FiCopy, FiShare2, FiClock } from 'react-icons/fi';
+import { FaArrowUp, FaFileAlt, FaImage } from 'react-icons/fa';
 import IconComponent from './IconComponent';
 import * as pdfjsLib from 'pdfjs-dist';
 import { useResponseCheck, ResponseUpgradeModal } from '../../utils/responseChecker';
 import { useNotification } from '../../utils/NotificationContext';
 import { useLanguage } from '../../utils/LanguageContext';
 import { useAuth } from '../../utils/AuthContext';
+import { supabase } from '../../utils/supabase';
+import coinIcon from '../../assets/assets_coin.png';
 
 // Import mistake check API functions
 import { 
@@ -25,6 +28,7 @@ import {
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
+import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -247,6 +251,9 @@ const MARKING_STANDARDS: MarkingStandard[] = [
 
 interface CheckMistakesComponentProps {
   className?: string;
+  variant?: 'default' | 'solve';
+  selectedHistoryItem?: MistakeHistoryItem | null;
+  onHistoryRefresh?: () => void;
 }
 
 // Add interface for history items
@@ -335,7 +342,27 @@ const PortalModal: React.FC<PortalModalProps> = ({ isOpen, onClose, children, cl
   );
 };
 
-const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ className = '' }) => {
+const MISTAKE_CHECKER_SYSTEM_PROMPT = `You are a strict mistake-checking engine.
+Return ONLY valid JSON in this exact schema:
+{
+  "extractedText": "string",
+  "mistakes": [
+    {
+      "incorrect": "string",
+      "correction": "string",
+      "type": "grammar|spelling|punctuation|other"
+    }
+  ]
+}
+Rules:
+- extractedText must contain the final clean text to display.
+- incorrect must be an exact snippet from extractedText.
+- correction must be the direct fixed form for incorrect.
+- type must be one of: grammar, spelling, punctuation, other.
+- If there are no mistakes, return mistakes as an empty array.
+- Do not output markdown, explanations, prefixes, or suffixes.`;
+
+const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ className = '', variant = 'default', selectedHistoryItem = null, onHistoryRefresh }) => {
   const { t } = useLanguage();
   const { user, session } = useAuth();
   const [file, setFile] = useState<File | null>(null);
@@ -381,6 +408,7 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
   // Add new state for text-only processing and marks summary
   const [textOnlyMode, setTextOnlyMode] = useState(false);
   const [directText, setDirectText] = useState('');
+  const [inputText, setInputText] = useState('');
 
   // Add new state variables for enhanced features
   const [showCorrectedText, setShowCorrectedText] = useState(false);
@@ -388,12 +416,54 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
   const [showReportModal, setShowReportModal] = useState(false);
   const [showFileViewModal, setShowFileViewModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [pdfPageCount, setPdfPageCount] = useState(0);
+  const [streamedAiResponse, setStreamedAiResponse] = useState('');
 
   // Add page markings state for teacher marking functionality
   const [pageMarkings, setPageMarkings] = useState<PageMarking[]>([]);
 
   // Add state to track history restoration
   const [isRestoringFromHistory, setIsRestoringFromHistory] = useState(false);
+
+  const sanitizeFileName = (name: string) => name.replace(/[^a-zA-Z0-9._-]/g, '_');
+
+  const uploadToSupabase = async (uploadFile: File | Blob, fileName: string): Promise<string | null> => {
+    try {
+      const sanitizedFileName = sanitizeFileName(fileName);
+      const filePath = `${user?.id || 'anonymous'}/${Date.now()}_${sanitizedFileName}`;
+      const { error } = await supabase.storage
+        .from('chat-attachments')
+        .upload(filePath, uploadFile);
+
+      if (error) {
+        console.error('Supabase upload error:', error);
+        return null;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('chat-attachments')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Upload to Supabase failed:', error);
+      return null;
+    }
+  };
+
+  const uploadBase64Images = async (base64Images: string[]): Promise<string[]> => {
+    const urls: string[] = [];
+    for (let i = 0; i < base64Images.length; i++) {
+      const base64 = base64Images[i];
+      if (!base64) continue;
+      const res = await fetch(base64);
+      const blob = await res.blob();
+      const fileName = `page_${i + 1}_${Date.now()}.jpg`;
+      const url = await uploadToSupabase(blob, fileName);
+      if (url) urls.push(url);
+    }
+    return urls;
+  };
 
   // Load history from database on component mount
   useEffect(() => {
@@ -526,6 +596,7 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
         
         // Reload history to include the new item (silently)
         loadHistoryFromDatabase();
+        onHistoryRefresh?.();
       } else {
         console.error('❌ Failed to save to database:', result.error);
         const errorMessage = `Failed to save to database: ${result.error || 'Unknown error'}`;
@@ -768,6 +839,12 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
     alert('✅ Successfully restored from history!');
   };
 
+  useEffect(() => {
+    if (selectedHistoryItem) {
+      loadFromHistory(selectedHistoryItem);
+    }
+  }, [selectedHistoryItem]);
+
   // Function to delete history item from database
   const deleteHistoryItem = async (id: string) => {
     try {
@@ -907,10 +984,53 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
     }
     
     if (textOnlyMode) {
-      return directText;
+      return extractedTexts[0]?.text || directText;
     }
     
     return extractedTexts[currentPage]?.text || '';
+  };
+
+  const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  const injectHighlightMarkup = (value: string, mistakes: Mistake[], mode: 'original' | 'corrected') => {
+    if (!value || mistakes.length === 0) return value;
+    let output = value;
+    const sorted = [...mistakes].sort((a, b) => {
+      const aLen = mode === 'corrected' ? a.correct.length : a.incorrect.length;
+      const bLen = mode === 'corrected' ? b.correct.length : b.incorrect.length;
+      return bLen - aLen;
+    });
+    sorted.forEach((mistake) => {
+      const target = mode === 'corrected' ? mistake.correct : mistake.incorrect;
+      if (!target) return;
+      const className = mode === 'corrected'
+        ? 'bg-emerald-500/25 border-b-2 border-emerald-500 rounded px-1'
+        : 'bg-red-500/25 border-b-2 border-red-500 rounded px-1';
+      output = output.replace(new RegExp(escapeRegExp(target), 'g'), `<span class="${className}">${target}</span>`);
+    });
+    return output;
+  };
+
+  const renderMarkdownText = (value: string, className: string, mistakes: Mistake[] = [], mode: 'original' | 'corrected' = 'original') => (
+    <div className={className}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeRaw, rehypeKatex]}
+      >
+        {injectHighlightMarkup(
+          value
+          .replace(/\\\[([\s\S]*?)\\\]/g, (_, eq) => `$$${eq}$$`)
+          .replace(/\\\(([\s\S]*?)\\\)/g, (_, eq) => `$${eq}$`),
+          mistakes,
+          mode
+        )}
+      </ReactMarkdown>
+    </div>
+  );
+
+  const isLikelyMarkdown = (text: string) => {
+    if (!text) return false;
+    return /(^|\n)\s*#{1,6}\s+|(\*\*|__|`{1,3}|^\s*[-*+]\s+|^\s*\d+\.\s+|\[[^\]]+\]\([^)]+\)|\|.+\||\\\(|\\\[)/m.test(text);
   };
 
   // Convert PDF to images using PDF.js
@@ -1238,109 +1358,130 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
     }
   };
 
-  // Parse mistakes from API response text
-  const parseMistakesFromText = (text: string, pageNumber: number): Mistake[] => {
-    const mistakes: Mistake[] = [];
-    let mistakeId = 1;
-    
-    // Split by lines and look for the MISTAKE/CORRECTION/TYPE pattern
-    const lines = text.split('\n');
-    let currentMistake: Partial<Mistake> = {};
-    
-    for (const line of lines) {
-      const trimmedLine = line.trim();
-      
-      if (trimmedLine.startsWith('MISTAKE:')) {
-        // If we have a current mistake being built, save it first
-        if (currentMistake.incorrect && currentMistake.correct) {
-          mistakes.push({
-            id: mistakeId++,
-            incorrect: currentMistake.incorrect,
-            correct: currentMistake.correct,
-            type: currentMistake.type || 'other'
-          });
-        }
-        
-        // Start new mistake
-        currentMistake = {
-          incorrect: trimmedLine.replace('MISTAKE:', '').trim()
-        };
-      } else if (trimmedLine.startsWith('CORRECTION:')) {
-        currentMistake.correct = trimmedLine.replace('CORRECTION:', '').trim();
-      } else if (trimmedLine.startsWith('TYPE:')) {
-        currentMistake.type = trimmedLine.replace('TYPE:', '').trim().toLowerCase();
-      }
+  const normalizeMistakeType = (value: string | undefined) => {
+    const normalized = (value || 'other').toLowerCase();
+    if (normalized === 'grammar' || normalized === 'spelling' || normalized === 'punctuation' || normalized === 'other') {
+      return normalized;
     }
-    
-    // Add the last mistake if it's complete
-    if (currentMistake.incorrect && currentMistake.correct) {
-      mistakes.push({
-        id: mistakeId++,
-        incorrect: currentMistake.incorrect,
-        correct: currentMistake.correct,
-        type: currentMistake.type || 'other'
-      });
-    }
-    
-    return mistakes;
+    return 'other';
   };
 
-  // Parse both extracted text and mistakes from combined API response
+  const parseJsonBlock = (input: string): any | null => {
+    const trimmed = input.trim();
+    if (!trimmed) return null;
+    try {
+      return JSON.parse(trimmed);
+    } catch {}
+
+    const fencedMatch = trimmed.match(/```json\s*([\s\S]*?)```/i) || trimmed.match(/```\s*([\s\S]*?)```/i);
+    if (fencedMatch?.[1]) {
+      try {
+        return JSON.parse(fencedMatch[1].trim());
+      } catch {}
+    }
+
+    const start = trimmed.indexOf('{');
+    const end = trimmed.lastIndexOf('}');
+    if (start !== -1 && end !== -1 && end > start) {
+      try {
+        return JSON.parse(trimmed.slice(start, end + 1));
+      } catch {}
+    }
+    return null;
+  };
+
   const parseTextAndMistakes = (text: string): { extractedText: string; mistakes: Mistake[] } => {
+    const parsedJson = parseJsonBlock(text);
+    if (parsedJson && typeof parsedJson === 'object') {
+      const extractedText = typeof parsedJson.extractedText === 'string'
+        ? parsedJson.extractedText
+        : typeof parsedJson.extracted_text === 'string'
+          ? parsedJson.extracted_text
+          : typeof parsedJson.text === 'string'
+            ? parsedJson.text
+            : '';
+
+      const candidateMistakes = Array.isArray(parsedJson.mistakes)
+        ? parsedJson.mistakes
+        : Array.isArray(parsedJson.errors)
+          ? parsedJson.errors
+          : [];
+
+      const mistakes = candidateMistakes
+        .map((item: any, index: number): Mistake | null => {
+          const incorrect = typeof item?.incorrect === 'string'
+            ? item.incorrect
+            : typeof item?.mistake === 'string'
+              ? item.mistake
+              : typeof item?.original === 'string'
+                ? item.original
+                : '';
+          const correct = typeof item?.correction === 'string'
+            ? item.correction
+            : typeof item?.correct === 'string'
+              ? item.correct
+              : typeof item?.suggestion === 'string'
+                ? item.suggestion
+                : '';
+          if (!incorrect || !correct) return null;
+          return {
+            id: index + 1,
+            incorrect: incorrect.trim(),
+            correct: correct.trim(),
+            type: normalizeMistakeType(item?.type)
+          };
+        })
+        .filter((mistake: Mistake | null): mistake is Mistake => Boolean(mistake));
+
+      return { extractedText: extractedText.trim(), mistakes };
+    }
+
     let extractedText = '';
     const mistakes: Mistake[] = [];
     let mistakeId = 1;
-    
-    // Split the response into sections
     const extractedTextMatch = text.match(/EXTRACTED_TEXT:\s*([\s\S]*?)(?=MISTAKES:|$)/);
     if (extractedTextMatch) {
       extractedText = extractedTextMatch[1].trim();
     }
-    
-    // Find the mistakes section
     const mistakesMatch = text.match(/MISTAKES:\s*([\s\S]*)/);
     if (mistakesMatch) {
       const mistakesText = mistakesMatch[1];
       const lines = mistakesText.split('\n');
       let currentMistake: Partial<Mistake> = {};
-      
       for (const line of lines) {
         const trimmedLine = line.trim();
-        
         if (trimmedLine.startsWith('MISTAKE:')) {
-          // If we have a current mistake being built, save it first
           if (currentMistake.incorrect && currentMistake.correct) {
             mistakes.push({
               id: mistakeId++,
               incorrect: currentMistake.incorrect,
               correct: currentMistake.correct,
-              type: currentMistake.type || 'other'
+              type: normalizeMistakeType(currentMistake.type)
             });
           }
-          
-          // Start new mistake
           currentMistake = {
             incorrect: trimmedLine.replace('MISTAKE:', '').trim()
           };
         } else if (trimmedLine.startsWith('CORRECTION:')) {
           currentMistake.correct = trimmedLine.replace('CORRECTION:', '').trim();
         } else if (trimmedLine.startsWith('TYPE:')) {
-          currentMistake.type = trimmedLine.replace('TYPE:', '').trim().toLowerCase();
+          currentMistake.type = trimmedLine.replace('TYPE:', '').trim();
         }
       }
-      
-      // Add the last mistake if it's complete
       if (currentMistake.incorrect && currentMistake.correct) {
         mistakes.push({
           id: mistakeId++,
           incorrect: currentMistake.incorrect,
           correct: currentMistake.correct,
-          type: currentMistake.type || 'other'
+          type: normalizeMistakeType(currentMistake.type)
         });
       }
     }
-    
     return { extractedText, mistakes };
+  };
+
+  const parseMistakesFromText = (text: string, pageNumber: number): Mistake[] => {
+    return parseTextAndMistakes(text).mistakes;
   };
 
   // Teacher marking functions
@@ -1658,15 +1799,18 @@ Be thorough and fair in your assessment.`
     setMarkingSummary(null);
     setOverallProcessingComplete(false);
     setIsProcessingStarted(false);
+    setStreamedAiResponse('');
 
     try {
       let pages: string[] = [];
+      const isImageFile = file.type.startsWith('image/') && file.type !== 'image/gif';
       
       if (file.type === 'application/pdf') {
         console.log('📄 Processing PDF file');
         pages = await convertPdfToImages(file);
+        setPdfPageCount(pages.length);
         console.log('✅ PDF converted to', pages.length, 'images');
-      } else if (file.type.startsWith('image/')) {
+      } else if (isImageFile) {
         console.log('🖼️ Processing image file');
         setProcessingStatus('Processing image...');
         
@@ -1686,9 +1830,10 @@ Be thorough and fair in your assessment.`
         });
         
         pages = [imageDataUrl];
+        setPdfPageCount(0);
       } else {
-        console.error('❌ Unsupported file type:', file.type);
-        throw new Error('Unsupported file type. Please upload a PDF or image file.');
+        pages = [];
+        setPdfPageCount(0);
       }
       
       console.log('📸 Total images prepared:', pages.length);
@@ -1697,7 +1842,8 @@ Be thorough and fair in your assessment.`
       setFile(file);
       
       // Initialize page mistakes but don't start processing
-      const initialPageMistakes: PageMistakes[] = pages.map((_, index) => ({
+      const totalAnalysisPages = pages.length > 0 ? pages.length : 1;
+      const initialPageMistakes: PageMistakes[] = Array.from({ length: totalAnalysisPages }, (_, index) => ({
         pageNumber: index + 1,
         mistakes: [],
         isLoading: false,
@@ -1706,7 +1852,7 @@ Be thorough and fair in your assessment.`
       setPageMistakes(initialPageMistakes);
 
       // Initialize extracted texts
-      const initialExtractedTexts: ExtractedText[] = pages.map((_, index) => ({
+      const initialExtractedTexts: ExtractedText[] = Array.from({ length: totalAnalysisPages }, (_, index) => ({
         pageNumber: index + 1,
         text: '',
         isLoading: false,
@@ -1728,7 +1874,37 @@ Be thorough and fair in your assessment.`
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      processFile(e.target.files[0]);
+      const selectedFile = e.target.files[0];
+      const allowedTypes = [
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'text/plain',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'text/csv'
+      ];
+      const isAllowed = allowedTypes.includes(selectedFile.type) || (selectedFile.type.startsWith('image/') && selectedFile.type !== 'image/gif');
+      if (!isAllowed) {
+        showError('Unsupported file type. Please upload PDF, image, Word, TXT, CSV, or XLSX files.');
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
+      setFile(selectedFile);
+      setDocumentPages([]);
+      setCurrentPage(0);
+      setPageMistakes([]);
+      setExtractedTexts([]);
+      setMarkingSummary(null);
+      setOverallProcessingComplete(false);
+      setIsProcessingStarted(false);
+      setTextOnlyMode(false);
+      setDirectText('');
+      setStreamedAiResponse('');
+      setPdfPageCount(0);
+      setProcessingStatus('');
     }
   };
 
@@ -1743,6 +1919,8 @@ Be thorough and fair in your assessment.`
     setIsProcessingStarted(false); // Reset processing state
     setTextOnlyMode(false);
     setDirectText('');
+    setStreamedAiResponse('');
+    setPdfPageCount(0);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -1833,7 +2011,208 @@ Be thorough and fair in your assessment.`
     }
   }, [pageMistakes, currentPage, isRestoringFromHistory]);
 
-  // Process text directly without file upload
+  const invokeMistakeCheckerWebhook = async (content: string, targetFile: File | null, preparedPages: string[]) => {
+    const chatId = `mistake-check-${Date.now()}`;
+    const timestamp = new Date().toISOString().replace('T', ' ').replace('Z', '');
+    const message = content.trim() || 'Check this content for mistakes';
+    const userId = user?.id || '0a147ebe-af99-481b-bcaf-ae70c9aeb8d8';
+
+    let requestBody: any = {
+      stream: true,
+      systemMessage: MISTAKE_CHECKER_SYSTEM_PROMPT,
+      messages: []
+    };
+
+    if (targetFile) {
+      const uploadedFileUrl = await uploadToSupabase(targetFile, targetFile.name);
+      if (!uploadedFileUrl) {
+        throw new Error('Failed to upload file to storage');
+      }
+
+      if (targetFile.type === 'application/pdf') {
+        const imageUrls = await uploadBase64Images(preparedPages);
+        requestBody = {
+          ...requestBody,
+          uploadedFileType: 'pdf_vision',
+          messages: [{
+            uid: userId,
+            type: 'pdf_vision',
+            text: { body: message },
+            body: message,
+            content: message,
+            role: 'user',
+            roleDescription: 'A versatile AI assistant for everyday tasks and questions',
+            timestamp,
+            chatid: chatId,
+            subject: 'mistake_checker',
+            systemMessage: MISTAKE_CHECKER_SYSTEM_PROMPT,
+            url: uploadedFileUrl,
+            image_urls: imageUrls,
+            page_count: imageUrls.length
+          }]
+        };
+      } else if (targetFile.type.startsWith('image/')) {
+        requestBody = {
+          ...requestBody,
+          uploadedFileType: 'image',
+          messages: [{
+            uid: userId,
+            type: 'image',
+            text: { body: message },
+            body: message,
+            content: message,
+            role: 'user',
+            roleDescription: 'A versatile AI assistant for everyday tasks and questions',
+            timestamp,
+            chatid: chatId,
+            subject: 'mistake_checker',
+            systemMessage: MISTAKE_CHECKER_SYSTEM_PROMPT,
+            url: uploadedFileUrl,
+            attachments: [{
+              url: uploadedFileUrl,
+              fileName: targetFile.name,
+              fileType: 'image',
+              originalName: targetFile.name,
+              size: targetFile.size
+            }]
+          }]
+        };
+      } else {
+        requestBody = {
+          ...requestBody,
+          uploadedFileType: 'document',
+          messages: [{
+            uid: userId,
+            type: 'document',
+            text: { body: message },
+            body: message,
+            content: message,
+            role: 'user',
+            roleDescription: 'A versatile AI assistant for everyday tasks and questions',
+            timestamp,
+            chatid: chatId,
+            subject: 'mistake_checker',
+            systemMessage: MISTAKE_CHECKER_SYSTEM_PROMPT,
+            url: uploadedFileUrl,
+            attachments: [{
+              url: uploadedFileUrl,
+              fileName: targetFile.name,
+              fileType: 'document',
+              originalName: targetFile.name,
+              size: targetFile.size
+            }]
+          }]
+        };
+      }
+    } else {
+      requestBody = {
+        ...requestBody,
+        uploadedFileType: 'text',
+        messages: [{
+          uid: userId,
+          type: 'text',
+          text: { body: 'text' },
+          body: message,
+          content: message,
+          transcription: message,
+          role: 'user',
+          roleDescription: '',
+          timestamp,
+          chatid: chatId,
+          subject: 'mistake_checker',
+          systemMessage: MISTAKE_CHECKER_SYSTEM_PROMPT
+        }]
+      };
+    }
+
+    const response = await fetch('https://n8n.matrixaiserver.com/webhook/matrixEdu/mistakeChecker', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok || !response.body) {
+      throw new Error(`Mistake checker webhook failed: ${response.status} ${response.statusText}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let rawBuffer = '';
+    let fullText = '';
+
+    const appendChunk = (chunkText: string) => {
+      if (!chunkText) return;
+      fullText += chunkText;
+      setStreamedAiResponse(fullText);
+
+      const parsedResult = parseTextAndMistakes(fullText);
+      const parsedMistakes = parsedResult.mistakes;
+      const parsedText = parsedResult.extractedText;
+
+      setPageMistakes(prev => prev.map((pm, index) => (
+        index === 0 ? { ...pm, mistakes: parsedMistakes, isLoading: true } : pm
+      )));
+      setExtractedTexts(prev => prev.map((et, index) => (
+        index === 0 ? { ...et, text: parsedText || fullText || et.text, isLoading: true } : et
+      )));
+    };
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        rawBuffer += decoder.decode(value, { stream: true });
+        const lines = rawBuffer.split('\n');
+        rawBuffer = lines.pop() || '';
+
+        for (const rawLine of lines) {
+          const line = rawLine.trim();
+          if (!line) continue;
+
+          const payloadLine = line.startsWith('data:') ? line.replace(/^data:\s*/, '') : line;
+          if (payloadLine === '[DONE]') continue;
+
+          try {
+            const parsed = JSON.parse(payloadLine);
+            if (parsed?.type === 'item' && typeof parsed.content === 'string') {
+              appendChunk(parsed.content);
+              continue;
+            }
+            const contentChunk = parsed?.choices?.[0]?.delta?.content;
+            if (typeof contentChunk === 'string') {
+              appendChunk(contentChunk);
+              continue;
+            }
+            if (typeof parsed?.content === 'string') {
+              appendChunk(parsed.content);
+            }
+          } catch {
+            appendChunk(payloadLine);
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+
+    if (rawBuffer.trim()) {
+      try {
+        const parsed = JSON.parse(rawBuffer.trim());
+        const finalChunk = parsed?.content || parsed?.choices?.[0]?.delta?.content;
+        if (typeof finalChunk === 'string') {
+          appendChunk(finalChunk);
+        }
+      } catch {
+        appendChunk(rawBuffer.trim());
+      }
+    }
+
+    return fullText;
+  };
+
   const processTextDirectly = async (text: string) => {
     if (!text.trim() || loading || isProcessingStarted || isRestoringFromHistory) return;
     
@@ -1843,6 +2222,7 @@ Be thorough and fair in your assessment.`
     setDirectText(text);
     setDocumentPages([]); // Clear any uploaded document
     setFile(null);
+    setStreamedAiResponse('');
     setPageMistakes([]);
     setExtractedTexts([]);
     
@@ -1854,10 +2234,17 @@ Be thorough and fair in your assessment.`
       isComplete: false
     }];
     setPageMistakes(initialPageMistakes);
+    setExtractedTexts([{
+      pageNumber: 1,
+      text: text,
+      isLoading: true,
+      isComplete: false
+    }]);
     
     try {
-      // Check mistakes for the text
-      const mistakes = await checkMistakesForText(text);
+      const fullAiText = await invokeMistakeCheckerWebhook(text, null, []);
+      const mistakes = parseMistakesFromText(fullAiText, 1);
+      const extractedText = parseTextAndMistakes(fullAiText).extractedText || text;
       
       // Update page mistakes
       setPageMistakes([{
@@ -1866,16 +2253,21 @@ Be thorough and fair in your assessment.`
         isLoading: false,
         isComplete: true
       }]);
+      setExtractedTexts([{
+        pageNumber: 1,
+        text: extractedText,
+        isLoading: false,
+        isComplete: true
+      }]);
       
       // Generate marking summary
-      const summary = generateMarksSummary(mistakes, text);
-      const integratedSummary = generateIntegratedSummary(mistakes, text, selectedMarkingStandard);
+      const integratedSummary = generateIntegratedSummary(mistakes, extractedText, selectedMarkingStandard);
       setMarkingSummary(integratedSummary);
       
       // Add to history
       addToHistory(
         'Direct Text Input',
-        text,
+        extractedText,
         mistakes,
         integratedSummary,
         'text',
@@ -1903,6 +2295,12 @@ Be thorough and fair in your assessment.`
         isLoading: false,
         isComplete: true,
         error: 'Processing failed'
+      }]);
+      setExtractedTexts([{
+        pageNumber: 1,
+        text,
+        isLoading: false,
+        isComplete: true
       }]);
       setIsProcessingStarted(false); // Reset on error
     } finally {
@@ -2263,17 +2661,15 @@ Be thorough and fair in your assessment.`
     };
   };
 
-  // New function to start processing after button click
   const startProcessing = async () => {
-    if (!file || !documentPages.length || isProcessingStarted) return;
+    if ((!file && !inputText.trim()) || isProcessingStarted) return;
 
-    // Check responses before proceeding
     const responseResult = await checkAndUseResponse({
       responseType: 'mistake_checker',
       queryData: { 
-        fileName: file.name,
-        fileSize: file.size,
-        fileType: file.type,
+        fileName: file?.name || 'Text Input',
+        fileSize: file?.size || inputText.trim().length,
+        fileType: file?.type || 'text/plain',
         mode: 'mistakes'
       },
       responsesUsed: 1
@@ -2287,84 +2683,89 @@ Be thorough and fair in your assessment.`
 
     setIsProcessingStarted(true);
     setLoading(true);
-    setProcessingStatus(`Processing all ${documentPages.length} pages...`);
+    setTextOnlyMode(!file);
+    setStreamedAiResponse('');
+    setProcessingStatus('Analyzing...');
     
     const processStartTime = Date.now();
     console.log('⏰ Processing start time:', new Date(processStartTime).toISOString());
 
     try {
-      // Update all pages to loading state
-      setPageMistakes(prev => prev.map(pm => ({ ...pm, isLoading: true })));
-      setExtractedTexts(prev => prev.map(et => ({ ...et, isLoading: true })));
-      
-      // Process all pages in parallel
-      console.log('🔄 Starting parallel processing of all pages for mistake checking');
-      const processingPromises = documentPages.map(async (imageUrl, index) => {
-        const pageNumber = index + 1;
-        console.log(`🚀 Starting processing for page ${pageNumber}`);
-        
-        try {
-          // Check for mistakes with combined text extraction
-          const mistakes = await checkMistakesForPage(imageUrl, pageNumber);
-          
-          // Update page mistakes
-          setPageMistakes(prev => prev.map(pm => 
-            pm.pageNumber === pageNumber 
-              ? { ...pm, mistakes, isLoading: false, isComplete: true }
-              : pm
-          ));
+      let preparedPages: string[] = [];
+      let initialExtractedText = inputText.trim();
 
-          console.log(`✅ Page ${pageNumber} processing completed successfully`);
-          return { pageNumber, mistakes };
-        } catch (error) {
-          console.error(`❌ Error processing page ${pageNumber}:`, error);
-          setPageMistakes(prev => prev.map(pm => 
-            pm.pageNumber === pageNumber 
-              ? { ...pm, isLoading: false, isComplete: true, error: 'Processing failed' }
-              : pm
-          ));
-          return null;
-        }
-      });
-
-      // Wait for all pages to complete
-      console.log('⏳ Waiting for all pages to complete processing...');
-      const results = await Promise.allSettled(processingPromises);
-      const successfulResults = results
-        .filter((result): result is PromiseFulfilledResult<{pageNumber: number, mistakes: Mistake[]} | null> => 
-          result.status === 'fulfilled' && result.value !== null
-        )
-        .map(result => result.value!);
-
-      setOverallProcessingComplete(true);
-      setProcessingStatus('All pages processed successfully!');
-
-      // Generate integrated summary with marking assessment
-      if (successfulResults.length > 0 && selectedMarkingStandard) {
-        const allMistakes = successfulResults.flatMap(result => result.mistakes);
-        const allText = extractedTexts.map(et => et.text).join('\n\n');
-        
-        const summary = generateIntegratedSummary(allMistakes, allText, selectedMarkingStandard);
-        setMarkingSummary(summary);
-        
-        // Add to history
-        if (file) {
-          addToHistory(
-            file.name, 
-            allText, 
-            allMistakes, 
-            summary, 
-            file.type, 
-            documentPages, 
-            file, 
-            pageMistakes, 
-            currentPage, 
-            true,
-            extractedTexts, // Include extracted texts
-            pageMarkings    // Include page markings
-          );
-        }
+      if (file?.type === 'application/pdf') {
+        preparedPages = await convertPdfToImages(file);
+        setPdfPageCount(preparedPages.length);
+      } else if (file?.type?.startsWith('image/')) {
+        const imageDataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        preparedPages = [imageDataUrl];
       }
+
+      setDocumentPages(preparedPages);
+      setCurrentPage(0);
+      const totalPages = preparedPages.length > 0 ? preparedPages.length : 1;
+      const initialPageMistakes: PageMistakes[] = Array.from({ length: totalPages }, (_, index) => ({
+        pageNumber: index + 1,
+        mistakes: [],
+        isLoading: true,
+        isComplete: false
+      }));
+      const initialExtractedTexts: ExtractedText[] = Array.from({ length: totalPages }, (_, index) => ({
+        pageNumber: index + 1,
+        text: index === 0 ? initialExtractedText : '',
+        isLoading: true,
+        isComplete: false
+      }));
+      setPageMistakes(initialPageMistakes);
+      setExtractedTexts(initialExtractedTexts);
+
+      const fullAiText = await invokeMistakeCheckerWebhook(inputText, file, preparedPages);
+      const parsedMistakes = parseMistakesFromText(fullAiText, 1);
+      const parsedText = parseTextAndMistakes(fullAiText).extractedText || initialExtractedText;
+
+      const finalPageMistakes = initialPageMistakes.map((pm, index) => ({
+        ...pm,
+        mistakes: index === 0 ? parsedMistakes : pm.mistakes,
+        isLoading: false,
+        isComplete: true,
+        error: undefined
+      }));
+      const finalExtractedTexts = initialExtractedTexts.map((et, index) => ({
+        ...et,
+        text: index === 0 ? parsedText : et.text || '',
+        isLoading: false,
+        isComplete: true,
+        error: undefined
+      }));
+
+      setPageMistakes(finalPageMistakes);
+      setExtractedTexts(finalExtractedTexts);
+      setOverallProcessingComplete(true);
+      setProcessingStatus('Analysis completed');
+
+      const summary = generateIntegratedSummary(parsedMistakes, parsedText, selectedMarkingStandard);
+      setMarkingSummary(summary);
+
+      addToHistory(
+        file?.name || 'Direct Text Input', 
+        parsedText, 
+        parsedMistakes, 
+        summary, 
+        file?.type || 'text', 
+        preparedPages, 
+        file || undefined, 
+        finalPageMistakes, 
+        0, 
+        true,
+        finalExtractedTexts,
+        pageMarkings
+      );
 
       const totalProcessTime = Date.now() - processStartTime;
       console.log('🎉 Processing completed successfully');
@@ -2375,7 +2776,7 @@ Be thorough and fair in your assessment.`
       console.error('💥 Processing error after', totalProcessTime + 'ms');
       console.error('🔴 Error message:', error instanceof Error ? error.message : String(error));
       
-      setProcessingStatus('Error processing file');
+      setProcessingStatus('Error processing');
       setOverallProcessingComplete(true);
       setIsProcessingStarted(false); // Reset on error
     } finally {
@@ -2385,185 +2786,175 @@ Be thorough and fair in your assessment.`
     }
   };
 
-  // If no file is uploaded, show upload interface
-  if (!file && !textOnlyMode) {
+  const handleCheckText = () => {
+    if (loading || (!inputText.trim() && !file)) return;
+    startProcessing();
+  };
+
+  const calculateCost = () => {
+    if (file) {
+      if (file.type === 'application/pdf') {
+        return Math.max(pdfPageCount, documentPages.length) * 2;
+      }
+      if (file.type.startsWith('image/')) {
+        return 3;
+      }
+      return 10;
+    }
+    if (inputText.trim()) {
+      return 2;
+    }
+    return 0;
+  };
+
+  const cost = calculateCost();
+
+  if (!isProcessingStarted && !overallProcessingComplete) {
     return (
       <div className={className}>
         <div className="h-full flex flex-col">
-          {/* Header with Title and History Button */}
-          <div className="flex items-center justify-between mb-8 px-4">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center">
-                  <IconComponent icon={AiOutlineBulb} className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-white">AI Mistake Checker</h1>
-                  <p className="text-slate-400 text-sm">Upload your work and get instant feedback</p>
-                </div>
-              </div>
-            </div>
-            <motion.button
-              onClick={() => {
-                console.log('History button clicked, current showHistory:', showHistory);
-                console.log('History items count:', mistakeHistory.length);
-                setShowHistory(true);
-              }}
-              className="flex items-center space-x-2 px-4 py-2 bg-slate-600/30 hover:bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 hover:text-white transition-all"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <IconComponent icon={AiOutlineHistory} className="h-5 w-5" />
-              <span>History</span>
-              {mistakeHistory.length > 0 && (
-                <span className="bg-cyan-500 text-white text-xs px-2 py-1 rounded-full">
-                  {mistakeHistory.length}
-                </span>
-              )}
-            </motion.button>
-          </div>
-
           <div className="flex flex-1 overflow-hidden">
-            {/* Main Content Area */}
-            <div className="flex-1 flex flex-col max-w-4xl mx-auto px-4">
-              {/* Marking Standard Selector - Centered */}
-              <div className="flex items-center justify-center mb-8">
-                <div className="bg-slate-600/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 min-w-[400px]">
-                  <div className="text-center mb-4">
-                    <h2 className="text-lg font-semibold text-white mb-2">Select Marking Standard</h2>
-                    <p className="text-slate-400 text-sm">Choose the educational standard for accurate assessment</p>
-                  </div>
-                  <select
-                    value={selectedMarkingStandard}
-                    onChange={(e) => setSelectedMarkingStandard(e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 text-center"
-                  >
-                    {MARKING_STANDARDS.map(standard => (
-                      <option key={standard.id} value={standard.id} className="bg-slate-700">
-                        {standard.name} - {standard.description}
-                      </option>
-                    ))}
-                  </select>
+            <div className="flex-1 flex flex-col max-w-3xl mx-auto px-4">
+              <div className="w-full flex justify-center items-center mb-10 px-4">
+                <h1 className="text-4xl font-bold text-center mt-2 tracking-tight text-gray-900 dark:text-white">
+                  {variant === 'solve' ? t('mistakeChecker.title') : 'AI Mistake Checker'}
+                </h1>
+              </div>
+
+              <div className="flex items-center justify-center gap-4 mb-10 w-full max-w-2xl mx-auto relative">
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth px-2">
+                  {MARKING_STANDARDS.map((standard) => (
+                    <button
+                      key={standard.id}
+                      onClick={() => setSelectedMarkingStandard(standard.id)}
+                      className={`px-5 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 ${
+                        selectedMarkingStandard === standard.id
+                          ? 'bg-gray-900 text-white dark:bg-[#27272a] dark:text-white'
+                          : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
+                      }`}
+                    >
+                      {standard.name}
+                    </button>
+                  ))}
                 </div>
               </div>
-              
-              {/* File Upload Area - Centered */}
-              <div className="mb-8">
-                <div 
-                  className="border-2 border-dashed border-white/20 rounded-xl p-12 text-center hover:border-cyan-500/50 cursor-pointer transition-all relative bg-slate-600/20 backdrop-blur-sm hover:bg-slate-600/30 min-h-[200px] flex flex-col justify-center"
+
+              <div className="w-full relative flex flex-col items-center">
+                <div
                   onClick={() => fileInputRef.current?.click()}
+                  className="w-[98%] bg-white dark:bg-[#111111] border border-dashed border-gray-300 dark:border-gray-800 rounded-t-3xl rounded-b-lg h-24 lg:h-32 flex flex-col items-center justify-start pt-3 lg:pt-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 hover:border-gray-400 dark:hover:border-gray-600 transition-all group z-0 mb-[-18px] lg:mb-[-45px]"
                 >
-                  <input 
-                    type="file" 
+                  <input
+                    type="file"
                     ref={fileInputRef}
                     onChange={handleFileChange}
                     className="hidden"
-                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    accept=".jpg,.jpeg,.png,.webp,application/pdf,.doc,.docx,.txt,.xlsx,.csv"
                   />
-                  <div className="text-slate-400">
-                    <IconComponent icon={AiOutlineUpload} className="h-16 w-16 mx-auto mb-6 text-cyan-400" />
-                    <h3 className="text-xl font-semibold text-slate-300 mb-3">Drag and drop your file here, or click to browse</h3>
-                    <p className="text-slate-400">Supports PDF, Word documents, and images</p>
+                  <div className="mb-1 lg:mb-2 relative">
+                    {file ? (
+                      <FaFileAlt className="text-gray-900 dark:text-white group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors w-4 h-4 lg:w-5 lg:h-5" />
+                    ) : (
+                      <FaImage className="text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-400 transition-colors w-4 h-4 lg:w-5 lg:h-5" />
+                    )}
+                  </div>
+                  <span className="text-[10px] lg:text-sm text-center px-4 text-gray-500 dark:text-gray-300 group-hover:text-gray-600 dark:group-hover:text-gray-200 transition-colors leading-tight">
+                    {file ? file.name : t('mistakeChecker.subtitle')}
+                  </span>
+                </div>
+
+                <div className="w-full bg-white dark:bg-black/40 backdrop-blur-xl rounded-[32px] p-2 border border-blue-500 shadow-xl dark:shadow-2xl z-10 relative">
+                  <div className="relative w-full">
+                    <textarea
+                      value={inputText}
+                      onChange={(e) => setInputText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleCheckText();
+                        }
+                      }}
+                      placeholder="Paste your text here for mistake checking..."
+                      className="w-full bg-transparent text-gray-800 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none text-lg resize-none py-4 px-4 pr-16 min-h-[64px]"
+                      rows={1}
+                    />
+                    <div className="absolute top-1/2 -translate-y-1/2 right-4">
+                      <button
+                        onClick={handleCheckText}
+                        disabled={loading || (!inputText.trim() && !file)}
+                        className={`relative p-2 rounded-full transition-all duration-200 flex items-center justify-center w-8 h-8 ${
+                          loading || (!inputText.trim() && !file)
+                            ? 'bg-gray-100 dark:bg-[#27272a] text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                            : 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200'
+                        }`}
+                      >
+                        {loading ? (
+                          <motion.div
+                            className="w-4 h-4 border-2 border-current border-t-transparent rounded-full"
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
+                          />
+                        ) : (
+                          <>
+                            {cost > 0 && (
+                              <span className="absolute -top-2 -right-2 z-10 inline-flex items-center gap-1 bg-[#ff5500] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                -{cost}
+                                <img src={coinIcon} alt="coins" className="w-3 h-3" />
+                              </span>
+                            )}
+                            <FaArrowUp size={14} />
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Divider */}
-              <div className="relative mb-8">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-white/10"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-slate-800 text-slate-400">Or</span>
-                </div>
-              </div>
-
-              {/* Text Input Option - Centered */}
-              <div className="mb-8">
-                <div className="bg-slate-600/20 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-                  <div className="text-center mb-4">
-                    <h3 className="text-lg font-semibold text-slate-300 mb-2">Paste your text directly</h3>
-                    <p className="text-slate-400 text-sm">Copy and paste your work for instant analysis</p>
-                  </div>
-                  <textarea
-                    placeholder="Paste your text here for mistake checking..."
-                    className="w-full h-40 p-4 bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 placeholder-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                    onPaste={(e) => {
-                      const text = e.clipboardData.getData('text');
-                      if (text.trim()) {
-                        // Process text directly without file upload
-                        processTextDirectly(text.trim());
-                      }
-                    }}
-                    onChange={(e) => {
-                      const text = e.target.value;
-                      if (text.trim()) {
-                        // Process text directly
-                        processTextDirectly(text.trim());
-                      }
-                    }}
-                  />
-                  <p className="text-xs text-slate-400 mt-3 text-center">
-                    Text will be processed automatically as you type or paste
-                  </p>
-                </div>
-              </div>
-              
-              {/* Check Button - Centered */}
-              <div className="flex items-center justify-center mb-6">
-                <motion.button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={loading}
-                  className={`flex items-center justify-center px-8 py-4 rounded-xl text-white font-semibold shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 min-w-[200px]`}
-                  whileHover={!loading ? { scale: 1.05 } : {}}
-                  whileTap={!loading ? { scale: 0.95 } : {}}
-                >
-                  {loading ? (
-                    <>
-                      <motion.div
-                        className="w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-3"
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
-                      />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      Check Mistakes
-                      <IconComponent icon={AiOutlineBulb} className="h-5 w-5 ml-2" />
-                    </>
-                  )}
-                </motion.button>
-              </div>
-
-              {/* Processing Status */}
               {processingStatus && (
                 <motion.div
-                  className="flex items-center justify-center"
+                  className="mt-6 p-4 bg-blue-500/10 backdrop-blur-sm rounded-lg border border-blue-500/20"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                 >
-                  <div className="p-4 bg-blue-500/10 backdrop-blur-sm rounded-xl border border-blue-500/20 max-w-md">
-                    <p className="text-sm text-blue-400 flex items-center justify-center">
-                      <motion.div
-                        className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full mr-2"
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
-                      />
-                      {processingStatus}
-                    </p>
-                  </div>
+                  <p className="text-sm text-blue-400 flex items-center justify-center">
+                    <motion.div
+                      className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full mr-2"
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
+                    />
+                    {processingStatus}
+                  </p>
                 </motion.div>
+              )}
+
+              {variant !== 'solve' && (
+                <div className="flex items-center justify-center mt-6">
+                  <motion.button
+                    onClick={() => setShowHistory(true)}
+                    className="flex items-center space-x-2 px-4 py-2 bg-gray-100 dark:bg-[#27272a] hover:bg-gray-200 dark:hover:bg-[#313136] border border-gray-200 dark:border-white/10 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all"
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    <IconComponent icon={AiOutlineHistory} className="h-5 w-5" />
+                    <span>History</span>
+                    {mistakeHistory.length > 0 && (
+                      <span className="bg-[#ff5500] text-white text-xs px-2 py-1 rounded-full">
+                        {mistakeHistory.length}
+                      </span>
+                    )}
+                  </motion.button>
+                </div>
               )}
             </div>
           </div>
 
-          {/* History Modal */}
-          <PortalModal 
-            isOpen={showHistory} 
-            onClose={() => setShowHistory(false)}
-            className="w-full max-w-6xl h-[80vh] bg-slate-800/95 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden"
-          >
+          {variant !== 'solve' && (
+            <PortalModal 
+              isOpen={showHistory} 
+              onClose={() => setShowHistory(false)}
+              className="w-full max-w-6xl h-[80vh] bg-slate-800/95 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden"
+            >
             <div className="h-full flex flex-col">
               {/* Modal Header */}
               <div className="flex items-center justify-between p-6 border-b border-white/10">
@@ -2710,7 +3101,8 @@ Be thorough and fair in your assessment.`
                 )}
               </div>
             </div>
-          </PortalModal>
+            </PortalModal>
+          )}
         </div>
       </div>
     );
@@ -2727,49 +3119,71 @@ Be thorough and fair in your assessment.`
           transition={{ duration: 0.5 }}
         >
           <motion.div
-            className="bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl p-8 shadow-sm"
+          className={`rounded-xl p-8 shadow-sm border ${
+            variant === 'solve'
+              ? 'bg-white dark:bg-[#111111] border-gray-200 dark:border-white/10'
+              : 'bg-slate-600/30 backdrop-blur-sm border-white/10'
+          }`}
             whileHover={{ boxShadow: "0 8px 32px rgba(6, 182, 212, 0.1)" }}
           >
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-cyan-400 mb-2">
+              <h2 className={`text-3xl font-bold mb-2 ${variant === 'solve' ? 'text-gray-900 dark:text-white' : 'text-cyan-400'}`}>
                 Document Ready for Analysis
               </h2>
-              <p className="text-slate-300 mb-4">
-                {file?.name} - {documentPages.length} page{documentPages.length > 1 ? 's' : ''} ready
+              <p className={`${variant === 'solve' ? 'text-gray-600 dark:text-gray-300' : 'text-slate-300'} mb-4`}>
+                {file?.name} - {file?.type === 'application/pdf'
+                  ? `${documentPages.length} page${documentPages.length > 1 ? 's' : ''} ready`
+                  : file?.type.startsWith('image/')
+                    ? '1 image ready'
+                    : 'file ready'}
               </p>
-              <p className="text-slate-400">
+              <p className={variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}>
                 Using {MARKING_STANDARDS.find(s => s.id === selectedMarkingStandard)?.name} marking standard
               </p>
             </div>
 
             {/* Document Preview */}
             <div className="mb-6 flex justify-center">
-              <div className="w-64 h-80 bg-slate-700/30 rounded-lg overflow-hidden border border-white/10">
-                <img 
-                  src={documentPages[0]} 
-                  alt="Document preview"
-                  className="w-full h-full object-contain"
-                  onError={(e) => {
-                    // Handle broken image URLs (e.g., expired blob URLs from history)
-                    e.currentTarget.style.display = 'none';
-                    console.log('🖼️ Document preview image failed to load - likely expired blob URL from history');
-                  }}
-                />
+              <div className={`w-64 h-80 rounded-lg overflow-hidden border ${
+                variant === 'solve' ? 'bg-gray-50 dark:bg-[#151518] border-gray-200 dark:border-white/10' : 'bg-slate-700/30 border-white/10'
+              }`}>
+                {documentPages.length > 0 ? (
+                  <img 
+                    src={documentPages[0]} 
+                    alt="Document preview"
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      console.log('🖼️ Document preview image failed to load - likely expired blob URL from history');
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center px-4 text-center">
+                    <IconComponent icon={AiOutlineFileText} className="h-12 w-12 mb-3 text-gray-400 dark:text-gray-500" />
+                    <p className="text-sm text-gray-600 dark:text-gray-300 break-all">{file?.name}</p>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Marking Standard Selector */}
             <div className="flex items-center justify-center mb-6">
-              <div className="bg-slate-600/20 backdrop-blur-sm rounded-lg p-4 border border-white/10">
+              <div className={`rounded-lg p-4 border ${
+                variant === 'solve' ? 'bg-gray-50 dark:bg-[#151518] border-gray-200 dark:border-white/10' : 'bg-slate-600/20 backdrop-blur-sm border-white/10'
+              }`}>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-slate-300 text-center flex-1">
+                  <label className={`block text-sm font-medium text-center flex-1 ${variant === 'solve' ? 'text-gray-700 dark:text-gray-300' : 'text-slate-300'}`}>
                     {t('aiStudy.selectMarkingStandard')}
                   </label>
                 </div>
                 <select
                   value={selectedMarkingStandard}
                   onChange={(e) => setSelectedMarkingStandard(e.target.value)}
-                  className="px-4 py-2 bg-slate-600/50 backdrop-blur-sm border border-white/10 rounded-lg text-slate-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 min-w-[250px]"
+                  className={`px-4 py-2 rounded-lg min-w-[250px] focus:outline-none focus:ring-2 ${
+                    variant === 'solve'
+                      ? 'bg-white dark:bg-[#111111] border border-gray-300 dark:border-white/10 text-gray-800 dark:text-gray-300 focus:ring-[#ff5500]'
+                      : 'bg-slate-600/50 backdrop-blur-sm border border-white/10 text-slate-300 focus:ring-cyan-500'
+                  }`}
                 >
                   {MARKING_STANDARDS.map(standard => (
                     <option key={standard.id} value={standard.id} className="bg-slate-700">
@@ -2783,7 +3197,11 @@ Be thorough and fair in your assessment.`
             <div className="flex items-center justify-center space-x-4">
               <motion.button
                 onClick={handleRemoveFile}
-                className="flex items-center px-6 py-3 bg-slate-600/50 hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10"
+                className={`flex items-center px-6 py-3 rounded-lg transition-colors border ${
+                  variant === 'solve'
+                    ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
+                    : 'bg-slate-600/50 hover:bg-slate-500/50 text-slate-300 border-white/10'
+                }`}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -2794,7 +3212,9 @@ Be thorough and fair in your assessment.`
               <motion.button
                 onClick={startProcessing}
                 disabled={loading}
-                className={`flex items-center justify-center px-8 py-4 rounded-lg text-white font-medium shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all bg-gradient-to-r from-cyan-500 to-blue-500`}
+                className={`flex items-center justify-center px-8 py-4 rounded-lg text-white font-medium shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all ${
+                  variant === 'solve' ? 'bg-[#ff5500] hover:bg-[#e64d00]' : 'bg-gradient-to-r from-cyan-500 to-blue-500'
+                }`}
                 whileHover={!loading ? { scale: 1.02 } : {}}
                 whileTap={!loading ? { scale: 0.98 } : {}}
               >
@@ -2815,14 +3235,24 @@ Be thorough and fair in your assessment.`
                 )}
               </motion.button>
             </div>
+            {cost > 0 && (
+              <div className="flex items-center justify-center mt-4">
+                <div className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-full bg-gray-100 text-gray-700 dark:bg-[#1f1f22] dark:text-gray-300 border border-gray-200 dark:border-white/10">
+                  <img src={coinIcon} alt="coin" className="w-5 h-5 rounded-full" />
+                  <span>{cost} Coins</span>
+                </div>
+              </div>
+            )}
             
             {processingStatus && (
               <motion.div
-                className="mt-6 p-4 bg-blue-500/10 backdrop-blur-sm rounded-lg border border-blue-500/20"
+                className={`mt-6 p-4 rounded-lg border ${
+                  variant === 'solve' ? 'bg-gray-50 dark:bg-[#151518] border-gray-200 dark:border-white/10' : 'bg-blue-500/10 backdrop-blur-sm border-blue-500/20'
+                }`}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
               >
-                <p className="text-sm text-blue-400 flex items-center justify-center">
+                <p className={`text-sm flex items-center justify-center ${variant === 'solve' ? 'text-gray-700 dark:text-gray-300' : 'text-blue-400'}`}>
                   <motion.div
                     className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full mr-2"
                     animate={{ rotate: 360 }}
@@ -2840,7 +3270,7 @@ Be thorough and fair in your assessment.`
 
   // After file upload, show split view with document on left and mistakes on right
   return (
-    <div className={`bg-[#0f172a]/60 backdrop-blur-md border border-white/10 rounded-xl shadow-lg overflow-hidden p-4 sm:p-6 ${className || ''}`}>
+    <div className={`${className || ''}`}>
       {/* Mobile-Responsive Header */}
       <div className="mb-6">
         {/* Desktop Header */}
@@ -2849,35 +3279,45 @@ Be thorough and fair in your assessment.`
             <div className="flex items-center space-x-3">
               <motion.button
                 onClick={handleRemoveFile}
-                className="flex items-center px-3 py-1.5 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10 text-sm"
+                className={`flex items-center px-3 py-1.5 rounded-lg transition-colors border text-sm ${
+                  variant === 'solve'
+                    ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
+                    : 'bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 text-slate-300 border-white/10'
+                }`}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
                 <IconComponent icon={AiOutlineLeft} className="h-3 w-3 mr-1.5" />
                 Back
               </motion.button>
-              <div className="border-l border-white/20 h-8"></div>
+              <div className={`border-l h-8 ${variant === 'solve' ? 'border-gray-300 dark:border-white/10' : 'border-white/20'}`}></div>
               <div>
-                <p className="text-slate-300 text-sm truncate max-w-[300px]">{file?.name}</p>
+                <p className={`text-sm truncate max-w-[300px] ${variant === 'solve' ? 'text-gray-700 dark:text-gray-200' : 'text-slate-300'}`}>{file?.name}</p>
               </div>
             </div>
             
             <div className="flex items-center space-x-2">
               {/* Compact Page Navigation */}
               {documentPages.length > 1 && (
-                <div className="flex items-center space-x-2 bg-slate-600/30 rounded-lg px-3 py-1.5 border border-white/10">
+                <div className={`flex items-center space-x-2 rounded-lg px-3 py-1.5 border ${
+                  variant === 'solve' ? 'bg-gray-50 dark:bg-[#151518] border-gray-200 dark:border-white/10' : 'bg-slate-600/30 border-white/10'
+                }`}>
                   <button 
-                    className="p-1 bg-cyan-500/20 hover:bg-cyan-500/30 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-cyan-400"
+                    className={`p-1 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${
+                      variant === 'solve' ? 'bg-gray-200 hover:bg-gray-300 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200' : 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400'
+                    }`}
                     disabled={currentPage === 0}
                     onClick={() => setCurrentPage(prev => prev - 1)}
                   >
                     <IconComponent icon={AiOutlineLeft} className="h-3 w-3" />
                   </button>
-                  <span className="text-slate-300 font-medium text-sm px-2">
+                  <span className={`font-medium text-sm px-2 ${variant === 'solve' ? 'text-gray-700 dark:text-gray-200' : 'text-slate-300'}`}>
                     {currentPage + 1}/{documentPages.length}
                   </span>
                   <button 
-                    className="p-1 bg-cyan-500/20 hover:bg-cyan-500/30 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-cyan-400"
+                    className={`p-1 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${
+                      variant === 'solve' ? 'bg-gray-200 hover:bg-gray-300 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200' : 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400'
+                    }`}
                     disabled={currentPage === documentPages.length - 1}
                     onClick={() => setCurrentPage(prev => prev + 1)}
                   >
@@ -2891,7 +3331,11 @@ Be thorough and fair in your assessment.`
                 {/* View File Button */}
                 <motion.button
                   onClick={() => setShowFileViewModal(true)}
-                  className="flex items-center px-2 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 rounded text-blue-400 transition-colors border border-blue-500/30 text-sm"
+                  className={`flex items-center px-2 py-1.5 rounded transition-colors border text-sm ${
+                    variant === 'solve'
+                      ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
+                      : 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border-blue-500/30'
+                  }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   title="View Original File"
@@ -2904,7 +3348,11 @@ Be thorough and fair in your assessment.`
                 {(pageMistakes.some(pm => pm.mistakes.length > 0)) && (
                   <motion.button
                     onClick={applyAutoCorrect}
-                    className="flex items-center px-2 py-1.5 bg-green-500/20 hover:bg-green-500/30 rounded text-green-400 transition-colors border border-green-500/30 text-sm"
+                    className={`flex items-center px-2 py-1.5 rounded transition-colors border text-sm ${
+                      variant === 'solve'
+                        ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
+                        : 'bg-green-500/20 hover:bg-green-500/30 text-green-400 border-green-500/30'
+                    }`}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     title="Apply Auto Corrections"
@@ -2918,7 +3366,11 @@ Be thorough and fair in your assessment.`
                 {markingSummary && overallProcessingComplete && (
                   <motion.button
                     onClick={() => setShowReportModal(true)}
-                    className="flex items-center px-2 py-1.5 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 rounded text-purple-400 transition-colors border border-purple-500/30 text-sm"
+                    className={`flex items-center px-2 py-1.5 rounded transition-colors border text-sm ${
+                      variant === 'solve'
+                        ? 'bg-[#ff5500] hover:bg-[#e64d00] text-white border-transparent'
+                        : 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 text-purple-400 border-purple-500/30'
+                    }`}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     title="View Assessment Report"
@@ -2937,7 +3389,11 @@ Be thorough and fair in your assessment.`
           <div className="flex items-center justify-between mb-4">
             <motion.button
               onClick={handleRemoveFile}
-              className="flex items-center px-3 py-2 bg-black/20 backdrop-blur-sm hover:bg-black/30 rounded-lg text-slate-300 transition-colors border border-white/10"
+              className={`flex items-center px-3 py-2 rounded-lg transition-colors border ${
+                variant === 'solve'
+                  ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
+                  : 'bg-black/20 backdrop-blur-sm hover:bg-black/30 text-slate-300 border-white/10'
+              }`}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -2947,7 +3403,11 @@ Be thorough and fair in your assessment.`
 
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 rounded-lg text-slate-300 transition-colors border border-white/10"
+              className={`p-2 rounded-lg transition-colors border ${
+                variant === 'solve'
+                  ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
+                  : 'bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 text-slate-300 border-white/10'
+              }`}
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 {isMobileMenuOpen ? (
@@ -2960,8 +3420,8 @@ Be thorough and fair in your assessment.`
           </div>
 
           <div className="mb-4">
-            <p className="text-slate-300 text-sm truncate">{file?.name}</p>
-            <p className="text-xs text-slate-400">
+            <p className={`text-sm truncate ${variant === 'solve' ? 'text-gray-700 dark:text-gray-200' : 'text-slate-300'}`}>{file?.name}</p>
+            <p className={`text-xs ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>
               Using {MARKING_STANDARDS.find(s => s.id === selectedMarkingStandard)?.name} standard
             </p>
           </div>
@@ -2973,24 +3433,36 @@ Be thorough and fair in your assessment.`
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="bg-slate-600/30 backdrop-blur-sm rounded-lg border border-white/10 p-4 mb-4"
+                className={`rounded-lg border p-4 mb-4 ${
+                  variant === 'solve'
+                    ? 'bg-gray-50 dark:bg-[#151518] border-gray-200 dark:border-white/10'
+                    : 'bg-slate-600/30 backdrop-blur-sm border-white/10'
+                }`}
               >
                 <div className="space-y-3">
                   {/* Page Navigation for Mobile */}
                   {documentPages.length > 1 && (
                     <div className="flex items-center justify-between">
                       <button 
-                        className="px-3 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-cyan-400 border border-cyan-500/30 text-sm"
+                        className={`px-3 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors border text-sm ${
+                          variant === 'solve'
+                            ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
+                            : 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border-cyan-500/30'
+                        }`}
                         disabled={currentPage === 0}
                         onClick={() => setCurrentPage(prev => prev - 1)}
                       >
                         Previous
                       </button>
-                      <span className="text-slate-300 font-medium text-sm">
+                      <span className={`font-medium text-sm ${variant === 'solve' ? 'text-gray-700 dark:text-gray-200' : 'text-slate-300'}`}>
                         Page {currentPage + 1} of {documentPages.length}
                       </span>
                       <button 
-                        className="px-3 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-cyan-400 border border-cyan-500/30 text-sm"
+                        className={`px-3 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors border text-sm ${
+                          variant === 'solve'
+                            ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
+                            : 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border-cyan-500/30'
+                        }`}
                         disabled={currentPage === documentPages.length - 1}
                         onClick={() => setCurrentPage(prev => prev + 1)}
                       >
@@ -3007,7 +3479,11 @@ Be thorough and fair in your assessment.`
                         setShowFileViewModal(true);
                         setIsMobileMenuOpen(false);
                       }}
-                      className="flex items-center justify-center px-3 py-2 bg-blue-500/20 hover:bg-blue-500/30 rounded-lg text-blue-400 transition-colors border border-blue-500/30 text-sm"
+                      className={`flex items-center justify-center px-3 py-2 rounded-lg transition-colors border text-sm ${
+                        variant === 'solve'
+                          ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
+                          : 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border-blue-500/30'
+                      }`}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
@@ -3022,7 +3498,11 @@ Be thorough and fair in your assessment.`
                           applyAutoCorrect();
                           setIsMobileMenuOpen(false);
                         }}
-                        className="flex items-center justify-center px-3 py-2 bg-green-500/20 hover:bg-green-500/30 rounded-lg text-green-400 transition-colors border border-green-500/30 text-sm"
+                        className={`flex items-center justify-center px-3 py-2 rounded-lg transition-colors border text-sm ${
+                          variant === 'solve'
+                            ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
+                            : 'bg-green-500/20 hover:bg-green-500/30 text-green-400 border-green-500/30'
+                        }`}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
@@ -3038,7 +3518,11 @@ Be thorough and fair in your assessment.`
                           setShowCorrectedText(!showCorrectedText);
                           setIsMobileMenuOpen(false);
                         }}
-                        className="flex items-center justify-center px-3 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 rounded-lg text-yellow-400 transition-colors border border-yellow-500/30 text-sm"
+                        className={`flex items-center justify-center px-3 py-2 rounded-lg transition-colors border text-sm ${
+                          variant === 'solve'
+                            ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
+                            : 'bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 border-yellow-500/30'
+                        }`}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
@@ -3054,7 +3538,11 @@ Be thorough and fair in your assessment.`
                           setShowReportModal(true);
                           setIsMobileMenuOpen(false);
                         }}
-                        className="flex items-center justify-center px-3 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 rounded-lg text-purple-400 transition-colors border border-purple-500/30 text-sm"
+                        className={`flex items-center justify-center px-3 py-2 rounded-lg transition-colors border text-sm ${
+                          variant === 'solve'
+                            ? 'bg-[#ff5500] hover:bg-[#e64d00] text-white border-transparent'
+                            : 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 text-purple-400 border-purple-500/30'
+                        }`}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
@@ -3070,23 +3558,34 @@ Be thorough and fair in your assessment.`
         </div>
       </div>
 
-      {/* Mobile-Responsive Split View: Document and Content */}
       <div className="flex flex-col lg:grid lg:grid-cols-2 gap-6 min-h-[calc(100vh-200px)]">
         {/* Left Side - Document (Full width on mobile, half on desktop) */}
-        <div className="bg-[#0f172a]/60 backdrop-blur-md border border-white/10 rounded-xl shadow-lg overflow-hidden order-2 lg:order-1">
-          <div className="bg-[#0f172a]/60 backdrop-blur-md px-4 lg:px-6 py-3 lg:py-4 border-b border-white/10 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-cyan-400">Document</h2>
+        <div className={`rounded-xl shadow-lg overflow-hidden order-2 lg:order-1 border ${
+          variant === 'solve'
+            ? 'bg-white dark:bg-[#111111] border-gray-200 dark:border-white/10'
+            : 'bg-[#0f172a]/60 backdrop-blur-md border-white/10'
+        }`}>
+          <div className={`px-4 lg:px-6 py-3 lg:py-4 border-b flex items-center justify-between ${
+            variant === 'solve'
+              ? 'bg-gray-50 dark:bg-[#151518] border-gray-200 dark:border-white/10'
+              : 'bg-[#0f172a]/60 backdrop-blur-md border-white/10'
+          }`}>
+            <h2 className={`text-lg font-semibold ${variant === 'solve' ? 'text-gray-900 dark:text-white' : 'text-cyan-400'}`}>Document</h2>
             
             {/* Desktop Text Toggle */}
             {correctedText && (
               <div className="hidden lg:flex items-center space-x-2">
-                <span className="text-sm text-slate-400">Show:</span>
+                <span className={`text-sm ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>Show:</span>
                 <button
                   onClick={() => setShowCorrectedText(!showCorrectedText)}
                   className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
                     showCorrectedText 
-                      ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                      : 'bg-slate-600/50 text-slate-300 border border-white/10'
+                      ? (variant === 'solve'
+                          ? 'bg-[#ff5500]/15 text-[#ff5500] border border-[#ff5500]/30'
+                          : 'bg-green-500/20 text-green-400 border border-green-500/30')
+                      : (variant === 'solve'
+                          ? 'bg-gray-100 text-gray-700 dark:bg-[#27272a] dark:text-gray-300 border border-gray-200 dark:border-white/10'
+                          : 'bg-slate-600/50 text-slate-300 border border-white/10')
                   }`}
                 >
                   {showCorrectedText ? 'Corrected' : 'Original'}
@@ -3097,16 +3596,18 @@ Be thorough and fair in your assessment.`
           
           {/* Mobile Text Toggle */}
           {correctedText && (
-            <div className="lg:hidden bg-slate-700/30 px-4 py-2 border-b border-white/10">
+            <div className={`lg:hidden px-4 py-2 border-b ${
+              variant === 'solve' ? 'bg-gray-50 dark:bg-[#151518] border-gray-200 dark:border-white/10' : 'bg-slate-700/30 border-white/10'
+            }`}>
               <div className="flex items-center justify-center space-x-4">
-                <span className="text-sm text-slate-400">View:</span>
-                <div className="flex bg-slate-600/50 rounded-lg p-1">
+                <span className={`text-sm ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>View:</span>
+                <div className={`flex rounded-lg p-1 ${variant === 'solve' ? 'bg-gray-100 dark:bg-[#27272a]' : 'bg-slate-600/50'}`}>
                   <button
                     onClick={() => setShowCorrectedText(false)}
                     className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
                       !showCorrectedText 
-                        ? 'bg-slate-500/50 text-slate-200'
-                        : 'text-slate-400'
+                        ? (variant === 'solve' ? 'bg-white dark:bg-[#1f1f22] text-gray-800 dark:text-gray-200' : 'bg-slate-500/50 text-slate-200')
+                        : (variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400')
                     }`}
                   >
                     Original
@@ -3115,8 +3616,8 @@ Be thorough and fair in your assessment.`
                     onClick={() => setShowCorrectedText(true)}
                     className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
                       showCorrectedText 
-                        ? 'bg-green-500/30 text-green-400'
-                        : 'text-slate-400'
+                        ? (variant === 'solve' ? 'bg-[#ff5500]/15 text-[#ff5500]' : 'bg-green-500/30 text-green-400')
+                        : (variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400')
                     }`}
                   >
                     Corrected
@@ -3127,42 +3628,94 @@ Be thorough and fair in your assessment.`
           )}
           
           <div className="h-64 lg:h-full p-4 relative">
-            <div className="w-full h-full bg-black/20 backdrop-blur-md rounded-lg overflow-hidden border border-white/10 relative">
+            <div className={`w-full h-full rounded-lg overflow-hidden border relative ${
+              variant === 'solve'
+                ? 'bg-gray-50 dark:bg-[#111111] border-gray-200 dark:border-white/10'
+                : 'bg-black/20 backdrop-blur-md border-white/10'
+            }`}>
               {textOnlyMode ? (
                 /* Direct Text Display */
                 <div className="w-full h-full overflow-auto p-4">
-                  <div className="text-slate-300 whitespace-pre-wrap font-mono text-sm leading-relaxed">
+                  <div className={`whitespace-pre-wrap font-mono text-sm leading-relaxed ${variant === 'solve' ? 'text-gray-700 dark:text-gray-300' : 'text-slate-300'}`}>
                     {getCurrentDisplayText() ? (
                       showCorrectedText && correctedText ? (
                         <div className="space-y-2">
                           <div className="text-green-400 text-xs font-medium mb-2 bg-green-500/10 px-2 py-1 rounded">
                             ✅ Corrected Text
                           </div>
-                          {correctedText}
+                          {renderMarkdownText(correctedText, variant === 'solve' ? 'prose prose-sm max-w-none dark:prose-invert text-gray-700 dark:text-gray-300' : 'prose prose-sm max-w-none dark:prose-invert text-slate-300', pageMistakes[0]?.mistakes || [], 'corrected')}
                         </div>
                       ) : (
+                        ((pageMistakes[0]?.mistakes?.length || 0) === 0 || isLikelyMarkdown(getCurrentDisplayText())) ? (
+                          renderMarkdownText(getCurrentDisplayText(), variant === 'solve' ? 'prose prose-sm max-w-none dark:prose-invert text-gray-700 dark:text-gray-300' : 'prose prose-sm max-w-none dark:prose-invert text-slate-300', pageMistakes[0]?.mistakes || [], 'original')
+                        ) : (
+                          highlightMistakesInText(
+                            getCurrentDisplayText(), 
+                            pageMistakes[0]?.mistakes || []
+                          ).map((part, index) => (
+                            part.isHighlighted ? (
+                              <span
+                                key={index}
+                                className={`${
+                                  part.mistakeType === 'grammar' ? 'bg-red-500/30 border-b-2 border-red-500' :
+                                  part.mistakeType === 'spelling' ? 'bg-yellow-500/30 border-b-2 border-yellow-500' :
+                                  part.mistakeType === 'punctuation' ? 'bg-blue-500/30 border-b-2 border-blue-500' :
+                                  'bg-indigo-500/30 border-b-2 border-indigo-500'
+                                } ${
+                                  part.isSelected ? 'ring-2 ring-cyan-400 bg-cyan-500/20 shadow-lg animate-pulse' : ''
+                                } rounded px-1 cursor-help transition-all hover:bg-opacity-50`}
+                                title={`${part.mistakeType?.toUpperCase()}: ${part.text} → ${part.correction}`}
+                                onClick={() => {
+                                  const mistakeId = pageMistakes[0]?.mistakes.find(m => m.incorrect === part.text)?.id;
+                                  if (mistakeId) {
+                                    setSelectedMistakeId(selectedMistakeId === mistakeId ? null : mistakeId);
+                                  }
+                                }}
+                              >
+                                {part.text}
+                              </span>
+                            ) : (
+                              <span key={index}>{part.text}</span>
+                            )
+                          ))
+                        )
+                      )
+                    ) : (
+                      <div className={`flex flex-col items-center justify-center h-full ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>
+                        <IconComponent icon={AiOutlineFileText} className="h-8 w-8 mb-2 opacity-50" />
+                        <p className="text-sm">No text to display</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : documentPages.length === 0 ? (
+                <div className="w-full h-full overflow-auto p-4">
+                  <div className="mb-4 flex items-center gap-3">
+                    <IconComponent icon={AiOutlineFileText} className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                    <p className={`text-sm ${variant === 'solve' ? 'text-gray-700 dark:text-gray-300' : 'text-slate-300'}`}>{file?.name}</p>
+                  </div>
+                  {extractedTexts[0]?.text ? (
+                    <div className={`whitespace-pre-wrap font-mono text-sm leading-relaxed rounded-lg p-4 ${
+                      variant === 'solve'
+                        ? 'text-gray-800 dark:text-gray-200 bg-white dark:bg-[#151518] border border-gray-200 dark:border-white/10'
+                        : 'text-slate-100 bg-slate-900/40 backdrop-blur-sm'
+                    }`}>
+                      {((pageMistakes[0]?.mistakes?.length || 0) === 0 || isLikelyMarkdown(extractedTexts[0].text)) ? (
+                        renderMarkdownText(extractedTexts[0].text, variant === 'solve' ? 'prose prose-sm max-w-none dark:prose-invert text-gray-800 dark:text-gray-200' : 'prose prose-sm max-w-none dark:prose-invert text-slate-100', pageMistakes[0]?.mistakes || [], 'original')
+                      ) : (
                         highlightMistakesInText(
-                          directText, 
+                          extractedTexts[0].text,
                           pageMistakes[0]?.mistakes || []
                         ).map((part, index) => (
                           part.isHighlighted ? (
                             <span
                               key={index}
                               className={`${
-                                part.mistakeType === 'grammar' ? 'bg-red-500/30 border-b-2 border-red-500' :
-                                part.mistakeType === 'spelling' ? 'bg-yellow-500/30 border-b-2 border-yellow-500' :
-                                part.mistakeType === 'punctuation' ? 'bg-blue-500/30 border-b-2 border-blue-500' :
-                                'bg-indigo-500/30 border-b-2 border-indigo-500'
-                              } ${
-                                part.isSelected ? 'ring-2 ring-cyan-400 bg-cyan-500/20 shadow-lg animate-pulse' : ''
-                              } rounded px-1 cursor-help transition-all hover:bg-opacity-50`}
-                              title={`${part.mistakeType?.toUpperCase()}: ${part.text} → ${part.correction}`}
-                              onClick={() => {
-                                const mistakeId = pageMistakes[0]?.mistakes.find(m => m.incorrect === part.text)?.id;
-                                if (mistakeId) {
-                                  setSelectedMistakeId(selectedMistakeId === mistakeId ? null : mistakeId);
-                                }
-                              }}
+                                part.mistakeType === 'grammar' ? 'bg-red-500/50 border-b-2 border-red-400' :
+                                part.mistakeType === 'spelling' ? 'bg-yellow-500/50 border-b-2 border-yellow-400' :
+                                part.mistakeType === 'punctuation' ? 'bg-blue-500/50 border-b-2 border-blue-400' :
+                                'bg-indigo-500/50 border-b-2 border-indigo-400'
+                              } rounded px-1`}
                             >
                               {part.text}
                             </span>
@@ -3170,14 +3723,13 @@ Be thorough and fair in your assessment.`
                             <span key={index}>{part.text}</span>
                           )
                         ))
-                      )
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-full text-slate-400">
-                        <IconComponent icon={AiOutlineFileText} className="h-8 w-8 mb-2 opacity-50" />
-                        <p className="text-sm">No text to display</p>
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className={`flex flex-col items-center justify-center h-[70%] ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>
+                      <p className="text-sm">{isProcessingStarted ? 'Processing...' : 'Click "Check Mistakes" to start analysis'}</p>
+                    </div>
+                  )}
                 </div>
               ) : (
                 /* Image with Text Overlay */
@@ -3197,7 +3749,7 @@ Be thorough and fair in your assessment.`
                   {/* Text Overlay */}
                   <div className="absolute inset-0 w-full h-full overflow-auto p-4 z-10">
                     {extractedTexts[currentPage] && extractedTexts[currentPage].isLoading && !extractedTexts[currentPage].text ? (
-                      <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                      <div className={`flex flex-col items-center justify-center h-full ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>
                         <motion.div
                           className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full mb-2"
                           animate={{ rotate: 360 }}
@@ -3206,81 +3758,93 @@ Be thorough and fair in your assessment.`
                         <p className="text-sm">Extracting text...</p>
                       </div>
                     ) : extractedTexts[currentPage] && extractedTexts[currentPage].error ? (
-                      <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                      <div className={`flex flex-col items-center justify-center h-full ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>
                         <div className="text-red-400 mb-2">⚠</div>
                         <p className="text-sm">Error extracting text</p>
-                        <p className="text-xs text-slate-500">{extractedTexts[currentPage].error}</p>
+                        <p className={`text-xs ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-500'}`}>{extractedTexts[currentPage].error}</p>
                       </div>
                     ) : extractedTexts[currentPage] && extractedTexts[currentPage].text ? (
                       <>
-                        <div className="text-slate-100 whitespace-pre-wrap font-mono text-sm leading-relaxed mb-4 bg-slate-900/40 backdrop-blur-sm rounded-lg p-4">
+                        <div className={`whitespace-pre-wrap font-mono text-sm leading-relaxed mb-4 rounded-lg p-4 ${
+                          variant === 'solve'
+                            ? 'text-gray-800 dark:text-gray-200 bg-white dark:bg-[#151518] border border-gray-200 dark:border-white/10'
+                            : 'text-slate-100 bg-slate-900/40 backdrop-blur-sm'
+                        }`}>
                           {showCorrectedText && correctedText ? (
                             <div className="space-y-2">
                               <div className="text-green-400 text-xs font-medium mb-2 bg-green-500/10 px-2 py-1 rounded">
                                 ✅ Auto-Corrected Text
                               </div>
-                              {correctedText}
+                              {renderMarkdownText(correctedText, variant === 'solve' ? 'prose prose-sm max-w-none dark:prose-invert text-gray-800 dark:text-gray-200' : 'prose prose-sm max-w-none dark:prose-invert text-slate-100', pageMistakes[currentPage]?.mistakes || [], 'corrected')}
                             </div>
                           ) : (
-                            highlightMistakesInText(
-                              extractedTexts[currentPage].text, 
-                              pageMistakes[currentPage]?.mistakes || []
-                            ).map((part, index) => (
-                              part.isHighlighted ? (
-                                <span
-                                  key={index}
-                                  className={`${
-                                    part.mistakeType === 'grammar' ? 'bg-red-500/50 border-b-2 border-red-400' :
-                                    part.mistakeType === 'spelling' ? 'bg-yellow-500/50 border-b-2 border-yellow-400' :
-                                    part.mistakeType === 'punctuation' ? 'bg-blue-500/50 border-b-2 border-blue-400' :
-                                    'bg-indigo-500/50 border-b-2 border-indigo-400'
-                                  } ${
-                                    part.isSelected ? 'ring-2 ring-cyan-400 bg-cyan-500/30 shadow-lg animate-pulse' : ''
-                                  } rounded px-1 cursor-help transition-all hover:bg-opacity-70`}
-                                  title={`${part.mistakeType?.toUpperCase()}: ${part.text} → ${part.correction}`}
-                                  onClick={() => {
-                                    const mistakeId = pageMistakes[currentPage]?.mistakes.find(m => m.incorrect === part.text)?.id;
-                                    if (mistakeId) {
-                                      setSelectedMistakeId(selectedMistakeId === mistakeId ? null : mistakeId);
-                                    }
-                                  }}
-                                >
-                                  {part.text}
-                                </span>
-                              ) : (
-                                <span key={index}>{part.text}</span>
-                              )
-                            ))
+                            ((pageMistakes[currentPage]?.mistakes?.length || 0) === 0 || isLikelyMarkdown(extractedTexts[currentPage].text)) ? (
+                              renderMarkdownText(extractedTexts[currentPage].text, variant === 'solve' ? 'prose prose-sm max-w-none dark:prose-invert text-gray-800 dark:text-gray-200' : 'prose prose-sm max-w-none dark:prose-invert text-slate-100', pageMistakes[currentPage]?.mistakes || [], 'original')
+                            ) : (
+                              highlightMistakesInText(
+                                extractedTexts[currentPage].text, 
+                                pageMistakes[currentPage]?.mistakes || []
+                              ).map((part, index) => (
+                                part.isHighlighted ? (
+                                  <span
+                                    key={index}
+                                    className={`${
+                                      part.mistakeType === 'grammar' ? 'bg-red-500/50 border-b-2 border-red-400' :
+                                      part.mistakeType === 'spelling' ? 'bg-yellow-500/50 border-b-2 border-yellow-400' :
+                                      part.mistakeType === 'punctuation' ? 'bg-blue-500/50 border-b-2 border-blue-400' :
+                                      'bg-indigo-500/50 border-b-2 border-indigo-400'
+                                    } ${
+                                      part.isSelected ? 'ring-2 ring-cyan-400 bg-cyan-500/30 shadow-lg animate-pulse' : ''
+                                    } rounded px-1 cursor-help transition-all hover:bg-opacity-70`}
+                                    title={`${part.mistakeType?.toUpperCase()}: ${part.text} → ${part.correction}`}
+                                    onClick={() => {
+                                      const mistakeId = pageMistakes[currentPage]?.mistakes.find(m => m.incorrect === part.text)?.id;
+                                      if (mistakeId) {
+                                        setSelectedMistakeId(selectedMistakeId === mistakeId ? null : mistakeId);
+                                      }
+                                    }}
+                                  >
+                                    {part.text}
+                                  </span>
+                                ) : (
+                                  <span key={index}>{part.text}</span>
+                                )
+                              ))
+                            )
                           )}
                         </div>
                         
                         {/* Color Legend - Made more prominent and always visible */}
                         {pageMistakes[currentPage]?.mistakes && pageMistakes[currentPage].mistakes.length > 0 && (
-                          <div className="mt-6 mb-4 p-4 bg-slate-800/80 backdrop-blur-sm rounded-lg border border-white/30 shadow-lg">
-                            <h4 className="text-base font-semibold text-slate-100 mb-3 flex items-center">
+                          <div className={`mt-6 mb-4 p-4 rounded-lg border shadow-lg ${
+                            variant === 'solve'
+                              ? 'bg-gray-50 dark:bg-[#151518] border-gray-200 dark:border-white/10'
+                              : 'bg-slate-800/80 backdrop-blur-sm border-white/30'
+                          }`}>
+                            <h4 className={`text-base font-semibold mb-3 flex items-center ${variant === 'solve' ? 'text-gray-900 dark:text-white' : 'text-slate-100'}`}>
                               <div className="w-2 h-2 bg-cyan-400 rounded-full mr-2"></div>
                               Mistake Types Legend
                             </h4>
                             <div className="grid grid-cols-2 gap-4 text-sm">
                               <div className="flex items-center">
                                 <div className="w-4 h-4 bg-red-500/60 border-b-2 border-red-400 rounded mr-3"></div>
-                                <span className="text-slate-200 font-medium">Grammar Errors</span>
+                                <span className={variant === 'solve' ? 'text-gray-700 dark:text-gray-300 font-medium' : 'text-slate-200 font-medium'}>Grammar Errors</span>
                               </div>
                               <div className="flex items-center">
                                 <div className="w-4 h-4 bg-yellow-500/60 border-b-2 border-yellow-400 rounded mr-3"></div>
-                                <span className="text-slate-200 font-medium">Spelling Errors</span>
+                                <span className={variant === 'solve' ? 'text-gray-700 dark:text-gray-300 font-medium' : 'text-slate-200 font-medium'}>Spelling Errors</span>
                               </div>
                               <div className="flex items-center">
                                 <div className="w-4 h-4 bg-blue-500/60 border-b-2 border-blue-400 rounded mr-3"></div>
-                                <span className="text-slate-200 font-medium">Punctuation</span>
+                                <span className={variant === 'solve' ? 'text-gray-700 dark:text-gray-300 font-medium' : 'text-slate-200 font-medium'}>Punctuation</span>
                               </div>
                               <div className="flex items-center">
                                 <div className="w-4 h-4 bg-indigo-500/60 border-b-2 border-indigo-400 rounded mr-3"></div>
-                                <span className="text-slate-200 font-medium">Other Issues</span>
+                                <span className={variant === 'solve' ? 'text-gray-700 dark:text-gray-300 font-medium' : 'text-slate-200 font-medium'}>Other Issues</span>
                               </div>
                             </div>
-                            <div className="mt-3 pt-3 border-t border-white/20">
-                              <p className="text-xs text-slate-400">
+                            <div className={`mt-3 pt-3 border-t ${variant === 'solve' ? 'border-gray-200 dark:border-white/10' : 'border-white/20'}`}>
+                              <p className={`text-xs ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>
                                 💡 Click on highlighted text to see correction details
                               </p>
                             </div>
@@ -3288,12 +3852,12 @@ Be thorough and fair in your assessment.`
                         )}
                       </>
                     ) : !isProcessingStarted ? (
-                      <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                      <div className={`flex flex-col items-center justify-center h-full ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>
                         <IconComponent icon={AiOutlineFileText} className="h-8 w-8 mb-2 opacity-50" />
                         <p className="text-sm">Click "Check Mistakes" to start analysis</p>
                       </div>
                     ) : (
-                      <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                      <div className={`flex flex-col items-center justify-center h-full ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>
                         <IconComponent icon={AiOutlineFileText} className="h-8 w-8 mb-2 opacity-50" />
                         <p className="text-sm">Processing...</p>
                       </div>
@@ -3306,10 +3870,18 @@ Be thorough and fair in your assessment.`
         </div>
 
         {/* Right Side - Content (Full width on mobile, half on desktop) */}
-        <div className="bg-slate-600/30 backdrop-blur-sm border border-white/10 rounded-xl shadow-lg overflow-hidden flex flex-col order-1 lg:order-2">
-          <div className="bg-slate-700/50 backdrop-blur-sm px-4 lg:px-6 py-3 lg:py-4 border-b border-white/10 flex-shrink-0">
+        <div className={`rounded-xl shadow-lg overflow-hidden flex flex-col order-1 lg:order-2 border ${
+          variant === 'solve'
+            ? 'bg-white dark:bg-[#111111] border-gray-200 dark:border-white/10'
+            : 'bg-slate-600/30 backdrop-blur-sm border-white/10'
+        }`}>
+          <div className={`px-4 lg:px-6 py-3 lg:py-4 border-b flex-shrink-0 ${
+            variant === 'solve'
+              ? 'bg-gray-50 dark:bg-[#151518] border-gray-200 dark:border-white/10'
+              : 'bg-slate-700/50 backdrop-blur-sm border-white/10'
+          }`}>
             <div className="flex items-center justify-between">
-              <h2 className="text-base lg:text-lg font-semibold text-cyan-400">Mistakes & Assessment</h2>
+              <h2 className={`text-base lg:text-lg font-semibold ${variant === 'solve' ? 'text-gray-900 dark:text-white' : 'text-cyan-400'}`}>Mistakes & Assessment</h2>
               {pageMistakes[currentPage] && (
                 <div className="flex items-center space-x-2">
                   {pageMistakes[currentPage].isLoading && (
@@ -3360,7 +3932,7 @@ Be thorough and fair in your assessment.`
                     />
                   ))}
                 </div>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className={`text-xs mt-1 ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>
                   {pageMistakes.filter(pm => pm.isComplete && !pm.error).length} of {pageMistakes.length} pages completed
                 </p>
               </div>
@@ -3369,7 +3941,7 @@ Be thorough and fair in your assessment.`
           
           <div className="flex-1 overflow-y-auto p-4 lg:p-6" ref={mistakesContainerRef} style={{ maxHeight: 'calc(100vh - 200px)' }}>
             {loading ? (
-              <div className="flex flex-col items-center justify-center h-32 lg:h-full text-slate-400">
+              <div className={`flex flex-col items-center justify-center h-32 lg:h-full ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>
                 <motion.div
                   className="w-12 h-12 lg:w-16 lg:h-16 border-4 border-cyan-500 border-t-transparent rounded-full mb-4"
                   animate={{ rotate: 360 }}
@@ -3382,12 +3954,16 @@ Be thorough and fair in your assessment.`
                 {/* Integrated Marking Summary (shown when processing is complete) */}
                 {markingSummary && overallProcessingComplete && (
                   <motion.div 
-                    className="mb-4 lg:mb-6 bg-gradient-to-r from-purple-500/10 to-pink-500/10 backdrop-blur-sm rounded-lg p-4 lg:p-6 border border-purple-500/20"
+                    className={`mb-4 lg:mb-6 rounded-lg p-4 lg:p-6 border ${
+                      variant === 'solve'
+                        ? 'bg-gray-50 dark:bg-[#151518] border-gray-200 dark:border-white/10'
+                        : 'bg-gradient-to-r from-purple-500/10 to-pink-500/10 backdrop-blur-sm border-purple-500/20'
+                    }`}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5, duration: 0.5 }}
                   >
-                    <h3 className="text-lg lg:text-xl font-semibold text-purple-400 mb-3 lg:mb-4 flex items-center">
+                    <h3 className={`text-lg lg:text-xl font-semibold mb-3 lg:mb-4 flex items-center ${variant === 'solve' ? 'text-gray-900 dark:text-white' : 'text-purple-400'}`}>
                       <IconComponent icon={AiOutlineFileText} className="h-4 w-4 lg:h-5 lg:w-5 mr-2" />
                       Assessment Summary
                     </h3>
@@ -3400,9 +3976,9 @@ Be thorough and fair in your assessment.`
                       <div className="text-lg lg:text-xl font-semibold text-green-300 mb-3">
                         Grade: {markingSummary.grade} ({Math.round(markingSummary.percentage)}%)
                       </div>
-                      <div className="w-full bg-slate-600 rounded-full h-3 lg:h-4">
+                      <div className={`w-full rounded-full h-3 lg:h-4 ${variant === 'solve' ? 'bg-gray-200 dark:bg-[#27272a]' : 'bg-slate-600'}`}>
                         <motion.div 
-                          className="bg-gradient-to-r from-green-500 to-emerald-500 h-3 lg:h-4 rounded-full"
+                          className={`h-3 lg:h-4 rounded-full ${variant === 'solve' ? 'bg-[#ff5500]' : 'bg-gradient-to-r from-green-500 to-emerald-500'}`}
                           initial={{ width: 0 }}
                           animate={{ width: `${markingSummary.percentage}%` }}
                           transition={{ duration: 1, delay: 0.5 }}
@@ -3469,8 +4045,12 @@ Be thorough and fair in your assessment.`
                 {/* Mistakes Content */}
                 {pageMistakes[currentPage] && pageMistakes[currentPage].mistakes.length > 0 ? (
                   <div className="space-y-3 lg:space-y-4">
-                    <div className="mb-3 lg:mb-4 p-3 bg-teal-500/10 backdrop-blur-sm rounded-lg border border-teal-500/20">
-                      <h3 className="text-base lg:text-lg font-semibold text-teal-400">
+                    <div className={`mb-3 lg:mb-4 p-3 rounded-lg border ${
+                      variant === 'solve'
+                        ? 'bg-gray-50 dark:bg-[#151518] border-gray-200 dark:border-white/10'
+                        : 'bg-teal-500/10 backdrop-blur-sm border-teal-500/20'
+                    }`}>
+                      <h3 className={`text-base lg:text-lg font-semibold ${variant === 'solve' ? 'text-gray-900 dark:text-white' : 'text-teal-400'}`}>
                         {textOnlyMode ? 'Text Analysis' : `Page ${currentPage + 1}`} - {pageMistakes[currentPage].mistakes.length} mistake(s) found
                       </h3>
                     </div>
@@ -3478,10 +4058,10 @@ Be thorough and fair in your assessment.`
                     {pageMistakes[currentPage].mistakes.map((mistake) => (
                       <motion.div
                         key={mistake.id}
-                        className={`bg-slate-700/30 backdrop-blur-sm rounded-lg p-3 lg:p-4 border cursor-pointer transition-all ${
+                        className={`rounded-lg p-3 lg:p-4 border cursor-pointer transition-all ${
                           selectedMistakeId === mistake.id 
-                            ? 'border-cyan-500/50 bg-cyan-500/10' 
-                            : 'border-white/10 hover:border-cyan-500/30'
+                            ? (variant === 'solve' ? 'border-[#ff5500]/50 bg-[#ff5500]/10' : 'border-cyan-500/50 bg-cyan-500/10')
+                            : (variant === 'solve' ? 'bg-white dark:bg-[#151518] border-gray-200 dark:border-white/10 hover:border-[#ff5500]/40' : 'bg-slate-700/30 backdrop-blur-sm border-white/10 hover:border-cyan-500/30')
                         }`}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -3499,14 +4079,14 @@ Be thorough and fair in your assessment.`
                         <div className="mb-3">
                           <h4 className="text-sm font-medium text-red-400 mb-1">Incorrect:</h4>
                           <div className="bg-red-500/10 border-l-4 border-red-500 p-2 lg:p-3 rounded-r">
-                            <p className="text-slate-300 font-mono text-sm">{mistake.incorrect}</p>
+                            <p className={`font-mono text-sm ${variant === 'solve' ? 'text-gray-700 dark:text-gray-300' : 'text-slate-300'}`}>{mistake.incorrect}</p>
                           </div>
                         </div>
                         
                         <div className="mb-2">
                           <h4 className="text-sm font-medium text-green-400 mb-1">Correction:</h4>
                           <div className="bg-green-500/10 border-l-4 border-green-500 p-2 lg:p-3 rounded-r">
-                            <p className="text-slate-300 font-mono text-sm">{mistake.correct}</p>
+                            <p className={`font-mono text-sm ${variant === 'solve' ? 'text-gray-700 dark:text-gray-300' : 'text-slate-300'}`}>{mistake.correct}</p>
                           </div>
                         </div>
                         
@@ -3519,7 +4099,7 @@ Be thorough and fair in your assessment.`
                     ))}
                   </div>
                 ) : pageMistakes[currentPage] && pageMistakes[currentPage].isComplete ? (
-                  <div className="flex flex-col items-center justify-center h-32 lg:h-full text-slate-400">
+                  <div className={`flex flex-col items-center justify-center h-32 lg:h-full ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>
                     <div className="text-4xl lg:text-6xl mb-4">✅</div>
                     <h3 className="text-lg lg:text-xl font-semibold text-green-400 mb-2">No Mistakes Found!</h3>
                     <p className="text-center text-sm">This page appears to be error-free. Great job!</p>
@@ -3537,7 +4117,7 @@ Be thorough and fair in your assessment.`
                     )}
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-32 lg:h-full text-slate-400">
+                  <div className={`flex flex-col items-center justify-center h-32 lg:h-full ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>
                     <IconComponent icon={AiOutlineBulb} className="h-8 w-8 lg:h-12 lg:w-12 mb-3 opacity-50" />
                     <p className="text-center text-sm">Mistakes and assessment will appear here after processing your document.</p>
                   </div>
@@ -3549,7 +4129,7 @@ Be thorough and fair in your assessment.`
       </div>
 
       {/* Assessment Summary Section - Now displayed below the main component */}
-      {markingSummary && overallProcessingComplete && (
+      {variant !== 'solve' && markingSummary && overallProcessingComplete && (
         <motion.div 
           className="mt-8 max-w-6xl mx-auto"
           initial={{ opacity: 0, y: 20 }}
@@ -3670,16 +4250,20 @@ Be thorough and fair in your assessment.`
           <PortalModal 
             isOpen={showReportModal}
             onClose={() => setShowReportModal(false)}
-            className="bg-white rounded-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl relative"
+            className={`rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl relative ${
+              variant === 'solve'
+                ? 'bg-white dark:bg-[#0f0f10] border border-gray-200 dark:border-white/10'
+                : 'bg-white'
+            }`}
           >
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-3xl font-bold text-gray-800 flex items-center">
-                <IconComponent icon={AiOutlineFileText} className="h-8 w-8 mr-3 text-blue-600" />
+              <h3 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center">
+                <IconComponent icon={AiOutlineFileText} className="h-8 w-8 mr-3 text-[#ff5500]" />
                 Assessment Report
               </h3>
               <button
                 onClick={() => setShowReportModal(false)}
-                className="text-gray-400 hover:text-gray-600 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -3689,23 +4273,23 @@ Be thorough and fair in your assessment.`
             
             <div className="overflow-y-auto max-h-[calc(90vh-120px)] space-y-6">
               {/* Score Overview */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
+              <div className="bg-gray-50 dark:bg-[#151518] rounded-xl p-6 border border-gray-200 dark:border-white/10">
                 <div className="text-center mb-6">
-                  <div className="text-6xl font-bold text-blue-600 mb-2">
+                  <div className="text-6xl font-bold text-[#ff5500] mb-2">
                     {markingSummary.totalScore}/{markingSummary.maxScore}
                   </div>
-                  <div className="text-2xl font-semibold text-blue-800 mb-4">
+                  <div className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
                     Grade: {markingSummary.grade} ({Math.round(markingSummary.percentage)}%)
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-6">
+                  <div className="w-full bg-gray-200 dark:bg-[#27272a] rounded-full h-6">
                     <motion.div 
-                      className="bg-gradient-to-r from-blue-500 to-indigo-500 h-6 rounded-full"
+                      className="bg-[#ff5500] h-6 rounded-full"
                       initial={{ width: 0 }}
                       animate={{ width: `${markingSummary.percentage}%` }}
                       transition={{ duration: 1 }}
                     ></motion.div>
                   </div>
-                  <p className="text-gray-600 mt-2">
+                  <p className="text-gray-600 dark:text-gray-300 mt-2">
                     Assessed using {MARKING_STANDARDS.find(s => s.id === selectedMarkingStandard)?.name} standards
                   </p>
                 </div>
@@ -3714,14 +4298,14 @@ Be thorough and fair in your assessment.`
               {/* Detailed Breakdown */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Strengths */}
-                <div className="bg-green-50 rounded-xl p-6 border border-green-200">
-                  <h3 className="text-xl font-semibold text-green-800 mb-4 flex items-center">
+                <div className="bg-white dark:bg-[#151518] rounded-xl p-6 border border-gray-200 dark:border-white/10">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
                     <span className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white mr-2">✓</span>
                     Strengths
                   </h3>
                   <ul className="space-y-3">
                     {markingSummary.strengths.map((strength, index) => (
-                      <li key={index} className="text-green-700 flex items-start">
+                      <li key={index} className="text-gray-700 dark:text-gray-300 flex items-start">
                         <span className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
                         {strength}
                       </li>
@@ -3730,35 +4314,35 @@ Be thorough and fair in your assessment.`
                 </div>
 
                 {/* Areas for Improvement */}
-                <div className="bg-indigo-50 rounded-xl p-6 border border-indigo-200">
-                  <h3 className="text-xl font-semibold text-indigo-800 mb-4 flex items-center">
+                <div className="bg-white dark:bg-[#151518] rounded-xl p-6 border border-gray-200 dark:border-white/10">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
                     <span className="w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center text-white mr-2">!</span>
                     Areas for Improvement
                   </h3>
                   <ul className="space-y-3">
                     {markingSummary.weaknesses.length > 0 ? (
                       markingSummary.weaknesses.map((weakness, index) => (
-                        <li key={index} className="text-indigo-700 flex items-start">
+                        <li key={index} className="text-gray-700 dark:text-gray-300 flex items-start">
                           <span className="w-2 h-2 bg-indigo-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
                           {weakness}
                         </li>
                       ))
                     ) : (
-                      <li className="text-indigo-700">No major areas of concern identified</li>
+                      <li className="text-gray-700 dark:text-gray-300">No major areas of concern identified</li>
                     )}
                   </ul>
                 </div>
               </div>
 
               {/* Recommendations */}
-              <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+              <div className="bg-white dark:bg-[#151518] rounded-xl p-6 border border-gray-200 dark:border-white/10">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
                   <IconComponent icon={AiOutlineBulb} className="w-6 h-6 mr-2 text-yellow-500" />
                   Recommendations
                 </h3>
                 <ul className="space-y-4">
                   {markingSummary.recommendations.map((rec, index) => (
-                    <li key={index} className="text-gray-700 flex items-start">
+                    <li key={index} className="text-gray-700 dark:text-gray-300 flex items-start">
                       <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
                       {rec}
                     </li>
@@ -3767,16 +4351,16 @@ Be thorough and fair in your assessment.`
               </div>
 
               {/* Study Plan */}
-              <div className="bg-purple-50 rounded-xl p-6 border border-purple-200">
-                <h3 className="text-xl font-semibold text-purple-800 mb-4 flex items-center">
+              <div className="bg-white dark:bg-[#151518] rounded-xl p-6 border border-gray-200 dark:border-white/10">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
                   <IconComponent icon={AiOutlineBook} className="w-6 h-6 mr-2 text-purple-600" />
                   Personalized Study Plan
                 </h3>
                 <div className="space-y-4">
                   {markingSummary.studyPlan.map((item, index) => (
-                    <div key={index} className="bg-white border border-purple-200 rounded-lg p-4">
+                    <div key={index} className="bg-gray-50 dark:bg-[#111111] border border-gray-200 dark:border-white/10 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-semibold text-purple-800">{item.topic}</h4>
+                        <h4 className="font-semibold text-gray-900 dark:text-white">{item.topic}</h4>
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                           item.priority === 'high' ? 'bg-red-100 text-red-800' :
                           item.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
@@ -3785,23 +4369,23 @@ Be thorough and fair in your assessment.`
                           {item.priority} priority
                         </span>
                       </div>
-                      <p className="text-purple-700 text-sm">{item.description}</p>
+                      <p className="text-gray-700 dark:text-gray-300 text-sm">{item.description}</p>
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* Export Options */}
-              <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
-                <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+              <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200 dark:border-white/10">
+                <button className="flex items-center px-4 py-2 bg-[#ff5500] text-white rounded-lg hover:bg-[#e64d00] transition-colors">
                   <IconComponent icon={FiDownload} className="h-4 w-4 mr-2" />
                   Download PDF
                 </button>
-                <button className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                <button className="flex items-center px-4 py-2 bg-gray-700 dark:bg-[#27272a] text-white rounded-lg hover:bg-gray-800 dark:hover:bg-[#313136] transition-colors">
                   <IconComponent icon={FiCopy} className="h-4 w-4 mr-2" />
                   Copy Report
                 </button>
-                <button className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                <button className="flex items-center px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-black rounded-lg hover:bg-black dark:hover:bg-gray-200 transition-colors">
                   <IconComponent icon={FiShare2} className="h-4 w-4 mr-2" />
                   Share Report
                 </button>
@@ -3817,16 +4401,24 @@ Be thorough and fair in your assessment.`
           <PortalModal 
             isOpen={showFileViewModal}
             onClose={() => setShowFileViewModal(false)}
-            className="bg-slate-800 rounded-xl p-6 max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl border border-white/10 relative"
+            className={`rounded-xl p-6 max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl relative ${
+              variant === 'solve'
+                ? 'bg-white dark:bg-[#0f0f10] border border-gray-200 dark:border-white/10'
+                : 'bg-slate-800 border border-white/10'
+            }`}
           >
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-cyan-400 flex items-center">
+              <h3 className={`text-2xl font-bold flex items-center ${variant === 'solve' ? 'text-gray-900 dark:text-white' : 'text-cyan-400'}`}>
                 <IconComponent icon={AiOutlineFileText} className="h-6 w-6 mr-3" />
                 Original Document: {file?.name}
               </h3>
               <button
                 onClick={() => setShowFileViewModal(false)}
-                className="text-slate-400 hover:text-slate-300 p-2 rounded-lg hover:bg-slate-700 transition-colors"
+                className={`p-2 rounded-lg transition-colors ${
+                  variant === 'solve'
+                    ? 'text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
+                    : 'text-slate-400 hover:text-slate-300 hover:bg-slate-700'
+                }`}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -3839,19 +4431,29 @@ Be thorough and fair in your assessment.`
                 <div className="space-y-6">
                   {/* Page Navigation for Multiple Pages */}
                   {documentPages.length > 1 && (
-                    <div className="flex items-center justify-center space-x-4 bg-slate-700/30 rounded-lg p-4">
+                    <div className={`flex items-center justify-center space-x-4 rounded-lg p-4 ${
+                      variant === 'solve' ? 'bg-gray-50 dark:bg-[#151518] border border-gray-200 dark:border-white/10' : 'bg-slate-700/30'
+                    }`}>
                       <button 
-                        className="px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-cyan-400 border border-cyan-500/30"
+                        className={`px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${
+                          variant === 'solve'
+                            ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-white/10'
+                            : 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/30'
+                        }`}
                         disabled={currentPage === 0}
                         onClick={() => setCurrentPage(prev => prev - 1)}
                       >
                         Previous
                       </button>
-                      <span className="text-slate-300 font-medium">
+                      <span className={`font-medium ${variant === 'solve' ? 'text-gray-700 dark:text-gray-200' : 'text-slate-300'}`}>
                         Page {currentPage + 1} of {documentPages.length}
                       </span>
                       <button 
-                        className="px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-cyan-400 border border-cyan-500/30"
+                        className={`px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${
+                          variant === 'solve'
+                            ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-white/10'
+                            : 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/30'
+                        }`}
                         disabled={currentPage === documentPages.length - 1}
                         onClick={() => setCurrentPage(prev => prev + 1)}
                       >
@@ -3875,34 +4477,46 @@ Be thorough and fair in your assessment.`
                   </div>
 
                   {/* Document Info */}
-                  <div className="bg-slate-700/30 rounded-lg p-4 space-y-2">
+                  <div className={`rounded-lg p-4 space-y-2 ${
+                    variant === 'solve' ? 'bg-gray-50 dark:bg-[#151518] border border-gray-200 dark:border-white/10' : 'bg-slate-700/30'
+                  }`}>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                       <div>
-                        <span className="text-slate-400">File Name:</span>
-                        <span className="text-slate-200 ml-2">{file?.name}</span>
+                        <span className={variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}>File Name:</span>
+                        <span className={variant === 'solve' ? 'text-gray-800 dark:text-gray-200 ml-2' : 'text-slate-200 ml-2'}>{file?.name}</span>
                       </div>
                       <div>
-                        <span className="text-slate-400">File Type:</span>
-                        <span className="text-slate-200 ml-2">{file?.type}</span>
+                        <span className={variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}>File Type:</span>
+                        <span className={variant === 'solve' ? 'text-gray-800 dark:text-gray-200 ml-2' : 'text-slate-200 ml-2'}>{file?.type}</span>
                       </div>
                       <div>
-                        <span className="text-slate-400">File Size:</span>
-                        <span className="text-slate-200 ml-2">{file?.size ? (file.size / 1024 / 1024).toFixed(2) : '0'} MB</span>
+                        <span className={variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}>File Size:</span>
+                        <span className={variant === 'solve' ? 'text-gray-800 dark:text-gray-200 ml-2' : 'text-slate-200 ml-2'}>{file?.size ? (file.size / 1024 / 1024).toFixed(2) : '0'} MB</span>
                       </div>
                     </div>
                   </div>
                 </div>
               ) : textOnlyMode ? (
-                <div className="bg-slate-700/30 rounded-lg p-6">
-                  <h4 className="text-cyan-400 mb-4 font-semibold">Original Text:</h4>
-                  <div className="bg-slate-800/50 rounded-lg p-4 max-h-96 overflow-y-auto">
-                    <pre className="text-slate-300 whitespace-pre-wrap text-sm font-mono">
+                <div className={`rounded-lg p-6 ${variant === 'solve' ? 'bg-gray-50 dark:bg-[#151518] border border-gray-200 dark:border-white/10' : 'bg-slate-700/30'}`}>
+                  <h4 className={`mb-4 font-semibold ${variant === 'solve' ? 'text-gray-900 dark:text-white' : 'text-cyan-400'}`}>Original Text:</h4>
+                  <div className={`rounded-lg p-4 max-h-96 overflow-y-auto ${variant === 'solve' ? 'bg-white dark:bg-[#111111] border border-gray-200 dark:border-white/10' : 'bg-slate-800/50'}`}>
+                    <pre className={`whitespace-pre-wrap text-sm font-mono ${variant === 'solve' ? 'text-gray-700 dark:text-gray-300' : 'text-slate-300'}`}>
                       {directText}
                     </pre>
                   </div>
                 </div>
+              ) : file ? (
+                <div className={`rounded-lg p-6 ${variant === 'solve' ? 'bg-gray-50 dark:bg-[#151518] border border-gray-200 dark:border-white/10' : 'bg-slate-700/30'}`}>
+                  <div className="flex flex-col items-center justify-center text-center">
+                    <IconComponent icon={AiOutlineFileText} className="h-16 w-16 mb-4 opacity-60" />
+                    <p className={`font-medium mb-2 ${variant === 'solve' ? 'text-gray-900 dark:text-white' : 'text-slate-200'}`}>{file.name}</p>
+                    <p className={`text-sm ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>
+                      Preview is not available for this file type in modal.
+                    </p>
+                  </div>
+                </div>
               ) : (
-                <div className="flex flex-col items-center justify-center h-64 text-slate-400">
+                <div className={`flex flex-col items-center justify-center h-64 ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>
                   <IconComponent icon={AiOutlineFileText} className="h-16 w-16 mb-4 opacity-50" />
                   <p>No document to display</p>
                 </div>
@@ -3912,14 +4526,14 @@ Be thorough and fair in your assessment.`
         )}
       </AnimatePresence>
 
-      {/* History Modal */}
-      <AnimatePresence>
-        {showHistory && (
-          <PortalModal 
-            isOpen={showHistory}
-            onClose={() => setShowHistory(false)}
-            className="bg-slate-800/90 backdrop-blur-sm border border-white/10 rounded-xl p-6 max-w-4xl w-full max-h-[80vh] overflow-hidden shadow-2xl relative"
-          >
+      {variant !== 'solve' && (
+        <AnimatePresence>
+          {showHistory && (
+            <PortalModal 
+              isOpen={showHistory}
+              onClose={() => setShowHistory(false)}
+              className="bg-slate-800/90 backdrop-blur-sm border border-white/10 rounded-xl p-6 max-w-4xl w-full max-h-[80vh] overflow-hidden shadow-2xl relative"
+            >
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-2xl font-semibold text-cyan-400 flex items-center">
                 <IconComponent icon={AiOutlineHistory} className="h-7 w-7 mr-3" />
@@ -4045,9 +4659,10 @@ Be thorough and fair in your assessment.`
                 </div>
               )}
             </div>
-          </PortalModal>
-        )}
-      </AnimatePresence>
+            </PortalModal>
+          )}
+        </AnimatePresence>
+      )}
 
       {/* Confirmation Modal */}
       <AnimatePresence>
@@ -4055,18 +4670,26 @@ Be thorough and fair in your assessment.`
           <PortalModal 
             isOpen={showConfirmModal}
             onClose={handleCancel}
-            className="bg-slate-800/95 backdrop-blur-sm border border-white/10 rounded-xl p-6 max-w-md w-full shadow-2xl"
+            className={`backdrop-blur-sm rounded-xl p-6 max-w-md w-full shadow-2xl ${
+              variant === 'solve'
+                ? 'bg-white dark:bg-[#0f0f10] border border-gray-200 dark:border-white/10'
+                : 'bg-slate-800/95 border border-white/10'
+            }`}
           >
             <div className="text-center">
               <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <IconComponent icon={AiOutlineExclamation} className="h-6 w-6 text-red-400" />
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Confirm Action</h3>
-              <p className="text-slate-300 mb-6">{confirmMessage}</p>
+              <h3 className={`text-lg font-semibold mb-2 ${variant === 'solve' ? 'text-gray-900 dark:text-white' : 'text-white'}`}>Confirm Action</h3>
+              <p className={`${variant === 'solve' ? 'text-gray-600 dark:text-gray-300' : 'text-slate-300'} mb-6`}>{confirmMessage}</p>
               <div className="flex space-x-3 justify-center">
                 <motion.button
                   onClick={handleCancel}
-                  className="px-4 py-2 bg-slate-600/50 hover:bg-slate-600/70 text-slate-300 rounded-lg transition-colors"
+                  className={`px-4 py-2 rounded-lg transition-colors ${
+                    variant === 'solve'
+                      ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200'
+                      : 'bg-slate-600/50 hover:bg-slate-600/70 text-slate-300'
+                  }`}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >

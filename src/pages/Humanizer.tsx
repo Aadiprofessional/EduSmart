@@ -21,7 +21,7 @@ import IconComponent from '../components/ui/IconComponent';
 import { useNotification } from '../utils/NotificationContext';
 import SidebarLeft from '../components/dashboard/SidebarLeft';
 import { useLanguage } from '../utils/LanguageContext';
-import { API_BASE_URL } from '../config/api';
+import { API_BASE } from '../config/api';
 import { useResponseCheck, ResponseUpgradeModal } from '../utils/responseChecker';
 import coinIcon from '../assets/assets_coin.png';
 
@@ -233,7 +233,7 @@ const Humanizer: React.FC = () => {
       const uid = user?.id || "0a147ebe-af99-481b-bcaf-ae70c9aeb8d8";
 
       // Using the new API endpoint
-      const response = await fetch(`${API_BASE_URL}/api/humanizer/createHumanization`, {
+      const response = await fetch(`${API_BASE}/humanizer/createHumanization`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

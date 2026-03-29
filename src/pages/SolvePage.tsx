@@ -179,6 +179,36 @@ const SolvePage: React.FC = () => {
   const subjectsContainerRef = useRef<HTMLDivElement>(null);
   const subjectRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const initialInputRef = useRef<HTMLTextAreaElement>(null);
+  const followUpInputRef = useRef<HTMLTextAreaElement>(null);
+
+  const resizeInputTextarea = (textarea: HTMLTextAreaElement | null) => {
+    if (!textarea) return;
+    const computedStyle = window.getComputedStyle(textarea);
+    const lineHeight = parseFloat(computedStyle.lineHeight) || 24;
+    const verticalPadding =
+      (parseFloat(computedStyle.paddingTop) || 0) +
+      (parseFloat(computedStyle.paddingBottom) || 0);
+    const baseHeight = Number(textarea.dataset.baseHeight || textarea.offsetHeight);
+    const twoLineHeight = lineHeight * 2 + verticalPadding;
+    const maxHeight = lineHeight * 4 + verticalPadding;
+    if (!textarea.dataset.baseHeight) {
+      textarea.dataset.baseHeight = `${baseHeight}`;
+    }
+
+    textarea.style.height = 'auto';
+    const nextHeight =
+      textarea.scrollHeight <= twoLineHeight
+        ? baseHeight
+        : Math.min(textarea.scrollHeight, maxHeight);
+    textarea.style.height = `${nextHeight}px`;
+    textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
+  };
+
+  useEffect(() => {
+    resizeInputTextarea(initialInputRef.current);
+    resizeInputTextarea(followUpInputRef.current);
+  }, [inputValue, chatStarted]);
 
   const fetchChatHistory = async (pageNumber = 0, isLoadMore = false) => {
     if (!user) return;
@@ -933,6 +963,7 @@ const SolvePage: React.FC = () => {
                        <div className="w-full bg-white dark:bg-black/40 backdrop-blur-xl rounded-[32px] p-2 border border-blue-500 shadow-xl dark:shadow-2xl z-10 relative">
                            <div className="relative w-full">
                                <textarea 
+                                ref={initialInputRef}
                                  value={inputValue}
                                  onChange={(e) => setInputValue(e.target.value)}
                                  onKeyDown={(e) => {
@@ -945,23 +976,25 @@ const SolvePage: React.FC = () => {
                                  className="w-full bg-transparent text-gray-800 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none text-lg resize-none py-4 px-4 pr-16 min-h-[64px]"
                                  rows={1}
                                />
-                              {!isSendDisabled && cost > 0 && (
-                                <span className="absolute bottom-11 right-0 z-10 inline-flex items-center gap-1 bg-[#ff5500] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                                   -{cost}
-                                   <img src={coinIcon} alt="coins" className="w-3 h-3" />
-                                 </span>
-                               )}
-                               <button 
-                                 onClick={handleSendMessage}
-                                 disabled={isSendDisabled}
-                                 className={`absolute top-1/2 -translate-y-1/2 right-4 p-2 rounded-full transition-all duration-200 flex items-center justify-center w-8 h-8 ${
-                                   isSendDisabled 
-                                     ? 'bg-gray-100 dark:bg-[#27272a] text-gray-400 dark:text-gray-600 cursor-not-allowed' 
-                                     : 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200'
-                                 }`}
-                               >
-                                 <FaArrowUp size={14} />
-                               </button>
+                              <div className="absolute top-1/2 -translate-y-1/2 right-4">
+                                 <button 
+                                   onClick={handleSendMessage}
+                                   disabled={isSendDisabled}
+                                   className={`relative p-2 rounded-full transition-all duration-200 flex items-center justify-center w-8 h-8 ${
+                                     isSendDisabled 
+                                       ? 'bg-gray-100 dark:bg-[#27272a] text-gray-400 dark:text-gray-600 cursor-not-allowed' 
+                                       : 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200'
+                                   }`}
+                                 >
+                                   {!isSendDisabled && cost > 0 && (
+                                     <span className="absolute -top-2 -right-2 z-10 inline-flex items-center gap-1 bg-[#ff5500] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                       -{cost}
+                                       <img src={coinIcon} alt="coins" className="w-3 h-3" />
+                                     </span>
+                                   )}
+                                   <FaArrowUp size={14} />
+                                 </button>
+                              </div>
                            </div>
                        </div>
                    </div>
@@ -1112,6 +1145,7 @@ const SolvePage: React.FC = () => {
                 <div className="absolute bottom-6 left-6 right-6 bg-white/80 dark:bg-black/40 backdrop-blur-xl rounded-[32px] p-2 border border-blue-500 shadow-2xl z-20">
                      <div className="relative w-full">
                          <textarea 
+                          ref={followUpInputRef}
                            value={inputValue}
                            onChange={(e) => setInputValue(e.target.value)}
                            onKeyDown={(e) => {
@@ -1124,23 +1158,25 @@ const SolvePage: React.FC = () => {
                           className="w-full bg-transparent text-gray-800 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none text-lg resize-none py-3 px-4 pr-16 min-h-[56px]"
                            rows={1}
                          />
-                        {!isSendDisabled && cost > 0 && (
-                          <span className="absolute bottom-9 right-0 z-10 inline-flex items-center gap-1 bg-[#ff5500] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                             -{cost}
-                             <img src={coinIcon} alt="coins" className="w-3 h-3" />
-                           </span>
-                         )}
-                         <button 
-                           onClick={handleSendMessage}
-                           disabled={isSendDisabled}
-                           className={`absolute top-1/2 -translate-y-1/2 right-4 p-2 rounded-full transition-all duration-200 flex items-center justify-center w-8 h-8 ${
-                             isSendDisabled 
-                               ? 'bg-[#27272a] text-gray-600 cursor-not-allowed' 
-                               : 'bg-white text-black hover:bg-gray-200'
-                           }`}
-                         >
-                           <FaArrowUp size={14} />
-                         </button>
+                        <div className="absolute top-1/2 -translate-y-1/2 right-4">
+                           <button 
+                             onClick={handleSendMessage}
+                             disabled={isSendDisabled}
+                             className={`relative p-2 rounded-full transition-all duration-200 flex items-center justify-center w-8 h-8 ${
+                               isSendDisabled 
+                                 ? 'bg-[#27272a] text-gray-600 cursor-not-allowed' 
+                                 : 'bg-white text-black hover:bg-gray-200'
+                             }`}
+                           >
+                             {!isSendDisabled && cost > 0 && (
+                               <span className="absolute -top-2 -right-2 z-10 inline-flex items-center gap-1 bg-[#ff5500] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                 -{cost}
+                                 <img src={coinIcon} alt="coins" className="w-3 h-3" />
+                               </span>
+                             )}
+                             <FaArrowUp size={14} />
+                           </button>
+                        </div>
                      </div>
                 </div>
 

@@ -21,6 +21,13 @@ interface PodcastSegment {
     start_time_formatted: string;
 }
 
+interface GroupedPodcastSegment {
+    speaker: string;
+    segments: PodcastSegment[];
+    start_seconds: number;
+    end_seconds: number;
+}
+
 interface StudyPodcastProps {
     onDiscuss?: (text: string) => void;
 }
@@ -52,6 +59,25 @@ const StudyPodcast: React.FC<StudyPodcastProps> = ({ onDiscuss }) => {
     const activeSegment = useMemo(() => {
         return transcript.find((item) => currentTime >= item.start_seconds && currentTime < item.end_seconds) || null;
     }, [transcript, currentTime]);
+    const groupedTranscript = useMemo<GroupedPodcastSegment[]>(() => {
+        if (!transcript.length) return [];
+        const groups: GroupedPodcastSegment[] = [];
+        transcript.forEach((segment) => {
+            const previousGroup = groups[groups.length - 1];
+            if (previousGroup && previousGroup.speaker === segment.speaker) {
+                previousGroup.segments.push(segment);
+                previousGroup.end_seconds = segment.end_seconds;
+                return;
+            }
+            groups.push({
+                speaker: segment.speaker,
+                segments: [segment],
+                start_seconds: segment.start_seconds,
+                end_seconds: segment.end_seconds
+            });
+        });
+        return groups;
+    }, [transcript]);
     const activeSpeaker = activeSegment?.speaker || transcript[0]?.speaker || null;
 
     // Preprocess LaTeX to convert various formats to react-markdown compatible format
@@ -240,12 +266,12 @@ const StudyPodcast: React.FC<StudyPodcastProps> = ({ onDiscuss }) => {
         // Skip if user is manually scrolling
         if (isUserScrolling.current) return;
 
-        const activeSegment = transcript.findIndex(
-            (seg) => currentTime >= seg.start_seconds && currentTime < seg.end_seconds
+        const activeGroup = groupedTranscript.findIndex(
+            (group) => currentTime >= group.start_seconds && currentTime < group.end_seconds
         );
         
-        if (activeSegment !== -1 && scrollRef.current) {
-            const activeElement = scrollRef.current.children[activeSegment] as HTMLElement;
+        if (activeGroup !== -1 && scrollRef.current) {
+            const activeElement = scrollRef.current.children[activeGroup] as HTMLElement;
             if (activeElement) {
                 isAutoScrolling.current = true;
                 // Use scrollTo instead of scrollIntoView to prevent whole page scrolling
@@ -266,7 +292,7 @@ const StudyPodcast: React.FC<StudyPodcastProps> = ({ onDiscuss }) => {
                 }, 1000);
             }
         }
-    }, [currentTime, transcript]);
+    }, [currentTime, groupedTranscript]);
 
     if (loading) {
         return (
@@ -482,53 +508,74 @@ const StudyPodcast: React.FC<StudyPodcastProps> = ({ onDiscuss }) => {
 
             {/* Transcript */}
             <div ref={scrollRef} className={`absolute inset-0 overflow-y-auto custom-scrollbar px-4 md:px-8 pb-8 transition-all duration-300 overscroll-contain ${isCompact ? 'pt-[100px]' : 'pt-[280px] md:pt-[280px]'}`}>
-                {transcript.map((item, index) => {
-                    const isActive = currentTime >= item.start_seconds && currentTime < item.end_seconds;
-                    const isRightAligned = speakerAlignment[item.speaker] === 'right';
+                {groupedTranscript.map((group, index) => {
+                    const isGroupActive = currentTime >= group.start_seconds && currentTime < group.end_seconds;
+                    const isRightAligned = speakerAlignment[group.speaker] === 'right';
+                    const activeLine = group.segments.find((segment) => currentTime >= segment.start_seconds && currentTime < segment.end_seconds) || null;
                     return (
                         <div 
-                            key={index} 
-                            className={`flex gap-4 transition-opacity duration-300 ${index === 0 ? 'mt-6' : ''} ${isRightAligned ? 'flex-row-reverse' : ''} ${isActive ? 'opacity-100 scale-[1.02]' : 'opacity-50 hover:opacity-80'}`}
+                            key={`${group.speaker}-${group.start_seconds}-${index}`}
+                            className={`flex gap-4 transition-opacity duration-300 ${index === 0 ? 'mt-6' : ''} ${isRightAligned ? 'flex-row-reverse' : ''} ${isGroupActive ? 'opacity-100 scale-[1.02]' : 'opacity-50 hover:opacity-80'}`}
                         >
                             <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-800 flex-shrink-0 border border-white/10">
                                 <img 
-                                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${item.speaker}`} 
-                                    alt={item.speaker} 
+                                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${group.speaker}`} 
+                                    alt={group.speaker} 
                                     className="w-full h-full object-cover" 
                                 />
                             </div>
                             <div className={`max-w-[80%] ${isRightAligned ? 'items-end' : 'items-start'} flex flex-col relative`}>
-                                <span className="text-xs text-gray-500 mb-1 px-1">{item.speaker}</span>
+                                <span className="text-xs text-gray-500 mb-1 px-1">{group.speaker}</span>
                                 <div 
                                     className={`p-4 rounded-2xl border text-xs md:text-sm leading-relaxed transition-colors duration-300 cursor-pointer relative ${
                                         isRightAligned ? 'rounded-tr-none' : 'rounded-tl-none'
                                     } ${
-                                        isActive 
+                                        isGroupActive 
                                             ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-500/50 text-indigo-700 dark:text-white shadow-lg shadow-indigo-500/10 dark:shadow-[0_0_15px_rgba(99,102,241,0.2)]' 
                                             : 'bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#252525]'
                                     }`}
                                     onClick={() => {
                                         if (audioRef.current) {
-                                            audioRef.current.currentTime = item.start_seconds;
+                                            audioRef.current.currentTime = group.start_seconds;
                                             audioRef.current.play();
                                             setIsPlaying(true);
                                         }
                                     }}
                                 >
-                                    <div className="prose dark:prose-invert max-w-none prose-p:my-0 prose-headings:my-2">
-                                        <ReactMarkdown
-                                            remarkPlugins={[remarkMath]}
-                                            rehypePlugins={[rehypeKatex]}
-                                        >
-                                            {preprocessLaTeX(item.text)}
-                                        </ReactMarkdown>
+                                    <div className="space-y-2">
+                                        {group.segments.map((segment, segmentIndex) => {
+                                            const isActiveLine = currentTime >= segment.start_seconds && currentTime < segment.end_seconds;
+                                            return (
+                                                <div
+                                                    key={`${group.speaker}-${segment.start_seconds}-${segmentIndex}`}
+                                                    className={`px-1 py-1 transition-colors duration-200 ${isActiveLine ? 'bg-indigo-200/80 dark:bg-indigo-700/50 rounded-md' : ''}`}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (audioRef.current) {
+                                                            audioRef.current.currentTime = segment.start_seconds;
+                                                            audioRef.current.play();
+                                                            setIsPlaying(true);
+                                                        }
+                                                    }}
+                                                >
+                                                    <div className="prose dark:prose-invert max-w-none prose-p:my-0 prose-headings:my-2">
+                                                        <ReactMarkdown
+                                                            remarkPlugins={[remarkMath]}
+                                                            rehypePlugins={[rehypeKatex]}
+                                                        >
+                                                            {preprocessLaTeX(segment.text)}
+                                                        </ReactMarkdown>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                     
-                                    {isActive && onDiscuss && (
+                                    {isGroupActive && activeLine && onDiscuss && (
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                const content = `Context from Podcast (${item.speaker} at ${formatTime(item.start_seconds)}): "${item.text}"`;
+                                                const content = `Context from Podcast (${group.speaker} at ${formatTime(activeLine.start_seconds)}): "${activeLine.text}"`;
                                                 onDiscuss(content);
                                             }}
                                             className={`absolute -top-3 ${isRightAligned ? '-left-3' : '-right-3'} group/btn flex items-center gap-2 bg-indigo-600 text-white p-2 rounded-full shadow-lg hover:bg-indigo-700 transition-all duration-200 z-10`}

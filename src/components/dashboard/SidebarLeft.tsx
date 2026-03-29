@@ -14,7 +14,8 @@ import {
   FaCalendarAlt,
   FaPenNib,
   FaUserCheck,
-  FaChevronLeft
+  FaChevronLeft,
+  FaCheckCircle
 } from 'react-icons/fa';
 import { useAuth } from '../../utils/AuthContext';
 import { useLanguage } from '../../utils/LanguageContext';
@@ -90,6 +91,12 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
                 label={t('sidebar.solve')}
                 active={isActive('/solve')}
                 onClick={() => navigate('/solve')} 
+              />
+              <NavItem 
+                icon={<FaCheckCircle />} 
+                label={t('aiStudy.mistakeChecker')}
+                active={isActive('/mistake-checker')}
+                onClick={() => navigate('/mistake-checker')} 
               />
               <NavItem 
                 icon={<FaFileAlt />} 

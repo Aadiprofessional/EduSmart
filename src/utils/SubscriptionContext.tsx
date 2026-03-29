@@ -126,6 +126,12 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
         return;
       }
 
+      const apiStatusResult = await subscriptionAPI.getStatus(session);
+      if (apiStatusResult.success && apiStatusResult.data) {
+        setSubscriptionStatus(apiStatusResult.data);
+        return;
+      }
+
       const supabaseData: SubscriptionWithAddons = await supabaseSubscriptionService.getUserSubscription(effectiveUserId);
 
       if (!supabaseData.subscription && !supabaseData.addons.length) {
@@ -221,6 +227,16 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
     }
 
     try {
+      const apiConsumeResult = await subscriptionAPI.useResponse(responseType, queryData, responsesUsed, session);
+      if (apiConsumeResult.success) {
+        const updatedStatus: SubscriptionStatus = {
+          ...subscriptionStatus,
+          responsesRemaining: Math.max(subscriptionStatus.responsesRemaining - responsesUsed, 0)
+        };
+        setSubscriptionStatus(updatedStatus);
+        return true;
+      }
+
       const success = await supabaseSubscriptionService.updateUserResponses(effectiveUserId, responsesUsed);
       
       if (success) {

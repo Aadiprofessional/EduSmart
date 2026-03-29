@@ -198,6 +198,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
   const [showFilters, setShowFilters] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | null>(null);
+  const [dateDrafts, setDateDrafts] = useState<Record<string, string>>({});
   const [reminderModal, setReminderModal] = useState<{
     isOpen: boolean;
     taskId: string;
@@ -210,7 +211,8 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
 
   // AI Timetable Import state
   const [showAIModal, setShowAIModal] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState<{ file: File; base64: string; extractedText: string; imageUrl?: string } | null>(null);
+  type UploadedAiFile = { file: File; base64: string; extractedText: string; imageUrl?: string };
+  const [uploadedFile, setUploadedFile] = useState<UploadedAiFile | null>(null);
   const [isProcessingAI, setIsProcessingAI] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [aiImportProgress, setAiImportProgress] = useState(0);
@@ -735,161 +737,6 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
     }
   };
 
-  // AI Processing Functions
-  const handleFileUpload = async (file: File): Promise<string> => {
-    try {
-      console.log('🔄 Starting file upload process:', file.name, file.type, file.size);
-      
-      // Convert file to base64
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-
-      console.log('✅ File converted to base64, length:', base64.length);
-      console.log('📡 Making API request to extract text from image...');
-
-      const requestPayload = {
-        model: "doubao-seed-1-6-vision-250815",
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "image_url",
-                image_url: {
-                  url: base64
-                }
-              },
-              {
-                type: "text",
-                text: "Please extract all text from this timetable/schedule image exactly as it appears, maintaining line breaks and formatting. Focus on identifying dates, times, subjects, assignments, deadlines, and any other academic content. Provide a clear, structured extraction of all visible information."
-              }
-            ]
-          }
-        ],
-        stream: true
-      };
-
-      const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || ''}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestPayload)
-      });
-
-      console.log('📊 API Response status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ API Error Response:', errorText);
-        throw new Error(`API call failed: ${response.status} ${response.statusText}`);
-      }
-
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('No response body reader available');
-      }
-
-      let extractedText = '';
-      
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          
-          const chunk = new TextDecoder().decode(value);
-          const lines = chunk.split('\n').filter(line => line.trim() !== '');
-          
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              if (data === '[DONE]') continue;
-              
-              try {
-                const parsed = JSON.parse(data);
-                if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta) {
-                  const delta = parsed.choices[0].delta;
-                  if (delta.content) {
-                    extractedText += delta.content;
-                  }
-                }
-              } catch (parseError) {
-                console.warn('Failed to parse streaming data:', parseError);
-              }
-            }
-          }
-        }
-      } finally {
-        reader.releaseLock();
-      }
-
-      console.log('✅ Text extraction completed, length:', extractedText.length);
-      return extractedText.trim();
-    } catch (error) {
-      console.error('💥 Error extracting text from file:', error);
-      throw new Error('Failed to extract text from file. Please try again.');
-    }
-  };
-
-  const analyzeWithAI = async (extractedText: string): Promise<any> => {
-    try {
-      const response = await fetch(process.env.REACT_APP_DASHSCOPE_ENDPOINT || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.REACT_APP_DASHSCOPE_API_KEY || ''}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: "doubao-seed-1-6-vision-250815",
-          messages: [
-            {
-              role: "system",
-              content: [
-                {
-                  type: "text", 
-                  text: "You are an AI assistant that analyzes academic timetables and schedules. Your task is to extract study tasks, assignments, deadlines, and academic events from the provided text. Return a JSON array of tasks with the following structure: [{\"title\": \"task name\", \"subject\": \"subject name\", \"dueDate\": \"YYYY-MM-DD\", \"priority\": \"high|medium|low\", \"description\": \"additional details\", \"type\": \"assignment|exam|project|study|other\"}]. Predict priority based on urgency and importance. Use current date as reference if no year is specified."
-                }
-              ]
-            },
-            {
-              role: "user",
-              content: [
-                {
-                  type: "text",
-                  text: `Please analyze this timetable/schedule text and extract all study tasks, assignments, deadlines, and academic events. Return only a valid JSON array of tasks:\n\n${extractedText}`
-                }
-              ]
-            }
-          ],
-          stream: false
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`API call failed: ${response.status} ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      const content = result.choices?.[0]?.message?.content || '';
-      
-      // Extract JSON from the response
-      const jsonMatch = content.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error('No valid JSON found in AI response');
-      }
-    } catch (error) {
-      console.error('Error analyzing with AI:', error);
-      throw new Error('Failed to analyze timetable with AI. Please try again.');
-    }
-  };
-
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -949,14 +796,6 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
         .from('chat-attachments')
         .getPublicUrl(filePath);
 
-      let extractedText = '';
-      try {
-        extractedText = await handleFileUpload(file);
-      } catch (extractError) {
-        console.warn('Text extraction failed, but proceeding with image:', extractError);
-        // Continue without extracted text
-      }
-      
       // Create base64 string for display
       const base64 = await new Promise<string>((resolve) => {
         const reader = new FileReader();
@@ -964,14 +803,14 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
         reader.readAsDataURL(file);
       });
 
-      setUploadedFile({
+      const nextUploadedFile: UploadedAiFile = {
         file,
         base64,
-        extractedText,
+        extractedText: '',
         imageUrl: publicUrl
-      });
-
-      showSuccess('File uploaded successfully!');
+      };
+      setUploadedFile(nextUploadedFile);
+      await processWithAI(nextUploadedFile);
 
     } catch (error) {
       console.error('Error processing file:', error);
@@ -1004,13 +843,14 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
     return addedCount;
   };
 
-  const processWithAI = async () => {
-    if (!uploadedFile) return;
+  const processWithAI = async (sourceUploadedFile?: UploadedAiFile) => {
+    const currentUploadedFile = sourceUploadedFile || uploadedFile;
+    if (!currentUploadedFile) return;
     const responseCheck = await checkAndUseResponse({
       responseType: 'study_planner_analysis',
       queryData: {
         hasUploadedFile: true,
-        hasExtractedText: !!uploadedFile.extractedText
+        hasExtractedText: !!currentUploadedFile.extractedText
       },
       requireCoins: true,
       noCoinsMessage: 'Please buy more coins to continue.'
@@ -1030,7 +870,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
       aiImportStartTimeRef.current = null;
 
       // Call Webhook if imageUrl is available
-      if (uploadedFile.imageUrl && user) {
+      if (currentUploadedFile.imageUrl && user) {
         const webhookUrl = 'https://n8n.matrixaiserver.com/webhook/b95c1be4-c8db-47a1-bcd3-a871834037f3';
         
         // Format timestamp as "YYYY-MM-DD HH:mm:ss.SSS"
@@ -1039,7 +879,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
 
         const payload = {
           uid: user.id,
-          image_url: uploadedFile.imageUrl,
+          image_url: currentUploadedFile.imageUrl,
           timestamp: formattedTimestamp
         };
 
@@ -1092,13 +932,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
         setAiAnalysisResult(null);
 
       } else {
-        // Fallback to local extraction
-        if (!uploadedFile.extractedText) {
-             throw new Error("No text extracted and no image URL available.");
-        }
-        const analysis = await analyzeWithAI(uploadedFile.extractedText);
-        setAiAnalysisResult(analysis);
-        showSuccess(`AI found ${analysis.length} tasks in your timetable!`);
+        throw new Error('No uploaded image URL available for AI import.');
       }
     } catch (error) {
       console.error('Error processing with AI:', error);
@@ -1666,7 +1500,6 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
 
   const filteredTasks = getFilteredAndSortedTasks();
 
-  // Updated date change handler to ensure database save
   const handleDateChange = async (taskId: string, newDate: string) => {
     try {
       await updateStudyTask(taskId, { date: newDate });
@@ -1675,6 +1508,32 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
       console.error('Error updating task date:', error);
       showError('Failed to update task date. Please try again.');
     }
+  };
+
+  const handleDateDraftChange = (taskId: string, newDate: string) => {
+    setDateDrafts(prev => ({
+      ...prev,
+      [taskId]: newDate
+    }));
+  };
+
+  const handleDateCommit = async (taskId: string, currentDate: string) => {
+    const draftDate = dateDrafts[taskId];
+    if (!draftDate || draftDate === currentDate) {
+      setDateDrafts(prev => {
+        const nextDrafts = { ...prev };
+        delete nextDrafts[taskId];
+        return nextDrafts;
+      });
+      return;
+    }
+
+    await handleDateChange(taskId, draftDate);
+    setDateDrafts(prev => {
+      const nextDrafts = { ...prev };
+      delete nextDrafts[taskId];
+      return nextDrafts;
+    });
   };
 
   // Updated subject change handler to ensure database save
@@ -2159,9 +2018,10 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                             <IconComponent icon={FiCalendar} className="h-3.5 w-3.5 text-gray-400 dark:text-zinc-500 mr-2" />
                             <input
                               type="date"
-                              value={task.date}
+                              value={dateDrafts[task.id] ?? task.date}
                               onClick={(e) => e.currentTarget.showPicker()}
-                              onChange={(e) => handleDateChange(task.id, e.target.value)}
+                              onChange={(e) => handleDateDraftChange(task.id, e.target.value)}
+                              onBlur={() => handleDateCommit(task.id, task.date)}
                               className="bg-transparent border-none outline-none text-xs font-medium text-gray-600 dark:text-zinc-300 w-24 cursor-pointer dark:[color-scheme:dark] dark:[&::-webkit-calendar-picker-indicator]:invert"
                             />
                           </div>
@@ -2427,7 +2287,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                       <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
                         {!aiAnalysisResult && (
                           <motion.button
-                            onClick={processWithAI}
+                            onClick={() => processWithAI()}
                             disabled={isProcessingAI || (!uploadedFile.extractedText && !uploadedFile.imageUrl)}
                             className="w-full sm:w-auto flex items-center justify-center px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:from-slate-400 disabled:to-slate-500 dark:disabled:from-slate-600 dark:disabled:to-slate-600 text-white font-medium rounded-lg transition-all disabled:cursor-not-allowed"
                             whileHover={{ scale: isProcessingAI ? 1 : 1.05 }}

@@ -29,6 +29,7 @@ import Dashboard from './pages/Dashboard';
 import MatrixEduDashboard from './pages/MatrixEduDashboard';
 import StudyPlannerPage from './pages/StudyPlannerPage';
 import SolvePage from './pages/SolvePage';
+import MistakeCheckerPage from './pages/MistakeCheckerPage';
 import ContentWriter from './pages/ContentWriter';
 import Humanizer from './pages/Humanizer';
 import GradePage from './pages/GradePage';
@@ -157,6 +158,11 @@ function App() {
                       <Route path="/solve" element={
                         <ProtectedRoute>
                           <SolvePage />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/mistake-checker" element={
+                        <ProtectedRoute>
+                          <MistakeCheckerPage />
                         </ProtectedRoute>
                       } />
                       <Route path="/content-writer" element={

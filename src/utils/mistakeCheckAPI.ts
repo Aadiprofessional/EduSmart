@@ -217,22 +217,22 @@ const getSampleMistakeCheckHistory = (): any[] => [
 ];
 
 // Get mistake check history - Enhanced with better error handling and data validation
-export const getMistakeCheckHistory = async (user?: any, session?: any) => {
+export const getMistakeCheckHistory = async (user?: any, session?: any, limit = 20, offset = 0) => {
   try {
     const userId = getUserId(user, session);
     
     if (!userId) {
-      console.warn('⚠️ No authenticated user - providing sample mistake check history');
+      console.warn('⚠️ No authenticated user - cannot load mistake check history');
       return { 
-        success: true, 
-        history: getSampleMistakeCheckHistory(),
-        error: 'Using sample data - please log in for your personal history'
+        success: false,
+        history: [],
+        error: 'User authentication required to load history'
       };
     }
     
     console.log('🔄 Fetching mistake check history for user:', userId);
     
-    const result = await mistakeCheckAPI.getHistory(userId);
+    const result = await mistakeCheckAPI.getHistory(userId, limit, offset);
     console.log('📋 Raw API result:', result);
     
     if (result.success && result.data) {
@@ -272,19 +272,19 @@ export const getMistakeCheckHistory = async (user?: any, session?: any) => {
         history: transformedHistory
       };
     } else {
-      console.warn('⚠️ API call failed or returned no data, using sample data:', result.error);
+      console.warn('⚠️ API call failed or returned no data:', result.error);
       return { 
-        success: true, 
-        history: getSampleMistakeCheckHistory(),
-        error: 'Backend temporarily unavailable - showing sample history'
+        success: false,
+        history: [],
+        error: result.error || 'Failed to load history from API'
       };
     }
   } catch (error: any) {
-    console.error('❌ Error fetching mistake check history, using sample data:', error);
+    console.error('❌ Error fetching mistake check history:', error);
     return { 
-      success: true, 
-      history: getSampleMistakeCheckHistory(),
-      error: 'Network error - showing sample history'
+      success: false,
+      history: [],
+      error: error.message || 'Network error while loading history'
     };
   }
 };

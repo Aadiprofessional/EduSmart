@@ -63,7 +63,7 @@ export const zhTW = {
     title: '選擇語言',
     english: 'English',
     simplifiedChinese: '简体中文',
-    traditionalChinese: '繁體中文'
+    traditionalChinese: '台灣'
   },
 
   // Dashboard
@@ -1132,6 +1132,7 @@ export const zhTW = {
     configurationComingSoon: "此方法的設定即將推出。",
     whatToInclude: "你想包含哪些內容？",
     chooseMethods: "選擇你想加入學習集的所有方法：",
+    speechToTextFilterHint: "請點擊篩選圖示來選擇語言",
     generatingDescription: "我們正在為你建立個人化學習資料。為了確保品質，此流程大約需要 3 分鐘。",
     methodLabels: {
       podcast: "播客",

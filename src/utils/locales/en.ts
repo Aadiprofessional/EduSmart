@@ -277,7 +277,7 @@ export const en = {
     title: "Choose Language",
     english: "English",
     simplifiedChinese: "Simplified Chinese",
-    traditionalChinese: "Traditional Chinese"
+    traditionalChinese: "Taiwan"
   },
 
   // Home Page
@@ -1480,6 +1480,7 @@ export const en = {
     configurationComingSoon: "Configuration for this method is coming soon.",
     whatToInclude: "What would you like to include?",
     chooseMethods: "Choose all the methods you want included in your study set:",
+    speechToTextFilterHint: "Click the filter icon to select language",
     generatingDescription: "We're crafting your personalized study materials. This process takes about 3 minutes to ensure high quality.",
     methodLabels: {
       podcast: "Podcast",

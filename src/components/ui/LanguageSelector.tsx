@@ -19,7 +19,7 @@ interface LanguageSelectorProps {
 const languageOptions: LanguageOption[] = [
   { code: 'en', name: 'English', nativeName: 'English', shortLabel: 'EN' },
   { code: 'zh-CN', name: 'Simplified Chinese', nativeName: '简体中文', shortLabel: '简中' },
-  { code: 'zh-TW', name: 'Traditional Chinese', nativeName: '繁體中文', shortLabel: '繁中' },
+  { code: 'zh-TW', name: 'Taiwan', nativeName: '台灣', shortLabel: 'TW' },
 ];
 
 const LanguageSelector: React.FC<LanguageSelectorProps> = ({ compactMobile = false }) => {

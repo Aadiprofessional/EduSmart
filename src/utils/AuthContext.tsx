@@ -46,9 +46,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
+      setSession(prevSession => {
+        const prevUserId = prevSession?.user?.id ?? null;
+        const nextUserId = nextSession?.user?.id ?? null;
+        const prevAccessToken = prevSession?.access_token ?? null;
+        const nextAccessToken = nextSession?.access_token ?? null;
+
+        if (prevUserId === nextUserId && prevAccessToken === nextAccessToken) {
+          return prevSession;
+        }
+
+        return nextSession;
+      });
+
+      setUser(prevUser => {
+        const nextUser = nextSession?.user ?? null;
+
+        if (
+          prevUser?.id === nextUser?.id &&
+          prevUser?.email === nextUser?.email
+        ) {
+          return prevUser;
+        }
+
+        return nextUser;
+      });
     });
 
     return () => {

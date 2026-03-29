@@ -277,7 +277,7 @@ export const zhCN = {
     title: "选择语言",
     english: "英文",
     simplifiedChinese: "简体中文",
-    traditionalChinese: "繁体中文"
+    traditionalChinese: "台湾"
   },
 
   // Home Page
@@ -1691,6 +1691,7 @@ export const zhCN = {
     configurationComingSoon: "该方法的配置即将上线。",
     whatToInclude: "你想包含哪些内容？",
     chooseMethods: "选择你希望加入学习集的所有方法：",
+    speechToTextFilterHint: "请点击筛选图标来选择语言",
     generatingDescription: "我们正在为你生成个性化学习资料。为保证质量，此过程大约需要 3 分钟。",
     methodLabels: {
       podcast: "播客",

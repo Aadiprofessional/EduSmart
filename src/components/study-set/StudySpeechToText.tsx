@@ -712,6 +712,19 @@ const StudySpeechToText: React.FC<StudySpeechToTextProps> = ({ onDiscuss, docume
         return groups;
     }, [transcript]);
 
+    const handleSummarizeVideoToChat = () => {
+        if (!onDiscuss || groupedTranscript.length === 0) return;
+        const transcriptWithTimestamps = groupedTranscript
+            .map((group) => `[${formatTime(group.start)} - ${formatTime(group.start + 30)}] ${group.words.map((word) => word.word).join('')}`)
+            .join('\n\n');
+        const maxLength = 12000;
+        const clippedTranscript = transcriptWithTimestamps.length > maxLength
+            ? `${transcriptWithTimestamps.slice(0, maxLength)}...`
+            : transcriptWithTimestamps;
+        const content = `Please summarize this video transcript. Include the main points, key takeaways, and a short timeline.\n\n${clippedTranscript}`;
+        onDiscuss(content);
+    };
+
     // Update groupedTranscriptRef
     useEffect(() => {
         groupedTranscriptRef.current = groupedTranscript;
@@ -1280,6 +1293,19 @@ const StudySpeechToText: React.FC<StudySpeechToTextProps> = ({ onDiscuss, docume
                     </div>
                 )}
             </div>
+            {mediaType === 'video' && onDiscuss && groupedTranscript.length > 0 && (
+                <div className="absolute bottom-6 left-0 right-0 flex justify-center pointer-events-none z-30">
+                    <div className="pointer-events-auto">
+                        <button
+                            onClick={handleSummarizeVideoToChat}
+                            className="px-4 py-2 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 rounded-full shadow-lg transition-all flex items-center gap-2 hover:scale-105 active:scale-95"
+                        >
+                            <FaVideo size={14} />
+                            <span className="text-sm font-medium">Summarize Video</span>
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

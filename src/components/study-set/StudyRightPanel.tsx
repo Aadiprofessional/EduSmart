@@ -59,7 +59,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
     const { user } = useAuth();
     const { t } = useLanguage();
     const { checkAndUseResponse } = useResponseCheck();
-    const inputRef = useRef<HTMLInputElement>(null);
+    const inputRef = useRef<HTMLTextAreaElement>(null);
     const cost = 1;
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
     const [upgradeMessage, setUpgradeMessage] = useState('');
@@ -73,6 +73,31 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
             }, 100);
         }
     }, [attachment]);
+
+    useEffect(() => {
+        if (!inputRef.current) return;
+        const textarea = inputRef.current;
+        const computedStyle = window.getComputedStyle(textarea);
+        const lineHeight = parseFloat(computedStyle.lineHeight) || 20;
+        const verticalPadding =
+            (parseFloat(computedStyle.paddingTop) || 0) +
+            (parseFloat(computedStyle.paddingBottom) || 0);
+        const baseHeight = Number(textarea.dataset.baseHeight || textarea.offsetHeight);
+        const twoLineHeight = lineHeight * 2 + verticalPadding;
+        const maxHeight = lineHeight * 4 + verticalPadding;
+
+        if (!textarea.dataset.baseHeight) {
+            textarea.dataset.baseHeight = `${baseHeight}`;
+        }
+
+        textarea.style.height = 'auto';
+        const nextHeight =
+            textarea.scrollHeight <= twoLineHeight
+                ? baseHeight
+                : Math.min(textarea.scrollHeight, maxHeight);
+        textarea.style.height = `${nextHeight}px`;
+        textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
+    }, [inputValue]);
 
     // Scroll to bottom whenever messages change
     useEffect(() => {
@@ -427,9 +452,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
                     </div>
                 )}
                 <div className="relative">
-                    <input 
+                    <textarea 
                        ref={inputRef}
-                       type="text" 
                        value={inputValue}
                        onChange={(e) => setInputValue(e.target.value)}
                        onKeyDown={(e) => {
@@ -440,21 +464,24 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
                        }}
                        placeholder={t('studyRightPanel.askAnything')}
                        disabled={isProcessing}
-                       className="w-full bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl py-3 pl-4 pr-12 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-600 focus:outline-none focus:border-indigo-500 dark:focus:border-white/20 disabled:opacity-50"
+                       className="w-full bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl py-3 pl-4 pr-14 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-600 focus:outline-none focus:border-indigo-500 dark:focus:border-white/20 disabled:opacity-50 resize-none min-h-[48px]"
+                       rows={1}
                     />
-                    {!isProcessing && inputValue.trim() && cost > 0 && (
-                        <span className="absolute bottom-9 right-0 z-10 inline-flex items-center gap-1 bg-[#ff5500] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                            -{cost}
-                            <img src={coinIcon} alt="coins" className="w-3 h-3" />
-                        </span>
-                    )}
-                    <button 
-                        onClick={handleSendMessage}
-                        disabled={!inputValue.trim() || isProcessing}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black dark:bg-white rounded-lg flex items-center justify-center text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                        <FaArrowUp size={12} />
-                    </button>
+                    <div className="absolute inset-y-0 right-2 flex items-center">
+                        <button 
+                            onClick={handleSendMessage}
+                            disabled={!inputValue.trim() || isProcessing}
+                            className="relative w-8 h-8 bg-black dark:bg-white rounded-lg flex items-center justify-center text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            {!isProcessing && inputValue.trim() && cost > 0 && (
+                                <span className="absolute -top-2 -right-2 z-10 inline-flex items-center gap-1 bg-[#ff5500] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                    -{cost}
+                                    <img src={coinIcon} alt="coins" className="w-3 h-3" />
+                                </span>
+                            )}
+                            <FaArrowUp size={12} />
+                        </button>
+                    </div>
                 </div>
             </div>
             <ResponseUpgradeModal

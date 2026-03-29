@@ -729,7 +729,7 @@ const CustomizeFillBlanks: React.FC<{
 
 const CustomizeSpeechToText: React.FC<{ 
     config: MethodConfig['speechToText']; 
-    languages: { code: string; name: string; flag: string }[];
+    languages: { code: string; name: string }[];
     onChange: (updates: Partial<MethodConfig['speechToText']>) => void;
     onClose: () => void;
 }> = ({ config, languages, onChange, onClose }) => {
@@ -755,7 +755,6 @@ const CustomizeSpeechToText: React.FC<{
                                 : 'bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-[#252525]'
                             }`}
                         >
-                            <span className="text-lg">{lang.flag}</span>
                             <span className="font-medium text-sm">{lang.name}</span>
                         </button>
                     ))}
@@ -855,7 +854,8 @@ const MethodSelectionPage: React.FC = () => {
     const [methodConfig, setMethodConfig] = useState<MethodConfig>(defaultMethodConfig);
     const [activeConfigMethod, setActiveConfigMethod] = useState<string | null>(null);
     const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
-    const [selectedLanguage, setSelectedLanguage] = useState({ code: 'en', name: 'English', flag: '🇺🇸' });
+    const [selectedLanguage, setSelectedLanguage] = useState({ code: 'en', name: 'English' });
+    const [showSpeechToTextHint, setShowSpeechToTextHint] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const [step, setStep] = useState<'selection' | 'summary'>('selection');
     const [metaData, setMetaData] = useState<{ duration?: number; pageCount?: number }>({});
@@ -998,6 +998,12 @@ const MethodSelectionPage: React.FC = () => {
         }
     }, [state?.uploadPayload?.uploadedFileType, state?.uploadPayload?.duration]);
 
+    React.useEffect(() => {
+        if (!showSpeechToTextHint) return;
+        const timer = setTimeout(() => setShowSpeechToTextHint(false), 3000);
+        return () => clearTimeout(timer);
+    }, [showSpeechToTextHint]);
+
     const calculateCosts = () => {
        let sourceCost = 0;
        const type = state?.uploadPayload?.uploadedFileType;
@@ -1018,10 +1024,10 @@ const MethodSelectionPage: React.FC = () => {
     };
 
     const languages = [
-        { code: 'en', name: 'English', flag: '🇺🇸' },
-        { code: 'yue', name: 'Chinese (Cantonese)', flag: '🇭🇰' },
-        { code: 'zh-Hant', name: 'Chinese (Traditional)', flag: '🇹🇼' },
-        { code: 'zh-Hans', name: 'Chinese (Simplified)', flag: '🇨🇳' },
+        { code: 'en', name: 'English' },
+        { code: 'yue', name: 'Chinese (Cantonese)' },
+        { code: 'zh-Hant', name: 'Taiwan' },
+        { code: 'zh-Hans', name: 'Chinese (Simplified)' },
     ];
 
     const methods = [
@@ -1036,14 +1042,23 @@ const MethodSelectionPage: React.FC = () => {
         { id: 'mindmap', label: t('methodSelection.methodLabels.mindmap'), icon: <FaProjectDiagram /> },
     ];
 
+    const isSpeechToTextVisible =
+        state?.uploadPayload?.uploadedFileType === 'audio' ||
+        state?.uploadPayload?.uploadedFileType === 'video' ||
+        state?.uploadPayload?.uploadedFileType === 'url';
+
     const visibleMethods = methods.filter(m => {
         if (m.id === 'speech-to-text') {
-             const type = state?.uploadPayload?.uploadedFileType;
-             const hasDuration = state?.uploadPayload?.duration;
-             return type === 'audio' || type === 'video' || type === 'url';
+             return isSpeechToTextVisible;
         }
         return true;
     });
+
+    React.useEffect(() => {
+        if (step === 'selection' && isSpeechToTextVisible && selectedMethods.includes('speech-to-text')) {
+            setShowSpeechToTextHint(true);
+        }
+    }, [step, isSpeechToTextVisible, selectedMethods]);
 
     const toggleMethod = (id: string) => {
         const type = state?.uploadPayload?.uploadedFileType;
@@ -1226,6 +1241,9 @@ const MethodSelectionPage: React.FC = () => {
 
     const openConfig = (e: React.MouseEvent, methodId: string) => {
         e.stopPropagation();
+        if (methodId === 'speech-to-text') {
+            setShowSpeechToTextHint(false);
+        }
         setActiveConfigMethod(methodId);
     };
 
@@ -1405,10 +1423,22 @@ const MethodSelectionPage: React.FC = () => {
                                         {isSelected && (
                                             <button 
                                                 onClick={(e) => openConfig(e, method.id)}
-                                                className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-white p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors z-10"
+                                                className={`absolute top-3 right-3 p-1.5 rounded-lg transition-colors z-10 ${
+                                                    method.id === 'speech-to-text'
+                                                        ? 'text-[#c2410c] bg-[#c2410c]/10 hover:bg-[#c2410c]/20'
+                                                        : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10'
+                                                }`}
                                             >
                                                 <FaSlidersH size={14} />
                                             </button>
+                                        )}
+                                        {isSelected && method.id === 'speech-to-text' && showSpeechToTextHint && (
+                                            <div className="absolute right-12 -top-11 z-20 pointer-events-none animate-pulse">
+                                                <div className="relative bg-[#c2410c] text-white text-[10px] md:text-xs font-medium px-2.5 py-1.5 rounded-lg shadow-lg whitespace-nowrap">
+                                                    {t('methodSelection.speechToTextFilterHint')}
+                                                    <div className="absolute right-3 -bottom-1 w-2 h-2 bg-[#c2410c] rotate-45" />
+                                                </div>
+                                            </div>
                                         )}
 
                                         <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-2 md:mb-0 md:mr-4 transition-colors ${
@@ -1442,10 +1472,22 @@ const MethodSelectionPage: React.FC = () => {
                                         {isSelected && (
                                             <button 
                                                 onClick={(e) => openConfig(e, method.id)}
-                                                className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-white p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors z-10"
+                                                className={`absolute top-3 right-3 p-1.5 rounded-lg transition-colors z-10 ${
+                                                    method.id === 'speech-to-text'
+                                                        ? 'text-[#c2410c] bg-[#c2410c]/10 hover:bg-[#c2410c]/20'
+                                                        : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10'
+                                                }`}
                                             >
                                                 <FaSlidersH size={14} />
                                             </button>
+                                        )}
+                                        {isSelected && method.id === 'speech-to-text' && showSpeechToTextHint && (
+                                            <div className="absolute right-12 -top-11 z-20 pointer-events-none animate-pulse">
+                                                <div className="relative bg-[#c2410c] text-white text-[10px] md:text-xs font-medium px-2.5 py-1.5 rounded-lg shadow-lg whitespace-nowrap">
+                                                    {t('methodSelection.speechToTextFilterHint')}
+                                                    <div className="absolute right-3 -bottom-1 w-2 h-2 bg-[#c2410c] rotate-45" />
+                                                </div>
+                                            </div>
                                         )}
 
                                         <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-2 md:mb-0 md:mr-4 transition-colors ${
@@ -1469,7 +1511,6 @@ const MethodSelectionPage: React.FC = () => {
                                     className="flex items-center gap-2 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 px-4 py-2.5 rounded-lg text-sm text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-[#252525] transition-colors min-w-[140px] justify-between"
                                 >
                                     <div className="flex items-center gap-2">
-                                        <span>{selectedLanguage.flag}</span>
                                         <span>{selectedLanguage.name}</span>
                                     </div>
                                     <FaChevronDown size={10} className={`text-gray-500 transition-transform ${isLanguageDropdownOpen ? 'rotate-180' : ''}`} />
@@ -1485,11 +1526,10 @@ const MethodSelectionPage: React.FC = () => {
                                                         setSelectedLanguage(lang);
                                                         setIsLanguageDropdownOpen(false);
                                                     }}
-                                                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-50 dark:hover:bg-white/5 transition-colors ${
+                                                    className={`w-full flex items-center gap-2 px-4 py-3 text-sm hover:bg-gray-50 dark:hover:bg-white/5 transition-colors ${
                                                         selectedLanguage.code === lang.code ? 'text-gray-900 dark:text-white bg-gray-50 dark:bg-white/5' : 'text-gray-500 dark:text-gray-400'
                                                     }`}
                                                 >
-                                                    <span className="text-lg">{lang.flag}</span>
                                                     <span>{lang.name}</span>
                                                     {selectedLanguage.code === lang.code && (
                                                         <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#c2410c]" />
