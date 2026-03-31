@@ -63,7 +63,7 @@ export const zhTW = {
     title: '選擇語言',
     english: 'English',
     simplifiedChinese: '简体中文',
-    traditionalChinese: '台灣'
+    traditionalChinese: '繁體中文'
   },
 
   // Dashboard

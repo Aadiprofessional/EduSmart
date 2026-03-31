@@ -322,6 +322,10 @@ export const mistakeCheckAPI = {
     page_mistakes?: any;
     extracted_texts?: any;
     page_markings?: any;
+    ocr_overlay_pages?: any;
+    n8n_marking_schemes?: any;
+    webhook_raw_response?: string;
+    webhook_normalized_payload?: any;
     marking_summary?: any;
     selected_marking_standard?: string;
     current_page?: number;
@@ -341,6 +345,10 @@ export const mistakeCheckAPI = {
       if (data.page_mistakes) formData.append('pageMistakes', JSON.stringify(data.page_mistakes));
       if (data.extracted_texts) formData.append('extractedTexts', JSON.stringify(data.extracted_texts));
       if (data.page_markings) formData.append('pageMarkings', JSON.stringify(data.page_markings));
+      if (data.ocr_overlay_pages) formData.append('ocrOverlayPages', JSON.stringify(data.ocr_overlay_pages));
+      if (data.n8n_marking_schemes) formData.append('n8nMarkingSchemes', JSON.stringify(data.n8n_marking_schemes));
+      if (data.webhook_raw_response) formData.append('webhookRawResponse', data.webhook_raw_response);
+      if (data.webhook_normalized_payload) formData.append('webhookNormalizedPayload', JSON.stringify(data.webhook_normalized_payload));
       if (data.marking_summary) formData.append('markingSummary', JSON.stringify(data.marking_summary));
       if (data.selected_marking_standard) formData.append('selectedMarkingStandard', data.selected_marking_standard);
       if (data.current_page !== undefined) formData.append('currentPage', data.current_page.toString());
@@ -378,6 +386,10 @@ export const mistakeCheckAPI = {
     page_mistakes?: any;
     extracted_texts?: any;
     page_markings?: any;
+    ocr_overlay_pages?: any;
+    n8n_marking_schemes?: any;
+    webhook_raw_response?: string;
+    webhook_normalized_payload?: any;
     marking_summary?: any;
     selected_marking_standard?: string;
     current_page?: number;
@@ -389,6 +401,10 @@ export const mistakeCheckAPI = {
       pageMistakes: data.page_mistakes,
       extractedTexts: data.extracted_texts,
       pageMarkings: data.page_markings,
+      ocrOverlayPages: data.ocr_overlay_pages,
+      n8nMarkingSchemes: data.n8n_marking_schemes,
+      webhookRawResponse: data.webhook_raw_response,
+      webhookNormalizedPayload: data.webhook_normalized_payload,
       markingSummary: data.marking_summary,
       selectedMarkingStandard: data.selected_marking_standard,
       currentPage: data.current_page,

@@ -168,7 +168,16 @@ const StudyMaterialPage: React.FC = () => {
     const [isRightPanelOpen, setIsRightPanelOpen] = useState(window.innerWidth >= 1280);
     const [isAddMethodModalOpen, setIsAddMethodModalOpen] = useState(false);
     const [isTimerOpen, setIsTimerOpen] = useState(false);
-    const [chatAttachment, setChatAttachment] = useState<{ type: 'text', content: string, source: string } | null>(null);
+    const [chatAttachment, setChatAttachment] = useState<{
+        id: string;
+        type: 'text';
+        content: string;
+        source: string;
+        displayContent?: string;
+        autoSend?: boolean;
+        coins?: number;
+        hidePreview?: boolean;
+    } | null>(null);
     const [selectionButton, setSelectionButton] = useState<{ x: number, y: number, text: string, source: string } | null>(null);
 
     // Polling for updates when new methods are added
@@ -275,8 +284,26 @@ const StudyMaterialPage: React.FC = () => {
     }, [activeMethod]);
 
     // Add to Chat Helper
-    const addToChat = (text: string, source: string = 'Study Material') => {
-        setChatAttachment({ type: 'text', content: text, source });
+    const addToChat = (
+        text: string,
+        source: string = 'Study Material',
+        options?: {
+            displayContent?: string;
+            autoSend?: boolean;
+            coins?: number;
+            hidePreview?: boolean;
+        }
+    ) => {
+        setChatAttachment({
+            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            type: 'text',
+            content: text,
+            source,
+            displayContent: options?.displayContent,
+            autoSend: options?.autoSend,
+            coins: options?.coins,
+            hidePreview: options?.hidePreview
+        });
         setSelectionButton(null);
         setIsRightPanelOpen(true);
         // Clear selection
@@ -413,7 +440,7 @@ const StudyMaterialPage: React.FC = () => {
             case 'podcast':
                 return <StudyPodcast onDiscuss={(text) => addToChat(text, 'Podcast')} />;
             case 'speech-to-text':
-                return <StudySpeechToText onDiscuss={(text) => addToChat(text, 'Speech to Text')} documentType={studySetData?.document_type} />;
+                return <StudySpeechToText onDiscuss={(text, options) => addToChat(text, 'Speech to Text', options)} documentType={studySetData?.document_type} />;
             case 'mindmap':
                 return <StudyMindmap />;
             case 'fill-blanks':

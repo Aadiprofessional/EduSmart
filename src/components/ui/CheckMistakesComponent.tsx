@@ -6,6 +6,8 @@ import { FiDownload, FiCopy, FiShare2, FiClock } from 'react-icons/fi';
 import { FaArrowUp, FaFileAlt, FaImage } from 'react-icons/fa';
 import IconComponent from './IconComponent';
 import * as pdfjsLib from 'pdfjs-dist';
+import html2canvas from 'html2canvas';
+import * as mammoth from 'mammoth';
 import { useResponseCheck, ResponseUpgradeModal } from '../../utils/responseChecker';
 import { useNotification } from '../../utils/NotificationContext';
 import { useLanguage } from '../../utils/LanguageContext';
@@ -76,6 +78,10 @@ interface Mistake {
   correct: string;
   type: string;
   explanation?: string;
+  severity?: string;
+  startIndex?: number;
+  endIndex?: number;
+  lineNumber?: number;
 }
 
 // Add new interface for page mistakes
@@ -160,10 +166,52 @@ interface HighlightedText {
   mistakeType?: string;
   correction?: string;
   isSelected?: boolean;
+  mistakeId?: number;
+}
+
+interface OcrBoundingBox {
+  x_min: number;
+  y_min: number;
+  x_max: number;
+  y_max: number;
+  width: number;
+  height: number;
+}
+
+interface OcrResultLine {
+  text: string;
+  score?: number;
+  polygon?: number[][];
+  bbox?: OcrBoundingBox;
+}
+
+interface OcrPageData {
+  page: number;
+  width: number;
+  height: number;
+  results: OcrResultLine[];
+}
+
+interface MarkingCriteriaBreakdown {
+  accuracy?: number;
+  presentation?: number;
+  methodology?: number;
+  understanding?: number;
+  [key: string]: number | undefined;
+}
+
+interface MarkingSchemeResult {
+  score: number;
+  maxScore: number;
+  percentage: number;
+  grade?: string;
+  feedback?: string;
+  criteria?: MarkingCriteriaBreakdown;
 }
 
 type ViewMode = 'mistakes' | 'marking';
 type DocumentView = 'image' | 'text'; // New type for document view mode
+type MistakeCheckerLanguage = 'en' | 'ch';
 
 // Marking Standards Data
 const MARKING_STANDARDS: MarkingStandard[] = [
@@ -249,6 +297,11 @@ const MARKING_STANDARDS: MarkingStandard[] = [
   }
 ];
 
+const LANGUAGE_OPTIONS: Array<{ code: MistakeCheckerLanguage; label: string }> = [
+  { code: 'en', label: 'English' },
+  { code: 'ch', label: 'Chinese' }
+];
+
 interface CheckMistakesComponentProps {
   className?: string;
   variant?: 'default' | 'solve';
@@ -273,6 +326,10 @@ interface MistakeHistoryItem {
   extractedTexts?: ExtractedText[];
   pageMarkings?: PageMarking[];
   selectedMarkingStandard?: string;
+  ocrOverlayPages?: OcrPageData[];
+  n8nMarkingSchemes?: Record<string, MarkingSchemeResult>;
+  webhookRawResponse?: string;
+  webhookNormalizedPayload?: any;
 }
 
 // Portal Modal Component - renders at document.body level
@@ -342,26 +399,6 @@ const PortalModal: React.FC<PortalModalProps> = ({ isOpen, onClose, children, cl
   );
 };
 
-const MISTAKE_CHECKER_SYSTEM_PROMPT = `You are a strict mistake-checking engine.
-Return ONLY valid JSON in this exact schema:
-{
-  "extractedText": "string",
-  "mistakes": [
-    {
-      "incorrect": "string",
-      "correction": "string",
-      "type": "grammar|spelling|punctuation|other"
-    }
-  ]
-}
-Rules:
-- extractedText must contain the final clean text to display.
-- incorrect must be an exact snippet from extractedText.
-- correction must be the direct fixed form for incorrect.
-- type must be one of: grammar, spelling, punctuation, other.
-- If there are no mistakes, return mistakes as an empty array.
-- Do not output markdown, explanations, prefixes, or suffixes.`;
-
 const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ className = '', variant = 'default', selectedHistoryItem = null, onHistoryRefresh }) => {
   const { t } = useLanguage();
   const { user, session } = useAuth();
@@ -378,6 +415,7 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
   
   // Remove teacher marking states and replace with integrated marking
   const [selectedMarkingStandard, setSelectedMarkingStandard] = useState<string>('hkdse');
+  const [selectedLanguage, setSelectedLanguage] = useState<MistakeCheckerLanguage>('en');
   const [markingSummary, setMarkingSummary] = useState<MarkingSummary | null>(null);
   
   // Add new state variables for the requested features
@@ -398,6 +436,7 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mistakesContainerRef = useRef<HTMLDivElement>(null); // Add ref for auto-scroll
+  const mistakeCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // Response checking state
   const { checkAndUseResponse } = useResponseCheck();
@@ -415,9 +454,10 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
   const [correctedText, setCorrectedText] = useState('');
   const [showReportModal, setShowReportModal] = useState(false);
   const [showFileViewModal, setShowFileViewModal] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [pdfPageCount, setPdfPageCount] = useState(0);
   const [streamedAiResponse, setStreamedAiResponse] = useState('');
+  const [ocrOverlayPages, setOcrOverlayPages] = useState<OcrPageData[]>([]);
+  const [n8nMarkingSchemes, setN8nMarkingSchemes] = useState<Record<string, MarkingSchemeResult>>({});
 
   // Add page markings state for teacher marking functionality
   const [pageMarkings, setPageMarkings] = useState<PageMarking[]>([]);
@@ -449,20 +489,6 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
       console.error('Upload to Supabase failed:', error);
       return null;
     }
-  };
-
-  const uploadBase64Images = async (base64Images: string[]): Promise<string[]> => {
-    const urls: string[] = [];
-    for (let i = 0; i < base64Images.length; i++) {
-      const base64 = base64Images[i];
-      if (!base64) continue;
-      const res = await fetch(base64);
-      const blob = await res.blob();
-      const fileName = `page_${i + 1}_${Date.now()}.jpg`;
-      const url = await uploadToSupabase(blob, fileName);
-      if (url) urls.push(url);
-    }
-    return urls;
   };
 
   // Load history from database on component mount
@@ -554,7 +580,7 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
   };
 
   // Function to save to database (enhanced from addToHistory)
-  const saveToDatabase = async (fileName: string, text: string, mistakes: Mistake[], markingSummary: MarkingSummary | null, fileType: string, documentPages?: string[], originalFile?: File, pageMistakes?: PageMistakes[], currentPageIndex?: number, processingComplete?: boolean, extractedTexts?: ExtractedText[], pageMarkings?: PageMarking[]) => {
+  const saveToDatabase = async (fileName: string, text: string, mistakes: Mistake[], markingSummary: MarkingSummary | null, fileType: string, documentPages?: string[], originalFile?: File, pageMistakes?: PageMistakes[], currentPageIndex?: number, processingComplete?: boolean, extractedTexts?: ExtractedText[], pageMarkings?: PageMarking[], ocrPages?: OcrPageData[], markingSchemes?: Record<string, MarkingSchemeResult>, webhookRawResponse?: string, webhookNormalizedPayload?: any) => {
     // Require authentication for saving
     if (!user && !session) {
       console.warn('⚠️ Cannot save mistake check - user not authenticated');
@@ -574,6 +600,10 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
         pageMistakes,
         extractedTexts,
         pageMarkings,
+        ocrOverlayPages: ocrPages,
+        n8nMarkingSchemes: markingSchemes,
+        webhookRawResponse,
+        webhookNormalizedPayload,
         markingSummary,
         selectedMarkingStandard,
         currentPage: currentPageIndex || 0,
@@ -612,9 +642,9 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
   };
 
   // Enhanced function to add to history (now uses database only)
-  const addToHistory = (fileName: string, text: string, mistakes: Mistake[], markingSummary: MarkingSummary | null, fileType: string, documentPages?: string[], originalFile?: File, pageMistakes?: PageMistakes[], currentPageIndex?: number, processingComplete?: boolean, extractedTexts?: ExtractedText[], pageMarkings?: PageMarking[]) => {
+  const addToHistory = (fileName: string, text: string, mistakes: Mistake[], markingSummary: MarkingSummary | null, fileType: string, documentPages?: string[], originalFile?: File, pageMistakes?: PageMistakes[], currentPageIndex?: number, processingComplete?: boolean, extractedTexts?: ExtractedText[], pageMarkings?: PageMarking[], ocrPages?: OcrPageData[], markingSchemes?: Record<string, MarkingSchemeResult>, webhookRawResponse?: string, webhookNormalizedPayload?: any) => {
     // Save to database - authentication required
-    saveToDatabase(fileName, text, mistakes, markingSummary, fileType, documentPages, originalFile, pageMistakes, currentPageIndex, processingComplete, extractedTexts, pageMarkings);
+    saveToDatabase(fileName, text, mistakes, markingSummary, fileType, documentPages, originalFile, pageMistakes, currentPageIndex, processingComplete, extractedTexts, pageMarkings, ocrPages, markingSchemes, webhookRawResponse, webhookNormalizedPayload);
   };
 
   // Function to load from history - Enhanced to properly restore view state
@@ -653,6 +683,8 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
       setTextOnlyMode(true);
       setFile(null);
       setDocumentPages([]);
+      setOcrOverlayPages([]);
+      setN8nMarkingSchemes(item.n8nMarkingSchemes || {});
       setDirectText(item.text || '');
       
       // Restore mistakes for text mode
@@ -704,6 +736,8 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
       setDocumentPages(item.documentPages);
       setCurrentPage(item.currentPage || 0);
       setTextOnlyMode(false);
+      setOcrOverlayPages(item.ocrOverlayPages || []);
+      setN8nMarkingSchemes(item.n8nMarkingSchemes || {});
       
       // Create or restore file state
       if (item.file) {
@@ -720,6 +754,8 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
       // Clear document states if no document pages
       setDocumentPages([]);
       setFile(null);
+      setOcrOverlayPages([]);
+      setN8nMarkingSchemes(item.n8nMarkingSchemes || {});
     }
 
     // Restore extracted texts
@@ -835,8 +871,6 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
       });
     }, 500);
     
-    // Show success message
-    alert('✅ Successfully restored from history!');
   };
 
   useEffect(() => {
@@ -978,6 +1012,15 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
     }
   };
 
+  const focusMistake = (mistakeId: number) => {
+    setSelectedMistakeId(selectedMistakeId === mistakeId ? null : mistakeId);
+    requestAnimationFrame(() => {
+      const key = `${currentPage}-${mistakeId}`;
+      const target = mistakeCardRefs.current[key];
+      target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  };
+
   const getCurrentDisplayText = () => {
     if (showCorrectedText && correctedText) {
       return correctedText;
@@ -991,6 +1034,96 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
   };
 
   const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  const collectMistakeMatches = (text: string, mistakes: Mistake[]) => {
+    if (!text || mistakes.length === 0) return [] as Array<{ start: number; end: number; mistake: Mistake }>;
+    const loweredText = text.toLowerCase();
+    const rawMatches: Array<{ start: number; end: number; mistake: Mistake }> = [];
+
+    mistakes.forEach((mistake) => {
+      const incorrect = typeof mistake.incorrect === 'string' ? mistake.incorrect.trim() : '';
+      if (!incorrect) return;
+      const target = incorrect.toLowerCase();
+      let fromIndex = 0;
+      while (fromIndex < loweredText.length) {
+        const foundIndex = loweredText.indexOf(target, fromIndex);
+        if (foundIndex === -1) break;
+        rawMatches.push({
+          start: foundIndex,
+          end: foundIndex + target.length,
+          mistake
+        });
+        fromIndex = foundIndex + Math.max(1, target.length);
+      }
+    });
+
+    return rawMatches
+      .sort((a, b) => {
+        if (a.start !== b.start) return a.start - b.start;
+        return (b.end - b.start) - (a.end - a.start);
+      })
+      .reduce((acc: Array<{ start: number; end: number; mistake: Mistake }>, match) => {
+        const last = acc[acc.length - 1];
+        if (!last || match.start >= last.end) {
+          acc.push(match);
+        }
+        return acc;
+      }, []);
+  };
+
+  const getOverlayLineHighlight = (lineText: string, mistakes: Mistake[], applyCorrection = false) => {
+    if (!lineText || mistakes.length === 0) {
+      return {
+        hasMistake: false,
+        type: 'other',
+        displayText: lineText,
+        tooltip: '',
+        matchedMistakeId: null as number | null,
+        ranges: [] as Array<{ start: number; end: number; type: string; mistakeId: number }>
+      };
+    }
+    const lineMatches = collectMistakeMatches(lineText, mistakes);
+    const matchedMistakes = lineMatches.map((match) => match.mistake);
+
+    if (matchedMistakes.length === 0) {
+      return {
+        hasMistake: false,
+        type: 'other',
+        displayText: lineText,
+        tooltip: '',
+        matchedMistakeId: null as number | null,
+        ranges: [] as Array<{ start: number; end: number; type: string; mistakeId: number }>
+      };
+    }
+
+    let correctedLine = lineText;
+    if (applyCorrection) {
+      matchedMistakes.forEach((mistake) => {
+        correctedLine = correctedLine.replace(
+          new RegExp(escapeRegExp(mistake.incorrect), 'gi'),
+          mistake.correct
+        );
+      });
+    }
+
+    const type = normalizeMistakeType(matchedMistakes[0]?.type);
+    const tooltip = matchedMistakes.map((mistake) => `${mistake.incorrect} → ${mistake.correct}`).join(' | ');
+    const ranges = lineMatches.map((match) => ({
+      start: match.start,
+      end: match.end,
+      type: normalizeMistakeType(match.mistake.type),
+      mistakeId: match.mistake.id
+    }));
+
+    return {
+      hasMistake: true,
+      type,
+      displayText: applyCorrection ? correctedLine : lineText,
+      tooltip,
+      matchedMistakeId: ranges[0]?.mistakeId || null,
+      ranges
+    };
+  };
 
   const injectHighlightMarkup = (value: string, mistakes: Mistake[], mode: 'original' | 'corrected') => {
     if (!value || mistakes.length === 0) return value;
@@ -1091,6 +1224,64 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
     }
   };
 
+  const convertDocxToImages = async (file: File): Promise<string[]> => {
+    setProcessingStatus('Loading DOCX...');
+    const buffer = await file.arrayBuffer();
+    const offscreenContainer = document.createElement('div');
+    offscreenContainer.style.position = 'fixed';
+    offscreenContainer.style.left = '-100000px';
+    offscreenContainer.style.top = '0';
+    offscreenContainer.style.width = '900px';
+    offscreenContainer.style.background = '#ffffff';
+    offscreenContainer.style.zIndex = '-1';
+    document.body.appendChild(offscreenContainer);
+
+    try {
+      const extracted = await mammoth.extractRawText({ arrayBuffer: buffer });
+      const pageTexts = extracted.value
+        .split('\f')
+        .map((page: string) => page.trim())
+        .filter((page: string) => page.length > 0);
+      const targetPages = pageTexts.length > 0 ? pageTexts : [extracted.value.trim() || file.name];
+      const images: string[] = [];
+
+      for (let index = 0; index < targetPages.length; index++) {
+        const pageBlock = document.createElement('div');
+        pageBlock.style.width = '800px';
+        pageBlock.style.minHeight = '1120px';
+        pageBlock.style.background = '#ffffff';
+        pageBlock.style.border = '1px solid #e5e7eb';
+        pageBlock.style.borderRadius = '8px';
+        pageBlock.style.padding = '48px 56px';
+        pageBlock.style.whiteSpace = 'pre-wrap';
+        pageBlock.style.fontFamily = 'Arial, sans-serif';
+        pageBlock.style.fontSize = '16px';
+        pageBlock.style.lineHeight = '1.5';
+        pageBlock.style.color = '#111827';
+        pageBlock.textContent = targetPages[index];
+        offscreenContainer.appendChild(pageBlock);
+        setProcessingStatus(`Converting DOCX page ${index + 1} of ${targetPages.length}...`);
+        const canvas = await html2canvas(pageBlock, {
+          scale: 2,
+          backgroundColor: '#ffffff',
+          useCORS: true,
+          logging: false
+        });
+        images.push(canvas.toDataURL('image/jpeg', 0.92));
+        offscreenContainer.removeChild(pageBlock);
+      }
+
+      setProcessingStatus('DOCX conversion completed!');
+      return images;
+    } catch (error) {
+      console.error('DOCX conversion error:', error);
+      setProcessingStatus('Error converting DOCX');
+      throw error;
+    } finally {
+      document.body.removeChild(offscreenContainer);
+    }
+  };
+
   // Extract text from page using OCR API
   const extractTextFromPage = async (imageUrl: string, pageNumber: number): Promise<string> => {
     console.log(`📝 Starting text extraction for page ${pageNumber}`);
@@ -1159,40 +1350,30 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
     let highlightedParts: HighlightedText[] = [];
     let lastIndex = 0;
 
-    // Sort mistakes by their position in the text
-    const sortedMistakes = mistakes
-      .map(mistake => ({
-        ...mistake,
-        index: text.toLowerCase().indexOf(mistake.incorrect.toLowerCase()),
-        isSelected: selectedMistakeId === mistake.id
-      }))
-      .filter(mistake => mistake.index !== -1)
-      .sort((a, b) => a.index - b.index);
+    const matchedRanges = collectMistakeMatches(text, mistakes);
 
-    for (const mistake of sortedMistakes) {
-      const startIndex = mistake.index;
-      
+    for (const match of matchedRanges) {
+      const startIndex = match.start;
+
       if (startIndex > lastIndex) {
-        // Add non-highlighted text before the mistake
         highlightedParts.push({
           text: text.substring(lastIndex, startIndex),
           isHighlighted: false
         });
       }
-      
-      // Add highlighted mistake
+
       highlightedParts.push({
-        text: mistake.incorrect,
+        text: text.substring(match.start, match.end),
         isHighlighted: true,
-        mistakeType: mistake.type,
-        correction: mistake.correct,
-        isSelected: mistake.isSelected
+        mistakeType: match.mistake.type,
+        correction: match.mistake.correct,
+        isSelected: selectedMistakeId === match.mistake.id,
+        mistakeId: match.mistake.id
       });
-      
-      lastIndex = startIndex + mistake.incorrect.length;
+
+      lastIndex = match.end;
     }
-    
-    // Add remaining non-highlighted text
+
     if (lastIndex < text.length) {
       highlightedParts.push({
         text: text.substring(lastIndex),
@@ -1387,24 +1568,195 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
         return JSON.parse(trimmed.slice(start, end + 1));
       } catch {}
     }
+    const arrayStart = trimmed.indexOf('[');
+    const arrayEnd = trimmed.lastIndexOf(']');
+    if (arrayStart !== -1 && arrayEnd !== -1 && arrayEnd > arrayStart) {
+      try {
+        return JSON.parse(trimmed.slice(arrayStart, arrayEnd + 1));
+      } catch {}
+    }
     return null;
   };
 
-  const parseTextAndMistakes = (text: string): { extractedText: string; mistakes: Mistake[] } => {
-    const parsedJson = parseJsonBlock(text);
-    if (parsedJson && typeof parsedJson === 'object') {
-      const extractedText = typeof parsedJson.extractedText === 'string'
-        ? parsedJson.extractedText
-        : typeof parsedJson.extracted_text === 'string'
-          ? parsedJson.extracted_text
-          : typeof parsedJson.text === 'string'
-            ? parsedJson.text
-            : '';
+  const normalizeOcrPages = (value: any): OcrPageData[] => {
+    if (!Array.isArray(value)) return [];
 
-      const candidateMistakes = Array.isArray(parsedJson.mistakes)
-        ? parsedJson.mistakes
-        : Array.isArray(parsedJson.errors)
-          ? parsedJson.errors
+    const parseNumber = (input: any) => (typeof input === 'number' && Number.isFinite(input) ? input : 0);
+
+    return value
+      .map((entry: any, index: number): OcrPageData | null => {
+        if (!entry || typeof entry !== 'object') return null;
+        const width = parseNumber(entry.width);
+        const height = parseNumber(entry.height);
+        const page = parseNumber(entry.page) || index + 1;
+        const rawResults = Array.isArray(entry.results) ? entry.results : [];
+
+        const results = rawResults
+          .map((line: any): OcrResultLine | null => {
+            if (!line || typeof line !== 'object' || typeof line.text !== 'string') return null;
+            const rawBbox = line.bbox && typeof line.bbox === 'object' ? line.bbox : null;
+            const bbox = rawBbox
+              ? {
+                  x_min: parseNumber(rawBbox.x_min),
+                  y_min: parseNumber(rawBbox.y_min),
+                  x_max: parseNumber(rawBbox.x_max),
+                  y_max: parseNumber(rawBbox.y_max),
+                  width: parseNumber(rawBbox.width),
+                  height: parseNumber(rawBbox.height)
+                }
+              : undefined;
+            const polygon = Array.isArray(line.polygon)
+              ? line.polygon
+                  .filter((point: any) => Array.isArray(point) && point.length >= 2)
+                  .map((point: any) => [parseNumber(point[0]), parseNumber(point[1])])
+              : undefined;
+
+            return {
+              text: line.text,
+              score: typeof line.score === 'number' ? line.score : undefined,
+              polygon,
+              bbox
+            };
+          })
+          .filter((line: OcrResultLine | null): line is OcrResultLine => Boolean(line));
+
+        return {
+          page,
+          width,
+          height,
+          results
+        };
+      })
+      .filter((page: OcrPageData | null): page is OcrPageData => Boolean(page));
+  };
+
+  const extractTextFromOcrPages = (ocrPages: OcrPageData[]): string => {
+    if (!Array.isArray(ocrPages) || ocrPages.length === 0) return '';
+    return ocrPages
+      .slice()
+      .sort((a, b) => a.page - b.page)
+      .map((page) => page.results.map((line) => line.text).filter(Boolean).join('\n').trim())
+      .filter(Boolean)
+      .join('\n\n');
+  };
+
+  const renderOcrPagesToImages = async (ocrPages: OcrPageData[]): Promise<string[]> => {
+    const pages = ocrPages.slice().sort((a, b) => a.page - b.page);
+    const images: string[] = [];
+    for (const page of pages) {
+      const width = page.width > 0 ? page.width : 1200;
+      const height = page.height > 0 ? page.height : 1600;
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) continue;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, height);
+      ctx.fillStyle = '#111827';
+      page.results.forEach((line) => {
+        const bbox = line.bbox;
+        const fontSize = bbox && bbox.height > 8 ? Math.min(42, Math.max(11, Math.round(bbox.height * 0.8))) : 18;
+        ctx.font = `${fontSize}px Arial`;
+        const x = bbox ? Math.max(4, bbox.x_min) : 20;
+        const y = bbox ? Math.max(fontSize, bbox.y_max) : 40;
+        ctx.fillText(line.text, x, y);
+      });
+      images.push(canvas.toDataURL('image/jpeg', 0.92));
+    }
+    return images;
+  };
+
+  const normalizeMarkingSchemes = (value: any): Record<string, MarkingSchemeResult> => {
+    if (!value || typeof value !== 'object') return {};
+    const entries = Object.entries(value);
+    const output: Record<string, MarkingSchemeResult> = {};
+
+    const mapSchemeKey = (rawKey: string) => {
+      const normalized = rawKey.toLowerCase().replace(/[\s_-]+/g, '');
+      if (normalized === 'hkdse') return 'hkdse';
+      if (normalized === 'alevel' || normalized === 'gcealevel') return 'alevel';
+      return rawKey.toLowerCase();
+    };
+
+    const toNumber = (input: any) => (typeof input === 'number' && Number.isFinite(input) ? input : 0);
+
+    entries.forEach(([key, rawValue]) => {
+      if (!rawValue || typeof rawValue !== 'object') return;
+      const score = toNumber((rawValue as any).score ?? (rawValue as any).totalScore);
+      const maxScore = toNumber((rawValue as any).maxScore || (rawValue as any).total);
+      const explicitPercentage = toNumber((rawValue as any).percentage);
+      const percentage = explicitPercentage || (maxScore > 0 ? (score / maxScore) * 100 : 0);
+      const criteriaRaw = (rawValue as any).criteria;
+      const criteria: MarkingCriteriaBreakdown | undefined = criteriaRaw && typeof criteriaRaw === 'object'
+        ? Object.entries(criteriaRaw).reduce((acc, [criteriaKey, criteriaValue]) => {
+            if (typeof criteriaValue === 'number' && Number.isFinite(criteriaValue)) {
+              acc[criteriaKey] = criteriaValue;
+            }
+            return acc;
+          }, {} as MarkingCriteriaBreakdown)
+        : undefined;
+
+      output[mapSchemeKey(key)] = {
+        score,
+        maxScore,
+        percentage,
+        grade: typeof (rawValue as any).grade === 'string' ? (rawValue as any).grade : undefined,
+        feedback: typeof (rawValue as any).feedback === 'string' ? (rawValue as any).feedback : undefined,
+        criteria
+      };
+    });
+
+    return output;
+  };
+
+  const parseWebhookPayload = (text: string): { rootPayload: any; normalizedPayload: any; ocrPages: OcrPageData[]; markingSchemes: Record<string, MarkingSchemeResult> } => {
+    const parsedJson = parseJsonBlock(text);
+    let rootPayload: any = parsedJson;
+    if (Array.isArray(rootPayload) && rootPayload.length > 0) {
+      rootPayload = rootPayload[0];
+    }
+
+    let normalizedPayload: any = rootPayload;
+    if (normalizedPayload && typeof normalizedPayload === 'object' && typeof normalizedPayload.output === 'string') {
+      const nestedPayload = parseJsonBlock(normalizedPayload.output as string);
+      if (nestedPayload && typeof nestedPayload === 'object') {
+        normalizedPayload = nestedPayload;
+      }
+    }
+
+    const ocrPages = normalizeOcrPages(rootPayload?.data) || [];
+    const rootMarking = normalizeMarkingSchemes(rootPayload?.markingSchemes || rootPayload?.marking?.schemes || rootPayload?.marking);
+    const nestedMarking = normalizeMarkingSchemes(normalizedPayload?.markingSchemes || normalizedPayload?.marking?.schemes || normalizedPayload?.marking);
+    const markingSchemes = Object.keys(nestedMarking).length > 0 ? nestedMarking : rootMarking;
+    if (ocrPages.length === 0) {
+      return {
+        rootPayload,
+        normalizedPayload,
+        ocrPages: normalizeOcrPages(normalizedPayload?.data),
+        markingSchemes
+      };
+    }
+    return { rootPayload, normalizedPayload, ocrPages, markingSchemes };
+  };
+
+  const parseTextAndMistakes = (text: string): { extractedText: string; mistakes: Mistake[]; ocrPages: OcrPageData[]; markingSchemes: Record<string, MarkingSchemeResult>; normalizedPayload?: any; rootPayload?: any } => {
+    const { rootPayload, normalizedPayload, ocrPages, markingSchemes } = parseWebhookPayload(text);
+
+    if (normalizedPayload && typeof normalizedPayload === 'object') {
+      const ocrDerivedText = extractTextFromOcrPages(ocrPages);
+      const extractedText = typeof normalizedPayload.extractedText === 'string'
+        ? normalizedPayload.extractedText
+        : typeof normalizedPayload.extracted_text === 'string'
+          ? normalizedPayload.extracted_text
+          : typeof normalizedPayload.text === 'string'
+            ? normalizedPayload.text
+            : ocrDerivedText;
+
+      const candidateMistakes = Array.isArray(normalizedPayload.mistakes)
+        ? normalizedPayload.mistakes
+        : Array.isArray(normalizedPayload.errors)
+          ? normalizedPayload.errors
           : [];
 
       const mistakes = candidateMistakes
@@ -1428,12 +1780,17 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
             id: index + 1,
             incorrect: incorrect.trim(),
             correct: correct.trim(),
-            type: normalizeMistakeType(item?.type)
+            type: normalizeMistakeType(item?.type),
+            explanation: typeof item?.explanation === 'string' ? item.explanation : undefined,
+            severity: typeof item?.severity === 'string' ? item.severity : undefined,
+            startIndex: typeof item?.startIndex === 'number' ? item.startIndex : undefined,
+            endIndex: typeof item?.endIndex === 'number' ? item.endIndex : undefined,
+            lineNumber: typeof item?.lineNumber === 'number' ? item.lineNumber : undefined
           };
         })
         .filter((mistake: Mistake | null): mistake is Mistake => Boolean(mistake));
 
-      return { extractedText: extractedText.trim(), mistakes };
+      return { extractedText: extractedText.trim(), mistakes, ocrPages, markingSchemes, normalizedPayload, rootPayload };
     }
 
     let extractedText = '';
@@ -1477,7 +1834,7 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
         });
       }
     }
-    return { extractedText, mistakes };
+    return { extractedText: extractedText || extractTextFromOcrPages(ocrPages), mistakes, ocrPages, markingSchemes, normalizedPayload, rootPayload };
   };
 
   const parseMistakesFromText = (text: string, pageNumber: number): Mistake[] => {
@@ -1800,6 +2157,8 @@ Be thorough and fair in your assessment.`
     setOverallProcessingComplete(false);
     setIsProcessingStarted(false);
     setStreamedAiResponse('');
+    setOcrOverlayPages([]);
+    setN8nMarkingSchemes({});
 
     try {
       let pages: string[] = [];
@@ -1881,14 +2240,11 @@ Be thorough and fair in your assessment.`
         'image/webp',
         'application/pdf',
         'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'text/plain',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'text/csv'
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
       ];
       const isAllowed = allowedTypes.includes(selectedFile.type) || (selectedFile.type.startsWith('image/') && selectedFile.type !== 'image/gif');
       if (!isAllowed) {
-        showError('Unsupported file type. Please upload PDF, image, Word, TXT, CSV, or XLSX files.');
+        showError('Unsupported file type. Please upload image, PDF, DOC, or DOCX files.');
         if (fileInputRef.current) fileInputRef.current.value = '';
         return;
       }
@@ -1903,6 +2259,8 @@ Be thorough and fair in your assessment.`
       setTextOnlyMode(false);
       setDirectText('');
       setStreamedAiResponse('');
+      setOcrOverlayPages([]);
+      setN8nMarkingSchemes({});
       setPdfPageCount(0);
       setProcessingStatus('');
     }
@@ -1920,6 +2278,8 @@ Be thorough and fair in your assessment.`
     setTextOnlyMode(false);
     setDirectText('');
     setStreamedAiResponse('');
+    setOcrOverlayPages([]);
+    setN8nMarkingSchemes({});
     setPdfPageCount(0);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -2011,7 +2371,16 @@ Be thorough and fair in your assessment.`
     }
   }, [pageMistakes, currentPage, isRestoringFromHistory]);
 
-  const invokeMistakeCheckerWebhook = async (content: string, targetFile: File | null, preparedPages: string[]) => {
+  useEffect(() => {
+    if (!overallProcessingComplete) return;
+    const combinedMistakes = pageMistakes.flatMap((page) => page.mistakes || []);
+    const combinedText = extractedTexts.map((textItem) => textItem.text || '').join('\n\n').trim();
+    if (!combinedText && combinedMistakes.length === 0) return;
+    const summary = getMarkingSummaryFromN8n(n8nMarkingSchemes, combinedMistakes, combinedText, selectedMarkingStandard);
+    setMarkingSummary(summary);
+  }, [selectedMarkingStandard]);
+
+  const invokeMistakeCheckerWebhook = async (content: string, targetFile: File | null) => {
     const chatId = `mistake-check-${Date.now()}`;
     const timestamp = new Date().toISOString().replace('T', ' ').replace('Z', '');
     const message = content.trim() || 'Check this content for mistakes';
@@ -2019,7 +2388,7 @@ Be thorough and fair in your assessment.`
 
     let requestBody: any = {
       stream: true,
-      systemMessage: MISTAKE_CHECKER_SYSTEM_PROMPT,
+      language: selectedLanguage,
       messages: []
     };
 
@@ -2028,82 +2397,34 @@ Be thorough and fair in your assessment.`
       if (!uploadedFileUrl) {
         throw new Error('Failed to upload file to storage');
       }
-
-      if (targetFile.type === 'application/pdf') {
-        const imageUrls = await uploadBase64Images(preparedPages);
-        requestBody = {
-          ...requestBody,
-          uploadedFileType: 'pdf_vision',
-          messages: [{
-            uid: userId,
-            type: 'pdf_vision',
-            text: { body: message },
-            body: message,
-            content: message,
-            role: 'user',
-            roleDescription: 'A versatile AI assistant for everyday tasks and questions',
-            timestamp,
-            chatid: chatId,
-            subject: 'mistake_checker',
-            systemMessage: MISTAKE_CHECKER_SYSTEM_PROMPT,
+      const isImageFile = targetFile.type.startsWith('image/');
+      const uploadedFileType = isImageFile ? 'image' : 'document';
+      requestBody = {
+        ...requestBody,
+        uploadedFileType,
+        messages: [{
+          uid: userId,
+          type: uploadedFileType,
+          text: { body: message },
+          body: message,
+          content: message,
+          role: 'user',
+          roleDescription: 'A versatile AI assistant for everyday tasks and questions',
+          timestamp,
+          chatid: chatId,
+          subject: 'mistake_checker',
+          languageCode: selectedLanguage,
+          url: uploadedFileUrl,
+          attachments: [{
             url: uploadedFileUrl,
-            image_urls: imageUrls,
-            page_count: imageUrls.length
+            fileName: targetFile.name,
+            fileType: uploadedFileType,
+            mimeType: targetFile.type,
+            originalName: targetFile.name,
+            size: targetFile.size
           }]
-        };
-      } else if (targetFile.type.startsWith('image/')) {
-        requestBody = {
-          ...requestBody,
-          uploadedFileType: 'image',
-          messages: [{
-            uid: userId,
-            type: 'image',
-            text: { body: message },
-            body: message,
-            content: message,
-            role: 'user',
-            roleDescription: 'A versatile AI assistant for everyday tasks and questions',
-            timestamp,
-            chatid: chatId,
-            subject: 'mistake_checker',
-            systemMessage: MISTAKE_CHECKER_SYSTEM_PROMPT,
-            url: uploadedFileUrl,
-            attachments: [{
-              url: uploadedFileUrl,
-              fileName: targetFile.name,
-              fileType: 'image',
-              originalName: targetFile.name,
-              size: targetFile.size
-            }]
-          }]
-        };
-      } else {
-        requestBody = {
-          ...requestBody,
-          uploadedFileType: 'document',
-          messages: [{
-            uid: userId,
-            type: 'document',
-            text: { body: message },
-            body: message,
-            content: message,
-            role: 'user',
-            roleDescription: 'A versatile AI assistant for everyday tasks and questions',
-            timestamp,
-            chatid: chatId,
-            subject: 'mistake_checker',
-            systemMessage: MISTAKE_CHECKER_SYSTEM_PROMPT,
-            url: uploadedFileUrl,
-            attachments: [{
-              url: uploadedFileUrl,
-              fileName: targetFile.name,
-              fileType: 'document',
-              originalName: targetFile.name,
-              size: targetFile.size
-            }]
-          }]
-        };
-      }
+        }]
+      };
     } else {
       requestBody = {
         ...requestBody,
@@ -2120,7 +2441,7 @@ Be thorough and fair in your assessment.`
           timestamp,
           chatid: chatId,
           subject: 'mistake_checker',
-          systemMessage: MISTAKE_CHECKER_SYSTEM_PROMPT
+          languageCode: selectedLanguage
         }]
       };
     }
@@ -2133,82 +2454,25 @@ Be thorough and fair in your assessment.`
       body: JSON.stringify(requestBody),
     });
 
-    if (!response.ok || !response.body) {
+    if (!response.ok) {
       throw new Error(`Mistake checker webhook failed: ${response.status} ${response.statusText}`);
     }
+    const rawResponseText = await response.text();
+    const fullText = rawResponseText.trim();
+    setStreamedAiResponse(fullText);
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let rawBuffer = '';
-    let fullText = '';
+    const parsedResult = parseTextAndMistakes(fullText);
+    const parsedMistakes = parsedResult.mistakes;
+    const parsedText = parsedResult.extractedText || extractTextFromOcrPages(parsedResult.ocrPages);
+    setOcrOverlayPages(parsedResult.ocrPages);
+    setN8nMarkingSchemes(parsedResult.markingSchemes);
 
-    const appendChunk = (chunkText: string) => {
-      if (!chunkText) return;
-      fullText += chunkText;
-      setStreamedAiResponse(fullText);
-
-      const parsedResult = parseTextAndMistakes(fullText);
-      const parsedMistakes = parsedResult.mistakes;
-      const parsedText = parsedResult.extractedText;
-
-      setPageMistakes(prev => prev.map((pm, index) => (
-        index === 0 ? { ...pm, mistakes: parsedMistakes, isLoading: true } : pm
-      )));
-      setExtractedTexts(prev => prev.map((et, index) => (
-        index === 0 ? { ...et, text: parsedText || fullText || et.text, isLoading: true } : et
-      )));
-    };
-
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        rawBuffer += decoder.decode(value, { stream: true });
-        const lines = rawBuffer.split('\n');
-        rawBuffer = lines.pop() || '';
-
-        for (const rawLine of lines) {
-          const line = rawLine.trim();
-          if (!line) continue;
-
-          const payloadLine = line.startsWith('data:') ? line.replace(/^data:\s*/, '') : line;
-          if (payloadLine === '[DONE]') continue;
-
-          try {
-            const parsed = JSON.parse(payloadLine);
-            if (parsed?.type === 'item' && typeof parsed.content === 'string') {
-              appendChunk(parsed.content);
-              continue;
-            }
-            const contentChunk = parsed?.choices?.[0]?.delta?.content;
-            if (typeof contentChunk === 'string') {
-              appendChunk(contentChunk);
-              continue;
-            }
-            if (typeof parsed?.content === 'string') {
-              appendChunk(parsed.content);
-            }
-          } catch {
-            appendChunk(payloadLine);
-          }
-        }
-      }
-    } finally {
-      reader.releaseLock();
-    }
-
-    if (rawBuffer.trim()) {
-      try {
-        const parsed = JSON.parse(rawBuffer.trim());
-        const finalChunk = parsed?.content || parsed?.choices?.[0]?.delta?.content;
-        if (typeof finalChunk === 'string') {
-          appendChunk(finalChunk);
-        }
-      } catch {
-        appendChunk(rawBuffer.trim());
-      }
-    }
+    setPageMistakes(prev => prev.map((pm, index) => (
+      index === 0 ? { ...pm, mistakes: parsedMistakes, isLoading: true } : pm
+    )));
+    setExtractedTexts(prev => prev.map((et, index) => (
+      index === 0 ? { ...et, text: parsedText || et.text, isLoading: true } : et
+    )));
 
     return fullText;
   };
@@ -2223,6 +2487,8 @@ Be thorough and fair in your assessment.`
     setDocumentPages([]); // Clear any uploaded document
     setFile(null);
     setStreamedAiResponse('');
+    setOcrOverlayPages([]);
+    setN8nMarkingSchemes({});
     setPageMistakes([]);
     setExtractedTexts([]);
     
@@ -2242,9 +2508,11 @@ Be thorough and fair in your assessment.`
     }]);
     
     try {
-      const fullAiText = await invokeMistakeCheckerWebhook(text, null, []);
-      const mistakes = parseMistakesFromText(fullAiText, 1);
-      const extractedText = parseTextAndMistakes(fullAiText).extractedText || text;
+      const fullAiText = await invokeMistakeCheckerWebhook(text, null);
+      const parsedResult = parseTextAndMistakes(fullAiText);
+      const mistakes = parsedResult.mistakes;
+      const extractedText = parsedResult.extractedText || text;
+      setN8nMarkingSchemes(parsedResult.markingSchemes);
       
       // Update page mistakes
       setPageMistakes([{
@@ -2261,7 +2529,7 @@ Be thorough and fair in your assessment.`
       }]);
       
       // Generate marking summary
-      const integratedSummary = generateIntegratedSummary(mistakes, extractedText, selectedMarkingStandard);
+      const integratedSummary = getMarkingSummaryFromN8n(parsedResult.markingSchemes, mistakes, extractedText, selectedMarkingStandard);
       setMarkingSummary(integratedSummary);
       
       // Add to history
@@ -2282,7 +2550,11 @@ Be thorough and fair in your assessment.`
         0,
         true,
         undefined, // extractedTexts - not used for text mode
-        undefined  // pageMarkings - not used for text mode
+        undefined,  // pageMarkings - not used for text mode
+        parsedResult.ocrPages,
+        parsedResult.markingSchemes,
+        fullAiText,
+        parsedResult.normalizedPayload
       );
       
       setOverallProcessingComplete(true);
@@ -2661,6 +2933,51 @@ Be thorough and fair in your assessment.`
     };
   };
 
+  const getMarkingSummaryFromN8n = (
+    schemes: Record<string, MarkingSchemeResult>,
+    mistakes: Mistake[],
+    text: string,
+    markingStandardId: string
+  ): MarkingSummary => {
+    const schemeKey = markingStandardId === 'alevel' ? 'alevel' : markingStandardId;
+    const selectedScheme = schemes[schemeKey];
+    if (!selectedScheme) {
+      return generateIntegratedSummary(mistakes, text, markingStandardId);
+    }
+    const score = typeof selectedScheme.score === 'number' ? selectedScheme.score : 0;
+    const maxScore = typeof selectedScheme.maxScore === 'number' && selectedScheme.maxScore > 0 ? selectedScheme.maxScore : 100;
+    const percentage = typeof selectedScheme.percentage === 'number'
+      ? Math.max(0, Math.min(100, selectedScheme.percentage))
+      : Math.max(0, Math.min(100, (score / maxScore) * 100));
+    const criteriaValues = selectedScheme.criteria
+      ? Object.entries(selectedScheme.criteria).filter(([, value]) => typeof value === 'number')
+      : [];
+    const criteriaPercentages = criteriaValues.map(([key, value]) => {
+      const numericValue = value as number;
+      const normalized = numericValue > 1 && numericValue <= 100 ? numericValue : numericValue * 100;
+      return { key, percentage: Math.max(0, Math.min(100, normalized)) };
+    });
+    const strengths = criteriaPercentages
+      .filter((item) => item.percentage >= 70)
+      .map((item) => `${item.key.charAt(0).toUpperCase()}${item.key.slice(1)}: ${Math.round(item.percentage)}%`);
+    const weaknesses = criteriaPercentages
+      .filter((item) => item.percentage < 55)
+      .map((item) => `${item.key.charAt(0).toUpperCase()}${item.key.slice(1)}: ${Math.round(item.percentage)}%`);
+    const recommendations = typeof selectedScheme.feedback === 'string' && selectedScheme.feedback.trim().length > 0
+      ? selectedScheme.feedback.split('\n').map((line) => line.trim()).filter(Boolean)
+      : [];
+    return {
+      totalScore: Math.round(score * 100) / 100,
+      maxScore,
+      percentage: Math.round(percentage * 100) / 100,
+      grade: selectedScheme.grade || 'N/A',
+      strengths,
+      weaknesses,
+      recommendations,
+      studyPlan: []
+    };
+  };
+
   const startProcessing = async () => {
     if ((!file && !inputText.trim()) || isProcessingStarted) return;
 
@@ -2685,6 +3002,8 @@ Be thorough and fair in your assessment.`
     setLoading(true);
     setTextOnlyMode(!file);
     setStreamedAiResponse('');
+    setOcrOverlayPages([]);
+    setN8nMarkingSchemes({});
     setProcessingStatus('Analyzing...');
     
     const processStartTime = Date.now();
@@ -2697,6 +3016,11 @@ Be thorough and fair in your assessment.`
       if (file?.type === 'application/pdf') {
         preparedPages = await convertPdfToImages(file);
         setPdfPageCount(preparedPages.length);
+      } else if (file?.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+        preparedPages = await convertDocxToImages(file);
+        setPdfPageCount(preparedPages.length);
+      } else if (file?.type === 'application/msword') {
+        throw new Error('DOC preview is not supported. Please convert .doc to .docx for page preview.');
       } else if (file?.type?.startsWith('image/')) {
         const imageDataUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
@@ -2725,46 +3049,83 @@ Be thorough and fair in your assessment.`
       setPageMistakes(initialPageMistakes);
       setExtractedTexts(initialExtractedTexts);
 
-      const fullAiText = await invokeMistakeCheckerWebhook(inputText, file, preparedPages);
-      const parsedMistakes = parseMistakesFromText(fullAiText, 1);
-      const parsedText = parseTextAndMistakes(fullAiText).extractedText || initialExtractedText;
+      const fullAiText = await invokeMistakeCheckerWebhook(inputText, file);
+      const parsedResult = parseTextAndMistakes(fullAiText);
+      const parsedMistakes = parsedResult.mistakes;
+      const parsedText = parsedResult.extractedText || initialExtractedText;
+      const sortedOcrPages = parsedResult.ocrPages.slice().sort((a, b) => a.page - b.page);
+      const ocrPageTexts = sortedOcrPages.map((page) => page.results.map((line) => line.text).filter(Boolean).join('\n').trim());
+      const fallbackPageCount = ocrPageTexts.length;
+      const resolvedTotalPages = preparedPages.length > 0
+        ? preparedPages.length
+        : (fallbackPageCount > 0 ? fallbackPageCount : 1);
+      const resolvedDocumentPages = preparedPages.length > 0
+        ? preparedPages
+        : await renderOcrPagesToImages(sortedOcrPages);
+      setOcrOverlayPages(parsedResult.ocrPages);
+      setN8nMarkingSchemes(parsedResult.markingSchemes);
+      setDocumentPages(resolvedDocumentPages);
+      setCurrentPage(0);
 
-      const finalPageMistakes = initialPageMistakes.map((pm, index) => ({
-        ...pm,
-        mistakes: index === 0 ? parsedMistakes : pm.mistakes,
+      const mistakesByPage = Array.from({ length: resolvedTotalPages }, () => [] as Mistake[]);
+      parsedMistakes.forEach((mistake) => {
+        const normalizedIncorrect = typeof mistake.incorrect === 'string' ? mistake.incorrect.trim().toLowerCase() : '';
+        let targetPageIndex = 0;
+        if (normalizedIncorrect && ocrPageTexts.length > 0) {
+          const foundIndex = ocrPageTexts.findIndex((pageText) => pageText.toLowerCase().includes(normalizedIncorrect));
+          if (foundIndex >= 0) {
+            targetPageIndex = foundIndex;
+          }
+        }
+        const boundedIndex = Math.min(Math.max(targetPageIndex, 0), resolvedTotalPages - 1);
+        mistakesByPage[boundedIndex].push(mistake);
+      });
+
+      const finalPageMistakes: PageMistakes[] = Array.from({ length: resolvedTotalPages }, (_, index) => ({
+        pageNumber: index + 1,
+        mistakes: mistakesByPage[index],
         isLoading: false,
         isComplete: true,
         error: undefined
       }));
-      const finalExtractedTexts = initialExtractedTexts.map((et, index) => ({
-        ...et,
-        text: index === 0 ? parsedText : et.text || '',
+      const finalExtractedTexts: ExtractedText[] = Array.from({ length: resolvedTotalPages }, (_, index) => ({
+        pageNumber: index + 1,
+        text: ocrPageTexts[index] || (index === 0 ? parsedText : ''),
         isLoading: false,
         isComplete: true,
         error: undefined
       }));
+      const normalizedParsedText = finalExtractedTexts
+        .map((item) => item.text.trim())
+        .filter(Boolean)
+        .join('\n\n')
+        .trim() || parsedText;
 
       setPageMistakes(finalPageMistakes);
       setExtractedTexts(finalExtractedTexts);
       setOverallProcessingComplete(true);
       setProcessingStatus('Analysis completed');
 
-      const summary = generateIntegratedSummary(parsedMistakes, parsedText, selectedMarkingStandard);
+      const summary = getMarkingSummaryFromN8n(parsedResult.markingSchemes, parsedMistakes, normalizedParsedText, selectedMarkingStandard);
       setMarkingSummary(summary);
 
       addToHistory(
         file?.name || 'Direct Text Input', 
-        parsedText, 
+        normalizedParsedText, 
         parsedMistakes, 
         summary, 
         file?.type || 'text', 
-        preparedPages, 
+        resolvedDocumentPages, 
         file || undefined, 
         finalPageMistakes, 
         0, 
         true,
         finalExtractedTexts,
-        pageMarkings
+        pageMarkings,
+        parsedResult.ocrPages,
+        parsedResult.markingSchemes,
+        fullAiText,
+        parsedResult.normalizedPayload
       );
 
       const totalProcessTime = Date.now() - processStartTime;
@@ -2794,7 +3155,7 @@ Be thorough and fair in your assessment.`
   const calculateCost = () => {
     if (file) {
       if (file.type === 'application/pdf') {
-        return Math.max(pdfPageCount, documentPages.length) * 2;
+        return 10;
       }
       if (file.type.startsWith('image/')) {
         return 3;
@@ -2808,48 +3169,61 @@ Be thorough and fair in your assessment.`
   };
 
   const cost = calculateCost();
+  const currentOcrOverlay = ocrOverlayPages.find((page) => page.page === currentPage + 1) || ocrOverlayPages[currentPage];
+  const currentMistakes = pageMistakes[currentPage]?.mistakes || [];
+  const hasOcrOverlay = Boolean(currentOcrOverlay && currentOcrOverlay.width > 0 && currentOcrOverlay.height > 0);
+  const overlayWidth = hasOcrOverlay ? currentOcrOverlay!.width : 1;
+  const overlayHeight = hasOcrOverlay ? currentOcrOverlay!.height : 1;
+  const availableMarkingSchemes = MARKING_STANDARDS.filter((standard) => standard.id === 'hkdse' || standard.id === 'alevel');
+  const selectedN8nScheme = n8nMarkingSchemes[selectedMarkingStandard] || (selectedMarkingStandard === 'alevel' ? n8nMarkingSchemes.alevel : undefined);
+  const mistakeTypeCounts = currentMistakes.reduce((acc, mistake) => {
+    const type = normalizeMistakeType(mistake.type);
+    acc[type] = (acc[type] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  const summaryStrengths = (markingSummary?.strengths || []).filter((item) => item.trim().length > 0);
+  const summaryWeaknesses = (markingSummary?.weaknesses || []).filter((item) => item.trim().length > 0);
+  const summaryRecommendations = (markingSummary?.recommendations || []).filter((item) => item.trim().length > 0);
+  const hasSummaryInsights = summaryStrengths.length > 0 || summaryWeaknesses.length > 0 || summaryRecommendations.length > 0;
 
   if (!isProcessingStarted && !overallProcessingComplete) {
     return (
       <div className={className}>
         <div className="h-full flex flex-col">
-          <div className="flex flex-1 overflow-hidden">
-            <div className="flex-1 flex flex-col max-w-3xl mx-auto px-4">
+          <div className="flex flex-1 overflow-hidden items-center justify-center">
+            <div className="w-full flex flex-col justify-center max-w-3xl mx-auto px-4 py-8">
               <div className="w-full flex justify-center items-center mb-10 px-4">
-                <h1 className="text-4xl font-bold text-center mt-2 tracking-tight text-gray-900 dark:text-white">
+                <h1 className="text-4xl font-bold text-center tracking-tight text-gray-900 dark:text-white">
                   {variant === 'solve' ? t('mistakeChecker.title') : 'AI Mistake Checker'}
                 </h1>
               </div>
 
-              <div className="flex items-center justify-center gap-4 mb-10 w-full max-w-2xl mx-auto relative">
-                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth px-2">
-                  {MARKING_STANDARDS.map((standard) => (
-                    <button
-                      key={standard.id}
-                      onClick={() => setSelectedMarkingStandard(standard.id)}
-                      className={`px-5 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 ${
-                        selectedMarkingStandard === standard.id
-                          ? 'bg-gray-900 text-white dark:bg-[#27272a] dark:text-white'
-                          : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
-                      }`}
-                    >
-                      {standard.name}
-                    </button>
+              <div className="flex items-center justify-center gap-3 mb-10 w-full max-w-xl mx-auto">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Language</label>
+                <select
+                  value={selectedLanguage}
+                  onChange={(e) => setSelectedLanguage(e.target.value as MistakeCheckerLanguage)}
+                  className="px-4 py-2 rounded-lg min-w-[180px] bg-white dark:bg-[#111111] border border-gray-300 dark:border-white/10 text-gray-800 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff5500]"
+                >
+                  {LANGUAGE_OPTIONS.map((language) => (
+                    <option key={language.code} value={language.code}>
+                      {language.label}
+                    </option>
                   ))}
-                </div>
+                </select>
               </div>
 
               <div className="w-full relative flex flex-col items-center">
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-[98%] bg-white dark:bg-[#111111] border border-dashed border-gray-300 dark:border-gray-800 rounded-t-3xl rounded-b-lg h-24 lg:h-32 flex flex-col items-center justify-start pt-3 lg:pt-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 hover:border-gray-400 dark:hover:border-gray-600 transition-all group z-0 mb-[-18px] lg:mb-[-45px]"
+                  className="w-[98%] bg-white dark:bg-[#111111] border border-dashed border-gray-300 dark:border-gray-800 rounded-t-3xl rounded-b-lg h-32 lg:h-44 flex flex-col items-center justify-start pt-5 lg:pt-8 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 hover:border-gray-400 dark:hover:border-gray-600 transition-all group z-0 mb-[-18px] lg:mb-[-45px]"
                 >
                   <input
                     type="file"
                     ref={fileInputRef}
                     onChange={handleFileChange}
                     className="hidden"
-                    accept=".jpg,.jpeg,.png,.webp,application/pdf,.doc,.docx,.txt,.xlsx,.csv"
+                    accept=".jpg,.jpeg,.png,.webp,application/pdf,.doc,.docx"
                   />
                   <div className="mb-1 lg:mb-2 relative">
                     {file ? (
@@ -2858,7 +3232,7 @@ Be thorough and fair in your assessment.`
                       <FaImage className="text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-400 transition-colors w-4 h-4 lg:w-5 lg:h-5" />
                     )}
                   </div>
-                  <span className="text-[10px] lg:text-sm text-center px-4 text-gray-500 dark:text-gray-300 group-hover:text-gray-600 dark:group-hover:text-gray-200 transition-colors leading-tight">
+                  <span className="text-xs lg:text-base text-center px-4 text-gray-500 dark:text-gray-300 group-hover:text-gray-600 dark:group-hover:text-gray-200 transition-colors leading-tight">
                     {file ? file.name : t('mistakeChecker.subtitle')}
                   </span>
                 </div>
@@ -3138,7 +3512,7 @@ Be thorough and fair in your assessment.`
                     : 'file ready'}
               </p>
               <p className={variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}>
-                Using {MARKING_STANDARDS.find(s => s.id === selectedMarkingStandard)?.name} marking standard
+                Language: {selectedLanguage === 'ch' ? 'Chinese' : 'English'}
               </p>
             </div>
 
@@ -3166,7 +3540,7 @@ Be thorough and fair in your assessment.`
               </div>
             </div>
 
-            {/* Marking Standard Selector */}
+                {/* Marking Standard Selector */}
             <div className="flex items-center justify-center mb-6">
               <div className={`rounded-lg p-4 border ${
                 variant === 'solve' ? 'bg-gray-50 dark:bg-[#151518] border-gray-200 dark:border-white/10' : 'bg-slate-600/20 backdrop-blur-sm border-white/10'
@@ -3185,7 +3559,7 @@ Be thorough and fair in your assessment.`
                       : 'bg-slate-600/50 backdrop-blur-sm border border-white/10 text-slate-300 focus:ring-cyan-500'
                   }`}
                 >
-                  {MARKING_STANDARDS.map(standard => (
+                  {availableMarkingSchemes.map((standard) => (
                     <option key={standard.id} value={standard.id} className="bg-slate-700">
                       {standard.name} - {standard.description}
                     </option>
@@ -3270,53 +3644,48 @@ Be thorough and fair in your assessment.`
 
   // After file upload, show split view with document on left and mistakes on right
   return (
-    <div className={`${className || ''}`}>
-      {/* Mobile-Responsive Header */}
-      <div className="mb-6">
-        {/* Desktop Header */}
-        <div className="hidden lg:block">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <motion.button
-                onClick={handleRemoveFile}
-                className={`flex items-center px-3 py-1.5 rounded-lg transition-colors border text-sm ${
-                  variant === 'solve'
-                    ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
-                    : 'bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 text-slate-300 border-white/10'
-                }`}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <IconComponent icon={AiOutlineLeft} className="h-3 w-3 mr-1.5" />
-                Back
-              </motion.button>
-              <div className={`border-l h-8 ${variant === 'solve' ? 'border-gray-300 dark:border-white/10' : 'border-white/20'}`}></div>
-              <div>
-                <p className={`text-sm truncate max-w-[300px] ${variant === 'solve' ? 'text-gray-700 dark:text-gray-200' : 'text-slate-300'}`}>{file?.name}</p>
-              </div>
+    <div className={`${className || ''} lg:h-full lg:min-h-0 lg:flex lg:flex-col lg:overflow-hidden`}>
+      <div className="mb-6 lg:flex-shrink-0">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`rounded-2xl border p-4 lg:p-5 ${
+            variant === 'solve'
+              ? 'bg-white dark:bg-[#151518] border-gray-200 dark:border-white/10'
+              : 'bg-gradient-to-br from-slate-700/40 via-slate-800/40 to-slate-900/40 backdrop-blur-sm border-white/10'
+          }`}
+        >
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="min-w-0">
+              <p className={`text-xs uppercase tracking-[0.16em] mb-1 ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-cyan-300/80'}`}>Analysis Workspace</p>
+              <h3 className={`text-base lg:text-lg font-semibold truncate ${variant === 'solve' ? 'text-gray-900 dark:text-white' : 'text-white'}`}>
+                {file?.name || 'Uploaded document'}
+              </h3>
+              <p className={`text-xs mt-1 ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-300'}`}>
+                Language: {selectedLanguage === 'ch' ? 'Chinese' : 'English'}
+              </p>
             </div>
-            
-            <div className="flex items-center space-x-2">
-              {/* Compact Page Navigation */}
+
+            <div className="flex flex-wrap items-center gap-2">
               {documentPages.length > 1 && (
-                <div className={`flex items-center space-x-2 rounded-lg px-3 py-1.5 border ${
-                  variant === 'solve' ? 'bg-gray-50 dark:bg-[#151518] border-gray-200 dark:border-white/10' : 'bg-slate-600/30 border-white/10'
+                <div className={`flex items-center rounded-xl px-2 py-1 border ${
+                  variant === 'solve' ? 'bg-gray-50 dark:bg-[#1f1f22] border-gray-200 dark:border-white/10' : 'bg-slate-900/50 border-white/10'
                 }`}>
-                  <button 
-                    className={`p-1 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${
-                      variant === 'solve' ? 'bg-gray-200 hover:bg-gray-300 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200' : 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400'
+                  <button
+                    className={`p-1.5 rounded-lg disabled:opacity-50 ${
+                      variant === 'solve' ? 'hover:bg-gray-200 dark:hover:bg-[#2a2a2f] text-gray-700 dark:text-gray-200' : 'hover:bg-cyan-500/20 text-cyan-300'
                     }`}
                     disabled={currentPage === 0}
                     onClick={() => setCurrentPage(prev => prev - 1)}
                   >
                     <IconComponent icon={AiOutlineLeft} className="h-3 w-3" />
                   </button>
-                  <span className={`font-medium text-sm px-2 ${variant === 'solve' ? 'text-gray-700 dark:text-gray-200' : 'text-slate-300'}`}>
+                  <span className={`text-xs font-medium px-2 ${variant === 'solve' ? 'text-gray-700 dark:text-gray-300' : 'text-slate-200'}`}>
                     {currentPage + 1}/{documentPages.length}
                   </span>
-                  <button 
-                    className={`p-1 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${
-                      variant === 'solve' ? 'bg-gray-200 hover:bg-gray-300 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200' : 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400'
+                  <button
+                    className={`p-1.5 rounded-lg disabled:opacity-50 ${
+                      variant === 'solve' ? 'hover:bg-gray-200 dark:hover:bg-[#2a2a2f] text-gray-700 dark:text-gray-200' : 'hover:bg-cyan-500/20 text-cyan-300'
                     }`}
                     disabled={currentPage === documentPages.length - 1}
                     onClick={() => setCurrentPage(prev => prev + 1)}
@@ -3326,241 +3695,59 @@ Be thorough and fair in your assessment.`
                 </div>
               )}
 
-              {/* Compact Action Buttons */}
-              <div className="flex items-center space-x-1">
-                {/* View File Button */}
+              <motion.button
+                onClick={() => setShowFileViewModal(true)}
+                className={`flex items-center px-3 py-2 rounded-xl border text-sm ${
+                  variant === 'solve'
+                    ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
+                    : 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border-blue-500/30'
+                }`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <IconComponent icon={AiOutlineFileText} className="h-4 w-4 mr-1.5" />
+                View
+              </motion.button>
+
+              {pageMistakes.some(pm => pm.mistakes.length > 0) && (
                 <motion.button
-                  onClick={() => setShowFileViewModal(true)}
-                  className={`flex items-center px-2 py-1.5 rounded transition-colors border text-sm ${
+                  onClick={applyAutoCorrect}
+                  className={`flex items-center px-3 py-2 rounded-xl border text-sm ${
                     variant === 'solve'
                       ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
-                      : 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border-blue-500/30'
+                      : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/30'
                   }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  title="View Original File"
                 >
-                  <IconComponent icon={AiOutlineFileText} className="h-3 w-3 mr-1" />
-                  View
+                  <IconComponent icon={AiOutlineCheckCircle} className="h-4 w-4 mr-1.5" />
+                  Correct
                 </motion.button>
+              )}
 
-                {/* Auto Correct Button */}
-                {(pageMistakes.some(pm => pm.mistakes.length > 0)) && (
-                  <motion.button
-                    onClick={applyAutoCorrect}
-                    className={`flex items-center px-2 py-1.5 rounded transition-colors border text-sm ${
-                      variant === 'solve'
-                        ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
-                        : 'bg-green-500/20 hover:bg-green-500/30 text-green-400 border-green-500/30'
-                    }`}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    title="Apply Auto Corrections"
-                  >
-                    <IconComponent icon={AiOutlineCheckCircle} className="h-3 w-3 mr-1" />
-                    Auto
-                  </motion.button>
-                )}
-
-                {/* View Report Button */}
-                {markingSummary && overallProcessingComplete && (
-                  <motion.button
-                    onClick={() => setShowReportModal(true)}
-                    className={`flex items-center px-2 py-1.5 rounded transition-colors border text-sm ${
-                      variant === 'solve'
-                        ? 'bg-[#ff5500] hover:bg-[#e64d00] text-white border-transparent'
-                        : 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 text-purple-400 border-purple-500/30'
-                    }`}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    title="View Assessment Report"
-                  >
-                    <IconComponent icon={AiOutlineFileText} className="h-3 w-3 mr-1" />
-                    Report
-                  </motion.button>
-                )}
-              </div>
+              {markingSummary && overallProcessingComplete && (
+                <motion.button
+                  onClick={() => setShowReportModal(true)}
+                  className={`flex items-center px-3 py-2 rounded-xl border text-sm ${
+                    variant === 'solve'
+                      ? 'bg-[#ff5500] hover:bg-[#e64d00] text-white border-transparent'
+                      : 'bg-gradient-to-r from-purple-500/30 to-pink-500/30 hover:from-purple-500/40 hover:to-pink-500/40 text-white border-purple-500/30'
+                  }`}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <IconComponent icon={AiOutlineFileText} className="h-4 w-4 mr-1.5" />
+                  Report
+                </motion.button>
+              )}
             </div>
           </div>
-        </div>
-
-        {/* Mobile Header */}
-        <div className="lg:hidden">
-          <div className="flex items-center justify-between mb-4">
-            <motion.button
-              onClick={handleRemoveFile}
-              className={`flex items-center px-3 py-2 rounded-lg transition-colors border ${
-                variant === 'solve'
-                  ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
-                  : 'bg-black/20 backdrop-blur-sm hover:bg-black/30 text-slate-300 border-white/10'
-              }`}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <IconComponent icon={AiOutlineLeft} className="h-4 w-4 mr-2" />
-              Back
-            </motion.button>
-
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className={`p-2 rounded-lg transition-colors border ${
-                variant === 'solve'
-                  ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
-                  : 'bg-slate-600/50 backdrop-blur-sm hover:bg-slate-500/50 text-slate-300 border-white/10'
-              }`}
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {isMobileMenuOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                )}
-              </svg>
-            </button>
-          </div>
-
-          <div className="mb-4">
-            <p className={`text-sm truncate ${variant === 'solve' ? 'text-gray-700 dark:text-gray-200' : 'text-slate-300'}`}>{file?.name}</p>
-            <p className={`text-xs ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>
-              Using {MARKING_STANDARDS.find(s => s.id === selectedMarkingStandard)?.name} standard
-            </p>
-          </div>
-
-          {/* Mobile Menu */}
-          <AnimatePresence>
-            {isMobileMenuOpen && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className={`rounded-lg border p-4 mb-4 ${
-                  variant === 'solve'
-                    ? 'bg-gray-50 dark:bg-[#151518] border-gray-200 dark:border-white/10'
-                    : 'bg-slate-600/30 backdrop-blur-sm border-white/10'
-                }`}
-              >
-                <div className="space-y-3">
-                  {/* Page Navigation for Mobile */}
-                  {documentPages.length > 1 && (
-                    <div className="flex items-center justify-between">
-                      <button 
-                        className={`px-3 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors border text-sm ${
-                          variant === 'solve'
-                            ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
-                            : 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border-cyan-500/30'
-                        }`}
-                        disabled={currentPage === 0}
-                        onClick={() => setCurrentPage(prev => prev - 1)}
-                      >
-                        Previous
-                      </button>
-                      <span className={`font-medium text-sm ${variant === 'solve' ? 'text-gray-700 dark:text-gray-200' : 'text-slate-300'}`}>
-                        Page {currentPage + 1} of {documentPages.length}
-                      </span>
-                      <button 
-                        className={`px-3 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors border text-sm ${
-                          variant === 'solve'
-                            ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
-                            : 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border-cyan-500/30'
-                        }`}
-                        disabled={currentPage === documentPages.length - 1}
-                        onClick={() => setCurrentPage(prev => prev + 1)}
-                      >
-                        Next
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Action Buttons for Mobile */}
-                  <div className="grid grid-cols-1 gap-2">
-                    {/* View File Button */}
-                    <motion.button
-                      onClick={() => {
-                        setShowFileViewModal(true);
-                        setIsMobileMenuOpen(false);
-                      }}
-                      className={`flex items-center justify-center px-3 py-2 rounded-lg transition-colors border text-sm ${
-                        variant === 'solve'
-                          ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
-                          : 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border-blue-500/30'
-                      }`}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <IconComponent icon={AiOutlineFileText} className="h-4 w-4 mr-2" />
-                      View Original File
-                    </motion.button>
-
-                    {/* Auto Correct Button */}
-                    {(pageMistakes.some(pm => pm.mistakes.length > 0)) && (
-                      <motion.button
-                        onClick={() => {
-                          applyAutoCorrect();
-                          setIsMobileMenuOpen(false);
-                        }}
-                        className={`flex items-center justify-center px-3 py-2 rounded-lg transition-colors border text-sm ${
-                          variant === 'solve'
-                            ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
-                            : 'bg-green-500/20 hover:bg-green-500/30 text-green-400 border-green-500/30'
-                        }`}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <IconComponent icon={AiOutlineCheckCircle} className="h-4 w-4 mr-2" />
-                        Apply Auto Corrections
-                      </motion.button>
-                    )}
-
-                    {/* Toggle Corrected/Original Text */}
-                    {correctedText && (
-                      <motion.button
-                        onClick={() => {
-                          setShowCorrectedText(!showCorrectedText);
-                          setIsMobileMenuOpen(false);
-                        }}
-                        className={`flex items-center justify-center px-3 py-2 rounded-lg transition-colors border text-sm ${
-                          variant === 'solve'
-                            ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
-                            : 'bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 border-yellow-500/30'
-                        }`}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <IconComponent icon={AiOutlineExclamationCircle} className="h-4 w-4 mr-2" />
-                        {showCorrectedText ? 'Show Original' : 'Show Corrected'}
-                      </motion.button>
-                    )}
-
-                    {/* View Report Button */}
-                    {markingSummary && overallProcessingComplete && (
-                      <motion.button
-                        onClick={() => {
-                          setShowReportModal(true);
-                          setIsMobileMenuOpen(false);
-                        }}
-                        className={`flex items-center justify-center px-3 py-2 rounded-lg transition-colors border text-sm ${
-                          variant === 'solve'
-                            ? 'bg-[#ff5500] hover:bg-[#e64d00] text-white border-transparent'
-                            : 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 text-purple-400 border-purple-500/30'
-                        }`}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <IconComponent icon={AiOutlineFileText} className="h-4 w-4 mr-2" />
-                        View Full Report
-                      </motion.button>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+        </motion.div>
       </div>
 
-      <div className="flex flex-col lg:grid lg:grid-cols-2 gap-6 min-h-[calc(100vh-200px)]">
+      <div className="flex flex-col gap-6 lg:flex-1 lg:min-h-0 lg:grid lg:grid-cols-2 lg:overflow-hidden">
         {/* Left Side - Document (Full width on mobile, half on desktop) */}
-        <div className={`rounded-xl shadow-lg overflow-hidden order-2 lg:order-1 border ${
+        <div className={`rounded-xl shadow-lg overflow-hidden lg:min-h-0 order-1 lg:order-1 border ${
           variant === 'solve'
             ? 'bg-white dark:bg-[#111111] border-gray-200 dark:border-white/10'
             : 'bg-[#0f172a]/60 backdrop-blur-md border-white/10'
@@ -3571,6 +3758,19 @@ Be thorough and fair in your assessment.`
               : 'bg-[#0f172a]/60 backdrop-blur-md border-white/10'
           }`}>
             <h2 className={`text-lg font-semibold ${variant === 'solve' ? 'text-gray-900 dark:text-white' : 'text-cyan-400'}`}>Document</h2>
+            <motion.button
+              onClick={() => setShowFileViewModal(true)}
+              className={`lg:hidden flex items-center px-3 py-1.5 rounded-lg border text-xs ${
+                variant === 'solve'
+                  ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
+                  : 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border-blue-500/30'
+              }`}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <IconComponent icon={AiOutlineFileText} className="h-3.5 w-3.5 mr-1" />
+              Full Screen
+            </motion.button>
             
             {/* Desktop Text Toggle */}
             {correctedText && (
@@ -3627,7 +3827,7 @@ Be thorough and fair in your assessment.`
             </div>
           )}
           
-          <div className="h-64 lg:h-full p-4 relative">
+          <div className="h-64 lg:h-full p-4 relative overflow-hidden">
             <div className={`w-full h-full rounded-lg overflow-hidden border relative ${
               variant === 'solve'
                 ? 'bg-gray-50 dark:bg-[#111111] border-gray-200 dark:border-white/10'
@@ -3635,7 +3835,7 @@ Be thorough and fair in your assessment.`
             }`}>
               {textOnlyMode ? (
                 /* Direct Text Display */
-                <div className="w-full h-full overflow-auto p-4">
+                <div className="w-full h-full overflow-auto lg:overflow-hidden p-4">
                   <div className={`whitespace-pre-wrap font-mono text-sm leading-relaxed ${variant === 'solve' ? 'text-gray-700 dark:text-gray-300' : 'text-slate-300'}`}>
                     {getCurrentDisplayText() ? (
                       showCorrectedText && correctedText ? (
@@ -3666,9 +3866,9 @@ Be thorough and fair in your assessment.`
                                 } rounded px-1 cursor-help transition-all hover:bg-opacity-50`}
                                 title={`${part.mistakeType?.toUpperCase()}: ${part.text} → ${part.correction}`}
                                 onClick={() => {
-                                  const mistakeId = pageMistakes[0]?.mistakes.find(m => m.incorrect === part.text)?.id;
+                                  const mistakeId = part.mistakeId;
                                   if (mistakeId) {
-                                    setSelectedMistakeId(selectedMistakeId === mistakeId ? null : mistakeId);
+                                      focusMistake(mistakeId);
                                   }
                                 }}
                               >
@@ -3689,7 +3889,7 @@ Be thorough and fair in your assessment.`
                   </div>
                 </div>
               ) : documentPages.length === 0 ? (
-                <div className="w-full h-full overflow-auto p-4">
+                <div className="w-full h-full overflow-auto lg:overflow-hidden p-4">
                   <div className="mb-4 flex items-center gap-3">
                     <IconComponent icon={AiOutlineFileText} className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                     <p className={`text-sm ${variant === 'solve' ? 'text-gray-700 dark:text-gray-300' : 'text-slate-300'}`}>{file?.name}</p>
@@ -3732,136 +3932,159 @@ Be thorough and fair in your assessment.`
                   )}
                 </div>
               ) : (
-                /* Image with Text Overlay */
-                <div className="relative w-full h-full">
-                  {/* Background Image with Low Opacity */}
-                  <img 
-                    src={documentPages[currentPage]} 
-                    alt={`Document page ${currentPage + 1}`}
-                    className="absolute inset-0 w-full h-full object-contain opacity-20"
-                    onError={(e) => {
-                      // Handle broken image URLs (e.g., expired blob URLs from history)
-                      e.currentTarget.style.display = 'none';
-                      console.log('🖼️ Image failed to load for page', currentPage + 1, '- likely expired blob URL from history');
-                    }}
-                  />
-                  
-                  {/* Text Overlay */}
-                  <div className="absolute inset-0 w-full h-full overflow-auto p-4 z-10">
-                    {extractedTexts[currentPage] && extractedTexts[currentPage].isLoading && !extractedTexts[currentPage].text ? (
-                      <div className={`flex flex-col items-center justify-center h-full ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>
-                        <motion.div
-                          className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full mb-2"
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
+                <div className="w-full h-full flex flex-col overflow-hidden">
+                  <div className="w-full flex-1 min-h-0 px-4 pt-4 pb-2">
+                    <div
+                      className="relative w-full h-full rounded-lg overflow-hidden bg-black/20"
+                      style={hasOcrOverlay ? { aspectRatio: `${overlayWidth} / ${overlayHeight}` } : undefined}
+                    >
+                      {hasOcrOverlay ? (
+                        <svg
+                          className="absolute inset-0 w-full h-full"
+                          viewBox={`0 0 ${overlayWidth} ${overlayHeight}`}
+                          preserveAspectRatio="xMidYMid meet"
+                        >
+                          <image
+                            href={documentPages[currentPage]}
+                            x={0}
+                            y={0}
+                            width={overlayWidth}
+                            height={overlayHeight}
+                            preserveAspectRatio="none"
+                            opacity={0.95}
+                          />
+                          {currentOcrOverlay!.results.map((line, index) => {
+                            const polygon = Array.isArray(line.polygon) ? line.polygon : [];
+                            const xValues = polygon.map((point) => point[0]).filter((value) => Number.isFinite(value));
+                            const yValues = polygon.map((point) => point[1]).filter((value) => Number.isFinite(value));
+                            const polygonBounds = xValues.length > 0 && yValues.length > 0
+                              ? {
+                                  x: Math.min(...xValues),
+                                  y: Math.min(...yValues),
+                                  width: Math.max(...xValues) - Math.min(...xValues),
+                                  height: Math.max(...yValues) - Math.min(...yValues)
+                                }
+                              : null;
+                            const bboxX = line.bbox?.x_min ?? polygonBounds?.x ?? 0;
+                            const bboxY = line.bbox?.y_min ?? polygonBounds?.y ?? 0;
+                            const bboxWidth = line.bbox?.width ?? polygonBounds?.width ?? 0;
+                            const bboxHeight = line.bbox?.height ?? polygonBounds?.height ?? 0;
+                            if (!line.text || bboxWidth <= 0 || bboxHeight <= 0) {
+                              return null;
+                            }
+
+                            const highlight = getOverlayLineHighlight(line.text, currentMistakes, showCorrectedText);
+                            const matchedMistakeId = highlight.matchedMistakeId;
+                            const horizontalPadding = 6;
+                            const availableWidth = Math.max(8, bboxWidth - horizontalPadding * 2);
+                            const baseFontSize = Math.max(10, Math.min(22, bboxHeight * 0.55));
+                            const widthBasedFontSize = Math.floor(availableWidth / Math.max(1, highlight.displayText.length) / 0.58);
+                            const fontSize = Math.max(8, Math.min(baseFontSize, widthBasedFontSize || baseFontSize));
+                            const clipPathId = `ocr-clip-${currentPage}-${index}`;
+                            const getMistakeIdFromClickPosition = (clientX: number) => {
+                              if (highlight.ranges.length === 0) return null;
+                              const relativeX = Math.max(0, Math.min(availableWidth, clientX - (bboxX + horizontalPadding)));
+                              const totalChars = Math.max(1, highlight.displayText.length);
+                              const charIndex = Math.floor((relativeX / availableWidth) * totalChars);
+                              const clickedRange = highlight.ranges.find((range) => charIndex >= range.start && charIndex < range.end);
+                              return clickedRange?.mistakeId || matchedMistakeId;
+                            };
+
+                            return (
+                              <g
+                                key={`ocr-line-${currentPage}-${index}`}
+                                onClick={(event) => {
+                                  const selectedId = getMistakeIdFromClickPosition(event.clientX);
+                                  if (selectedId) {
+                                    focusMistake(selectedId);
+                                  }
+                                }}
+                                className={matchedMistakeId ? 'cursor-pointer' : ''}
+                              >
+                                {highlight.tooltip && <title>{highlight.tooltip}</title>}
+                                <clipPath id={clipPathId}>
+                                  <rect
+                                    x={bboxX}
+                                    y={bboxY}
+                                    width={bboxWidth}
+                                    height={bboxHeight}
+                                    rx={6}
+                                  />
+                                </clipPath>
+                                <rect
+                                  x={bboxX}
+                                  y={bboxY}
+                                  width={bboxWidth}
+                                  height={bboxHeight}
+                                  rx={6}
+                                  fill="rgba(8, 47, 73, 0.30)"
+                                  stroke="rgba(34, 211, 238, 0.70)"
+                                  strokeWidth={1.2}
+                                />
+                                {highlight.ranges.map((range, rangeIndex) => {
+                                  const totalChars = Math.max(1, highlight.displayText.length);
+                                  const highlightX = bboxX + horizontalPadding + (range.start / totalChars) * availableWidth;
+                                  const highlightWidth = Math.max(8, ((range.end - range.start) / totalChars) * availableWidth);
+                                  const segmentColor = range.type === 'grammar'
+                                    ? 'rgba(239, 68, 68, 0.42)'
+                                    : range.type === 'spelling'
+                                      ? 'rgba(245, 158, 11, 0.42)'
+                                      : range.type === 'punctuation'
+                                        ? 'rgba(59, 130, 246, 0.42)'
+                                        : 'rgba(99, 102, 241, 0.42)';
+                                  return (
+                                    <rect
+                                      key={`ocr-highlight-${currentPage}-${index}-${rangeIndex}`}
+                                      x={highlightX}
+                                      y={bboxY + 2}
+                                      width={highlightWidth}
+                                      height={Math.max(8, bboxHeight - 4)}
+                                      rx={4}
+                                      fill={segmentColor}
+                                      className="cursor-pointer"
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        focusMistake(range.mistakeId);
+                                      }}
+                                    />
+                                  );
+                                })}
+                                <text
+                                  x={bboxX + horizontalPadding}
+                                  y={bboxY + bboxHeight / 2}
+                                  fill="#e0f2fe"
+                                  fontSize={fontSize}
+                                  fontFamily="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace"
+                                  dominantBaseline="middle"
+                                  textLength={availableWidth}
+                                  lengthAdjust="spacingAndGlyphs"
+                                  clipPath={`url(#${clipPathId})`}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    const selectedId = getMistakeIdFromClickPosition(event.clientX);
+                                    if (selectedId) {
+                                      focusMistake(selectedId);
+                                    }
+                                  }}
+                                >
+                                  {highlight.displayText}
+                                </text>
+                              </g>
+                            );
+                          })}
+                        </svg>
+                      ) : (
+                        <img 
+                          src={documentPages[currentPage]} 
+                          alt={`Document page ${currentPage + 1}`}
+                          className="absolute inset-0 w-full h-full object-contain"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            console.log('🖼️ Image failed to load for page', currentPage + 1, '- likely expired blob URL from history');
+                          }}
                         />
-                        <p className="text-sm">Extracting text...</p>
-                      </div>
-                    ) : extractedTexts[currentPage] && extractedTexts[currentPage].error ? (
-                      <div className={`flex flex-col items-center justify-center h-full ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>
-                        <div className="text-red-400 mb-2">⚠</div>
-                        <p className="text-sm">Error extracting text</p>
-                        <p className={`text-xs ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-500'}`}>{extractedTexts[currentPage].error}</p>
-                      </div>
-                    ) : extractedTexts[currentPage] && extractedTexts[currentPage].text ? (
-                      <>
-                        <div className={`whitespace-pre-wrap font-mono text-sm leading-relaxed mb-4 rounded-lg p-4 ${
-                          variant === 'solve'
-                            ? 'text-gray-800 dark:text-gray-200 bg-white dark:bg-[#151518] border border-gray-200 dark:border-white/10'
-                            : 'text-slate-100 bg-slate-900/40 backdrop-blur-sm'
-                        }`}>
-                          {showCorrectedText && correctedText ? (
-                            <div className="space-y-2">
-                              <div className="text-green-400 text-xs font-medium mb-2 bg-green-500/10 px-2 py-1 rounded">
-                                ✅ Auto-Corrected Text
-                              </div>
-                              {renderMarkdownText(correctedText, variant === 'solve' ? 'prose prose-sm max-w-none dark:prose-invert text-gray-800 dark:text-gray-200' : 'prose prose-sm max-w-none dark:prose-invert text-slate-100', pageMistakes[currentPage]?.mistakes || [], 'corrected')}
-                            </div>
-                          ) : (
-                            ((pageMistakes[currentPage]?.mistakes?.length || 0) === 0 || isLikelyMarkdown(extractedTexts[currentPage].text)) ? (
-                              renderMarkdownText(extractedTexts[currentPage].text, variant === 'solve' ? 'prose prose-sm max-w-none dark:prose-invert text-gray-800 dark:text-gray-200' : 'prose prose-sm max-w-none dark:prose-invert text-slate-100', pageMistakes[currentPage]?.mistakes || [], 'original')
-                            ) : (
-                              highlightMistakesInText(
-                                extractedTexts[currentPage].text, 
-                                pageMistakes[currentPage]?.mistakes || []
-                              ).map((part, index) => (
-                                part.isHighlighted ? (
-                                  <span
-                                    key={index}
-                                    className={`${
-                                      part.mistakeType === 'grammar' ? 'bg-red-500/50 border-b-2 border-red-400' :
-                                      part.mistakeType === 'spelling' ? 'bg-yellow-500/50 border-b-2 border-yellow-400' :
-                                      part.mistakeType === 'punctuation' ? 'bg-blue-500/50 border-b-2 border-blue-400' :
-                                      'bg-indigo-500/50 border-b-2 border-indigo-400'
-                                    } ${
-                                      part.isSelected ? 'ring-2 ring-cyan-400 bg-cyan-500/30 shadow-lg animate-pulse' : ''
-                                    } rounded px-1 cursor-help transition-all hover:bg-opacity-70`}
-                                    title={`${part.mistakeType?.toUpperCase()}: ${part.text} → ${part.correction}`}
-                                    onClick={() => {
-                                      const mistakeId = pageMistakes[currentPage]?.mistakes.find(m => m.incorrect === part.text)?.id;
-                                      if (mistakeId) {
-                                        setSelectedMistakeId(selectedMistakeId === mistakeId ? null : mistakeId);
-                                      }
-                                    }}
-                                  >
-                                    {part.text}
-                                  </span>
-                                ) : (
-                                  <span key={index}>{part.text}</span>
-                                )
-                              ))
-                            )
-                          )}
-                        </div>
-                        
-                        {/* Color Legend - Made more prominent and always visible */}
-                        {pageMistakes[currentPage]?.mistakes && pageMistakes[currentPage].mistakes.length > 0 && (
-                          <div className={`mt-6 mb-4 p-4 rounded-lg border shadow-lg ${
-                            variant === 'solve'
-                              ? 'bg-gray-50 dark:bg-[#151518] border-gray-200 dark:border-white/10'
-                              : 'bg-slate-800/80 backdrop-blur-sm border-white/30'
-                          }`}>
-                            <h4 className={`text-base font-semibold mb-3 flex items-center ${variant === 'solve' ? 'text-gray-900 dark:text-white' : 'text-slate-100'}`}>
-                              <div className="w-2 h-2 bg-cyan-400 rounded-full mr-2"></div>
-                              Mistake Types Legend
-                            </h4>
-                            <div className="grid grid-cols-2 gap-4 text-sm">
-                              <div className="flex items-center">
-                                <div className="w-4 h-4 bg-red-500/60 border-b-2 border-red-400 rounded mr-3"></div>
-                                <span className={variant === 'solve' ? 'text-gray-700 dark:text-gray-300 font-medium' : 'text-slate-200 font-medium'}>Grammar Errors</span>
-                              </div>
-                              <div className="flex items-center">
-                                <div className="w-4 h-4 bg-yellow-500/60 border-b-2 border-yellow-400 rounded mr-3"></div>
-                                <span className={variant === 'solve' ? 'text-gray-700 dark:text-gray-300 font-medium' : 'text-slate-200 font-medium'}>Spelling Errors</span>
-                              </div>
-                              <div className="flex items-center">
-                                <div className="w-4 h-4 bg-blue-500/60 border-b-2 border-blue-400 rounded mr-3"></div>
-                                <span className={variant === 'solve' ? 'text-gray-700 dark:text-gray-300 font-medium' : 'text-slate-200 font-medium'}>Punctuation</span>
-                              </div>
-                              <div className="flex items-center">
-                                <div className="w-4 h-4 bg-indigo-500/60 border-b-2 border-indigo-400 rounded mr-3"></div>
-                                <span className={variant === 'solve' ? 'text-gray-700 dark:text-gray-300 font-medium' : 'text-slate-200 font-medium'}>Other Issues</span>
-                              </div>
-                            </div>
-                            <div className={`mt-3 pt-3 border-t ${variant === 'solve' ? 'border-gray-200 dark:border-white/10' : 'border-white/20'}`}>
-                              <p className={`text-xs ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>
-                                💡 Click on highlighted text to see correction details
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    ) : !isProcessingStarted ? (
-                      <div className={`flex flex-col items-center justify-center h-full ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>
-                        <IconComponent icon={AiOutlineFileText} className="h-8 w-8 mb-2 opacity-50" />
-                        <p className="text-sm">Click "Check Mistakes" to start analysis</p>
-                      </div>
-                    ) : (
-                      <div className={`flex flex-col items-center justify-center h-full ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>
-                        <IconComponent icon={AiOutlineFileText} className="h-8 w-8 mb-2 opacity-50" />
-                        <p className="text-sm">Processing...</p>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -3870,7 +4093,7 @@ Be thorough and fair in your assessment.`
         </div>
 
         {/* Right Side - Content (Full width on mobile, half on desktop) */}
-        <div className={`rounded-xl shadow-lg overflow-hidden flex flex-col order-1 lg:order-2 border ${
+        <div className={`rounded-xl shadow-lg overflow-hidden lg:min-h-0 flex flex-col order-2 lg:order-2 border ${
           variant === 'solve'
             ? 'bg-white dark:bg-[#111111] border-gray-200 dark:border-white/10'
             : 'bg-slate-600/30 backdrop-blur-sm border-white/10'
@@ -3939,7 +4162,7 @@ Be thorough and fair in your assessment.`
             )}
           </div>
           
-          <div className="flex-1 overflow-y-auto p-4 lg:p-6" ref={mistakesContainerRef} style={{ maxHeight: 'calc(100vh - 200px)' }}>
+          <div className="flex-1 p-4 lg:p-6 lg:min-h-0 lg:overflow-y-auto" ref={mistakesContainerRef}>
             {loading ? (
               <div className={`flex flex-col items-center justify-center h-32 lg:h-full ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>
                 <motion.div
@@ -3951,90 +4174,163 @@ Be thorough and fair in your assessment.`
               </div>
             ) : (
               <>
+                <div className={`mb-4 lg:mb-6 rounded-xl p-4 border ${
+                  variant === 'solve'
+                    ? 'bg-gray-50 dark:bg-[#151518] border-gray-200 dark:border-white/10'
+                    : 'bg-slate-700/40 backdrop-blur-sm border-white/10'
+                }`}>
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <h3 className={`text-sm font-semibold ${variant === 'solve' ? 'text-gray-800 dark:text-gray-100' : 'text-slate-100'}`}>Marking Scheme</h3>
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      variant === 'solve'
+                        ? 'bg-gray-200 text-gray-600 dark:bg-[#27272a] dark:text-gray-300'
+                        : 'bg-slate-800/80 text-slate-300 border border-white/10'
+                    }`}>
+                      {selectedMarkingStandard.toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {availableMarkingSchemes.map((scheme) => (
+                      <button
+                        key={scheme.id}
+                        onClick={() => setSelectedMarkingStandard(scheme.id)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                          selectedMarkingStandard === scheme.id
+                            ? (variant === 'solve' ? 'bg-[#ff5500] text-white shadow-sm' : 'bg-cyan-500 text-slate-900')
+                            : (variant === 'solve' ? 'bg-white text-gray-700 border border-gray-200 dark:bg-[#1f1f22] dark:text-gray-200 dark:border-white/10' : 'bg-slate-800/70 text-slate-200 border border-white/10')
+                        }`}
+                      >
+                        {scheme.name}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className={`rounded-lg p-3 border ${variant === 'solve' ? 'bg-white dark:bg-[#1a1a1d] border-gray-200 dark:border-white/10' : 'bg-slate-900/50 border-white/10'}`}>
+                      <div className="text-xs opacity-70 mb-1">Mistakes</div>
+                      <div className="font-semibold">{currentMistakes.length}</div>
+                    </div>
+                    <div className={`rounded-lg p-3 border ${variant === 'solve' ? 'bg-white dark:bg-[#1a1a1d] border-gray-200 dark:border-white/10' : 'bg-slate-900/50 border-white/10'}`}>
+                      <div className="text-xs opacity-70 mb-1">Current Page</div>
+                      <div className="font-semibold">{textOnlyMode ? 'Text' : `Page ${currentPage + 1}`}</div>
+                    </div>
+                    <div className={`rounded-lg p-3 border ${variant === 'solve' ? 'bg-white dark:bg-[#1a1a1d] border-gray-200 dark:border-white/10' : 'bg-slate-900/50 border-white/10'}`}>
+                      <div className="text-xs opacity-70 mb-1">Scheme Score</div>
+                      <div className="font-semibold">
+                        {selectedN8nScheme ? `${selectedN8nScheme.score}/${selectedN8nScheme.maxScore}` : 'Internal Model'}
+                      </div>
+                    </div>
+                    <div className={`rounded-lg p-3 border ${variant === 'solve' ? 'bg-white dark:bg-[#1a1a1d] border-gray-200 dark:border-white/10' : 'bg-slate-900/50 border-white/10'}`}>
+                      <div className="text-xs opacity-70 mb-1">Grade</div>
+                      <div className="font-semibold">
+                        {selectedN8nScheme ? `${selectedN8nScheme.grade || 'N/A'} (${Math.round(selectedN8nScheme.percentage)}%)` : 'Pending AI rubric'}
+                      </div>
+                    </div>
+                  </div>
+                  {selectedN8nScheme?.feedback && (
+                    <div className={`mt-3 rounded-lg p-3 text-xs border ${variant === 'solve' ? 'bg-white dark:bg-[#1a1a1d] border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300' : 'bg-slate-900/50 border-white/10 text-slate-300'}`}>
+                      {selectedN8nScheme.feedback}
+                    </div>
+                  )}
+                </div>
+
                 {/* Integrated Marking Summary (shown when processing is complete) */}
                 {markingSummary && overallProcessingComplete && (
                   <motion.div 
-                    className={`mb-4 lg:mb-6 rounded-lg p-4 lg:p-6 border ${
+                    className={`mb-4 lg:mb-6 rounded-xl p-4 lg:p-6 border ${
                       variant === 'solve'
                         ? 'bg-gray-50 dark:bg-[#151518] border-gray-200 dark:border-white/10'
-                        : 'bg-gradient-to-r from-purple-500/10 to-pink-500/10 backdrop-blur-sm border-purple-500/20'
+                        : 'bg-gradient-to-br from-purple-500/10 via-slate-900/20 to-cyan-500/10 backdrop-blur-sm border-purple-500/20'
                     }`}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5, duration: 0.5 }}
                   >
-                    <h3 className={`text-lg lg:text-xl font-semibold mb-3 lg:mb-4 flex items-center ${variant === 'solve' ? 'text-gray-900 dark:text-white' : 'text-purple-400'}`}>
+                    <h3 className={`text-lg lg:text-xl font-semibold mb-4 flex items-center ${variant === 'solve' ? 'text-gray-900 dark:text-white' : 'text-purple-300'}`}>
                       <IconComponent icon={AiOutlineFileText} className="h-4 w-4 lg:h-5 lg:w-5 mr-2" />
                       Assessment Summary
                     </h3>
-                    
-                    {/* Score Display */}
-                    <div className="mb-4 lg:mb-6 text-center">
-                      <div className="text-2xl lg:text-4xl font-bold text-green-400 mb-2">
-                        {markingSummary.totalScore}/{markingSummary.maxScore}
+
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className={`rounded-lg p-3 border ${variant === 'solve' ? 'bg-white dark:bg-[#1a1a1d] border-gray-200 dark:border-white/10' : 'bg-slate-900/50 border-white/10'}`}>
+                        <p className="text-xs opacity-70 mb-1">Total Score</p>
+                        <p className="text-lg font-semibold">{markingSummary.totalScore}/{markingSummary.maxScore}</p>
                       </div>
-                      <div className="text-lg lg:text-xl font-semibold text-green-300 mb-3">
-                        Grade: {markingSummary.grade} ({Math.round(markingSummary.percentage)}%)
+                      <div className={`rounded-lg p-3 border ${variant === 'solve' ? 'bg-white dark:bg-[#1a1a1d] border-gray-200 dark:border-white/10' : 'bg-slate-900/50 border-white/10'}`}>
+                        <p className="text-xs opacity-70 mb-1">Grade</p>
+                        <p className="text-lg font-semibold">{markingSummary.grade} ({Math.round(markingSummary.percentage)}%)</p>
                       </div>
-                      <div className={`w-full rounded-full h-3 lg:h-4 ${variant === 'solve' ? 'bg-gray-200 dark:bg-[#27272a]' : 'bg-slate-600'}`}>
+                    </div>
+
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs opacity-70">Assessment Progress</span>
+                        <span className="text-xs font-medium">{Math.round(markingSummary.percentage)}%</span>
+                      </div>
+                      <div className={`w-full rounded-full h-2.5 ${variant === 'solve' ? 'bg-gray-200 dark:bg-[#27272a]' : 'bg-slate-700/80'}`}>
                         <motion.div 
-                          className={`h-3 lg:h-4 rounded-full ${variant === 'solve' ? 'bg-[#ff5500]' : 'bg-gradient-to-r from-green-500 to-emerald-500'}`}
+                          className={`h-2.5 rounded-full ${variant === 'solve' ? 'bg-[#ff5500]' : 'bg-gradient-to-r from-cyan-500 to-purple-500'}`}
                           initial={{ width: 0 }}
                           animate={{ width: `${markingSummary.percentage}%` }}
                           transition={{ duration: 1, delay: 0.5 }}
                         ></motion.div>
                       </div>
                     </div>
-                    
-                    <div className="grid grid-cols-1 gap-3 lg:gap-4 mb-4">
-                      {/* Strengths */}
-                      {markingSummary.strengths.length > 0 && (
-                        <div className="bg-green-500/10 rounded-lg p-3 lg:p-4 border border-green-500/20">
-                          <h4 className="text-sm font-semibold text-green-400 mb-2 flex items-center">
-                            ✓ Strengths
-                          </h4>
-                          <ul className="space-y-1">
-                            {markingSummary.strengths.slice(0, 2).map((strength, index) => (
-                              <li key={index} className="text-xs text-green-300">• {strength}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      
-                      {/* Areas for Improvement */}
-                      {markingSummary.weaknesses.length > 0 && (
-                        <div className="bg-red-500/10 rounded-lg p-3 lg:p-4 border border-red-500/20">
-                          <h4 className="text-sm font-semibold text-red-400 mb-2 flex items-center">
-                            ! Areas to Improve
-                          </h4>
-                          <ul className="space-y-1">
-                            {markingSummary.weaknesses.slice(0, 2).map((weakness, index) => (
-                              <li key={index} className="text-xs text-red-300">• {weakness}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Study Plan Preview */}
+
+                    {hasSummaryInsights && (
+                      <div className="grid grid-cols-1 gap-3 mb-4">
+                        {summaryStrengths.length > 0 && (
+                          <div className={`rounded-lg p-3 border ${variant === 'solve' ? 'bg-green-50 dark:bg-green-500/10 border-green-500/20' : 'bg-green-500/10 border-green-500/20'}`}>
+                            <h4 className={`text-sm font-semibold mb-2 ${variant === 'solve' ? 'text-green-700 dark:text-green-300' : 'text-green-300'}`}>Strengths</h4>
+                            <ul className="space-y-1">
+                              {summaryStrengths.slice(0, 3).map((strength, index) => (
+                                <li key={index} className={`text-xs ${variant === 'solve' ? 'text-green-700 dark:text-green-200' : 'text-green-200'}`}>• {strength}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {summaryWeaknesses.length > 0 && (
+                          <div className={`rounded-lg p-3 border ${variant === 'solve' ? 'bg-rose-50 dark:bg-rose-500/10 border-rose-500/20' : 'bg-rose-500/10 border-rose-500/20'}`}>
+                            <h4 className={`text-sm font-semibold mb-2 ${variant === 'solve' ? 'text-rose-700 dark:text-rose-300' : 'text-rose-300'}`}>Needs Work</h4>
+                            <ul className="space-y-1">
+                              {summaryWeaknesses.slice(0, 3).map((weakness, index) => (
+                                <li key={index} className={`text-xs ${variant === 'solve' ? 'text-rose-700 dark:text-rose-200' : 'text-rose-200'}`}>• {weakness}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {summaryRecommendations.length > 0 && (
+                          <div className={`rounded-lg p-3 border ${variant === 'solve' ? 'bg-blue-50 dark:bg-blue-500/10 border-blue-500/20' : 'bg-blue-500/10 border-blue-500/20'}`}>
+                            <h4 className={`text-sm font-semibold mb-2 ${variant === 'solve' ? 'text-blue-700 dark:text-blue-300' : 'text-blue-300'}`}>AI Recommendations</h4>
+                            <ul className="space-y-1">
+                              {summaryRecommendations.slice(0, 3).map((item, index) => (
+                                <li key={index} className={`text-xs ${variant === 'solve' ? 'text-blue-700 dark:text-blue-200' : 'text-blue-200'}`}>• {item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {markingSummary.studyPlan.length > 0 && (
-                      <div className="bg-blue-500/10 rounded-lg p-3 lg:p-4 border border-blue-500/20">
-                        <h4 className="text-sm font-semibold text-blue-400 mb-2">📚 Study Plan (Preview)</h4>
+                      <div className={`rounded-lg p-3 border ${variant === 'solve' ? 'bg-white dark:bg-[#1a1a1d] border-gray-200 dark:border-white/10' : 'bg-slate-900/50 border-white/10'}`}>
+                        <h4 className={`text-sm font-semibold mb-2 ${variant === 'solve' ? 'text-gray-800 dark:text-gray-100' : 'text-cyan-300'}`}>Study Plan</h4>
                         <div className="space-y-2">
-                          {markingSummary.studyPlan.slice(0, 1).map((item, index) => (
-                            <div key={index} className="flex items-center justify-between">
-                              <span className="text-xs text-blue-300">{item.topic}</span>
-                              <span className={`px-2 py-1 rounded text-xs ${
-                                item.priority === 'high' ? 'bg-red-500/20 text-red-400' :
-                                item.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                                'bg-green-500/20 text-green-400'
+                          {markingSummary.studyPlan.slice(0, 2).map((item, index) => (
+                            <div key={index} className="flex items-center justify-between gap-3">
+                              <span className={`text-xs ${variant === 'solve' ? 'text-gray-600 dark:text-gray-300' : 'text-slate-200'}`}>{item.topic}</span>
+                              <span className={`px-2 py-0.5 rounded text-[11px] font-medium ${
+                                item.priority === 'high'
+                                  ? 'bg-red-500/20 text-red-400'
+                                  : item.priority === 'medium'
+                                    ? 'bg-yellow-500/20 text-yellow-400'
+                                    : 'bg-emerald-500/20 text-emerald-400'
                               }`}>
                                 {item.priority}
                               </span>
                             </div>
                           ))}
-                          {markingSummary.studyPlan.length > 1 && (
-                            <p className="text-xs text-slate-400">+ {markingSummary.studyPlan.length - 1} more items</p>
+                          {markingSummary.studyPlan.length > 2 && (
+                            <p className={`text-xs ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>+ {markingSummary.studyPlan.length - 2} more items</p>
                           )}
                         </div>
                       </div>
@@ -4042,57 +4338,74 @@ Be thorough and fair in your assessment.`
                   </motion.div>
                 )}
 
-                {/* Mistakes Content */}
                 {pageMistakes[currentPage] && pageMistakes[currentPage].mistakes.length > 0 ? (
                   <div className="space-y-3 lg:space-y-4">
-                    <div className={`mb-3 lg:mb-4 p-3 rounded-lg border ${
+                    <div className={`rounded-xl p-4 border ${
                       variant === 'solve'
                         ? 'bg-gray-50 dark:bg-[#151518] border-gray-200 dark:border-white/10'
                         : 'bg-teal-500/10 backdrop-blur-sm border-teal-500/20'
                     }`}>
-                      <h3 className={`text-base lg:text-lg font-semibold ${variant === 'solve' ? 'text-gray-900 dark:text-white' : 'text-teal-400'}`}>
-                        {textOnlyMode ? 'Text Analysis' : `Page ${currentPage + 1}`} - {pageMistakes[currentPage].mistakes.length} mistake(s) found
-                      </h3>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h3 className={`text-base lg:text-lg font-semibold ${variant === 'solve' ? 'text-gray-900 dark:text-white' : 'text-teal-300'}`}>
+                          {textOnlyMode ? 'Text Analysis' : `Page ${currentPage + 1}`} · {pageMistakes[currentPage].mistakes.length} mistakes
+                        </h3>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className={`px-2 py-1 rounded-full ${variant === 'solve' ? 'bg-white border border-gray-200 text-gray-600 dark:bg-[#1f1f22] dark:border-white/10 dark:text-gray-300' : 'bg-slate-900/60 border border-white/10 text-slate-300'}`}>
+                            Grammar {mistakeTypeCounts.grammar || 0}
+                          </span>
+                          <span className={`px-2 py-1 rounded-full ${variant === 'solve' ? 'bg-white border border-gray-200 text-gray-600 dark:bg-[#1f1f22] dark:border-white/10 dark:text-gray-300' : 'bg-slate-900/60 border border-white/10 text-slate-300'}`}>
+                            Spelling {mistakeTypeCounts.spelling || 0}
+                          </span>
+                          <span className={`px-2 py-1 rounded-full ${variant === 'solve' ? 'bg-white border border-gray-200 text-gray-600 dark:bg-[#1f1f22] dark:border-white/10 dark:text-gray-300' : 'bg-slate-900/60 border border-white/10 text-slate-300'}`}>
+                            Punctuation {mistakeTypeCounts.punctuation || 0}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    
+
                     {pageMistakes[currentPage].mistakes.map((mistake) => (
                       <motion.div
                         key={mistake.id}
-                        className={`rounded-lg p-3 lg:p-4 border cursor-pointer transition-all ${
-                          selectedMistakeId === mistake.id 
-                            ? (variant === 'solve' ? 'border-[#ff5500]/50 bg-[#ff5500]/10' : 'border-cyan-500/50 bg-cyan-500/10')
-                            : (variant === 'solve' ? 'bg-white dark:bg-[#151518] border-gray-200 dark:border-white/10 hover:border-[#ff5500]/40' : 'bg-slate-700/30 backdrop-blur-sm border-white/10 hover:border-cyan-500/30')
+                        ref={(el) => {
+                          mistakeCardRefs.current[`${currentPage}-${mistake.id}`] = el;
+                        }}
+                        className={`rounded-xl p-4 border cursor-pointer transition-all ${
+                          selectedMistakeId === mistake.id
+                            ? (variant === 'solve' ? 'border-[#ff5500]/50 bg-[#ff5500]/10 shadow-md' : 'border-cyan-400/60 bg-cyan-500/10')
+                            : (variant === 'solve' ? 'bg-white dark:bg-[#151518] border-gray-200 dark:border-white/10 hover:border-[#ff5500]/40 hover:shadow-sm' : 'bg-slate-700/30 backdrop-blur-sm border-white/10 hover:border-cyan-500/30')
                         }`}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: mistake.id * 0.1 }}
+                        transition={{ delay: mistake.id * 0.08 }}
                         onClick={() => {
-                          setSelectedMistakeId(selectedMistakeId === mistake.id ? null : mistake.id);
+                          focusMistake(mistake.id);
                         }}
                       >
-                        <div className="mb-2">
-                          <span className="inline-block px-2 py-1 bg-yellow-500/20 text-yellow-400 text-xs font-medium rounded border border-yellow-500/30">
+                        <div className="flex items-center justify-between gap-2 mb-3">
+                          <span className="inline-block px-2 py-1 bg-yellow-500/20 text-yellow-300 text-xs font-medium rounded border border-yellow-500/30">
                             {mistake.type}
                           </span>
+                          <span className={`text-xs ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>Mistake #{mistake.id}</span>
                         </div>
-                        
-                        <div className="mb-3">
-                          <h4 className="text-sm font-medium text-red-400 mb-1">Incorrect:</h4>
-                          <div className="bg-red-500/10 border-l-4 border-red-500 p-2 lg:p-3 rounded-r">
-                            <p className={`font-mono text-sm ${variant === 'solve' ? 'text-gray-700 dark:text-gray-300' : 'text-slate-300'}`}>{mistake.incorrect}</p>
+
+                        <div className="space-y-3">
+                          <div>
+                            <h4 className="text-xs uppercase tracking-wide font-semibold text-red-400 mb-1">Incorrect</h4>
+                            <div className="bg-red-500/10 border border-red-500/30 p-2.5 rounded-lg">
+                              <p className={`font-mono text-sm ${variant === 'solve' ? 'text-gray-700 dark:text-gray-200' : 'text-slate-200'}`}>{mistake.incorrect}</p>
+                            </div>
+                          </div>
+                          <div>
+                            <h4 className="text-xs uppercase tracking-wide font-semibold text-emerald-400 mb-1">Correction</h4>
+                            <div className="bg-emerald-500/10 border border-emerald-500/30 p-2.5 rounded-lg">
+                              <p className={`font-mono text-sm ${variant === 'solve' ? 'text-gray-700 dark:text-gray-200' : 'text-slate-200'}`}>{mistake.correct}</p>
+                            </div>
                           </div>
                         </div>
-                        
-                        <div className="mb-2">
-                          <h4 className="text-sm font-medium text-green-400 mb-1">Correction:</h4>
-                          <div className="bg-green-500/10 border-l-4 border-green-500 p-2 lg:p-3 rounded-r">
-                            <p className={`font-mono text-sm ${variant === 'solve' ? 'text-gray-700 dark:text-gray-300' : 'text-slate-300'}`}>{mistake.correct}</p>
-                          </div>
-                        </div>
-                        
+
                         {mistake.explanation && (
-                          <div className="mt-3 p-2 lg:p-3 bg-blue-500/10 rounded border border-blue-500/20">
-                            <p className="text-sm text-blue-400">{mistake.explanation}</p>
+                          <div className="mt-3 p-2.5 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                            <p className={`text-xs ${variant === 'solve' ? 'text-blue-700 dark:text-blue-300' : 'text-blue-300'}`}>{mistake.explanation}</p>
                           </div>
                         )}
                       </motion.div>

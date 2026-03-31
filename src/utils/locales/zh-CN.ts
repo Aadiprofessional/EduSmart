@@ -277,7 +277,7 @@ export const zhCN = {
     title: "选择语言",
     english: "英文",
     simplifiedChinese: "简体中文",
-    traditionalChinese: "台湾"
+    traditionalChinese: "繁体中文"
   },
 
   // Home Page

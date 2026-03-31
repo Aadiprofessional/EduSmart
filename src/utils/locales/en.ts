@@ -277,7 +277,7 @@ export const en = {
     title: "Choose Language",
     english: "English",
     simplifiedChinese: "Simplified Chinese",
-    traditionalChinese: "Taiwan"
+    traditionalChinese: "Chinese Traditional"
   },
 
   // Home Page

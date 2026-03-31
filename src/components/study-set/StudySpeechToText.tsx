@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } f
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
-import { FaPlay, FaPause, FaForward, FaBackward, FaDownload, FaMicrophone, FaVideo, FaCommentDots, FaExpand, FaCompress, FaArrowsAlt } from 'react-icons/fa';
+import { FaPlay, FaPause, FaForward, FaBackward, FaDownload, FaMicrophone, FaVideo, FaCommentDots, FaExpand, FaCompress, FaArrowsAlt, FaListUl } from 'react-icons/fa';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { Skeleton } from '../ui/Skeleton';
 import ReactMarkdown from 'react-markdown';
@@ -239,7 +239,15 @@ const isYouTubeUrl = (url: string | null) => {
 };
 
 interface StudySpeechToTextProps {
-    onDiscuss?: (text: string) => void;
+    onDiscuss?: (
+        text: string,
+        options?: {
+            displayContent?: string;
+            autoSend?: boolean;
+            coins?: number;
+            hidePreview?: boolean;
+        }
+    ) => void;
     documentType?: string;
 }
 
@@ -712,17 +720,45 @@ const StudySpeechToText: React.FC<StudySpeechToTextProps> = ({ onDiscuss, docume
         return groups;
     }, [transcript]);
 
-    const handleSummarizeVideoToChat = () => {
-        if (!onDiscuss || groupedTranscript.length === 0) return;
+    const buildTranscriptForAi = () => {
+        if (groupedTranscript.length === 0) return '';
         const transcriptWithTimestamps = groupedTranscript
             .map((group) => `[${formatTime(group.start)} - ${formatTime(group.start + 30)}] ${group.words.map((word) => word.word).join('')}`)
             .join('\n\n');
         const maxLength = 12000;
-        const clippedTranscript = transcriptWithTimestamps.length > maxLength
+        return transcriptWithTimestamps.length > maxLength
             ? `${transcriptWithTimestamps.slice(0, maxLength)}...`
             : transcriptWithTimestamps;
-        const content = `Please summarize this video transcript. Include the main points, key takeaways, and a short timeline.\n\n${clippedTranscript}`;
-        onDiscuss(content);
+    };
+
+    const handleSummarizeToChat = () => {
+        if (!onDiscuss || groupedTranscript.length === 0) return;
+        const clippedTranscript = buildTranscriptForAi();
+        if (!clippedTranscript) return;
+        const mediaLabel = mediaType === 'video' ? 'video' : 'audio';
+        const displayContent = mediaType === 'video' ? 'Summarize Video' : 'Summarize Audio';
+        const content = `Please summarize this ${mediaLabel} transcript. Include the main points, key takeaways, and a short timeline.\n\n${clippedTranscript}`;
+        onDiscuss(content, {
+            displayContent,
+            autoSend: true,
+            coins: 2,
+            hidePreview: true
+        });
+    };
+
+    const handleGenerateKeypointsToChat = () => {
+        if (!onDiscuss || groupedTranscript.length === 0) return;
+        const clippedTranscript = buildTranscriptForAi();
+        if (!clippedTranscript) return;
+        const mediaLabel = mediaType === 'video' ? 'video' : 'audio';
+        const displayContent = mediaType === 'video' ? 'Generate Keypoints (Video)' : 'Generate Keypoints (Audio)';
+        const content = `Please generate key points from this ${mediaLabel} transcript. Return concise bullet points grouped by topic and include the most important actionable insights.\n\n${clippedTranscript}`;
+        onDiscuss(content, {
+            displayContent,
+            autoSend: true,
+            coins: 2,
+            hidePreview: true
+        });
     };
 
     // Update groupedTranscriptRef
@@ -1293,15 +1329,22 @@ const StudySpeechToText: React.FC<StudySpeechToTextProps> = ({ onDiscuss, docume
                     </div>
                 )}
             </div>
-            {mediaType === 'video' && onDiscuss && groupedTranscript.length > 0 && (
+            {onDiscuss && groupedTranscript.length > 0 && (
                 <div className="absolute bottom-6 left-0 right-0 flex justify-center pointer-events-none z-30">
-                    <div className="pointer-events-auto">
+                    <div className="pointer-events-auto flex items-center gap-3">
                         <button
-                            onClick={handleSummarizeVideoToChat}
+                            onClick={handleSummarizeToChat}
                             className="px-4 py-2 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 rounded-full shadow-lg transition-all flex items-center gap-2 hover:scale-105 active:scale-95"
                         >
-                            <FaVideo size={14} />
-                            <span className="text-sm font-medium">Summarize Video</span>
+                            {mediaType === 'video' ? <FaVideo size={14} /> : <FaMicrophone size={14} />}
+                            <span className="text-sm font-medium">{mediaType === 'video' ? 'Summarize Video' : 'Summarize Audio'}</span>
+                        </button>
+                        <button
+                            onClick={handleGenerateKeypointsToChat}
+                            className="px-4 py-2 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 rounded-full shadow-lg transition-all flex items-center gap-2 hover:scale-105 active:scale-95"
+                        >
+                            <FaListUl size={14} />
+                            <span className="text-sm font-medium">Generate Keypoints</span>
                         </button>
                     </div>
                 </div>

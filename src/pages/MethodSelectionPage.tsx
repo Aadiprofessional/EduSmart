@@ -1026,7 +1026,7 @@ const MethodSelectionPage: React.FC = () => {
     const languages = [
         { code: 'en', name: 'English' },
         { code: 'yue', name: 'Chinese (Cantonese)' },
-        { code: 'zh-Hant', name: 'Taiwan' },
+        { code: 'zh-Hant', name: 'Chinese Taiwan' },
         { code: 'zh-Hans', name: 'Chinese (Simplified)' },
     ];
 

@@ -25,9 +25,20 @@ interface Message {
     subject?: string;
 }
 
+interface ChatAttachment {
+    id: string;
+    type: 'text';
+    content: string;
+    source: string;
+    displayContent?: string;
+    autoSend?: boolean;
+    coins?: number;
+    hidePreview?: boolean;
+}
+
 interface ChatPanelProps {
     documentId?: string;
-    attachment?: { type: 'text', content: string, source: string } | null;
+    attachment?: ChatAttachment | null;
     onClearAttachment?: () => void;
 }
 
@@ -60,6 +71,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
     const { t } = useLanguage();
     const { checkAndUseResponse } = useResponseCheck();
     const inputRef = useRef<HTMLTextAreaElement>(null);
+    const lastAutoSentAttachmentId = useRef<string | null>(null);
     const cost = 1;
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
     const [upgradeMessage, setUpgradeMessage] = useState('');
@@ -73,6 +85,13 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
             }, 100);
         }
     }, [attachment]);
+
+    useEffect(() => {
+        if (!attachment?.autoSend || isProcessing) return;
+        if (lastAutoSentAttachmentId.current === attachment.id) return;
+        lastAutoSentAttachmentId.current = attachment.id;
+        handleSendMessage();
+    }, [attachment, isProcessing]);
 
     useEffect(() => {
         if (!inputRef.current) return;
@@ -170,11 +189,18 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
         }
 
         const messageContent = inputValue.trim();
-        // Combine attachment with message for the AI
-        let finalContent = messageContent;
-        if (attachment) {
-            finalContent = `Context from ${attachment.source}:\n${attachment.content}\n\nUser Question:\n${messageContent}`;
-        }
+        const shouldAutoPrompt = Boolean(attachment?.autoSend && !messageContent);
+        const aiInputContent = attachment
+            ? shouldAutoPrompt
+                ? attachment.content
+                : `Context from ${attachment.source}:\n${attachment.content}\n\nUser Question:\n${messageContent}`
+            : messageContent;
+        const visibleContent = attachment
+            ? shouldAutoPrompt
+                ? attachment.displayContent || messageContent || t('studyRightPanel.askAboutStudySet')
+                : messageContent
+            : messageContent;
+        const requestCoins = attachment?.coins ?? cost;
         
         setInputValue('');
         if (onClearAttachment) onClearAttachment();
@@ -184,9 +210,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
         const newUserMsg: Message = {
             id: userMsgId,
             type: 'user',
-            content: finalContent, // Show full content in chat history? Or just message? 
-            // Usually showing context is good for history, but maybe visually separate it?
-            // For now, let's just show it all as text.
+            content: visibleContent,
             timestamp: new Date()
         };
         
@@ -224,7 +248,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
                 id: userMsgId,
                 chat_id: documentId,
                 position: 0,
-                content: finalContent,
+                content: visibleContent,
                 status: 'done',
                 created_by: user?.id
             });
@@ -235,14 +259,15 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
             
             const requestBody = {
                 stream: true,
+                coins: requestCoins,
                 uploadedFileType: 'text',
                 messages: [{
                     uid: userId,
                     type: "text",
                     text: { body: "text" }, 
-                    body: finalContent,
-                    content: finalContent,
-                    transcription: finalContent,
+                    body: aiInputContent,
+                    content: aiInputContent,
+                    transcription: aiInputContent,
                     role: "user",
                     roleDescription: "",
                     timestamp: timestamp,
@@ -446,7 +471,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
                         </div>
                         <div className="pl-8">
                             <p className="text-xs text-indigo-900/80 dark:text-indigo-200/80 line-clamp-3 leading-relaxed font-medium">
-                                "{attachment.content}"
+                                "{attachment.hidePreview ? (attachment.displayContent || attachment.source) : attachment.content}"
                             </p>
                         </div>
                     </div>
@@ -470,12 +495,12 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
                     <div className="absolute inset-y-0 right-2 flex items-center">
                         <button 
                             onClick={handleSendMessage}
-                            disabled={!inputValue.trim() || isProcessing}
+                            disabled={(!inputValue.trim() && !attachment) || isProcessing}
                             className="relative w-8 h-8 bg-black dark:bg-white rounded-lg flex items-center justify-center text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
-                            {!isProcessing && inputValue.trim() && cost > 0 && (
+                            {!isProcessing && (inputValue.trim() || attachment) && (attachment?.coins ?? cost) > 0 && (
                                 <span className="absolute -top-2 -right-2 z-10 inline-flex items-center gap-1 bg-[#ff5500] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                                    -{cost}
+                                    -{attachment?.coins ?? cost}
                                     <img src={coinIcon} alt="coins" className="w-3 h-3" />
                                 </span>
                             )}
@@ -499,7 +524,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
 interface StudyRightPanelProps {
     activeMethod?: string;
     documentId?: string;
-    attachment?: { type: 'text', content: string, source: string } | null;
+    attachment?: ChatAttachment | null;
     onClearAttachment?: () => void;
     hasNotes?: boolean;
 }

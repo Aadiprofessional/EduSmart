@@ -1,36 +1,18 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaYoutube, FaPhone, FaEnvelope, FaMapMarkerAlt, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaYoutube, FaPhone, FaEnvelope } from 'react-icons/fa';
 import IconComponent from '../ui/IconComponent';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useLanguage } from '../../utils/LanguageContext';
-import { getPageTheme } from '../../utils/pageThemes';
 import matrixLogo from '../../assets/matrixedu.png';
 
 const Footer: React.FC = () => {
   const { t } = useLanguage();
-  const location = useLocation();
-  const theme = getPageTheme(location.pathname);
   
-  // Mobile accordion state
-  const [openSection, setOpenSection] = useState<string | null>(null);
-
-  const toggleSection = (section: string) => {
-    setOpenSection(openSection === section ? null : section);
-  };
-
   const socialVariants = {
     hover: { 
       scale: 1.2, 
       rotate: 5, 
-      transition: { duration: 0.2 } 
-    }
-  };
-
-  const linkVariants = {
-    hover: { 
-      x: 5, 
-      scale: 1.05,
       transition: { duration: 0.2 } 
     }
   };
@@ -114,114 +96,24 @@ const Footer: React.FC = () => {
               </Link>
             </motion.div>
 
-            {/* Mobile Accordions */}
+            {/* Mobile Contact */}
             <div className="space-y-2 mb-6 text-left">
-                {/* Quick Links Accordion */}
                 <div className="border-b border-gray-200 dark:border-white/10">
-                    <button 
-                        onClick={() => toggleSection('quickLinks')}
-                        className="w-full py-3 flex items-center justify-between text-sm font-bold text-gray-900 dark:text-white"
-                    >
-                        {t('footer.quickLinks')}
-                        {openSection === 'quickLinks' ? <FaChevronUp size={12} /> : <FaChevronDown size={12} />}
-                    </button>
-                    <AnimatePresence>
-                        {openSection === 'quickLinks' && (
-                            <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                className="overflow-hidden"
-                            >
-                                <ul className="pb-3 space-y-2">
-                                    {[
-                                        { name: t('nav.home'), href: '/' },
-                                        { name: t('nav.database'), href: '/database' },
-                                        { name: t('nav.successStories'), href: '/case-studies' },
-                                        { name: t('nav.aiCourses'), href: '/ai-courses' },
-                                        { name: t('nav.blog'), href: '/blog' }
-                                    ].map((link, index) => (
-                                        <li key={index}>
-                                            <Link to={link.href} className="text-xs text-gray-600 dark:text-gray-400 block py-1">
-                                                {link.name}
-                                            </Link>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
-
-                {/* Resources Accordion */}
-                <div className="border-b border-gray-200 dark:border-white/10">
-                    <button 
-                        onClick={() => toggleSection('resources')}
-                        className="w-full py-3 flex items-center justify-between text-sm font-bold text-gray-900 dark:text-white"
-                    >
-                        {t('footer.resources')}
-                        {openSection === 'resources' ? <FaChevronUp size={12} /> : <FaChevronDown size={12} />}
-                    </button>
-                    <AnimatePresence>
-                        {openSection === 'resources' && (
-                            <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                className="overflow-hidden"
-                            >
-                                <ul className="pb-3 space-y-2">
-                                    {[
-                                        { name: t('footer.resourceLinks.scholarships'), href: '/scholarship-finder' },
-                                        { name: t('footer.resourceLinks.applicationTracker'), href: '/application-tracker' },
-                                        { name: t('footer.resourceLinks.privacyPolicy'), href: '/privacy' },
-                                        { name: t('footer.resourceLinks.termsOfService'), href: '/terms' },
-                                        { name: t('footer.resourceLinks.faq'), href: '/faq' }
-                                    ].map((link, index) => (
-                                        <li key={index}>
-                                            <Link to={link.href} className="text-xs text-gray-600 dark:text-gray-400 block py-1">
-                                                {link.name}
-                                            </Link>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
-
-                {/* Contact Accordion */}
-                <div className="border-b border-gray-200 dark:border-white/10">
-                    <button 
-                        onClick={() => toggleSection('contact')}
-                        className="w-full py-3 flex items-center justify-between text-sm font-bold text-gray-900 dark:text-white"
-                    >
+                    <div className="w-full py-3 flex items-center justify-between text-sm font-bold text-gray-900 dark:text-white">
                         {t('footer.contactUs')}
-                        {openSection === 'contact' ? <FaChevronUp size={12} /> : <FaChevronDown size={12} />}
-                    </button>
-                    <AnimatePresence>
-                        {openSection === 'contact' && (
-                            <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                className="overflow-hidden"
-                            >
-                                <div className="pb-3 space-y-3 text-xs text-gray-600 dark:text-gray-400">
-                                    <div className="flex items-center">
-                                        <IconComponent icon={FaPhone} className="mr-2 text-blue-600 dark:text-blue-400" />
-                                        <span>{t('footer.contactInfo.phone')}</span>
-                                    </div>
-                                    <div className="flex items-center">
-                                        <IconComponent icon={FaEnvelope} className="mr-2 text-purple-600 dark:text-purple-400" />
-                                        <a href={`mailto:${t('footer.contactInfo.email')}`} className="text-purple-600 dark:text-purple-400">
-                                            {t('footer.contactInfo.email')}
-                                        </a>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                    </div>
+                    <div className="pb-3 space-y-3 text-xs text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center">
+                            <IconComponent icon={FaPhone} className="mr-2 text-blue-600 dark:text-blue-400" />
+                            <span>{t('footer.contactInfo.phone')}</span>
+                        </div>
+                        <div className="flex items-center">
+                            <IconComponent icon={FaEnvelope} className="mr-2 text-purple-600 dark:text-purple-400" />
+                            <a href={`mailto:${t('footer.contactInfo.email')}`} className="text-purple-600 dark:text-purple-400">
+                                {t('footer.contactInfo.email')}
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
           </motion.div>
@@ -229,7 +121,7 @@ const Footer: React.FC = () => {
 
           {/* Desktop Layout */}
         <motion.div 
-          className="hidden lg:grid lg:grid-cols-4 gap-8"
+          className="hidden lg:grid lg:grid-cols-2 gap-8"
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
@@ -269,60 +161,6 @@ const Footer: React.FC = () => {
                 </motion.a>
               ))}
             </div>
-          </motion.div>
-          
-          {/* Quick Links */}
-          <motion.div variants={itemVariants}>
-            <h3 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">{t('footer.quickLinks')}</h3>
-            <ul className="space-y-3">
-              {[
-                { name: t('nav.home'), href: '/' },
-                { name: t('nav.database'), href: '/database' },
-                { name: t('nav.successStories'), href: '/case-studies' },
-                { name: t('nav.aiCourses'), href: '/ai-courses' },
-                { name: t('nav.blog'), href: '/blog' }
-              ].map((link, index) => (
-                <li key={index}>
-                  <motion.div variants={linkVariants} whileHover="hover">
-                    <Link 
-                      to={link.href} 
-                      className="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-white inline-flex items-center group transition-all duration-300"
-                      data-magnetic
-                    >
-                      <span className="w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full mr-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                      {link.name}
-                    </Link>
-                  </motion.div>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-          
-          {/* Resources */}
-          <motion.div variants={itemVariants}>
-            <h3 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">{t('footer.resources')}</h3>
-            <ul className="space-y-3">
-              {[
-                { name: t('footer.resourceLinks.scholarships'), href: '/scholarship-finder' },
-                { name: t('footer.resourceLinks.applicationTracker'), href: '/application-tracker' },
-                { name: t('footer.resourceLinks.privacyPolicy'), href: '/privacy' },
-                { name: t('footer.resourceLinks.termsOfService'), href: '/terms' },
-                { name: t('footer.resourceLinks.faq'), href: '/faq' }
-              ].map((link, index) => (
-                <li key={index}>
-                  <motion.div variants={linkVariants} whileHover="hover">
-                    <Link 
-                      to={link.href} 
-                      className="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-white inline-flex items-center group transition-all duration-300"
-                      data-magnetic
-                    >
-                      <span className="w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full mr-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                      {link.name}
-                    </Link>
-                  </motion.div>
-                </li>
-              ))}
-            </ul>
           </motion.div>
           
           {/* Contact */}
@@ -380,12 +218,6 @@ const Footer: React.FC = () => {
               {t('footer.copyright')}
             </p>
             <div className="flex flex-wrap justify-center sm:justify-end gap-4 sm:gap-6 text-xs sm:text-sm">
-              <Link to="/privacy" className="text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white transition-colors duration-300">
-                {t('footer.privacyPolicy')}
-              </Link>
-              <Link to="/terms" className="text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white transition-colors duration-300">
-                {t('footer.termsOfService')}
-              </Link>
               <Link to="/cookies" className="text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white transition-colors duration-300">
                 {t('footer.cookiePolicy')}
               </Link>

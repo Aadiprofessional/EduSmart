@@ -83,6 +83,10 @@ export interface MistakeCheckSubmissionData {
   pageMistakes?: any[];
   extractedTexts?: any[];
   pageMarkings?: any[];
+  ocrOverlayPages?: any[];
+  n8nMarkingSchemes?: Record<string, any>;
+  webhookRawResponse?: string;
+  webhookNormalizedPayload?: any;
   markingSummary?: any;
   selectedMarkingStandard: string;
   currentPage: number;
@@ -104,6 +108,10 @@ export interface MistakeCheckHistoryItem {
   extractedTexts?: any[];
   pageMarkings?: any[];
   selectedMarkingStandard?: string;
+  ocrOverlayPages?: any[];
+  n8nMarkingSchemes?: Record<string, any>;
+  webhookRawResponse?: string;
+  webhookNormalizedPayload?: any;
 }
 
 // Submit a new mistake check - Enhanced with user context and better error handling
@@ -127,7 +135,11 @@ export const submitMistakeCheck = async (data: MistakeCheckSubmissionData, user?
       pageMistakesCount: data.pageMistakes?.length || 0,
       extractedTextsCount: data.extractedTexts?.length || 0,
       pageMarkingsCount: data.pageMarkings?.length || 0,
+      ocrOverlayPagesCount: data.ocrOverlayPages?.length || 0,
       hasMarkingSummary: !!data.markingSummary,
+      hasN8nMarkingSchemes: !!data.n8nMarkingSchemes,
+      hasWebhookRawResponse: !!data.webhookRawResponse,
+      hasWebhookNormalizedPayload: !!data.webhookNormalizedPayload,
       currentPage: data.currentPage,
       overallProcessingComplete: data.overallProcessingComplete,
       hasFile: !!data.file
@@ -143,6 +155,10 @@ export const submitMistakeCheck = async (data: MistakeCheckSubmissionData, user?
       page_mistakes: data.pageMistakes,
       extracted_texts: data.extractedTexts,
       page_markings: data.pageMarkings,
+      ocr_overlay_pages: data.ocrOverlayPages,
+      n8n_marking_schemes: data.n8nMarkingSchemes,
+      webhook_raw_response: data.webhookRawResponse,
+      webhook_normalized_payload: data.webhookNormalizedPayload,
       marking_summary: data.markingSummary,
       selected_marking_standard: data.selectedMarkingStandard,
       current_page: data.currentPage,
@@ -263,7 +279,11 @@ export const getMistakeCheckHistory = async (user?: any, session?: any, limit = 
         overallProcessingComplete: item.overallProcessingComplete ?? item.overall_processing_complete ?? false,
         extractedTexts: item.extractedTexts || item.extracted_texts || undefined,
         pageMarkings: item.pageMarkings || item.page_markings || undefined,
-        selectedMarkingStandard: item.selectedMarkingStandard || item.selected_marking_standard || 'hkdse'
+        selectedMarkingStandard: item.selectedMarkingStandard || item.selected_marking_standard || 'hkdse',
+        ocrOverlayPages: item.ocrOverlayPages || item.ocr_overlay_pages || undefined,
+        n8nMarkingSchemes: item.n8nMarkingSchemes || item.n8n_marking_schemes || undefined,
+        webhookRawResponse: item.webhookRawResponse || item.webhook_raw_response || undefined,
+        webhookNormalizedPayload: item.webhookNormalizedPayload || item.webhook_normalized_payload || undefined
       })) : [];
       
       console.log('✅ History transformed successfully:', transformedHistory.length, 'items');
@@ -301,6 +321,10 @@ export const updateMistakeCheck = async (id: string, data: Partial<MistakeCheckS
       page_mistakes: data.pageMistakes,
       extracted_texts: data.extractedTexts,
       page_markings: data.pageMarkings,
+      ocr_overlay_pages: data.ocrOverlayPages,
+      n8n_marking_schemes: data.n8nMarkingSchemes,
+      webhook_raw_response: data.webhookRawResponse,
+      webhook_normalized_payload: data.webhookNormalizedPayload,
       marking_summary: data.markingSummary,
       selected_marking_standard: data.selectedMarkingStandard,
       current_page: data.currentPage,
@@ -393,7 +417,11 @@ export const getMistakeCheckById = async (id: string, user?: any, session?: any)
         overallProcessingComplete: item.overallProcessingComplete ?? item.overall_processing_complete ?? false,
         extractedTexts: item.extractedTexts || item.extracted_texts || undefined,
         pageMarkings: item.pageMarkings || item.page_markings || undefined,
-        selectedMarkingStandard: item.selectedMarkingStandard || item.selected_marking_standard || 'hkdse'
+        selectedMarkingStandard: item.selectedMarkingStandard || item.selected_marking_standard || 'hkdse',
+        ocrOverlayPages: item.ocrOverlayPages || item.ocr_overlay_pages || undefined,
+        n8nMarkingSchemes: item.n8nMarkingSchemes || item.n8n_marking_schemes || undefined,
+        webhookRawResponse: item.webhookRawResponse || item.webhook_raw_response || undefined,
+        webhookNormalizedPayload: item.webhookNormalizedPayload || item.webhook_normalized_payload || undefined
       };
       
       console.log('✅ Mistake check fetched successfully');
