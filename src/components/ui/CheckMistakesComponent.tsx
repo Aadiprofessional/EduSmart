@@ -3,7 +3,7 @@ import ReactDOM, { flushSync } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AiOutlineUpload, AiOutlineCamera, AiOutlineFullscreen, AiOutlineBulb, AiOutlineFileText, AiOutlineHistory, AiOutlineLoading3Quarters, AiOutlineLeft, AiOutlineRight, AiOutlineClose, AiOutlineCheckCircle, AiOutlineExclamationCircle, AiOutlineBook, AiOutlineDelete, AiOutlineExclamation } from 'react-icons/ai';
 import { FiDownload, FiCopy, FiShare2, FiClock } from 'react-icons/fi';
-import { FaArrowUp, FaFileAlt, FaImage } from 'react-icons/fa';
+import { FaFileAlt } from 'react-icons/fa';
 import IconComponent from './IconComponent';
 import * as pdfjsLib from 'pdfjs-dist';
 import html2canvas from 'html2canvas';
@@ -302,6 +302,8 @@ const LANGUAGE_OPTIONS: Array<{ code: MistakeCheckerLanguage; label: string }> =
   { code: 'ch', label: 'Chinese' }
 ];
 
+const MAX_DOCUMENT_UPLOAD_PAGES = 15;
+
 interface CheckMistakesComponentProps {
   className?: string;
   variant?: 'default' | 'solve';
@@ -447,8 +449,6 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
   // Add new state for text-only processing and marks summary
   const [textOnlyMode, setTextOnlyMode] = useState(false);
   const [directText, setDirectText] = useState('');
-  const [inputText, setInputText] = useState('');
-
   // Add new state variables for enhanced features
   const [showCorrectedText, setShowCorrectedText] = useState(false);
   const [correctedText, setCorrectedText] = useState('');
@@ -458,6 +458,9 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
   const [streamedAiResponse, setStreamedAiResponse] = useState('');
   const [ocrOverlayPages, setOcrOverlayPages] = useState<OcrPageData[]>([]);
   const [n8nMarkingSchemes, setN8nMarkingSchemes] = useState<Record<string, MarkingSchemeResult>>({});
+  const [webhookProgress, setWebhookProgress] = useState(0);
+  const [webhookRemainingSeconds, setWebhookRemainingSeconds] = useState(180);
+  const [overlayTextColors, setOverlayTextColors] = useState<Record<number, string>>({});
 
   // Add page markings state for teacher marking functionality
   const [pageMarkings, setPageMarkings] = useState<PageMarking[]>([]);
@@ -1280,6 +1283,41 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
     } finally {
       document.body.removeChild(offscreenContainer);
     }
+  };
+
+  const getPdfPageCount = async (targetFile: File): Promise<number> => {
+    const arrayBuffer = await targetFile.arrayBuffer();
+    const loadingTask = pdfjsLib.getDocument({
+      data: arrayBuffer,
+      useWorkerFetch: false,
+      isEvalSupported: false,
+      useSystemFonts: true
+    });
+    const pdf = await loadingTask.promise as PDFDocumentProxy;
+    return pdf.numPages;
+  };
+
+  const getWordDocumentPageCount = async (targetFile: File): Promise<number> => {
+    const arrayBuffer = await targetFile.arrayBuffer();
+    const extracted = await mammoth.extractRawText({ arrayBuffer });
+    const rawText = (extracted.value || '').trim();
+    const explicitPages = rawText
+      .split('\f')
+      .map((page: string) => page.trim())
+      .filter((page: string) => page.length > 0);
+
+    if (explicitPages.length > 0) {
+      return explicitPages.length;
+    }
+
+    if (!rawText) {
+      return 1;
+    }
+
+    const words = rawText.split(/\s+/).filter(Boolean).length;
+    const estimatedByWords = Math.ceil(words / 450);
+    const estimatedByChars = Math.ceil(rawText.length / 2500);
+    return Math.max(1, estimatedByWords, estimatedByChars);
   };
 
   // Extract text from page using OCR API
@@ -2231,7 +2269,7 @@ Be thorough and fair in your assessment.`
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const selectedFile = e.target.files[0];
       const allowedTypes = [
@@ -2248,6 +2286,36 @@ Be thorough and fair in your assessment.`
         if (fileInputRef.current) fileInputRef.current.value = '';
         return;
       }
+
+      let detectedPageCount = 0;
+      const isPdfOrWord =
+        selectedFile.type === 'application/pdf' ||
+        selectedFile.type === 'application/msword' ||
+        selectedFile.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+      if (isPdfOrWord) {
+        setProcessingStatus('Validating document pages...');
+        try {
+          if (selectedFile.type === 'application/pdf') {
+            detectedPageCount = await getPdfPageCount(selectedFile);
+          } else {
+            detectedPageCount = await getWordDocumentPageCount(selectedFile);
+          }
+        } catch (error) {
+          showError('Unable to read document pages. Please upload a valid PDF, DOC, or DOCX file.');
+          if (fileInputRef.current) fileInputRef.current.value = '';
+          setProcessingStatus('');
+          return;
+        }
+
+        if (detectedPageCount > MAX_DOCUMENT_UPLOAD_PAGES) {
+          showError(`Maximum allowed document length is ${MAX_DOCUMENT_UPLOAD_PAGES} pages. This file has ${detectedPageCount} pages.`);
+          if (fileInputRef.current) fileInputRef.current.value = '';
+          setProcessingStatus('');
+          return;
+        }
+      }
+
       setFile(selectedFile);
       setDocumentPages([]);
       setCurrentPage(0);
@@ -2261,7 +2329,7 @@ Be thorough and fair in your assessment.`
       setStreamedAiResponse('');
       setOcrOverlayPages([]);
       setN8nMarkingSchemes({});
-      setPdfPageCount(0);
+      setPdfPageCount(detectedPageCount);
       setProcessingStatus('');
     }
   };
@@ -2381,6 +2449,7 @@ Be thorough and fair in your assessment.`
   }, [selectedMarkingStandard]);
 
   const invokeMistakeCheckerWebhook = async (content: string, targetFile: File | null) => {
+    const maxWebhookWaitMs = 180000;
     const chatId = `mistake-check-${Date.now()}`;
     const timestamp = new Date().toISOString().replace('T', ' ').replace('Z', '');
     const message = content.trim() || 'Check this content for mistakes';
@@ -2446,35 +2515,67 @@ Be thorough and fair in your assessment.`
       };
     }
 
-    const response = await fetch('https://n8n.matrixaiserver.com/webhook/matrixEdu/mistakeChecker', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    });
+    const controller = new AbortController();
+    const startedAt = Date.now();
+    setWebhookProgress(0);
+    setWebhookRemainingSeconds(Math.ceil(maxWebhookWaitMs / 1000));
+    setProcessingStatus('Waiting for analysis response... 180s');
 
-    if (!response.ok) {
-      throw new Error(`Mistake checker webhook failed: ${response.status} ${response.statusText}`);
+    const progressInterval = window.setInterval(() => {
+      const elapsedMs = Date.now() - startedAt;
+      const ratio = Math.min(1, elapsedMs / maxWebhookWaitMs);
+      const progress = Math.min(95, Math.round(ratio * 95));
+      const remaining = Math.max(0, Math.ceil((maxWebhookWaitMs - elapsedMs) / 1000));
+      setWebhookProgress(progress);
+      setWebhookRemainingSeconds(remaining);
+      setProcessingStatus(`Waiting for analysis response... ${remaining}s`);
+    }, 500);
+
+    const timeoutId = window.setTimeout(() => controller.abort(), maxWebhookWaitMs);
+
+    try {
+      const response = await fetch('https://n8n.matrixaiserver.com/webhook/matrixEdu/mistakeChecker', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal
+      });
+
+      if (!response.ok) {
+        throw new Error(`Mistake checker webhook failed: ${response.status} ${response.statusText}`);
+      }
+      const rawResponseText = await response.text();
+      const fullText = rawResponseText.trim();
+      setWebhookProgress(100);
+      setWebhookRemainingSeconds(0);
+      setProcessingStatus('Response received. Finalizing results...');
+      setStreamedAiResponse(fullText);
+
+      const parsedResult = parseTextAndMistakes(fullText);
+      const parsedMistakes = parsedResult.mistakes;
+      const parsedText = parsedResult.extractedText || extractTextFromOcrPages(parsedResult.ocrPages);
+      setOcrOverlayPages(parsedResult.ocrPages);
+      setN8nMarkingSchemes(parsedResult.markingSchemes);
+
+      setPageMistakes(prev => prev.map((pm, index) => (
+        index === 0 ? { ...pm, mistakes: parsedMistakes, isLoading: true } : pm
+      )));
+      setExtractedTexts(prev => prev.map((et, index) => (
+        index === 0 ? { ...et, text: parsedText || et.text, isLoading: true } : et
+      )));
+
+      return fullText;
+    } catch (error) {
+      if ((error as Error)?.name === 'AbortError') {
+        throw new Error('Analysis service did not respond within 3 minutes. Please try again.');
+      }
+      throw error;
+    } finally {
+      clearInterval(progressInterval);
+      clearTimeout(timeoutId);
     }
-    const rawResponseText = await response.text();
-    const fullText = rawResponseText.trim();
-    setStreamedAiResponse(fullText);
-
-    const parsedResult = parseTextAndMistakes(fullText);
-    const parsedMistakes = parsedResult.mistakes;
-    const parsedText = parsedResult.extractedText || extractTextFromOcrPages(parsedResult.ocrPages);
-    setOcrOverlayPages(parsedResult.ocrPages);
-    setN8nMarkingSchemes(parsedResult.markingSchemes);
-
-    setPageMistakes(prev => prev.map((pm, index) => (
-      index === 0 ? { ...pm, mistakes: parsedMistakes, isLoading: true } : pm
-    )));
-    setExtractedTexts(prev => prev.map((et, index) => (
-      index === 0 ? { ...et, text: parsedText || et.text, isLoading: true } : et
-    )));
-
-    return fullText;
   };
 
   const processTextDirectly = async (text: string) => {
@@ -2489,6 +2590,8 @@ Be thorough and fair in your assessment.`
     setStreamedAiResponse('');
     setOcrOverlayPages([]);
     setN8nMarkingSchemes({});
+    setWebhookProgress(0);
+    setWebhookRemainingSeconds(180);
     setPageMistakes([]);
     setExtractedTexts([]);
     
@@ -2979,14 +3082,14 @@ Be thorough and fair in your assessment.`
   };
 
   const startProcessing = async () => {
-    if ((!file && !inputText.trim()) || isProcessingStarted) return;
+    if (!file || isProcessingStarted) return;
 
     const responseResult = await checkAndUseResponse({
       responseType: 'mistake_checker',
       queryData: { 
-        fileName: file?.name || 'Text Input',
-        fileSize: file?.size || inputText.trim().length,
-        fileType: file?.type || 'text/plain',
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
         mode: 'mistakes'
       },
       responsesUsed: 1
@@ -3004,6 +3107,8 @@ Be thorough and fair in your assessment.`
     setStreamedAiResponse('');
     setOcrOverlayPages([]);
     setN8nMarkingSchemes({});
+    setWebhookProgress(0);
+    setWebhookRemainingSeconds(180);
     setProcessingStatus('Analyzing...');
     
     const processStartTime = Date.now();
@@ -3011,7 +3116,7 @@ Be thorough and fair in your assessment.`
 
     try {
       let preparedPages: string[] = [];
-      let initialExtractedText = inputText.trim();
+      const initialExtractedText = '';
 
       if (file?.type === 'application/pdf') {
         preparedPages = await convertPdfToImages(file);
@@ -3049,7 +3154,7 @@ Be thorough and fair in your assessment.`
       setPageMistakes(initialPageMistakes);
       setExtractedTexts(initialExtractedTexts);
 
-      const fullAiText = await invokeMistakeCheckerWebhook(inputText, file);
+      const fullAiText = await invokeMistakeCheckerWebhook('', file);
       const parsedResult = parseTextAndMistakes(fullAiText);
       const parsedMistakes = parsedResult.mistakes;
       const parsedText = parsedResult.extractedText || initialExtractedText;
@@ -3110,13 +3215,13 @@ Be thorough and fair in your assessment.`
       setMarkingSummary(summary);
 
       addToHistory(
-        file?.name || 'Direct Text Input', 
+        file.name, 
         normalizedParsedText, 
         parsedMistakes, 
         summary, 
-        file?.type || 'text', 
+        file.type, 
         resolvedDocumentPages, 
-        file || undefined, 
+        file, 
         finalPageMistakes, 
         0, 
         true,
@@ -3148,7 +3253,11 @@ Be thorough and fair in your assessment.`
   };
 
   const handleCheckText = () => {
-    if (loading || (!inputText.trim() && !file)) return;
+    if (loading) return;
+    if (!file) {
+      showError('Please upload a file before sending.');
+      return;
+    }
     startProcessing();
   };
 
@@ -3162,18 +3271,80 @@ Be thorough and fair in your assessment.`
       }
       return 10;
     }
-    if (inputText.trim()) {
-      return 2;
-    }
     return 0;
   };
 
+  const formatFileSize = (bytes: number) => {
+    if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    const unitIndex = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+    const value = bytes / Math.pow(1024, unitIndex);
+    const precision = unitIndex === 0 ? 0 : 1;
+    return `${value.toFixed(precision)} ${units[unitIndex]}`;
+  };
+
+  const selectedLanguageLabel = LANGUAGE_OPTIONS.find((language) => language.code === selectedLanguage)?.label || 'English';
   const cost = calculateCost();
   const currentOcrOverlay = ocrOverlayPages.find((page) => page.page === currentPage + 1) || ocrOverlayPages[currentPage];
   const currentMistakes = pageMistakes[currentPage]?.mistakes || [];
   const hasOcrOverlay = Boolean(currentOcrOverlay && currentOcrOverlay.width > 0 && currentOcrOverlay.height > 0);
   const overlayWidth = hasOcrOverlay ? currentOcrOverlay!.width : 1;
   const overlayHeight = hasOcrOverlay ? currentOcrOverlay!.height : 1;
+  const overlayLineRects = hasOcrOverlay && currentOcrOverlay
+    ? currentOcrOverlay.results
+      .map((line, index) => {
+        const polygon = Array.isArray(line.polygon) ? line.polygon : [];
+        const xValues = polygon.map((point) => point[0]).filter((value) => Number.isFinite(value));
+        const yValues = polygon.map((point) => point[1]).filter((value) => Number.isFinite(value));
+        const polygonBounds = xValues.length > 0 && yValues.length > 0
+          ? {
+              x: Math.min(...xValues),
+              y: Math.min(...yValues),
+              width: Math.max(...xValues) - Math.min(...xValues),
+              height: Math.max(...yValues) - Math.min(...yValues)
+            }
+          : null;
+        const x = line.bbox?.x_min ?? polygonBounds?.x ?? 0;
+        const y = line.bbox?.y_min ?? polygonBounds?.y ?? 0;
+        const width = line.bbox?.width ?? polygonBounds?.width ?? 0;
+        const height = line.bbox?.height ?? polygonBounds?.height ?? 0;
+        if (!line.text || width <= 0 || height <= 0) {
+          return null;
+        }
+        return { index, x, y, width, height };
+      })
+      .filter((item): item is { index: number; x: number; y: number; width: number; height: number } => Boolean(item))
+    : [];
+  const mergedOverlayRects = (() => {
+    const merged: Array<{ x: number; y: number; width: number; height: number }> = [];
+    const canMerge = (a: { x: number; y: number; width: number; height: number }, b: { x: number; y: number; width: number; height: number }) =>
+      a.x <= b.x + b.width + 2 &&
+      a.x + a.width >= b.x - 2 &&
+      a.y <= b.y + b.height + 2 &&
+      a.y + a.height >= b.y - 2;
+
+    overlayLineRects.forEach((rect) => {
+      let current = { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+      let mergedIntoExisting = true;
+      while (mergedIntoExisting) {
+        mergedIntoExisting = false;
+        for (let i = 0; i < merged.length; i += 1) {
+          if (canMerge(current, merged[i])) {
+            const left = Math.min(current.x, merged[i].x);
+            const top = Math.min(current.y, merged[i].y);
+            const right = Math.max(current.x + current.width, merged[i].x + merged[i].width);
+            const bottom = Math.max(current.y + current.height, merged[i].y + merged[i].height);
+            current = { x: left, y: top, width: right - left, height: bottom - top };
+            merged.splice(i, 1);
+            mergedIntoExisting = true;
+            break;
+          }
+        }
+      }
+      merged.push(current);
+    });
+    return merged;
+  })();
   const availableMarkingSchemes = MARKING_STANDARDS.filter((standard) => standard.id === 'hkdse' || standard.id === 'alevel');
   const selectedN8nScheme = n8nMarkingSchemes[selectedMarkingStandard] || (selectedMarkingStandard === 'alevel' ? n8nMarkingSchemes.alevel : undefined);
   const mistakeTypeCounts = currentMistakes.reduce((acc, mistake) => {
@@ -3185,38 +3356,127 @@ Be thorough and fair in your assessment.`
   const summaryWeaknesses = (markingSummary?.weaknesses || []).filter((item) => item.trim().length > 0);
   const summaryRecommendations = (markingSummary?.recommendations || []).filter((item) => item.trim().length > 0);
   const hasSummaryInsights = summaryStrengths.length > 0 || summaryWeaknesses.length > 0 || summaryRecommendations.length > 0;
+  const grammarCount = (mistakeTypeCounts.grammar || 0);
+  const spellingCount = (mistakeTypeCounts.spelling || 0);
+  const styleCount = (mistakeTypeCounts.punctuation || 0) + (mistakeTypeCounts.other || 0);
+  const totalMistakesCount = currentMistakes.length;
+
+  useEffect(() => {
+    if (!hasOcrOverlay || !currentOcrOverlay || !documentPages[currentPage]) {
+      setOverlayTextColors({});
+      return;
+    }
+
+    let cancelled = false;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = overlayWidth;
+      canvas.height = overlayHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        if (!cancelled) {
+          setOverlayTextColors({});
+        }
+        return;
+      }
+
+      ctx.drawImage(img, 0, 0, overlayWidth, overlayHeight);
+      const nextColors: Record<number, string> = {};
+
+      currentOcrOverlay.results.forEach((line, index) => {
+        const polygon = Array.isArray(line.polygon) ? line.polygon : [];
+        const xValues = polygon.map((point) => point[0]).filter((value) => Number.isFinite(value));
+        const yValues = polygon.map((point) => point[1]).filter((value) => Number.isFinite(value));
+        const polygonBounds = xValues.length > 0 && yValues.length > 0
+          ? {
+              x: Math.min(...xValues),
+              y: Math.min(...yValues),
+              width: Math.max(...xValues) - Math.min(...xValues),
+              height: Math.max(...yValues) - Math.min(...yValues)
+            }
+          : null;
+
+        const bboxX = Math.max(0, Math.floor(line.bbox?.x_min ?? polygonBounds?.x ?? 0));
+        const bboxY = Math.max(0, Math.floor(line.bbox?.y_min ?? polygonBounds?.y ?? 0));
+        const bboxWidth = Math.max(1, Math.floor(line.bbox?.width ?? polygonBounds?.width ?? 1));
+        const bboxHeight = Math.max(1, Math.floor(line.bbox?.height ?? polygonBounds?.height ?? 1));
+
+        const safeWidth = Math.max(1, Math.min(bboxWidth, overlayWidth - bboxX));
+        const safeHeight = Math.max(1, Math.min(bboxHeight, overlayHeight - bboxY));
+        let luminance = 255;
+
+        try {
+          const data = ctx.getImageData(bboxX, bboxY, safeWidth, safeHeight).data;
+          let sum = 0;
+          let count = 0;
+          for (let i = 0; i < data.length; i += 4) {
+            const alpha = data[i + 3] / 255;
+            if (alpha <= 0) continue;
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            sum += (0.2126 * r + 0.7152 * g + 0.0722 * b) * alpha;
+            count += 1;
+          }
+          if (count > 0) {
+            luminance = sum / count;
+          }
+        } catch {
+          luminance = 255;
+        }
+
+        nextColors[index] = luminance < 140 ? '#f8fafc' : '#0f172a';
+      });
+
+      if (!cancelled) {
+        setOverlayTextColors(nextColors);
+      }
+    };
+
+    img.onerror = () => {
+      if (!cancelled) {
+        setOverlayTextColors({});
+      }
+    };
+
+    img.src = documentPages[currentPage];
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentPage, currentOcrOverlay, documentPages, hasOcrOverlay, overlayHeight, overlayWidth]);
 
   if (!isProcessingStarted && !overallProcessingComplete) {
     return (
-      <div className={className}>
+      <div className={`mistake-checker-premium ${className}`}>
+        <div className="mistake-checker-premium-topline" />
         <div className="h-full flex flex-col">
           <div className="flex flex-1 overflow-hidden items-center justify-center">
-            <div className="w-full flex flex-col justify-center max-w-3xl mx-auto px-4 py-8">
-              <div className="w-full flex justify-center items-center mb-10 px-4">
-                <h1 className="text-4xl font-bold text-center tracking-tight text-gray-900 dark:text-white">
-                  {variant === 'solve' ? t('mistakeChecker.title') : 'AI Mistake Checker'}
-                </h1>
-              </div>
-
-              <div className="flex items-center justify-center gap-3 mb-10 w-full max-w-xl mx-auto">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Language</label>
-                <select
-                  value={selectedLanguage}
-                  onChange={(e) => setSelectedLanguage(e.target.value as MistakeCheckerLanguage)}
-                  className="px-4 py-2 rounded-lg min-w-[180px] bg-white dark:bg-[#111111] border border-gray-300 dark:border-white/10 text-gray-800 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ff5500]"
+            <div className="w-full flex flex-col justify-center max-w-[680px] mx-auto px-4 py-10 lg:py-14">
+              <div className="w-full text-center mb-8">
+                <h1
+                  className="mistake-checker-title"
+                  style={{ fontFamily: '"DM Serif Display", serif' }}
                 >
-                  {LANGUAGE_OPTIONS.map((language) => (
-                    <option key={language.code} value={language.code}>
-                      {language.label}
-                    </option>
-                  ))}
-                </select>
+                  AI Mistake Checker
+                </h1>
+                <div className="mistake-checker-divider" aria-hidden="true">
+                  <span />
+                </div>
+                <p
+                  className="mistake-checker-subtitle"
+                  style={{ fontFamily: '"DM Sans", sans-serif' }}
+                >
+                  Upload any document. Get precise corrections instantly.
+                </p>
               </div>
 
-              <div className="w-full relative flex flex-col items-center">
+              <div className="mistake-checker-card">
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-[98%] bg-white dark:bg-[#111111] border border-dashed border-gray-300 dark:border-gray-800 rounded-t-3xl rounded-b-lg h-32 lg:h-44 flex flex-col items-center justify-start pt-5 lg:pt-8 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 hover:border-gray-400 dark:hover:border-gray-600 transition-all group z-0 mb-[-18px] lg:mb-[-45px]"
+                  className={`mistake-checker-upload-zone group ${file ? 'is-file-selected' : ''}`}
                 >
                   <input
                     type="file"
@@ -3225,63 +3485,83 @@ Be thorough and fair in your assessment.`
                     className="hidden"
                     accept=".jpg,.jpeg,.png,.webp,application/pdf,.doc,.docx"
                   />
-                  <div className="mb-1 lg:mb-2 relative">
-                    {file ? (
-                      <FaFileAlt className="text-gray-900 dark:text-white group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors w-4 h-4 lg:w-5 lg:h-5" />
-                    ) : (
-                      <FaImage className="text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-400 transition-colors w-4 h-4 lg:w-5 lg:h-5" />
-                    )}
-                  </div>
-                  <span className="text-xs lg:text-base text-center px-4 text-gray-500 dark:text-gray-300 group-hover:text-gray-600 dark:group-hover:text-gray-200 transition-colors leading-tight">
-                    {file ? file.name : t('mistakeChecker.subtitle')}
-                  </span>
+                  {file ? (
+                    <>
+                      <button
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleRemoveFile();
+                        }}
+                        className="mistake-checker-remove-button"
+                        aria-label="Remove uploaded file"
+                      >
+                        <IconComponent icon={AiOutlineClose} className="w-3 h-3" />
+                      </button>
+                      <div className="flex items-center gap-3">
+                        <FaFileAlt className="w-6 h-6 text-[var(--accent)]" />
+                        <div className="text-left">
+                          <p className="text-sm font-medium text-[var(--accent)] break-all">{file.name}</p>
+                          <p className="text-xs text-[var(--text-muted)]">{formatFileSize(file.size)}</p>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        className="mistake-checker-upload-icon"
+                        width="36"
+                        height="36"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 16V7" strokeWidth="1.7" strokeLinecap="round" />
+                        <path d="M8.5 10.5L12 7L15.5 10.5" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M4.5 16.5V17C4.5 18.3807 5.61929 19.5 7 19.5H17C18.3807 19.5 19.5 18.3807 19.5 17V16.5" strokeWidth="1.7" strokeLinecap="round" />
+                      </svg>
+                      <p className="mistake-checker-upload-primary">Drop your file here</p>
+                      <p className="mistake-checker-upload-secondary">Supports PDF, DOC, DOCX, and images</p>
+                      <span className="mistake-checker-upload-pill">or click to browse</span>
+                    </>
+                  )}
                 </div>
 
-                <div className="w-full bg-white dark:bg-black/40 backdrop-blur-xl rounded-[32px] p-2 border border-blue-500 shadow-xl dark:shadow-2xl z-10 relative">
-                  <div className="relative w-full">
-                    <textarea
-                      value={inputText}
-                      onChange={(e) => setInputText(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleCheckText();
-                        }
-                      }}
-                      placeholder="Paste your text here for mistake checking..."
-                      className="w-full bg-transparent text-gray-800 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none text-lg resize-none py-4 px-4 pr-16 min-h-[64px]"
-                      rows={1}
-                    />
-                    <div className="absolute top-1/2 -translate-y-1/2 right-4">
-                      <button
-                        onClick={handleCheckText}
-                        disabled={loading || (!inputText.trim() && !file)}
-                        className={`relative p-2 rounded-full transition-all duration-200 flex items-center justify-center w-8 h-8 ${
-                          loading || (!inputText.trim() && !file)
-                            ? 'bg-gray-100 dark:bg-[#27272a] text-gray-400 dark:text-gray-600 cursor-not-allowed'
-                            : 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200'
-                        }`}
-                      >
-                        {loading ? (
-                          <motion.div
-                            className="w-4 h-4 border-2 border-current border-t-transparent rounded-full"
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
-                          />
-                        ) : (
-                          <>
-                            {cost > 0 && (
-                              <span className="absolute -top-2 -right-2 z-10 inline-flex items-center gap-1 bg-[#ff5500] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                                -{cost}
-                                <img src={coinIcon} alt="coins" className="w-3 h-3" />
-                              </span>
-                            )}
-                            <FaArrowUp size={14} />
-                          </>
+                <div className="mistake-checker-controls">
+                  <select
+                    value={selectedLanguage}
+                    onChange={(e) => setSelectedLanguage(e.target.value as MistakeCheckerLanguage)}
+                    className="mistake-checker-language-select"
+                    style={{ fontFamily: '"DM Sans", sans-serif' }}
+                    aria-label="Select language"
+                  >
+                    {LANGUAGE_OPTIONS.map((language) => (
+                      <option key={language.code} value={language.code}>
+                        {language.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  <button
+                    onClick={handleCheckText}
+                    disabled={loading || !file}
+                    className="mistake-checker-send-button"
+                    style={{ fontFamily: '"DM Sans", sans-serif' }}
+                  >
+                    {loading ? (
+                      <span className="mistake-checker-loading-ring" />
+                    ) : (
+                      <>
+                        <span>Send</span>
+                        {cost > 0 && (
+                          <span className="mistake-checker-coin-pill">
+                            -{cost}
+                            <img src={coinIcon} alt="coins" className="w-3 h-3" />
+                          </span>
                         )}
-                      </button>
-                    </div>
-                  </div>
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
 
@@ -3313,7 +3593,7 @@ Be thorough and fair in your assessment.`
                     <IconComponent icon={AiOutlineHistory} className="h-5 w-5" />
                     <span>History</span>
                     {mistakeHistory.length > 0 && (
-                      <span className="bg-[#ff5500] text-white text-xs px-2 py-1 rounded-full">
+                      <span className="bg-[#8b5cf6] text-white text-xs px-2 py-1 rounded-full">
                         {mistakeHistory.length}
                       </span>
                     )}
@@ -3512,7 +3792,7 @@ Be thorough and fair in your assessment.`
                     : 'file ready'}
               </p>
               <p className={variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}>
-                Language: {selectedLanguage === 'ch' ? 'Chinese' : 'English'}
+                Language: {selectedLanguageLabel}
               </p>
             </div>
 
@@ -3555,7 +3835,7 @@ Be thorough and fair in your assessment.`
                   onChange={(e) => setSelectedMarkingStandard(e.target.value)}
                   className={`px-4 py-2 rounded-lg min-w-[250px] focus:outline-none focus:ring-2 ${
                     variant === 'solve'
-                      ? 'bg-white dark:bg-[#111111] border border-gray-300 dark:border-white/10 text-gray-800 dark:text-gray-300 focus:ring-[#ff5500]'
+                      ? 'bg-white dark:bg-[#111111] border border-gray-300 dark:border-white/10 text-gray-800 dark:text-gray-300 focus:ring-[#8b5cf6]'
                       : 'bg-slate-600/50 backdrop-blur-sm border border-white/10 text-slate-300 focus:ring-cyan-500'
                   }`}
                 >
@@ -3587,7 +3867,7 @@ Be thorough and fair in your assessment.`
                 onClick={startProcessing}
                 disabled={loading}
                 className={`flex items-center justify-center px-8 py-4 rounded-lg text-white font-medium shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all ${
-                  variant === 'solve' ? 'bg-[#ff5500] hover:bg-[#e64d00]' : 'bg-gradient-to-r from-cyan-500 to-blue-500'
+                  variant === 'solve' ? 'bg-[#8b5cf6] hover:bg-[#7c3aed]' : 'bg-gradient-to-r from-cyan-500 to-blue-500'
                 }`}
                 whileHover={!loading ? { scale: 1.02 } : {}}
                 whileTap={!loading ? { scale: 0.98 } : {}}
@@ -3644,7 +3924,28 @@ Be thorough and fair in your assessment.`
 
   // After file upload, show split view with document on left and mistakes on right
   return (
-    <div className={`${className || ''} lg:h-full lg:min-h-0 lg:flex lg:flex-col lg:overflow-hidden`}>
+    <div className={`mistake-checker-premium ${className || ''} lg:h-full lg:min-h-0 lg:flex lg:flex-col lg:overflow-hidden`}>
+      {overallProcessingComplete && (
+        <motion.div
+          className="mistake-checker-results-intro"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+        >
+          <div className="flex items-center gap-2 text-[var(--text-primary)]">
+            <IconComponent icon={AiOutlineCheckCircle} className="h-5 w-5 text-[var(--success)]" />
+            <h2 className="text-base font-semibold tracking-wide" style={{ fontFamily: '"DM Sans", sans-serif' }}>
+              Analysis Complete
+            </h2>
+          </div>
+          <div className="mistake-checker-summary-bar">
+            <span className="mistake-checker-summary-total">{totalMistakesCount} total</span>
+            <span className="mistake-checker-tag grammar">Grammar {grammarCount}</span>
+            <span className="mistake-checker-tag spelling">Spelling {spellingCount}</span>
+            <span className="mistake-checker-tag style">Style {styleCount}</span>
+          </div>
+        </motion.div>
+      )}
       <div className="mb-6 lg:flex-shrink-0">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -3662,7 +3963,7 @@ Be thorough and fair in your assessment.`
                 {file?.name || 'Uploaded document'}
               </h3>
               <p className={`text-xs mt-1 ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-300'}`}>
-                Language: {selectedLanguage === 'ch' ? 'Chinese' : 'English'}
+                Language: {selectedLanguageLabel}
               </p>
             </div>
 
@@ -3730,7 +4031,7 @@ Be thorough and fair in your assessment.`
                   onClick={() => setShowReportModal(true)}
                   className={`flex items-center px-3 py-2 rounded-xl border text-sm ${
                     variant === 'solve'
-                      ? 'bg-[#ff5500] hover:bg-[#e64d00] text-white border-transparent'
+                      ? 'bg-[#8b5cf6] hover:bg-[#7c3aed] text-white border-transparent'
                       : 'bg-gradient-to-r from-purple-500/30 to-pink-500/30 hover:from-purple-500/40 hover:to-pink-500/40 text-white border-purple-500/30'
                   }`}
                   whileHover={{ scale: 1.02 }}
@@ -3781,7 +4082,7 @@ Be thorough and fair in your assessment.`
                   className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
                     showCorrectedText 
                       ? (variant === 'solve'
-                          ? 'bg-[#ff5500]/15 text-[#ff5500] border border-[#ff5500]/30'
+                          ? 'bg-[#8b5cf6]/15 text-[#8b5cf6] border border-[#8b5cf6]/30'
                           : 'bg-green-500/20 text-green-400 border border-green-500/30')
                       : (variant === 'solve'
                           ? 'bg-gray-100 text-gray-700 dark:bg-[#27272a] dark:text-gray-300 border border-gray-200 dark:border-white/10'
@@ -3816,7 +4117,7 @@ Be thorough and fair in your assessment.`
                     onClick={() => setShowCorrectedText(true)}
                     className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
                       showCorrectedText 
-                        ? (variant === 'solve' ? 'bg-[#ff5500]/15 text-[#ff5500]' : 'bg-green-500/30 text-green-400')
+                        ? (variant === 'solve' ? 'bg-[#8b5cf6]/15 text-[#8b5cf6]' : 'bg-green-500/30 text-green-400')
                         : (variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400')
                     }`}
                   >
@@ -3953,6 +4254,20 @@ Be thorough and fair in your assessment.`
                             preserveAspectRatio="none"
                             opacity={0.95}
                           />
+                          {mergedOverlayRects.map((rect, idx) => (
+                            <rect
+                              key={`ocr-merged-container-${currentPage}-${idx}`}
+                              x={rect.x}
+                              y={rect.y}
+                              width={rect.width}
+                              height={rect.height}
+                              rx={6}
+                              fill="#FDE68A"
+                              stroke="#22d3ee"
+                              strokeWidth={1.2}
+                              pointerEvents="none"
+                            />
+                          ))}
                           {currentOcrOverlay!.results.map((line, index) => {
                             const polygon = Array.isArray(line.polygon) ? line.polygon : [];
                             const xValues = polygon.map((point) => point[0]).filter((value) => Number.isFinite(value));
@@ -3981,6 +4296,7 @@ Be thorough and fair in your assessment.`
                             const widthBasedFontSize = Math.floor(availableWidth / Math.max(1, highlight.displayText.length) / 0.58);
                             const fontSize = Math.max(8, Math.min(baseFontSize, widthBasedFontSize || baseFontSize));
                             const clipPathId = `ocr-clip-${currentPage}-${index}`;
+                            const adaptiveTextColor = overlayTextColors[index] || '#0f172a';
                             const getMistakeIdFromClickPosition = (clientX: number) => {
                               if (highlight.ranges.length === 0) return null;
                               const relativeX = Math.max(0, Math.min(availableWidth, clientX - (bboxX + horizontalPadding)));
@@ -4011,16 +4327,6 @@ Be thorough and fair in your assessment.`
                                     rx={6}
                                   />
                                 </clipPath>
-                                <rect
-                                  x={bboxX}
-                                  y={bboxY}
-                                  width={bboxWidth}
-                                  height={bboxHeight}
-                                  rx={6}
-                                  fill="rgba(8, 47, 73, 0.30)"
-                                  stroke="rgba(34, 211, 238, 0.70)"
-                                  strokeWidth={1.2}
-                                />
                                 {highlight.ranges.map((range, rangeIndex) => {
                                   const totalChars = Math.max(1, highlight.displayText.length);
                                   const highlightX = bboxX + horizontalPadding + (range.start / totalChars) * availableWidth;
@@ -4052,7 +4358,7 @@ Be thorough and fair in your assessment.`
                                 <text
                                   x={bboxX + horizontalPadding}
                                   y={bboxY + bboxHeight / 2}
-                                  fill="#e0f2fe"
+                                  fill={adaptiveTextColor}
                                   fontSize={fontSize}
                                   fontFamily="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace"
                                   dominantBaseline="middle"
@@ -4171,6 +4477,16 @@ Be thorough and fair in your assessment.`
                   transition={{ duration: 1, repeat: Infinity, ease: [0, 0, 1, 1] as const }}
                 />
                 <p className="text-center text-sm">{processingStatus || 'Checking for mistakes...'}</p>
+                <div className={`w-full max-w-xs mt-3 h-2 rounded-full overflow-hidden ${variant === 'solve' ? 'bg-gray-200 dark:bg-[#27272a]' : 'bg-slate-700/60'}`}>
+                  <motion.div
+                    className="h-full bg-cyan-500"
+                    animate={{ width: `${webhookProgress}%` }}
+                    transition={{ ease: 'easeOut', duration: 0.3 }}
+                  />
+                </div>
+                <p className="text-xs mt-2 text-center">
+                  {webhookProgress >= 100 ? 'Finalizing result...' : `${webhookProgress}% • up to ${webhookRemainingSeconds}s`}
+                </p>
               </div>
             ) : (
               <>
@@ -4196,7 +4512,7 @@ Be thorough and fair in your assessment.`
                         onClick={() => setSelectedMarkingStandard(scheme.id)}
                         className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                           selectedMarkingStandard === scheme.id
-                            ? (variant === 'solve' ? 'bg-[#ff5500] text-white shadow-sm' : 'bg-cyan-500 text-slate-900')
+                            ? (variant === 'solve' ? 'bg-[#8b5cf6] text-white shadow-sm' : 'bg-cyan-500 text-slate-900')
                             : (variant === 'solve' ? 'bg-white text-gray-700 border border-gray-200 dark:bg-[#1f1f22] dark:text-gray-200 dark:border-white/10' : 'bg-slate-800/70 text-slate-200 border border-white/10')
                         }`}
                       >
@@ -4268,7 +4584,7 @@ Be thorough and fair in your assessment.`
                       </div>
                       <div className={`w-full rounded-full h-2.5 ${variant === 'solve' ? 'bg-gray-200 dark:bg-[#27272a]' : 'bg-slate-700/80'}`}>
                         <motion.div 
-                          className={`h-2.5 rounded-full ${variant === 'solve' ? 'bg-[#ff5500]' : 'bg-gradient-to-r from-cyan-500 to-purple-500'}`}
+                          className={`h-2.5 rounded-full ${variant === 'solve' ? 'bg-[#8b5cf6]' : 'bg-gradient-to-r from-cyan-500 to-purple-500'}`}
                           initial={{ width: 0 }}
                           animate={{ width: `${markingSummary.percentage}%` }}
                           transition={{ duration: 1, delay: 0.5 }}
@@ -4357,59 +4673,59 @@ Be thorough and fair in your assessment.`
                             Spelling {mistakeTypeCounts.spelling || 0}
                           </span>
                           <span className={`px-2 py-1 rounded-full ${variant === 'solve' ? 'bg-white border border-gray-200 text-gray-600 dark:bg-[#1f1f22] dark:border-white/10 dark:text-gray-300' : 'bg-slate-900/60 border border-white/10 text-slate-300'}`}>
-                            Punctuation {mistakeTypeCounts.punctuation || 0}
+                            Style {(mistakeTypeCounts.punctuation || 0) + (mistakeTypeCounts.other || 0)}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    {pageMistakes[currentPage].mistakes.map((mistake) => (
-                      <motion.div
-                        key={mistake.id}
-                        ref={(el) => {
-                          mistakeCardRefs.current[`${currentPage}-${mistake.id}`] = el;
-                        }}
-                        className={`rounded-xl p-4 border cursor-pointer transition-all ${
-                          selectedMistakeId === mistake.id
-                            ? (variant === 'solve' ? 'border-[#ff5500]/50 bg-[#ff5500]/10 shadow-md' : 'border-cyan-400/60 bg-cyan-500/10')
-                            : (variant === 'solve' ? 'bg-white dark:bg-[#151518] border-gray-200 dark:border-white/10 hover:border-[#ff5500]/40 hover:shadow-sm' : 'bg-slate-700/30 backdrop-blur-sm border-white/10 hover:border-cyan-500/30')
-                        }`}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: mistake.id * 0.08 }}
-                        onClick={() => {
-                          focusMistake(mistake.id);
-                        }}
-                      >
-                        <div className="flex items-center justify-between gap-2 mb-3">
-                          <span className="inline-block px-2 py-1 bg-yellow-500/20 text-yellow-300 text-xs font-medium rounded border border-yellow-500/30">
-                            {mistake.type}
-                          </span>
-                          <span className={`text-xs ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>Mistake #{mistake.id}</span>
-                        </div>
+                    {pageMistakes[currentPage].mistakes.map((mistake) => {
+                      const normalizedType = normalizeMistakeType(mistake.type);
+                      const accentColor = normalizedType === 'grammar' ? '#c0392b' : normalizedType === 'spelling' ? '#8b5cf6' : '#6366f1';
 
-                        <div className="space-y-3">
-                          <div>
-                            <h4 className="text-xs uppercase tracking-wide font-semibold text-red-400 mb-1">Incorrect</h4>
-                            <div className="bg-red-500/10 border border-red-500/30 p-2.5 rounded-lg">
-                              <p className={`font-mono text-sm ${variant === 'solve' ? 'text-gray-700 dark:text-gray-200' : 'text-slate-200'}`}>{mistake.incorrect}</p>
+                      return (
+                        <motion.div
+                          key={mistake.id}
+                          ref={(el) => {
+                            mistakeCardRefs.current[`${currentPage}-${mistake.id}`] = el;
+                          }}
+                          className={`rounded-xl p-4 border cursor-pointer transition-all ${
+                            selectedMistakeId === mistake.id
+                              ? (variant === 'solve' ? 'border-[#8b5cf6] bg-[#8b5cf6]/10 shadow-md' : 'border-cyan-400/60 bg-cyan-500/10')
+                              : (variant === 'solve' ? 'bg-[var(--surface)] border-[var(--border)] hover:border-[#8b5cf6]/60 hover:shadow-sm' : 'bg-slate-700/30 backdrop-blur-sm border-white/10 hover:border-cyan-500/30')
+                          }`}
+                          style={{ borderLeftWidth: 4, borderLeftColor: accentColor }}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: mistake.id * 0.08 }}
+                          onClick={() => {
+                            focusMistake(mistake.id);
+                          }}
+                        >
+                          <div className="flex items-center justify-between gap-2 mb-3">
+                            <span className="inline-block px-2 py-1 text-xs font-medium rounded border border-[#2a2a2a] text-[var(--text-secondary)] bg-[var(--surface-2)]">
+                              {mistake.type}
+                            </span>
+                            <span className={`text-xs ${variant === 'solve' ? 'text-[var(--text-muted)]' : 'text-slate-400'}`}>Mistake #{mistake.id}</span>
+                          </div>
+
+                          <div className="space-y-3">
+                            <div className="rounded-lg border border-[#2a2a2a] bg-[var(--surface-2)] p-2.5">
+                              <p className="text-sm text-[#d76a63] line-through">{mistake.incorrect}</p>
+                            </div>
+                            <div className="rounded-lg border border-[#2a2a2a] bg-[var(--surface-2)] p-2.5">
+                              <p className="text-sm text-[#6fd39a]">{mistake.correct}</p>
                             </div>
                           </div>
-                          <div>
-                            <h4 className="text-xs uppercase tracking-wide font-semibold text-emerald-400 mb-1">Correction</h4>
-                            <div className="bg-emerald-500/10 border border-emerald-500/30 p-2.5 rounded-lg">
-                              <p className={`font-mono text-sm ${variant === 'solve' ? 'text-gray-700 dark:text-gray-200' : 'text-slate-200'}`}>{mistake.correct}</p>
-                            </div>
-                          </div>
-                        </div>
 
-                        {mistake.explanation && (
-                          <div className="mt-3 p-2.5 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                            <p className={`text-xs ${variant === 'solve' ? 'text-blue-700 dark:text-blue-300' : 'text-blue-300'}`}>{mistake.explanation}</p>
-                          </div>
-                        )}
-                      </motion.div>
-                    ))}
+                          {mistake.explanation && (
+                            <div className="mt-3 p-2.5 rounded-lg border border-[#2a2a2a] bg-[var(--surface-2)]">
+                              <p className="text-xs text-[var(--text-secondary)]">{mistake.explanation}</p>
+                            </div>
+                          )}
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 ) : pageMistakes[currentPage] && pageMistakes[currentPage].isComplete ? (
                   <div className={`flex flex-col items-center justify-center h-32 lg:h-full ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>
@@ -4571,7 +4887,7 @@ Be thorough and fair in your assessment.`
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center">
-                <IconComponent icon={AiOutlineFileText} className="h-8 w-8 mr-3 text-[#ff5500]" />
+                <IconComponent icon={AiOutlineFileText} className="h-8 w-8 mr-3 text-[#8b5cf6]" />
                 Assessment Report
               </h3>
               <button
@@ -4588,7 +4904,7 @@ Be thorough and fair in your assessment.`
               {/* Score Overview */}
               <div className="bg-gray-50 dark:bg-[#151518] rounded-xl p-6 border border-gray-200 dark:border-white/10">
                 <div className="text-center mb-6">
-                  <div className="text-6xl font-bold text-[#ff5500] mb-2">
+                  <div className="text-6xl font-bold text-[#8b5cf6] mb-2">
                     {markingSummary.totalScore}/{markingSummary.maxScore}
                   </div>
                   <div className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
@@ -4596,7 +4912,7 @@ Be thorough and fair in your assessment.`
                   </div>
                   <div className="w-full bg-gray-200 dark:bg-[#27272a] rounded-full h-6">
                     <motion.div 
-                      className="bg-[#ff5500] h-6 rounded-full"
+                      className="bg-[#8b5cf6] h-6 rounded-full"
                       initial={{ width: 0 }}
                       animate={{ width: `${markingSummary.percentage}%` }}
                       transition={{ duration: 1 }}
@@ -4690,7 +5006,7 @@ Be thorough and fair in your assessment.`
 
               {/* Export Options */}
               <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200 dark:border-white/10">
-                <button className="flex items-center px-4 py-2 bg-[#ff5500] text-white rounded-lg hover:bg-[#e64d00] transition-colors">
+                <button className="flex items-center px-4 py-2 bg-[#8b5cf6] text-white rounded-lg hover:bg-[#7c3aed] transition-colors">
                   <IconComponent icon={FiDownload} className="h-4 w-4 mr-2" />
                   Download PDF
                 </button>
@@ -4967,7 +5283,7 @@ Be thorough and fair in your assessment.`
                     <IconComponent icon={AiOutlineHistory} className="mx-auto text-6xl mb-4 opacity-50" />
                     <p className="text-xl font-medium mb-2">{t('aiStudy.noMistakeCheckHistoryYet')}</p>
                     <p className="text-sm">{t('aiStudy.analyzedDocumentsWillAppearHere')}</p>
-                    <p className="text-xs mt-2 text-slate-500">{t('aiStudy.uploadDocumentsOrEnterTextToGetStarted')}</p>
+                    <p className="text-xs mt-2 text-slate-500">Upload a document to get started.</p>
                   </motion.div>
                 </div>
               )}

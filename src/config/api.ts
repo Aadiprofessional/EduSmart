@@ -14,16 +14,31 @@ const normalizeBaseUrl = (url: string): string => {
 
 // Function to get the API base URL based on environment
 export const getApiBaseUrl = (): string => {
+  const hostname = window.location.hostname.toLowerCase();
+  const isMatrixeduHost = hostname === 'matrixedu.ai' || hostname.endsWith('.matrixedu.ai');
   const configuredBaseUrl = process.env.REACT_APP_API_BASE_URL || process.env.REACT_APP_BACKEND_URL;
+
   if (configuredBaseUrl) {
-    return normalizeBaseUrl(configuredBaseUrl);
+    const normalizedConfiguredBaseUrl = normalizeBaseUrl(configuredBaseUrl);
+
+    if (isMatrixeduHost && hostname !== 'server.matrixedu.ai') {
+      try {
+        const configuredHost = new URL(normalizedConfiguredBaseUrl).hostname.toLowerCase();
+        if (configuredHost !== 'server.matrixedu.ai') {
+          return 'https://server.matrixedu.ai';
+        }
+      } catch {
+        return 'https://server.matrixedu.ai';
+      }
+    }
+
+    return normalizedConfiguredBaseUrl;
   }
 
   if (process.env.NODE_ENV === 'development') {
     return 'http://localhost:8000';
   }
 
-  const hostname = window.location.hostname.toLowerCase();
   if (
     hostname !== 'server.matrixedu.ai' &&
     (hostname === 'matrixedu.ai' || hostname.endsWith('.matrixedu.ai'))

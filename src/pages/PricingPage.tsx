@@ -120,6 +120,24 @@ const PricingPage: React.FC = () => {
     }
   };
 
+  const getPlanDiscountPercent = (plan: SubscriptionPlan) => {
+    const planIdentity = `${plan.type || ''} ${plan.name || ''}`.toLowerCase();
+    if (planIdentity.includes('year') || planIdentity.includes('annual')) {
+      return 30;
+    }
+    if (planIdentity.includes('month')) {
+      return 20;
+    }
+    return 0;
+  };
+
+  const getOriginalPrice = (currentPrice: number, discountPercent: number) => {
+    if (!discountPercent) {
+      return currentPrice;
+    }
+    return Math.round(currentPrice / (1 - discountPercent / 100));
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-[#050505] text-white overflow-hidden font-sans selection:bg-purple-500 selection:text-white">
       <Header />
@@ -183,7 +201,11 @@ const PricingPage: React.FC = () => {
             animate="visible"
             className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto"
           >
-            {plans.map((plan) => (
+            {plans.map((plan) => {
+              const discountPercent = getPlanDiscountPercent(plan);
+              const originalPrice = getOriginalPrice(plan.price, discountPercent);
+
+              return (
               <HolographicCard
                 key={plan.id}
                 variants={itemVariants}
@@ -203,10 +225,18 @@ const PricingPage: React.FC = () => {
                         )}
                         {plan.name}
                       </h3>
-                      <div className="flex items-baseline mb-4">
+                      <div className="flex items-baseline mb-2 gap-2 flex-wrap">
+                        {discountPercent > 0 && (
+                          <span className="text-lg text-gray-400 line-through">${originalPrice}</span>
+                        )}
                         <span className="text-4xl font-extrabold text-white">${plan.price}</span>
                         <span className="text-gray-400 ml-2">/{plan.type || t('pricingPage.month')}</span>
                       </div>
+                      {discountPercent > 0 && (
+                        <div className="mb-4 inline-flex items-center px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-300 text-xs font-semibold">
+                          {discountPercent}% OFF
+                        </div>
+                      )}
                       <p className="text-gray-400">
                         {plan.description || t('pricingPage.defaultPlanDescription')}
                       </p>
@@ -262,7 +292,8 @@ const PricingPage: React.FC = () => {
                     </button>
                 </div>
               </HolographicCard>
-            ))}
+              );
+            })}
           </motion.div>
         )}
 
