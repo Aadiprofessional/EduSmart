@@ -129,7 +129,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ compactMobile = fal
 
   const dropdownContent = isOpen ? (
     <div
-      className={`language-dropdown fixed bg-[#050505]/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/15 py-3 ${
+      className={`language-dropdown fixed bg-white/95 dark:bg-[#050505]/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-indigo-100 dark:border-white/15 py-3 ${
         isMobile ? (compactMobile ? 'w-60' : 'w-72') : 'w-56'
       }`}
       style={{
@@ -140,7 +140,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ compactMobile = fal
       onMouseDown={(e) => e.stopPropagation()} // Prevent mousedown bubbling
       onClick={(e) => e.stopPropagation()} // Prevent click bubbling
     >
-      <div className={`px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-white/10 ${
+      <div className={`px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-indigo-100 dark:border-white/10 ${
         isMobile ? 'text-center' : ''
       }`}>
         {t('languageSelector.title')}
@@ -158,10 +158,10 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ compactMobile = fal
               e.stopPropagation();
               handleLanguageChange(option.code);
             }}
-            className={`w-full flex items-center justify-between px-4 py-3 text-sm hover:bg-white/5 transition-all duration-200 rounded-xl ${
+            className={`w-full flex items-center justify-between px-4 py-3 text-sm hover:bg-indigo-50 dark:hover:bg-white/5 transition-all duration-200 rounded-xl ${
               language === option.code
-                ? 'text-indigo-300 bg-indigo-500/10 border border-indigo-500/20'
-                : 'text-gray-300 hover:text-white'
+                ? 'text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20'
+                : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
             } ${isMobile ? 'py-4' : ''}`} // Larger touch targets on mobile
           >
             <div className="flex items-center gap-3">
@@ -169,8 +169,8 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ compactMobile = fal
                 isMobile ? 'text-xs' : 'text-[10px]'
               } ${
                 language === option.code
-                  ? 'border-indigo-400/40 bg-indigo-500/20 text-indigo-200'
-                  : 'border-white/20 bg-white/5 text-gray-300'
+                  ? 'border-indigo-300 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-200'
+                  : 'border-indigo-200 dark:border-white/20 bg-indigo-50 dark:bg-white/5 text-gray-600 dark:text-gray-300'
               }`}>
                 {option.shortLabel}
               </span>
@@ -179,7 +179,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ compactMobile = fal
                   {option.nativeName}
                 </span>
                 {option.nativeName !== option.name && (
-                  <span className={`text-gray-500 ${isMobile ? 'text-sm' : 'text-xs'}`}>
+                  <span className={`text-gray-500 dark:text-gray-500 ${isMobile ? 'text-sm' : 'text-xs'}`}>
                     {option.name}
                   </span>
                 )}
@@ -205,24 +205,24 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ compactMobile = fal
         className={`group flex items-center rounded-full border transition-all duration-200 ${
           isMobile
             ? compactMobile
-              ? 'gap-1.5 px-2.5 py-2 border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/30'
-              : 'gap-2 px-3 py-2.5 border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/30'
-            : 'gap-2 px-3 py-1.5 border-white/15 bg-white/[0.04] hover:bg-white/10 hover:border-white/30'
+              ? 'gap-1.5 px-2.5 py-2 border-indigo-200 dark:border-white/20 bg-white dark:bg-white/5 hover:bg-indigo-50 dark:hover:bg-white/10 hover:border-indigo-300 dark:hover:border-white/30'
+              : 'gap-2 px-3 py-2.5 border-indigo-200 dark:border-white/20 bg-white dark:bg-white/5 hover:bg-indigo-50 dark:hover:bg-white/10 hover:border-indigo-300 dark:hover:border-white/30'
+            : 'gap-2 px-3 py-1.5 border-indigo-200 dark:border-white/15 bg-white dark:bg-white/[0.04] hover:bg-indigo-50 dark:hover:bg-white/10 hover:border-indigo-300 dark:hover:border-white/30'
         }`}
         aria-label={t('languageSelector.title')}
       >
-        <span className={`inline-flex items-center justify-center rounded-md border border-white/20 bg-white/5 font-semibold text-white/90 tracking-wide ${
+        <span className={`inline-flex items-center justify-center rounded-md border border-indigo-200 dark:border-white/20 bg-indigo-50 dark:bg-white/5 font-semibold text-gray-700 dark:text-white/90 tracking-wide ${
           isMobile ? (compactMobile ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-1 text-xs') : 'px-2 py-1 text-[10px]'
         }`}>
           {currentLanguage.shortLabel}
         </span>
         {!(isMobile && compactMobile) && (
-          <span className={`font-medium text-white/80 group-hover:text-white ${isMobile ? 'text-sm' : 'text-xs'}`}>{currentLanguage.nativeName}</span>
+          <span className={`font-medium text-gray-700 dark:text-white/80 group-hover:text-gray-900 dark:group-hover:text-white ${isMobile ? 'text-sm' : 'text-xs'}`}>{currentLanguage.nativeName}</span>
         )}
-        <IconComponent icon={AiOutlineGlobal} className={`${isMobile ? 'h-4 w-4' : 'h-3.5 w-3.5'} text-indigo-300`} />
+        <IconComponent icon={AiOutlineGlobal} className={`${isMobile ? 'h-4 w-4' : 'h-3.5 w-3.5'} text-indigo-600 dark:text-indigo-300`} />
         <IconComponent 
           icon={AiOutlineDown} 
-          className={`transition-transform duration-200 text-white/70 ${isOpen ? 'rotate-180' : ''} ${
+          className={`transition-transform duration-200 text-gray-500 dark:text-white/70 ${isOpen ? 'rotate-180' : ''} ${
             isMobile ? 'h-4 w-4' : 'h-3 w-3'
           }`} 
         />

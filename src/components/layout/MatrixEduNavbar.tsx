@@ -73,21 +73,21 @@ const MatrixEduNavbar: React.FC = () => {
   // The ReflectHero had: fixed top-0 left-0 right-0 z-50 ... backdrop-blur-sm bg-[#050505]/50
   
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 md:px-6 py-3.5 md:py-4 w-full backdrop-blur-sm bg-[#050505]/80 border-b border-white/5 transition-all duration-300">
+    <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 md:px-6 py-3.5 md:py-4 w-full backdrop-blur-sm bg-white/80 dark:bg-[#050505]/80 border-b border-indigo-100/80 dark:border-white/5 transition-all duration-300">
       <div className="flex items-center gap-2 cursor-pointer shrink-0" onClick={() => navigate('/')}>
           {/* Logo */}
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-[0_0_15px_rgba(99,102,241,0.5)]">
               <img src={matrixLogo} alt={t('matrixEduNavbar.logoAlt')} className="w-5 h-5" />
           </div>
-          <span className="text-lg md:text-xl font-semibold tracking-tight text-white hidden min-[390px]:inline">MatrixEdu</span>
+          <span className="text-lg md:text-xl font-semibold tracking-tight text-gray-900 dark:text-white hidden min-[390px]:inline">MatrixEdu</span>
       </div>
 
       {/* Desktop Menu */}
-      <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-400 absolute left-1/2 transform -translate-x-1/2">
-          <Link to="/" className={`hover:text-white transition-colors ${location.pathname === '/' ? 'text-white' : ''}`}>{t('nav.home')}</Link>
-          <Link to="/about" className={`hover:text-white transition-colors ${location.pathname === '/about' ? 'text-white' : ''}`}>{t('nav.about')}</Link>
-          <Link to="/pricing" className={`hover:text-white transition-colors ${location.pathname === '/pricing' ? 'text-white' : ''}`}>{t('nav.pricing')}</Link>
-          <Link to="/blog" className={`hover:text-white transition-colors ${location.pathname === '/blog' ? 'text-white' : ''}`}>{t('nav.blog')}</Link>
+      <div className="hidden md:flex items-center gap-8 text-sm font-medium absolute left-1/2 transform -translate-x-1/2">
+          <Link to="/" className={`transition-colors hover:text-gray-900 dark:hover:text-white ${location.pathname === '/' ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>{t('nav.home')}</Link>
+          <Link to="/about" className={`transition-colors hover:text-gray-900 dark:hover:text-white ${location.pathname === '/about' ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>{t('nav.about')}</Link>
+          <Link to="/pricing" className={`transition-colors hover:text-gray-900 dark:hover:text-white ${location.pathname === '/pricing' ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>{t('nav.pricing')}</Link>
+          <Link to="/blog" className={`transition-colors hover:text-gray-900 dark:hover:text-white ${location.pathname === '/blog' ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>{t('nav.blog')}</Link>
       </div>
 
       {/* Auth Buttons & Coins */}
@@ -119,7 +119,7 @@ const MatrixEduNavbar: React.FC = () => {
               </button>
           ) : (
               <>
-                  <button onClick={() => navigate('/login')} className="text-sm font-medium text-gray-400 hover:text-white transition-colors">{t('nav.login')}</button>
+                  <button onClick={() => navigate('/login')} className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">{t('nav.login')}</button>
                   <button onClick={() => navigate('/signup')} className="text-sm font-medium px-4 py-2 bg-[#6366f1] hover:bg-[#5558dd] text-white rounded-lg transition-all shadow-[0_0_15px_rgba(99,102,241,0.5)] hover:shadow-[0_0_20px_rgba(99,102,241,0.7)]">
                       {t('nav.signup')}
                   </button>
@@ -138,7 +138,7 @@ const MatrixEduNavbar: React.FC = () => {
 
         <LanguageSelector compactMobile />
          
-        <button className="text-gray-300 hover:text-white p-1.5" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+        <button className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white p-1.5" onClick={() => setIsMenuOpen(!isMenuOpen)}>
             {isMenuOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
         </button>
       </div>
@@ -150,14 +150,14 @@ const MatrixEduNavbar: React.FC = () => {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="absolute top-full left-0 right-0 bg-[#050505] border-b border-white/10 overflow-hidden md:hidden shadow-xl"
+                className="absolute top-full left-0 right-0 bg-white dark:bg-[#050505] border-b border-indigo-100 dark:border-white/10 overflow-hidden md:hidden shadow-xl"
             >
                 <div className="flex flex-col p-5 gap-4">
-                    <Link to="/" onClick={() => setIsMenuOpen(false)} className="text-gray-400 hover:text-white text-lg">{t('nav.home')}</Link>
-                    <Link to="/about" onClick={() => setIsMenuOpen(false)} className="text-gray-400 hover:text-white text-lg">{t('nav.about')}</Link>
-                    <Link to="/pricing" onClick={() => setIsMenuOpen(false)} className="text-gray-400 hover:text-white text-lg">{t('nav.pricing')}</Link>
-                    <Link to="/blog" onClick={() => setIsMenuOpen(false)} className="text-gray-400 hover:text-white text-lg">{t('nav.blog')}</Link>
-                    <div className="h-px bg-white/10 my-2"></div>
+                    <Link to="/" onClick={() => setIsMenuOpen(false)} className="text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-lg">{t('nav.home')}</Link>
+                    <Link to="/about" onClick={() => setIsMenuOpen(false)} className="text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-lg">{t('nav.about')}</Link>
+                    <Link to="/pricing" onClick={() => setIsMenuOpen(false)} className="text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-lg">{t('nav.pricing')}</Link>
+                    <Link to="/blog" onClick={() => setIsMenuOpen(false)} className="text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-lg">{t('nav.blog')}</Link>
+                    <div className="h-px bg-indigo-100 dark:bg-white/10 my-2"></div>
                     {user ? (
                         <button 
                             onClick={() => {
@@ -173,7 +173,7 @@ const MatrixEduNavbar: React.FC = () => {
                             <button onClick={() => {
                               setIsMenuOpen(false);
                               navigate('/login');
-                            }} className="w-full py-3 text-gray-300 hover:text-white border border-white/10 rounded-lg">{t('nav.login')}</button>
+                            }} className="w-full py-3 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white border border-indigo-100 dark:border-white/10 rounded-lg">{t('nav.login')}</button>
                             <button onClick={() => {
                               setIsMenuOpen(false);
                               navigate('/signup');

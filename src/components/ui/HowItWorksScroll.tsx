@@ -58,12 +58,11 @@ const Step = ({ step, index, isActive, t }: { step: StepItem, index: number, isA
           transition={{ duration: 0.5 }}
           className={`relative rounded-2xl overflow-hidden shadow-2xl border-4 ${isActive ? 'border-indigo-500 shadow-indigo-500/20' : 'border-gray-200 dark:border-gray-800'} transition-all duration-500 aspect-video bg-gray-100 dark:bg-gray-900 flex items-center justify-center group`}
         >
-           {/* Placeholder for Video - Replace with actual <video> tag later */}
-           <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 text-white">
+           <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white">
               {!isActive && (
-                <div className="absolute inset-0 bg-black/60 z-10 flex items-center justify-center backdrop-blur-sm transition-all duration-500">
-                    <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
-                        <div className="w-0 h-0 border-t-[10px] border-t-transparent border-l-[20px] border-l-white border-b-[10px] border-b-transparent ml-1"></div>
+                <div className="absolute inset-0 bg-white/75 dark:bg-black/60 z-10 flex items-center justify-center backdrop-blur-sm transition-all duration-500">
+                    <div className="w-16 h-16 rounded-full bg-white/80 dark:bg-white/20 backdrop-blur-md flex items-center justify-center border border-indigo-200 dark:border-white/30">
+                        <div className="w-0 h-0 border-t-[10px] border-t-transparent border-l-[20px] border-l-gray-900 dark:border-l-white border-b-[10px] border-b-transparent ml-1"></div>
                     </div>
                 </div>
               )}
@@ -71,11 +70,11 @@ const Step = ({ step, index, isActive, t }: { step: StepItem, index: number, isA
               <div className={`text-center z-0 transition-opacity duration-500 ${isActive ? 'opacity-100' : 'opacity-50'}`}>
                   <step.icon size={48} className="mx-auto mb-4 text-indigo-400" />
                   <p className="font-bold text-lg mb-2">{step.videoPlaceholder}</p>
-                  <p className="text-xs text-gray-400">{t('howItWorks.videoSimulation')}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('howItWorks.videoSimulation')}</p>
               </div>
 
               {isActive && (
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-800">
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200 dark:bg-gray-800">
                       <motion.div 
                         initial={{ width: "0%" }}
                         animate={{ width: "100%" }}

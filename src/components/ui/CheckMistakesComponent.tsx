@@ -4159,7 +4159,7 @@ Be thorough and fair in your assessment.`
                                 key={index}
                                 className={`${
                                   part.mistakeType === 'grammar' ? 'bg-red-500/30 border-b-2 border-red-500' :
-                                  part.mistakeType === 'spelling' ? 'bg-yellow-500/30 border-b-2 border-yellow-500' :
+                                  part.mistakeType === 'spelling' ? 'bg-gradient-to-r from-fuchsia-500/25 to-cyan-400/25 border-b-2 border-cyan-400/70' :
                                   part.mistakeType === 'punctuation' ? 'bg-blue-500/30 border-b-2 border-blue-500' :
                                   'bg-indigo-500/30 border-b-2 border-indigo-500'
                                 } ${
@@ -4213,7 +4213,7 @@ Be thorough and fair in your assessment.`
                               key={index}
                               className={`${
                                 part.mistakeType === 'grammar' ? 'bg-red-500/50 border-b-2 border-red-400' :
-                                part.mistakeType === 'spelling' ? 'bg-yellow-500/50 border-b-2 border-yellow-400' :
+                                part.mistakeType === 'spelling' ? 'bg-gradient-to-r from-fuchsia-500/40 to-cyan-400/40 border-b-2 border-cyan-300/80' :
                                 part.mistakeType === 'punctuation' ? 'bg-blue-500/50 border-b-2 border-blue-400' :
                                 'bg-indigo-500/50 border-b-2 border-indigo-400'
                               } rounded px-1`}
@@ -4245,6 +4245,12 @@ Be thorough and fair in your assessment.`
                           viewBox={`0 0 ${overlayWidth} ${overlayHeight}`}
                           preserveAspectRatio="xMidYMid meet"
                         >
+                          <defs>
+                            <linearGradient id="ocrAiOverlayGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#e0c3fc" />
+<stop offset="100%" stopColor="#8EC5FC" />
+                            </linearGradient>
+                          </defs>
                           <image
                             href={documentPages[currentPage]}
                             x={0}
@@ -4262,7 +4268,7 @@ Be thorough and fair in your assessment.`
                               width={rect.width}
                               height={rect.height}
                               rx={6}
-                              fill="#FDE68A"
+                              fill="url(#ocrAiOverlayGradient)"
                               stroke="#22d3ee"
                               strokeWidth={1.2}
                               pointerEvents="none"
@@ -4332,12 +4338,12 @@ Be thorough and fair in your assessment.`
                                   const highlightX = bboxX + horizontalPadding + (range.start / totalChars) * availableWidth;
                                   const highlightWidth = Math.max(8, ((range.end - range.start) / totalChars) * availableWidth);
                                   const segmentColor = range.type === 'grammar'
-                                    ? 'rgba(239, 68, 68, 0.42)'
+                                    ? '#fecaca'
                                     : range.type === 'spelling'
-                                      ? 'rgba(245, 158, 11, 0.42)'
+                                      ? '#a5f3fc'
                                       : range.type === 'punctuation'
-                                        ? 'rgba(59, 130, 246, 0.42)'
-                                        : 'rgba(99, 102, 241, 0.42)';
+                                        ? '#bfdbfe'
+                                        : '#ddd6fe';
                                   return (
                                     <rect
                                       key={`ocr-highlight-${currentPage}-${index}-${rangeIndex}`}
@@ -4691,7 +4697,7 @@ Be thorough and fair in your assessment.`
                           }}
                           className={`rounded-xl p-4 border cursor-pointer transition-all ${
                             selectedMistakeId === mistake.id
-                              ? (variant === 'solve' ? 'border-[#8b5cf6] bg-[#8b5cf6]/10 shadow-md' : 'border-cyan-400/60 bg-cyan-500/10')
+                              ? (variant === 'solve' ? 'border-cyan-400/60 bg-gradient-to-r from-violet-500/10 via-cyan-400/10 to-sky-400/10 shadow-md' : 'border-cyan-400/70 bg-gradient-to-r from-cyan-500/15 via-blue-500/10 to-violet-500/15')
                               : (variant === 'solve' ? 'bg-[var(--surface)] border-[var(--border)] hover:border-[#8b5cf6]/60 hover:shadow-sm' : 'bg-slate-700/30 backdrop-blur-sm border-white/10 hover:border-cyan-500/30')
                           }`}
                           style={{ borderLeftWidth: 4, borderLeftColor: accentColor }}

@@ -54,6 +54,9 @@ const Footer: React.FC = () => {
                   MatrixEdu
                 </h3>
               </div>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-2 font-medium">
+                Matrix AI Company Limited
+              </p>
               <p className="text-gray-600 dark:text-gray-400 text-xs leading-relaxed max-w-sm mx-auto">
                 {t('footer.aiEducation')}
               </p>
@@ -136,6 +139,9 @@ const Footer: React.FC = () => {
                   MatrixEdu
                 </h3>
               </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 font-medium">
+                Matrix AI Company Limited
+              </p>
               <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
                 {t('footer.about')}
               </p>
@@ -218,6 +224,12 @@ const Footer: React.FC = () => {
               {t('footer.copyright')}
             </p>
             <div className="flex flex-wrap justify-center sm:justify-end gap-4 sm:gap-6 text-xs sm:text-sm">
+              <Link to="/privacy" className="text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white transition-colors duration-300">
+                Privacy Policy
+              </Link>
+              <Link to="/terms" className="text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white transition-colors duration-300">
+                Terms of Service
+              </Link>
               <Link to="/cookies" className="text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white transition-colors duration-300">
                 {t('footer.cookiePolicy')}
               </Link>
