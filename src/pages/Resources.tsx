@@ -47,7 +47,7 @@ const Resources: React.FC = () => {
   const sampleResources: Resource[] = [
     {
       id: '1',
-      title: 'University Application Guide 2024',
+      title: 'University Application Guide 2022',
       type: 'guide',
       category: 'application',
       description: 'Complete step-by-step guide for university applications including essays, recommendations, and deadlines.',
@@ -57,8 +57,8 @@ const Resources: React.FC = () => {
       tags: ['Application', 'University', 'Guide', 'Essays'],
       downloads: 2450,
       views: 5200,
-      created_at: '2024-01-15T00:00:00Z',
-      updated_at: '2024-01-15T00:00:00Z'
+      created_at: '2022-01-15T00:00:00Z',
+      updated_at: '2022-01-15T00:00:00Z'
     },
     {
       id: '2',
@@ -72,8 +72,8 @@ const Resources: React.FC = () => {
       tags: ['Study', 'Template', 'Organization', 'Planning'],
       downloads: 1890,
       views: 3400,
-      created_at: '2024-01-10T00:00:00Z',
-      updated_at: '2024-01-10T00:00:00Z'
+      created_at: '2022-01-10T00:00:00Z',
+      updated_at: '2022-01-10T00:00:00Z'
     },
     {
       id: '3',
@@ -87,8 +87,8 @@ const Resources: React.FC = () => {
       tags: ['SAT', 'Test Prep', 'Checklist', 'Exam'],
       downloads: 3200,
       views: 6800,
-      created_at: '2024-01-05T00:00:00Z',
-      updated_at: '2024-01-05T00:00:00Z'
+      created_at: '2022-01-05T00:00:00Z',
+      updated_at: '2022-01-05T00:00:00Z'
     },
     {
       id: '4',
@@ -102,8 +102,8 @@ const Resources: React.FC = () => {
       tags: ['Career', 'Workshop', 'Professional', 'Development'],
       downloads: 0,
       views: 2100,
-      created_at: '2023-12-28T00:00:00Z',
-      updated_at: '2023-12-28T00:00:00Z'
+      created_at: '2022-12-28T00:00:00Z',
+      updated_at: '2022-12-28T00:00:00Z'
     },
     {
       id: '5',
@@ -117,8 +117,8 @@ const Resources: React.FC = () => {
       tags: ['Scholarship', 'E-book', 'Application', 'Funding'],
       downloads: 1650,
       views: 4200,
-      created_at: '2023-12-20T00:00:00Z',
-      updated_at: '2023-12-20T00:00:00Z'
+      created_at: '2022-12-20T00:00:00Z',
+      updated_at: '2022-12-20T00:00:00Z'
     },
     {
       id: '6',
@@ -132,8 +132,8 @@ const Resources: React.FC = () => {
       tags: ['Study', 'Webinar', 'Techniques', 'Memory'],
       downloads: 0,
       views: 1800,
-      created_at: '2023-12-15T00:00:00Z',
-      updated_at: '2023-12-15T00:00:00Z'
+      created_at: '2022-12-15T00:00:00Z',
+      updated_at: '2022-12-15T00:00:00Z'
     }
   ];
 

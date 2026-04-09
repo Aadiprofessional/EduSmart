@@ -194,7 +194,7 @@ const CaseStudies: React.FC = () => {
           outcome: "Accepted with Full Scholarship",
           scholarship_amount: 250000,
           scholarship_currency: "USD",
-          application_year: 2023,
+          application_year: 2022,
           story_content: "Sarah's journey began at a local community college where she excelled in her pre-medical courses...",
           challenges_faced: ["Financial constraints", "Limited research opportunities"],
           strategies_used: ["Community college transfer pathway", "Research partnerships"],
@@ -207,7 +207,7 @@ const CaseStudies: React.FC = () => {
           views: 15420,
           likes: 892,
           status: "published",
-          created_at: "2023-12-01T00:00:00Z"
+          created_at: "2022-12-01T00:00:00Z"
         },
         {
           id: "2",
@@ -222,7 +222,7 @@ const CaseStudies: React.FC = () => {
           outcome: "Accepted with Research Assistantship",
           scholarship_amount: 45000,
           scholarship_currency: "USD",
-          application_year: 2023,
+          application_year: 2022,
           featured: true,
           category: "Graduate School",
           field_of_study: "Computer Science",
@@ -231,7 +231,7 @@ const CaseStudies: React.FC = () => {
           views: 12350,
           likes: 743,
           status: "published",
-          created_at: "2023-11-15T00:00:00Z"
+          created_at: "2022-11-15T00:00:00Z"
         },
         {
           id: "3",
@@ -246,7 +246,7 @@ const CaseStudies: React.FC = () => {
           outcome: "Accepted with Merit Scholarship",
           scholarship_amount: 75000,
           scholarship_currency: "USD",
-          application_year: 2023,
+          application_year: 2022,
           featured: false,
           category: "Business School",
           field_of_study: "Business Administration",
@@ -255,7 +255,7 @@ const CaseStudies: React.FC = () => {
           views: 9876,
           likes: 567,
           status: "published",
-          created_at: "2023-12-15T00:00:00Z"
+          created_at: "2022-12-15T00:00:00Z"
         }
       ]);
       // Also set mock filters if empty

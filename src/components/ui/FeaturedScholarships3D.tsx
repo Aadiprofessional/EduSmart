@@ -67,7 +67,7 @@ const FeaturedScholarships3D: React.FC = () => {
       description: t('home.featuredScholarships.samples.meritBased.description'),
       amount: 'Up to $50,000',
       recipients: '500+ Students',
-      deadline: 'March 2024',
+      deadline: 'March 2022',
       color: 'from-blue-400 to-blue-600',
       bgGradient: 'from-blue-500/10 to-blue-600/5',
       accentColor: 'blue-400'
@@ -79,7 +79,7 @@ const FeaturedScholarships3D: React.FC = () => {
       description: t('home.featuredScholarships.samples.international.description'),
       amount: 'Up to $30,000',
       recipients: '300+ Students',
-      deadline: 'April 2024',
+      deadline: 'April 2022',
       color: 'from-green-400 to-green-600',
       bgGradient: 'from-green-500/10 to-green-600/5',
       accentColor: 'green-400'
@@ -91,7 +91,7 @@ const FeaturedScholarships3D: React.FC = () => {
       description: t('home.featuredScholarships.samples.needBased.description'),
       amount: 'Up to $40,000',
       recipients: '400+ Students',
-      deadline: 'May 2024',
+      deadline: 'May 2022',
       color: 'from-purple-400 to-purple-600',
       bgGradient: 'from-purple-500/10 to-purple-600/5',
       accentColor: 'purple-400'
@@ -103,7 +103,7 @@ const FeaturedScholarships3D: React.FC = () => {
       description: t('home.featuredScholarships.samples.innovation.description'),
       amount: 'Up to $60,000',
       recipients: '200+ Students',
-      deadline: 'June 2024',
+      deadline: 'June 2022',
       color: 'from-indigo-400 to-indigo-600',
       bgGradient: 'from-indigo-500/10 to-indigo-600/5',
       accentColor: 'indigo-400'

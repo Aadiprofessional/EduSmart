@@ -1517,7 +1517,7 @@ const Database: React.FC = () => {
     acceptanceRateRange: [0, 100],
     studentPopulationRange: [0, 100000],
     facultyCountRange: [0, 10000],
-    establishedYearRange: [1800, 2024],
+    establishedYearRange: [2022, 2022],
     applicationFeeRange: [0, 500],
     campusSize: '',
     accreditation: '',
@@ -1747,7 +1747,7 @@ const Database: React.FC = () => {
               uni.country === 'india' || uni.country === 'India' ? 'Asia' :
               'Other'
             ),
-            rankingYear: uni.ranking_year || 2024,
+            rankingYear: uni.ranking_year || 2022,
             acceptanceRate: `${uni.acceptance_rate || 50}%`,
             studentPopulation: uni.student_population?.toLocaleString() || '10,000',
             researchOutput: 'High',
@@ -1960,7 +1960,7 @@ const Database: React.FC = () => {
       acceptanceRateRange: [0, 100],
       studentPopulationRange: [0, 100000],
       facultyCountRange: [0, 10000],
-      establishedYearRange: [1800, 2024],
+      establishedYearRange: [2022, 2022],
       applicationFeeRange: [0, 500],
       campusSize: '',
       accreditation: '',

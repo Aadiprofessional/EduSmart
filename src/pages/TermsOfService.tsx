@@ -76,7 +76,7 @@ To the extent allowed by law, MatrixAi limits liability for indirect or conseque
                 Legal terms for using MatrixEdu, a product operated by MatrixAi.
               </p>
               <div className="mt-8 rounded-2xl bg-gray-50 dark:bg-[#0f0f0f] border border-gray-200 dark:border-white/10 p-5 md:p-6 text-left">
-                <p className="text-gray-700 dark:text-gray-300"><span className="font-bold text-gray-900 dark:text-white">Last Updated:</span> April 8, 2026</p>
+                <p className="text-gray-700 dark:text-gray-300"><span className="font-bold text-gray-900 dark:text-white">Last Updated:</span> April 8, 2022</p>
                 <p className="text-gray-700 dark:text-gray-300 mt-2"><span className="font-bold text-gray-900 dark:text-white">Company:</span> MatrixAi</p>
                 <p className="text-gray-700 dark:text-gray-300 mt-2"><span className="font-bold text-gray-900 dark:text-white">Product:</span> MatrixEdu</p>
               </div>

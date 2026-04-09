@@ -454,6 +454,11 @@ const DocumentSummarizerComponent: React.FC<DocumentSummarizerComponentProps> = 
                 symbolSize: 8,
                 orient: 'LR',
                 roam: true,
+                zoom: 1,
+                scaleLimit: {
+                  min: 0.3,
+                  max: 4
+                },
                 initialTreeDepth: 3,
                 label: {
                   position: 'left',
@@ -497,6 +502,7 @@ const DocumentSummarizerComponent: React.FC<DocumentSummarizerComponentProps> = 
             };
             
             // Initialize the chart
+            mindmapRef.current.style.touchAction = 'none';
             mindmapChart.current = echarts.init(mindmapRef.current);
             mindmapChart.current.setOption(option);
             
@@ -2318,11 +2324,11 @@ Please provide a well-structured summary using proper markdown formatting.`
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-medium text-cyan-400">Interactive Mind Map</h3>
                     <div className="flex items-center space-x-2">
-                      <span className="text-xs text-slate-400">🖱️ Click & drag to move • 🔍 Scroll to zoom • 📍 Double-click to reset</span>
+                      <span className="text-xs text-slate-400">🤏 Pinch to zoom • 🖱️ Drag to move • 📍 Double-click to reset</span>
                     </div>
                   </div>
                 </div>
-                <div ref={mindmapRef} className="w-full h-[calc(100%-60px)] rounded-b-lg" />
+                <div ref={mindmapRef} className="w-full h-[calc(100%-60px)] rounded-b-lg" style={{ touchAction: 'none' }} />
               </div>
             ) : (summary || streamingText) ? (
               <div className="relative">
@@ -2714,13 +2720,14 @@ Please provide a well-structured summary using proper markdown formatting.`
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-medium text-cyan-400">Interactive Mind Map</h3>
                   <div className="flex items-center space-x-2">
-                    <span className="text-xs text-slate-400">🖱️ Click & drag to move • 🔍 Scroll to zoom • 📍 Double-click to reset</span>
+                    <span className="text-xs text-slate-400">🤏 Pinch to zoom • 🖱️ Drag to move • 📍 Double-click to reset</span>
                   </div>
                 </div>
               </div>
               <div 
                 ref={fullScreenView === 'mindmap' ? mindmapRef : null}
-                className="w-full h-[calc(100%-60px)] rounded-b-2xl" 
+                className="w-full h-[calc(100%-60px)] rounded-b-2xl"
+                style={{ touchAction: 'none' }}
               />
             </div>
           ) : summary ? (

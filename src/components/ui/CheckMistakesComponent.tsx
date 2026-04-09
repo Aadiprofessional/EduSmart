@@ -4159,11 +4159,11 @@ Be thorough and fair in your assessment.`
                                 key={index}
                                 className={`${
                                   part.mistakeType === 'grammar' ? 'bg-red-500/30 border-b-2 border-red-500' :
-                                  part.mistakeType === 'spelling' ? 'bg-gradient-to-r from-fuchsia-500/25 to-cyan-400/25 border-b-2 border-cyan-400/70' :
-                                  part.mistakeType === 'punctuation' ? 'bg-blue-500/30 border-b-2 border-blue-500' :
-                                  'bg-indigo-500/30 border-b-2 border-indigo-500'
+                                  part.mistakeType === 'spelling' ? 'bg-yellow-400/30 border-b-2 border-yellow-400/90' :
+                                  part.mistakeType === 'punctuation' ? 'bg-red-400/25 border-b-2 border-red-400/90' :
+                                  'bg-yellow-300/25 border-b-2 border-yellow-300/90'
                                 } ${
-                                  part.isSelected ? 'ring-2 ring-cyan-400 bg-cyan-500/20 shadow-lg animate-pulse' : ''
+                                  part.isSelected ? 'ring-2 ring-yellow-400 bg-yellow-400/20 shadow-lg animate-pulse' : ''
                                 } rounded px-1 cursor-help transition-all hover:bg-opacity-50`}
                                 title={`${part.mistakeType?.toUpperCase()}: ${part.text} → ${part.correction}`}
                                 onClick={() => {
@@ -4213,9 +4213,9 @@ Be thorough and fair in your assessment.`
                               key={index}
                               className={`${
                                 part.mistakeType === 'grammar' ? 'bg-red-500/50 border-b-2 border-red-400' :
-                                part.mistakeType === 'spelling' ? 'bg-gradient-to-r from-fuchsia-500/40 to-cyan-400/40 border-b-2 border-cyan-300/80' :
-                                part.mistakeType === 'punctuation' ? 'bg-blue-500/50 border-b-2 border-blue-400' :
-                                'bg-indigo-500/50 border-b-2 border-indigo-400'
+                                part.mistakeType === 'spelling' ? 'bg-yellow-400/45 border-b-2 border-yellow-300/90' :
+                                part.mistakeType === 'punctuation' ? 'bg-red-400/40 border-b-2 border-red-300/90' :
+                                'bg-yellow-300/40 border-b-2 border-yellow-300/90'
                               } rounded px-1`}
                             >
                               {part.text}
@@ -4340,10 +4340,10 @@ Be thorough and fair in your assessment.`
                                   const segmentColor = range.type === 'grammar'
                                     ? '#fecaca'
                                     : range.type === 'spelling'
-                                      ? '#a5f3fc'
+                                      ? '#fde68a'
                                       : range.type === 'punctuation'
-                                        ? '#bfdbfe'
-                                        : '#ddd6fe';
+                                        ? '#fca5a5'
+                                        : '#fef08a';
                                   return (
                                     <rect
                                       key={`ocr-highlight-${currentPage}-${index}-${rangeIndex}`}

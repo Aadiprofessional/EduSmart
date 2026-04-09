@@ -49,7 +49,7 @@ const BlogSection: React.FC = () => {
       title: 'How AI Is Revolutionizing University Selection Process',
       excerpt: 'Discover how artificial intelligence algorithms are helping students find their perfect university match with unprecedented accuracy.',
       author: { name: 'Dr. James Wilson', avatar_url: undefined },
-      created_at: '2024-05-15T00:00:00Z',
+      created_at: '2022-05-15T00:00:00Z',
       category: 'Technology',
       tags: ['AI', 'University', 'Technology'],
       image: 'https://images.unsplash.com/photo-1593642532744-d377ab507dc8?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
@@ -62,7 +62,7 @@ const BlogSection: React.FC = () => {
       title: '5 Success Stories: From Rejection to Top University Admission',
       excerpt: 'Read inspiring case studies of students who overcame initial rejections and secured spots at prestigious universities worldwide.',
       author: { name: 'Emily Parker', avatar_url: undefined },
-      created_at: '2024-05-10T00:00:00Z',
+      created_at: '2022-05-10T00:00:00Z',
       category: 'Success Stories',
       tags: ['Success', 'University', 'Admission'],
       image: 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
@@ -72,10 +72,10 @@ const BlogSection: React.FC = () => {
     },
     {
       id: '3',
-      title: 'International Scholarship Guide: Hidden Opportunities for 2025',
+      title: 'International Scholarship Guide: Hidden Opportunities for 2022',
       excerpt: 'Uncover lesser-known scholarship programs and funding sources for international students planning to study abroad.',
       author: { name: 'Michael Thompson', avatar_url: undefined },
-      created_at: '2024-05-05T00:00:00Z',
+      created_at: '2022-05-05T00:00:00Z',
       category: 'Scholarships',
       tags: ['Scholarships', 'International', 'Funding'],
       image: 'https://images.unsplash.com/photo-1532649538693-f3a2ec1bf8bd?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
@@ -89,7 +89,7 @@ const BlogSection: React.FC = () => {
   const sampleResources: Resource[] = [
     {
       id: '1',
-      title: 'University Application Guide 2024',
+      title: 'University Application Guide 2022',
       type: 'guide',
       category: 'application',
       description: 'Complete step-by-step guide for university applications including essays, recommendations, and deadlines.',
@@ -98,7 +98,7 @@ const BlogSection: React.FC = () => {
       tags: ['Application', 'University', 'Guide'],
       downloads: 2450,
       views: 5200,
-      created_at: '2024-01-15T00:00:00Z'
+      created_at: '2022-01-15T00:00:00Z'
     },
     {
       id: '2',
@@ -111,7 +111,7 @@ const BlogSection: React.FC = () => {
       tags: ['SAT', 'Test Prep', 'Checklist'],
       downloads: 3200,
       views: 6800,
-      created_at: '2024-01-05T00:00:00Z'
+      created_at: '2022-01-05T00:00:00Z'
     },
     {
       id: '3',
@@ -124,7 +124,7 @@ const BlogSection: React.FC = () => {
       tags: ['Scholarship', 'E-book', 'Application'],
       downloads: 1650,
       views: 4200,
-      created_at: '2023-12-20T00:00:00Z'
+      created_at: '2022-12-20T00:00:00Z'
     }
   ];
 

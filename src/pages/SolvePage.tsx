@@ -583,7 +583,7 @@ const SolvePage: React.FC = () => {
       };
 
       const userId = user?.id || '0a147ebe-af99-481b-bcaf-ae70c9aeb8d8'; // Use authenticated user ID or fallback
-      const timestamp = new Date().toISOString().replace('T', ' ').replace('Z', ''); // Format: "2026-01-31 01:22:57.175"
+      const timestamp = new Date().toISOString().replace('T', ' ').replace('Z', ''); // Format: "2022-01-31 01:22:57.175"
 
       try {
         let currentFileUrl: string | undefined = undefined;
@@ -1002,16 +1002,16 @@ const SolvePage: React.FC = () => {
              </div>
            ) : (
              /* Chat State */
-             <div className="flex-1 flex flex-col h-full w-full max-w-5xl mx-auto px-6 pt-20 pb-6 relative">
+            <div className="flex-1 flex flex-col h-full w-full max-w-5xl mx-auto px-4 sm:px-6 pt-20 pb-6 relative overflow-x-hidden">
                 
                 {/* Messages Area */}
                 <div 
                   ref={messagesContainerRef}
-                  className="flex-1 overflow-y-auto pb-32 pr-2 custom-scrollbar"
+                  className="flex-1 overflow-y-auto overflow-x-hidden pb-32 pr-2 custom-scrollbar"
                 >
                   {messages.map((msg) => (
                     <div key={msg.id} className={`mb-8 flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[80%] ${msg.type === 'user' ? 'flex flex-col items-end' : 'w-full'}`}>
+                      <div className={`${msg.type === 'user' ? 'max-w-[80%] flex flex-col items-end' : 'max-w-[95%] sm:max-w-[92%] w-full'}`}>
                         
                         {/* Attachment (User) */}
                         {msg.type === 'user' && msg.attachment && (
@@ -1061,7 +1061,7 @@ const SolvePage: React.FC = () => {
                           )}
                           
                           {msg.type === 'ai' ? (
-                            <div className="w-full">
+                            <div className="w-full break-words">
                               {!msg.content && isProcessing && msg.id === messages[messages.length-1].id ? (
                                 <div className="flex space-x-2 items-center h-6 px-2">
                                   <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
@@ -1070,7 +1070,7 @@ const SolvePage: React.FC = () => {
                                 </div>
                               ) : (
                                 <>
-                                <div className="prose dark:prose-invert max-w-none text-gray-900 dark:text-gray-200 text-left">
+                                <div className="prose dark:prose-invert max-w-full text-gray-900 dark:text-gray-200 text-left break-words overflow-x-hidden [&_.katex-display]:max-w-full [&_.katex-display]:overflow-x-auto [&_.katex-display]:overflow-y-hidden">
                                     <ReactMarkdown 
                                       remarkPlugins={[remarkGfm, remarkMath]}
                                       rehypePlugins={[rehypeRaw, rehypeKatex]}
@@ -1102,7 +1102,9 @@ const SolvePage: React.FC = () => {
                                                     {children}
                                                 </code>
                                             );
-                                        }
+                                        },
+                                        pre: ({node, ...props}) => <pre className="max-w-full overflow-x-auto rounded-lg p-3 bg-gray-100 dark:bg-gray-900" {...props} />,
+                                        img: ({node, ...props}) => <img className="max-w-full h-auto rounded-lg" {...props} />
                                       }}
                                     >
                                       {preprocessMath(msg.content)}

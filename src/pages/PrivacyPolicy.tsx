@@ -84,7 +84,7 @@ Please send the request from your registered email address. We process deletion 
                 MatrixEdu respects your privacy and explains in clear language how data is used.
               </p>
               <div className="mt-8 rounded-2xl bg-gray-50 dark:bg-[#0f0f0f] border border-gray-200 dark:border-white/10 p-5 md:p-6 text-left">
-                <p className="text-gray-700 dark:text-gray-300"><span className="font-bold text-gray-900 dark:text-white">Last Updated:</span> April 8, 2026</p>
+                <p className="text-gray-700 dark:text-gray-300"><span className="font-bold text-gray-900 dark:text-white">Last Updated:</span> April 8, 2022</p>
                 <p className="text-gray-700 dark:text-gray-300 mt-2"><span className="font-bold text-gray-900 dark:text-white">Contact:</span> support@matrixaiglobal.com</p>
               </div>
             </motion.div>

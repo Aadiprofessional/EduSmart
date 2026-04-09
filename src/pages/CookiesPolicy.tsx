@@ -360,7 +360,7 @@ Contact Information:
             className="bg-white/10 backdrop-blur-sm rounded-xl p-6 max-w-4xl mx-auto border border-white/20"
           >
             <p className="text-gray-300 mb-4">
-              <strong className="text-white">Last Updated:</strong> December 2024
+              <strong className="text-white">Last Updated:</strong> December 2022
             </p>
             <p className="text-gray-300 mb-4">
               <strong className="text-white">Cookie Controller:</strong> MatrixAi Global Limited (Hong Kong)

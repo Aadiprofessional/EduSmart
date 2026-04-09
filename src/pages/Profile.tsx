@@ -786,13 +786,13 @@ const Profile: React.FC = () => {
                         </label>
                         <input
                           type="number"
-                          min="2024"
-                          max="2030"
+                          min="2022"
+                          max="2022"
                           value={profile.graduation_year}
                           onChange={(e) => handleInputChange('graduation_year', e.target.value)}
                           disabled={!isEditing}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100"
-                          placeholder="2025"
+                          placeholder="2022"
                         />
                       </div>
                       <div>

@@ -293,10 +293,12 @@ const StudyMindmap: React.FC = () => {
 
     const chartInstanceRef = useRef<echarts.ECharts | null>(null);
     const currentZoom = useRef(1);
+    const clampZoom = (zoom: number) => Math.min(4, Math.max(0.3, zoom));
 
     useEffect(() => {
         if (chartRef.current && !isGenerating && !loading) {
-            const chartInstance = echarts.init(chartRef.current, undefined, { renderer: 'svg' });
+            chartRef.current.style.touchAction = 'none';
+            const chartInstance = echarts.init(chartRef.current, undefined, { renderer: 'canvas' });
             chartInstanceRef.current = chartInstance;
             const isDark = document.documentElement.classList.contains('dark');
             
@@ -322,6 +324,11 @@ const StudyMindmap: React.FC = () => {
                     {
                         type: 'tree',
                         roam: true,
+                        zoom: currentZoom.current,
+                        scaleLimit: {
+                            min: 0.3,
+                            max: 4
+                        },
                         orient: 'LR',
                         data: chartData,
                         top: '4%',
@@ -583,9 +590,9 @@ const StudyMindmap: React.FC = () => {
     const handleZoom = (type: 'in' | 'out') => {
         if (!chartInstanceRef.current) return;
         
-        const newZoom = type === 'in' 
+        const newZoom = clampZoom(type === 'in' 
             ? currentZoom.current * 1.2 
-            : currentZoom.current / 1.2;
+            : currentZoom.current / 1.2);
             
         currentZoom.current = newZoom;
         
@@ -621,7 +628,7 @@ const StudyMindmap: React.FC = () => {
                 </button>
             </div>
 
-            <div className="flex-1 w-full h-full" ref={chartRef}></div>
+            <div className="flex-1 w-full h-full" style={{ touchAction: 'none' }} ref={chartRef}></div>
             
             {showInfo && (
                 <div className="absolute bottom-8 left-8 p-4 bg-white/80 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-white/10 max-w-sm shadow-lg relative">

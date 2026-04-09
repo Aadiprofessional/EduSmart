@@ -25,7 +25,7 @@ const UpcomingEvents: React.FC = () => {
       title: 'Study Abroad Cost Calculator',
       description: 'Estimate your total expenses, including tuition, living costs, and travel, based on your destination and lifestyle preferences.',
       status: 'In Progress',
-      release: 'Q3 2025',
+      release: 'Q3 2022',
       icon: <IconComponent icon={FaMoneyBillWave} className="text-indigo-500 text-5xl" />,
       link: '/features/cost-calculator',
       image: 'https://images.unsplash.com/photo-1564939558297-fc396f18e5c7?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'
@@ -45,7 +45,7 @@ const UpcomingEvents: React.FC = () => {
       title: 'AI-Generated Study Plan',
       description: 'Receive a personalized study plan based on your target universities, application deadlines, and preparation timeline.',
       status: 'Beta Testing',
-      release: 'Early 2026',
+      release: 'Early 2022',
       icon: <IconComponent icon={FaCalendarCheck} className="text-indigo-500 text-5xl" />,
       link: '/features/study-plan',
       image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'
