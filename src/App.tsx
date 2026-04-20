@@ -62,6 +62,8 @@ import { AppDataProvider } from './utils/AppDataContext';
 import { UserProvider } from './contexts/UserContext';
 import { ErrorProvider } from './contexts/ErrorContext';
 import CursorTrail from './components/ui/CursorTrail';
+import { AdRewardProvider } from './utils/AdRewardContext';
+import AdPromptToast from './components/ads/AdPromptToast';
 
 function App() {
   // Enable smooth scrolling across the app
@@ -83,9 +85,13 @@ function App() {
                           v7_relativeSplatPath: true,
                         }}
                       >
+                        <AdRewardProvider>
                         <div className="App dark:bg-[#111111] bg-gray-50 min-h-screen text-gray-900 dark:text-white transition-colors duration-200">
                           {/* Global Error Notification */}
                           <ErrorNotification />
+
+                          {/* Lite Mode ad prompt toast */}
+                          <AdPromptToast />
                           
                           {/* Global Magnetic Cursor - Commented out for cleaner UI like matrixedu.ai */}
                           {/* <CursorTrail/> */}
@@ -207,6 +213,7 @@ function App() {
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                         </div>
+                        </AdRewardProvider>
                       </Router>
                     </AppDataProvider>
                   </NotificationProvider>

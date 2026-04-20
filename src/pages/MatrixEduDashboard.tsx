@@ -11,6 +11,8 @@ import { supabase } from '../utils/supabase';
 import { StudySet } from '../components/dashboard/StudySetCard';
 import { useLanguage } from '../utils/LanguageContext';
 import { useResponseCheck, ResponseUpgradeModal } from '../utils/responseChecker';
+import CoinPanel from '../components/ads/CoinPanel';
+import AdBanner from '../components/ads/AdBanner';
 
 const MatrixEduDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -544,6 +546,11 @@ const MatrixEduDashboard: React.FC = () => {
                     <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 px-4">{t('matrixDashboard.heroSubtitle')}</p>
                 </div>
 
+                {/* Inline coin panel for lite mode */}
+                <div className="mb-4 flex justify-center">
+                  <CoinPanel variant="inline" onUpgradeClick={() => navigate('/pricing')} />
+                </div>
+
                 {/* Expanded Action Cards */}
                 <div className={`transition-all duration-300 ${isScrolled ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100 h-auto'}`}>
                     <ActionCards 
@@ -553,6 +560,11 @@ const MatrixEduDashboard: React.FC = () => {
                        isCompact={false}
                     />
                 </div>
+            </div>
+
+            {/* AdSense leaderboard between hero and study sets */}
+            <div className="px-4 md:px-8 lg:px-12 mb-6">
+              <AdBanner size="responsive" />
             </div>
 
             {/* Scrollable Study Sets Section */}

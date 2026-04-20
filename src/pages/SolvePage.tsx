@@ -15,6 +15,7 @@ import 'katex/dist/katex.min.css'; // Ensure katex CSS is imported for math rend
 import coinIcon from '../assets/assets_coin.png';
 import { useLanguage } from '../utils/LanguageContext';
 import { useResponseCheck, ResponseUpgradeModal } from '../utils/responseChecker';
+import AdBanner from '../components/ads/AdBanner';
 
 // Type definitions for PDF.js
 interface PDFPageProxy {
@@ -894,8 +895,11 @@ const SolvePage: React.FC = () => {
                <div className="max-w-3xl w-full flex flex-col items-center">
                    
                    {/* Header Section */}
-                  <div className="w-full flex justify-center items-center mb-16 px-4">
+                  <div className="w-full flex flex-col items-center mb-12 px-4 gap-4">
                       <h1 className="text-4xl font-bold text-center mt-2 tracking-tight">{t('solvePage.whatDoYouWantToSolve')}</h1>
+                      <div className="w-full max-w-2xl">
+                        <AdBanner size="responsive" />
+                      </div>
                    </div>
 
                    {/* Subject Pills */}

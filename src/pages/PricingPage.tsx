@@ -8,6 +8,8 @@ import { subscriptionAPI, SubscriptionPlan } from '../utils/subscriptionAPI';
 import { Header } from '../components/layout';
 import { Skeleton } from '../components/ui/Skeleton';
 import { useLanguage } from '../utils/LanguageContext';
+import AdBanner from '../components/ads/AdBanner';
+import { useAdReward } from '../utils/AdRewardContext';
 
 // Floating Particle Component
 const FloatingParticle = ({ delay = 0, size = 4, color = "bg-white" }: { delay?: number, size?: number, color?: string }) => (
@@ -364,7 +366,92 @@ const PricingPage: React.FC = () => {
             ))}
           </div>
         </div>
+
+        {/* ── Lite Mode Section ─────────────────────────────────────── */}
+        <LiteModeSection navigate={navigate} />
+
+        {/* ── AdSense Banner ─────────────────────────────────────── */}
+        <div className="flex justify-center my-8 px-4">
+          <AdBanner size="leaderboard" className="mx-auto" />
+        </div>
+
       </main>
+    </div>
+  );
+};
+
+// ── Lite Mode card extracted so it can use the hook ──────────────────────────
+const LiteModeSection: React.FC<{ navigate: (path: string) => void }> = ({ navigate }) => {
+  let isLiteMode = false;
+  let currentCoins = 0;
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const ctx = useAdReward();
+    isLiteMode = ctx.isLiteMode;
+    currentCoins = ctx.currentCoins;
+  } catch {
+    // Not inside AdRewardProvider — skip
+  }
+
+  return (
+    <div className="mt-16 mb-8 max-w-4xl mx-auto">
+      <div className="relative rounded-2xl border border-yellow-500/30 bg-gradient-to-br from-yellow-500/5 to-orange-500/5 p-8 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(234,179,8,0.08),transparent_60%)]" />
+        <div className="relative">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
+            <div className="w-12 h-12 rounded-xl bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
+              <span className="text-2xl">🆓</span>
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                Lite Mode — Free Access
+                {isLiteMode && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 border border-yellow-500/40 text-yellow-300 font-normal">
+                    Your current plan
+                  </span>
+                )}
+              </h2>
+              <p className="text-gray-400 mt-1">
+                All Pro features, earned through watching short ads. No credit card needed.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-3 gap-4 mb-6">
+            {[
+              { icon: '🪙', title: 'Earn Coins', desc: 'Watch 3 short ads to earn 1 coin' },
+              { icon: '🧠', title: 'All Pro Features', desc: 'Flashcards, AI tutor, summariser & more' },
+              { icon: '📈', title: 'Upgrade Anytime', desc: 'Switch to Paid Pro to skip ads' },
+            ].map((item) => (
+              <div key={item.title} className="rounded-xl bg-white/5 border border-white/10 p-4">
+                <div className="text-2xl mb-2">{item.icon}</div>
+                <p className="text-white font-semibold text-sm">{item.title}</p>
+                <p className="text-gray-400 text-xs mt-0.5">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {isLiteMode ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-1.5 bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-3 py-2">
+                <span className="text-lg">🪙</span>
+                <span className="text-yellow-300 font-bold">{currentCoins} coins</span>
+              </div>
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="px-5 py-2 rounded-lg bg-gradient-to-r from-yellow-400 to-orange-400 text-black font-bold text-sm hover:opacity-90 transition-all"
+              >
+                Go to Dashboard
+              </button>
+            </div>
+          ) : (
+            <p className="text-gray-500 text-sm">
+              Lite Mode is automatically activated when you sign in without a paid plan.
+              <span className="text-yellow-400 ml-1">Sign up free →</span>
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

@@ -19,10 +19,10 @@ import {
 } from 'react-icons/fa';
 import { useAuth } from '../../utils/AuthContext';
 import { useLanguage } from '../../utils/LanguageContext';
-
 import { useTheme } from '../../utils/ThemeContext';
-
 import matrixLogo from '../../assets/matrixedu.png';
+import CoinPanel from '../ads/CoinPanel';
+import SubscriptionBadge from '../ads/SubscriptionBadge';
 
 interface SidebarLeftProps {
   className?: string;
@@ -127,6 +127,9 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
 
           {/* Bottom Controls */}
           <div className="space-y-4 overflow-hidden whitespace-nowrap">
+            {/* Coin Panel — shown for Lite Mode users */}
+            <CoinPanel variant="sidebar" onUpgradeClick={() => navigate('/pricing')} />
+
             {/* Theme Toggle */}
             <div className="bg-gray-100 dark:bg-[#1a1a1a] p-1 rounded-lg flex justify-between border border-gray-200 dark:border-white/5">
                 <button 
@@ -176,6 +179,7 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
                 </div>
                 <div className="flex-1 overflow-hidden">
                   <p className="text-sm font-medium truncate text-gray-900 dark:text-white">{user?.email?.split('@')[0] || t('sidebar.user')}</p>
+                  <SubscriptionBadge className="mt-0.5" />
                 </div>
                 {isMenuOpen ? <FaChevronUp size={12} className="text-gray-500 flex-shrink-0" /> : <FaChevronDown size={12} className="text-gray-500 flex-shrink-0" />}
             </div>

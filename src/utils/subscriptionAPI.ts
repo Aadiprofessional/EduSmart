@@ -176,14 +176,31 @@ export interface UsageLog {
   created_at: string;
 }
 
+export interface AdRewardConfig {
+  coinsPerAd: number;
+  cooldownSeconds: number;
+  dailyCapAds: number;
+  dailyCapCoins: number;
+}
+
 export interface SubscriptionStatus {
   hasActiveSubscription: boolean;
   isPro: boolean;
+  isLiteMode?: boolean;
+  mode?: 'lite' | 'pro';
   subscription: UserSubscription | null;
   addons: UserAddon[];
   responsesRemaining: number;
   totalResponses: number;
   current_coins?: number;
+  adReward?: AdRewardConfig;
+}
+
+export interface AdRewardResponse {
+  current_coins: number;
+  daily_ads_remaining: number;
+  daily_coins_remaining: number;
+  coins_earned: number;
 }
 
 // Subscription API functions
@@ -383,6 +400,21 @@ export const subscriptionAPI = {
 
   getUsageLogs: async (page: number = 1, limit: number = 10, session?: Session | null): Promise<{ success: boolean; data?: { logs: UsageLog[]; pagination: any }; error?: string }> => {
     return apiCall('GET', `/api/subscriptions/usage-logs?page=${page}&limit=${limit}`, null, session);
+  },
+
+  rewardAd: async (
+    adEventId?: string,
+    adProvider?: string,
+    metadata?: object,
+    session?: Session | null
+  ): Promise<{ success: boolean; data?: AdRewardResponse; error?: string; status?: number }> => {
+    const body: Record<string, any> = {
+      watched_at: new Date().toISOString()
+    };
+    if (adEventId) body.ad_event_id = adEventId;
+    if (adProvider) body.ad_provider = adProvider;
+    if (metadata) body.metadata = metadata;
+    return apiCall('POST', '/api/subscriptions/ads/reward', body, session);
   }
 };
 

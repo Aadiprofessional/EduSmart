@@ -1161,7 +1161,7 @@ const GradePage: React.FC = () => {
               >
                 {messages.map((msg) => (
                   <div key={msg.id} className={`mb-8 flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[80%] ${msg.type === 'user' ? 'flex flex-col items-end' : 'w-full'}`}>
+                    <div className={`${msg.type === 'user' ? 'max-w-[80%] flex flex-col items-end' : 'w-full max-w-full'}`}>
                       
                       {/* Attachment (User) */}
                       {msg.type === 'user' && msg.attachment && (

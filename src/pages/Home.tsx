@@ -12,6 +12,7 @@ import { useLanguage } from '../utils/LanguageContext';
 import { ModelPositionProvider, useModelPosition } from '../utils/ModelPositionContext';
 import { useAuth } from '../utils/AuthContext';
 import MatrixEduLanding from '../components/ui/MatrixEduLanding';
+import AdBanner from '../components/ads/AdBanner';
 
 // Our Impact Section Component
 const OurImpactSection: React.FC = () => {
@@ -266,6 +267,9 @@ const Home: React.FC = () => {
   return (
     <ModelPositionProvider>
       <MatrixEduLanding />
+      <div className="flex justify-center px-4 py-6 bg-black">
+        <AdBanner size="leaderboard" className="mx-auto" />
+      </div>
       <Footer />
     </ModelPositionProvider>
   );
