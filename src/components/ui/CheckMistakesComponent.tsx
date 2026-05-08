@@ -3925,125 +3925,106 @@ Be thorough and fair in your assessment.`
   // After file upload, show split view with document on left and mistakes on right
   return (
     <div className={`mistake-checker-premium ${className || ''} lg:h-full lg:min-h-0 lg:flex lg:flex-col lg:overflow-hidden`}>
-      {overallProcessingComplete && (
-        <motion.div
-          className="mistake-checker-results-intro"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, ease: 'easeOut' }}
-        >
-          <div className="flex items-center gap-2 text-[var(--text-primary)]">
-            <IconComponent icon={AiOutlineCheckCircle} className="h-5 w-5 text-[var(--success)]" />
-            <h2 className="text-base font-semibold tracking-wide" style={{ fontFamily: '"DM Sans", sans-serif' }}>
-              Analysis Complete
-            </h2>
-          </div>
-          <div className="mistake-checker-summary-bar">
-            <span className="mistake-checker-summary-total">{totalMistakesCount} total</span>
-            <span className="mistake-checker-tag grammar">Grammar {grammarCount}</span>
-            <span className="mistake-checker-tag spelling">Spelling {spellingCount}</span>
-            <span className="mistake-checker-tag style">Style {styleCount}</span>
-          </div>
-        </motion.div>
-      )}
-      <div className="mb-6 lg:flex-shrink-0">
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`rounded-2xl border p-4 lg:p-5 ${
-            variant === 'solve'
-              ? 'bg-white dark:bg-[#151518] border-gray-200 dark:border-white/10'
-              : 'bg-gradient-to-br from-slate-700/40 via-slate-800/40 to-slate-900/40 backdrop-blur-sm border-white/10'
-          }`}
-        >
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      {/* ── Compact single-row header ─────────────────────────────── */}
+      <div className={`mb-3 lg:flex-shrink-0 rounded-2xl border px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2 ${
+        variant === 'solve'
+          ? 'bg-white dark:bg-[#151518] border-gray-200 dark:border-white/10'
+          : 'bg-gradient-to-br from-slate-700/40 via-slate-800/40 to-slate-900/40 backdrop-blur-sm border-white/10'
+      }`}>
+        {/* Left: status + counts + filename */}
+        <div className="flex items-center gap-3 flex-1 min-w-0 flex-wrap">
+          {overallProcessingComplete && (
+            <div className="flex items-center gap-1.5 text-[var(--text-primary)] shrink-0">
+              <IconComponent icon={AiOutlineCheckCircle} className="h-4 w-4 text-[var(--success)]" />
+              <span className="text-sm font-semibold whitespace-nowrap">Analysis Complete</span>
+            </div>
+          )}
+          {overallProcessingComplete && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className={`text-xs ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>{totalMistakesCount} total</span>
+              <span className="mistake-checker-tag grammar">Grammar {grammarCount}</span>
+              <span className="mistake-checker-tag spelling">Spelling {spellingCount}</span>
+              <span className="mistake-checker-tag style">Style {styleCount}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-2 min-w-0">
             <div className="min-w-0">
-              <p className={`text-xs uppercase tracking-[0.16em] mb-1 ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-cyan-300/80'}`}>Analysis Workspace</p>
-              <h3 className={`text-base lg:text-lg font-semibold truncate ${variant === 'solve' ? 'text-gray-900 dark:text-white' : 'text-white'}`}>
+              <span className={`text-xs uppercase tracking-widest mr-1 ${variant === 'solve' ? 'text-gray-400 dark:text-gray-500' : 'text-cyan-300/60'}`}>Workspace</span>
+              <span className={`text-sm font-semibold truncate ${variant === 'solve' ? 'text-gray-900 dark:text-white' : 'text-white'}`}>
                 {file?.name || 'Uploaded document'}
-              </h3>
-              <p className={`text-xs mt-1 ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-300'}`}>
-                Language: {selectedLanguageLabel}
-              </p>
+              </span>
             </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              {documentPages.length > 1 && (
-                <div className={`flex items-center rounded-xl px-2 py-1 border ${
-                  variant === 'solve' ? 'bg-gray-50 dark:bg-[#1f1f22] border-gray-200 dark:border-white/10' : 'bg-slate-900/50 border-white/10'
-                }`}>
-                  <button
-                    className={`p-1.5 rounded-lg disabled:opacity-50 ${
-                      variant === 'solve' ? 'hover:bg-gray-200 dark:hover:bg-[#2a2a2f] text-gray-700 dark:text-gray-200' : 'hover:bg-cyan-500/20 text-cyan-300'
-                    }`}
-                    disabled={currentPage === 0}
-                    onClick={() => setCurrentPage(prev => prev - 1)}
-                  >
-                    <IconComponent icon={AiOutlineLeft} className="h-3 w-3" />
-                  </button>
-                  <span className={`text-xs font-medium px-2 ${variant === 'solve' ? 'text-gray-700 dark:text-gray-300' : 'text-slate-200'}`}>
-                    {currentPage + 1}/{documentPages.length}
-                  </span>
-                  <button
-                    className={`p-1.5 rounded-lg disabled:opacity-50 ${
-                      variant === 'solve' ? 'hover:bg-gray-200 dark:hover:bg-[#2a2a2f] text-gray-700 dark:text-gray-200' : 'hover:bg-cyan-500/20 text-cyan-300'
-                    }`}
-                    disabled={currentPage === documentPages.length - 1}
-                    onClick={() => setCurrentPage(prev => prev + 1)}
-                  >
-                    <IconComponent icon={AiOutlineRight} className="h-3 w-3" />
-                  </button>
-                </div>
-              )}
-
-              <motion.button
-                onClick={() => setShowFileViewModal(true)}
-                className={`flex items-center px-3 py-2 rounded-xl border text-sm ${
-                  variant === 'solve'
-                    ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
-                    : 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border-blue-500/30'
-                }`}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <IconComponent icon={AiOutlineFileText} className="h-4 w-4 mr-1.5" />
-                View
-              </motion.button>
-
-              {pageMistakes.some(pm => pm.mistakes.length > 0) && (
-                <motion.button
-                  onClick={applyAutoCorrect}
-                  className={`flex items-center px-3 py-2 rounded-xl border text-sm ${
-                    variant === 'solve'
-                      ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
-                      : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/30'
-                  }`}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <IconComponent icon={AiOutlineCheckCircle} className="h-4 w-4 mr-1.5" />
-                  Correct
-                </motion.button>
-              )}
-
-              {markingSummary && overallProcessingComplete && (
-                <motion.button
-                  onClick={() => setShowReportModal(true)}
-                  className={`flex items-center px-3 py-2 rounded-xl border text-sm ${
-                    variant === 'solve'
-                      ? 'bg-[#8b5cf6] hover:bg-[#7c3aed] text-white border-transparent'
-                      : 'bg-gradient-to-r from-purple-500/30 to-pink-500/30 hover:from-purple-500/40 hover:to-pink-500/40 text-white border-purple-500/30'
-                  }`}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <IconComponent icon={AiOutlineFileText} className="h-4 w-4 mr-1.5" />
-                  Report
-                </motion.button>
-              )}
-            </div>
+            <span className={`text-xs shrink-0 ${variant === 'solve' ? 'text-gray-400 dark:text-gray-500' : 'text-slate-400'}`}>· {selectedLanguageLabel}</span>
           </div>
-        </motion.div>
+          {/* Page navigation */}
+          {documentPages.length > 1 && (
+            <div className={`flex items-center rounded-lg px-1.5 py-0.5 border ${
+              variant === 'solve' ? 'bg-gray-50 dark:bg-[#1f1f22] border-gray-200 dark:border-white/10' : 'bg-slate-900/50 border-white/10'
+            }`}>
+              <button
+                className={`p-1 rounded disabled:opacity-50 ${variant === 'solve' ? 'hover:bg-gray-200 dark:hover:bg-[#2a2a2f] text-gray-700 dark:text-gray-200' : 'hover:bg-cyan-500/20 text-cyan-300'}`}
+                disabled={currentPage === 0}
+                onClick={() => setCurrentPage(prev => prev - 1)}
+              >
+                <IconComponent icon={AiOutlineLeft} className="h-3 w-3" />
+              </button>
+              <span className={`text-xs font-medium px-1.5 ${variant === 'solve' ? 'text-gray-700 dark:text-gray-300' : 'text-slate-200'}`}>
+                {currentPage + 1}/{documentPages.length}
+              </span>
+              <button
+                className={`p-1 rounded disabled:opacity-50 ${variant === 'solve' ? 'hover:bg-gray-200 dark:hover:bg-[#2a2a2f] text-gray-700 dark:text-gray-200' : 'hover:bg-cyan-500/20 text-cyan-300'}`}
+                disabled={currentPage === documentPages.length - 1}
+                onClick={() => setCurrentPage(prev => prev + 1)}
+              >
+                <IconComponent icon={AiOutlineRight} className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Right: action buttons */}
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          <motion.button
+            onClick={() => setShowFileViewModal(true)}
+            className={`flex items-center px-2.5 py-1.5 rounded-lg border text-xs ${
+              variant === 'solve'
+                ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
+                : 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border-blue-500/30'
+            }`}
+            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+          >
+            <IconComponent icon={AiOutlineFileText} className="h-3.5 w-3.5 mr-1" />
+            View
+          </motion.button>
+          {pageMistakes.some(pm => pm.mistakes.length > 0) && (
+            <motion.button
+              onClick={applyAutoCorrect}
+              className={`flex items-center px-2.5 py-1.5 rounded-lg border text-xs ${
+                variant === 'solve'
+                  ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
+                  : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/30'
+              }`}
+              whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+            >
+              <IconComponent icon={AiOutlineCheckCircle} className="h-3.5 w-3.5 mr-1" />
+              Correct
+            </motion.button>
+          )}
+          {markingSummary && overallProcessingComplete && (
+            <motion.button
+              onClick={() => setShowReportModal(true)}
+              className={`flex items-center px-2.5 py-1.5 rounded-lg border text-xs ${
+                variant === 'solve'
+                  ? 'bg-[#8b5cf6] hover:bg-[#7c3aed] text-white border-transparent'
+                  : 'bg-gradient-to-r from-purple-500/30 to-pink-500/30 hover:from-purple-500/40 hover:to-pink-500/40 text-white border-purple-500/30'
+              }`}
+              whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+            >
+              <IconComponent icon={AiOutlineFileText} className="h-3.5 w-3.5 mr-1" />
+              Report
+            </motion.button>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-col gap-6 lg:flex-1 lg:min-h-0 lg:grid lg:grid-cols-2 lg:overflow-hidden">
@@ -4245,12 +4226,6 @@ Be thorough and fair in your assessment.`
                           viewBox={`0 0 ${overlayWidth} ${overlayHeight}`}
                           preserveAspectRatio="xMidYMid meet"
                         >
-                          <defs>
-                            <linearGradient id="ocrAiOverlayGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#e0c3fc" />
-<stop offset="100%" stopColor="#8EC5FC" />
-                            </linearGradient>
-                          </defs>
                           <image
                             href={documentPages[currentPage]}
                             x={0}
@@ -4258,22 +4233,7 @@ Be thorough and fair in your assessment.`
                             width={overlayWidth}
                             height={overlayHeight}
                             preserveAspectRatio="none"
-                            opacity={0.95}
                           />
-                          {mergedOverlayRects.map((rect, idx) => (
-                            <rect
-                              key={`ocr-merged-container-${currentPage}-${idx}`}
-                              x={rect.x}
-                              y={rect.y}
-                              width={rect.width}
-                              height={rect.height}
-                              rx={6}
-                              fill="url(#ocrAiOverlayGradient)"
-                              stroke="#22d3ee"
-                              strokeWidth={1.2}
-                              pointerEvents="none"
-                            />
-                          ))}
                           {currentOcrOverlay!.results.map((line, index) => {
                             const polygon = Array.isArray(line.polygon) ? line.polygon : [];
                             const xValues = polygon.map((point) => point[0]).filter((value) => Number.isFinite(value));
@@ -4298,11 +4258,6 @@ Be thorough and fair in your assessment.`
                             const matchedMistakeId = highlight.matchedMistakeId;
                             const horizontalPadding = 6;
                             const availableWidth = Math.max(8, bboxWidth - horizontalPadding * 2);
-                            const baseFontSize = Math.max(10, Math.min(22, bboxHeight * 0.55));
-                            const widthBasedFontSize = Math.floor(availableWidth / Math.max(1, highlight.displayText.length) / 0.58);
-                            const fontSize = Math.max(8, Math.min(baseFontSize, widthBasedFontSize || baseFontSize));
-                            const clipPathId = `ocr-clip-${currentPage}-${index}`;
-                            const adaptiveTextColor = overlayTextColors[index] || '#0f172a';
                             const getMistakeIdFromClickPosition = (clientX: number) => {
                               if (highlight.ranges.length === 0) return null;
                               const relativeX = Math.max(0, Math.min(availableWidth, clientX - (bboxX + horizontalPadding)));
@@ -4311,6 +4266,9 @@ Be thorough and fair in your assessment.`
                               const clickedRange = highlight.ranges.find((range) => charIndex >= range.start && charIndex < range.end);
                               return clickedRange?.mistakeId || matchedMistakeId;
                             };
+
+                            // Only render if there are actual mistake highlights
+                            if (highlight.ranges.length === 0) return null;
 
                             return (
                               <g
@@ -4324,35 +4282,35 @@ Be thorough and fair in your assessment.`
                                 className={matchedMistakeId ? 'cursor-pointer' : ''}
                               >
                                 {highlight.tooltip && <title>{highlight.tooltip}</title>}
-                                <clipPath id={clipPathId}>
-                                  <rect
-                                    x={bboxX}
-                                    y={bboxY}
-                                    width={bboxWidth}
-                                    height={bboxHeight}
-                                    rx={6}
-                                  />
-                                </clipPath>
                                 {highlight.ranges.map((range, rangeIndex) => {
                                   const totalChars = Math.max(1, highlight.displayText.length);
                                   const highlightX = bboxX + horizontalPadding + (range.start / totalChars) * availableWidth;
                                   const highlightWidth = Math.max(8, ((range.end - range.start) / totalChars) * availableWidth);
-                                  const segmentColor = range.type === 'grammar'
-                                    ? '#fecaca'
+                                  const segmentFill = range.type === 'grammar'
+                                    ? 'rgba(239,68,68,0.35)'
                                     : range.type === 'spelling'
-                                      ? '#fde68a'
+                                      ? 'rgba(234,179,8,0.4)'
                                       : range.type === 'punctuation'
-                                        ? '#fca5a5'
-                                        : '#fef08a';
+                                        ? 'rgba(249,115,22,0.35)'
+                                        : 'rgba(168,85,247,0.35)';
+                                  const segmentStroke = range.type === 'grammar'
+                                    ? '#ef4444'
+                                    : range.type === 'spelling'
+                                      ? '#eab308'
+                                      : range.type === 'punctuation'
+                                        ? '#f97316'
+                                        : '#a855f7';
                                   return (
                                     <rect
                                       key={`ocr-highlight-${currentPage}-${index}-${rangeIndex}`}
                                       x={highlightX}
-                                      y={bboxY + 2}
+                                      y={bboxY}
                                       width={highlightWidth}
-                                      height={Math.max(8, bboxHeight - 4)}
+                                      height={bboxHeight}
                                       rx={4}
-                                      fill={segmentColor}
+                                      fill={segmentFill}
+                                      stroke={segmentStroke}
+                                      strokeWidth={1.5}
                                       className="cursor-pointer"
                                       onClick={(event) => {
                                         event.stopPropagation();
@@ -4361,26 +4319,6 @@ Be thorough and fair in your assessment.`
                                     />
                                   );
                                 })}
-                                <text
-                                  x={bboxX + horizontalPadding}
-                                  y={bboxY + bboxHeight / 2}
-                                  fill={adaptiveTextColor}
-                                  fontSize={fontSize}
-                                  fontFamily="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace"
-                                  dominantBaseline="middle"
-                                  textLength={availableWidth}
-                                  lengthAdjust="spacingAndGlyphs"
-                                  clipPath={`url(#${clipPathId})`}
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    const selectedId = getMistakeIdFromClickPosition(event.clientX);
-                                    if (selectedId) {
-                                      focusMistake(selectedId);
-                                    }
-                                  }}
-                                >
-                                  {highlight.displayText}
-                                </text>
                               </g>
                             );
                           })}

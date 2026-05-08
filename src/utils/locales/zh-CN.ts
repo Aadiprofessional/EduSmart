@@ -690,6 +690,10 @@ export const zhCN = {
     getSolution: "获取解答",
     fileLoadedSuccessfully: "文件加载成功",
     loadingRelatedKnowledge: "加载相关知识中...",
+    loading: {
+      generatingWithAiMagic: "正在使用 AI 魔法生成...",
+      craftingFillInBlanks: "正在生成填空题..."
+    },
     relatedKnowledgeButton: "相关知识",
     exitFullscreen: "退出全屏",
     solution: "解答",

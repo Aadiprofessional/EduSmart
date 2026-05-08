@@ -1675,6 +1675,10 @@ export const zhTW = {
     // Upload Homework Component specific
     fileLoadedSuccessfully: "文件載入成功",
     loadingRelatedKnowledge: "載入相關知識中...",
+    loading: {
+      generatingWithAiMagic: "正在使用 AI 魔法產生...",
+      craftingFillInBlanks: "正在製作填空題..."
+    },
     relatedKnowledgeButton: "相關知識",
     exitFullscreen: "退出全螢幕",
     solution: "解答",

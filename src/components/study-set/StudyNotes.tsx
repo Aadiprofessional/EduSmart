@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
+import { useLanguage } from '../../utils/LanguageContext';
 import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -21,6 +22,7 @@ import { Skeleton } from '../ui/Skeleton';
 const StudyNotes: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const { user } = useAuth();
+    const { t } = useLanguage();
     const location = useLocation();
     const studySetData = location.state?.studySetData;
     const editorRef = useRef<HTMLDivElement>(null);
@@ -391,9 +393,9 @@ const StudyNotes: React.FC = () => {
                                 <div className="absolute inset-0 bg-indigo-500 blur-xl opacity-20 rounded-full animate-pulse"></div>
                                 <FaMagic className="relative text-5xl text-indigo-500 dark:text-indigo-400 mb-6 animate-bounce" />
                             </div>
-                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Generating with AI magic...</h2>
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{t('aiStudy.loading.generatingWithAiMagic')}</h2>
                             <p className="text-gray-500 dark:text-gray-400 max-w-md text-center">
-                                We're crafting your study notes. This usually takes just a moment!
+                                {t('aiStudy.loading.craftingStudyNotes')}
                             </p>
                         </div>
                     ) : loading ? (

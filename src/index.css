@@ -432,21 +432,40 @@ html {
   padding: 4px 9px;
   border-radius: 9999px;
   font-size: 0.72rem;
+  font-weight: 600;
 }
 
 .mistake-checker-tag.grammar {
+  color: #b91c1c;
+  border-color: rgba(185, 28, 28, 0.4);
+  background: rgba(254, 202, 202, 0.5);
+}
+
+.dark .mistake-checker-tag.grammar {
   color: #f8b6ad;
   border-color: rgba(192, 57, 43, 0.35);
   background: rgba(192, 57, 43, 0.16);
 }
 
 .mistake-checker-tag.spelling {
+  color: #6d28d9;
+  border-color: rgba(109, 40, 217, 0.4);
+  background: rgba(221, 214, 254, 0.6);
+}
+
+.dark .mistake-checker-tag.spelling {
   color: #c4b5fd;
   border-color: rgba(139, 92, 246, 0.4);
   background: rgba(139, 92, 246, 0.15);
 }
 
 .mistake-checker-tag.style {
+  color: #5b21b6;
+  border-color: rgba(91, 33, 182, 0.4);
+  background: rgba(196, 181, 253, 0.5);
+}
+
+.dark .mistake-checker-tag.style {
   color: #ddd6fe;
   border-color: rgba(124, 58, 237, 0.4);
   background: rgba(124, 58, 237, 0.18);

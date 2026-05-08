@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
+import { useLanguage } from '../../utils/LanguageContext';
 import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
 import { FaChevronLeft, FaChevronRight, FaMagic, FaCheckCircle, FaTimesCircle, FaCommentDots, FaRedo, FaLightbulb } from 'react-icons/fa';
@@ -29,6 +30,7 @@ interface StudyMultipleChoiceProps {
 const StudyMultipleChoice: React.FC<StudyMultipleChoiceProps> = ({ onDiscuss }) => {
     const { id } = useParams<{ id: string }>();
     const { user } = useAuth();
+    const { t } = useLanguage();
     const [questions, setQuestions] = useState<MultipleChoiceQuestion[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -294,9 +296,9 @@ const StudyMultipleChoice: React.FC<StudyMultipleChoiceProps> = ({ onDiscuss }) 
                     <div className="absolute inset-0 bg-indigo-500 blur-xl opacity-20 rounded-full animate-pulse"></div>
                     <FaMagic className="relative text-5xl text-indigo-400 mb-6 animate-bounce" />
                 </div>
-                <h2 className="text-2xl font-bold text-white mb-2">Generating with AI magic...</h2>
-                <p className="text-gray-400 max-w-md text-center">
-                    We're crafting challenging multiple choice questions from your material. This usually takes just a moment!
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{t('aiStudy.loading.generatingWithAiMagic')}</h2>
+                <p className="text-gray-600 dark:text-gray-400 max-w-md text-center">
+                    {t('aiStudy.loading.craftingMultipleChoice')}
                 </p>
             </div>
         );
@@ -305,7 +307,7 @@ const StudyMultipleChoice: React.FC<StudyMultipleChoiceProps> = ({ onDiscuss }) 
     if (questions.length === 0 && !loading) {
         return (
             <div className="flex-1 flex flex-col items-center justify-center h-full">
-                <p className="text-gray-400">No questions found.</p>
+                <p className="text-gray-600 dark:text-gray-400">{t('aiStudy.loading.noQuestionsFound')}</p>
             </div>
         );
     }

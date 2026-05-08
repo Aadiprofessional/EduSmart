@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FaArrowUp, FaChevronRight, FaChevronLeft, FaRegEdit, FaHistory, FaImage, FaFileAlt, FaTimes, FaCopy, FaFilePdf, FaExpand, FaDownload } from 'react-icons/fa';
+import { FaArrowUp, FaChevronRight, FaChevronLeft, FaRegEdit, FaHistory, FaImage, FaFileAlt, FaTimes, FaCopy, FaFilePdf, FaExpand, FaDownload, FaShareAlt } from 'react-icons/fa';
 import SidebarLeft from '../components/dashboard/SidebarLeft';
 import { supabase } from '../utils/supabase';
 import { v4 as uuidv4 } from 'uuid';
@@ -1141,6 +1141,28 @@ const SolvePage: React.FC = () => {
                             </div>
                           )}
                         </div>
+
+                        {/* User message toolbar */}
+                        {msg.type === 'user' && msg.content && (
+                          <div className="flex items-center gap-3 mt-1.5 pr-1">
+                            <button
+                              onClick={() => handleCopy(msg.content)}
+                              className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                              title={t('solvePage.copyToClipboard')}
+                            >
+                              <FaCopy size={11} /> {t('solvePage.copy')}
+                            </button>
+                            {typeof navigator !== 'undefined' && 'share' in navigator && (
+                              <button
+                                onClick={() => navigator.share({ text: msg.content })}
+                                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                                title="Share"
+                              >
+                                <FaShareAlt size={11} /> Share
+                              </button>
+                            )}
+                          </div>
+                        )}
 
                       </div>
                     </div>

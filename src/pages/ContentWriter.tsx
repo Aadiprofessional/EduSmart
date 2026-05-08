@@ -517,7 +517,7 @@ const ContentWriter: React.FC = () => {
         <div className="flex-1 flex overflow-hidden relative">
             
             {/* GENERATOR PANEL (Left) */}
-            <div className={`${mobileTab === 'generator' ? 'flex' : 'hidden'} lg:flex w-full lg:w-[400px] flex-col border-r border-gray-200 dark:border-white/5 bg-white dark:bg-[#0a0a0a] relative z-10`}>
+            <div className={`${mobileTab === 'generator' ? 'flex' : 'hidden'} lg:flex w-full lg:w-[360px] xl:w-[420px] flex-col border-r border-gray-200 dark:border-white/5 bg-white dark:bg-[#0a0a0a] relative z-10`}>
                 <div className="flex-1 overflow-y-auto p-5 lg:p-8 space-y-8 scrollbar-thin scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20">
                     
                     {/* Prompt Section */}
@@ -599,7 +599,7 @@ const ContentWriter: React.FC = () => {
                             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t('contentWriter.quickStart')}</h3>
                             <span className="text-[10px] bg-gray-100 dark:bg-white/5 px-2 py-1 rounded-md text-gray-500">{t('contentWriter.autoFill')}</span>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
                             {templates.map((template) => (
                                 <button
                                     key={template.id}
@@ -698,8 +698,8 @@ const ContentWriter: React.FC = () => {
                 </div>
 
                 {/* Editor Area */}
-                <div className="flex-1 overflow-y-auto px-4 lg:px-16 pb-32 pt-28 scrollbar-thin scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20">
-                    <div className="max-w-4xl mx-auto w-full min-h-[800px] bg-white dark:bg-[#0f0f0f] border border-gray-200 dark:border-white/5 rounded-xl p-8 lg:p-12 shadow-2xl relative transition-all duration-500">
+                <div className="flex-1 overflow-y-auto px-4 lg:px-8 xl:px-16 pb-32 pt-28 scrollbar-thin scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20">
+                    <div className="max-w-5xl mx-auto w-full min-h-[800px] bg-white dark:bg-[#0f0f0f] border border-gray-200 dark:border-white/5 rounded-xl p-8 lg:p-12 shadow-2xl relative transition-all duration-500">
                         {/* Subtle paper texture/noise overlay could go here */}
                         
                         <>
@@ -752,8 +752,8 @@ const ContentWriter: React.FC = () => {
                                                 <FaMagic className="text-3xl text-indigo-400 animate-pulse" />
                                             </div>
                                         </div>
-                                        <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 mb-3">{t('contentWriter.craftingYourMasterpiece')}</h2>
-                                        <p className="text-gray-500 text-sm font-medium tracking-wide uppercase">{t('contentWriter.aiAnalyzingPatterns')}</p>
+                                        <h2 className="text-2xl font-bold text-gray-900 dark:text-transparent dark:bg-clip-text dark:bg-gradient-to-r dark:from-white dark:to-gray-400 mb-3">{t('contentWriter.craftingYourMasterpiece')}</h2>
+                                        <p className="text-gray-500 dark:text-gray-500 text-sm font-medium tracking-wide uppercase">{t('contentWriter.aiAnalyzingPatterns')}</p>
                                     </div>
                                 )}
                                 {(!editedContent && !isGenerating) && (

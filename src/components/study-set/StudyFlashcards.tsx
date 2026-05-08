@@ -294,10 +294,10 @@ const StudyFlashcards: React.FC<StudyFlashcardsProps> = ({ onDiscuss }) => {
     return (
         <div className="flex-1 flex flex-col items-center justify-center h-full max-w-4xl mx-auto w-full px-4">
             {/* Stats Filter Buttons */}
-            <div className="flex flex-wrap justify-center gap-3 mb-8">
+            <div className="flex flex-wrap justify-center items-center gap-3 mb-8">
                 <button
                     onClick={() => setFilter('unfamiliar')}
-                    className={`px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 transition-all ${
+                    className={`px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap ${
                         filter === 'unfamiliar' 
                         ? 'bg-red-100 dark:bg-red-900/50 border-red-500 text-red-700 dark:text-red-400 ring-2 ring-red-500/20' 
                         : 'bg-gray-100 dark:bg-gray-800 border-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
@@ -308,7 +308,7 @@ const StudyFlashcards: React.FC<StudyFlashcardsProps> = ({ onDiscuss }) => {
                 </button>
                 <button
                     onClick={() => setFilter('learning')}
-                    className={`px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 transition-all ${
+                    className={`px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap ${
                         filter === 'learning' 
                         ? 'bg-indigo-100 dark:bg-indigo-900/50 border-indigo-500 text-indigo-700 dark:text-indigo-400 ring-2 ring-indigo-500/20' 
                         : 'bg-gray-100 dark:bg-gray-800 border-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
@@ -319,7 +319,7 @@ const StudyFlashcards: React.FC<StudyFlashcardsProps> = ({ onDiscuss }) => {
                 </button>
                 <button
                     onClick={() => setFilter('mastered')}
-                    className={`px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 transition-all ${
+                    className={`px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap ${
                         filter === 'mastered' 
                         ? 'bg-green-100 dark:bg-green-900/50 border-green-500 text-green-700 dark:text-green-400 ring-2 ring-green-500/20' 
                         : 'bg-gray-100 dark:bg-gray-800 border-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
@@ -402,20 +402,20 @@ const StudyFlashcards: React.FC<StudyFlashcardsProps> = ({ onDiscuss }) => {
                                 </div>
 
                             {/* Action Buttons on Back */}
-                            <div className="absolute bottom-6 flex gap-4" onClick={e => e.stopPropagation()}>
+                            <div className="absolute bottom-6 flex items-center gap-3" onClick={e => e.stopPropagation()}>
                                 {currentCard.status === 'unfamiliar' && (
                                     <>
                                         <button
                                             onClick={() => updateFlashcardStatus(currentCard.id, 'learning')}
-                                            className="flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors text-sm font-medium"
+                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors text-xs font-medium whitespace-nowrap"
                                         >
-                                            <FaRedo size={14} /> Still Learning
+                                            <FaRedo size={12} /> Still Learning
                                         </button>
                                         <button
                                             onClick={() => updateFlashcardStatus(currentCard.id, 'mastered')}
-                                            className="flex items-center gap-2 px-4 py-2 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors text-sm font-medium"
+                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors text-xs font-medium whitespace-nowrap"
                                         >
-                                            <FaCheckCircle size={14} /> Know it
+                                            <FaCheckCircle size={12} /> Know it
                                         </button>
                                     </>
                                 )}
@@ -423,24 +423,24 @@ const StudyFlashcards: React.FC<StudyFlashcardsProps> = ({ onDiscuss }) => {
                                     <>
                                         <button
                                             onClick={() => updateFlashcardStatus(currentCard.id, 'learning')}
-                                            className="flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors text-sm font-medium"
+                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors text-xs font-medium whitespace-nowrap"
                                         >
-                                            <FaRedo size={14} /> Still Learning
+                                            <FaRedo size={12} /> Still Learning
                                         </button>
                                         <button
                                             onClick={() => updateFlashcardStatus(currentCard.id, 'mastered')}
-                                            className="flex items-center gap-2 px-4 py-2 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors text-sm font-medium"
+                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors text-xs font-medium whitespace-nowrap"
                                         >
-                                            <FaCheckCircle size={14} /> Know it
+                                            <FaCheckCircle size={12} /> Know it
                                         </button>
                                     </>
                                 )}
                                 {currentCard.status === 'mastered' && (
                                     <button
                                         onClick={() => updateFlashcardStatus(currentCard.id, 'unfamiliar')}
-                                        className="flex items-center gap-2 px-4 py-2 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors text-sm font-medium"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors text-xs font-medium whitespace-nowrap"
                                     >
-                                        <FaRedo size={14} /> Reset to Unfamiliar
+                                        <FaRedo size={12} /> Reset to Unfamiliar
                                     </button>
                                 )}
                             </div>

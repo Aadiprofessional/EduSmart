@@ -9,6 +9,7 @@
  */
 
 import React, { useEffect, useRef } from 'react';
+import { useSubscription } from '../../utils/SubscriptionContext';
 
 // ── AdSense configuration ────────────────────────────────────────────────────
 // Replace with your real publisher ID from https://adsense.google.com
@@ -44,12 +45,14 @@ const adSizeMap: Record<AdBannerSize, { width: string; height: string; format: s
 const AdBanner: React.FC<AdBannerProps> = ({ size = 'responsive', className = '' }) => {
   const insRef = useRef<HTMLModElement>(null);
   const pushed = useRef(false);
+  const { subscriptionStatus } = useSubscription();
 
   const { width, height, format } = adSizeMap[size] ?? adSizeMap.responsive;
   const isResponsive = size === 'responsive';
 
   useEffect(() => {
     if (pushed.current) return;
+    if (subscriptionStatus?.hasActiveSubscription) return;
     pushed.current = true;
 
     try {
@@ -58,7 +61,12 @@ const AdBanner: React.FC<AdBannerProps> = ({ size = 'responsive', className = ''
     } catch (e) {
       console.warn('[AdBanner] adsbygoogle.push failed:', e);
     }
-  }, []);
+  }, [subscriptionStatus]);
+
+  // Pro users see no ads and no reserved space
+  if (subscriptionStatus?.hasActiveSubscription) {
+    return null;
+  }
 
   return (
     <div

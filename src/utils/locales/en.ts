@@ -722,6 +722,10 @@ export const en = {
     relatedKnowledgeButton: "Related Knowledge",
     exitFullscreen: "Exit Fullscreen",
     solution: "Solution",
+    loading: {
+      generatingWithAiMagic: "Generating with a bit of AI magic...",
+      craftingFillInBlanks: "Crafting fill-in-the-blanks..."
+    },
     
     // Upgrade Modal
     upgradeModal: {
