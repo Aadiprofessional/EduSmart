@@ -7,7 +7,7 @@ import { useSubscription } from '../../utils/SubscriptionContext';
 import { supabase } from '../../utils/supabase';
 import { useLanguage } from '../../utils/LanguageContext';
 import coinIcon from '../../assets/assets_coin.png';
-import matrixLogo from '../../assets/matrixedu.png';
+import matrixLogo from '../../assets/matrixedu.jpeg';
 import LanguageSelector from '../ui/LanguageSelector';
 
 const Header: React.FC = () => {
@@ -127,7 +127,7 @@ const Header: React.FC = () => {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-             <img src={matrixLogo} alt={t('appHeader.logoAlt')} className="w-8 h-8 rounded-lg" />
+             <img src={matrixLogo} alt={t('appHeader.logoAlt')} className="w-8 h-8 rounded-xl object-cover" />
              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-500">MatrixEdu</span>
           </div>
 

@@ -439,6 +439,9 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mistakesContainerRef = useRef<HTMLDivElement>(null); // Add ref for auto-scroll
   const mistakeCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
+  const languageDropdownRef = useRef<HTMLDivElement>(null);
+  const [languageDropdownPosition, setLanguageDropdownPosition] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
 
   // Response checking state
   const { checkAndUseResponse } = useResponseCheck();
@@ -493,6 +496,19 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
       return null;
     }
   };
+
+  // Close language dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (languageDropdownRef.current && !languageDropdownRef.current.contains(e.target as Node)) {
+        setIsLanguageDropdownOpen(false);
+      }
+    };
+    if (isLanguageDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isLanguageDropdownOpen]);
 
   // Load history from database on component mount
   useEffect(() => {
@@ -3528,19 +3544,64 @@ Be thorough and fair in your assessment.`
                 </div>
 
                 <div className="mistake-checker-controls">
-                  <select
-                    value={selectedLanguage}
-                    onChange={(e) => setSelectedLanguage(e.target.value as MistakeCheckerLanguage)}
-                    className="mistake-checker-language-select"
-                    style={{ fontFamily: '"DM Sans", sans-serif' }}
-                    aria-label="Select language"
-                  >
-                    {LANGUAGE_OPTIONS.map((language) => (
-                      <option key={language.code} value={language.code}>
-                        {language.label}
-                      </option>
-                    ))}
-                  </select>
+                  <div ref={languageDropdownRef} className="relative" style={{ fontFamily: '"DM Sans", sans-serif' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (languageDropdownRef.current) {
+                          const rect = languageDropdownRef.current.getBoundingClientRect();
+                          setLanguageDropdownPosition({ top: rect.top, left: rect.left, width: rect.width, height: rect.height });
+                        }
+                        setIsLanguageDropdownOpen((v) => !v);
+                      }}
+                      className="mistake-checker-language-btn"
+                      aria-label="Select language"
+                      aria-expanded={isLanguageDropdownOpen}
+                    >
+                      <span className="mistake-checker-language-flag">
+                        {selectedLanguage === 'en' ? '🇬🇧' : '🇨🇳'}
+                      </span>
+                      <span>{LANGUAGE_OPTIONS.find(l => l.code === selectedLanguage)?.label}</span>
+                      <svg className={`mistake-checker-language-chevron ${isLanguageDropdownOpen ? 'rotate-180' : ''}`} width="14" height="14" viewBox="0 0 20 20" fill="none">
+                        <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
+                    {/* Render dropdown in portal to avoid clipping by overflow:hidden ancestors */}
+                    {isLanguageDropdownOpen && languageDropdownPosition && ReactDOM.createPortal(
+                      <div
+                        className="mistake-checker-language-dropdown"
+                        role="listbox"
+                        onMouseDown={(e) => e.stopPropagation()}
+                        style={{
+                          position: 'fixed',
+                          top: languageDropdownPosition.top + languageDropdownPosition.height + 6,
+                          left: languageDropdownPosition.left,
+                          width: languageDropdownPosition.width,
+                          zIndex: 9999
+                        }}
+                      >
+                        {LANGUAGE_OPTIONS.map((language) => (
+                          <button
+                            key={language.code}
+                            type="button"
+                            role="option"
+                            aria-selected={selectedLanguage === language.code}
+                            onClick={() => { setSelectedLanguage(language.code); setIsLanguageDropdownOpen(false); }}
+                            className={`mistake-checker-language-option ${selectedLanguage === language.code ? 'is-selected' : ''}`}
+                          >
+                            <span>{language.code === 'en' ? '🇬🇧' : '🇨🇳'}</span>
+                            <span>{language.label}</span>
+                            {selectedLanguage === language.code && (
+                              <svg className="ml-auto" width="14" height="14" viewBox="0 0 20 20" fill="none">
+                                <path d="M4 10l5 5 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            )}
+                          </button>
+                        ))}
+                      </div>,
+                      document.body
+                    )}
+                  </div>
 
                   <button
                     onClick={handleCheckText}

@@ -157,7 +157,7 @@ html {
   --danger: #c0392b;
   --success: #27ae60;
   position: relative;
-  background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(139, 92, 246, 0.16) 0%, transparent 60%), var(--bg);
+  background: var(--bg);
   color: var(--text-primary);
   min-height: 100%;
   overflow: hidden;
@@ -343,6 +343,98 @@ html {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* Custom language dropdown button */
+.mistake-checker-language-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--surface);
+  border: 1.5px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-size: 0.92rem;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: all 200ms ease;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.mistake-checker-language-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.mistake-checker-language-btn:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.mistake-checker-language-flag {
+  font-size: 1.1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.mistake-checker-language-chevron {
+  margin-left: auto;
+  color: var(--accent);
+  transition: transform 200ms ease;
+  flex-shrink: 0;
+}
+
+.mistake-checker-language-chevron.rotate-180 {
+  transform: rotate(180deg);
+}
+
+.mistake-checker-language-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 100%;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 0 0 1px var(--accent-glow);
+  z-index: 50;
+  overflow: hidden;
+  padding: 4px;
+}
+
+.dark .mistake-checker-language-dropdown {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(139, 92, 246, 0.2);
+}
+
+.mistake-checker-language-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 7px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 150ms ease;
+  text-align: left;
+}
+
+.mistake-checker-language-option:hover {
+  background: var(--accent-dim);
+  color: var(--text-primary);
+}
+
+.mistake-checker-language-option.is-selected {
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-weight: 500;
 }
 
 .mistake-checker-send-button {

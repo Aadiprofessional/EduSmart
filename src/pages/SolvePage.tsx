@@ -940,7 +940,7 @@ const SolvePage: React.FC = () => {
                        {/* Drag & Drop Zone */}
                       <div 
                         onClick={handleDropZoneClick}
-                        className="w-[98%] bg-white dark:bg-[#111111] border border-dashed border-gray-300 dark:border-gray-800 rounded-t-3xl rounded-b-lg h-24 lg:h-32 flex flex-col items-center justify-start pt-3 lg:pt-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 hover:border-gray-400 dark:hover:border-gray-600 transition-all group z-0 mb-[-18px] lg:mb-[-45px]"
+                        className="w-full bg-white dark:bg-[#1a1a1a] border-2 border-dashed border-gray-200 dark:border-[#2a2a2a] rounded-2xl min-h-[160px] flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-500 hover:bg-indigo-50/50 dark:hover:bg-indigo-500/5 transition-all duration-200 group mb-3 px-6 py-8"
                       >
                           <input 
                            type="file" 
@@ -949,18 +949,42 @@ const SolvePage: React.FC = () => {
                            onChange={handleFileSelect}
                            accept=".jpg,.jpeg,.png,.webp,application/pdf,.doc,.docx,.txt,.xlsx,.csv"
                          />
-                          <div className="mb-1 lg:mb-2 relative">
-                             {attachedFile ? (
-                               <FaFileAlt className="text-gray-900 dark:text-white group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors w-4 h-4 lg:w-5 lg:h-5" />
-                             ) : (
-                               <FaImage className="text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-400 transition-colors w-4 h-4 lg:w-5 lg:h-5" />
-                             )}
-                          </div>
-                          <span className="text-[10px] lg:text-sm text-center px-4 text-gray-500 dark:text-gray-300 group-hover:text-gray-600 dark:group-hover:text-gray-200 transition-colors leading-tight">
-                            {attachedFile 
-                              ? t('solvePage.attachedFile', { values: { name: attachedFile.name } })
-                              : t('solvePage.dragDropUpload')}
-                          </span>
+                          {attachedFile ? (
+                            <div className="flex items-center gap-3">
+                              <FaFileAlt className="text-indigo-500 w-6 h-6" />
+                              <div className="text-left">
+                                <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400 break-all">{attachedFile.name}</p>
+                                <p className="text-xs text-gray-400">{(attachedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                              </div>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setAttachedFile(null); }}
+                                className="ml-2 p-1 rounded-full bg-gray-100 dark:bg-[#2a2a2a] text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                              >
+                                <FaTimes className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-[#2a2a2a] flex items-center justify-center group-hover:bg-indigo-100 dark:group-hover:bg-indigo-500/10 transition-colors">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-gray-400 group-hover:text-indigo-500 dark:text-gray-500 dark:group-hover:text-indigo-400 transition-colors" stroke="currentColor">
+                                  <path d="M12 16V7" strokeWidth="1.7" strokeLinecap="round" />
+                                  <path d="M8.5 10.5L12 7L15.5 10.5" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                                  <path d="M4.5 16.5V17C4.5 18.3807 5.61929 19.5 7 19.5H17C18.3807 19.5 19.5 18.3807 19.5 17V16.5" strokeWidth="1.7" strokeLinecap="round" />
+                                </svg>
+                              </div>
+                              <div className="text-center">
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                  {t('solvePage.dragDropUpload')}
+                                </p>
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                  Supports PDF, DOC, DOCX, and images
+                                </p>
+                              </div>
+                              <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#3a3a3a] rounded-full px-3 py-1">
+                                or click to browse
+                              </span>
+                            </>
+                          )}
                       </div>
                        
                        {/* Input Box */}
@@ -1011,7 +1035,8 @@ const SolvePage: React.FC = () => {
                 {/* Messages Area */}
                 <div 
                   ref={messagesContainerRef}
-                  className="flex-1 overflow-y-auto overflow-x-hidden pb-32 pr-2 custom-scrollbar"
+                  className="flex-1 overflow-y-auto overflow-x-hidden pb-32 pr-2"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
                 >
                   {messages.map((msg) => (
                     <div key={msg.id} className={`mb-8 flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -1116,17 +1141,20 @@ const SolvePage: React.FC = () => {
                                   </div>
                                   
                                   {/* AI Toolbar */}
-                                  <div className="flex items-center gap-4 mt-4 pt-3 border-t border-white/5">
+                                  <div className="flex items-center gap-4 mt-4 pt-3 border-t border-gray-200 dark:border-white/5">
+                                    <span className="text-xs text-gray-400 dark:text-gray-500">
+                                      {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
                                     <button 
                                       onClick={() => handleCopy(msg.content)}
-                                      className="flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors"
+                                      className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
                                       title={t('solvePage.copyToClipboard')}
                                     >
                                       <FaCopy /> {t('solvePage.copy')}
                                     </button>
                                     <button 
                                       onClick={() => handleExportPDF(msg.content)}
-                                      className="flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors"
+                                      className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
                                       title={t('solvePage.exportAsPdf')}
                                     >
                                       <FaFilePdf /> {t('solvePage.exportPdf')}
@@ -1145,6 +1173,9 @@ const SolvePage: React.FC = () => {
                         {/* User message toolbar */}
                         {msg.type === 'user' && msg.content && (
                           <div className="flex items-center gap-3 mt-1.5 pr-1">
+                            <span className="text-xs text-gray-400 dark:text-gray-500">
+                              {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
                             <button
                               onClick={() => handleCopy(msg.content)}
                               className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
@@ -1192,8 +1223,8 @@ const SolvePage: React.FC = () => {
                              disabled={isSendDisabled}
                              className={`relative p-2 rounded-full transition-all duration-200 flex items-center justify-center w-8 h-8 ${
                                isSendDisabled 
-                                 ? 'bg-[#27272a] text-gray-600 cursor-not-allowed' 
-                                 : 'bg-white text-black hover:bg-gray-200'
+                                 ? 'bg-gray-100 dark:bg-[#27272a] text-gray-400 dark:text-gray-600 cursor-not-allowed' 
+                                 : 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200'
                              }`}
                            >
                              {!isSendDisabled && cost > 0 && (

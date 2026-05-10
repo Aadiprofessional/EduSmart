@@ -5,7 +5,7 @@ import { FaBars, FaTimes, FaBolt } from 'react-icons/fa';
 import { useAuth } from '../../utils/AuthContext';
 import { useSubscription } from '../../utils/SubscriptionContext';
 import { supabase } from '../../utils/supabase';
-import matrixLogo from '../../assets/matrixedu.png';
+import matrixLogo from '../../assets/matrixedu.jpeg';
 import coinIcon from '../../assets/assets_coin.png';
 import { useLanguage } from '../../utils/LanguageContext';
 import LanguageSelector from '../ui/LanguageSelector';
@@ -76,9 +76,7 @@ const MatrixEduNavbar: React.FC = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 md:px-6 py-3.5 md:py-4 w-full backdrop-blur-sm bg-white/80 dark:bg-[#050505]/80 border-b border-indigo-100/80 dark:border-white/5 transition-all duration-300">
       <div className="flex items-center gap-2 cursor-pointer shrink-0" onClick={() => navigate('/')}>
           {/* Logo */}
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-[0_0_15px_rgba(99,102,241,0.5)]">
-              <img src={matrixLogo} alt={t('matrixEduNavbar.logoAlt')} className="w-5 h-5" />
-          </div>
+          <img src={matrixLogo} alt={t('matrixEduNavbar.logoAlt')} className="w-8 h-8 rounded-xl object-cover" />
           <span className="text-lg md:text-xl font-semibold tracking-tight text-gray-900 dark:text-white hidden min-[390px]:inline">MatrixEdu</span>
       </div>
 

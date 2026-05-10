@@ -20,7 +20,7 @@ import {
 import { useAuth } from '../../utils/AuthContext';
 import { useLanguage } from '../../utils/LanguageContext';
 import { useTheme } from '../../utils/ThemeContext';
-import matrixLogo from '../../assets/matrixedu.png';
+import matrixLogo from '../../assets/matrixedu.jpeg';
 import CoinPanel from '../ads/CoinPanel';
 import SubscriptionBadge from '../ads/SubscriptionBadge';
 
@@ -59,9 +59,7 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
             {/* Logo */}
             <div className="flex items-center justify-between mb-8 px-2">
               <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-[0_0_15px_rgba(99,102,241,0.5)]">
-                    <img src={matrixLogo} alt={t('sidebar.logoAlt')} className="w-5 h-5" />
-                </div>
+                <img src={matrixLogo} alt={t('sidebar.logoAlt')} className="w-8 h-8 rounded-xl object-cover" />
                 <motion.span 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -79,6 +77,12 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
 
             {/* Navigation */}
             <nav className="space-y-1">
+              <NavItem 
+                icon={<FaCalendarAlt />} 
+                label={t('sidebar.studyPlanner')}
+                active={isActive('/study-planner')} 
+                onClick={() => navigate('/study-planner')}
+              />
               <NavItem 
                 icon={<FaLayerGroup />} 
                 label={t('sidebar.studySets')}
@@ -115,12 +119,6 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
                 label={t('sidebar.humanizer')}
                 active={isActive('/humanizer')}
                 onClick={() => navigate('/humanizer')} 
-              />
-                <NavItem 
-                icon={<FaCalendarAlt />} 
-                label={t('sidebar.studyPlanner')}
-                active={isActive('/study-planner')} 
-                onClick={() => navigate('/study-planner')}
               />
             </nav>
           </div>
