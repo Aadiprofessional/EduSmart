@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FaArrowUp, FaChevronRight, FaChevronLeft, FaRegEdit, FaHistory, FaImage, FaFileAlt, FaTimes, FaCopy, FaFilePdf, FaExpand, FaDownload, FaShareAlt } from 'react-icons/fa';
+import { FaArrowUp, FaChevronRight, FaChevronLeft, FaRegEdit, FaHistory, FaImage, FaFileAlt, FaTimes, FaCopy, FaFilePdf, FaExpand, FaDownload, FaShareAlt, FaBars, FaBullseye } from 'react-icons/fa';
 import SidebarLeft from '../components/dashboard/SidebarLeft';
 import { supabase } from '../utils/supabase';
 import { v4 as uuidv4 } from 'uuid';
@@ -861,32 +861,49 @@ const SolvePage: React.FC = () => {
       
       <div className="flex-1 flex relative w-full">
         <main className={`flex-1 flex flex-col relative transition-all duration-300 w-full ${isHistoryOpen ? 'mr-0' : 'mr-0'}`}>
-           {/* Top Icons - Absolute Positioned */}
-           <div className="absolute top-6 left-6 z-20 flex items-center gap-4">
-             {(!isLeftSidebarOpen || !isMobile) && (
-                <button 
-                  onClick={() => setIsLeftSidebarOpen(true)} 
-                  className="w-10 h-10 rounded-full bg-indigo-600 dark:bg-indigo-500 text-white flex items-center justify-center font-bold text-sm hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors shadow-sm lg:hidden"
-                >
-                  ME
-                </button>
-             )}
-             <button 
-               onClick={handleNewChat}
-               className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-               title={t('solvePage.newChat')}
+           {/* Top Bar */}
+           <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 h-16">
+             {/* Left: sidebar toggle + new chat */}
+             <div className="flex items-center gap-2">
+               {!isLeftSidebarOpen && (
+                 <button
+                   onClick={() => setIsLeftSidebarOpen(true)}
+                   className="w-10 h-10 rounded-full bg-indigo-600 dark:bg-indigo-500 text-white flex items-center justify-center font-bold text-sm hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors shadow-sm lg:hidden"
+                 >
+                   ME
+                 </button>
+               )}
+               {!isLeftSidebarOpen && (
+                 <button
+                   onClick={() => setIsLeftSidebarOpen(true)}
+                   className="hidden lg:flex p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-white/10 shadow-sm transition-colors"
+                   title="Open sidebar"
+                 >
+                   <FaBars size={16} />
+                 </button>
+               )}
+               <button
+                 onClick={handleNewChat}
+                 className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                 title={t('solvePage.newChat')}
+               >
+                 <FaRegEdit size={22} />
+               </button>
+             </div>
+             {/* Center: Solve title */}
+             <div className="flex items-center gap-2 pointer-events-none">
+               <FaBullseye size={16} className="text-indigo-500" />
+               <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t('sidebar.solve')}</span>
+             </div>
+             {/* Right: history */}
+             <button
+               onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+               className={`p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors ${isHistoryOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+               title={t('solvePage.history')}
              >
-                <FaRegEdit size={22} />
+               <FaHistory size={22} />
              </button>
            </div>
-           
-           <button 
-             onClick={() => setIsHistoryOpen(!isHistoryOpen)}
-             className={`absolute top-6 right-6 p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors z-20 ${isHistoryOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
-             title={t('solvePage.history')}
-           >
-              <FaHistory size={22} />
-           </button>
 
            {/* Main Content Area */}
            {!chatStarted ? (
@@ -1201,41 +1218,39 @@ const SolvePage: React.FC = () => {
                 </div>
 
                 {/* Bottom Input Area (Sticky) */}
-                <div className="absolute bottom-6 left-6 right-6 bg-white/80 dark:bg-black/40 backdrop-blur-xl rounded-[32px] p-2 border border-blue-500 shadow-2xl z-20">
-                     <div className="relative w-full">
-                         <textarea 
-                          ref={followUpInputRef}
-                           value={inputValue}
-                           onChange={(e) => setInputValue(e.target.value)}
-                           onKeyDown={(e) => {
-                             if (e.key === 'Enter' && !e.shiftKey) {
-                               e.preventDefault();
-                               if (!isSendDisabled) handleSendMessage();
-                             }
-                           }}
-                           placeholder={t('solvePage.askFollowUpQuestion')}
-                          className="w-full bg-transparent text-gray-800 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none text-lg resize-none py-3 px-4 pr-16 min-h-[56px]"
-                           rows={1}
-                         />
-                        <div className="absolute top-1/2 -translate-y-1/2 right-4">
-                           <button 
-                             onClick={handleSendMessage}
-                             disabled={isSendDisabled}
-                             className={`relative p-2 rounded-full transition-all duration-200 flex items-center justify-center w-8 h-8 ${
-                               isSendDisabled 
-                                 ? 'bg-gray-100 dark:bg-[#27272a] text-gray-400 dark:text-gray-600 cursor-not-allowed' 
-                                 : 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200'
-                             }`}
-                           >
-                             {!isSendDisabled && cost > 0 && (
-                               <span className="absolute -top-2 -right-2 z-10 inline-flex items-center gap-1 bg-[#ff5500] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                                 -{cost}
-                                 <img src={coinIcon} alt="coins" className="w-3 h-3" />
-                               </span>
-                             )}
-                             <FaArrowUp size={14} />
-                           </button>
-                        </div>
+                <div className="absolute bottom-6 left-6 right-6 bg-white/80 dark:bg-black/40 backdrop-blur-xl rounded-[32px] border border-blue-500 shadow-2xl z-20 flex items-center gap-2 px-4 py-2">
+                     <textarea 
+                      ref={followUpInputRef}
+                       value={inputValue}
+                       onChange={(e) => setInputValue(e.target.value)}
+                       onKeyDown={(e) => {
+                         if (e.key === 'Enter' && !e.shiftKey) {
+                           e.preventDefault();
+                           if (!isSendDisabled) handleSendMessage();
+                         }
+                       }}
+                       placeholder={t('solvePage.askFollowUpQuestion')}
+                      className="flex-1 bg-transparent text-gray-800 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none text-lg resize-none py-3 min-h-[44px] max-h-[120px] leading-[22px] self-center"
+                       rows={1}
+                     />
+                     <div className="flex-shrink-0">
+                       <button 
+                         onClick={handleSendMessage}
+                         disabled={isSendDisabled}
+                         className={`relative p-2 rounded-full transition-all duration-200 flex items-center justify-center w-8 h-8 ${
+                           isSendDisabled 
+                             ? 'bg-gray-100 dark:bg-[#27272a] text-gray-400 dark:text-gray-600 cursor-not-allowed' 
+                             : 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200'
+                         }`}
+                       >
+                         {!isSendDisabled && cost > 0 && (
+                           <span className="absolute -top-2 -right-2 z-10 inline-flex items-center gap-1 bg-[#ff5500] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                             -{cost}
+                             <img src={coinIcon} alt="coins" className="w-3 h-3" />
+                           </span>
+                         )}
+                         <FaArrowUp size={14} />
+                       </button>
                      </div>
                 </div>
 

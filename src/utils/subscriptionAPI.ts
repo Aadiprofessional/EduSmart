@@ -415,6 +415,10 @@ export const subscriptionAPI = {
     if (adProvider) body.ad_provider = adProvider;
     if (metadata) body.metadata = metadata;
     return apiCall('POST', '/api/subscriptions/ads/reward', body, session);
+  },
+
+  deleteAccount: async (session?: Session | null): Promise<{ success: boolean; error?: string }> => {
+    return apiCall('DELETE', '/api/user/account', null, session);
   }
 };
 

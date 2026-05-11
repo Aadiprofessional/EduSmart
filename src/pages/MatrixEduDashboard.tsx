@@ -113,6 +113,10 @@ const MatrixEduDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const ITEMS_PER_PAGE = 12;
+  const [totalCount, setTotalCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<StudySet[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   const fetchFolders = async () => {
     if (!user) return;
@@ -134,6 +138,64 @@ const MatrixEduDashboard: React.FC = () => {
   useEffect(() => {
     fetchFolders();
   }, [user]);
+
+  const fetchTotalCount = async () => {
+    if (!user) return;
+    let query = supabase
+      .from('upload_document')
+      .select('*', { count: 'exact', head: true })
+      .eq('uid', user.id);
+    if (selectedFolderId) {
+      const folder = folders.find((f: any) => f.id === selectedFolderId);
+      if (folder && folder.document_ids.length > 0) {
+        query = query.in('document_id', folder.document_ids);
+      }
+    }
+    const { count } = await query;
+    setTotalCount(count ?? 0);
+  };
+
+  useEffect(() => {
+    fetchTotalCount();
+  }, [user, selectedFolderId, folders]);
+
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    let active = true;
+    const timer = setTimeout(async () => {
+      if (!user) return;
+      setIsSearching(true);
+      let query = supabase
+        .from('upload_document')
+        .select('*')
+        .eq('uid', user.id)
+        .ilike('document_name', `%${searchQuery.trim()}%`)
+        .order('created_at', { ascending: false });
+      if (selectedFolderId) {
+        const folder = folders.find((f: any) => f.id === selectedFolderId);
+        if (folder && folder.document_ids.length > 0) {
+          query = query.in('document_id', folder.document_ids);
+        }
+      }
+      const { data } = await query;
+      if (active && data) {
+        const mapped: StudySet[] = data.map((doc: any) => ({
+          id: doc.document_id,
+          title: doc.document_name || t('matrixDashboard.untitledStudySet'),
+          stats: { unfamiliar: 0, learning: 0, mastered: 0 },
+          progress: 0,
+          totalCards: 0,
+          ...doc,
+        }));
+        setSearchResults(mapped);
+      }
+      if (active) setIsSearching(false);
+    }, 300);
+    return () => { active = false; clearTimeout(timer); };
+  }, [searchQuery, user, selectedFolderId]);
 
   const enrichStudySetsWithStats = async (sets: StudySet[]): Promise<StudySet[]> => {
     if (!user) return sets;
@@ -573,8 +635,11 @@ const MatrixEduDashboard: React.FC = () => {
                 className="px-4 md:px-8 lg:px-12 pb-24 w-full mx-auto min-h-screen"
             >
                 <StudySetList 
-              studySets={studySets} 
-              loading={loading}
+              studySets={searchQuery.trim() ? searchResults : studySets} 
+              loading={loading || (searchQuery.trim() ? isSearching : false)}
+              totalCount={totalCount}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
               onSetClick={(set) => navigate(`/study-set/${set.id}`)}
               onDragStart={handleDragStart}
               onMove={handleMoveClick}
@@ -582,7 +647,7 @@ const MatrixEduDashboard: React.FC = () => {
               onDelete={handleDeleteStudySet}
             />
                 
-                {loadingMore && (
+                {!searchQuery.trim() && loadingMore && (
                     <div className="flex justify-center mt-8 mb-8">
                         <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
                     </div>

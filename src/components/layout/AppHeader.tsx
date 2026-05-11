@@ -8,6 +8,7 @@ import { supabase } from '../../utils/supabase';
 import { useLanguage } from '../../utils/LanguageContext';
 import coinIcon from '../../assets/assets_coin.png';
 import matrixLogo from '../../assets/matrixedu.jpeg';
+import LogoWithText from '../ui/LogoWithText';
 import LanguageSelector from '../ui/LanguageSelector';
 
 const Header: React.FC = () => {
@@ -125,11 +126,10 @@ const Header: React.FC = () => {
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white/80 dark:bg-[#050505]/80 backdrop-blur-md border-b border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none' : 'bg-transparent border-transparent'}`}>
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-             <img src={matrixLogo} alt={t('appHeader.logoAlt')} className="w-8 h-8 rounded-xl object-cover" />
-             <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-500">MatrixEdu</span>
-          </div>
+           {/* Logo */}
+           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+             <LogoWithText size={32} maxTextWidth={160} title="MatrixEdu" subtitle="MatrixAI Company Limited" />
+           </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-6">

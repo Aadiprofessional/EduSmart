@@ -93,14 +93,23 @@ const StudyPlannerPage: React.FC = () => {
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-full relative overflow-hidden transition-all duration-300">
         
-        {/* Mobile Sidebar Toggle */}
-        <div className="absolute top-6 left-6 z-10">
-            {(!isLeftSidebarOpen || !isMobile) && (
+        {/* Sidebar Toggle */}
+        <div className="absolute top-6 left-6 z-10 flex items-center gap-2">
+            {!isLeftSidebarOpen && (
                 <button 
                     onClick={() => setIsLeftSidebarOpen(true)} 
                     className="w-10 h-10 rounded-full bg-indigo-600 dark:bg-indigo-500 text-white flex items-center justify-center font-bold text-sm hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors shadow-sm lg:hidden"
                 >
                     ME
+                </button>
+            )}
+            {!isLeftSidebarOpen && (
+                <button
+                    onClick={() => setIsLeftSidebarOpen(true)}
+                    className="hidden lg:flex p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-white/10 shadow-sm transition-colors"
+                    title="Open sidebar"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/></svg>
                 </button>
             )}
         </div>

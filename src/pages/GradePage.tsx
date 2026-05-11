@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FaUpload, FaFileAlt, FaChevronRight, FaArrowUp, FaExpand, FaDownload, FaFilePdf, FaCopy, FaRegEdit, FaHistory, FaTimes, FaEllipsisV, FaTrash } from 'react-icons/fa';
+import { FaUpload, FaFileAlt, FaChevronRight, FaArrowUp, FaExpand, FaDownload, FaFilePdf, FaCopy, FaRegEdit, FaHistory, FaTimes, FaEllipsisV, FaTrash, FaBars } from 'react-icons/fa';
 import SidebarLeft from '../components/dashboard/SidebarLeft';
 import { supabase } from '../utils/supabase';
 import { v4 as uuidv4 } from 'uuid';
@@ -995,12 +995,21 @@ const GradePage: React.FC = () => {
 
          {/* Unified Header: ME Button + New Chat/Back Navigation */}
          <div className="absolute top-6 left-6 z-30 flex items-center gap-4">
-            {(!isLeftSidebarOpen || !isMobile) && (
+            {!isLeftSidebarOpen && (
               <button 
                 onClick={() => setIsLeftSidebarOpen(true)} 
                 className="w-10 h-10 rounded-full bg-indigo-600 dark:bg-indigo-500 text-white flex items-center justify-center font-bold text-sm hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors shadow-sm lg:hidden"
               >
                 ME
+              </button>
+            )}
+            {!isLeftSidebarOpen && (
+              <button
+                onClick={() => setIsLeftSidebarOpen(true)}
+                className="hidden lg:flex p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-white/10 shadow-sm transition-colors"
+                title="Open sidebar"
+              >
+                <FaBars size={16} />
               </button>
             )}
 

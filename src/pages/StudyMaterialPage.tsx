@@ -24,6 +24,7 @@ import {
 import { useAuth } from '../utils/AuthContext';
 import { supabase } from '../utils/supabase';
 import { useLanguage } from '../utils/LanguageContext';
+import LogoWithText from '../components/ui/LogoWithText';
 
 // Import Study Set Components
 import StudyNotes from '../components/study-set/StudyNotes';
@@ -85,9 +86,9 @@ const StudySidebar: React.FC<StudySidebarProps> = ({ activeMethod, onSelectMetho
                 {/* Header */}
                 <div className="p-4 border-b border-gray-200 dark:border-white/5 flex justify-between items-center">
                     <div className="flex flex-col">
-                        <div className="flex items-center gap-2 mb-1 cursor-pointer" onClick={() => navigate('/dashboard')}>
-                           <div className="text-indigo-600 dark:text-indigo-500 text-xl font-bold">{t('home.hero.title')}</div>
-                        </div>
+                                <div className="flex items-center gap-2 mb-1 cursor-pointer" onClick={() => navigate('/dashboard')}>
+                                    <LogoWithText size={28} maxTextWidth={160} title={t('home.hero.title')} showSubtitle={false} />
+                                </div>
                         
                         <button 
                             onClick={() => navigate('/dashboard')}

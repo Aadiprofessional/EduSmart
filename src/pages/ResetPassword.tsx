@@ -5,6 +5,7 @@ import { useAuth } from '../utils/AuthContext';
 import { useLanguage } from '../utils/LanguageContext';
 import { motion } from 'framer-motion';
 import { useNotification } from '../utils/NotificationContext';
+import LogoWithText from '../components/ui/LogoWithText';
 import { supabase } from '../utils/supabase';
 
 const ResetPassword: React.FC = () => {
@@ -179,9 +180,14 @@ const ResetPassword: React.FC = () => {
                   <FaMagic className="text-purple-400" />
                   Study smarter using AI
                 </div>
-                <h1 className="text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
-                  MatrixEdu
-                </h1>
+                <div className="flex justify-center">
+                  <LogoWithText
+                    size={40}
+                    maxTextWidth={200}
+                    titleClassName="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60 leading-tight"
+                    subtitleClassName="text-[11px] text-gray-400 truncate"
+                  />
+                </div>
             </div>
 
             {/* Reset Password Form Container */}

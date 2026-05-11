@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../utils/AuthContext';
 import { useLanguage } from '../utils/LanguageContext';
 import { useNotification } from '../utils/NotificationContext';
+import LogoWithText from '../components/ui/LogoWithText';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -242,9 +243,14 @@ const Login: React.FC = () => {
                     <FaMagic className="text-purple-400" />
                     Study smarter using AI
                   </div>
-                  <h1 className="text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60 group-hover:to-white/80 transition-all">
-                    MatrixEdu
-                  </h1>
+                  <div className="flex justify-center">
+                    <LogoWithText
+                      size={40}
+                      maxTextWidth={200}
+                      titleClassName="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60 group-hover:to-white/80 transition-all leading-tight"
+                      subtitleClassName="text-[11px] text-gray-400 truncate"
+                    />
+                  </div>
                 </Link>
             </div>
 

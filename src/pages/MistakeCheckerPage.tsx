@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaRegEdit, FaHistory } from 'react-icons/fa';
+import { FaRegEdit, FaHistory, FaBars } from 'react-icons/fa';
 import SidebarLeft from '../components/dashboard/SidebarLeft';
 import CheckMistakesComponent from '../components/ui/CheckMistakesComponent';
 import { useLanguage } from '../utils/LanguageContext';
@@ -113,12 +113,21 @@ const MistakeCheckerPage: React.FC = () => {
       <div className="flex-1 flex relative w-full">
         <main className={`flex-1 flex flex-col relative transition-all duration-300 w-full ${isHistoryOpen ? 'mr-0' : 'mr-0'}`}>
           <div className="absolute top-6 left-6 z-20 flex items-center gap-4">
-            {(!isLeftSidebarOpen || !isMobile) && (
+            {!isLeftSidebarOpen && (
               <button
                 onClick={() => setIsLeftSidebarOpen(true)}
                 className="w-10 h-10 rounded-full bg-indigo-600 dark:bg-indigo-500 text-white flex items-center justify-center font-bold text-sm hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors shadow-sm lg:hidden"
               >
                 ME
+              </button>
+            )}
+            {!isLeftSidebarOpen && (
+              <button
+                onClick={() => setIsLeftSidebarOpen(true)}
+                className="hidden lg:flex p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-white/10 shadow-sm transition-colors"
+                title="Open sidebar"
+              >
+                <FaBars size={16} />
               </button>
             )}
             <button

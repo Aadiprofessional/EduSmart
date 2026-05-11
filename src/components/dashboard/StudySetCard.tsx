@@ -114,9 +114,14 @@ const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid', onC
             className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl p-6 hover:border-gray-300 dark:hover:border-white/20 transition-colors group flex flex-col md:flex-row items-center gap-6 shadow-sm dark:shadow-none cursor-pointer"
         >
             <div className="flex-1 min-w-0 w-full md:w-auto">
-                <div className="flex justify-between items-center mb-2">
-                    <h3 className="text-base md:text-lg font-bold text-gray-900 dark:text-white truncate">{set.title}</h3>
-                </div>
+                <h3 className="text-base md:text-lg font-bold text-gray-900 dark:text-white truncate mb-0.5">{set.title}</h3>
+                {set.created_at && (
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-2">
+                    {new Date(set.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    {' · '}
+                    {new Date(set.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                  </p>
+                )}
                 <div className="flex items-center gap-4">
                     <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden max-w-xs">
                         <div 
@@ -196,7 +201,16 @@ const StudySetCard: React.FC<StudySetCardProps> = ({ set, viewMode = 'grid', onC
         className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl p-6 hover:border-gray-300 dark:hover:border-white/20 transition-colors group shadow-sm dark:shadow-none cursor-pointer relative"
       >
         <div className="flex justify-between items-start mb-4 md:mb-6">
-            <h3 className="text-base md:text-lg font-bold text-gray-900 dark:text-white truncate pr-2">{set.title}</h3>
+            <div className="flex-1 min-w-0 pr-2">
+              <h3 className="text-base md:text-lg font-bold text-gray-900 dark:text-white truncate">{set.title}</h3>
+              {set.created_at && (
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+                  {new Date(set.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  {' · '}
+                  {new Date(set.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                </p>
+              )}
+            </div>
             <div className="flex gap-2 flex-shrink-0 items-center">
               {onMove && (
                 <button 

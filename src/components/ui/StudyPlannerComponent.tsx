@@ -190,6 +190,8 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
     return () => observer.disconnect();
   }, []);
 
+  
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [sortBy, setSortBy] = useState('date');
@@ -225,6 +227,23 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
     startDate: '',
     endDate: ''
   });
+  const [showDateRangePicker, setShowDateRangePicker] = useState(false);
+  const [pickerViewDate, setPickerViewDate] = useState(new Date());
+  const [pickerTempStart, setPickerTempStart] = useState('');
+  const [pickerTempEnd, setPickerTempEnd] = useState('');
+  const dateRangePickerRef = useRef<HTMLDivElement>(null);
+  // Close date range picker when clicking outside
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (dateRangePickerRef.current && !dateRangePickerRef.current.contains(e.target as Node)) {
+        setShowDateRangePicker(false);
+      }
+    };
+    if (showDateRangePicker) {
+      document.addEventListener('mousedown', handleOutsideClick);
+    }
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [showDateRangePicker]);
   const [customPrompt, setCustomPrompt] = useState('');
   const [isGeneratingSuggestion, setIsGeneratingSuggestion] = useState(false);
   const [showRoadmapResultModal, setShowRoadmapResultModal] = useState(false);
@@ -2432,7 +2451,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
             className="flex items-center justify-center z-50 p-4"
           >
             <motion.div
-              className="bg-white dark:bg-black/90 backdrop-blur-xl border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden"
+              className="bg-white dark:bg-black/90 backdrop-blur-xl border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col overflow-visible"
               initial={{ scale: 0.95, opacity: 0, y: 10 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 10 }}
@@ -2464,31 +2483,149 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                     <IconComponent icon={FiCalendar} className="mr-2 text-emerald-500" />
                     {t('aiStudy.selectDateRange')}
                   </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <span className="text-gray-500 text-xs">{t('aiStudy.start')}</span>
+
+                  {/* Custom Date Range Picker */}
+                  <div className="relative" ref={dateRangePickerRef}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPickerTempStart(suggestionDateRange.startDate);
+                        setPickerTempEnd(suggestionDateRange.endDate);
+                        setPickerViewDate(suggestionDateRange.startDate ? new Date(suggestionDateRange.startDate + 'T00:00:00') : new Date());
+                        setShowDateRangePicker(prev => !prev);
+                      }}
+                      className="w-full flex items-center gap-2 bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 hover:border-emerald-500 rounded-xl px-4 py-2.5 text-sm text-left transition-all"
+                    >
+                      <IconComponent icon={FiCalendar} className="text-emerald-500 flex-shrink-0" />
+                      {suggestionDateRange.startDate && suggestionDateRange.endDate ? (
+                        <span className="text-gray-900 dark:text-white">
+                          {new Date(suggestionDateRange.startDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          <span className="mx-2 text-gray-400">→</span>
+                          {new Date(suggestionDateRange.endDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 dark:text-gray-500">{t('aiStudy.selectDateRange')}</span>
+                      )}
+                    </button>
+
+                    {showDateRangePicker && (
+                      <div className="absolute top-full left-0 mt-2 z-50 bg-white dark:bg-[#1e1e1e] border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl p-4 w-[300px]">
+                        {/* Month Navigation */}
+                        <div className="flex items-center justify-between mb-3">
+                          <button
+                            type="button"
+                            onClick={() => setPickerViewDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1))}
+                            className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 transition-colors"
+                          >
+                            <IconComponent icon={FiChevronLeft} className="h-4 w-4" />
+                          </button>
+                          <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                            {pickerViewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setPickerViewDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1))}
+                            className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 transition-colors"
+                          >
+                            <IconComponent icon={FiChevronRight} className="h-4 w-4" />
+                          </button>
+                        </div>
+
+                        {/* Day Headers */}
+                        <div className="grid grid-cols-7 mb-1">
+                          {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
+                            <div key={d} className="text-center text-[11px] font-medium text-gray-400 py-1">{d}</div>
+                          ))}
+                        </div>
+
+                        {/* Calendar Days */}
+                        <div className="grid grid-cols-7 gap-y-0.5">
+                          {(() => {
+                            const year = pickerViewDate.getFullYear();
+                            const month = pickerViewDate.getMonth();
+                            const firstDay = new Date(year, month, 1).getDay();
+                            const daysInMonth = new Date(year, month + 1, 0).getDate();
+                            const cells: React.ReactNode[] = [];
+
+                            // Leading empty cells
+                            for (let i = 0; i < firstDay; i++) {
+                              cells.push(<div key={`e${i}`} />);
+                            }
+
+                            for (let day = 1; day <= daysInMonth; day++) {
+                              const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                              const isStart = dateStr === pickerTempStart;
+                              const isEnd = dateStr === pickerTempEnd;
+                              const isInRange = pickerTempStart && pickerTempEnd && dateStr > pickerTempStart && dateStr < pickerTempEnd;
+                              const isSingle = pickerTempStart && !pickerTempEnd && dateStr === pickerTempStart;
+
+                              cells.push(
+                                <button
+                                  key={day}
+                                  type="button"
+                                  onClick={() => {
+                                    if (!pickerTempStart || (pickerTempStart && pickerTempEnd)) {
+                                      setPickerTempStart(dateStr);
+                                      setPickerTempEnd('');
+                                    } else {
+                                      if (dateStr < pickerTempStart) {
+                                        setPickerTempEnd(pickerTempStart);
+                                        setPickerTempStart(dateStr);
+                                      } else {
+                                        setPickerTempEnd(dateStr);
+                                      }
+                                    }
+                                  }}
+                                  className={`relative text-[13px] h-8 w-full rounded-lg flex items-center justify-center transition-colors font-medium
+                                    ${isStart || isEnd ? 'bg-emerald-500 text-white' : ''}
+                                    ${isSingle ? 'bg-emerald-500 text-white' : ''}
+                                    ${isInRange ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-none' : ''}
+                                    ${!isStart && !isEnd && !isInRange && !isSingle ? 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10' : ''}
+                                  `}
+                                >
+                                  {day}
+                                </button>
+                              );
+                            }
+                            return cells;
+                          })()}
+                        </div>
+
+                        {/* Selection hint */}
+                        <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-3 text-center">
+                          {!pickerTempStart
+                            ? 'Click to select start date'
+                            : !pickerTempEnd
+                            ? 'Now click the end date'
+                            : `${new Date(pickerTempStart + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} → ${new Date(pickerTempEnd + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+                          }
+                        </p>
+
+                        {/* Apply / Cancel */}
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            type="button"
+                            onClick={() => setShowDateRangePicker(false)}
+                            className="flex-1 py-1.5 text-sm rounded-xl border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (pickerTempStart && pickerTempEnd) {
+                                setSuggestionDateRange({ startDate: pickerTempStart, endDate: pickerTempEnd });
+                                setShowDateRangePicker(false);
+                              }
+                            }}
+                            disabled={!pickerTempStart || !pickerTempEnd}
+                            className={`flex-1 py-1.5 text-sm rounded-xl font-medium transition-colors ${pickerTempStart && pickerTempEnd ? 'bg-emerald-500 hover:bg-emerald-600 text-white' : 'bg-gray-100 dark:bg-white/5 text-gray-400 cursor-not-allowed'}`}
+                          >
+                            Apply
+                          </button>
+                        </div>
                       </div>
-                      <input
-                        type="date"
-                        value={suggestionDateRange.startDate}
-                        onClick={(e) => e.currentTarget.showPicker()}
-                        onChange={(e) => setSuggestionDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-                        className="pl-12 w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-gray-900 dark:text-white dark:[color-scheme:dark] dark:[&::-webkit-calendar-picker-indicator]:invert"
-                      />
-                    </div>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <span className="text-gray-500 text-xs">{t('aiStudy.end')}</span>
-                      </div>
-                      <input
-                        type="date"
-                        value={suggestionDateRange.endDate}
-                        onClick={(e) => e.currentTarget.showPicker()}
-                        onChange={(e) => setSuggestionDateRange(prev => ({ ...prev, endDate: e.target.value }))}
-                        className="pl-10 w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-gray-900 dark:text-white dark:[color-scheme:dark] dark:[&::-webkit-calendar-picker-indicator]:invert"
-                      />
-                    </div>
+                    )}
                   </div>
                 </div>
 

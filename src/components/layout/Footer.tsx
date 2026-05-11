@@ -5,6 +5,7 @@ import IconComponent from '../ui/IconComponent';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../../utils/LanguageContext';
 import matrixLogo from '../../assets/matrixedu.jpeg';
+import LogoWithText from '../ui/LogoWithText';
 
 const Footer: React.FC = () => {
   const { t } = useLanguage();
@@ -48,15 +49,9 @@ const Footer: React.FC = () => {
           >
             {/* Logo */}
             <motion.div variants={itemVariants} className="mb-4 flex flex-col items-center">
-              <div className="flex items-center gap-2 mb-2">
-                <img src={matrixLogo} alt="MatrixEdu Logo" className="w-8 h-8 rounded-xl object-cover" />
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
-                  MatrixEdu
-                </h3>
+              <div className="mb-2">
+                <LogoWithText size={32} maxTextWidth={160} title="MatrixEdu" subtitle="MatrixAI Company Limited" />
               </div>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-2 font-medium">
-                Matrix AI Company Limited
-              </p>
               <p className="text-gray-600 dark:text-gray-400 text-xs leading-relaxed max-w-sm mx-auto">
                 {t('footer.aiEducation')}
               </p>
@@ -132,16 +127,11 @@ const Footer: React.FC = () => {
         >
           {/* About */}
           <motion.div variants={itemVariants}>
-            <div className="mb-6">
+              <div className="mb-6">
               <div className="flex items-center gap-2 mb-4">
-                <img src={matrixLogo} alt="MatrixEdu Logo" className="w-10 h-10 rounded-xl object-cover" />
-                <h3 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
-                  MatrixEdu
-                </h3>
+                <LogoWithText size={40} maxTextWidth={220} title="MatrixEdu" subtitle="MatrixAI Company Limited" />
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 font-medium">
-                Matrix AI Company Limited
-              </p>
+              
               <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
                 {t('footer.about')}
               </p>

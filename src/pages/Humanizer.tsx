@@ -398,12 +398,23 @@ const Humanizer: React.FC = () => {
         {/* Header / Mobile Nav */}
         <header className="h-16 border-b border-gray-200 dark:border-white/5 bg-white/90 dark:bg-[#0a0a0a]/80 backdrop-blur-xl flex items-center justify-between px-4 lg:px-6 shrink-0 z-20">
             <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
                 <button 
                     onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)} 
                     className="lg:hidden w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-900 dark:text-white flex items-center justify-center transition-colors"
                 >
                     <IconComponent icon={FiMenu} className="w-5 h-5" />
                 </button>
+                {!isLeftSidebarOpen && (
+                  <button
+                    onClick={() => setIsLeftSidebarOpen(true)}
+                    className="hidden lg:flex p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 rounded-xl border border-gray-200 dark:border-white/10 transition-colors"
+                    title="Open sidebar"
+                  >
+                    <IconComponent icon={FiMenu} className="w-5 h-5" />
+                  </button>
+                )}
+                </div>
                 <h1 className="text-lg lg:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
                         <FaUserCheck size={14} className="text-white" />
