@@ -209,20 +209,126 @@ const StudyNotes: React.FC = () => {
 
     const handleExportPdf = async () => {
         if (!editorRef.current) return;
-        
+
         try {
-            const isDarkMode = document.documentElement.classList.contains('dark');
-            const canvas = await html2canvas(editorRef.current, { 
-                scale: 2,
-                backgroundColor: isDarkMode ? '#111111' : '#ffffff', // Match theme
-                useCORS: true
-            });
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
             const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-            
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            const pdfPageHeight = pdf.internal.pageSize.getHeight();
+            const margin = 15; // mm
+            const contentWidth = pdfWidth - margin * 2;
+            const pageContentHeight = pdfPageHeight - margin * 2;
+
+            // Build a clean, light-mode clone of the editor content
+            const container = document.createElement('div');
+            // Width in px: contentWidth mm × 3.7795 px/mm at 96dpi
+            container.style.cssText = [
+                'position:fixed', 'top:-9999px', 'left:-9999px',
+                `width:${Math.round(contentWidth * 3.7795)}px`,
+                'background:#ffffff', 'color:#111111',
+                "font-family:'Segoe UI',Arial,sans-serif",
+                'font-size:14px', 'line-height:1.7', 'padding:0',
+            ].join(';');
+
+            const clone = editorRef.current.cloneNode(true) as HTMLElement;
+            clone.style.cssText = [
+                'background:#ffffff', 'color:#111111',
+                'padding:0', 'min-height:unset',
+                'max-height:unset', 'overflow:visible',
+                'box-shadow:none', 'border:none',
+            ].join(';');
+
+            // Recursively force white-bg / black-text and clean dark-mode classes
+            const applyPrintStyles = (el: Element) => {
+                const h = el as HTMLElement;
+                const tag = h.tagName?.toLowerCase();
+                // Strip Tailwind dark: classes so they don't bleed through
+                if (h.className) {
+                    h.className = h.className
+                        .split(' ')
+                        .filter(c => !c.startsWith('dark:'))
+                        .join(' ');
+                }
+                h.style.color = '#111111';
+                h.style.backgroundColor = 'transparent';
+                if (['h1','h2','h3','h4','h5','h6'].includes(tag)) {
+                    h.style.color = '#000000';
+                    h.style.fontWeight = 'bold';
+                    h.style.marginTop = '1em';
+                    h.style.marginBottom = '0.4em';
+                    const sizes: Record<string,string> = { h1:'26px', h2:'22px', h3:'18px', h4:'16px', h5:'14px', h6:'13px' };
+                    h.style.fontSize = sizes[tag] || '14px';
+                }
+                if (tag === 'code') {
+                    h.style.backgroundColor = '#f3f4f6';
+                    h.style.color = '#1e293b';
+                    h.style.fontFamily = 'monospace';
+                    h.style.padding = '2px 6px';
+                    h.style.borderRadius = '3px';
+                }
+                if (tag === 'pre') {
+                    h.style.backgroundColor = '#f3f4f6';
+                    h.style.color = '#1e293b';
+                    h.style.fontFamily = 'monospace';
+                    h.style.padding = '12px 16px';
+                    h.style.borderRadius = '6px';
+                    h.style.overflowX = 'auto';
+                    h.style.marginBottom = '1em';
+                }
+                if (tag === 'blockquote') {
+                    h.style.borderLeft = '4px solid #d1d5db';
+                    h.style.paddingLeft = '16px';
+                    h.style.color = '#6b7280';
+                    h.style.margin = '0.5em 0';
+                }
+                if (tag === 'a') {
+                    h.style.color = '#2563eb';
+                    h.style.textDecoration = 'underline';
+                }
+                if (tag === 'hr') {
+                    h.style.borderColor = '#e5e7eb';
+                }
+                Array.from(el.children).forEach(applyPrintStyles);
+            };
+            applyPrintStyles(clone);
+
+            container.appendChild(clone);
+            document.body.appendChild(container);
+
+            const canvas = await html2canvas(container, {
+                scale: 2,
+                backgroundColor: '#ffffff',
+                useCORS: true,
+                logging: false,
+                width: container.scrollWidth,
+                height: container.scrollHeight,
+            });
+
+            document.body.removeChild(container);
+
+            const imgData = canvas.toDataURL('image/png');
+            const imgHeight = (canvas.height * contentWidth) / canvas.width;
+
+            let heightLeft = imgHeight;
+            let pageIndex = 0;
+
+            // First page
+            pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, imgHeight);
+            heightLeft -= pageContentHeight;
+
+            // Subsequent pages: slide image up by one pageContentHeight each time
+            while (heightLeft > 0) {
+                pageIndex++;
+                pdf.addPage();
+                pdf.addImage(
+                    imgData, 'PNG',
+                    margin,
+                    margin - pageIndex * pageContentHeight,
+                    contentWidth,
+                    imgHeight
+                );
+                heightLeft -= pageContentHeight;
+            }
+
             pdf.save('study-notes.pdf');
         } catch (error) {
             console.error('Error exporting PDF:', error);
@@ -344,7 +450,6 @@ const StudyNotes: React.FC = () => {
                             <ToolbarButton icon={<FaSuperscript size={12} />} command="superscript" />
                             <ToolbarButton icon={<FaSubscript size={12} />} command="subscript" />
                             <ToolbarButton icon={<FaMinus size={12} />} command="insertHorizontalRule" />
-                            <ToolbarButton icon={<FaImage size={12} />} onClick={() => openPopup('image')} />
                             
                             <div className="w-px h-4 bg-gray-200 dark:bg-white/10 mx-1 flex-shrink-0"></div>
                             
@@ -361,7 +466,7 @@ const StudyNotes: React.FC = () => {
                                     type="text"
                                     value={popupValue}
                                     onChange={(e) => setPopupValue(e.target.value)}
-                                    placeholder={activePopup === 'link' ? "Enter URL..." : "Enter Image URL..."}
+                                    placeholder="Enter URL..."
                                     className="flex-1 bg-gray-100 dark:bg-black/30 border border-gray-200 dark:border-white/10 rounded px-2 py-1 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                                     autoFocus
                                 />

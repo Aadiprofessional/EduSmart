@@ -959,11 +959,15 @@ export const zhTW = {
     actionCards: {
       upload: {
         title: "上傳",
-        description: "圖片、檔案、音訊、影片"
+        description: "圖片、檔案、音訊"
       },
-      paste: {
-        title: "貼上",
-        description: "YouTube、網站、文字"
+      url: {
+        title: "URL",
+        description: "YouTube、網站"
+      },
+      text: {
+        title: "文字",
+        description: "貼上筆記"
       },
       record: {
         title: "錄音",
@@ -2036,6 +2040,26 @@ export const zhTW = {
         }
       }
     }
+  },
+  feedback: {
+    title: "意見回饋與幫助",
+    subtitle: "有問題、發現了錯誤，或想建議新功能？歡迎告訴我們。",
+    typeLabel: "類型",
+    typeFeedback: "意見回饋",
+    typeBug: "問題回報",
+    typeHelp: "幫助",
+    typeFeature: "功能建議",
+    messageLabel: "訊息",
+    messagePlaceholder: "詳細描述您的意見、問題或請求...",
+    emailLabel: "電子郵件（選填）",
+    emailPlaceholder: "your@email.com",
+    submitBtn: "發送意見",
+    successTitle: "感謝您！",
+    successMsg: "您的訊息已收到。如有需要，我們將回覆您。",
+    errorTitle: "錯誤",
+    emptyMsg: "提交前請輸入訊息內容。",
+    errorMsg: "發送意見失敗",
+    buttonLabel: "意見回饋"
   }
 };
 

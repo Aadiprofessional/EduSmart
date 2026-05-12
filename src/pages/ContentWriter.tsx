@@ -29,7 +29,7 @@ const ContentWriter: React.FC = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   
   const [prompt, setPrompt] = useState('');
-  const [activeTemplate, setActiveTemplate] = useState('college-app');
+  const [activeTemplate, setActiveTemplate] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState(''); // Stores HTML content
   const [isHistoryOpen, setIsHistoryOpen] = useState(false); // Right panel history state
   const [tone, setTone] = useState('professional');
@@ -334,6 +334,12 @@ const ContentWriter: React.FC = () => {
   };
 
   const selectTemplate = (templateId: string) => {
+    // If clicking the already-active template, deselect it and clear the prompt
+    if (activeTemplate === templateId) {
+      setActiveTemplate(null);
+      setPrompt('');
+      return;
+    }
     setActiveTemplate(templateId);
     let templatePrompt = '';
     switch(templateId) {

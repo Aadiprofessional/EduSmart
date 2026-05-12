@@ -7,7 +7,7 @@ import { useSubscription } from '../../utils/SubscriptionContext';
 import { supabase } from '../../utils/supabase';
 import { useLanguage } from '../../utils/LanguageContext';
 import coinIcon from '../../assets/assets_coin.png';
-import matrixLogo from '../../assets/matrixedu.jpeg';
+import matrixLogo from '../../assets/logoround.png';
 import LogoWithText from '../ui/LogoWithText';
 import LanguageSelector from '../ui/LanguageSelector';
 

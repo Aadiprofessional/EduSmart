@@ -1522,11 +1522,15 @@ export const zhCN = {
     actionCards: {
       upload: {
         title: "上传",
-        description: "图片、文件、音频、视频"
+        description: "图片、文件、音频"
       },
-      paste: {
-        title: "粘贴",
-        description: "YouTube、网站、文本"
+      url: {
+        title: "URL",
+        description: "YouTube、网站"
+      },
+      text: {
+        title: "文本",
+        description: "粘贴笔记"
       },
       record: {
         title: "录音",
@@ -2463,6 +2467,26 @@ export const zhCN = {
     importantNotes: "重要说明",
     disclaimer: "免责声明",
     allCostEstimatesAreAIGeneratedAndMayVaryBasedOnIndividualCircumstancesProgramRequirementsLifestyleChoicesAndCurrentExchangeRatesPleaseVerifyWithTheUniversityForTheMostAccurateInformation: "所有费用估算均由AI生成，可能因个人情况、项目要求、生活方式选择和当前汇率而有所不同。请与大学核实以获取最准确的信息。"
+  },
+  feedback: {
+    title: "反馈与帮助",
+    subtitle: "有疑问、发现了问题，或想建议新功能？欢迎告诉我们。",
+    typeLabel: "类型",
+    typeFeedback: "反馈",
+    typeBug: "问题报告",
+    typeHelp: "帮助",
+    typeFeature: "功能建议",
+    messageLabel: "消息",
+    messagePlaceholder: "详细描述您的反馈、问题或请求...",
+    emailLabel: "邮箱（可选）",
+    emailPlaceholder: "your@email.com",
+    submitBtn: "发送反馈",
+    successTitle: "感谢您！",
+    successMsg: "您的消息已收到。如需要，我们将进行处理并回复您。",
+    errorTitle: "错误",
+    emptyMsg: "提交前请输入消息内容。",
+    errorMsg: "发送反馈失败",
+    buttonLabel: "反馈"
   }
 };
 

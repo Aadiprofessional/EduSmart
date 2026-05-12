@@ -10,6 +10,7 @@ import {
   FaMoon, 
   FaChevronDown,
   FaChevronUp,
+  FaChevronRight,
   FaHistory,
   FaCalendarAlt,
   FaPenNib,
@@ -18,12 +19,16 @@ import {
   FaCheckCircle,
   FaGlobe,
   FaTrash,
-  FaExclamationTriangle
+  FaExclamationTriangle,
+  FaCommentAlt,
+  FaCog,
+  FaBolt,
+  FaCoins
 } from 'react-icons/fa';
 import { useAuth } from '../../utils/AuthContext';
 import { useLanguage } from '../../utils/LanguageContext';
 import { useTheme } from '../../utils/ThemeContext';
-import matrixLogo from '../../assets/matrixedu.jpeg';
+import matrixLogo from '../../assets/logoround.png';
 import LogoWithText from '../ui/LogoWithText';
 import CoinPanel from '../ads/CoinPanel';
 import SubscriptionBadge from '../ads/SubscriptionBadge';
@@ -159,27 +164,9 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
           </div>
 
           {/* Bottom Controls */}
-          <div className="space-y-4 overflow-hidden whitespace-nowrap">
+          <div className="space-y-2 overflow-hidden whitespace-nowrap">
             {/* Coin Panel — shown for Lite Mode users */}
             <CoinPanel variant="sidebar" onUpgradeClick={() => navigate('/pricing')} />
-
-            {/* Theme Toggle */}
-            <div className="bg-gray-100 dark:bg-[#1a1a1a] p-1 rounded-lg flex justify-between border border-gray-200 dark:border-white/5">
-                <button 
-                  onClick={() => setTheme('light')}
-                  className={`flex-1 p-1.5 rounded flex justify-center transition-colors ${theme === 'light' ? 'bg-white shadow text-gray-900' : 'text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/10'}`}
-                  title={t('sidebar.lightMode')}
-                >
-                  <FaSun size={14} />
-                </button>
-                <button 
-                   onClick={() => setTheme('dark')}
-                   className={`flex-1 p-1.5 rounded flex justify-center transition-colors ${theme === 'dark' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/10'}`}
-                   title={t('sidebar.darkMode')}
-                >
-                  <FaMoon size={14} />
-                </button>
-            </div>
 
             {/* Collapsible Menu */}
             <AnimatePresence>
@@ -191,85 +178,80 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
                         transition={{ duration: 0.2 }}
                         className="overflow-hidden"
                     >
-                        <div className="space-y-1 border-t border-gray-200 dark:border-white/5 pt-4">
-                            <NavItem icon={<FaHistory />} label={t('sidebar.transactionHistory')} onClick={() => navigate('/transaction-history')} />
+                        <div className="space-y-1 border-t border-gray-200 dark:border-white/5 pt-2 overflow-y-auto" style={{ maxHeight: '52vh' }}>
+                            {/* Feedback & Help */}
+                            <button onClick={() => navigate('/feedback')} className="w-full flex items-center gap-3 px-2 py-2.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors text-sm">
+                                <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                                    <FaCommentAlt size={13} className="text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div className="flex-1 text-left overflow-hidden">
+                                    <p className="font-medium text-gray-900 dark:text-white text-sm truncate">Feedback & Help</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Report a bug or ask for help</p>
+                                </div>
+                                <FaChevronRight size={10} className="text-gray-400 flex-shrink-0" />
+                            </button>
 
-                            {/* Language Selector */}
-                            <div className="relative">
-                              <button
-                                onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
-                                className="w-full flex items-center gap-3 px-3 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors text-sm"
-                              >
-                                <FaGlobe size={13} />
-                                <span className="flex-1 text-left">{currentLangLabel}</span>
-                                <FaChevronDown size={10} className={`transition-transform ${isLangDropdownOpen ? 'rotate-180' : ''}`} />
-                              </button>
-                              <AnimatePresence>
-                                {isLangDropdownOpen && (
-                                  <motion.div
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: 'auto', opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    transition={{ duration: 0.15 }}
-                                    className="overflow-hidden pl-8"
-                                  >
-                                    {languageOptions.map(opt => (
-                                      <button
-                                        key={opt.code}
-                                        onClick={() => { setLanguage(opt.code); setIsLangDropdownOpen(false); }}
-                                        className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-colors ${language === opt.code ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 font-semibold' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'}`}
-                                      >
-                                        {language === opt.code && <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 flex-shrink-0" />}
-                                        {opt.label}
-                                      </button>
-                                    ))}
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
+                            {/* Transactions */}
+                            <button onClick={() => navigate('/transaction-history')} className="w-full flex items-center gap-3 px-2 py-2.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors text-sm">
+                                <div className="w-8 h-8 rounded-lg bg-yellow-100 dark:bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
+                                    <FaHistory size={13} className="text-yellow-600 dark:text-yellow-400" />
+                                </div>
+                                <div className="flex-1 text-left overflow-hidden">
+                                    <p className="font-medium text-gray-900 dark:text-white text-sm truncate">Transactions</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Coin history</p>
+                                </div>
+                                <FaChevronRight size={10} className="text-gray-400 flex-shrink-0" />
+                            </button>
+
+                            {/* Settings */}
+                            <button onClick={() => navigate('/settings')} className="w-full flex items-center gap-3 px-2 py-2.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors text-sm">
+                                <div className="w-8 h-8 rounded-lg bg-teal-100 dark:bg-teal-500/20 flex items-center justify-center flex-shrink-0">
+                                    <FaCog size={13} className="text-teal-600 dark:text-teal-400" />
+                                </div>
+                                <div className="flex-1 text-left overflow-hidden">
+                                    <p className="font-medium text-gray-900 dark:text-white text-sm truncate">Settings</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Manage your account and support</p>
+                                </div>
+                                <FaChevronRight size={10} className="text-gray-400 flex-shrink-0" />
+                            </button>
+
+                            {/* Buy More Coins */}
+                            <button onClick={() => navigate('/pricing')} className="w-full flex items-center gap-3 px-2 py-2.5 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 rounded-lg transition-colors text-sm border border-indigo-200 dark:border-indigo-500/20">
+                                <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                                    <FaBolt size={13} className="text-white" />
+                                </div>
+                                <div className="flex-1 text-left overflow-hidden">
+                                    <p className="font-medium text-indigo-700 dark:text-indigo-300 text-sm truncate">Buy More Coins</p>
+                                    <p className="text-xs text-indigo-500 dark:text-indigo-400 truncate">Top up your coin balance</p>
+                                </div>
+                                <FaChevronRight size={10} className="text-indigo-400 flex-shrink-0" />
+                            </button>
+
+                            {/* Dark Mode Toggle */}
+                            <div className="flex items-center gap-3 px-2 py-2.5 rounded-lg">
+                                <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-500/20 flex items-center justify-center flex-shrink-0">
+                                    <FaMoon size={13} className="text-slate-600 dark:text-slate-400" />
+                                </div>
+                                <div className="flex-1 overflow-hidden">
+                                    <p className="font-medium text-gray-900 dark:text-white text-sm">Dark Mode</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">{theme === 'dark' ? 'Switch to light' : 'Switch to dark'}</p>
+                                </div>
+                                <button
+                                    onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                                    className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${theme === 'dark' ? 'bg-indigo-600' : 'bg-gray-300'}`}
+                                >
+                                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${theme === 'dark' ? 'left-5' : 'left-1'}`} />
+                                </button>
                             </div>
 
-                            {/* Delete Account */}
-                            {deleteConfirmStep === 0 && (
-                              <button
-                                onClick={handleDeleteAccount}
-                                className="w-full flex items-center gap-3 px-3 py-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors text-sm"
-                              >
-                                <FaTrash size={12} />
-                                <span>Delete Account</span>
-                              </button>
-                            )}
-                            {deleteConfirmStep === 1 && (
-                              <div className="px-3 py-2 bg-red-50 dark:bg-red-500/10 rounded-lg border border-red-200 dark:border-red-500/20">
-                                <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-xs font-semibold mb-2">
-                                  <FaExclamationTriangle size={12} />
-                                  <span>Delete your account?</span>
+                            {/* Log Out */}
+                            <button onClick={handleSignOut} className="w-full flex items-center gap-3 px-2 py-2.5 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors text-sm">
+                                <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                                    <FaSignOutAlt size={13} className="text-red-500 dark:text-red-400" />
                                 </div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">All your data will be permanently deleted. This cannot be undone.</p>
-                                <div className="flex gap-2">
-                                  <button onClick={() => setDeleteConfirmStep(0)} className="flex-1 py-1.5 text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg hover:bg-gray-50 transition-colors">Cancel</button>
-                                  <button onClick={handleDeleteAccount} className="flex-1 py-1.5 text-xs text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors font-semibold">Continue</button>
+                                <div className="flex-1 text-left">
+                                    <p className="font-medium text-red-600 dark:text-red-400 text-sm">Log Out</p>
                                 </div>
-                              </div>
-                            )}
-                            {deleteConfirmStep === 2 && (
-                              <div className="px-3 py-2 bg-red-50 dark:bg-red-500/10 rounded-lg border border-red-200 dark:border-red-500/20">
-                                <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-xs font-semibold mb-2">
-                                  <FaExclamationTriangle size={12} />
-                                  <span>Final confirmation</span>
-                                </div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Are you absolutely sure? This action is irreversible.</p>
-                                <div className="flex gap-2">
-                                  <button onClick={() => setDeleteConfirmStep(0)} className="flex-1 py-1.5 text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg hover:bg-gray-50 transition-colors">Cancel</button>
-                                  <button onClick={handleDeleteAccount} disabled={isDeletingAccount} className="flex-1 py-1.5 text-xs text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors font-semibold disabled:opacity-60">
-                                    {isDeletingAccount ? 'Deleting...' : 'Delete Forever'}
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-
-                            <button onClick={handleSignOut} className="w-full flex items-center gap-3 px-3 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors text-sm">
-                                <FaSignOutAlt />
-                                <span>{t('nav.logout')}</span>
                             </button>
                         </div>
                     </motion.div>

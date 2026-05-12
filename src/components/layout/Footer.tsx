@@ -4,7 +4,7 @@ import { FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaYoutube, FaPhone, FaE
 import IconComponent from '../ui/IconComponent';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../../utils/LanguageContext';
-import matrixLogo from '../../assets/matrixedu.jpeg';
+import matrixLogo from '../../assets/logoround.png';
 import LogoWithText from '../ui/LogoWithText';
 
 const Footer: React.FC = () => {

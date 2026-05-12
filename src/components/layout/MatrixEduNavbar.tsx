@@ -5,7 +5,7 @@ import { FaBars, FaTimes, FaBolt } from 'react-icons/fa';
 import { useAuth } from '../../utils/AuthContext';
 import { useSubscription } from '../../utils/SubscriptionContext';
 import { supabase } from '../../utils/supabase';
-import matrixLogo from '../../assets/matrixedu.jpeg';
+import matrixLogo from '../../assets/logoround.png';
 import LogoWithText from '../ui/LogoWithText';
 import coinIcon from '../../assets/assets_coin.png';
 import { useLanguage } from '../../utils/LanguageContext';
@@ -92,10 +92,13 @@ const MatrixEduNavbar: React.FC = () => {
           <LanguageSelector />
           {user && !subLoading && (
             subscriptionStatus?.hasActiveSubscription ? (
-                <div className="flex items-center px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/30 rounded-full text-yellow-400 backdrop-blur-sm">
+                <button
+                onClick={() => navigate('/transaction-history')}
+                className="flex items-center px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/30 rounded-full text-yellow-400 backdrop-blur-sm hover:bg-yellow-500/20 transition-colors cursor-pointer"
+                >
                     <img src={coinIcon} alt={t('matrixEduNavbar.coinsAlt')} className="w-4 h-4 mr-1.5" />
                     <span className="font-bold text-sm">{coins}</span>
-                </div>
+                </button>
             ) : (
                 <button
                 onClick={() => navigate('/pricing')}
@@ -127,10 +130,13 @@ const MatrixEduNavbar: React.FC = () => {
       <div className="flex items-center gap-2 md:hidden shrink-0">
          {/* Mobile Coins Display */}
          {user && !subLoading && subscriptionStatus?.hasActiveSubscription && (
-            <div className="flex items-center px-2 py-1 bg-yellow-500/10 border border-yellow-500/30 rounded-full text-yellow-400 backdrop-blur-sm">
+            <button
+                onClick={() => navigate('/transaction-history')}
+                className="flex items-center px-2 py-1 bg-yellow-500/10 border border-yellow-500/30 rounded-full text-yellow-400 backdrop-blur-sm hover:bg-yellow-500/20 transition-colors cursor-pointer"
+            >
                 <img src={coinIcon} alt={t('matrixEduNavbar.coinsAlt')} className="w-3.5 h-3.5 mr-1" />
                 <span className="font-bold text-xs">{coins}</span>
-            </div>
+            </button>
          )}
 
         <LanguageSelector compactMobile />

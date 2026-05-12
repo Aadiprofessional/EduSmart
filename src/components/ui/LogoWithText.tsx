@@ -1,5 +1,5 @@
 import React from 'react';
-import matrixLogo from '../../assets/matrixedu.jpeg';
+import matrixLogo from '../../assets/logoround.png';
 
 interface Props {
   size?: number; // px

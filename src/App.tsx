@@ -42,6 +42,8 @@ import FAQ from './pages/FAQ';
 import CookiesPolicy from './pages/CookiesPolicy';
 import MathTestPage from './pages/MathTestPage';
 import TimerPage from './pages/TimerPage';
+import FeedbackPage from './pages/FeedbackPage';
+import SettingsPage from './pages/SettingsPage';
 
 // Components
 import ErrorNotification from './components/ErrorNotification';
@@ -210,6 +212,16 @@ function App() {
                       <Route path="/cookies" element={<CookiesPolicy />} />
                       <Route path="/math-test" element={<MathTestPage />} />
                       <Route path="/timer" element={<TimerPage />} />
+                      <Route path="/feedback" element={
+                        <ProtectedRoute>
+                          <FeedbackPage />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/settings" element={
+                        <ProtectedRoute>
+                          <SettingsPage />
+                        </ProtectedRoute>
+                      } />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                         </div>

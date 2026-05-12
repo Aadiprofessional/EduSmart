@@ -1,19 +1,20 @@
 import React from 'react';
-import { FaUpload, FaLink, FaMicrophone } from 'react-icons/fa';
+import { FaUpload, FaLink, FaMicrophone, FaRegClipboard } from 'react-icons/fa';
 import { useLanguage } from '../../utils/LanguageContext';
 
 interface ActionCardsProps {
     onUpload: () => void;
-    onPaste: () => void;
+    onUrl: () => void;
+    onText: () => void;
     onRecord: () => void;
     isCompact?: boolean;
 }
 
-const ActionCards: React.FC<ActionCardsProps> = ({ onUpload, onPaste, onRecord, isCompact = false }) => {
+const ActionCards: React.FC<ActionCardsProps> = ({ onUpload, onUrl, onText, onRecord, isCompact = false }) => {
   const { t } = useLanguage();
 
   return (
-    <div className={`grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-4 transition-all duration-300 ${isCompact ? 'mb-4' : 'mb-8 md:mb-16'}`}>
+    <div className={`grid grid-cols-4 gap-2 md:gap-4 transition-all duration-300 ${isCompact ? 'mb-4' : 'mb-8 md:mb-16'}`}>
         <ActionCard 
            icon={<FaUpload />} 
            title={t('matrixDashboard.actionCards.upload.title')} 
@@ -23,9 +24,16 @@ const ActionCards: React.FC<ActionCardsProps> = ({ onUpload, onPaste, onRecord, 
         />
         <ActionCard 
            icon={<FaLink />} 
-           title={t('matrixDashboard.actionCards.paste.title')} 
-           description={t('matrixDashboard.actionCards.paste.description')} 
-           onClick={onPaste}
+           title={t('matrixDashboard.actionCards.url.title')} 
+           description={t('matrixDashboard.actionCards.url.description')} 
+           onClick={onUrl}
+           isCompact={isCompact}
+        />
+        <ActionCard 
+           icon={<FaRegClipboard />} 
+           title={t('matrixDashboard.actionCards.text.title')} 
+           description={t('matrixDashboard.actionCards.text.description')} 
+           onClick={onText}
            isCompact={isCompact}
         />
         <ActionCard 

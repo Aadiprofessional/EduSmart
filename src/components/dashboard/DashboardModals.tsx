@@ -211,9 +211,6 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void; onNex
             if (file.type.startsWith('audio/')) {
                 resultPayload = await uploadService.constructAudioPayload(file, uid);
                 resultPayload.uploadedFileType = 'audio';
-            } else if (file.type.startsWith('video/')) {
-                resultPayload = await uploadService.constructVideoPayload(file, uid);
-                resultPayload.uploadedFileType = 'video';
             } else {
                 // Default to document for everything else (pdf, doc, image, etc.)
                 resultPayload = await uploadService.constructDocumentPayload(file, uid, type);
@@ -299,7 +296,7 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void; onNex
         ref={fileInputRef} 
         className="hidden" 
         onChange={handleFileChange}
-        accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.ppt,.pptx"
+        accept="image/*,audio/*,.pdf,.doc,.docx,.ppt,.pptx"
         multiple
       />
       
@@ -387,7 +384,7 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void; onNex
             {uploadState === 'error' ? <FaTimes className="text-2xl" /> : <FaUpload className="text-2xl" />}
             </div>
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">{uploadState === 'error' ? t('matrixDashboard.modals.upload.uploadFailed') : t('matrixDashboard.modals.upload.clickOrDrag')}</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{t('matrixDashboard.modals.upload.supportedFileTypes')}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Image, PDF, Word, PowerPoint, Audio</p>
         </div>
       ) : (
         <div className="bg-white dark:bg-[#111] border border-dashed border-gray-200 dark:border-white/10 rounded-xl p-8">
@@ -479,7 +476,7 @@ export const PasteModal: React.FC<{ isOpen: boolean; onClose: () => void; onNext
                className="w-full h-40 bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-lg p-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-indigo-500/50 transition-colors resize-none disabled:opacity-50"
             ></textarea>
             <div className="flex justify-end mt-2">
-               <span className="text-xs text-gray-500">{text.length}/50000</span>
+               <span className="text-xs text-gray-500">{text.length}/10000</span>
             </div>
          </div>
 
@@ -492,6 +489,154 @@ export const PasteModal: React.FC<{ isOpen: boolean; onClose: () => void; onNext
                {isLoading ? t('common.processing') : t('common.next')}
             </button>
          </div>
+      </div>
+    </BaseModal>
+  );
+};
+
+// --- URL Modal ---
+export const URLModal: React.FC<{ isOpen: boolean; onClose: () => void; onNext: (payload: UploadPayload) => void }> = ({ isOpen, onClose, onNext }) => {
+  const { user } = useAuth();
+  const { t } = useLanguage();
+  const [url, setUrl] = useState('');
+  const [urlError, setUrlError] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) {
+      setUrl('');
+      setUrlError('');
+    }
+  }, [isOpen]);
+
+  const isValidUrl = (val: string) => {
+    try {
+      const u = new URL(val.startsWith('http') ? val : `https://${val}`);
+      return u.protocol === 'http:' || u.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+
+  const handleNext = () => {
+    if (!user) {
+      alert(t('matrixDashboard.modals.paste.signInError'));
+      return;
+    }
+    const trimmed = url.trim();
+    if (!isValidUrl(trimmed)) {
+      setUrlError('Please enter a valid URL (e.g. https://youtu.be/... or https://example.com)');
+      return;
+    }
+    const normalised = trimmed.startsWith('http') ? trimmed : `https://${trimmed}`;
+    const payload = uploadService.constructUrlPayload(normalised, user.id);
+    onNext(payload);
+  };
+
+  const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
+
+  return (
+    <BaseModal isOpen={isOpen} onClose={onClose} title="Add URL" subtitle="YouTube video or any website URL">
+      <div className="space-y-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {t('matrixDashboard.modals.paste.enterUrlLabel')}
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <FaLink className="text-gray-400 dark:text-gray-500" />
+            </div>
+            <input
+              type="text"
+              value={url}
+              onChange={(e) => { setUrl(e.target.value); setUrlError(''); }}
+              onKeyDown={(e) => e.key === 'Enter' && handleNext()}
+              placeholder={t('matrixDashboard.modals.paste.urlPlaceholder')}
+              className="w-full bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-lg py-3 pl-10 pr-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-indigo-500/50 transition-colors"
+            />
+          </div>
+          {urlError && <p className="text-xs text-red-500 mt-1">{urlError}</p>}
+          {isYouTube && !urlError && url && (
+            <p className="text-xs text-green-500 dark:text-green-400 mt-1 flex items-center gap-1">
+              <FaCheck /> YouTube link detected
+            </p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="p-3 rounded-lg bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 text-center">
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">YouTube</p>
+            <p className="text-[11px] text-gray-400">https://youtu.be/...</p>
+          </div>
+          <div className="p-3 rounded-lg bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 text-center">
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Website</p>
+            <p className="text-[11px] text-gray-400">https://example.com</p>
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            onClick={handleNext}
+            disabled={!url.trim()}
+            className={`px-8 py-2.5 rounded-lg font-medium transition-colors ${
+              !url.trim() ? 'bg-gray-200 dark:bg-gray-800 text-gray-400 cursor-not-allowed' : 'bg-[#c2410c] hover:bg-[#9a3412] text-white'
+            }`}
+          >
+            {t('common.next')}
+          </button>
+        </div>
+      </div>
+    </BaseModal>
+  );
+};
+
+// --- Text Modal ---
+export const TextModal: React.FC<{ isOpen: boolean; onClose: () => void; onNext: (payload: UploadPayload) => void }> = ({ isOpen, onClose, onNext }) => {
+  const { user } = useAuth();
+  const { t } = useLanguage();
+  const [text, setText] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) setText('');
+  }, [isOpen]);
+
+  const handleNext = () => {
+    if (!user) {
+      alert(t('matrixDashboard.modals.paste.signInError'));
+      return;
+    }
+    const payload = uploadService.constructTextPayload(text, user.id);
+    onNext(payload);
+  };
+
+  return (
+    <BaseModal isOpen={isOpen} onClose={onClose} title="Add Text" subtitle="Paste your notes, lectures, or any text content">
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {t('matrixDashboard.modals.paste.copyPasteLabel')}
+          </label>
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={t('matrixDashboard.modals.paste.notesPlaceholder')}
+            className="w-full h-48 bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-lg p-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-indigo-500/50 transition-colors resize-none"
+          />
+          <div className="flex justify-end mt-1">
+            <span className="text-xs text-gray-500">{text.length}/10000</span>
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            onClick={handleNext}
+            disabled={!text.trim()}
+            className={`px-8 py-2.5 rounded-lg font-medium transition-colors ${
+              !text.trim() ? 'bg-gray-200 dark:bg-gray-800 text-gray-400 cursor-not-allowed' : 'bg-[#c2410c] hover:bg-[#9a3412] text-white'
+            }`}
+          >
+            {t('common.next')}
+          </button>
+        </div>
       </div>
     </BaseModal>
   );

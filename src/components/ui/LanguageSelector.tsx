@@ -58,7 +58,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ compactMobile = fal
       } else {
         setDropdownPosition({
           top: rect.bottom + 8,
-          right: window.innerWidth - rect.right,
+          right: Math.max(0, window.innerWidth - rect.right - 8),
         });
       }
     }

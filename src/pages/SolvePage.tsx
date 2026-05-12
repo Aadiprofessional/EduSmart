@@ -890,10 +890,14 @@ const SolvePage: React.FC = () => {
                  <FaRegEdit size={22} />
                </button>
              </div>
-             {/* Center: Solve title */}
+             {/* Center: Solve title / Chat name */}
              <div className="flex items-center gap-2 pointer-events-none">
                <FaBullseye size={16} className="text-indigo-500" />
-               <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t('sidebar.solve')}</span>
+               <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 max-w-[200px] truncate">
+                 {chatId && history.find(c => c.id === chatId)?.title
+                   ? history.find(c => c.id === chatId)!.title
+                   : t('sidebar.solve')}
+               </span>
              </div>
              {/* Right: history */}
              <button

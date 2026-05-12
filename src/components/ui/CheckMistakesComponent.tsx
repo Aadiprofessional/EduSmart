@@ -3,7 +3,7 @@ import ReactDOM, { flushSync } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AiOutlineUpload, AiOutlineCamera, AiOutlineFullscreen, AiOutlineBulb, AiOutlineFileText, AiOutlineHistory, AiOutlineLoading3Quarters, AiOutlineLeft, AiOutlineRight, AiOutlineClose, AiOutlineCheckCircle, AiOutlineExclamationCircle, AiOutlineBook, AiOutlineDelete, AiOutlineExclamation } from 'react-icons/ai';
 import { FiDownload, FiCopy, FiShare2, FiClock } from 'react-icons/fi';
-import { FaFileAlt } from 'react-icons/fa';
+import { FaFileAlt, FaPaperPlane } from 'react-icons/fa';
 import IconComponent from './IconComponent';
 import * as pdfjsLib from 'pdfjs-dist';
 import html2canvas from 'html2canvas';
@@ -293,6 +293,22 @@ const MARKING_STANDARDS: MarkingStandard[] = [
       presentation: 20,
       methodology: 30,
       understanding: 10
+    }
+  },
+  {
+    id: 'gre',
+    name: 'GRE (Graduate Record Exam)',
+    description: 'ETS GRE Analytical Writing',
+    gradingScale: {
+      max: 6,
+      passingGrade: 4,
+      gradeLabels: { 6: '6', 5: '5', 4: '4', 3: '3', 2: '2', 1: '1', 0: '0' }
+    },
+    criteria: {
+      accuracy: 25,
+      presentation: 25,
+      methodology: 25,
+      understanding: 25
     }
   }
 ];
@@ -1730,6 +1746,7 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
       const normalized = rawKey.toLowerCase().replace(/[\s_-]+/g, '');
       if (normalized === 'hkdse') return 'hkdse';
       if (normalized === 'alevel' || normalized === 'gcealevel') return 'alevel';
+      if (normalized === 'gre') return 'gre';
       return rawKey.toLowerCase();
     };
 
@@ -3361,8 +3378,8 @@ Be thorough and fair in your assessment.`
     });
     return merged;
   })();
-  const availableMarkingSchemes = MARKING_STANDARDS.filter((standard) => standard.id === 'hkdse' || standard.id === 'alevel');
-  const selectedN8nScheme = n8nMarkingSchemes[selectedMarkingStandard] || (selectedMarkingStandard === 'alevel' ? n8nMarkingSchemes.alevel : undefined);
+  const availableMarkingSchemes = MARKING_STANDARDS.filter((standard) => standard.id === 'hkdse' || standard.id === 'alevel' || standard.id === 'gre');
+  const selectedN8nScheme = n8nMarkingSchemes[selectedMarkingStandard] || (selectedMarkingStandard === 'alevel' ? n8nMarkingSchemes.alevel : selectedMarkingStandard === 'gre' ? n8nMarkingSchemes.gre : undefined);
   const mistakeTypeCounts = currentMistakes.reduce((acc, mistake) => {
     const type = normalizeMistakeType(mistake.type);
     acc[type] = (acc[type] || 0) + 1;
@@ -3558,9 +3575,6 @@ Be thorough and fair in your assessment.`
                       aria-label="Select language"
                       aria-expanded={isLanguageDropdownOpen}
                     >
-                      <span className="mistake-checker-language-flag">
-                        {selectedLanguage === 'en' ? '🇬🇧' : '🇨🇳'}
-                      </span>
                       <span>{LANGUAGE_OPTIONS.find(l => l.code === selectedLanguage)?.label}</span>
                       <svg className={`mistake-checker-language-chevron ${isLanguageDropdownOpen ? 'rotate-180' : ''}`} width="14" height="14" viewBox="0 0 20 20" fill="none">
                         <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
@@ -3589,7 +3603,6 @@ Be thorough and fair in your assessment.`
                             onClick={() => { setSelectedLanguage(language.code); setIsLanguageDropdownOpen(false); }}
                             className={`mistake-checker-language-option ${selectedLanguage === language.code ? 'is-selected' : ''}`}
                           >
-                            <span>{language.code === 'en' ? '🇬🇧' : '🇨🇳'}</span>
                             <span>{language.label}</span>
                             {selectedLanguage === language.code && (
                               <svg className="ml-auto" width="14" height="14" viewBox="0 0 20 20" fill="none">
@@ -3613,6 +3626,7 @@ Be thorough and fair in your assessment.`
                       <span className="mistake-checker-loading-ring" />
                     ) : (
                       <>
+                        <FaPaperPlane size={13} />
                         <span>Send</span>
                         {cost > 0 && (
                           <span className="mistake-checker-coin-pill">
@@ -4115,60 +4129,7 @@ Be thorough and fair in your assessment.`
               Full Screen
             </motion.button>
             
-            {/* Desktop Text Toggle */}
-            {correctedText && (
-              <div className="hidden lg:flex items-center space-x-2">
-                <span className={`text-sm ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>Show:</span>
-                <button
-                  onClick={() => setShowCorrectedText(!showCorrectedText)}
-                  className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                    showCorrectedText 
-                      ? (variant === 'solve'
-                          ? 'bg-[#8b5cf6]/15 text-[#8b5cf6] border border-[#8b5cf6]/30'
-                          : 'bg-green-500/20 text-green-400 border border-green-500/30')
-                      : (variant === 'solve'
-                          ? 'bg-gray-100 text-gray-700 dark:bg-[#27272a] dark:text-gray-300 border border-gray-200 dark:border-white/10'
-                          : 'bg-slate-600/50 text-slate-300 border border-white/10')
-                  }`}
-                >
-                  {showCorrectedText ? 'Corrected' : 'Original'}
-                </button>
-              </div>
-            )}
           </div>
-          
-          {/* Mobile Text Toggle */}
-          {correctedText && (
-            <div className={`lg:hidden px-4 py-2 border-b ${
-              variant === 'solve' ? 'bg-gray-50 dark:bg-[#151518] border-gray-200 dark:border-white/10' : 'bg-slate-700/30 border-white/10'
-            }`}>
-              <div className="flex items-center justify-center space-x-4">
-                <span className={`text-sm ${variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400'}`}>View:</span>
-                <div className={`flex rounded-lg p-1 ${variant === 'solve' ? 'bg-gray-100 dark:bg-[#27272a]' : 'bg-slate-600/50'}`}>
-                  <button
-                    onClick={() => setShowCorrectedText(false)}
-                    className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                      !showCorrectedText 
-                        ? (variant === 'solve' ? 'bg-white dark:bg-[#1f1f22] text-gray-800 dark:text-gray-200' : 'bg-slate-500/50 text-slate-200')
-                        : (variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400')
-                    }`}
-                  >
-                    Original
-                  </button>
-                  <button
-                    onClick={() => setShowCorrectedText(true)}
-                    className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                      showCorrectedText 
-                        ? (variant === 'solve' ? 'bg-[#8b5cf6]/15 text-[#8b5cf6]' : 'bg-green-500/30 text-green-400')
-                        : (variant === 'solve' ? 'text-gray-500 dark:text-gray-400' : 'text-slate-400')
-                    }`}
-                  >
-                    Corrected
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
           
           <div className="h-64 lg:h-full p-4 relative overflow-hidden">
             <div className={`w-full h-full rounded-lg overflow-hidden border relative ${

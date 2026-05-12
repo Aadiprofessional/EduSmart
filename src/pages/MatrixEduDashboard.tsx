@@ -4,7 +4,7 @@ import SidebarLeft from '../components/dashboard/SidebarLeft';
 import SidebarRight from '../components/dashboard/SidebarRight';
 import ActionCards from '../components/dashboard/ActionCards';
 import StudySetList from '../components/dashboard/StudySetList';
-import { UploadModal, PasteModal, RecordModal, CreateFolderModal, MoveDocumentModal } from '../components/dashboard/DashboardModals';
+import { UploadModal, PasteModal, URLModal, TextModal, RecordModal, CreateFolderModal, MoveDocumentModal } from '../components/dashboard/DashboardModals';
 import { useAuth } from '../utils/AuthContext';
 import { FaBars, FaFolder } from 'react-icons/fa';
 import { supabase } from '../utils/supabase';
@@ -23,7 +23,7 @@ const MatrixEduDashboard: React.FC = () => {
   const studySetListRef = useRef<HTMLDivElement>(null);
   
   // Modal States
-  const [activeModal, setActiveModal] = useState<'upload' | 'paste' | 'record' | 'createFolder' | 'moveDocument' | null>(null);
+  const [activeModal, setActiveModal] = useState<'upload' | 'url' | 'text' | 'paste' | 'record' | 'createFolder' | 'moveDocument' | null>(null);
   const [documentToMove, setDocumentToMove] = useState<StudySet | null>(null);
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(window.innerWidth >= 1024);
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(window.innerWidth >= 1280);
@@ -32,7 +32,7 @@ const MatrixEduDashboard: React.FC = () => {
   const [upgradeMessage, setUpgradeMessage] = useState('');
   const [upgradeCtaType, setUpgradeCtaType] = useState<'coins' | 'subscription'>('subscription');
 
-  const handleOpenActionModal = async (modal: 'upload' | 'paste' | 'record') => {
+  const handleOpenActionModal = async (modal: 'upload' | 'url' | 'text' | 'paste' | 'record') => {
     const responseCheck = await checkAndUseResponse({
       responseType: 'dashboard_upload_access',
       queryData: { action: modal },
@@ -550,7 +550,7 @@ const MatrixEduDashboard: React.FC = () => {
             ref={scrollRef}
         >
             {/* Sticky Navigation Header */}
-            <div className={`sticky top-0 z-40 transition-all duration-300 w-full border-b ${isScrolled ? 'bg-white/95 dark:bg-[#111]/95 backdrop-blur-md border-gray-200 dark:border-white/5 py-2 shadow-sm' : 'bg-gray-50/95 dark:bg-[#111111]/95 border-transparent py-4'}`}>
+            <div className={`sticky top-0 z-40 transition-all duration-300 w-full ${isScrolled ? 'bg-white/95 dark:bg-[#111]/95 backdrop-blur-md border-b border-gray-200 dark:border-white/5 py-2 shadow-sm' : 'bg-transparent border-b border-transparent py-2'}`}>
                 <div className="w-full mx-auto px-4 md:px-8 lg:px-12 relative flex flex-col justify-center min-h-[60px]">
                     
                     {/* Top Row: Nav Toggles + (Optional) Compact Actions */}
@@ -581,7 +581,8 @@ const MatrixEduDashboard: React.FC = () => {
                             {isScrolled && (
                                 <ActionCards 
                                    onUpload={() => handleOpenActionModal('upload')}
-                                   onPaste={() => handleOpenActionModal('paste')}
+                                   onUrl={() => handleOpenActionModal('url')}
+                                   onText={() => handleOpenActionModal('text')}
                                    onRecord={() => handleOpenActionModal('record')}
                                    isCompact={true}
                                 />
@@ -603,7 +604,7 @@ const MatrixEduDashboard: React.FC = () => {
             {/* Hero Section (Scrolls away) */}
             <div className="w-full mx-auto px-4 md:px-8 lg:px-12 relative mb-8">
                 {/* Header Title */}
-                <div className={`text-center transition-all duration-300 overflow-hidden ${isScrolled ? 'opacity-0 h-0 margin-0' : 'opacity-100 h-auto mb-8 md:mb-12 mt-4'}`}>
+                <div className={`text-center transition-all duration-300 overflow-hidden ${isScrolled ? 'opacity-0 h-0 margin-0' : 'opacity-100 h-auto mb-4 md:mb-6'}`}>
                     <h1 className="text-2xl md:text-4xl font-bold mb-3 text-gray-900 dark:text-white">{t('matrixDashboard.heroTitle', { values: { name: user?.email?.split('@')[0] || t('sidebar.user') } })}</h1>
                     <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 px-4">{t('matrixDashboard.heroSubtitle')}</p>
                 </div>
@@ -617,7 +618,8 @@ const MatrixEduDashboard: React.FC = () => {
                 <div className={`transition-all duration-300 ${isScrolled ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100 h-auto'}`}>
                     <ActionCards 
                        onUpload={() => handleOpenActionModal('upload')}
-                       onPaste={() => handleOpenActionModal('paste')}
+                       onUrl={() => handleOpenActionModal('url')}
+                       onText={() => handleOpenActionModal('text')}
                        onRecord={() => handleOpenActionModal('record')}
                        isCompact={false}
                     />
@@ -682,6 +684,22 @@ const MatrixEduDashboard: React.FC = () => {
       <PasteModal 
          isOpen={activeModal === 'paste'} 
          onClose={() => setActiveModal(null)} 
+         onNext={(payload) => {
+            setActiveModal(null);
+            navigate('/study-set/1/selection', { state: { uploadPayload: payload } });
+         }}
+      />
+      <URLModal
+         isOpen={activeModal === 'url'}
+         onClose={() => setActiveModal(null)}
+         onNext={(payload) => {
+            setActiveModal(null);
+            navigate('/study-set/1/selection', { state: { uploadPayload: payload } });
+         }}
+      />
+      <TextModal
+         isOpen={activeModal === 'text'}
+         onClose={() => setActiveModal(null)}
          onNext={(payload) => {
             setActiveModal(null);
             navigate('/study-set/1/selection', { state: { uploadPayload: payload } });

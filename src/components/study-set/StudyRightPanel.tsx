@@ -198,7 +198,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ documentId, attachment, onClearAt
         const visibleContent = attachment
             ? shouldAutoPrompt
                 ? attachment.displayContent || messageContent || t('studyRightPanel.askAboutStudySet')
-                : messageContent
+                : messageContent || attachment.displayContent || `From ${attachment.source}: ${attachment.content.substring(0, 100)}${attachment.content.length > 100 ? '...' : ''}`
             : messageContent;
         const requestCoins = attachment?.coins ?? cost;
         

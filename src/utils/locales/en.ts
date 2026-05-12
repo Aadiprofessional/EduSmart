@@ -1311,11 +1311,15 @@ export const en = {
     actionCards: {
       upload: {
         title: "Upload",
-        description: "Image, file, audio, video"
+        description: "Image, file, audio"
       },
-      paste: {
-        title: "Paste",
-        description: "YouTube, website, text"
+      url: {
+        title: "URL",
+        description: "YouTube, website"
+      },
+      text: {
+        title: "Text",
+        description: "Paste your notes"
       },
       record: {
         title: "Record",
@@ -2488,6 +2492,26 @@ export const en = {
     importantNotes: "Important Notes",
     disclaimer: "Disclaimer",
     allCostEstimatesAreAIGeneratedAndMayVaryBasedOnIndividualCircumstancesProgramRequirementsLifestyleChoicesAndCurrentExchangeRatesPleaseVerifyWithTheUniversityForTheMostAccurateInformation: "All cost estimates are AI-generated and may vary based on individual circumstances, program requirements, lifestyle choices, and current exchange rates. Please verify with the university for the most accurate information."
+  },
+  feedback: {
+    title: "Feedback & Help",
+    subtitle: "Have a question, found a bug, or want to suggest a feature? We'd love to hear from you.",
+    typeLabel: "Type",
+    typeFeedback: "Feedback",
+    typeBug: "Bug Report",
+    typeHelp: "Help",
+    typeFeature: "Feature Request",
+    messageLabel: "Message",
+    messagePlaceholder: "Describe your feedback, issue, or request in detail...",
+    emailLabel: "Email (optional)",
+    emailPlaceholder: "your@email.com",
+    submitBtn: "Send Feedback",
+    successTitle: "Thank you!",
+    successMsg: "Your message has been received. We'll look into it and get back to you if needed.",
+    errorTitle: "Error",
+    emptyMsg: "Please enter a message before submitting.",
+    errorMsg: "Failed to send feedback",
+    buttonLabel: "Feedback"
   }
 };
 
