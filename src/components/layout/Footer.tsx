@@ -214,6 +214,12 @@ const Footer: React.FC = () => {
               {t('footer.copyright')}
             </p>
             <div className="flex flex-wrap justify-center sm:justify-end gap-4 sm:gap-6 text-xs sm:text-sm">
+              <Link to="/contact" className="text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white transition-colors duration-300">
+                Contact Us
+              </Link>
+              <Link to="/about" className="text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white transition-colors duration-300">
+                About
+              </Link>
               <Link to="/privacy" className="text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white transition-colors duration-300">
                 Privacy Policy
               </Link>

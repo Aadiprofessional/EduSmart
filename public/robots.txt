@@ -1,3 +1,23 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Allow: /
+
+# Do not crawl authenticated/private routes
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /settings
+Disallow: /study-planner
+Disallow: /solve
+Disallow: /mistake-checker
+Disallow: /content-writer
+Disallow: /humanizer
+Disallow: /paper-grader
+Disallow: /study-set/
+Disallow: /transaction-history
+Disallow: /subscription/buy/
+Disallow: /auth/
+Disallow: /reset-password
+Disallow: /thank-you
+
+# Sitemap location
+Sitemap: https://matrixedu.ai/sitemap.xml

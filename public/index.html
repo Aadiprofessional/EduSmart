@@ -2,30 +2,142 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/logoround.png" />
+
+    <!-- =============================================
+         VIEWPORT & THEME
+         ============================================= -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#0f766e" />
-    <meta
-      name="description"
-      content="MatrixEdu - Your one-stop platform for educational resources, courses, scholarships, and career planning"
-    />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logoround.png" />
-    <!--
-      manifest.json provides metadata used when your web app is installed on a
-      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-    -->
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
 
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
-    <title>MatrixEdu | Education Resources Platform</title>
+    <!-- =============================================
+         FAVICON & ICONS
+         ============================================= -->
+    <link rel="icon" href="%PUBLIC_URL%/logoround.png" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logoround.png" />
+    <link rel="shortcut icon" href="%PUBLIC_URL%/favicon.ico" />
+
+    <!-- =============================================
+         PRIMARY SEO META TAGS
+         ============================================= -->
+    <title>MatrixEdu — AI-Powered Education Platform | Courses, Scholarships & Study Tools</title>
+    <meta name="description" content="MatrixEdu by MatrixAI provides AI-powered courses, scholarship finder, study planner, content writer, and smart tutoring tools. Empowering students worldwide to learn smarter." />
+    <meta name="keywords" content="MatrixEdu, AI education, online courses, scholarships, study planner, AI tutor, MatrixAI, learning platform, academic tools" />
+    <meta name="author" content="MatrixAI Company Limited" />
+    <meta name="robots" content="index, follow" />
+    <meta name="language" content="English" />
+    <meta name="revisit-after" content="7 days" />
+
+    <!-- =============================================
+         CANONICAL URL (prevents duplicate content)
+         ============================================= -->
+    <link rel="canonical" href="https://matrixedu.ai/" />
+
+    <!-- =============================================
+         GOOGLE SEARCH CONSOLE VERIFICATION
+         Replace the content value with the code from
+         Google Search Console > Add Property > HTML tag
+         ============================================= -->
+    <!-- <meta name="google-site-verification" content="REPLACE_WITH_YOUR_GOOGLE_VERIFICATION_CODE" /> -->
+
+    <!-- =============================================
+         OPEN GRAPH (Facebook, LinkedIn, WhatsApp)
+         ============================================= -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://matrixedu.ai/" />
+    <meta property="og:site_name" content="MatrixEdu" />
+    <meta property="og:title" content="MatrixEdu — AI-Powered Education Platform" />
+    <meta property="og:description" content="MatrixEdu by MatrixAI provides AI-powered courses, scholarship finder, study planner, content writer, and smart tutoring tools. Empowering students worldwide." />
+    <meta property="og:image" content="https://matrixedu.ai/matrixedu.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="MatrixEdu AI Education Platform" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- =============================================
+         TWITTER CARD
+         ============================================= -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@matrixedu" />
+    <meta name="twitter:title" content="MatrixEdu — AI-Powered Education Platform" />
+    <meta name="twitter:description" content="AI-powered courses, scholarship finder, study planner, and smart tutoring tools. Empowering students worldwide to learn smarter." />
+    <meta name="twitter:image" content="https://matrixedu.ai/matrixedu.png" />
+
+    <!-- =============================================
+         STRUCTURED DATA — Organization + WebSite
+         Helps Google understand your brand identity
+         ============================================= -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://matrixedu.ai/#organization",
+          "name": "MatrixAI Company Limited",
+          "url": "https://matrixedu.ai",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://matrixedu.ai/logoround.png",
+            "width": 512,
+            "height": 512
+          },
+          "description": "MatrixAI is the company behind MatrixEdu, an AI-powered educational platform offering courses, scholarships, study tools, and academic AI assistants.",
+          "email": "support@matrixaiglobal.com",
+          "sameAs": [
+            "https://matrixedu.ai"
+          ]
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://matrixedu.ai/#website",
+          "url": "https://matrixedu.ai",
+          "name": "MatrixEdu",
+          "description": "AI-powered education platform with courses, scholarships, study planner and smart AI tutoring tools.",
+          "publisher": {
+            "@id": "https://matrixedu.ai/#organization"
+          },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://matrixedu.ai/courses?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "SoftwareApplication",
+          "name": "MatrixEdu",
+          "operatingSystem": "Web",
+          "applicationCategory": "EducationApplication",
+          "url": "https://matrixedu.ai",
+          "description": "MatrixEdu is an AI-powered education platform developed by MatrixAI Company Limited. It provides courses, a scholarship finder, an AI study planner, content writing tools, and an AI tutor to help students learn smarter.",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          },
+          "author": {
+            "@id": "https://matrixedu.ai/#organization"
+          }
+        }
+      ]
+    }
+    </script>
+
+    <!-- =============================================
+         FONTS
+         ============================================= -->
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+    <!-- =============================================
+         PWA MANIFEST
+         ============================================= -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+
+    <!-- =============================================
+         ADS
+         ============================================= -->
     <!-- Google IMA SDK for rewarded video ads -->
     <script src="https://imasdk.googleapis.com/js/sdkloader/ima3.js"></script>
     <!-- Google AdSense for display banner ads (test publisher) -->

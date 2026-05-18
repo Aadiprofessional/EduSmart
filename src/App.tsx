@@ -38,6 +38,7 @@ import MethodSelectionPage from './pages/MethodSelectionPage';
 import ThankYou from './pages/ThankYou';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import Contact from './pages/Contact';
 import FAQ from './pages/FAQ';
 import CookiesPolicy from './pages/CookiesPolicy';
 import MathTestPage from './pages/MathTestPage';
@@ -208,6 +209,7 @@ function App() {
                       <Route path="/thank-you" element={<ThankYou />} />
                       <Route path="/terms" element={<TermsOfService />} />
                       <Route path="/privacy" element={<PrivacyPolicy />} />
+                      <Route path="/contact" element={<Contact />} />
                       <Route path="/faq" element={<FAQ />} />
                       <Route path="/cookies" element={<CookiesPolicy />} />
                       <Route path="/math-test" element={<MathTestPage />} />
