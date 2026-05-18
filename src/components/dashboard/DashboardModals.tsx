@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaTimes, FaUpload, FaLink, FaMicrophone, FaCheck, FaBook, FaListUl, FaLayerGroup, FaPodcast, FaChalkboardTeacher, FaPencilAlt, FaEdit, FaChevronDown, FaStop, FaPlay, FaPause } from 'react-icons/fa';
+import { FaTimes, FaUpload, FaLink, FaMicrophone, FaCheck, FaBook, FaListUl, FaLayerGroup, FaPodcast, FaChalkboardTeacher, FaPencilAlt, FaEdit, FaChevronDown, FaStop, FaPlay, FaPause, FaExclamationTriangle } from 'react-icons/fa';
 import { useAuth } from '../../utils/AuthContext';
 import { jsPDF } from 'jspdf';
 import { uploadService, UploadPayload } from '../../services/uploadService';
@@ -556,9 +556,20 @@ export const URLModal: React.FC<{ isOpen: boolean; onClose: () => void; onNext: 
           </div>
           {urlError && <p className="text-xs text-red-500 mt-1">{urlError}</p>}
           {isYouTube && !urlError && url && (
-            <p className="text-xs text-green-500 dark:text-green-400 mt-1 flex items-center gap-1">
-              <FaCheck /> YouTube link detected
-            </p>
+            <>
+              <p className="text-xs text-green-500 dark:text-green-400 mt-1 flex items-center gap-1">
+                <FaCheck /> YouTube link detected
+              </p>
+
+              <div className="mt-2 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-sm text-yellow-800 dark:text-yellow-200">
+                <div className="flex items-start gap-2">
+                  <div className="mt-0.5 text-lg text-yellow-700 dark:text-yellow-300"><FaExclamationTriangle /></div>
+                  <div>
+                    {t('matrixDashboard.modals.paste.youtubeCaptionNotice')}
+                  </div>
+                </div>
+              </div>
+            </>
           )}
         </div>
 

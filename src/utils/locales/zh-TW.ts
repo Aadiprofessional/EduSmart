@@ -892,11 +892,17 @@ export const zhTW = {
     unexpectedError: "發生非預期錯誤",
     couldNotLoad: "無法載入歷史紀錄",
     tryAgain: "再試一次",
+    buyCoins: "購買點數",
     noTransactions: "找不到交易紀錄",
     noTransactionsDescription: "你目前還沒有任何購買紀錄。",
     transactionFallback: "交易",
     notAvailable: "無資料",
     coinsAmount: "{{amount}} 點數",
+    chargesInfo: "點數會依 AI 工具和輸入類型扣除。開始請求前，請先查看下方費用列表。",
+    tabs: {
+      transactions: "交易紀錄",
+      charges: "費用"
+    },
     columns: {
       description: "描述",
       dateTime: "日期與時間",
@@ -1012,7 +1018,8 @@ export const zhTW = {
         urlPlaceholder: "https://youtu.be/...",
         or: "或",
         copyPasteLabel: "複製並貼上文字作為內容",
-        notesPlaceholder: "在這裡貼上你的筆記"
+        notesPlaceholder: "在這裡貼上你的筆記",
+        youtubeCaptionNotice: "此功能需要 YouTube 影片具有字幕/隱藏式字幕才能自動擷取文字。如果影片沒有字幕，請下載音訊（MP3）並透過 上傳 → 音訊 選項上傳以進行轉錄。"
       },
       record: {
         title: "錄製音訊",
@@ -1868,6 +1875,28 @@ export const zhTW = {
     viewHistory: "查看歷史",
     recommendationLetters: "推薦信",
     aiContentWriter: "AI內容寫作器",
+
+    // Study Planner calendar
+    calendarToday: "今天",
+    calendarMonthJan: "一月",
+    calendarMonthFeb: "二月",
+    calendarMonthMar: "三月",
+    calendarMonthApr: "四月",
+    calendarMonthMay: "五月",
+    calendarMonthJun: "六月",
+    calendarMonthJul: "七月",
+    calendarMonthAug: "八月",
+    calendarMonthSep: "九月",
+    calendarMonthOct: "十月",
+    calendarMonthNov: "十一月",
+    calendarMonthDec: "十二月",
+    calendarDaySun: "日",
+    calendarDayMon: "一",
+    calendarDayTue: "二",
+    calendarDayWed: "三",
+    calendarDayThu: "四",
+    calendarDayFri: "五",
+    calendarDaySat: "六",
     
   
     

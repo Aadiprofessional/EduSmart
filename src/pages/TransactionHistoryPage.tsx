@@ -2,12 +2,84 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { AiOutlineArrowLeft, AiOutlineCalendar, AiOutlineCreditCard, AiOutlineCheckCircle, AiOutlineCloseCircle, AiOutlineClockCircle, AiOutlineCrown } from 'react-icons/ai';
+import { FaBookOpen, FaBrain, FaCalendarCheck, FaComments, FaFileAlt, FaInfoCircle, FaRobot, FaSpellCheck } from 'react-icons/fa';
 import { useAuth } from '../utils/AuthContext';
 import { subscriptionAPI, Transaction } from '../utils/subscriptionAPI';
 import { Header } from '../components/layout';
 import { Skeleton } from '../components/ui/Skeleton';
 import { useLanguage } from '../utils/LanguageContext';
+import coinIcon from '../assets/assets_coin.png';
 
+const chargeSections = [
+  {
+    title: 'AI Solver',
+    icon: FaBrain,
+    color: 'text-violet-500',
+    bg: 'bg-violet-500/10',
+    items: [
+      { label: 'Text query', cost: '1', sublabel: '1 Coin per message' },
+      { label: 'Image understanding', cost: '3', sublabel: '3 Coins per image' },
+      { label: 'PDF understanding', cost: '2', sublabel: '2 Coins per PDF' },
+    ],
+  },
+  {
+    title: 'Mistake Checker',
+    icon: FaSpellCheck,
+    color: 'text-red-500',
+    bg: 'bg-red-500/10',
+    items: [
+      { label: 'Image / photo', cost: '3', sublabel: '3 Coins per image' },
+      { label: 'PDF document', cost: '10', sublabel: '10 Coins per PDF' },
+    ],
+  },
+  {
+    title: 'AI Humanizer',
+    icon: FaRobot,
+    color: 'text-orange-500',
+    bg: 'bg-orange-500/10',
+    items: [
+      { label: 'Humanize text', cost: '40', sublabel: 'Per humanization request' },
+    ],
+  },
+  {
+    title: 'Study Set Creation',
+    icon: FaBookOpen,
+    color: 'text-emerald-500',
+    bg: 'bg-emerald-500/10',
+    items: [
+      { label: 'Speech to Text', cost: '1', sublabel: '1 Coin per minute' },
+      { label: 'YouTube video', cost: '10', sublabel: '10 Coins per video' },
+      { label: 'Other input methods', cost: '1', sublabel: '1 Coin per method' },
+    ],
+  },
+  {
+    title: 'AI Study Planner',
+    icon: FaCalendarCheck,
+    color: 'text-amber-500',
+    bg: 'bg-amber-500/10',
+    items: [
+      { label: 'AI Roadmap generation', cost: '2', sublabel: '2 Coins per roadmap' },
+    ],
+  },
+  {
+    title: 'Paper Grader',
+    icon: FaFileAlt,
+    color: 'text-blue-500',
+    bg: 'bg-blue-500/10',
+    items: [
+      { label: 'Per message', cost: '1', sublabel: '1 Coin per message sent' },
+    ],
+  },
+  {
+    title: 'Study Chat',
+    icon: FaComments,
+    color: 'text-indigo-500',
+    bg: 'bg-indigo-500/10',
+    items: [
+      { label: 'Per message', cost: '1', sublabel: '1 Coin per message sent' },
+    ],
+  },
+];
 
 const TransactionHistoryPage: React.FC = () => {
   const { user, session } = useAuth();
@@ -16,6 +88,7 @@ const TransactionHistoryPage: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'transactions' | 'charges'>('transactions');
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -90,18 +163,51 @@ const TransactionHistoryPage: React.FC = () => {
       <Header />
       
       <main className="pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
-        <div className="flex items-center mb-8">
-          <button 
-            onClick={() => navigate(-1)}
-            className="mr-4 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-white/10 transition-colors"
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+          <div className="flex items-center">
+            <button 
+              onClick={() => navigate(-1)}
+              className="mr-4 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-white/10 transition-colors"
+            >
+              <AiOutlineArrowLeft className="w-5 h-5" />
+            </button>
+            <h1 className="text-3xl font-bold">{t('transactionHistoryPage.title')}</h1>
+          </div>
+          <button
+            onClick={() => navigate('/subscription')}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-semibold shadow-lg shadow-indigo-500/20 transition-all"
           >
-            <AiOutlineArrowLeft className="w-5 h-5" />
+            <AiOutlineCrown className="w-5 h-5" />
+            {t('transactionHistoryPage.buyCoins')}
           </button>
-          <h1 className="text-3xl font-bold">{t('transactionHistoryPage.title')}</h1>
+        </div>
+
+        <div className="inline-flex w-full sm:w-auto bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl p-1 mb-6 shadow-sm">
+          <button
+            onClick={() => setActiveTab('transactions')}
+            className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+              activeTab === 'transactions'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            {t('transactionHistoryPage.tabs.transactions')}
+          </button>
+          <button
+            onClick={() => setActiveTab('charges')}
+            className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+              activeTab === 'charges'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            {t('transactionHistoryPage.tabs.charges')}
+          </button>
         </div>
 
         <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-200 dark:border-white/10 overflow-hidden shadow-sm">
-          {loading ? (
+          {activeTab === 'transactions' ? (
+          loading ? (
             <div className="p-6 space-y-4">
               {[1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className="flex items-center justify-between py-4 border-b border-gray-100 dark:border-white/5 last:border-0">
@@ -137,7 +243,14 @@ const TransactionHistoryPage: React.FC = () => {
                 <AiOutlineCalendar className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-bold mb-2">{t('transactionHistoryPage.noTransactions')}</h3>
-              <p className="text-gray-500 dark:text-gray-400">{t('transactionHistoryPage.noTransactionsDescription')}</p>
+              <p className="text-gray-500 dark:text-gray-400 mb-6">{t('transactionHistoryPage.noTransactionsDescription')}</p>
+              <button
+                onClick={() => navigate('/subscription')}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold transition-colors"
+              >
+                <AiOutlineCrown className="w-5 h-5" />
+                {t('transactionHistoryPage.buyCoins')}
+              </button>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -197,6 +310,47 @@ const TransactionHistoryPage: React.FC = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )
+          ) : (
+            <div className="p-4 sm:p-6">
+              <div className="flex items-start gap-3 rounded-xl border border-indigo-200 dark:border-indigo-500/30 bg-indigo-50 dark:bg-indigo-500/10 p-4 mb-6">
+                <FaInfoCircle className="w-5 h-5 text-indigo-600 dark:text-indigo-300 mt-0.5 flex-shrink-0" />
+                <p className="text-sm leading-relaxed text-indigo-700 dark:text-indigo-200">
+                  {t('transactionHistoryPage.chargesInfo')}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {chargeSections.map((section) => {
+                  const Icon = section.icon;
+
+                  return (
+                    <section key={section.title} className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] overflow-hidden">
+                      <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-white/10">
+                        <div className={`w-9 h-9 rounded-xl ${section.bg} flex items-center justify-center`}>
+                          <Icon className={`w-4 h-4 ${section.color}`} />
+                        </div>
+                        <h2 className="text-sm font-bold text-gray-900 dark:text-white">{section.title}</h2>
+                      </div>
+                      <div className="divide-y divide-gray-200 dark:divide-white/10">
+                        {section.items.map((item) => (
+                          <div key={`${section.title}-${item.label}`} className="flex items-center justify-between gap-4 px-4 py-3">
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">{item.label}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{item.sublabel}</p>
+                            </div>
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-100 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 flex-shrink-0">
+                              <span className="text-sm font-bold text-amber-700 dark:text-amber-300">-{item.cost}</span>
+                              <img src={coinIcon} alt="Coins" className="w-4 h-4" />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>

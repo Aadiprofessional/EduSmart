@@ -103,11 +103,11 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
           transition={{ duration: 0.3, ease: "easeInOut" }}
           className={`bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-white/10 flex flex-col justify-between h-full p-4 flex-shrink-0 group text-gray-900 dark:text-white ${className}`}
         >
-          <div className="overflow-hidden whitespace-nowrap">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden whitespace-nowrap min-h-0">
             {/* Logo */}
             <div className="flex items-center justify-between mb-8 px-2">
               <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-                <LogoWithText size={28} maxTextWidth={120} title="MatrixEdu" subtitle="MatrixAI Company Limited" />
+                <LogoWithText size={28} maxTextWidth={120} title="MatrixEdu" showSubtitle={false} />
               </div>
 
               <button onClick={onClose} className="hover:text-gray-900 dark:hover:text-white text-gray-400" title={t('sidebar.closeSidebar')}>
@@ -164,7 +164,7 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
           </div>
 
           {/* Bottom Controls */}
-          <div className="space-y-2 overflow-hidden whitespace-nowrap">
+          <div className="flex-shrink-0 space-y-2 overflow-hidden whitespace-nowrap">
             {/* Coin Panel — shown for Lite Mode users */}
             <CoinPanel variant="sidebar" onUpgradeClick={() => navigate('/pricing')} />
 
@@ -179,16 +179,16 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
                         className="overflow-hidden"
                     >
                         <div className="space-y-1 border-t border-gray-200 dark:border-white/5 pt-2 overflow-y-auto" style={{ maxHeight: '52vh' }}>
-                            {/* Feedback & Help */}
-                            <button onClick={() => navigate('/feedback')} className="w-full flex items-center gap-3 px-2 py-2.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors text-sm">
-                                <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-                                    <FaCommentAlt size={13} className="text-blue-600 dark:text-blue-400" />
+                            {/* Buy More Coins */}
+                            <button onClick={() => navigate('/subscription')} className="w-full flex items-center gap-3 px-2 py-2.5 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 rounded-lg transition-colors text-sm border border-indigo-200 dark:border-indigo-500/20">
+                                <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                                    <FaBolt size={13} className="text-white" />
                                 </div>
                                 <div className="flex-1 text-left overflow-hidden">
-                                    <p className="font-medium text-gray-900 dark:text-white text-sm truncate">Feedback & Help</p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Report a bug or ask for help</p>
+                                    <p className="font-medium text-indigo-700 dark:text-indigo-300 text-sm truncate">Buy More Coins</p>
+                                    <p className="text-xs text-indigo-500 dark:text-indigo-400 truncate">Top up your coin balance</p>
                                 </div>
-                                <FaChevronRight size={10} className="text-gray-400 flex-shrink-0" />
+                                <FaChevronRight size={10} className="text-indigo-400 flex-shrink-0" />
                             </button>
 
                             {/* Transactions */}
@@ -199,6 +199,18 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
                                 <div className="flex-1 text-left overflow-hidden">
                                     <p className="font-medium text-gray-900 dark:text-white text-sm truncate">Transactions</p>
                                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Coin history</p>
+                                </div>
+                                <FaChevronRight size={10} className="text-gray-400 flex-shrink-0" />
+                            </button>
+
+                            {/* Feedback & Help */}
+                            <button onClick={() => navigate('/feedback')} className="w-full flex items-center gap-3 px-2 py-2.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors text-sm">
+                                <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                                    <FaCommentAlt size={13} className="text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div className="flex-1 text-left overflow-hidden">
+                                    <p className="font-medium text-gray-900 dark:text-white text-sm truncate">Feedback & Help</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Report a bug or ask for help</p>
                                 </div>
                                 <FaChevronRight size={10} className="text-gray-400 flex-shrink-0" />
                             </button>
@@ -215,20 +227,8 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
                                 <FaChevronRight size={10} className="text-gray-400 flex-shrink-0" />
                             </button>
 
-                            {/* Buy More Coins */}
-                            <button onClick={() => navigate('/pricing')} className="w-full flex items-center gap-3 px-2 py-2.5 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 rounded-lg transition-colors text-sm border border-indigo-200 dark:border-indigo-500/20">
-                                <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center flex-shrink-0">
-                                    <FaBolt size={13} className="text-white" />
-                                </div>
-                                <div className="flex-1 text-left overflow-hidden">
-                                    <p className="font-medium text-indigo-700 dark:text-indigo-300 text-sm truncate">Buy More Coins</p>
-                                    <p className="text-xs text-indigo-500 dark:text-indigo-400 truncate">Top up your coin balance</p>
-                                </div>
-                                <FaChevronRight size={10} className="text-indigo-400 flex-shrink-0" />
-                            </button>
-
                             {/* Dark Mode Toggle */}
-                            <div className="flex items-center gap-3 px-2 py-2.5 rounded-lg">
+                            <div className="flex items-center gap-3 px-2 py-2.5 rounded-lg border-t border-gray-200 dark:border-white/5 mt-2 pt-3">
                                 <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-500/20 flex items-center justify-center flex-shrink-0">
                                     <FaMoon size={13} className="text-slate-600 dark:text-slate-400" />
                                 </div>

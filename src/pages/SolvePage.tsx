@@ -1315,11 +1315,6 @@ const SolvePage: React.FC = () => {
             {history.map(item => (
                <div key={item.id} onClick={() => loadChat(item)} className="group cursor-pointer mb-4 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors border border-transparent hover:border-gray-200 dark:hover:border-white/5">
                   <div className="flex gap-3">
-                     <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-md overflow-hidden flex-shrink-0">
-                       <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-600">
-                           <FaImage />
-                       </div>
-                     </div>
                      <div className="flex-1 min-w-0">
                        <div className="flex items-center justify-between mb-1">
                          <span className="text-[#ff5500] text-[10px] font-bold uppercase tracking-wider">{item.metadata?.subject || t('solvePage.subjects.general')}</span>

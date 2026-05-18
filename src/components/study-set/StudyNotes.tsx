@@ -13,10 +13,8 @@ import {
   FaChevronDown, FaBold, FaItalic, FaUnderline, FaStrikethrough, 
   FaListUl, FaListOl, FaQuoteRight, FaCode, FaMinus, FaImage, FaEraser,
   FaFilePdf, FaAlignLeft, FaAlignCenter, FaAlignRight, FaLink, FaHighlighter,
-  FaSuperscript, FaSubscript, FaMagic, FaBook, FaSave
+  FaSuperscript, FaSubscript, FaMagic, FaBook, FaSave, FaCopy, FaShareAlt
 } from 'react-icons/fa';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import { Skeleton } from '../ui/Skeleton';
 
 const StudyNotes: React.FC = () => {
@@ -207,131 +205,120 @@ const StudyNotes: React.FC = () => {
         setPopupValue('');
     };
 
-    const handleExportPdf = async () => {
+    const handleExportPdf = () => {
         if (!editorRef.current) return;
 
-        try {
-            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfPageHeight = pdf.internal.pageSize.getHeight();
-            const margin = 15; // mm
-            const contentWidth = pdfWidth - margin * 2;
-            const pageContentHeight = pdfPageHeight - margin * 2;
+        // Clone and strip every Tailwind/dark-mode class & inline style
+        const clone = editorRef.current.cloneNode(true) as HTMLElement;
+        clone.querySelectorAll('*').forEach(el => {
+            el.removeAttribute('class');
+            el.removeAttribute('style');
+            el.removeAttribute('contenteditable');
+            el.removeAttribute('data-placeholder');
+        });
+        const html = clone.innerHTML;
 
-            // Build a clean, light-mode clone of the editor content
-            const container = document.createElement('div');
-            // Width in px: contentWidth mm × 3.7795 px/mm at 96dpi
-            container.style.cssText = [
-                'position:fixed', 'top:-9999px', 'left:-9999px',
-                `width:${Math.round(contentWidth * 3.7795)}px`,
-                'background:#ffffff', 'color:#111111',
-                "font-family:'Segoe UI',Arial,sans-serif",
-                'font-size:14px', 'line-height:1.7', 'padding:0',
-            ].join(';');
+        const iframe = document.createElement('iframe');
+        iframe.setAttribute('aria-hidden', 'true');
+        Object.assign(iframe.style, {
+            position: 'fixed', top: '0', left: '-9999px',
+            width: '210mm', height: '297mm', border: 'none', visibility: 'hidden'
+        });
+        document.body.appendChild(iframe);
 
-            const clone = editorRef.current.cloneNode(true) as HTMLElement;
-            clone.style.cssText = [
-                'background:#ffffff', 'color:#111111',
-                'padding:0', 'min-height:unset',
-                'max-height:unset', 'overflow:visible',
-                'box-shadow:none', 'border:none',
-            ].join(';');
+        const doc = iframe.contentDocument;
+        if (!doc) return;
+        doc.open();
+        doc.write(`<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&family=Noto+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  @page { margin: 20mm; size: A4 portrait; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Noto Sans SC", "Noto Sans", Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.75;
+    color: #111 !important;
+    background: #fff !important;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+  * { color: #111 !important; background-color: transparent !important; }
+  h1 { font-size: 20pt; font-weight: 700; margin: 16pt 0 8pt; }
+  h2 { font-size: 15pt; font-weight: 700; margin: 14pt 0 6pt; border-bottom: 1pt solid #ddd; padding-bottom: 3pt; }
+  h3 { font-size: 13pt; font-weight: 700; margin: 11pt 0 5pt; }
+  h4, h5, h6 { font-size: 11pt; font-weight: 700; margin: 8pt 0 4pt; }
+  p  { margin-bottom: 7pt; }
+  ul, ol { padding-left: 20pt; margin-bottom: 7pt; }
+  li { margin-bottom: 3pt; }
+  blockquote { margin: 6pt 0 6pt 12pt; font-style: italic; border-left: 3pt solid #aaa; padding-left: 8pt; }
+  table { width: 100%; border-collapse: collapse; margin: 8pt 0; font-size: 10pt; page-break-inside: auto; }
+  tr { page-break-inside: avoid; }
+  th, td { border: 1pt solid #bbb !important; padding: 5pt 8pt; text-align: left; word-break: break-word; white-space: normal; vertical-align: top; }
+  th { background: #eee !important; font-weight: 700; }
+  pre { font-family: "Courier New", Courier, monospace; font-size: 9pt; white-space: pre-wrap; word-break: break-all; background: #f4f4f4 !important; padding: 7pt; margin: 5pt 0; }
+  code { font-family: "Courier New", Courier, monospace; font-size: 9pt; background: #f4f4f4 !important; padding: 1pt 3pt; }
+  hr { border: none; border-top: 1pt solid #ddd; margin: 10pt 0; }
+  img { max-width: 100%; height: auto; display: block; }
+  strong, b { font-weight: 700; }
+  em, i { font-style: italic; }
+</style>
+</head>
+<body>${html}</body>
+</html>`);
+        doc.close();
 
-            // Recursively force white-bg / black-text and clean dark-mode classes
-            const applyPrintStyles = (el: Element) => {
-                const h = el as HTMLElement;
-                const tag = h.tagName?.toLowerCase();
-                // Strip Tailwind dark: classes so they don't bleed through
-                if (h.className) {
-                    h.className = h.className
-                        .split(' ')
-                        .filter(c => !c.startsWith('dark:'))
-                        .join(' ');
-                }
-                h.style.color = '#111111';
-                h.style.backgroundColor = 'transparent';
-                if (['h1','h2','h3','h4','h5','h6'].includes(tag)) {
-                    h.style.color = '#000000';
-                    h.style.fontWeight = 'bold';
-                    h.style.marginTop = '1em';
-                    h.style.marginBottom = '0.4em';
-                    const sizes: Record<string,string> = { h1:'26px', h2:'22px', h3:'18px', h4:'16px', h5:'14px', h6:'13px' };
-                    h.style.fontSize = sizes[tag] || '14px';
-                }
-                if (tag === 'code') {
-                    h.style.backgroundColor = '#f3f4f6';
-                    h.style.color = '#1e293b';
-                    h.style.fontFamily = 'monospace';
-                    h.style.padding = '2px 6px';
-                    h.style.borderRadius = '3px';
-                }
-                if (tag === 'pre') {
-                    h.style.backgroundColor = '#f3f4f6';
-                    h.style.color = '#1e293b';
-                    h.style.fontFamily = 'monospace';
-                    h.style.padding = '12px 16px';
-                    h.style.borderRadius = '6px';
-                    h.style.overflowX = 'auto';
-                    h.style.marginBottom = '1em';
-                }
-                if (tag === 'blockquote') {
-                    h.style.borderLeft = '4px solid #d1d5db';
-                    h.style.paddingLeft = '16px';
-                    h.style.color = '#6b7280';
-                    h.style.margin = '0.5em 0';
-                }
-                if (tag === 'a') {
-                    h.style.color = '#2563eb';
-                    h.style.textDecoration = 'underline';
-                }
-                if (tag === 'hr') {
-                    h.style.borderColor = '#e5e7eb';
-                }
-                Array.from(el.children).forEach(applyPrintStyles);
-            };
-            applyPrintStyles(clone);
-
-            container.appendChild(clone);
-            document.body.appendChild(container);
-
-            const canvas = await html2canvas(container, {
-                scale: 2,
-                backgroundColor: '#ffffff',
-                useCORS: true,
-                logging: false,
-                width: container.scrollWidth,
-                height: container.scrollHeight,
-            });
-
-            document.body.removeChild(container);
-
-            const imgData = canvas.toDataURL('image/png');
-            const imgHeight = (canvas.height * contentWidth) / canvas.width;
-
-            let heightLeft = imgHeight;
-            let pageIndex = 0;
-
-            // First page
-            pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, imgHeight);
-            heightLeft -= pageContentHeight;
-
-            // Subsequent pages: slide image up by one pageContentHeight each time
-            while (heightLeft > 0) {
-                pageIndex++;
-                pdf.addPage();
-                pdf.addImage(
-                    imgData, 'PNG',
-                    margin,
-                    margin - pageIndex * pageContentHeight,
-                    contentWidth,
-                    imgHeight
-                );
-                heightLeft -= pageContentHeight;
+        // Wait for Noto Sans SC to finish loading before triggering print
+        // so all CJK glyphs are embedded in the PDF
+        const tryPrint = () => {
+            try {
+                iframe.contentWindow?.focus();
+                iframe.contentWindow?.print();
+            } catch (e) {
+                console.error('Print failed:', e);
             }
+            setTimeout(() => iframe.parentNode?.removeChild(iframe), 3000);
+        };
 
-            pdf.save('study-notes.pdf');
-        } catch (error) {
-            console.error('Error exporting PDF:', error);
+        const fonts = (iframe.contentDocument as any)?.fonts;
+        if (fonts && typeof fonts.ready?.then === 'function') {
+            fonts.ready.then(() => setTimeout(tryPrint, 200));
+        } else {
+            // Fallback: give fonts 2s to load
+            setTimeout(tryPrint, 2000);
+        }
+    };
+
+    const handleCopy = async () => {
+        if (!editorRef.current) return;
+        try {
+            await navigator.clipboard.writeText(editorRef.current.innerText);
+        } catch {
+            // fallback
+            const ta = document.createElement('textarea');
+            ta.value = editorRef.current.innerText;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        }
+    };
+
+    const handleShare = async () => {
+        if (!editorRef.current) return;
+        const text = editorRef.current.innerText;
+        if (navigator.share) {
+            try {
+                await navigator.share({ title: 'Study Notes', text });
+            } catch { /* user cancelled */ }
+        } else {
+            // Fallback: copy to clipboard
+            await handleCopy();
         }
     };
 
@@ -589,8 +576,25 @@ const StudyNotes: React.FC = () => {
                         </button>
                     )}
                     <button 
+                        onClick={handleCopy}
+                        className="px-4 py-2 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 rounded-full shadow-lg transition-all flex items-center gap-2 hover:scale-105 active:scale-95"
+                        title="Copy all text"
+                    >
+                        <FaCopy size={13} />
+                        <span className="text-sm font-medium">Copy</span>
+                    </button>
+                    <button 
+                        onClick={handleShare}
+                        className="px-4 py-2 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 rounded-full shadow-lg transition-all flex items-center gap-2 hover:scale-105 active:scale-95"
+                        title="Share notes"
+                    >
+                        <FaShareAlt size={13} />
+                        <span className="text-sm font-medium">Share</span>
+                    </button>
+                    <button 
                         onClick={handleExportPdf}
                         className="px-4 py-2 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 rounded-full shadow-lg transition-all flex items-center gap-2 hover:scale-105 active:scale-95"
+                        title="Export as PDF"
                     >
                         <FaFilePdf size={14} />
                         <span className="text-sm font-medium">Export PDF</span>

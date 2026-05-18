@@ -420,10 +420,16 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
     const daysInMonth = getDaysInMonth(currentDate);
     const firstDay = getFirstDayOfMonth(currentDate);
     const monthNames = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      t('aiStudy.calendarMonthJan'), t('aiStudy.calendarMonthFeb'), t('aiStudy.calendarMonthMar'),
+      t('aiStudy.calendarMonthApr'), t('aiStudy.calendarMonthMay'), t('aiStudy.calendarMonthJun'),
+      t('aiStudy.calendarMonthJul'), t('aiStudy.calendarMonthAug'), t('aiStudy.calendarMonthSep'),
+      t('aiStudy.calendarMonthOct'), t('aiStudy.calendarMonthNov'), t('aiStudy.calendarMonthDec')
     ];
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayNames = [
+      t('aiStudy.calendarDaySun'), t('aiStudy.calendarDayMon'), t('aiStudy.calendarDayTue'),
+      t('aiStudy.calendarDayWed'), t('aiStudy.calendarDayThu'), t('aiStudy.calendarDayFri'),
+      t('aiStudy.calendarDaySat')
+    ];
 
     const days = [];
     
@@ -516,7 +522,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              Today
+              {t('aiStudy.calendarToday')}
             </motion.button>
             <motion.button
               onClick={() => navigateMonth('next')}
@@ -1673,32 +1679,32 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
       animate="visible"
     >
       {/* Header */}
-      <div className="bg-transparent px-4 lg:px-6 py-6 border-b border-gray-200 dark:border-white/5">
+      <div className="bg-transparent px-2 sm:px-4 lg:px-6 py-4 lg:py-6 border-b border-gray-200 dark:border-white/5">
         <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
           <div className="flex items-center space-x-3">
           </div>
-          <div className="flex flex-wrap justify-center items-center gap-2 lg:gap-3 w-full lg:w-auto">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap justify-center items-center gap-2 lg:gap-3 w-full lg:w-auto">
             <motion.button
               onClick={() => setShowAIModal(true)}
-              className="flex items-center px-4 py-2 bg-purple-500/10 dark:bg-purple-500/20 text-purple-600 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30 rounded-xl hover:bg-purple-500/20 dark:hover:bg-purple-500/30 transition-all font-medium"
+              className="flex items-center justify-center px-3 py-2 bg-purple-500/10 dark:bg-purple-500/20 text-purple-600 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30 rounded-xl hover:bg-purple-500/20 dark:hover:bg-purple-500/30 transition-all font-medium text-sm"
               variants={buttonVariants}
               whileHover="hover"
               whileTap="tap"
               title={t('aiStudy.aiTimetableImport')}
             >
-              <IconComponent icon={FaBrain} className="h-4 w-4 mr-2" />
-              {t('aiStudy.aiImport')}
+              <IconComponent icon={FaBrain} className="h-4 w-4 mr-2 flex-shrink-0" />
+              <span className="truncate">{t('aiStudy.aiImport')}</span>
             </motion.button>
             <motion.button
               onClick={openAISuggestionModal}
-              className="flex items-center px-4 py-2 bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 rounded-xl hover:bg-emerald-500/20 dark:hover:bg-emerald-500/30 transition-all font-medium"
+              className="flex items-center justify-center px-3 py-2 bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 rounded-xl hover:bg-emerald-500/20 dark:hover:bg-emerald-500/30 transition-all font-medium text-sm"
               variants={buttonVariants}
               whileHover="hover"
               whileTap="tap"
               title={t('aiStudy.aiStudyRoadmapGenerator')}
             >
-              <IconComponent icon={AiOutlineBulb} className="h-4 w-4 mr-2" />
-              {t('aiStudy.aiRoadmap')}
+              <IconComponent icon={AiOutlineBulb} className="h-4 w-4 mr-2 flex-shrink-0" />
+              <span className="truncate">{t('aiStudy.aiRoadmap')}</span>
             </motion.button>
             <motion.button
               onClick={() => {
@@ -1709,24 +1715,24 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                   fetchHistory();
                 }
               }}
-              className="flex items-center px-4 py-2 bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 rounded-xl hover:bg-amber-500/20 dark:hover:bg-amber-500/30 transition-all font-medium"
+              className="flex items-center justify-center px-3 py-2 bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 rounded-xl hover:bg-amber-500/20 dark:hover:bg-amber-500/30 transition-all font-medium text-sm"
               variants={buttonVariants}
               whileHover="hover"
               whileTap="tap"
               title={t('aiStudy.history')}
             >
-              <IconComponent icon={FiClock} className="h-4 w-4 mr-2" />
-              {t('aiStudy.history')}
+              <IconComponent icon={FiClock} className="h-4 w-4 mr-2 flex-shrink-0" />
+              <span className="truncate">{t('aiStudy.history')}</span>
             </motion.button>
             <motion.button
               onClick={() => setShowAddForm(!showAddForm)}
-              className="flex items-center px-4 py-2 bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30 rounded-xl hover:bg-blue-500/20 dark:hover:bg-blue-500/30 transition-all font-medium"
+              className="flex items-center justify-center px-3 py-2 bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30 rounded-xl hover:bg-blue-500/20 dark:hover:bg-blue-500/30 transition-all font-medium text-sm"
               variants={buttonVariants}
               whileHover="hover"
               whileTap="tap"
             >
-              <IconComponent icon={FiPlus} className="h-4 w-4 mr-2" />
-              {t('aiStudy.addTask')}
+              <IconComponent icon={FiPlus} className="h-4 w-4 mr-2 flex-shrink-0" />
+              <span className="truncate">{t('aiStudy.addTask')}</span>
             </motion.button>
           </div>
         </div>
@@ -2020,21 +2026,21 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                         </div>
 
                         {/* Metadata Row */}
-                        <div className="flex flex-wrap items-center gap-2.5">
+                        <div className="flex flex-wrap items-center gap-2">
                           {/* Subject */}
                           <div className="group/input relative">
                              <input
                               type="text"
                               value={task.subject}
                               onChange={(e) => handleSubjectChange(task.id, e.target.value)}
-                              className="w-24 sm:w-32 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-600 dark:text-zinc-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/30 outline-none transition-all hover:bg-gray-100 dark:hover:bg-white/10 placeholder-gray-400 dark:placeholder-zinc-600"
+                              className="w-20 sm:w-32 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5 rounded-lg px-2 py-1.5 text-xs font-medium text-gray-600 dark:text-zinc-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/30 outline-none transition-all hover:bg-gray-100 dark:hover:bg-white/10 placeholder-gray-400 dark:placeholder-zinc-600"
                               placeholder="Subject"
                             />
                           </div>
 
                           {/* Date */}
-                          <div className="flex items-center bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5 rounded-lg px-2.5 py-1.5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors group-focus-within:ring-2 group-focus-within:ring-indigo-500/20">
-                            <IconComponent icon={FiCalendar} className="h-3.5 w-3.5 text-gray-400 dark:text-zinc-500 mr-2" />
+                          <div className="flex items-center bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5 rounded-lg px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
+                            <IconComponent icon={FiCalendar} className="h-3.5 w-3.5 text-gray-400 dark:text-zinc-500 mr-1.5 flex-shrink-0" />
                             <input
                               type="date"
                               value={dateDrafts[task.id] ?? task.date}
@@ -2046,8 +2052,8 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                           </div>
 
                           {/* Duration */}
-                          <div className="flex items-center bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5 rounded-lg px-2.5 py-1.5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
-                            <IconComponent icon={FiClock} className="h-3.5 w-3.5 text-gray-400 dark:text-zinc-500 mr-2" />
+                          <div className="flex items-center bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5 rounded-lg px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
+                            <IconComponent icon={FiClock} className="h-3.5 w-3.5 text-gray-400 dark:text-zinc-500 mr-1.5 flex-shrink-0" />
                             <input
                               type="number"
                               value={task.estimatedHours}

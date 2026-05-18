@@ -490,11 +490,11 @@ const ContentWriter: React.FC = () => {
                   </button>
                 )}
                 </div>
-                <h1 className="text-lg lg:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <h1 className="text-lg lg:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2 lg:gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 flex-shrink-0">
                         <FaPenNib size={14} className="text-white" />
                     </div>
-                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-500 dark:from-white dark:to-gray-400">{t('contentWriter.title')}</span>
+                    <span className="hidden sm:inline bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-500 dark:from-white dark:to-gray-400 whitespace-nowrap">{t('contentWriter.title')}</span>
                 </h1>
             </div>
 
@@ -517,15 +517,15 @@ const ContentWriter: React.FC = () => {
                 </button>
             </div>
 
-            {/* Desktop Actions */}
-            <div className="hidden lg:flex items-center gap-3">
+            {/* History Actions */}
+            <div className="flex items-center gap-3">
                  <button 
                   onClick={() => setIsHistoryOpen(!isHistoryOpen)}
                   className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-all ${isHistoryOpen ? 'bg-white/10 text-white' : ''}`}
                   title={t('contentWriter.history')}
                 >
                    <FaHistory size={14} />
-                   <span>{t('contentWriter.history')}</span>
+                   <span className="hidden lg:inline">{t('contentWriter.history')}</span>
                 </button>
             </div>
         </header>
@@ -616,12 +616,12 @@ const ContentWriter: React.FC = () => {
                             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t('contentWriter.quickStart')}</h3>
                             <span className="text-[10px] bg-gray-100 dark:bg-white/5 px-2 py-1 rounded-md text-gray-500">{t('contentWriter.autoFill')}</span>
                         </div>
-                        <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-2 gap-3">
                             {templates.map((template) => (
                                 <button
                                     key={template.id}
                                     onClick={() => selectTemplate(template.id)}
-                                    className={`p-4 rounded-xl border text-left transition-all group relative overflow-hidden flex flex-col gap-3 ${activeTemplate === template.id ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-white dark:bg-white/[0.02] border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/10 hover:bg-gray-50 dark:hover:bg-white/[0.04]'}`}
+                                    className={`p-4 rounded-xl border text-left transition-all group relative flex flex-col gap-3 ${activeTemplate === template.id ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-white dark:bg-white/[0.02] border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/10 hover:bg-gray-50 dark:hover:bg-white/[0.04]'}`}
                                 >
                                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${activeTemplate === template.id ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30' : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-500 group-hover:bg-gray-200 dark:group-hover:bg-white/10 group-hover:text-gray-800 dark:group-hover:text-gray-300'} transition-all duration-300`}>
                                         <template.icon size={14} />
@@ -716,33 +716,34 @@ const ContentWriter: React.FC = () => {
 
                 {/* Editor Area */}
                 <div className="flex-1 overflow-y-auto px-4 lg:px-8 xl:px-16 pb-32 pt-28 scrollbar-thin scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20">
-                    <div className="max-w-5xl mx-auto w-full min-h-[800px] bg-white dark:bg-[#0f0f0f] border border-gray-200 dark:border-white/5 rounded-xl p-8 lg:p-12 shadow-2xl relative transition-all duration-500">
+                    <div className="max-w-5xl mx-auto w-full min-h-[800px] bg-white dark:bg-[#0f0f0f] border border-gray-200 dark:border-white/5 rounded-xl p-6 lg:p-10 shadow-2xl relative transition-all duration-500 overflow-hidden">
                         {/* Subtle paper texture/noise overlay could go here */}
                         
                         <>
                                 <style>{`
-                                    .content-writer-editor { font-size: 1.125rem; color: #374151; line-height: 1.8; }
+                                    .content-writer-editor { font-size: 1rem; color: #374151; line-height: 1.8; word-break: break-word; overflow-wrap: break-word; }
                                     .dark .content-writer-editor { color: #d4d4d8; }
-                                    .content-writer-editor h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 1.5rem; margin-top: 1rem; color: #111827; letter-spacing: -0.02em; line-height: 1.1; }
+                                    .content-writer-editor h1 { font-size: 2rem; font-weight: 800; margin-bottom: 1.25rem; margin-top: 1rem; color: #111827; letter-spacing: -0.02em; line-height: 1.2; word-break: break-word; }
                                     .dark .content-writer-editor h1 { color: #ffffff; }
-                                    .content-writer-editor h2 { font-size: 1.875rem; font-weight: 700; margin-bottom: 1rem; margin-top: 2rem; color: #1f2937; letter-spacing: -0.01em; }
+                                    .content-writer-editor h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.75rem; margin-top: 1.75rem; color: #1f2937; letter-spacing: -0.01em; word-break: break-word; }
                                     .dark .content-writer-editor h2 { color: #f4f4f5; }
-                                    .content-writer-editor h3 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.75rem; margin-top: 1.5rem; color: #374151; }
+                                    .content-writer-editor h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; margin-top: 1.25rem; color: #374151; word-break: break-word; }
                                     .dark .content-writer-editor h3 { color: #e4e4e7; }
-                                    .content-writer-editor p { margin-bottom: 1.5em; }
-                                    .content-writer-editor ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 1.5em; color: #4b5563; }
+                                    .content-writer-editor p { margin-bottom: 1.25em; word-break: break-word; overflow-wrap: break-word; }
+                                    .content-writer-editor ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 1.25em; color: #4b5563; }
                                     .dark .content-writer-editor ul { color: #a1a1aa; }
-                                    .content-writer-editor ol { list-style-type: decimal; padding-left: 1.5em; margin-bottom: 1.5em; color: #4b5563; }
+                                    .content-writer-editor ol { list-style-type: decimal; padding-left: 1.5em; margin-bottom: 1.25em; color: #4b5563; }
                                     .dark .content-writer-editor ol { color: #a1a1aa; }
-                                    .content-writer-editor blockquote { border-left: 3px solid #6366f1; padding-left: 1.5em; font-style: italic; margin: 2em 0; color: #374151; }
+                                    .content-writer-editor li { margin-bottom: 0.4em; word-break: break-word; }
+                                    .content-writer-editor blockquote { border-left: 3px solid #6366f1; padding-left: 1.5em; font-style: italic; margin: 1.5em 0; color: #374151; }
                                     .dark .content-writer-editor blockquote { color: #d4d4d8; }
-                                    .content-writer-editor pre { background: #f3f4f6; padding: 1.5em; border-radius: 0.75rem; overflow-x: auto; margin-bottom: 2em; border: 1px solid #e5e7eb; font-size: 0.9em; }
+                                    .content-writer-editor pre { background: #f3f4f6; padding: 1.25em; border-radius: 0.75rem; overflow-x: auto; margin-bottom: 1.5em; border: 1px solid #e5e7eb; font-size: 0.875em; white-space: pre-wrap; word-break: break-word; }
                                     .dark .content-writer-editor pre { background: #18181b; border-color: #27272a; }
-                                    .content-writer-editor code { font-family: 'JetBrains Mono', monospace; background: #e5e7eb; padding: 0.2em 0.4em; border-radius: 0.3em; font-size: 0.85em; color: #1f2937; }
+                                    .content-writer-editor code { font-family: 'JetBrains Mono', monospace; background: #e5e7eb; padding: 0.2em 0.4em; border-radius: 0.3em; font-size: 0.85em; color: #1f2937; word-break: break-word; }
                                     .dark .content-writer-editor code { background: #27272a; color: #e4e4e7; }
                                     .content-writer-editor a { color: #818cf8; text-decoration: none; border-bottom: 1px solid rgba(129, 140, 248, 0.3); transition: border-color 0.2s; }
                                     .content-writer-editor a:hover { border-bottom-color: #818cf8; }
-                                    .content-writer-editor img { max-width: 100%; border-radius: 0.75rem; margin: 2em 0; border: 1px solid #e5e7eb; }
+                                    .content-writer-editor img { max-width: 100%; border-radius: 0.75rem; margin: 1.5em 0; border: 1px solid #e5e7eb; }
                                     .dark .content-writer-editor img { border-color: #27272a; }
                                 `}</style>
                                 {isGenerating && (
@@ -753,7 +754,7 @@ const ContentWriter: React.FC = () => {
                                 )}
                                 <div 
                                     ref={editorRef}
-                                    className="content-writer-editor focus:outline-none min-h-[600px] font-serif"
+                                    className="content-writer-editor focus:outline-none min-h-[600px] break-words"
                                     contentEditable={true}
                                     suppressContentEditableWarning={true}
                                     dangerouslySetInnerHTML={{ __html: editedContent }}

@@ -66,13 +66,21 @@ export const BotMessageAttachments: React.FC<any> = ({ attachments }) => (
   </div>
 );
 export const AIImageStrip: React.FC<any> = () => null;
-export const ChargeModal: React.FC<any> = ({ isOpen, onClose }) => (
+export const ChargeModal: React.FC<any> = ({ isOpen, onClose, currentCoins = 0 }) => (
   isOpen ? (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white p-6 rounded shadow-lg">
+      <div className="bg-white p-6 rounded shadow-lg max-w-sm w-[calc(100%-2rem)]">
         <h3 className="font-bold mb-2">Not Enough Coins</h3>
-        <p>Please recharge.</p>
-        <button onClick={onClose} className="mt-4 px-4 py-2 bg-blue-500 text-white rounded">Close</button>
+        <p className="text-sm text-gray-600">You currently have {currentCoins} coins. Buy more coins to keep using AI tools.</p>
+        <div className="mt-5 flex justify-end gap-3">
+          <button onClick={onClose} className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors">Close</button>
+          <button
+            onClick={() => { window.location.href = '/subscription'; }}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+          >
+            Buy Coins
+          </button>
+        </div>
       </div>
     </div>
   ) : null

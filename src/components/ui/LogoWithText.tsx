@@ -24,7 +24,7 @@ const LogoWithText: React.FC<Props> = ({
 }) => {
   return (
     <div className={`flex items-center gap-3 ${className}`}>
-      <img src={matrixLogo} alt={`${title} logo`} style={{ width: size, height: size }} className="rounded-xl object-cover flex-shrink-0" />
+      <img src={matrixLogo} alt={`${title} logo`} style={{ width: size, height: size }} className="rounded-lg object-cover flex-shrink-0" />
       <div style={{ maxWidth: maxTextWidth }} className="flex flex-col overflow-hidden">
         <span className={titleClassName}>{title}</span>
         {showSubtitle && (

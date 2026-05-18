@@ -1009,6 +1009,28 @@ export const en = {
     reminderDateLabel: "Reminder Date",
     reminderTimeLabel: "Reminder Time",
 
+    // Study Planner calendar
+    calendarToday: "Today",
+    calendarMonthJan: "January",
+    calendarMonthFeb: "February",
+    calendarMonthMar: "March",
+    calendarMonthApr: "April",
+    calendarMonthMay: "May",
+    calendarMonthJun: "June",
+    calendarMonthJul: "July",
+    calendarMonthAug: "August",
+    calendarMonthSep: "September",
+    calendarMonthOct: "October",
+    calendarMonthNov: "November",
+    calendarMonthDec: "December",
+    calendarDaySun: "Sun",
+    calendarDayMon: "Mon",
+    calendarDayTue: "Tue",
+    calendarDayWed: "Wed",
+    calendarDayThu: "Thu",
+    calendarDayFri: "Fri",
+    calendarDaySat: "Sat",
+
     // Check Mistakes Component specific
     mistakeCheckHistory: "Mistake Check History",
     clearAll: "Clear All",
@@ -1244,11 +1266,17 @@ export const en = {
     unexpectedError: "An unexpected error occurred",
     couldNotLoad: "Could not load history",
     tryAgain: "Try Again",
+    buyCoins: "Buy Coins",
     noTransactions: "No transactions found",
     noTransactionsDescription: "You haven't made any purchases yet.",
     transactionFallback: "Transaction",
     notAvailable: "N/A",
     coinsAmount: "{{amount}} Coins",
+    chargesInfo: "Coins are charged based on the AI tool and input type. Review the list below before starting a request.",
+    tabs: {
+      transactions: "Transactions",
+      charges: "Charges"
+    },
     columns: {
       description: "Description",
       dateTime: "Date & Time",
@@ -1364,7 +1392,8 @@ export const en = {
         urlPlaceholder: "https://youtu.be/...",
         or: "or",
         copyPasteLabel: "Copy and paste text to add as content",
-        notesPlaceholder: "Paste your notes here"
+        notesPlaceholder: "Paste your notes here",
+        youtubeCaptionNotice: "This feature requires captions/subtitles on the YouTube video to extract text automatically. If the video does not have captions, download the audio (MP3) and upload it via the Upload → Audio option for transcription."
       },
       record: {
         title: "Record Audio",

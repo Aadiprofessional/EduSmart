@@ -118,7 +118,7 @@ const StudyPlannerPage: React.FC = () => {
         <div className="flex-1 overflow-y-auto w-full h-full">
             <StudyPlannerComponent 
               ref={studyPlannerRef}
-              className="w-full min-h-full p-4 lg:p-8 pb-24 lg:pb-8" 
+              className="w-full min-h-full p-2 sm:p-4 lg:p-8 pb-24 lg:pb-8" 
               onToggleHistory={() => setIsHistoryOpen(true)}
               onRefreshHistory={() => {
                 // Refresh history list if sidebar is open

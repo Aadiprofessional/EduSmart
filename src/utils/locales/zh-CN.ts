@@ -1162,6 +1162,28 @@ export const zhCN = {
     aiStudyRoadmap: "AI学习路线图",
     generateStudyRoadmap: "生成学习路线图",
     generatingRoadmap: "正在生成路线图...",
+
+    // Study Planner calendar
+    calendarToday: "今天",
+    calendarMonthJan: "一月",
+    calendarMonthFeb: "二月",
+    calendarMonthMar: "三月",
+    calendarMonthApr: "四月",
+    calendarMonthMay: "五月",
+    calendarMonthJun: "六月",
+    calendarMonthJul: "七月",
+    calendarMonthAug: "八月",
+    calendarMonthSep: "九月",
+    calendarMonthOct: "十月",
+    calendarMonthNov: "十一月",
+    calendarMonthDec: "十二月",
+    calendarDaySun: "日",
+    calendarDayMon: "一",
+    calendarDayTue: "二",
+    calendarDayWed: "三",
+    calendarDayThu: "四",
+    calendarDayFri: "五",
+    calendarDaySat: "六",
    
     oneAiResponseUsed: "使用了1次AI响应"
 
@@ -1455,11 +1477,17 @@ export const zhCN = {
     unexpectedError: "发生了意外错误",
     couldNotLoad: "无法加载历史记录",
     tryAgain: "重试",
+    buyCoins: "购买积分",
     noTransactions: "暂无交易记录",
     noTransactionsDescription: "你还没有任何购买记录。",
     transactionFallback: "交易",
     notAvailable: "暂无",
     coinsAmount: "{{amount}} 积分",
+    chargesInfo: "积分会根据 AI 工具和输入类型扣除。开始请求前，请先查看下方费用列表。",
+    tabs: {
+      transactions: "交易记录",
+      charges: "费用"
+    },
     columns: {
       description: "描述",
       dateTime: "日期与时间",
@@ -1575,7 +1603,8 @@ export const zhCN = {
         urlPlaceholder: "https://youtu.be/...",
         or: "或",
         copyPasteLabel: "复制并粘贴文本作为内容",
-        notesPlaceholder: "在这里粘贴你的笔记"
+        notesPlaceholder: "在这里粘贴你的笔记",
+        youtubeCaptionNotice: "此功能需要 YouTube 视频具有字幕/隐藏式字幕才能自动提取文本。如果视频没有字幕，请下载音频（MP3）并通过 上传 → 音频 选项上传以进行转录。"
       },
       record: {
         title: "录制音频",

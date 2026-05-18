@@ -486,6 +486,7 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
 
   // Add state to track history restoration
   const [isRestoringFromHistory, setIsRestoringFromHistory] = useState(false);
+  const [documentView, setDocumentView] = useState<DocumentView>('image');
 
   const sanitizeFileName = (name: string) => name.replace(/[^a-zA-Z0-9._-]/g, '_');
 
@@ -1083,11 +1084,18 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
       while (fromIndex < loweredText.length) {
         const foundIndex = loweredText.indexOf(target, fromIndex);
         if (foundIndex === -1) break;
-        rawMatches.push({
-          start: foundIndex,
-          end: foundIndex + target.length,
-          mistake
-        });
+        // Check word boundaries: skip if match is a substring of a larger word
+        const charBefore = foundIndex > 0 ? loweredText[foundIndex - 1] : null;
+        const charAfter = foundIndex + target.length < loweredText.length ? loweredText[foundIndex + target.length] : null;
+        const boundaryBefore = charBefore === null || /\W/.test(charBefore);
+        const boundaryAfter = charAfter === null || /\W/.test(charAfter);
+        if (boundaryBefore && boundaryAfter) {
+          rawMatches.push({
+            start: foundIndex,
+            end: foundIndex + target.length,
+            mistake
+          });
+        }
         fromIndex = foundIndex + Math.max(1, target.length);
       }
     });
@@ -3620,7 +3628,10 @@ Be thorough and fair in your assessment.`
                     onClick={handleCheckText}
                     disabled={loading || !file}
                     className="mistake-checker-send-button"
-                    style={{ fontFamily: '"DM Sans", sans-serif' }}
+                   style={{ 
+  fontFamily: '"DM Sans", sans-serif',
+  textTransform: "none"
+}}
                   >
                     {loading ? (
                       <span className="mistake-checker-loading-ring" />
@@ -3744,13 +3755,6 @@ Be thorough and fair in your assessment.`
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center space-x-3 mb-3">
-                                <div className="w-10 h-10 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-lg flex items-center justify-center border border-cyan-500/20">
-                                  <IconComponent 
-                                    icon={item.fileType.includes('pdf') ? AiOutlineFileText : 
-                                          item.fileType.includes('image') ? AiOutlineCamera : AiOutlineFileText} 
-                                    className="h-5 w-5 text-cyan-400" 
-                                  />
-                                </div>
                                 <div className="flex-1 min-w-0">
                                   <h3 className="text-lg font-semibold text-white truncate">
                                     {item.fileName || 'Text Analysis'}
@@ -3871,29 +3875,7 @@ Be thorough and fair in your assessment.`
               </p>
             </div>
 
-            {/* Document Preview */}
-            <div className="mb-6 flex justify-center">
-              <div className={`w-64 h-80 rounded-lg overflow-hidden border ${
-                variant === 'solve' ? 'bg-gray-50 dark:bg-[#151518] border-gray-200 dark:border-white/10' : 'bg-slate-700/30 border-white/10'
-              }`}>
-                {documentPages.length > 0 ? (
-                  <img 
-                    src={documentPages[0]} 
-                    alt="Document preview"
-                    className="w-full h-full object-contain"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                      console.log('🖼️ Document preview image failed to load - likely expired blob URL from history');
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center px-4 text-center">
-                    <IconComponent icon={AiOutlineFileText} className="h-12 w-12 mb-3 text-gray-400 dark:text-gray-500" />
-                    <p className="text-sm text-gray-600 dark:text-gray-300 break-all">{file?.name}</p>
-                  </div>
-                )}
-              </div>
-            </div>
+
 
                 {/* Marking Standard Selector */}
             <div className="flex items-center justify-center mb-6">
@@ -4115,19 +4097,51 @@ Be thorough and fair in your assessment.`
               : 'bg-[#0f172a]/60 backdrop-blur-md border-white/10'
           }`}>
             <h2 className={`text-lg font-semibold ${variant === 'solve' ? 'text-gray-900 dark:text-white' : 'text-cyan-400'}`}>Document</h2>
-            <motion.button
-              onClick={() => setShowFileViewModal(true)}
-              className={`lg:hidden flex items-center px-3 py-1.5 rounded-lg border text-xs ${
-                variant === 'solve'
-                  ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
-                  : 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border-blue-500/30'
-              }`}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <IconComponent icon={AiOutlineFileText} className="h-3.5 w-3.5 mr-1" />
-              Full Screen
-            </motion.button>
+            <div className="flex items-center gap-2">
+              {!textOnlyMode && documentPages.length > 0 && extractedTexts[currentPage]?.text && (
+                <div className={`flex items-center rounded-lg border overflow-hidden text-xs ${
+                  variant === 'solve'
+                    ? 'border-gray-200 dark:border-white/10'
+                    : 'border-white/10'
+                }`}>
+                  <button
+                    onClick={() => setDocumentView('image')}
+                    className={`px-3 py-1.5 flex items-center gap-1 transition-colors ${
+                      documentView === 'image'
+                        ? variant === 'solve' ? 'bg-indigo-600 text-white' : 'bg-cyan-500/30 text-cyan-300'
+                        : variant === 'solve' ? 'bg-gray-100 dark:bg-[#27272a] text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[#313136]' : 'bg-transparent text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    Image
+                  </button>
+                  <button
+                    onClick={() => setDocumentView('text')}
+                    className={`px-3 py-1.5 flex items-center gap-1 transition-colors ${
+                      documentView === 'text'
+                        ? variant === 'solve' ? 'bg-indigo-600 text-white' : 'bg-cyan-500/30 text-cyan-300'
+                        : variant === 'solve' ? 'bg-gray-100 dark:bg-[#27272a] text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[#313136]' : 'bg-transparent text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    Text
+                  </button>
+                </div>
+              )}
+              <motion.button
+                onClick={() => setShowFileViewModal(true)}
+                className={`lg:hidden flex items-center px-3 py-1.5 rounded-lg border text-xs ${
+                  variant === 'solve'
+                    ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
+                    : 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border-blue-500/30'
+                }`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <IconComponent icon={AiOutlineFileText} className="h-3.5 w-3.5 mr-1" />
+                Full Screen
+              </motion.button>
+            </div>
             
           </div>
           
@@ -4237,6 +4251,66 @@ Be thorough and fair in your assessment.`
                 </div>
               ) : (
                 <div className="w-full h-full flex flex-col overflow-hidden">
+                  {documentView === 'text' && extractedTexts[currentPage]?.text ? (
+                    /* Text View - extracted text with highlights */
+                    <div className="w-full h-full overflow-y-auto p-4">
+                      <div className={`text-sm leading-relaxed ${variant === 'solve' ? 'text-gray-800 dark:text-gray-200' : 'text-slate-200'}`}>
+                        {(() => {
+                          // OCR puts each word on its own line; normalise single \n → space
+                          const normalizeOcrText = (raw: string) =>
+                            raw
+                              .replace(/\r\n/g, '\n')
+                              .replace(/\n{2,}/g, '\u0000PARA\u0000')  // protect paragraph breaks
+                              .replace(/\n/g, ' ')                       // single \n → space
+                              .replace(/\u0000PARA\u0000/g, '\n\n')      // restore paragraph breaks
+                              .replace(/ {2,}/g, ' ')
+                              .trim();
+                          const displayText = normalizeOcrText(extractedTexts[currentPage].text);
+                          if (showCorrectedText && correctedText) {
+                            return (
+                              <div className="space-y-2">
+                                <div className="text-green-400 text-xs font-medium mb-2 bg-green-500/10 px-2 py-1 rounded">
+                                  ✅ Corrected Text
+                                </div>
+                                <div className="whitespace-pre-wrap">{correctedText}</div>
+                              </div>
+                            );
+                          }
+                          if ((pageMistakes[currentPage]?.mistakes?.length || 0) === 0) {
+                            return <div className="whitespace-pre-wrap">{displayText}</div>;
+                          }
+                          return (
+                            <div className="whitespace-pre-wrap">
+                              {highlightMistakesInText(
+                                displayText,
+                                pageMistakes[currentPage]?.mistakes || []
+                              ).map((part, index) => (
+                                part.isHighlighted ? (
+                                  <span
+                                    key={index}
+                                    className={`${
+                                      part.mistakeType === 'grammar' ? 'bg-red-500/30 border-b-2 border-red-500' :
+                                      part.mistakeType === 'spelling' ? 'bg-yellow-400/30 border-b-2 border-yellow-400/90' :
+                                      part.mistakeType === 'punctuation' ? 'bg-red-400/25 border-b-2 border-red-400/90' :
+                                      'bg-yellow-300/25 border-b-2 border-yellow-300/90'
+                                    } ${
+                                      part.isSelected ? 'ring-2 ring-yellow-400 bg-yellow-400/20 shadow-lg animate-pulse' : ''
+                                    } rounded px-0.5 cursor-help transition-all hover:bg-opacity-50`}
+                                    title={`${part.mistakeType?.toUpperCase()}: ${part.text} → ${part.correction}`}
+                                    onClick={() => { if (part.mistakeId) focusMistake(part.mistakeId); }}
+                                  >
+                                    {part.text}
+                                  </span>
+                                ) : (
+                                  <span key={index}>{part.text}</span>
+                                )
+                              ))}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  ) : (
                   <div className="w-full flex-1 min-h-0 px-4 pt-4 pb-2">
                     <div
                       className="relative w-full h-full rounded-lg overflow-hidden bg-black/20"
@@ -4358,6 +4432,7 @@ Be thorough and fair in your assessment.`
                       )}
                     </div>
                   </div>
+                  )}
                 </div>
               )}
             </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
@@ -7,7 +7,7 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeRaw from 'rehype-raw';
 import rehypeKatex from 'rehype-katex';
-import { FaMagic } from 'react-icons/fa';
+import { FaMagic, FaCopy, FaShareAlt } from 'react-icons/fa';
 import { Skeleton } from '../ui/Skeleton';
 
 const StudyTutorLesson: React.FC = () => {
@@ -16,6 +16,32 @@ const StudyTutorLesson: React.FC = () => {
     const [lessonContent, setLessonContent] = useState<string>('');
     const [loading, setLoading] = useState(true);
     const [isGenerating, setIsGenerating] = useState(false);
+    const contentRef = useRef<HTMLDivElement>(null);
+
+    const handleCopy = async () => {
+        const text = contentRef.current?.innerText || lessonContent;
+        try {
+            await navigator.clipboard.writeText(text);
+        } catch {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        }
+    };
+
+    const handleShare = async () => {
+        const text = contentRef.current?.innerText || lessonContent;
+        if (navigator.share) {
+            try {
+                await navigator.share({ title: 'Lesson', text });
+            } catch { /* user cancelled */ }
+        } else {
+            await handleCopy();
+        }
+    };
 
     // Preprocess LaTeX to convert various formats to react-markdown compatible format
     const preprocessLaTeX = (text: string) => {
@@ -84,7 +110,7 @@ const StudyTutorLesson: React.FC = () => {
     return (
         <div className="h-full relative overflow-hidden">
             {/* Scrollable Content */}
-            <div className="h-full overflow-y-auto px-8 pb-8 pt-8 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-800 scrollbar-track-transparent">
+            <div className="h-full overflow-y-auto px-8 pb-24 pt-8 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-800 scrollbar-track-transparent">
                 <div className="max-w-3xl mx-auto w-full min-h-full">
                     {loading || isGenerating ? (
                         <div className="space-y-6">
@@ -108,7 +134,7 @@ const StudyTutorLesson: React.FC = () => {
                             </div>
                         </div>
                     ) : (
-                        <div className="prose dark:prose-invert max-w-none focus:outline-none pb-20">
+                        <div ref={contentRef} className="prose dark:prose-invert max-w-none focus:outline-none pb-4">
                             <ReactMarkdown 
                                 remarkPlugins={[remarkGfm, remarkMath]} 
                                 rehypePlugins={[rehypeRaw, rehypeKatex]}
@@ -149,6 +175,30 @@ const StudyTutorLesson: React.FC = () => {
                     )}
                 </div>
             </div>
+
+            {/* Bottom Action Bar */}
+            {!loading && !isGenerating && lessonContent && (
+                <div className="absolute bottom-6 left-0 right-0 flex justify-center pointer-events-none z-30">
+                    <div className="flex items-center gap-2 pointer-events-auto">
+                        <button
+                            onClick={handleCopy}
+                            className="px-4 py-2 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 rounded-full shadow-lg transition-all flex items-center gap-2 hover:scale-105 active:scale-95"
+                            title="Copy lesson text"
+                        >
+                            <FaCopy size={13} />
+                            <span className="text-sm font-medium">Copy</span>
+                        </button>
+                        <button
+                            onClick={handleShare}
+                            className="px-4 py-2 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 rounded-full shadow-lg transition-all flex items-center gap-2 hover:scale-105 active:scale-95"
+                            title="Share lesson"
+                        >
+                            <FaShareAlt size={13} />
+                            <span className="text-sm font-medium">Share</span>
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
