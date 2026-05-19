@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaRegEdit, FaHistory, FaBars } from 'react-icons/fa';
 import SidebarLeft from '../components/dashboard/SidebarLeft';
@@ -38,7 +38,7 @@ const MistakeCheckerPage: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const fetchHistory = async (offset = 0, append = false) => {
+  const fetchHistory = useCallback(async (offset = 0, append = false) => {
     setHistoryLoading(true);
     setHistoryError('');
     try {
@@ -64,11 +64,11 @@ const MistakeCheckerPage: React.FC = () => {
     } finally {
       setHistoryLoading(false);
     }
-  };
+  }, [user, session, HISTORY_LIMIT]);
 
   useEffect(() => {
     fetchHistory(0, false);
-  }, [user, session]);
+  }, [fetchHistory]);
 
   const handleOpenHistory = () => {
     const next = !isHistoryOpen;

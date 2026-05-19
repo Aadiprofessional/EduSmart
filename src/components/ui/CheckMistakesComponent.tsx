@@ -4068,15 +4068,7 @@ Be thorough and fair in your assessment.`
               <span className="mistake-checker-tag style">Style {styleCount}</span>
             </div>
           )}
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="min-w-0">
-              <span className={`text-xs uppercase tracking-widest mr-1 ${variant === 'solve' ? 'text-gray-400 dark:text-gray-500' : 'text-cyan-300/60'}`}>Workspace</span>
-              <span className={`text-sm font-semibold truncate ${variant === 'solve' ? 'text-gray-900 dark:text-white' : 'text-white'}`}>
-                {file?.name || 'Uploaded document'}
-              </span>
-            </div>
-            <span className={`text-xs shrink-0 ${variant === 'solve' ? 'text-gray-400 dark:text-gray-500' : 'text-slate-400'}`}>· {selectedLanguageLabel}</span>
-          </div>
+          {/* Workspace label removed from header - shown inside document area instead */}
           {/* Page navigation */}
           {documentPages.length > 1 && (
             <div className={`flex items-center rounded-lg px-1.5 py-0.5 border ${
@@ -4164,7 +4156,7 @@ Be thorough and fair in your assessment.`
               <h2 className={`text-lg font-semibold flex-shrink-0 ${variant === 'solve' ? 'text-gray-900 dark:text-white' : 'text-cyan-400'}`}>Document</h2>
             </div>
             <div className="flex items-center gap-2">
-              {!textOnlyMode && documentPages.length > 0 && extractedTexts[currentPage]?.text && (
+              {!textOnlyMode && documentPages.length > 0 && (extractedTexts[currentPage]?.text || hasOcrOverlay) && (
                 <div className={`flex items-center rounded-lg border overflow-hidden text-xs ${
                   variant === 'solve'
                     ? 'border-gray-200 dark:border-white/10'
@@ -4211,12 +4203,29 @@ Be thorough and fair in your assessment.`
             
           </div>
           
-          <div className="h-64 lg:h-full p-4 relative overflow-hidden">
+            <div className="h-64 lg:h-full p-4 relative overflow-hidden">
             <div className={`w-full h-full rounded-lg overflow-hidden border relative ${
               variant === 'solve'
                 ? 'bg-gray-50 dark:bg-[#111111] border-gray-200 dark:border-white/10'
                 : 'bg-black/20 backdrop-blur-md border-white/10'
             }`}>
+              {/* Info card placed inside the document area (moved from header) */}
+              {(file?.name || (ocrOverlayPages && ocrOverlayPages.length > 0)) && (
+                <div className="absolute top-4 right-4 z-20">
+                  <div className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs shadow-sm ${variant === 'solve' ? 'bg-white border border-gray-200 text-gray-700' : 'bg-slate-900/70 border border-white/10 text-slate-200'}`}>
+                    <IconComponent icon={AiOutlineFileText} className="h-4 w-4" />
+                    <div className="flex flex-col leading-tight">
+                      <span className="font-medium truncate max-w-[14rem]">{file?.name || `Workspace`}</span>
+                      <div className="text-[11px] text-gray-500 dark:text-gray-400">
+                        <span>{selectedLanguageLabel}</span>
+                        {ocrOverlayPages && ocrOverlayPages.length > 0 ? (
+                          <span className="ml-2">• OCR overlay • {ocrOverlayPages.length} page{ocrOverlayPages.length>1?'s':''}</span>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
               {textOnlyMode ? (
                 /* Direct Text Display */
                 <div className="w-full h-full overflow-auto lg:overflow-hidden p-4">
@@ -4275,9 +4284,9 @@ Be thorough and fair in your assessment.`
               ) : documentPages.length === 0 ? (
                 <div className="w-full h-full overflow-auto lg:overflow-hidden p-4">
                   <div className="mb-4 flex items-center gap-3">
-                    <IconComponent icon={AiOutlineFileText} className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-                    <p className={`text-sm ${variant === 'solve' ? 'text-gray-700 dark:text-gray-300' : 'text-slate-300'}`}>{file?.name}</p>
-                  </div>
+                        <IconComponent icon={AiOutlineFileText} className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                        {/* Filename moved into document area info card to avoid header duplication */}
+                      </div>
                   {extractedTexts[0]?.text ? (
                     <div className={`whitespace-pre-wrap font-mono text-sm leading-relaxed rounded-lg p-4 ${
                       variant === 'solve'
@@ -4317,65 +4326,162 @@ Be thorough and fair in your assessment.`
                 </div>
               ) : (
                 <div className="w-full h-full flex flex-col overflow-hidden">
-                  {documentView === 'text' && extractedTexts[currentPage]?.text ? (
-                    /* Text View - extracted text with highlights */
-                    <div className="w-full h-full overflow-y-auto p-4">
-                      <div className={`text-sm leading-relaxed ${variant === 'solve' ? 'text-gray-800 dark:text-gray-200' : 'text-slate-200'}`}>
-                        {(() => {
-                          // OCR puts each word on its own line; normalise single \n → space
-                          const normalizeOcrText = (raw: string) =>
-                            raw
-                              .replace(/\r\n/g, '\n')
-                              .replace(/\n{2,}/g, '\u0000PARA\u0000')  // protect paragraph breaks
-                              .replace(/\n/g, ' ')                       // single \n → space
-                              .replace(/\u0000PARA\u0000/g, '\n\n')      // restore paragraph breaks
-                              .replace(/ +([.,:;!?…»\)\]])/g, '$1')     // remove space before punctuation
-                              .replace(/ {2,}/g, ' ')
-                              .trim();
-                          const displayText = normalizeOcrText(extractedTexts[currentPage].text);
-                          if (showCorrectedText && correctedText) {
-                            return (
-                              <div className="space-y-2">
-                                <div className="text-green-400 text-xs font-medium mb-2 bg-green-500/10 px-2 py-1 rounded">
-                                  ✅ Corrected Text
-                                </div>
-                                <div className="whitespace-pre-wrap">{correctedText}</div>
-                              </div>
-                            );
-                          }
-                          if ((pageMistakes[currentPage]?.mistakes?.length || 0) === 0) {
-                            return <div className="whitespace-pre-wrap">{displayText}</div>;
-                          }
-                          return (
-                            <div className="whitespace-pre-wrap">
-                              {highlightMistakesInText(
-                                displayText,
-                                pageMistakes[currentPage]?.mistakes || []
-                              ).map((part, index) => (
-                                part.isHighlighted ? (
-                                  <span
-                                    key={index}
-                                    className={`${
-                                      part.mistakeType === 'grammar' ? 'bg-red-500/30 border-b-2 border-red-500' :
-                                      part.mistakeType === 'spelling' ? 'bg-yellow-400/30 border-b-2 border-yellow-400/90' :
-                                      part.mistakeType === 'punctuation' ? 'bg-red-400/25 border-b-2 border-red-400/90' :
-                                      'bg-yellow-300/25 border-b-2 border-yellow-300/90'
-                                    } ${
-                                      part.isSelected ? 'ring-2 ring-yellow-400 bg-yellow-400/20 shadow-lg animate-pulse' : ''
-                                    } rounded px-0.5 cursor-help transition-all hover:bg-opacity-50`}
-                                    title={`${part.mistakeType?.toUpperCase()}: ${part.text} → ${part.correction}`}
-                                    onClick={() => { if (part.mistakeId) focusMistake(part.mistakeId); }}
-                                  >
-                                    {part.text}
-                                  </span>
-                                ) : (
-                                  <span key={index}>{part.text}</span>
-                                )
-                              ))}
-                            </div>
-                          );
-                        })()}
-                      </div>
+                  {documentView === 'text' && (hasOcrOverlay || extractedTexts[currentPage]?.text) ? (
+                    /* Text View - positioned text using OCR bbox data */
+                    <div className="w-full flex-1 min-h-0 px-4 pt-4 pb-2">
+                      {hasOcrOverlay && currentOcrOverlay ? (
+                        <div
+                          className={`relative w-full h-full rounded-lg overflow-auto ${variant === 'solve' ? 'bg-white dark:bg-[#1a1a1a]' : 'bg-slate-900/80'}`}
+                          style={{ aspectRatio: `${overlayWidth} / ${overlayHeight}` }}
+                        >
+                          <svg
+                            className="absolute inset-0 w-full h-full"
+                            viewBox={`0 0 ${overlayWidth} ${overlayHeight}`}
+                            preserveAspectRatio="xMidYMid meet"
+                          >
+                            {/* Clean white/dark background */}
+                            <rect x={0} y={0} width={overlayWidth} height={overlayHeight} fill={variant === 'solve' ? 'white' : '#1a1a2e'} />
+                            {(() => {
+                              const PUNCT_ONLY = /^[.,:;!?'")\]»—…\-(]+$/;
+                              const currentMistakes = pageMistakes[currentPage]?.mistakes || [];
+                              const textColor = variant === 'solve' ? '#111827' : '#e2e8f0';
+
+                              // Step 1: keep only tokens with a valid, non-degenerate bbox
+                              const withBbox = currentOcrOverlay.results.filter(
+                                (r) => r.text && r.bbox && r.bbox.x_max > r.bbox.x_min && r.bbox.y_max > r.bbox.y_min
+                              );
+
+                              // Step 2: calibrate character-width ratio from the actual OCR data.
+                              // Handwriting can be narrow/tall (ratio ~0.20) vs wide/short (ratio ~0.60).
+                              // Hardcoding 0.60 (normal print) causes wildly inconsistent sizes for handwriting.
+                              const cwRatios = withBbox
+                                .filter(t => t.text!.trim().length >= 2 && t.bbox!.width > 0 && t.bbox!.height > 0)
+                                .map(t => t.bbox!.width / (t.text!.trim().length * t.bbox!.height));
+                              cwRatios.sort((a, b) => a - b);
+                              const charWRatio = cwRatios.length > 0
+                                ? Math.max(0.12, Math.min(0.65, cwRatios[Math.floor(cwRatios.length / 2)]))
+                                : 0.50;
+
+                              // Step 3: sort by vertical centre, then left-to-right
+                              const sorted = [...withBbox].sort((a, b) => {
+                                const ca = (a.bbox!.y_min + a.bbox!.y_max) / 2;
+                                const cb = (b.bbox!.y_min + b.bbox!.y_max) / 2;
+                                const avgH = ((a.bbox!.y_max - a.bbox!.y_min) + (b.bbox!.y_max - b.bbox!.y_min)) / 2;
+                                if (Math.abs(ca - cb) > avgH * 0.5) return ca - cb;
+                                return a.bbox!.x_min - b.bbox!.x_min;
+                              });
+
+                              // Step 4: group tokens into visual lines using y-centre proximity
+                              const lineGroups: (typeof withBbox)[] = [];
+                              for (const result of sorted) {
+                                if (lineGroups.length === 0) { lineGroups.push([result]); continue; }
+                                const lastGroup = lineGroups[lineGroups.length - 1];
+                                const prev = lastGroup[lastGroup.length - 1];
+                                const cp = (prev.bbox!.y_min + prev.bbox!.y_max) / 2;
+                                const cc = (result.bbox!.y_min + result.bbox!.y_max) / 2;
+                                const avgH = ((prev.bbox!.y_max - prev.bbox!.y_min) + (result.bbox!.y_max - result.bbox!.y_min)) / 2;
+                                if (Math.abs(cp - cc) <= avgH * 0.5) { lastGroup.push(result); }
+                                else { lineGroups.push([result]); }
+                              }
+
+                              return lineGroups.flatMap((group, lineIdx) => {
+                                // Step 5: within each line, merge tokens that share the same bbox
+                                // (OCR often emits punctuation as a separate token with an identical bbox)
+                                const deduped: (typeof withBbox[0])[] = [];
+                                for (const token of group) {
+                                  const ex = deduped.findIndex(
+                                    (d) =>
+                                      d.bbox &&
+                                      Math.abs(d.bbox.x_min - token.bbox!.x_min) < 3 &&
+                                      Math.abs(d.bbox.y_min - token.bbox!.y_min) < 3 &&
+                                      Math.abs(d.bbox.x_max - token.bbox!.x_max) < 3 &&
+                                      Math.abs(d.bbox.y_max - token.bbox!.y_max) < 3
+                                  );
+                                  if (ex !== -1) {
+                                    const sep = PUNCT_ONLY.test(token.text!.trim()) ? '' : ' ';
+                                    deduped[ex] = { ...deduped[ex], text: deduped[ex].text + sep + token.text!.trim() };
+                                  } else {
+                                    deduped.push({ ...token });
+                                  }
+                                }
+
+                                // Step 6: compute per-token font sizes using the calibrated ratio,
+                                // then normalize to the line median so all tokens on a line share
+                                // the same cap-height — matching how the original handwriting looks.
+                                const sortedTokens = [...deduped].sort((a, b) => a.bbox!.x_min - b.bbox!.x_min);
+                                const rawFS = sortedTokens.map(t => {
+                                  const fsByH = t.bbox!.height * 0.72;
+                                  const chars = Math.max(1, t.text!.trim().length);
+                                  const fsByW = t.bbox!.width / (chars * charWRatio);
+                                  return Math.max(8, Math.min(fsByH, fsByW));
+                                });
+                                const sortedFS = [...rawFS].sort((a, b) => a - b);
+                                // Use median to ignore outlier tokens that would shrink the whole line
+                                const lineFS = Math.max(8, sortedFS[Math.floor(sortedFS.length / 2)]);
+
+                                return sortedTokens.map((token, tokenIdx) => {
+                                  const { x_min: bboxX, y_min: bboxY, width: bboxW, height: bboxH } = token.bbox!;
+                                  const displayText = token.text!;
+                                  const baseline = bboxY + bboxH * 0.82;
+                                  // Use textLength so text is horizontally fitted to the bbox.
+                                  // Because lineFS is already calibrated to the handwriting's aspect ratio,
+                                  // the compression/expansion ratio stays small (typically < 1.3×).
+                                  const highlight = getOverlayLineHighlight(displayText, currentMistakes, showCorrectedText);
+
+                                  return (
+                                    <g key={`tv-${currentPage}-${lineIdx}-${tokenIdx}`}>
+                                      {highlight.ranges.map((range, ri) => {
+                                        const totalChars = Math.max(1, highlight.displayText.length);
+                                        const hx = bboxX + (range.start / totalChars) * bboxW;
+                                        const hw = Math.max(6, ((range.end - range.start) / totalChars) * bboxW);
+                                        const fill = range.type === 'grammar'
+                                          ? 'rgba(239,68,68,0.35)'
+                                          : range.type === 'spelling'
+                                            ? 'rgba(234,179,8,0.4)'
+                                            : range.type === 'punctuation'
+                                              ? 'rgba(249,115,22,0.35)'
+                                              : 'rgba(168,85,247,0.35)';
+                                        const stroke = range.type === 'grammar' ? '#ef4444'
+                                          : range.type === 'spelling' ? '#eab308'
+                                          : range.type === 'punctuation' ? '#f97316'
+                                          : '#a855f7';
+                                        return (
+                                          <rect
+                                            key={`tv-hl-${lineIdx}-${tokenIdx}-${ri}`}
+                                            x={hx} y={bboxY} width={hw} height={bboxH}
+                                            rx={3} fill={fill} stroke={stroke} strokeWidth={1.5}
+                                            className="cursor-pointer"
+                                            onClick={() => focusMistake(range.mistakeId)}
+                                          />
+                                        );
+                                      })}
+                                      {highlight.tooltip && <title>{highlight.tooltip}</title>}
+                                      <text
+                                        x={bboxX}
+                                        y={baseline}
+                                        fontSize={lineFS}
+                                        fontFamily="Arial, sans-serif"
+                                        textLength={bboxW}
+                                        lengthAdjust="spacingAndGlyphs"
+                                        fill={textColor}
+                                        className={highlight.matchedMistakeId ? 'cursor-pointer' : ''}
+                                        onClick={() => { if (highlight.matchedMistakeId) focusMistake(highlight.matchedMistakeId); }}
+                                      >
+                                        {highlight.displayText}
+                                      </text>
+                                    </g>
+                                  );
+                                });
+                              });
+                            })()}
+                          </svg>
+                        </div>
+                      ) : (
+                        /* Fallback flat text when no OCR overlay available */
+                        <div className={`text-sm leading-relaxed whitespace-pre-wrap ${variant === 'solve' ? 'text-gray-800 dark:text-gray-200' : 'text-slate-200'}`}>
+                          {extractedTexts[currentPage]?.text || ''}
+                        </div>
+                      )}
                     </div>
                   ) : (
                   <div className="w-full flex-1 min-h-0 px-4 pt-4 pb-2">
