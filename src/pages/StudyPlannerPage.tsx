@@ -204,7 +204,7 @@ const StudyPlannerPage: React.FC = () => {
                             </h3>
                             <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 space-x-4">
                                 <span className="flex items-center bg-gray-100 dark:bg-black/30 px-2 py-1 rounded-md">
-                                    <IconComponent icon={FiCalendar} className="mr-1.5 h-3.5 w-3.5 text-gray-400" />
+                                    <IconComponent icon={FiCalendar} className="mr-1.5 h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
                                     {new Date(item.created_at).toLocaleDateString(language, { month: 'short', day: 'numeric', year: 'numeric' })}
                                 </span>
                                 <span className="flex items-center bg-gray-100 dark:bg-black/30 px-2 py-1 rounded-md">

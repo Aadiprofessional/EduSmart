@@ -11,11 +11,14 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
+import DOMPurify from 'dompurify';
 import 'katex/dist/katex.min.css'; // Ensure katex CSS is imported for math rendering
 import coinIcon from '../assets/assets_coin.png';
 import { useLanguage } from '../utils/LanguageContext';
 import { useResponseCheck, ResponseUpgradeModal } from '../utils/responseChecker';
 import AdBanner from '../components/ads/AdBanner';
+
+const SOLVE_API_URL = 'https://server.matrixedu.ai/api/multimodal-chat';
 
 // Type definitions for PDF.js
 interface PDFPageProxy {
@@ -103,7 +106,6 @@ const SolvePage: React.FC = () => {
   }, []);
 
   const subjects = [
-    { id: 'Psychology', label: t('solvePage.subjects.psychology') },
     { id: 'Physics', label: t('solvePage.subjects.physics') },
     { id: 'Biology', label: t('solvePage.subjects.biology') },
     { id: 'Math', label: t('solvePage.subjects.math') },
@@ -577,113 +579,34 @@ const SolvePage: React.FC = () => {
     setAttachedFile(null); // Clear attachment after sending
     setIsProcessingStarted(true);
 
-      // Prepare request body
-      let requestBody: any = {
-        stream: true,
-        messages: []
-      };
-
-      const userId = user?.id || '0a147ebe-af99-481b-bcaf-ae70c9aeb8d8'; // Use authenticated user ID or fallback
-      const timestamp = new Date().toISOString().replace('T', ' ').replace('Z', ''); // Format: "2022-01-31 01:22:57.175"
+      const userId = user?.id || '0a147ebe-af99-481b-bcaf-ae70c9aeb8d8';
+      const timestamp = new Date().toISOString();
 
       try {
         let currentFileUrl: string | undefined = undefined;
 
+        // Build multimodal-chat request
+        const requestBody: any = {
+          messages: [{
+            uid: userId,
+            content: newUserMsg.content,
+            timestamp,
+            chatid: currentChatId,
+          }]
+        };
+
         if (attachedFile) {
-          // Handle attachments
           const fileUrl = await uploadToSupabase(attachedFile, attachedFile.name);
-          
-          if (!fileUrl) {
-            throw new Error('Failed to upload file');
-          }
+          if (!fileUrl) throw new Error('Failed to upload file');
           currentFileUrl = fileUrl;
 
           if (attachedFile.type.startsWith('image/')) {
-            // Image Attachment
-            requestBody.uploadedFileType = 'image';
-            requestBody.messages = [{
-              uid: userId,
-              type: "image",
-              text: { body: newUserMsg.content },
-              body: newUserMsg.content,
-              content: newUserMsg.content,
-              role: "user",
-              roleDescription: "A versatile AI assistant for everyday tasks and questions",
-              timestamp: timestamp,
-              chatid: currentChatId,
-              subject: selectedSubject,
-              url: fileUrl,
-              attachments: [{
-                url: fileUrl,
-                fileName: attachedFile.name,
-                fileType: "image",
-                originalName: attachedFile.name,
-                size: attachedFile.size
-              }]
-            }];
+            requestBody.imageUrl = fileUrl;
           } else if (attachedFile.type === 'application/pdf') {
-            // PDF Attachment
-            const base64Images = await convertPdfToImages(attachedFile);
-            const imageUrls = await uploadBase64Images(base64Images);
-            // Just use the URLs directly without backticks/spaces
-            const formattedImageUrls = imageUrls;
-
-            requestBody.uploadedFileType = 'pdf_vision';
-            requestBody.messages = [{
-              uid: userId,
-              type: "pdf_vision",
-              text: { body: newUserMsg.content },
-              body: newUserMsg.content,
-              content: newUserMsg.content,
-              role: "user",
-              roleDescription: "A versatile AI assistant for everyday tasks and questions",
-              timestamp: timestamp,
-              chatid: currentChatId,
-              subject: selectedSubject,
-              url: fileUrl,
-              image_urls: formattedImageUrls,
-              page_count: imageUrls.length
-            }];
+            requestBody.pdfUrl = fileUrl;
           } else {
-            // Other Documents (docx, etc.)
-            requestBody.uploadedFileType = 'document';
-            requestBody.messages = [{
-              uid: userId,
-              type: "document",
-              text: { body: newUserMsg.content },
-              body: newUserMsg.content,
-              content: newUserMsg.content,
-              role: "user",
-              roleDescription: "A versatile AI assistant for everyday tasks and questions",
-              timestamp: timestamp,
-              chatid: currentChatId,
-              subject: selectedSubject,
-              url: fileUrl,
-              attachments: [{
-                url: fileUrl,
-                fileName: attachedFile.name,
-                fileType: "document",
-                originalName: attachedFile.name,
-                size: attachedFile.size
-              }]
-            }];
+            requestBody.docxUrl = fileUrl;
           }
-        } else {
-          // Text Only
-          requestBody.uploadedFileType = 'text';
-          requestBody.messages = [{
-            uid: userId,
-            type: "text",
-            text: { body: "text" }, 
-            body: newUserMsg.content,
-            content: newUserMsg.content,
-            transcription: newUserMsg.content,
-            role: "user",
-            roleDescription: "",
-            timestamp: timestamp,
-            chatid: currentChatId,
-            subject: selectedSubject
-          }];
         }
 
         // Persist Chat and Message to Supabase
@@ -718,66 +641,53 @@ const SolvePage: React.FC = () => {
         });
         if (msgError) console.error('Error saving user message:', msgError);
 
-        console.log('Sending request to n8n:', requestBody);
-
-        // Send to webhook
-        const response = await fetch('https://n8n.matrixaiserver.com/webhook/matrixEdu/solveQuestion', {
+        // Send to multimodal-chat API
+        const response = await fetch(SOLVE_API_URL, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(requestBody),
         });
 
-        if (!response.body) {
-          throw new Error('No response body');
-        }
+        if (!response.body) throw new Error('No response body');
 
-        // Stream handling
+        // Parse SSE stream: lines like "data: {\"content\":\"...\"}" or plain JSON
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let aiContent = '';
         let buffer = '';
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        
-        const chunk = decoder.decode(value, { stream: true });
-        buffer += chunk;
-        
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || ''; // Keep the last partial line
-        
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          
-          try {
-            // Try to parse the line as JSON
-            const json = JSON.parse(line);
-            
-            // Check if it's an item with content
-            if (json.type === 'item' && typeof json.content === 'string') {
-              aiContent += json.content;
-              
-              // Update the last message with new content
-              setMessages(prev => {
-                const newMessages = [...prev];
-                const lastMessageIndex = newMessages.findIndex(m => m.id === newAiMsgId);
-                if (lastMessageIndex !== -1) {
-                  newMessages[lastMessageIndex] = {
-                    ...newMessages[lastMessageIndex],
-                    content: aiContent
-                  };
-                }
-                return newMessages;
-              });
-            }
-          } catch (e) {
-            console.warn('Skipping invalid JSON line in stream:', line);
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          for (const line of lines) {
+            let str = line.trim();
+            if (!str || str === 'data: [DONE]' || str === '[DONE]') continue;
+            if (str.startsWith('data: ')) str = str.slice(6).trim();
+            if (!str || str === '[DONE]') continue;
+            try {
+              const json = JSON.parse(str);
+              const chunk =
+                (typeof json.content === 'string' && json.content) ||
+                (typeof json.text === 'string' && json.text) ||
+                (json.type === 'item' && typeof json.content === 'string' && json.content) ||
+                null;
+              if (chunk) {
+                aiContent += chunk;
+                setMessages(prev => {
+                  const newMessages = [...prev];
+                  const idx = newMessages.findIndex(m => m.id === newAiMsgId);
+                  if (idx !== -1) {
+                    newMessages[idx] = { ...newMessages[idx], content: aiContent };
+                  }
+                  return newMessages;
+                });
+              }
+            } catch {}
           }
         }
-      }
 
       // Save AI Message to DB
       if (aiContent) {
@@ -819,15 +729,15 @@ const SolvePage: React.FC = () => {
   const calculateCost = () => {
     if (attachedFile) {
       if (attachedFile.type === 'application/pdf') {
-        return pdfPageCount * 2;
+        return pdfPageCount > 0 ? pdfPageCount * 2 : 2;
       } else if (attachedFile.type.startsWith('image/')) {
         return 3;
       } else {
-        // Documents
+        // DOCX and other documents
         return 10;
       }
     } else if (inputValue.trim()) {
-      return 2;
+      return 1;
     }
     return 0;
   };
@@ -1051,7 +961,7 @@ const SolvePage: React.FC = () => {
              </div>
            ) : (
              /* Chat State */
-            <div className="flex-1 flex flex-col h-full w-full max-w-5xl mx-auto px-4 sm:px-6 pt-20 pb-6 relative overflow-x-hidden">
+            <div className="flex-1 flex flex-col h-full w-full max-w-5xl mx-auto px-4 sm:px-6 pt-20 pb-6 relative overflow-hidden">
                 
                 {/* Messages Area */}
                 <div 
@@ -1143,6 +1053,17 @@ const SolvePage: React.FC = () => {
                                         a: ({node, ...props}) => <a className="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 underline" {...props} />,
                                         code: ({node, className, children, ...props}) => {
                                             const match = /language-(\w+)/.exec(className || '');
+                                            const lang = match ? match[1] : '';
+                                            if (lang === 'svg') {
+                                              const svgStr = String(children).trim();
+                                              const safeSvg = DOMPurify.sanitize(svgStr, { USE_PROFILES: { svg: true, svgFilters: true } });
+                                              return (
+                                                <div
+                                                  className="my-2 overflow-x-auto"
+                                                  dangerouslySetInnerHTML={{ __html: safeSvg }}
+                                                />
+                                              );
+                                            }
                                             return !match ? (
                                                 <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm text-indigo-600 dark:text-indigo-300" {...props}>
                                                     {children}
@@ -1173,13 +1094,15 @@ const SolvePage: React.FC = () => {
                                     >
                                       <FaCopy /> {t('solvePage.copy')}
                                     </button>
-                                    <button 
-                                      onClick={() => handleExportPDF(msg.content)}
-                                      className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
-                                      title={t('solvePage.exportAsPdf')}
-                                    >
-                                      <FaFilePdf /> {t('solvePage.exportPdf')}
-                                    </button>
+                                    {typeof navigator !== 'undefined' && 'share' in navigator && (
+                                      <button
+                                        onClick={async () => { try { await navigator.share({ title: 'Solution', text: msg.content }); } catch (e: any) { if (e?.name !== 'AbortError') console.error(e); } }}
+                                        className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                        title="Share"
+                                      >
+                                        <FaShareAlt /> Share
+                                      </button>
+                                    )}
                                   </div>
                                 </>
                               )}
@@ -1206,7 +1129,7 @@ const SolvePage: React.FC = () => {
                             </button>
                             {typeof navigator !== 'undefined' && 'share' in navigator && (
                               <button
-                                onClick={() => navigator.share({ text: msg.content })}
+                                onClick={async () => { try { await navigator.share({ text: msg.content }); } catch (e: any) { if (e?.name !== 'AbortError') console.error(e); } }}
                                 className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
                                 title="Share"
                               >

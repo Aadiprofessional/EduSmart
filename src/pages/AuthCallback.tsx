@@ -54,7 +54,7 @@ const AuthCallback: React.FC = () => {
             window.history.replaceState({}, document.title, window.location.pathname);
             
             setTimeout(() => {
-              const returnTo = sessionStorage.getItem('returnTo') || '/';
+              const returnTo = sessionStorage.getItem('returnTo') || '/dashboard';
               sessionStorage.removeItem('returnTo');
               navigate(returnTo);
             }, 1500);
@@ -79,7 +79,7 @@ const AuthCallback: React.FC = () => {
           setMessage('Authentication successful! Redirecting...');
           
           setTimeout(() => {
-            const returnTo = sessionStorage.getItem('returnTo') || '/';
+            const returnTo = sessionStorage.getItem('returnTo') || '/dashboard';
             sessionStorage.removeItem('returnTo');
             navigate(returnTo);
           }, 1500);

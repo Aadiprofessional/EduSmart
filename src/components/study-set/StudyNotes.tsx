@@ -13,7 +13,8 @@ import {
   FaChevronDown, FaBold, FaItalic, FaUnderline, FaStrikethrough, 
   FaListUl, FaListOl, FaQuoteRight, FaCode, FaMinus, FaImage, FaEraser,
   FaFilePdf, FaAlignLeft, FaAlignCenter, FaAlignRight, FaLink, FaHighlighter,
-  FaSuperscript, FaSubscript, FaMagic, FaBook, FaSave, FaCopy, FaShareAlt
+  FaSuperscript, FaSubscript, FaMagic, FaBook, FaSave, FaCopy, FaShareAlt,
+  FaEllipsisV, FaEdit
 } from 'react-icons/fa';
 import { Skeleton } from '../ui/Skeleton';
 
@@ -33,6 +34,9 @@ const StudyNotes: React.FC = () => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const menuRef = React.useRef<HTMLDivElement>(null);
 
     const fonts = [
         { name: 'Sans Serif', value: 'Arial' },
@@ -164,6 +168,17 @@ const StudyNotes: React.FC = () => {
             clearInterval(intervalId);
         };
     }, [id, user]);
+
+    // Close menu on outside click
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+                setIsMenuOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const execCmd = (command: string, value: string | undefined = undefined) => {
         document.execCommand(command, false, value);
@@ -368,86 +383,107 @@ const StudyNotes: React.FC = () => {
     );
 
     return (
-        <div className="h-full relative">
-            {/* Floating Toolbar */}
-            <div className="absolute top-0 left-0 right-0 z-20 p-4 flex justify-center pointer-events-none">
-                <div className="max-w-3xl w-full relative pointer-events-auto">
-                    {/* Glassmorphism Toolbar */}
-                    <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 shadow-2xl backdrop-blur-md bg-white/80 dark:bg-[#1a1a1a]/80 supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-[#1a1a1a]/60">
-                        <div className="flex items-center gap-1 p-2 overflow-x-auto scrollbar-none">
-                            {/* Font Style Dropdown */}
-                            <div className="relative">
-                                <ToolbarButton 
-                                    icon={<div className="flex items-center gap-1"><span className="text-xs font-bold whitespace-nowrap">{currentFont.name}</span><FaChevronDown size={8} /></div>}
-                                    onClick={() => setActivePopup(activePopup === 'font' ? null : 'font')}
-                                />
-                                {activePopup === 'font' && (
-                                    <div className="absolute top-full left-0 mt-2 p-1 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl shadow-2xl z-50 w-40 backdrop-blur-md">
-                                        {fonts.map((font) => (
-                                            <button
-                                                key={font.value}
-                                                onClick={() => {
-                                                    execCmd('fontName', font.value);
-                                                    setCurrentFont(font);
-                                                    setActivePopup(null);
-                                                }}
-                                                className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded transition-colors"
-                                                style={{ fontFamily: font.value }}
-                                            >
-                                                {font.name}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                            <div className="w-px h-4 bg-gray-200 dark:bg-white/10 mx-1 flex-shrink-0"></div>
-                            
-                            {/* Basic Formatting */}
-                            <ToolbarButton icon={<FaBold size={12} />} command="bold" />
-                            <ToolbarButton icon={<FaItalic size={12} />} command="italic" />
-                            <ToolbarButton icon={<FaUnderline size={12} />} command="underline" />
-                            <ToolbarButton icon={<FaStrikethrough size={12} />} command="strikeThrough" />
-                            <ToolbarButton icon={<FaHighlighter size={12} />} command="hiliteColor" value="yellow" />
-                            
-                            <div className="w-px h-4 bg-gray-200 dark:bg-white/10 mx-1 flex-shrink-0"></div>
-                            
-                            {/* Headings */}
-                            <ToolbarButton icon={<FaChevronDown size={8} />} label="H1" command="formatBlock" value="H1" />
-                            <ToolbarButton icon={<FaChevronDown size={8} />} label="H2" command="formatBlock" value="H2" />
-                            
-                            <div className="w-px h-4 bg-gray-200 dark:bg-white/10 mx-1 flex-shrink-0"></div>
-                            
-                            {/* Lists & Indent */}
-                            <ToolbarButton icon={<FaListUl size={12} />} command="insertUnorderedList" />
-                            <ToolbarButton icon={<FaListOl size={12} />} command="insertOrderedList" />
-                            <ToolbarButton icon={<FaQuoteRight size={12} />} command="formatBlock" value="blockquote" />
-                            
-                            <div className="w-px h-4 bg-gray-200 dark:bg-white/10 mx-1 flex-shrink-0"></div>
-                            
-                            {/* Alignment */}
-                            <ToolbarButton icon={<FaAlignLeft size={12} />} command="justifyLeft" />
-                            <ToolbarButton icon={<FaAlignCenter size={12} />} command="justifyCenter" />
-                            <ToolbarButton icon={<FaAlignRight size={12} />} command="justifyRight" />
-                            
-                            <div className="w-px h-4 bg-gray-200 dark:bg-white/10 mx-1 flex-shrink-0"></div>
-                            
-                            {/* Special */}
-                            <ToolbarButton icon={<FaLink size={12} />} onClick={() => openPopup('link')} />
-                            <ToolbarButton icon={<FaCode size={12} />} command="formatBlock" value="pre" />
-                            <ToolbarButton icon={<FaSuperscript size={12} />} command="superscript" />
-                            <ToolbarButton icon={<FaSubscript size={12} />} command="subscript" />
-                            <ToolbarButton icon={<FaMinus size={12} />} command="insertHorizontalRule" />
-                            
-                            <div className="w-px h-4 bg-gray-200 dark:bg-white/10 mx-1 flex-shrink-0"></div>
-                            
-                            {/* Actions */}
-                            <ToolbarButton icon={<FaEraser size={12} />} command="removeFormat" />
+        <div className="h-full flex flex-col">
+            {/* Header */}
+            <div className="h-12 shrink-0 flex items-center justify-between px-4 border-b border-gray-200 dark:border-white/10 bg-white dark:bg-[#111111] z-20">
+                <div className="flex items-center gap-2">
+                    <FaBook size={13} className="text-indigo-500" />
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white">Study Notes</span>
+                    {isEditMode && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-medium">Editing</span>
+                    )}
+                </div>
+                {/* Three-dot Menu */}
+                <div ref={menuRef} className="relative">
+                    <button
+                        onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                    >
+                        <FaEllipsisV size={14} />
+                    </button>
+                    {isMenuOpen && (
+                        <div className="absolute top-full right-0 mt-1 w-36 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden">
+                            <button
+                                onClick={() => { handleCopy(); setIsMenuOpen(false); }}
+                                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                            >
+                                <FaCopy size={13} />
+                                Copy
+                            </button>
+                            <button
+                                onClick={() => { handleShare(); setIsMenuOpen(false); }}
+                                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                            >
+                                <FaShareAlt size={13} />
+                                Share
+                            </button>
+                            <div className="h-px bg-gray-200 dark:bg-white/10 mx-2" />
+                            <button
+                                onClick={() => { setIsEditMode(!isEditMode); setIsMenuOpen(false); }}
+                                className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm transition-colors ${isEditMode ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                            >
+                                <FaEdit size={13} />
+                                {isEditMode ? 'Done Editing' : 'Edit'}
+                            </button>
                         </div>
-                    </div>
+                    )}
+                </div>
+            </div>
 
-                    {/* Popup for Link/Image */}
-                    {activePopup && (
-                        <div className="absolute top-full left-0 mt-2 p-3 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl shadow-2xl z-50 flex items-center gap-2 w-64 backdrop-blur-md">
+            {/* Toolbar — only visible in edit mode, inline in flex column */}
+            {isEditMode && (
+                <div className="shrink-0 border-b border-gray-200 dark:border-white/10 bg-white/90 dark:bg-[#1a1a1a]/90 backdrop-blur-md relative z-10">
+                    <div className="flex items-center gap-1 p-2 overflow-x-auto scrollbar-none">
+                        {/* Font Style Dropdown */}
+                        <div className="relative">
+                            <ToolbarButton
+                                icon={<div className="flex items-center gap-1"><span className="text-xs font-bold whitespace-nowrap">{currentFont.name}</span><FaChevronDown size={8} /></div>}
+                                onClick={() => setActivePopup(activePopup === 'font' ? null : 'font')}
+                            />
+                            {activePopup === 'font' && (
+                                <div className="absolute top-full left-0 mt-2 p-1 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl shadow-2xl z-50 w-40 backdrop-blur-md">
+                                    {fonts.map((font) => (
+                                        <button
+                                            key={font.value}
+                                            onClick={() => { execCmd('fontName', font.value); setCurrentFont(font); setActivePopup(null); }}
+                                            className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded transition-colors"
+                                            style={{ fontFamily: font.value }}
+                                        >
+                                            {font.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        <div className="w-px h-4 bg-gray-200 dark:bg-white/10 mx-1 flex-shrink-0"></div>
+                        <ToolbarButton icon={<FaBold size={12} />} command="bold" />
+                        <ToolbarButton icon={<FaItalic size={12} />} command="italic" />
+                        <ToolbarButton icon={<FaUnderline size={12} />} command="underline" />
+                        <ToolbarButton icon={<FaStrikethrough size={12} />} command="strikeThrough" />
+                        <ToolbarButton icon={<FaHighlighter size={12} />} command="hiliteColor" value="yellow" />
+                        <div className="w-px h-4 bg-gray-200 dark:bg-white/10 mx-1 flex-shrink-0"></div>
+                        <ToolbarButton icon={<FaChevronDown size={8} />} label="H1" command="formatBlock" value="H1" />
+                        <ToolbarButton icon={<FaChevronDown size={8} />} label="H2" command="formatBlock" value="H2" />
+                        <div className="w-px h-4 bg-gray-200 dark:bg-white/10 mx-1 flex-shrink-0"></div>
+                        <ToolbarButton icon={<FaListUl size={12} />} command="insertUnorderedList" />
+                        <ToolbarButton icon={<FaListOl size={12} />} command="insertOrderedList" />
+                        <ToolbarButton icon={<FaQuoteRight size={12} />} command="formatBlock" value="blockquote" />
+                        <div className="w-px h-4 bg-gray-200 dark:bg-white/10 mx-1 flex-shrink-0"></div>
+                        <ToolbarButton icon={<FaAlignLeft size={12} />} command="justifyLeft" />
+                        <ToolbarButton icon={<FaAlignCenter size={12} />} command="justifyCenter" />
+                        <ToolbarButton icon={<FaAlignRight size={12} />} command="justifyRight" />
+                        <div className="w-px h-4 bg-gray-200 dark:bg-white/10 mx-1 flex-shrink-0"></div>
+                        <ToolbarButton icon={<FaLink size={12} />} onClick={() => openPopup('link')} />
+                        <ToolbarButton icon={<FaCode size={12} />} command="formatBlock" value="pre" />
+                        <ToolbarButton icon={<FaSuperscript size={12} />} command="superscript" />
+                        <ToolbarButton icon={<FaSubscript size={12} />} command="subscript" />
+                        <ToolbarButton icon={<FaMinus size={12} />} command="insertHorizontalRule" />
+                        <div className="w-px h-4 bg-gray-200 dark:bg-white/10 mx-1 flex-shrink-0"></div>
+                        <ToolbarButton icon={<FaEraser size={12} />} command="removeFormat" />
+                    </div>
+                    {/* Link Popup */}
+                    {activePopup === 'link' && (
+                        <div className="absolute top-full left-4 mt-1 p-3 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl shadow-2xl z-50 flex items-center gap-2 w-64 backdrop-blur-md">
                             <form onSubmit={handlePopupSubmit} className="flex items-center gap-2 w-full">
                                 <input
                                     type="text"
@@ -457,27 +493,18 @@ const StudyNotes: React.FC = () => {
                                     className="flex-1 bg-gray-100 dark:bg-black/30 border border-gray-200 dark:border-white/10 rounded px-2 py-1 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                                     autoFocus
                                 />
-                                <button 
-                                    type="submit"
-                                    className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-xs rounded font-medium transition-colors"
-                                >
-                                    Add
-                                </button>
-                                <button 
-                                    type="button"
-                                    onClick={() => setActivePopup(null)}
-                                    className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                                >
+                                <button type="submit" className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-xs rounded font-medium transition-colors">Add</button>
+                                <button type="button" onClick={() => setActivePopup(null)} className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
                                     <FaMinus size={10} className="rotate-45" />
                                 </button>
                             </form>
                         </div>
                     )}
                 </div>
-            </div>
+            )}
 
             {/* Scrollable Content */}
-            <div className="h-full overflow-y-auto px-8 pb-8 pt-24 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-800 scrollbar-track-transparent overscroll-contain">
+            <div className="flex-1 overflow-y-auto px-8 pb-8 pt-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-800 scrollbar-track-transparent overscroll-contain relative">
                 <div className="max-w-3xl mx-auto w-full min-h-full">
                     {isGenerating ? (
                         <div className="flex flex-col items-center justify-center h-full pt-20">
@@ -539,66 +566,43 @@ const StudyNotes: React.FC = () => {
                                 .dark .study-notes-editor h2 {
                                     color: white;
                                 }
-                                /* Protect Math elements */
-                                .katex, .katex-display {
-                                    user-select: text;
-                                }
-                                .katex-display {
-                                    margin: 1em 0;
-                                    overflow-x: auto;
-                                    overflow-y: hidden;
-                                }
+                                .katex, .katex-display { user-select: text; }
+                                .katex-display { margin: 1em 0; overflow-x: auto; overflow-y: hidden; }
                             `}</style>
-                            <div 
+                            <div
                                 ref={editorRef}
-                                className="study-notes-editor prose prose-gray dark:prose-invert max-w-none focus:outline-none pb-20 min-h-[300px]"
-                                contentEditable={true}
+                                className={`study-notes-editor prose prose-gray dark:prose-invert max-w-none focus:outline-none pb-20 min-h-[300px] ${!isEditMode ? 'cursor-default select-text' : ''}`}
+                                contentEditable={isEditMode}
                                 suppressContentEditableWarning={true}
                                 dangerouslySetInnerHTML={{ __html: notesContent }}
-                                onInput={() => setHasUnsavedChanges(true)}
+                                onInput={() => isEditMode && setHasUnsavedChanges(true)}
                             />
                         </>
                     )}
                 </div>
-            </div>
 
-            {/* Bottom Action Bar */}
-            <div className="absolute bottom-6 left-0 right-0 flex justify-center pointer-events-none z-30">
-                <div className="flex items-center gap-2 pointer-events-auto">
-                    {hasUnsavedChanges && (
-                        <button 
-                            onClick={handleSave}
-                            disabled={isSaving}
-                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 hover:scale-105 active:scale-95"
+                {/* Bottom Action Bar */}
+                <div className="sticky bottom-4 flex justify-center pointer-events-none z-30 mt-4">
+                    <div className="flex items-center gap-2 pointer-events-auto">
+                        {hasUnsavedChanges && isEditMode && (
+                            <button
+                                onClick={handleSave}
+                                disabled={isSaving}
+                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 hover:scale-105 active:scale-95"
+                            >
+                                <FaSave size={14} className={isSaving ? 'animate-spin' : ''} />
+                                <span className="text-sm font-medium">{isSaving ? 'Saving...' : 'Save Changes'}</span>
+                            </button>
+                        )}
+                        <button
+                            onClick={handleExportPdf}
+                            className="px-4 py-2 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 rounded-full shadow-lg transition-all flex items-center gap-2 hover:scale-105 active:scale-95"
+                            title="Export as PDF"
                         >
-                            <FaSave size={14} className={isSaving ? 'animate-spin' : ''} />
-                            <span className="text-sm font-medium">{isSaving ? 'Saving...' : 'Save Changes'}</span>
+                            <FaFilePdf size={14} />
+                            <span className="text-sm font-medium">Export PDF</span>
                         </button>
-                    )}
-                    <button 
-                        onClick={handleCopy}
-                        className="px-4 py-2 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 rounded-full shadow-lg transition-all flex items-center gap-2 hover:scale-105 active:scale-95"
-                        title="Copy all text"
-                    >
-                        <FaCopy size={13} />
-                        <span className="text-sm font-medium">Copy</span>
-                    </button>
-                    <button 
-                        onClick={handleShare}
-                        className="px-4 py-2 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 rounded-full shadow-lg transition-all flex items-center gap-2 hover:scale-105 active:scale-95"
-                        title="Share notes"
-                    >
-                        <FaShareAlt size={13} />
-                        <span className="text-sm font-medium">Share</span>
-                    </button>
-                    <button 
-                        onClick={handleExportPdf}
-                        className="px-4 py-2 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 rounded-full shadow-lg transition-all flex items-center gap-2 hover:scale-105 active:scale-95"
-                        title="Export as PDF"
-                    >
-                        <FaFilePdf size={14} />
-                        <span className="text-sm font-medium">Export PDF</span>
-                    </button>
+                    </div>
                 </div>
             </div>
         </div>

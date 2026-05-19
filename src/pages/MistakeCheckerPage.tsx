@@ -209,7 +209,9 @@ const MistakeCheckerPage: React.FC = () => {
                         </span>
                       </div>
                       <h3 className="text-gray-900 dark:text-gray-200 text-sm font-medium truncate mb-1">
-                        {item.fileName || t('solvePage.untitledChat')}
+                        {item.text?.trim()
+                          ? item.text.trim().slice(0, 55) + (item.text.trim().length > 55 ? '…' : '')
+                          : item.fileName || t('solvePage.untitledChat')}
                       </h3>
                       <p className="text-gray-500 text-xs truncate">
                         {item.mistakes?.length || 0} mistake{(item.mistakes?.length || 0) !== 1 ? 's' : ''}

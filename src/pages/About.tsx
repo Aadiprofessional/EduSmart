@@ -176,29 +176,25 @@ const About: React.FC = () => {
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-blue-500/20 blur-3xl rounded-full" />
                   <div className="relative bg-[#0A0A0A] border border-white/10 rounded-2xl p-8 backdrop-blur-xl">
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-4">
-                        <div className="bg-[#111] p-4 rounded-xl border border-white/5">
-                          <IconComponent icon={FaBrain} className="text-2xl text-purple-400 mb-3" />
-                          <h3 className="text-white font-medium">{t('about.pillars.smartStudyFlow.title')}</h3>
-                          <p className="text-xs text-gray-500 mt-1">{t('about.pillars.smartStudyFlow.description')}</p>
-                        </div>
-                        <div className="bg-[#111] p-4 rounded-xl border border-white/5 translate-x-4">
-                          <IconComponent icon={FaGlobe} className="text-2xl text-blue-400 mb-3" />
-                          <h3 className="text-white font-medium">{t('about.pillars.anywhereAccess.title')}</h3>
-                          <p className="text-xs text-gray-500 mt-1">{t('about.pillars.anywhereAccess.description')}</p>
-                        </div>
+                      <div className="bg-[#111] p-4 rounded-xl border border-white/5">
+                        <IconComponent icon={FaBrain} className="text-2xl text-purple-400 mb-3" />
+                        <h3 className="text-white font-medium">{t('about.pillars.smartStudyFlow.title')}</h3>
+                        <p className="text-xs text-gray-500 mt-1">{t('about.pillars.smartStudyFlow.description')}</p>
                       </div>
-                      <div className="space-y-4 pt-8">
-                        <div className="bg-[#111] p-4 rounded-xl border border-white/5">
-                          <IconComponent icon={FaShieldAlt} className="text-2xl text-green-400 mb-3" />
-                          <h3 className="text-white font-medium">{t('about.pillars.reliableWorkspace.title')}</h3>
-                          <p className="text-xs text-gray-500 mt-1">{t('about.pillars.reliableWorkspace.description')}</p>
-                        </div>
-                        <div className="bg-[#111] p-4 rounded-xl border border-white/5 translate-x-4">
-                          <IconComponent icon={FaRocket} className="text-2xl text-pink-400 mb-3" />
-                          <h3 className="text-white font-medium">{t('about.pillars.fasterExecution.title')}</h3>
-                          <p className="text-xs text-gray-500 mt-1">{t('about.pillars.fasterExecution.description')}</p>
-                        </div>
+                      <div className="bg-[#111] p-4 rounded-xl border border-white/5">
+                        <IconComponent icon={FaShieldAlt} className="text-2xl text-green-400 mb-3" />
+                        <h3 className="text-white font-medium">{t('about.pillars.reliableWorkspace.title')}</h3>
+                        <p className="text-xs text-gray-500 mt-1">{t('about.pillars.reliableWorkspace.description')}</p>
+                      </div>
+                      <div className="bg-[#111] p-4 rounded-xl border border-white/5">
+                        <IconComponent icon={FaGlobe} className="text-2xl text-blue-400 mb-3" />
+                        <h3 className="text-white font-medium">{t('about.pillars.anywhereAccess.title')}</h3>
+                        <p className="text-xs text-gray-500 mt-1">{t('about.pillars.anywhereAccess.description')}</p>
+                      </div>
+                      <div className="bg-[#111] p-4 rounded-xl border border-white/5">
+                        <IconComponent icon={FaRocket} className="text-2xl text-pink-400 mb-3" />
+                        <h3 className="text-white font-medium">{t('about.pillars.fasterExecution.title')}</h3>
+                        <p className="text-xs text-gray-500 mt-1">{t('about.pillars.fasterExecution.description')}</p>
                       </div>
                     </div>
                   </div>
@@ -305,7 +301,7 @@ const About: React.FC = () => {
                     transition={{ delay: i * 0.2 }}
                     viewport={{ once: true }}
                   >
-                    <div className="text-6xl font-bold text-white/5 mb-6 group-hover:text-purple-500/20 transition-colors duration-300">
+                    <div className="text-6xl font-bold text-purple-500/30 mb-6 group-hover:text-purple-500/50 transition-colors duration-300">
                       {value.number}
                     </div>
                     <h3 className="text-2xl font-bold text-white mb-4">{value.title}</h3>

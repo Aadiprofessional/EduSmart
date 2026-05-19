@@ -774,6 +774,7 @@ export const zhCN = {
     
     // Study Planner specific
     addTask: "添加任务",
+    searchTasks: "搜索任务...",
     taskDescription: "任务描述",
     enterTaskDescription: "输入任务描述",
     subject: "科目",

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes, FaUpload, FaLink, FaMicrophone, FaCheck, FaBook, FaListUl, FaLayerGroup, FaPodcast, FaChalkboardTeacher, FaPencilAlt, FaEdit, FaChevronDown, FaStop, FaPlay, FaPause, FaExclamationTriangle } from 'react-icons/fa';
+import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { useAuth } from '../../utils/AuthContext';
 import { jsPDF } from 'jspdf';
 import { uploadService, UploadPayload } from '../../services/uploadService';
@@ -495,16 +496,31 @@ export const PasteModal: React.FC<{ isOpen: boolean; onClose: () => void; onNext
 };
 
 // --- URL Modal ---
+const YOUTUBE_TRANSCRIPT_API_KEY = '8c6aef0752mshcf6f0dae1f7d895p1219c9jsn8965cdb43288';
+
+const extractYouTubeVideoId = (rawUrl: string): string | null => {
+  try {
+    const u = new URL(rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`);
+    if (u.hostname.includes('youtu.be')) return u.pathname.slice(1).split('?')[0] || null;
+    if (u.hostname.includes('youtube.com')) return u.searchParams.get('v');
+  } catch {}
+  return null;
+};
+
 export const URLModal: React.FC<{ isOpen: boolean; onClose: () => void; onNext: (payload: UploadPayload) => void }> = ({ isOpen, onClose, onNext }) => {
   const { user } = useAuth();
   const { t } = useLanguage();
   const [url, setUrl] = useState('');
   const [urlError, setUrlError] = useState('');
+  const [ytCheckStatus, setYtCheckStatus] = useState<'idle' | 'checking' | 'success' | 'no_captions'>('idle');
+  const [transcriptText, setTranscriptText] = useState('');
 
   useEffect(() => {
     if (!isOpen) {
       setUrl('');
       setUrlError('');
+      setYtCheckStatus('idle');
+      setTranscriptText('');
     }
   }, [isOpen]);
 
@@ -516,6 +532,69 @@ export const URLModal: React.FC<{ isOpen: boolean; onClose: () => void; onNext: 
       return false;
     }
   };
+
+  const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
+
+  // Auto-check YouTube transcript when URL changes (debounced)
+  useEffect(() => {
+    const trimmed = url.trim();
+    const ytUrl = trimmed.includes('youtube.com') || trimmed.includes('youtu.be');
+
+    if (!ytUrl || !trimmed) {
+      setYtCheckStatus('idle');
+      setTranscriptText('');
+      return;
+    }
+
+    const videoId = extractYouTubeVideoId(trimmed);
+    if (!videoId) {
+      setYtCheckStatus('idle');
+      return;
+    }
+
+    setYtCheckStatus('checking');
+    setTranscriptText('');
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://youtube-video-summarizer-gpt-ai.p.rapidapi.com/api/v1/get-transcript-v2?video_id=${encodeURIComponent(videoId)}&platform=youtube`,
+          {
+            method: 'GET',
+            headers: {
+              'x-rapidapi-host': 'youtube-video-summarizer-gpt-ai.p.rapidapi.com',
+              'x-rapidapi-key': YOUTUBE_TRANSCRIPT_API_KEY,
+            },
+          }
+        );
+        const data = await res.json();
+
+        // API returns { code: 100000, data: { transcripts: { en_auto: { custom: [{start, text}] } } } }
+        let text = '';
+        if (data?.code === 100000 && data?.data?.transcripts) {
+          const transcripts = data.data.transcripts;
+          const firstLang = Object.values(transcripts)[0] as any;
+          const segments: any[] = firstLang?.custom || firstLang?.manual || [];
+          text = segments.map((seg: any) => seg.text || '').join(' ');
+        }
+
+        if (text.trim()) {
+          setTranscriptText(text.trim());
+          setYtCheckStatus('success');
+        } else {
+          setYtCheckStatus('no_captions');
+        }
+      } catch {
+        setYtCheckStatus('no_captions');
+      }
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [url]);
+
+  const isNextEnabled = Boolean(url.trim()) && (
+    isYouTube ? ytCheckStatus === 'success' : isValidUrl(url.trim())
+  );
 
   const handleNext = () => {
     if (!user) {
@@ -529,10 +608,11 @@ export const URLModal: React.FC<{ isOpen: boolean; onClose: () => void; onNext: 
     }
     const normalised = trimmed.startsWith('http') ? trimmed : `https://${trimmed}`;
     const payload = uploadService.constructUrlPayload(normalised, user.id);
+    if (isYouTube && transcriptText) {
+      payload.transcriptText = transcriptText;
+    }
     onNext(payload);
   };
-
-  const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
 
   return (
     <BaseModal isOpen={isOpen} onClose={onClose} title="Add URL" subtitle="YouTube video or any website URL">
@@ -549,26 +629,46 @@ export const URLModal: React.FC<{ isOpen: boolean; onClose: () => void; onNext: 
               type="text"
               value={url}
               onChange={(e) => { setUrl(e.target.value); setUrlError(''); }}
-              onKeyDown={(e) => e.key === 'Enter' && handleNext()}
+              onKeyDown={(e) => e.key === 'Enter' && isNextEnabled && handleNext()}
               placeholder={t('matrixDashboard.modals.paste.urlPlaceholder')}
-              className="w-full bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-lg py-3 pl-10 pr-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-indigo-500/50 transition-colors"
+              className={`w-full bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-lg py-3 pl-10 ${url.trim() ? 'pr-9' : 'pr-4'} text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-indigo-500/50 transition-colors`}
             />
+            {url.trim() && (
+              <button
+                type="button"
+                onClick={() => { setUrl(''); setUrlError(''); setYtCheckStatus('idle'); setTranscriptText(''); }}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                aria-label="Clear URL"
+              >
+                <FaTimes className="text-sm" />
+              </button>
+            )}
           </div>
           {urlError && <p className="text-xs text-red-500 mt-1">{urlError}</p>}
-          {isYouTube && !urlError && url && (
-            <>
-              <p className="text-xs text-green-500 dark:text-green-400 mt-1 flex items-center gap-1">
-                <FaCheck /> YouTube link detected
-              </p>
 
-              <div className="mt-2 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-sm text-yellow-800 dark:text-yellow-200">
-                <div className="flex items-start gap-2">
-                  <div className="mt-0.5 text-lg text-yellow-700 dark:text-yellow-300"><FaExclamationTriangle /></div>
-                  <div>
-                    {t('matrixDashboard.modals.paste.youtubeCaptionNotice')}
+          {/* YouTube-specific status indicators */}
+          {isYouTube && url.trim() && (
+            <>
+              {ytCheckStatus === 'checking' && (
+                <p className="text-xs text-blue-500 dark:text-blue-400 mt-1 flex items-center gap-1">
+                  <AiOutlineLoading3Quarters className="animate-spin" /> Checking for captions...
+                </p>
+              )}
+              {ytCheckStatus === 'success' && (
+                <p className="text-xs text-green-500 dark:text-green-400 mt-1 flex items-center gap-1">
+                  <FaCheck /> Captions found — ready to proceed
+                </p>
+              )}
+              {ytCheckStatus === 'no_captions' && (
+                <div className="mt-2 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-sm text-yellow-800 dark:text-yellow-200">
+                  <div className="flex items-start gap-2">
+                    <div className="mt-0.5 text-lg text-yellow-700 dark:text-yellow-300"><FaExclamationTriangle /></div>
+                    <div>
+                      This feature requires captions/subtitles on the YouTube video to extract text automatically. If the video does not have captions, download the audio (MP3) and upload it via the <strong>Upload → Audio</strong> option for transcription.
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </>
           )}
         </div>
@@ -587,9 +687,9 @@ export const URLModal: React.FC<{ isOpen: boolean; onClose: () => void; onNext: 
         <div className="flex justify-end">
           <button
             onClick={handleNext}
-            disabled={!url.trim()}
+            disabled={!isNextEnabled}
             className={`px-8 py-2.5 rounded-lg font-medium transition-colors ${
-              !url.trim() ? 'bg-gray-200 dark:bg-gray-800 text-gray-400 cursor-not-allowed' : 'bg-[#c2410c] hover:bg-[#9a3412] text-white'
+              !isNextEnabled ? 'bg-gray-200 dark:bg-gray-800 text-gray-400 cursor-not-allowed' : 'bg-[#c2410c] hover:bg-[#9a3412] text-white'
             }`}
           >
             {t('common.next')}

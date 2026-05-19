@@ -491,29 +491,32 @@ const ContentWriter: React.FC = () => {
                 )}
                 </div>
                 <h1 className="text-lg lg:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2 lg:gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 flex-shrink-0">
+                    <div className="hidden lg:flex w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 items-center justify-center shadow-lg shadow-indigo-500/20 flex-shrink-0">
                         <FaPenNib size={14} className="text-white" />
                     </div>
                     <span className="hidden sm:inline bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-500 dark:from-white dark:to-gray-400 whitespace-nowrap">{t('contentWriter.title')}</span>
                 </h1>
             </div>
 
-            {/* Mobile Tab Switcher - Segmented Control Style */}
-            <div className="flex lg:hidden bg-gray-100 dark:bg-white/5 p-1 rounded-full border border-gray-200 dark:border-white/5 relative">
-                <div 
-                    className={`absolute inset-y-1 rounded-full bg-indigo-600 shadow-lg shadow-indigo-500/20 transition-all duration-300 ease-out ${mobileTab === 'generator' ? 'left-1 w-[calc(50%-4px)]' : 'left-[calc(50%)] w-[calc(50%-4px)]'}`}
-                />
-                <button 
+            {/* Mobile Tab Switcher - Underline Style */}
+            <div className="flex lg:hidden">
+                <button
                     onClick={() => setMobileTab('generator')}
-                    className={`relative z-10 px-5 py-1.5 text-xs font-semibold rounded-full transition-colors ${mobileTab === 'generator' ? 'text-white' : 'text-gray-400 hover:text-white'}`}
+                    className={`relative px-5 py-1.5 text-sm font-semibold transition-colors ${mobileTab === 'generator' ? 'text-indigo-500' : 'text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
                 >
                     {t('contentWriter.createTab')}
+                    {mobileTab === 'generator' && (
+                        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 rounded-full" />
+                    )}
                 </button>
-                <button 
+                <button
                     onClick={() => setMobileTab('editor')}
-                    className={`relative z-10 px-5 py-1.5 text-xs font-semibold rounded-full transition-colors ${mobileTab === 'editor' ? 'text-white' : 'text-gray-400 hover:text-white'}`}
+                    className={`relative px-5 py-1.5 text-sm font-semibold transition-colors ${mobileTab === 'editor' ? 'text-indigo-500' : 'text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
                 >
                     {t('contentWriter.editorTab')}
+                    {mobileTab === 'editor' && (
+                        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 rounded-full" />
+                    )}
                 </button>
             </div>
 
@@ -537,11 +540,33 @@ const ContentWriter: React.FC = () => {
             <div className={`${mobileTab === 'generator' ? 'flex' : 'hidden'} lg:flex w-full lg:w-[360px] xl:w-[420px] flex-col border-r border-gray-200 dark:border-white/5 bg-white dark:bg-[#0a0a0a] relative z-10`}>
                 <div className="flex-1 overflow-y-auto p-5 lg:p-8 space-y-8 scrollbar-thin scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20">
                     
+                    {/* Templates Grid — shown first on mobile to match image layout */}
+                    <div>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('contentWriter.templates')}</h3>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            {templates.map((template) => (
+                                <button
+                                    key={template.id}
+                                    onClick={() => selectTemplate(template.id)}
+                                    className={`p-4 rounded-2xl border text-center transition-all group relative flex flex-col items-center gap-3 ${activeTemplate === template.id ? 'bg-indigo-500/10 border-indigo-500/50 dark:border-indigo-500/50' : 'bg-white dark:bg-white/[0.03] border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 hover:bg-gray-50 dark:hover:bg-white/[0.05]'}`}
+                                >
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${activeTemplate === template.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' : 'bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 group-hover:bg-gray-200 dark:group-hover:bg-white/15 group-hover:text-gray-700 dark:group-hover:text-gray-300'} transition-all duration-200`}>
+                                        <template.icon size={16} />
+                                    </div>
+                                    <span className={`text-xs font-semibold leading-tight ${activeTemplate === template.id ? 'text-indigo-600 dark:text-indigo-300' : 'text-gray-600 dark:text-gray-400 group-hover:text-gray-800 dark:group-hover:text-gray-200'}`}>
+                                        {template.name}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
                     {/* Prompt Section */}
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                            <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
-                                <FaMagic className="text-indigo-400" size={12} />
+                            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                 {t('contentWriter.prompt')}
                             </label>
                             {prompt && (
@@ -559,20 +584,20 @@ const ContentWriter: React.FC = () => {
                                 value={prompt}
                                 onChange={(e) => setPrompt(e.target.value)}
                                 placeholder={t('contentWriter.promptPlaceholder')}
-                                className="relative w-full p-5 bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/10 rounded-2xl focus:outline-none focus:border-indigo-500/30 text-sm leading-relaxed min-h-[160px] resize-none placeholder-gray-400 dark:placeholder-gray-600 text-gray-800 dark:text-gray-200 transition-all shadow-inner"
+                                className="relative w-full p-4 bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/10 rounded-2xl focus:outline-none focus:border-indigo-500/30 text-sm leading-relaxed min-h-[140px] resize-none placeholder-gray-400 dark:placeholder-gray-600 text-gray-800 dark:text-gray-200 transition-all"
                             />
                         </div>
                     </div>
 
                     {/* Controls */}
-                    <div className="grid grid-cols-2 gap-5">
+                    <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider pl-1">{t('contentWriter.tone')}</label>
-                            <div className="relative group">
+                            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider pl-1">{t('contentWriter.tone')}</label>
+                            <div className="relative">
                                 <select 
                                     value={tone}
                                     onChange={(e) => setTone(e.target.value)}
-                                    className="w-full appearance-none p-3 pl-4 pr-10 bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/10 rounded-xl text-sm text-gray-800 dark:text-gray-200 outline-none focus:border-indigo-500/30 focus:bg-white dark:focus:bg-white/[0.05] transition-all cursor-pointer shadow-sm"
+                                    className="w-full appearance-none p-3 pl-4 pr-8 bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/10 rounded-xl text-sm text-gray-800 dark:text-gray-200 outline-none focus:border-indigo-500/30 transition-all cursor-pointer"
                                 >
                                     <option value="professional">{t('contentWriter.tones.professional')}</option>
                                     <option value="casual">{t('contentWriter.tones.informal')}</option>
@@ -580,22 +605,27 @@ const ContentWriter: React.FC = () => {
                                     <option value="creative">{t('contentWriter.creative')}</option>
                                     <option value="enthusiastic">{t('contentWriter.enthusiastic')}</option>
                                 </select>
-                                <FaChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 text-xs pointer-events-none group-hover:text-gray-400 transition-colors" />
+                                <FaChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs pointer-events-none" />
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider pl-1">{t('contentWriter.length')}</label>
-                            <div className="relative group">
-                                <input 
-                                    type="number"
+                            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider pl-1">{t('contentWriter.wordCount')}</label>
+                            <div className="relative">
+                                <select
                                     value={targetWordCount}
                                     onChange={(e) => setTargetWordCount(Number(e.target.value))}
-                                    className="w-full p-3 bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/10 rounded-xl text-sm text-gray-800 dark:text-gray-200 outline-none focus:border-indigo-500/30 focus:bg-white dark:focus:bg-white/[0.05] transition-all shadow-sm"
-                                    step={100}
-                                    min={100}
-                                    max={3000}
-                                />
-                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-600 font-medium">{t('contentWriter.words')}</span>
+                                    className="w-full appearance-none p-3 pl-4 pr-8 bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/10 rounded-xl text-sm text-gray-800 dark:text-gray-200 outline-none focus:border-indigo-500/30 transition-all cursor-pointer"
+                                >
+                                    <option value={100}>~100</option>
+                                    <option value={250}>~250</option>
+                                    <option value={500}>~500</option>
+                                    <option value={750}>~750</option>
+                                    <option value={1000}>~1000</option>
+                                    <option value={1500}>~1500</option>
+                                    <option value={2000}>~2000</option>
+                                    <option value={3000}>~3000</option>
+                                </select>
+                                <FaChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs pointer-events-none" />
                             </div>
                         </div>
                     </div>
@@ -604,36 +634,11 @@ const ContentWriter: React.FC = () => {
                     <button
                         onClick={handleGenerateContent}
                         disabled={isGenerating || !prompt.trim()}
-                        className="w-full py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-[length:200%_auto] hover:bg-right text-white rounded-xl font-bold shadow-xl shadow-indigo-500/20 transition-all duration-500 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group relative overflow-hidden transform hover:-translate-y-0.5"
+                        className="w-full py-4 bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-white rounded-2xl font-bold shadow-lg shadow-cyan-500/20 transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group relative overflow-hidden"
                     >
                         {isGenerating ? <FiRefreshCw className="animate-spin text-lg" /> : <FaMagic className="text-lg group-hover:rotate-12 transition-transform" />}
-                        <span className="relative tracking-wide">{isGenerating ? t('contentWriter.contentWriterGenerating') : t('contentWriter.generateContent')}</span>
+                        <span className="tracking-wide text-base">{isGenerating ? t('contentWriter.contentWriterGenerating') : t('contentWriter.generateContent')}</span>
                     </button>
-
-                    {/* Templates Grid */}
-                    <div className="pt-6 border-t border-gray-200 dark:border-white/5">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t('contentWriter.quickStart')}</h3>
-                            <span className="text-[10px] bg-gray-100 dark:bg-white/5 px-2 py-1 rounded-md text-gray-500">{t('contentWriter.autoFill')}</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            {templates.map((template) => (
-                                <button
-                                    key={template.id}
-                                    onClick={() => selectTemplate(template.id)}
-                                    className={`p-4 rounded-xl border text-left transition-all group relative flex flex-col gap-3 ${activeTemplate === template.id ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-white dark:bg-white/[0.02] border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/10 hover:bg-gray-50 dark:hover:bg-white/[0.04]'}`}
-                                >
-                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${activeTemplate === template.id ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30' : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-500 group-hover:bg-gray-200 dark:group-hover:bg-white/10 group-hover:text-gray-800 dark:group-hover:text-gray-300'} transition-all duration-300`}>
-                                        <template.icon size={14} />
-                                    </div>
-                                    <div>
-                                        <span className={`block text-xs font-bold mb-0.5 ${activeTemplate === template.id ? 'text-indigo-700 dark:text-white' : 'text-gray-700 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200'}`}>{template.name}</span>
-                                        <span className="block text-[10px] text-gray-500 dark:text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-400">{t('contentWriter.clickToUse')}</span>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
                 </div>
             </div>
 

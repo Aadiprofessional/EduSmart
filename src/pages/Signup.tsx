@@ -125,7 +125,7 @@ const Signup: React.FC = () => {
       setAuthError(null);
       
       // Store current page in session storage for redirect after auth
-      sessionStorage.setItem('returnTo', '/');
+      sessionStorage.setItem('returnTo', '/dashboard');
       
       if (provider === 'Google') {
         await signInWithGoogle();

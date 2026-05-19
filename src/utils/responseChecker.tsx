@@ -156,9 +156,9 @@ export const ResponseUpgradeModal: React.FC<ResponseUpgradeModalProps> = ({ isOp
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[100] p-4">
-      <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-white/10 bg-[#0f0f0f] shadow-[0_25px_80px_rgba(0,0,0,0.55)]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.22),transparent_52%)]" />
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+      <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0f0f0f] shadow-[0_25px_80px_rgba(0,0,0,0.15)] dark:shadow-[0_25px_80px_rgba(0,0,0,0.55)]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.08),transparent_52%)] dark:bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.22),transparent_52%)]" />
         <div className="relative p-7 sm:p-8 text-center">
           <div className="w-16 h-16 bg-gradient-to-r from-indigo-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-indigo-900/30">
             <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -166,19 +166,19 @@ export const ResponseUpgradeModal: React.FC<ResponseUpgradeModalProps> = ({ isOp
             </svg>
           </div>
           
-          <h3 className="text-2xl font-bold text-white mb-2">Action Required</h3>
-          <p className="text-slate-300 mb-7">{message}</p>
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Action Required</h3>
+          <p className="text-gray-600 dark:text-slate-300 mb-7">{message}</p>
           
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl border border-white/10 transition-all"
+              className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 text-gray-800 dark:text-white rounded-xl border border-gray-200 dark:border-white/10 transition-all"
             >
               Cancel
             </button>
             <button
               onClick={() => {
-                window.location.href = ctaType === 'coins' ? '/subscription#addons' : '/subscription';
+                window.location.href = ctaType === 'coins' ? '/pricing' : '/subscription';
               }}
               className="flex-1 px-4 py-3 bg-gradient-to-r from-indigo-500 to-orange-500 hover:from-indigo-600 hover:to-orange-600 text-white rounded-xl transition-all shadow-lg shadow-indigo-900/30"
             >

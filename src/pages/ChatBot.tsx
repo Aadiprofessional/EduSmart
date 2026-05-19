@@ -735,7 +735,7 @@ const MarkdownContentWithControls: React.FC<{ source: string; darkMode: boolean;
     >
       <div ref={containerRef} className="markdown-content">
         {(() => {
-          const isMostlyHTML = /<!DOCTYPE|<html\b|<body\b|<head\b|<h1\b|<p\b|<div\b|<table\b|<ul\b|<ol\b|<img\b|<ai-images\b/i.test(source);
+          const isMostlyHTML = /<!DOCTYPE|<html\b|<body\b|<head\b|<h1\b|<p\b|<div\b|<table\b|<ul\b|<ol\b|<img\b|<ai-images\b|<svg\b/i.test(source);
           if (isMostlyHTML) {
             return <div dangerouslySetInnerHTML={{ __html: source }} />;
           }
@@ -752,6 +752,15 @@ const MarkdownContentWithControls: React.FC<{ source: string; darkMode: boolean;
               const match = /language-(\w+)/.exec(className || '');
               const language = match ? match[1] : '';
               const codeString = String(children).replace(/\n$/, '');
+              if (language === 'svg') {
+                const safeSvg = DOMPurify.sanitize(codeString, { USE_PROFILES: { svg: true, svgFilters: true } });
+                return (
+                  <div
+                    className="my-2 overflow-x-auto"
+                    dangerouslySetInnerHTML={{ __html: safeSvg }}
+                  />
+                );
+              }
               if (!inline && (language || codeString.includes('\n'))) {
                 return (
                   <CodeBlock
@@ -1270,7 +1279,7 @@ const TextWithCharts: React.FC<{
     if (selectedFile) {
       // Check if it's an image
       if (selectedFile.type.startsWith('image/')) {
-        return 2; // -2 coins for images
+        return 3; // -3 coins for images
       }
       // For other files (documents, PDFs, etc.)
       return 10; // -10 coins for file attachments
@@ -1281,7 +1290,7 @@ const TextWithCharts: React.FC<{
       // Check if any uploaded file is an image
       const hasImage = uploadedFiles.some(file => file.fileType === 'image');
       if (hasImage && uploadedFiles.length === 1 && uploadedFiles[0].fileType === 'image') {
-        return 2; // -2 coins for single image
+        return 3; // -3 coins for single image
       }
       return 10; // -10 coins for file attachments
     }
@@ -1289,7 +1298,7 @@ const TextWithCharts: React.FC<{
     // Check for current uploaded file
     if (currentUploadedFile) {
       if (currentUploadedFile.fileType === 'image') {
-        return 2; // -2 coins for images
+        return 3; // -3 coins for images
       }
       return 10; // -10 coins for documents
     }
@@ -1429,6 +1438,7 @@ const TextWithCharts: React.FC<{
   const chatInputAreaRef = useRef<HTMLDivElement>(null);
   const historyDropdownRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const sseAbortRef = useRef<AbortController | null>(null);
   const chunksChannelRef = useRef<any>(null);
   const mobileChatHistoryRef = useRef<HTMLDivElement>(null);
   const desktopChatHistoryRef = useRef<HTMLDivElement>(null);
@@ -2810,10 +2820,12 @@ const TextWithCharts: React.FC<{
 
   // Function to pause streaming
   const pauseStreaming = () => {
+    if (sseAbortRef.current) {
+      sseAbortRef.current.abort();
+      sseAbortRef.current = null;
+    }
     if (wsRef.current) {
-      try {
-        wsRef.current.close();
-      } catch {}
+      try { wsRef.current.close(); } catch {}
       wsRef.current = null;
     }
     try {
@@ -2838,88 +2850,101 @@ const TextWithCharts: React.FC<{
     image_urls?: string[];
     page_count?: number;
   }, onChunk?: (chunk: string) => void): Promise<void> => {
-    return new Promise((resolve, reject) => {
+    const base = typeof input === 'string' ? { content: input, type: 'text' } : input;
+    const content = base.content || '';
+
+    // Build study-chat request body
+    const requestBody: any = {
+      stream: true,
+      coins: calculateCoinCost(),
+      messages: [{
+        uid: user?.id || 'anonymous',
+        content,
+        timestamp: Math.floor(Date.now() / 1000),
+        chatid: chatId || ''
+      }]
+    };
+
+    // Attach file references
+    const attachments = (base as any).attachments;
+    if (attachments?.length > 0) {
+      const first = attachments[0];
+      const ft = (first.fileType || '').toLowerCase();
+      if (ft === 'image') {
+        requestBody.imageUrl = first.url;
+      } else if (ft === 'pdf_vision' || ft === 'pdf') {
+        requestBody.pdfUrl = first.url;
+      } else {
+        requestBody.docxUrl = first.url;
+      }
+    } else if ((base as any).image_urls?.length > 0) {
+      requestBody.pdfUrl = (base as any).url;
+    } else if ((base as any).url && (base as any).type === 'image') {
+      requestBody.imageUrl = (base as any).url;
+    } else if ((base as any).url) {
+      requestBody.imageUrl = (base as any).url;
+    }
+
+    setIsStreaming(true);
+    setIsPaused(false);
+    setIsIntentionallyAborted(false);
+
+    const controller = new AbortController();
+    sseAbortRef.current = controller;
+
+    return new Promise(async (resolve, reject) => {
       try {
-        setIsStreaming(true);
-        setIsPaused(false);
-        setIsIntentionallyAborted(false);
-        const ws = new WebSocket('wss://main.matrixaiserver.com/ws/chat');
-        wsRef.current = ws;
-        ws.onopen = () => {
-          const base = typeof input === 'string' ? { content: input, type: 'text' } : input;
-          const message: any = {
-            uid: user?.id || 'anonymous',
-            type: (base as any).type || 'text',
-            text: { body: base.content },
-            body: base.content,
-            content: base.content,
-            role: 'user',
-            roleDescription: selectedRole.description,
-            timestamp: getCurrentLocalTimeFormatted(),
-            chatid: chatId
-          };
-          if ((base as any).url) message.url = (base as any).url;
-          if ((base as any).attachments) message.attachments = (base as any).attachments;
-          if ((base as any).image_urls) message.image_urls = (base as any).image_urls;
-          if ((base as any).page_count) message.page_count = (base as any).page_count;
-          const payload: any = {
-            type: 'openrequest',
-            stream: true,
-            chatid: chatId,
-            messages: [message]
-          };
-          ws.send(JSON.stringify(payload));
-        };
-        ws.onmessage = (evt) => {
-          const raw = typeof evt.data === 'string' ? evt.data : '';
-          try {
-            const obj = JSON.parse(raw);
-            if (obj && typeof obj === 'object') {
-              if (obj.type === 'done' || obj.done === true) {
-                try { ws.close(); } catch {}
-                return;
-              }
-              if (obj.type === 'chunk' && typeof obj.text === 'string') {
-                if (onChunk) onChunk(obj.text);
-                return;
-              }
-              if (typeof obj.chunk === 'string') {
-                if (onChunk) onChunk(obj.chunk);
-                return;
-              }
-              if (typeof obj.data === 'string') {
-                if (onChunk) onChunk(obj.data);
-                return;
-              }
-              if (typeof obj.text === 'string') {
-                if (onChunk) onChunk(obj.text);
-                return;
-              }
-              if (typeof obj.body === 'string') {
-                if (onChunk) onChunk(obj.body);
-                return;
-              }
-              return;
+        const response = await fetch('https://server.matrixedu.ai/api/study-chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal,
+        });
+
+        if (!response.body) throw new Error('No response body');
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          for (const line of lines) {
+            let str = line.trim();
+            if (!str || str === 'data: [DONE]' || str === '[DONE]') continue;
+            if (str.startsWith('data: ')) str = str.slice(6).trim();
+            if (!str || str === '[DONE]') continue;
+            try {
+              const json = JSON.parse(str);
+              const chunk =
+                (typeof json.content === 'string' && json.content) ||
+                (typeof json.text === 'string' && json.text) ||
+                (json.type === 'chunk' && typeof json.text === 'string' && json.text) ||
+                null;
+              if (chunk && onChunk) onChunk(chunk);
+            } catch {
+              // Non-JSON line; ignore
             }
-          } catch {}
-          if (raw) {
-            if (onChunk) onChunk(raw);
           }
-        };
-        ws.onerror = () => {
-          setIsStreaming(false);
-          setIsPaused(false);
-          wsRef.current = null;
-          reject(new Error('WebSocket error'));
-        };
-        ws.onclose = () => {
-          setIsStreaming(false);
-          setIsPaused(false);
-          wsRef.current = null;
+        }
+
+        setIsStreaming(false);
+        setIsPaused(false);
+        sseAbortRef.current = null;
+        resolve();
+      } catch (e: any) {
+        setIsStreaming(false);
+        setIsPaused(false);
+        sseAbortRef.current = null;
+        if (e?.name === 'AbortError') {
           resolve();
-        };
-      } catch (e) {
-        reject(e as any);
+        } else {
+          reject(e);
+        }
       }
     });
   };
@@ -4733,6 +4758,10 @@ const TextWithCharts: React.FC<{
     
     stopSpeech(); // Stop any ongoing speech
     // Ensure streaming is stopped and connection closed when switching chats
+    if (sseAbortRef.current) {
+      try { sseAbortRef.current.abort(); } catch {}
+      sseAbortRef.current = null;
+    }
     if (wsRef.current) {
       try {
         wsRef.current.close();

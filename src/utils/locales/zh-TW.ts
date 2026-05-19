@@ -1584,6 +1584,7 @@ export const zhTW = {
     
     // Study Planner specific
     addTask: "新增任務",
+    searchTasks: "搜尋任務...",
     taskDescription: "任務描述",
     enterTaskDescription: "輸入任務描述",
     subject: "科目",

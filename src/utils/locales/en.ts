@@ -805,6 +805,7 @@ export const en = {
     
     // Study Planner specific
     addTask: "Add Task",
+    searchTasks: "Search tasks...",
     taskDescription: "Task Description",
     enterTaskDescription: "Enter task description",
     subject: "Subject",
@@ -1227,8 +1228,8 @@ export const en = {
     confirmDeleteHistoryItem: "Are you sure you want to delete this history item?",
     historyItemDeleted: "History item deleted",
     failedToDeleteHistoryItem: "Failed to delete history item",
-    createTab: "Create",
-    editorTab: "Editor",
+    createTab: "Setup",
+    editorTab: "Generated",
     length: "Length",
     words: "words",
     quickStart: "Quick Start",

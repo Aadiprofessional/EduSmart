@@ -193,6 +193,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
   
 
   const [showAddForm, setShowAddForm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [sortBy, setSortBy] = useState('date');
   const [filterPriority, setFilterPriority] = useState('all');
@@ -652,6 +653,14 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
       filtered = filtered.filter(task => task.date === selectedDate);
     }
 
+    // Apply search query filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      filtered = filtered.filter(task =>
+        task.task.toLowerCase().includes(q) || task.subject.toLowerCase().includes(q)
+      );
+    }
+
     // Sort by the selected criteria
     switch (sortBy) {
       case 'priority':
@@ -691,6 +700,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
     setSelectedCalendarDate(null);
     setFilterPriority('all');
     setFilterSubject('all');
+    setSearchQuery('');
   };
 
   // Reminder functions
@@ -1680,13 +1690,12 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
     >
       {/* Header */}
       <div className="bg-transparent px-2 sm:px-4 lg:px-6 py-4 lg:py-6 border-b border-gray-200 dark:border-white/5">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-          <div className="flex items-center space-x-3">
-          </div>
-          <div className="grid grid-cols-2 sm:flex sm:flex-wrap justify-center items-center gap-2 lg:gap-3 w-full lg:w-auto">
+        <div className="flex items-center justify-between gap-3">
+          {/* AI Action Buttons */}
+          <div className="flex flex-1 items-center gap-2 sm:gap-3">
             <motion.button
               onClick={() => setShowAIModal(true)}
-              className="flex items-center justify-center px-3 py-2 bg-purple-500/10 dark:bg-purple-500/20 text-purple-600 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30 rounded-xl hover:bg-purple-500/20 dark:hover:bg-purple-500/30 transition-all font-medium text-sm"
+              className="flex flex-1 sm:flex-none items-center justify-center px-3 sm:px-5 py-2.5 bg-indigo-600 dark:bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-700 transition-all font-semibold text-sm shadow-sm"
               variants={buttonVariants}
               whileHover="hover"
               whileTap="tap"
@@ -1697,7 +1706,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
             </motion.button>
             <motion.button
               onClick={openAISuggestionModal}
-              className="flex items-center justify-center px-3 py-2 bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 rounded-xl hover:bg-emerald-500/20 dark:hover:bg-emerald-500/30 transition-all font-medium text-sm"
+              className="flex flex-1 sm:flex-none items-center justify-center px-3 sm:px-5 py-2.5 bg-teal-600 dark:bg-teal-600 text-white rounded-xl hover:bg-teal-700 dark:hover:bg-teal-700 transition-all font-semibold text-sm shadow-sm"
               variants={buttonVariants}
               whileHover="hover"
               whileTap="tap"
@@ -1705,6 +1714,19 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
             >
               <IconComponent icon={AiOutlineBulb} className="h-4 w-4 mr-2 flex-shrink-0" />
               <span className="truncate">{t('aiStudy.aiRoadmap')}</span>
+            </motion.button>
+          </div>
+          {/* Icon Buttons: Add Task & History */}
+          <div className="flex items-center gap-1.5">
+            <motion.button
+              onClick={() => setShowAddForm(!showAddForm)}
+              className={`p-2 rounded-xl transition-all ${showAddForm ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10'}`}
+              variants={buttonVariants}
+              whileHover="hover"
+              whileTap="tap"
+              title={t('aiStudy.addTask')}
+            >
+              <IconComponent icon={FiPlus} className="h-5 w-5" />
             </motion.button>
             <motion.button
               onClick={() => {
@@ -1715,24 +1737,13 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                   fetchHistory();
                 }
               }}
-              className="flex items-center justify-center px-3 py-2 bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 rounded-xl hover:bg-amber-500/20 dark:hover:bg-amber-500/30 transition-all font-medium text-sm"
+              className="p-2 rounded-xl text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-all"
               variants={buttonVariants}
               whileHover="hover"
               whileTap="tap"
               title={t('aiStudy.history')}
             >
-              <IconComponent icon={FiClock} className="h-4 w-4 mr-2 flex-shrink-0" />
-              <span className="truncate">{t('aiStudy.history')}</span>
-            </motion.button>
-            <motion.button
-              onClick={() => setShowAddForm(!showAddForm)}
-              className="flex items-center justify-center px-3 py-2 bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30 rounded-xl hover:bg-blue-500/20 dark:hover:bg-blue-500/30 transition-all font-medium text-sm"
-              variants={buttonVariants}
-              whileHover="hover"
-              whileTap="tap"
-            >
-              <IconComponent icon={FiPlus} className="h-4 w-4 mr-2 flex-shrink-0" />
-              <span className="truncate">{t('aiStudy.addTask')}</span>
+              <IconComponent icon={FiClock} className="h-5 w-5" />
             </motion.button>
           </div>
         </div>
@@ -1779,7 +1790,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                   value={newTask.date}
                   onClick={(e) => e.currentTarget.showPicker()}
                   onChange={(e) => setNewTask({...newTask, date: e.target.value})}
-                  className="w-full px-3 py-2 bg-white dark:bg-[#1f1f23] border border-gray-200 dark:border-white/10 rounded-lg text-gray-900 dark:text-gray-300 focus:outline-none focus:border-indigo-500 dark:focus:border-white/20 dark:[color-scheme:dark] dark:[&::-webkit-calendar-picker-indicator]:invert"
+                  className="w-full px-3 py-2 bg-white dark:bg-[#1f1f23] border border-gray-200 dark:border-white/10 rounded-lg text-gray-900 dark:text-gray-300 focus:outline-none focus:border-indigo-500 dark:focus:border-white/20 dark:[color-scheme:dark]"
                   required
                 />
               </div>
@@ -1904,7 +1915,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                     value={selectedDate}
                     onClick={(e) => e.currentTarget.showPicker()}
                     onChange={(e) => setSelectedDate(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-black/20 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-lg text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none dark:[color-scheme:dark] dark:[&::-webkit-calendar-picker-indicator]:invert"
+                    className="w-full px-3 py-2 bg-white dark:bg-black/20 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-lg text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none dark:[color-scheme:dark]"
                   />
                 </div>
 
@@ -1945,6 +1956,28 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                 </p>
               </div>
             )}
+
+            {/* Search Bar */}
+            <div className="mt-4 relative">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                <IconComponent icon={FiFilter} className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t('aiStudy.searchTasks')}
+                className="w-full pl-9 pr-4 py-2.5 bg-gray-50 dark:bg-black/20 backdrop-blur-sm border border-gray-200 dark:border-white/10 rounded-xl text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-600 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-sm transition-colors"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                >
+                  <IconComponent icon={FiX} className="h-4 w-4" />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Tasks List */}
@@ -2047,7 +2080,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                               onClick={(e) => e.currentTarget.showPicker()}
                               onChange={(e) => handleDateDraftChange(task.id, e.target.value)}
                               onBlur={() => handleDateCommit(task.id, task.date)}
-                              className="bg-transparent border-none outline-none text-xs font-medium text-gray-600 dark:text-zinc-300 w-24 cursor-pointer dark:[color-scheme:dark] dark:[&::-webkit-calendar-picker-indicator]:invert"
+                              className="bg-transparent border-none outline-none text-xs font-medium text-gray-600 dark:text-zinc-300 w-24 cursor-pointer dark:[color-scheme:dark]"
                             />
                           </div>
 
@@ -2222,7 +2255,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <IconComponent icon={FaCalendarAlt} className="h-8 w-8 text-gray-400" />
+                            <IconComponent icon={FaCalendarAlt} className="h-8 w-8 text-gray-500 dark:text-gray-400" />
                           )}
                         </div>
                         <div className="flex-1">
@@ -2425,7 +2458,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                             </h3>
                             <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 space-x-4">
                                 <span className="flex items-center bg-gray-100 dark:bg-black/30 px-2 py-1 rounded-md">
-                                    <IconComponent icon={FiCalendar} className="mr-1.5 h-3.5 w-3.5 text-gray-400" />
+                                    <IconComponent icon={FiCalendar} className="mr-1.5 h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
                                     {new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                                 </span>
                                 <span className="flex items-center bg-gray-100 dark:bg-black/30 px-2 py-1 rounded-md">
@@ -3118,7 +3151,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                       value={reminderDate}
                       onClick={(e) => e.currentTarget.showPicker()}
                       onChange={(e) => setReminderDate(e.target.value)}
-                      className="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-lg px-4 py-3 text-gray-900 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 dark:[color-scheme:dark] dark:[&::-webkit-calendar-picker-indicator]:invert"
+                      className="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-lg px-4 py-3 text-gray-900 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 dark:[color-scheme:dark]"
                     />
                   </div>
                   
@@ -3131,7 +3164,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                       value={reminderTime}
                       onClick={(e) => e.currentTarget.showPicker()}
                       onChange={(e) => setReminderTime(e.target.value)}
-                      className="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-lg px-4 py-3 text-gray-900 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 dark:[color-scheme:dark] dark:[&::-webkit-calendar-picker-indicator]:invert"
+                      className="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-lg px-4 py-3 text-gray-900 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 dark:[color-scheme:dark]"
                     />
                   </div>
                 </div>

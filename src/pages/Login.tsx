@@ -120,7 +120,7 @@ const Login: React.FC = () => {
         const { success, error } = await signIn(formData.email, formData.password);
         
         if (success) {
-          navigate('/');
+          navigate('/dashboard');
         } else {
           setAuthError(error || t('auth.login.signInError'));
         }
@@ -137,7 +137,7 @@ const Login: React.FC = () => {
       setAuthError(null);
       
       // Store current location for redirect after auth
-      sessionStorage.setItem('returnTo', window.location.pathname);
+      sessionStorage.setItem('returnTo', '/dashboard');
       
       if (provider === 'Google') {
         console.log('Initiating Google OAuth...');

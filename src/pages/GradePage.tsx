@@ -1091,7 +1091,7 @@ const GradePage: React.FC = () => {
                                      </div>
                                      <div>
                                         <h3 className="font-bold mb-1 text-gray-900 dark:text-white">{item.title || t('gradePage.gradingReport')}</h3>
-                                         <p className="text-xs text-gray-500">{new Date(item.created_at).toLocaleDateString()}</p>
+                                         <p className="text-xs text-gray-500">{new Date(item.created_at).toLocaleDateString()} {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                                      </div>
                                  </div>
                                  <div className="relative">

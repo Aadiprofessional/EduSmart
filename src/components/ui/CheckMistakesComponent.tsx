@@ -1656,6 +1656,70 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
     return null;
   };
 
+  // Mirrors the mobile buildTextFromOcrResults: groups OCR tokens into lines using
+  // bounding-box y-centre proximity, then sorts each line left-to-right.
+  // This reconstructs readable paragraphs instead of one word per line.
+  const buildTextFromOcrResults = (results: OcrResultLine[]): string => {
+    if (!results || results.length === 0) return '';
+
+    const withBbox = results.filter(
+      (r) => r.bbox && r.bbox.x_max > r.bbox.x_min && r.bbox.y_max > r.bbox.y_min
+    );
+    if (withBbox.length === 0) {
+      // No bbox info — fall back to plain join
+      return results.map((r) => r.text).filter(Boolean).join(' ');
+    }
+
+    // Sort by vertical centre, then left-to-right within same row
+    const sorted = [...withBbox].sort((a, b) => {
+      const centerA = (a.bbox!.y_min + a.bbox!.y_max) / 2;
+      const centerB = (b.bbox!.y_min + b.bbox!.y_max) / 2;
+      const avgH = ((a.bbox!.y_max - a.bbox!.y_min) + (b.bbox!.y_max - b.bbox!.y_min)) / 2;
+      if (Math.abs(centerA - centerB) > avgH * 0.5) return centerA - centerB;
+      return a.bbox!.x_min - b.bbox!.x_min;
+    });
+
+    // Group into lines
+    const lines: OcrResultLine[][] = [];
+    for (const result of sorted) {
+      if (lines.length === 0) { lines.push([result]); continue; }
+      const lastLine = lines[lines.length - 1];
+      const prev = lastLine[lastLine.length - 1];
+      const centerPrev = (prev.bbox!.y_min + prev.bbox!.y_max) / 2;
+      const centerCur = (result.bbox!.y_min + result.bbox!.y_max) / 2;
+      const avgH = ((prev.bbox!.y_max - prev.bbox!.y_min) + (result.bbox!.y_max - result.bbox!.y_min)) / 2;
+      if (Math.abs(centerPrev - centerCur) <= avgH * 0.5) {
+        lastLine.push(result);
+      } else {
+        lines.push([result]);
+      }
+    }
+
+    const PUNCT_ONLY = /^[.,:;!?'")\]»—…]+$/;
+    // Build text per line, appending punctuation-only tokens without a leading space
+    const lineTexts: string[] = lines.map((line) => {
+      const sortedLine = [...line].sort((a, b) => a.bbox!.x_min - b.bbox!.x_min);
+      let lineText = '';
+      for (const word of sortedLine) {
+        if (!lineText) { lineText = word.text; }
+        else if (PUNCT_ONLY.test(word.text)) { lineText += word.text; }
+        else { lineText += ' ' + word.text; }
+      }
+      return lineText;
+    });
+
+    // Merge lines that are purely punctuation into the previous line
+    const merged: string[] = [];
+    for (const lineText of lineTexts) {
+      if (merged.length > 0 && PUNCT_ONLY.test(lineText.trim())) {
+        merged[merged.length - 1] += lineText.trim();
+      } else {
+        merged.push(lineText);
+      }
+    }
+    return merged.join('\n');
+  };
+
   const normalizeOcrPages = (value: any): OcrPageData[] => {
     if (!Array.isArray(value)) return [];
 
@@ -1713,7 +1777,7 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
     return ocrPages
       .slice()
       .sort((a, b) => a.page - b.page)
-      .map((page) => page.results.map((line) => line.text).filter(Boolean).join('\n').trim())
+      .map((page) => buildTextFromOcrResults(page.results).trim())
       .filter(Boolean)
       .join('\n\n');
   };
@@ -3200,7 +3264,7 @@ Be thorough and fair in your assessment.`
       const parsedMistakes = parsedResult.mistakes;
       const parsedText = parsedResult.extractedText || initialExtractedText;
       const sortedOcrPages = parsedResult.ocrPages.slice().sort((a, b) => a.page - b.page);
-      const ocrPageTexts = sortedOcrPages.map((page) => page.results.map((line) => line.text).filter(Boolean).join('\n').trim());
+      const ocrPageTexts = sortedOcrPages.map((page) => buildTextFromOcrResults(page.results).trim());
       const fallbackPageCount = ocrPageTexts.length;
       const resolvedTotalPages = preparedPages.length > 0
         ? preparedPages.length
@@ -4096,7 +4160,9 @@ Be thorough and fair in your assessment.`
               ? 'bg-gray-50 dark:bg-[#151518] border-gray-200 dark:border-white/10'
               : 'bg-[#0f172a]/60 backdrop-blur-md border-white/10'
           }`}>
-            <h2 className={`text-lg font-semibold ${variant === 'solve' ? 'text-gray-900 dark:text-white' : 'text-cyan-400'}`}>Document</h2>
+            <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+              <h2 className={`text-lg font-semibold flex-shrink-0 ${variant === 'solve' ? 'text-gray-900 dark:text-white' : 'text-cyan-400'}`}>Document</h2>
+            </div>
             <div className="flex items-center gap-2">
               {!textOnlyMode && documentPages.length > 0 && extractedTexts[currentPage]?.text && (
                 <div className={`flex items-center rounded-lg border overflow-hidden text-xs ${
@@ -4263,6 +4329,7 @@ Be thorough and fair in your assessment.`
                               .replace(/\n{2,}/g, '\u0000PARA\u0000')  // protect paragraph breaks
                               .replace(/\n/g, ' ')                       // single \n → space
                               .replace(/\u0000PARA\u0000/g, '\n\n')      // restore paragraph breaks
+                              .replace(/ +([.,:;!?…»\)\]])/g, '$1')     // remove space before punctuation
                               .replace(/ {2,}/g, ' ')
                               .trim();
                           const displayText = normalizeOcrText(extractedTexts[currentPage].text);
