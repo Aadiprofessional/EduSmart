@@ -754,7 +754,7 @@ const SolvePage: React.FC = () => {
   };
 
   return (
-    <div className="h-screen bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-white flex font-sans overflow-hidden relative">
+    <div className="min-h-[100dvh] h-[100dvh] bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-white flex font-sans overflow-hidden relative">
       {/* Mobile Sidebar Overlay */}
       {(isLeftSidebarOpen && isMobile) && (
         <div 
@@ -769,8 +769,8 @@ const SolvePage: React.FC = () => {
         className="fixed inset-y-0 left-0 z-50 lg:relative lg:z-0 shadow-2xl lg:shadow-none h-full"
       />
       
-      <div className="flex-1 flex relative w-full">
-        <main className={`flex-1 flex flex-col relative transition-all duration-300 w-full ${isHistoryOpen ? 'mr-0' : 'mr-0'}`}>
+      <div className="flex-1 flex relative w-full min-h-0">
+        <main className={`flex-1 flex flex-col relative transition-all duration-300 w-full min-h-0 ${isHistoryOpen ? 'mr-0' : 'mr-0'}`}>
            {/* Top Bar */}
            <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 h-16">
              {/* Left: sidebar toggle + new chat */}
@@ -961,17 +961,17 @@ const SolvePage: React.FC = () => {
              </div>
            ) : (
              /* Chat State */
-            <div className="flex-1 flex flex-col h-full w-full max-w-5xl mx-auto px-4 sm:px-6 pt-20 pb-6 relative overflow-hidden">
+            <div className="flex-1 flex flex-col h-full min-h-0 w-full pt-20 pb-6 relative overflow-hidden">
                 
                 {/* Messages Area */}
                 <div 
                   ref={messagesContainerRef}
-                  className="flex-1 overflow-y-auto overflow-x-hidden pb-32 pr-2"
-                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
+                  className="solve-messages-scrollbar scrollbar-thin flex-1 overflow-y-auto overflow-x-hidden pb-32 pr-1"
                 >
-                  {messages.map((msg) => (
-                    <div key={msg.id} className={`mb-8 flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`${msg.type === 'user' ? 'max-w-[80%] flex flex-col items-end' : 'max-w-[95%] sm:max-w-[92%] w-full'}`}>
+                  <div className="w-full max-w-5xl mx-auto px-4 sm:px-6">
+                    {messages.map((msg) => (
+                      <div key={msg.id} className={`mb-8 flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`${msg.type === 'user' ? 'max-w-[80%] flex flex-col items-end' : 'max-w-[95%] sm:max-w-[92%] w-full'}`}>
                         
                         {/* Attachment (User) */}
                         {msg.type === 'user' && msg.attachment && (
@@ -1139,46 +1139,49 @@ const SolvePage: React.FC = () => {
                           </div>
                         )}
 
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
 
                 {/* Bottom Input Area (Sticky) */}
-                <div className="absolute bottom-6 left-6 right-6 bg-white/80 dark:bg-black/40 backdrop-blur-xl rounded-[32px] border border-blue-500 shadow-2xl z-20 flex items-center gap-2 px-4 py-2">
-                     <textarea 
-                      ref={followUpInputRef}
-                       value={inputValue}
-                       onChange={(e) => setInputValue(e.target.value)}
-                       onKeyDown={(e) => {
-                         if (e.key === 'Enter' && !e.shiftKey) {
-                           e.preventDefault();
-                           if (!isSendDisabled) handleSendMessage();
-                         }
-                       }}
-                       placeholder={t('solvePage.askFollowUpQuestion')}
-                      className="flex-1 bg-transparent text-gray-800 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none text-lg resize-none py-3 min-h-[44px] max-h-[120px] leading-[22px] self-center"
-                       rows={1}
-                     />
-                     <div className="flex-shrink-0">
-                       <button 
-                         onClick={handleSendMessage}
-                         disabled={isSendDisabled}
-                         className={`relative p-2 rounded-full transition-all duration-200 flex items-center justify-center w-8 h-8 ${
-                           isSendDisabled 
-                             ? 'bg-gray-100 dark:bg-[#27272a] text-gray-400 dark:text-gray-600 cursor-not-allowed' 
-                             : 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200'
-                         }`}
-                       >
-                         {!isSendDisabled && cost > 0 && (
-                           <span className="absolute -top-2 -right-2 z-10 inline-flex items-center gap-1 bg-[#ff5500] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                             -{cost}
-                             <img src={coinIcon} alt="coins" className="w-3 h-3" />
-                           </span>
-                         )}
-                         <FaArrowUp size={14} />
-                       </button>
-                     </div>
+                <div className="absolute bottom-6 left-0 right-0 z-20 px-4 sm:px-6">
+                  <div className="max-w-5xl mx-auto bg-white/80 dark:bg-black/40 backdrop-blur-xl rounded-[32px] border border-blue-500 shadow-2xl flex items-center gap-2 px-4 py-2">
+                       <textarea 
+                        ref={followUpInputRef}
+                         value={inputValue}
+                         onChange={(e) => setInputValue(e.target.value)}
+                         onKeyDown={(e) => {
+                           if (e.key === 'Enter' && !e.shiftKey) {
+                             e.preventDefault();
+                             if (!isSendDisabled) handleSendMessage();
+                           }
+                         }}
+                         placeholder={t('solvePage.askFollowUpQuestion')}
+                        className="flex-1 bg-transparent text-gray-800 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none text-lg resize-none py-3 min-h-[44px] max-h-[120px] leading-[22px] self-center"
+                         rows={1}
+                       />
+                       <div className="flex-shrink-0">
+                         <button 
+                           onClick={handleSendMessage}
+                           disabled={isSendDisabled}
+                           className={`relative p-2 rounded-full transition-all duration-200 flex items-center justify-center w-8 h-8 ${
+                             isSendDisabled 
+                               ? 'bg-gray-100 dark:bg-[#27272a] text-gray-400 dark:text-gray-600 cursor-not-allowed' 
+                               : 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200'
+                           }`}
+                         >
+                           {!isSendDisabled && cost > 0 && (
+                             <span className="absolute -top-2 -right-2 z-10 inline-flex items-center gap-1 bg-[#ff5500] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                               -{cost}
+                               <img src={coinIcon} alt="coins" className="w-3 h-3" />
+                             </span>
+                           )}
+                           <FaArrowUp size={14} />
+                         </button>
+                       </div>
+                  </div>
                 </div>
 
              </div>

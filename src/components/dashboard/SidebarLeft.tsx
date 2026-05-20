@@ -101,7 +101,8 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
           animate={{ width: 256, opacity: 1 }} // 256px = w-64
           exit={{ width: 0, opacity: 0 }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
-          className={`bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-white/10 flex flex-col justify-between h-full p-4 flex-shrink-0 group text-gray-900 dark:text-white ${className}`}
+          className={`bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-white/10 flex min-h-0 flex-col h-full p-4 flex-shrink-0 group text-gray-900 dark:text-white ${className}`}
+          style={{ height: '100dvh', maxHeight: '100dvh' }}
         >
           <div className="flex-1 overflow-y-auto overflow-x-hidden whitespace-nowrap min-h-0">
             {/* Logo */}
@@ -164,7 +165,7 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
           </div>
 
           {/* Bottom Controls */}
-          <div className="flex-shrink-0 space-y-2 overflow-hidden whitespace-nowrap">
+          <div className="mt-auto flex-shrink-0 space-y-2 overflow-hidden whitespace-nowrap">
             {/* Coin Panel — shown for Lite Mode users */}
             <CoinPanel variant="sidebar" onUpgradeClick={() => navigate('/pricing')} />
 

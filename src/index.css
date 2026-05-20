@@ -132,6 +132,15 @@ html {
   height: 6px;
 }
 
+.solve-messages-scrollbar {
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+}
+
+.solve-messages-scrollbar::-webkit-scrollbar {
+  width: 12px;
+}
+
 /* Global Text Selection */
 ::selection {
   background-color: rgba(79, 70, 229, 0.3); /* Indigo-600 with opacity */
