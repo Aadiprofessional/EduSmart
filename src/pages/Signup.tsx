@@ -5,6 +5,7 @@ import { useAuth } from '../utils/AuthContext';
 import { useLanguage } from '../utils/LanguageContext';
 import { motion } from 'framer-motion';
 import LogoWithText from '../components/ui/LogoWithText';
+import TurnstileWidget from '../components/auth/TurnstileWidget';
 
 const Signup: React.FC = () => {
   const navigate = useNavigate();
@@ -22,6 +23,10 @@ const Signup: React.FC = () => {
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [turnstileRefresh, setTurnstileRefresh] = useState(0);
+  const turnstileSiteKey = process.env.REACT_APP_TURNSTILE_SITE_KEY?.trim();
+  const isTurnstileEnabled = Boolean(turnstileSiteKey);
 
   // Particle animation configuration
   const particles = Array.from({ length: 50 }).map((_, i) => ({
@@ -87,6 +92,10 @@ const Signup: React.FC = () => {
     if (!agreeToTerms) {
       newErrors.terms = t('auth.signup.agreeToTermsRequired');
     }
+
+    if (isTurnstileEnabled && !captchaToken) {
+      newErrors.captcha = 'Please complete the captcha challenge.';
+    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -99,7 +108,7 @@ const Signup: React.FC = () => {
       setIsSubmitting(true);
       
       try {
-        const { success, error } = await signUp(formData.email, formData.password, formData.name);
+        const { success, error } = await signUp(formData.email, formData.password, formData.name, captchaToken || undefined);
         
         if (success) {
           navigate('/login', {
@@ -111,9 +120,13 @@ const Signup: React.FC = () => {
           });
         } else {
           setAuthError(error || t('auth.signup.signUpError'));
+          setCaptchaToken(null);
+          setTurnstileRefresh(prev => prev + 1);
         }
       } catch (error) {
         setAuthError(t('auth.signup.signUpError'));
+        setCaptchaToken(null);
+        setTurnstileRefresh(prev => prev + 1);
       } finally {
         setIsSubmitting(false);
       }
@@ -388,9 +401,26 @@ const Signup: React.FC = () => {
                     </div>
                   </div>
 
+                  {isTurnstileEnabled && turnstileSiteKey && (
+                    <div className="space-y-1">
+                      <TurnstileWidget
+                        siteKey={turnstileSiteKey}
+                        onTokenChange={(token) => {
+                          setCaptchaToken(token);
+                          if (errors.captcha) {
+                            setErrors(prev => ({ ...prev, captcha: '' }));
+                          }
+                        }}
+                        refreshTrigger={turnstileRefresh}
+                        className="flex justify-center"
+                      />
+                      {errors.captcha && <p className="mt-1 text-xs text-red-400 pl-1">{errors.captcha}</p>}
+                    </div>
+                  )}
+
                   <motion.button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || (isTurnstileEnabled && !captchaToken)}
                     className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-medium rounded-xl shadow-lg shadow-purple-900/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 relative overflow-hidden"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
