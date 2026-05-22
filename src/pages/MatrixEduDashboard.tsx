@@ -71,10 +71,6 @@ const MatrixEduDashboard: React.FC = () => {
           }
       }
 
-      const { scrollHeight, clientHeight } = e.currentTarget;
-      if (scrollHeight - scrollTop <= clientHeight + 100 && hasMore && !loadingMore) {
-          handleLoadMore();
-      }
   };
 
   useEffect(() => {
@@ -109,10 +105,8 @@ const MatrixEduDashboard: React.FC = () => {
 
   const [studySets, setStudySets] = useState<StudySet[]>([]);
   const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const ITEMS_PER_PAGE = 12;
+  const ITEMS_PER_PAGE = 10;
   const [totalCount, setTotalCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<StudySet[]>([]);
@@ -299,13 +293,9 @@ const MatrixEduDashboard: React.FC = () => {
     return enrichedSets;
   };
 
-  const fetchStudySets = async (pageNumber = 0, isLoadMore = false) => {
+  const fetchStudySets = async (pageNumber = 0) => {
       if (!user) return;
-      if (isLoadMore) {
-          setLoadingMore(true);
-      } else {
-          setLoading(true);
-      }
+      setLoading(true);
       
       try {
           const from = pageNumber * ITEMS_PER_PAGE;
@@ -324,8 +314,7 @@ const MatrixEduDashboard: React.FC = () => {
                      query = query.in('document_id', folder.document_ids);
                  } else {
                      setStudySets([]);
-                     setHasMore(false);
-                     setLoadingMore(false);
+                     setLoading(false);
                      return;
                  }
             }
@@ -351,37 +340,27 @@ const MatrixEduDashboard: React.FC = () => {
 
               const enrichedSets = await enrichStudySetsWithStats(mappedSets);
 
-              if (data.length < ITEMS_PER_PAGE) {
-                  setHasMore(false);
-              }
-
-              if (isLoadMore) {
-                  setStudySets(prev => [...prev, ...enrichedSets]);
-              } else {
-                  setStudySets(enrichedSets);
-              }
+              setStudySets(enrichedSets);
           }
       } catch (error) {
           console.error('Error fetching study sets:', error);
       } finally {
-          if (isLoadMore) {
-            setLoadingMore(false);
-          } else {
-            setLoading(false);
-          }
+          setLoading(false);
       }
   };
 
   useEffect(() => {
     setPage(0);
-    setHasMore(true);
-    fetchStudySets(0, false);
   }, [user, selectedFolderId]);
 
-  const handleLoadMore = () => {
-      const nextPage = page + 1;
-      setPage(nextPage);
-      fetchStudySets(nextPage, true);
+  useEffect(() => {
+    fetchStudySets(page);
+  }, [page, user, selectedFolderId]);
+
+  const handlePageChange = (nextPage: number) => {
+    if (nextPage === page) return;
+    setPage(nextPage);
+    scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCreateFolder = async (name: string, color: string) => {
@@ -431,7 +410,7 @@ const MatrixEduDashboard: React.FC = () => {
 
     if (error) {
       console.error('Error deleting study set:', error);
-      fetchStudySets(0, false); 
+      fetchStudySets(0); 
     }
   };
 
@@ -498,7 +477,7 @@ const MatrixEduDashboard: React.FC = () => {
     fetchFolders();
     // Refresh study sets to reflect changes if currently filtering by folder
     if (selectedFolderId) {
-       fetchStudySets(0, false);
+      fetchStudySets(0);
     }
   };
 
@@ -637,22 +616,25 @@ const MatrixEduDashboard: React.FC = () => {
                 className="px-4 md:px-8 lg:px-12 pb-24 w-full mx-auto min-h-screen"
             >
                 <StudySetList 
-              studySets={searchQuery.trim() ? searchResults : studySets} 
-              loading={loading || (searchQuery.trim() ? isSearching : false)}
-              totalCount={totalCount}
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              onSetClick={(set) => navigate(`/study-set/${set.id}`)}
-              onDragStart={handleDragStart}
-              onMove={handleMoveClick}
-              onRename={handleRenameStudySet}
-              onDelete={handleDeleteStudySet}
-            />
+                  studySets={searchQuery.trim() ? searchResults : studySets} 
+                  loading={loading || (searchQuery.trim() ? isSearching : false)}
+                  totalCount={totalCount}
+                  itemsPerPage={ITEMS_PER_PAGE}
+                  currentPage={page}
+                  onPageChange={handlePageChange}
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  onSetClick={(set) => navigate(`/study-set/${set.id}`)}
+                  onDragStart={handleDragStart}
+                  onMove={handleMoveClick}
+                  onRename={handleRenameStudySet}
+                  onDelete={handleDeleteStudySet}
+                />
                 
-                {!searchQuery.trim() && loadingMore && (
-                    <div className="flex justify-center mt-8 mb-8">
-                        <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                    </div>
+                {!searchQuery.trim() && loading && (
+                  <div className="flex justify-center mt-8 mb-8">
+                    <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
                 )}
             </div>
         </div>

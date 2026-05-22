@@ -60,6 +60,13 @@ const defaultMethodConfig: MethodConfig = {
     mindmap: { depth: 'medium' }
 };
 
+const getPayloadUrl = (payload?: UploadPayload | null): string => {
+    if (!payload) return '';
+    return payload.messages?.[0]?.url || payload.url || payload.body || '';
+};
+
+const isYouTubeUrl = (url: string): boolean => /(?:youtube\.com|youtu\.be)/i.test(url);
+
 // --- Configuration Components ---
 
 const CustomizeNotes: React.FC<{ 
@@ -842,11 +849,13 @@ const MethodSelectionPage: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const state = location.state as { uploadPayload?: UploadPayload } | null;
+    const payloadUrl = getPayloadUrl(state?.uploadPayload);
+    const isYouTubeSource = isYouTubeUrl(payloadUrl);
 
     const [selectedMethods, setSelectedMethods] = useState<string[]>(() => {
         const type = state?.uploadPayload?.uploadedFileType;
         const hasDuration = state?.uploadPayload?.duration;
-        if (type === 'audio' || type === 'video' || (type === 'url' && hasDuration)) {
+        if (type === 'audio' || type === 'video' || (type === 'url' && hasDuration && isYouTubeSource) || type === 'youtube') {
             return ['speech-to-text', 'notes'];
         }
         return ['tutor-lesson'];
@@ -986,17 +995,16 @@ const MethodSelectionPage: React.FC = () => {
         extractMetadata();
     }, [state?.uploadPayload]);
 
-    // Force Speech to Text for Audio/Video/YouTube
+    // Force Speech to Text only for audio, video, and YouTube URLs.
     React.useEffect(() => {
         const type = state?.uploadPayload?.uploadedFileType;
-        const hasDuration = state?.uploadPayload?.duration;
-        if (type === 'audio' || type === 'video' || type === 'url') {
+        if (type === 'audio' || type === 'video' || type === 'youtube' || (type === 'url' && isYouTubeSource)) {
              setSelectedMethods(prev => {
                  if (prev.includes('speech-to-text')) return prev;
                  return [...prev, 'speech-to-text'];
              });
         }
-    }, [state?.uploadPayload?.uploadedFileType, state?.uploadPayload?.duration]);
+    }, [state?.uploadPayload?.uploadedFileType, isYouTubeSource]);
 
     React.useEffect(() => {
         if (!showSpeechToTextHint) return;
@@ -1045,7 +1053,8 @@ const MethodSelectionPage: React.FC = () => {
     const isSpeechToTextVisible =
         state?.uploadPayload?.uploadedFileType === 'audio' ||
         state?.uploadPayload?.uploadedFileType === 'video' ||
-        state?.uploadPayload?.uploadedFileType === 'url';
+        state?.uploadPayload?.uploadedFileType === 'youtube' ||
+        (state?.uploadPayload?.uploadedFileType === 'url' && isYouTubeSource);
 
     const visibleMethods = methods.filter(m => {
         if (m.id === 'speech-to-text') {
@@ -1062,8 +1071,7 @@ const MethodSelectionPage: React.FC = () => {
 
     const toggleMethod = (id: string) => {
         const type = state?.uploadPayload?.uploadedFileType;
-        const hasDuration = state?.uploadPayload?.duration;
-        if (id === 'speech-to-text' && (type === 'audio' || type === 'video' || type === 'url')) {
+        if (id === 'speech-to-text' && (type === 'audio' || type === 'video' || type === 'youtube' || (type === 'url' && isYouTubeSource))) {
             return; 
         }
         if (selectedMethods.includes(id)) {
@@ -1085,14 +1093,12 @@ const MethodSelectionPage: React.FC = () => {
             try {
                 let currentPayload = { ...state.uploadPayload };
 
-                // Process YouTube URL
+                // Only convert URL uploads to youtube type when the source URL is actually YouTube.
                 if (currentPayload.uploadedFileType === 'url') {
                      const ytUrl = currentPayload.messages?.[0]?.url || currentPayload.url;
-                     if (ytUrl) {
-                         // Directly set type to youtube as requested
+                     if (ytUrl && isYouTubeUrl(ytUrl)) {
                          currentPayload.uploadedFileType = 'youtube';
-                         // Ensure URL is passed clearly (it's already in 'url' and messages[0].url)
-                         currentPayload.youtube_url = ytUrl; // Adding explicit field just in case
+                         currentPayload.youtube_url = ytUrl;
                      }
                 }
 
@@ -1114,7 +1120,7 @@ const MethodSelectionPage: React.FC = () => {
                     tutor_lesson: selectedMethods.includes('tutor-lesson'),
                     written_tests: selectedMethods.includes('written-tests'),
                     fill_in_the_blanks: selectedMethods.includes('fill-blanks'),
-                    speech_to_text: selectedMethods.includes('speech-to-text')
+                    speech_to_text: isSpeechToTextVisible && selectedMethods.includes('speech-to-text')
                 };
 
                 // Send the payload to n8n webhook
