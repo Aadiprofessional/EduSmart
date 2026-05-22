@@ -6,6 +6,7 @@ import { useLanguage } from '../utils/LanguageContext';
 import { motion } from 'framer-motion';
 import LogoWithText from '../components/ui/LogoWithText';
 import TurnstileWidget from '../components/auth/TurnstileWidget';
+import { getTurnstileBypassToken, getTurnstileSiteKey, isLocalhostTurnstileBypass } from '../utils/turnstile';
 
 const Signup: React.FC = () => {
   const navigate = useNavigate();
@@ -23,10 +24,12 @@ const Signup: React.FC = () => {
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const isLocalhostBypass = isLocalhostTurnstileBypass();
+  const turnstileSiteKey = getTurnstileSiteKey();
+  const shouldBypassTurnstile = isLocalhostBypass;
+  const shouldRenderTurnstile = Boolean(turnstileSiteKey) && !shouldBypassTurnstile;
+  const [captchaToken, setCaptchaToken] = useState<string | null>(shouldBypassTurnstile ? getTurnstileBypassToken() : null);
   const [turnstileRefresh, setTurnstileRefresh] = useState(0);
-  const turnstileSiteKey = process.env.REACT_APP_TURNSTILE_SITE_KEY?.trim();
-  const isTurnstileEnabled = Boolean(turnstileSiteKey);
 
   // Particle animation configuration
   const particles = Array.from({ length: 50 }).map((_, i) => ({
@@ -93,7 +96,7 @@ const Signup: React.FC = () => {
       newErrors.terms = t('auth.signup.agreeToTermsRequired');
     }
 
-    if (isTurnstileEnabled && !captchaToken) {
+    if (shouldRenderTurnstile && !captchaToken) {
       newErrors.captcha = 'Please complete the captcha challenge.';
     }
     
@@ -401,7 +404,15 @@ const Signup: React.FC = () => {
                     </div>
                   </div>
 
-                  {isTurnstileEnabled && turnstileSiteKey && (
+                  {shouldBypassTurnstile && (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-center rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm font-medium text-emerald-300">
+                        Bypass
+                      </div>
+                    </div>
+                  )}
+
+                  {shouldRenderTurnstile && (
                     <div className="space-y-1">
                       <TurnstileWidget
                         siteKey={turnstileSiteKey}
@@ -420,7 +431,7 @@ const Signup: React.FC = () => {
 
                   <motion.button
                     type="submit"
-                    disabled={isSubmitting || (isTurnstileEnabled && !captchaToken)}
+                    disabled={isSubmitting || (shouldRenderTurnstile && !captchaToken)}
                     className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-medium rounded-xl shadow-lg shadow-purple-900/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 relative overflow-hidden"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}

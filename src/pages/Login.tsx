@@ -7,6 +7,7 @@ import { useLanguage } from '../utils/LanguageContext';
 import { useNotification } from '../utils/NotificationContext';
 import LogoWithText from '../components/ui/LogoWithText';
 import TurnstileWidget from '../components/auth/TurnstileWidget';
+import { getTurnstileBypassToken, getTurnstileSiteKey, isLocalhostTurnstileBypass } from '../utils/turnstile';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -23,10 +24,12 @@ const Login: React.FC = () => {
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const isLocalhostBypass = isLocalhostTurnstileBypass();
+  const turnstileSiteKey = getTurnstileSiteKey();
+  const shouldBypassTurnstile = isLocalhostBypass;
+  const shouldRenderTurnstile = Boolean(turnstileSiteKey) && !shouldBypassTurnstile;
+  const [captchaToken, setCaptchaToken] = useState<string | null>(shouldBypassTurnstile ? getTurnstileBypassToken() : null);
   const [turnstileRefresh, setTurnstileRefresh] = useState(0);
-  const turnstileSiteKey = process.env.REACT_APP_TURNSTILE_SITE_KEY?.trim();
-  const isTurnstileEnabled = Boolean(turnstileSiteKey);
 
   // Set body background color to match the page background to prevent white background on overscroll
   React.useEffect(() => {
@@ -111,7 +114,7 @@ const Login: React.FC = () => {
       newErrors.password = t('auth.login.passwordRequired');
     }
 
-    if (isTurnstileEnabled && !captchaToken) {
+    if (shouldRenderTurnstile && !captchaToken) {
       newErrors.captcha = 'Please complete the captcha challenge.';
     }
     
@@ -402,7 +405,15 @@ const Login: React.FC = () => {
                     </Link>
                   </div>
 
-                  {isTurnstileEnabled && turnstileSiteKey && (
+                  {shouldBypassTurnstile && (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-center rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm font-medium text-emerald-300">
+                        Bypass
+                      </div>
+                    </div>
+                  )}
+
+                  {shouldRenderTurnstile && (
                     <div className="space-y-1">
                       <TurnstileWidget
                         siteKey={turnstileSiteKey}
@@ -440,7 +451,7 @@ const Login: React.FC = () => {
 
                   <motion.button
                     type="submit"
-                    disabled={isSubmitting || (isTurnstileEnabled && !captchaToken)}
+                    disabled={isSubmitting || (shouldRenderTurnstile && !captchaToken)}
                     className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-white/10 hover:bg-white/20 border-white/10 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
