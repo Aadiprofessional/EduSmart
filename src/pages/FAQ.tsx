@@ -239,7 +239,7 @@ Free Plan:
 • Community forum access
 • Email support
 
-Student Pro ($9.99/month):
+Student Pro (HK$9.99/month):
 • Unlimited AI tutoring and assistance
 • Advanced university search and filtering
 • Complete application tracking system
@@ -249,7 +249,7 @@ Student Pro ($9.99/month):
 • Study scheduling tools
 • Essay writing assistance
 
-Premium ($19.99/month):
+Premium (HK$19.99/month):
 • Everything in Student Pro
 • Advanced AI features and models
 • Personal academic advisor consultations
@@ -259,7 +259,7 @@ Premium ($19.99/month):
 • Advanced analytics and insights
 • Integration with university application systems
 
-Family Plan ($24.99/month):
+Family Plan (HK$24.99/month):
 • Up to 6 family member accounts
 • All Premium features for each account
 • Parental controls and monitoring

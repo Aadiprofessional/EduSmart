@@ -57,7 +57,7 @@ export const quickQuestionsData: QuickQuestion[] = [
         text: "How much does it cost?",
         category: "pricing",
         icon: "💰",
-        response: "We offer flexible pricing: Free tier with basic features, Student Pro at $9.99/month, and Premium at $19.99/month for unlimited AI access and premium tools.",
+        response: "We offer flexible pricing: Free tier with basic features, Student Pro at HK$9.99/month, and Premium at HK$19.99/month for unlimited AI access and premium tools.",
         actionPath: "/subscription",
         followUpQuestions: [
           {
@@ -678,7 +678,7 @@ export const quickQuestionsData: QuickQuestion[] = [
         text: "Show me pricing plans",
         category: "pricing",
         icon: "💳",
-        response: "Choose from our flexible pricing: Free (basic features), Student Pro ($9.99/month), Premium ($19.99/month), and Family plans available.",
+        response: "Choose from our flexible pricing: Free (basic features), Student Pro (HK$9.99/month), Premium (HK$19.99/month), and Family plans available.",
         actionPath: "/subscription",
         followUpQuestions: [
           {

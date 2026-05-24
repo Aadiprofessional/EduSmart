@@ -229,9 +229,9 @@ const PricingPage: React.FC = () => {
                       </h3>
                       <div className="flex items-baseline mb-2 gap-2 flex-wrap">
                         {discountPercent > 0 && (
-                          <span className="text-lg text-gray-400 line-through">${originalPrice}</span>
+                          <span className="text-lg text-gray-400 line-through">{`HK$${originalPrice}`}</span>
                         )}
-                        <span className="text-4xl font-extrabold text-white">${plan.price}</span>
+                        <span className="text-4xl font-extrabold text-white">{`HK$${plan.price}`}</span>
                         <span className="text-gray-400 ml-2">/{plan.type || t('pricingPage.month')}</span>
                       </div>
                       {discountPercent > 0 && (

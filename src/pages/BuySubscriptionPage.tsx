@@ -189,7 +189,7 @@ const BuySubscriptionPage: React.FC = () => {
                 )}
                 <div className="flex justify-between items-center pt-2 border-t border-gray-100 dark:border-white/5">
                   <span className="text-lg font-bold">Total</span>
-                  <span className="text-2xl font-bold">${plan.price}</span>
+                  <span className="text-2xl font-bold">{`HK$${plan.price}`}</span>
                 </div>
               </div>
 
@@ -253,7 +253,7 @@ const BuySubscriptionPage: React.FC = () => {
                     : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:shadow-purple-500/25'
                 }`}
               >
-                {processing ? 'Processing Payment...' : `Confirm Payment ($${plan.price})`}
+                {processing ? 'Processing Payment...' : `Confirm Payment (HK$${plan.price})`}
               </button>
               
               <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-4">
