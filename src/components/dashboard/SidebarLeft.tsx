@@ -102,7 +102,7 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
           exit={{ width: 0, opacity: 0 }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
           className={`bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-white/10 flex min-h-0 flex-col h-full p-4 flex-shrink-0 group text-gray-900 dark:text-white ${className}`}
-          style={{ height: '100dvh', maxHeight: '100dvh' }}
+          style={{ height: '100vh', maxHeight: '100vh' }}
         >
           <div className="flex-1 overflow-y-auto overflow-x-hidden whitespace-nowrap min-h-0">
             {/* Logo */}
@@ -165,7 +165,7 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
           </div>
 
           {/* Bottom Controls */}
-          <div className="mt-auto flex-shrink-0 space-y-2 overflow-hidden whitespace-nowrap">
+          <div className="mt-auto flex-shrink-0 space-y-2 w-full">
             {/* Coin Panel — shown for Lite Mode users */}
             <CoinPanel variant="sidebar" onUpgradeClick={() => navigate('/pricing')} />
 
@@ -261,8 +261,8 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
 
             {/* User Profile - Toggle Trigger */}
             <div 
-                className="flex items-center gap-3 px-2 pt-2 border-t border-gray-200 dark:border-white/5 cursor-pointer hover:bg-gray-100 dark:hover:bg-white/5 rounded p-2 transition-colors"
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="flex items-center gap-3 px-2 pt-2 border-t border-gray-200 dark:border-white/5 cursor-pointer hover:bg-gray-100 dark:hover:bg-white/5 rounded p-2 transition-colors flex-shrink-0 w-full"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
                 <div className="w-8 h-8 rounded-full bg-cyan-600 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
                   {user?.email?.substring(0, 2).toUpperCase() || 'AI'}
