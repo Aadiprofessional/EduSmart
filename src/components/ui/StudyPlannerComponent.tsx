@@ -214,7 +214,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
 
   // AI Timetable Import state
   const [showAIModal, setShowAIModal] = useState(false);
-  type UploadedAiFile = { file: File; base64: string; extractedText: string; imageUrl?: string };
+  type UploadedAiFile = { file: File; base64: string; extractedText: string; imageUrl?: string; pdfUrl?: string; docxUrl?: string };
   const [uploadedFile, setUploadedFile] = useState<UploadedAiFile | null>(null);
   const [isProcessingAI, setIsProcessingAI] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -794,9 +794,12 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
       return;
     }
 
-    // Check file type (only images for now)
-    if (!file.type.startsWith('image/')) {
-      showWarning('Please select an image file (PNG, JPG, JPEG, GIF). Only images are supported for now.');
+    // Check file type (images, PDF, DOCX)
+    const isImage = file.type.startsWith('image/');
+    const isPDF = file.type === 'application/pdf';
+    const isDOCX = file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || file.name.toLowerCase().endsWith('.docx');
+    if (!isImage && !isPDF && !isDOCX) {
+      showWarning('Please select an image (PNG, JPG), PDF, or DOCX file.');
       return;
     }
 
@@ -842,7 +845,9 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
         file,
         base64,
         extractedText: '',
-        imageUrl: publicUrl
+        imageUrl: isImage ? publicUrl : undefined,
+        pdfUrl: isPDF ? publicUrl : undefined,
+        docxUrl: isDOCX ? publicUrl : undefined,
       };
       setUploadedFile(nextUploadedFile);
       await processWithAI(nextUploadedFile);
@@ -904,21 +909,28 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
       setAiImportProgress(0);
       aiImportStartTimeRef.current = null;
 
-      // Call Webhook if imageUrl is available
-      if (currentUploadedFile.imageUrl && user) {
-        const webhookUrl = 'https://n8n.matrixaiserver.com/webhook/b95c1be4-c8db-47a1-bcd3-a871834037f3';
+      // Call import-timetable API if any file URL is available
+      const hasFileUrl = currentUploadedFile.imageUrl || currentUploadedFile.pdfUrl || currentUploadedFile.docxUrl;
+      if (hasFileUrl && user) {
+        const apiUrl = 'https://server.matrixedu.ai/api/study-planner/import-timetable';
         
         // Format timestamp as "YYYY-MM-DD HH:mm:ss.SSS"
         const now = new Date();
         const formattedTimestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}.${String(now.getMilliseconds()).padStart(3, '0')}`;
 
+        const urlField = currentUploadedFile.imageUrl
+          ? { image_url: currentUploadedFile.imageUrl }
+          : currentUploadedFile.pdfUrl
+          ? { pdf_url: currentUploadedFile.pdfUrl }
+          : { docx_url: currentUploadedFile.docxUrl };
+
         const payload = {
           uid: user.id,
-          image_url: currentUploadedFile.imageUrl,
+          ...urlField,
           timestamp: formattedTimestamp
         };
 
-        const response = await fetch(webhookUrl, {
+        const response = await fetch(apiUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -927,16 +939,20 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
         });
 
         if (!response.ok) {
-          throw new Error(`Webhook failed: ${response.status} ${response.statusText}`);
+          throw new Error(`Import API failed: ${response.status} ${response.statusText}`);
         }
 
         const rawData = await response.json();
-        console.log('Webhook response:', rawData);
+        console.log('Import API response:', rawData);
 
         let tasksData: any[] = [];
         
+        // Handle { success, count, tasks: [...] } format
+        if (rawData && rawData.success && Array.isArray(rawData.tasks)) {
+            tasksData = rawData.tasks;
+        }
         // Handle nested format: [{ data: [...] }]
-        if (Array.isArray(rawData) && rawData.length > 0 && rawData[0]?.data && Array.isArray(rawData[0].data)) {
+        else if (Array.isArray(rawData) && rawData.length > 0 && rawData[0]?.data && Array.isArray(rawData[0].data)) {
             tasksData = rawData[0].data;
         } 
         // Handle object format: { data: [...] }
@@ -967,7 +983,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
         setAiAnalysisResult(null);
 
       } else {
-        throw new Error('No uploaded image URL available for AI import.');
+        throw new Error('No uploaded file URL available for AI import.');
       }
     } catch (error) {
       console.error('Error processing with AI:', error);
@@ -2186,7 +2202,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                       <input
                         type="file"
                         id="timetable-upload"
-                        accept="image/*"
+                        accept="image/*,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx"
                         onChange={handleFileSelect}
                         className="hidden"
                         disabled={isUploading}

@@ -108,7 +108,7 @@ const SidebarRight: React.FC<SidebarRightProps> = ({
           animate={{ width: 288, opacity: 1 }} // 288px = w-72
           exit={{ width: 0, opacity: 0 }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
-          className={`bg-white dark:bg-[#111111] border-l border-gray-200 dark:border-white/10 p-6 flex flex-col h-full flex-shrink-0 group text-gray-900 dark:text-white ${className}`}
+          className={`bg-white dark:bg-[#111111] border-l border-gray-200 dark:border-white/10 p-6 flex flex-col h-full flex-shrink-0 overflow-hidden group text-gray-900 dark:text-white ${className}`}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >

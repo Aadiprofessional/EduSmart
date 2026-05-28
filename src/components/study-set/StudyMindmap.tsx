@@ -3,7 +3,7 @@ import * as echarts from 'echarts';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../../utils/AuthContext';
 import { supabase } from '../../utils/supabase';
-import { FaProjectDiagram, FaPlus, FaMinus, FaDownload, FaMagic, FaTimes } from 'react-icons/fa';
+import { FaProjectDiagram, FaPlus, FaMinus, FaDownload, FaShare, FaMagic, FaTimes } from 'react-icons/fa';
 import { Skeleton } from '../ui/Skeleton';
 
 const parseXMLToMindmap = (xmlString: string) => {
@@ -467,7 +467,102 @@ const StudyMindmap: React.FC = () => {
         );
     }
 
-    const handleExport = () => {
+    const buildExportChartURL = (): Promise<string | null> => {
+        return new Promise((resolve) => {
+            if (!mindmapData) { resolve(null); return; }
+
+            const { width, height, maxLeafLabelLength } = getTreeDimensions(mindmapData);
+            const div = document.createElement('div');
+            div.style.visibility = 'hidden';
+            div.style.position = 'fixed';
+            div.style.top = '0';
+            div.style.left = '-10000px';
+            div.style.width = `${width}px`;
+            div.style.height = `${height}px`;
+            document.body.appendChild(div);
+
+            const chart = echarts.init(div, undefined, { renderer: 'svg' });
+            const exportBgColor = '#ffffff';
+            const exportTextColor = '#000000';
+            const exportLineColor = '#555555';
+            const rightMargin = Math.max(maxLeafLabelLength * 12 + 100, 300);
+            const exportData = expandAllTreeNodes(mindmapData);
+
+            chart.setOption({
+                backgroundColor: exportBgColor,
+                animation: false,
+                series: [{
+                    type: 'tree',
+                    orient: 'LR',
+                    data: [exportData],
+                    top: '120px',
+                    left: '120px',
+                    bottom: '120px',
+                    right: `${rightMargin + 700}px`,
+                    nodeGap: 130,
+                    layerGap: 300,
+                    symbolSize: 12,
+                    initialTreeDepth: -1,
+                    label: {
+                        position: 'left',
+                        verticalAlign: 'middle',
+                        align: 'right',
+                        fontSize: 15,
+                        lineHeight: 24,
+                        width: 520,
+                        overflow: 'break',
+                        color: exportTextColor,
+                        fontFamily: 'sans-serif',
+                        formatter: function (params: any) {
+                            const title = cleanLabelText(params.name || '');
+                            const description = getNodeDescription(params);
+                            return description ? `${title}\n${description}` : title;
+                        }
+                    },
+                    leaves: {
+                        label: {
+                            position: 'right',
+                            verticalAlign: 'middle',
+                            align: 'left',
+                            fontSize: 15,
+                            lineHeight: 24,
+                            width: 780,
+                            overflow: 'break',
+                            color: exportTextColor,
+                            fontFamily: 'sans-serif',
+                            formatter: function (params: any) {
+                                const title = cleanLabelText(params.name || '');
+                                const description = getNodeDescription(params);
+                                return description ? `${title}\n${description}` : title;
+                            }
+                        }
+                    },
+                    expandAndCollapse: false,
+                    itemStyle: { color: '#c2410c', borderColor: exportLineColor },
+                    lineStyle: { color: exportLineColor, curveness: 0.5, width: 2 }
+                }]
+            } as any);
+
+            setTimeout(() => {
+                try {
+                    const url = chart.getDataURL({
+                        type: 'svg',
+                        backgroundColor: exportBgColor,
+                        excludeComponents: ['toolbox']
+                    });
+                    resolve(url);
+                } catch (e) {
+                    console.error('Chart URL generation failed:', e);
+                    resolve(null);
+                } finally {
+                    chart.dispose();
+                    document.body.removeChild(div);
+                }
+            }, 100);
+        });
+    };
+
+    const handleExport = async () => {
         if (!mindmapData) return;
 
         // 1. Calculate dimensions
@@ -587,6 +682,41 @@ const StudyMindmap: React.FC = () => {
         }, 100);
     };
 
+    const handleShare = async () => {
+        if (!mindmapData) return;
+
+        const url = await buildExportChartURL();
+        if (!url) return;
+
+        try {
+            const svgContent = decodeURIComponent(url.replace('data:image/svg+xml;charset=UTF-8,', ''));
+            const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+            const file = new File([blob], 'mindmap.svg', { type: 'image/svg+xml' });
+
+            if (navigator.share) {
+                const shareData: ShareData = { title: 'Mind Map' };
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    shareData.files = [file];
+                } else {
+                    shareData.url = window.location.href;
+                }
+                await navigator.share(shareData);
+            } else {
+                // Fallback: download the SVG
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'mindmap.svg';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+        } catch (e: any) {
+            if (e?.name !== 'AbortError') {
+                console.error('Share failed:', e);
+            }
+        }
+    };
+
     const handleZoom = (type: 'in' | 'out') => {
         if (!chartInstanceRef.current) return;
         
@@ -624,7 +754,14 @@ const StudyMindmap: React.FC = () => {
                     className="p-2 bg-[#c2410c] hover:bg-[#9a3412] rounded-lg text-white transition-colors flex items-center gap-2 shadow-lg shadow-orange-900/20"
                 >
                     <FaDownload size={12} />
-                    <span className="text-sm font-bold">Export</span>
+                    <span className="text-sm font-bold">Download</span>
+                </button>
+                <button 
+                    onClick={handleShare}
+                    className="p-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-white transition-colors flex items-center gap-2 shadow-lg shadow-indigo-900/20"
+                >
+                    <FaShare size={12} />
+                    <span className="text-sm font-bold">Share</span>
                 </button>
             </div>
 

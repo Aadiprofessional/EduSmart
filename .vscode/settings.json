@@ -2,5 +2,8 @@
     "java.compile.nullAnalysis.mode": "automatic",
     "i18n-ally.localesPaths": [
         "src/utils/locales"
-    ]
+    ],
+    "chat.tools.terminal.autoApprove": {
+        "npm install": true
+    }
 }

@@ -73,6 +73,17 @@ const MatrixEduDashboard: React.FC = () => {
 
   };
 
+  // Lock body scroll so only the inner scrollable div scrolls — prevents
+  // the sidebars from moving when the browser body becomes scrollable due to
+  // skeleton loading, Framer Motion layout changes, or dynamic content shifts.
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 1024) {
@@ -499,7 +510,7 @@ const MatrixEduDashboard: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-[#111] overflow-hidden">
+    <div className="fixed inset-0 flex bg-gray-50 dark:bg-[#111] overflow-hidden">
       {/* Mobile Sidebar Overlays */}
       {(isLeftSidebarOpen && window.innerWidth < 1024) && (
         <div 

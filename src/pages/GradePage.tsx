@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FaUpload, FaFileAlt, FaChevronRight, FaArrowUp, FaExpand, FaDownload, FaFilePdf, FaCopy, FaRegEdit, FaHistory, FaTimes, FaEllipsisV, FaTrash, FaBars } from 'react-icons/fa';
+import { FaUpload, FaFileAlt, FaChevronRight, FaArrowUp, FaExpand, FaDownload, FaFilePdf, FaCopy, FaRegEdit, FaHistory, FaTimes, FaEllipsisV, FaTrash, FaBars, FaFolder, FaFolderOpen, FaFolderPlus, FaChevronDown, FaLayerGroup } from 'react-icons/fa';
 import SidebarLeft from '../components/dashboard/SidebarLeft';
 import { supabase } from '../utils/supabase';
 import { v4 as uuidv4 } from 'uuid';
@@ -54,6 +54,15 @@ interface Message {
   timestamp: Date;
 }
 
+interface GradeFolder {
+  id: string;
+  user_id: string;
+  name: string;
+  parent_id: string | null;
+  color: string;
+  created_at: string;
+}
+
 interface DBChat {
   id: string;
   owner: string | null;
@@ -63,6 +72,7 @@ interface DBChat {
   service_type?: string;
   rubric_url?: string | null;
   rubric_name?: string | null;
+  folder_id?: string | null;
 }
 
 interface DBMessage {
@@ -124,6 +134,14 @@ const GradePage: React.FC = () => {
   const [upgradeMessage, setUpgradeMessage] = useState('');
   const [upgradeCtaType, setUpgradeCtaType] = useState<'coins' | 'subscription'>('subscription');
   const [openHistoryMenuId, setOpenHistoryMenuId] = useState<string | null>(null);
+  const [folders, setFolders] = useState<GradeFolder[]>([]);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | undefined>(undefined);
+  const [expandedFolderIds, setExpandedFolderIds] = useState<Set<string>>(new Set());
+  const [openFolderMenuId, setOpenFolderMenuId] = useState<string | null>(null);
+  const [folderModal, setFolderModal] = useState<{ visible: boolean; parentId: string | null; renaming: GradeFolder | null }>({ visible: false, parentId: null, renaming: null });
+  const [folderInput, setFolderInput] = useState('');
+  const [folderColor, setFolderColor] = useState('#a855f7');
+  const [movingChat, setMovingChat] = useState<DBChat | null>(null);
   
   const { user } = useAuth();
   const { checkAndUseResponse } = useResponseCheck();
@@ -133,20 +151,26 @@ const GradePage: React.FC = () => {
   const rubricInputRef = useRef<HTMLInputElement>(null);
   const paperInputRef = useRef<HTMLInputElement>(null);
 
-  const fetchChatHistory = async (pageNumber = 0, isLoadMore = false) => {
+  const fetchChatHistory = async (pageNumber = 0, isLoadMore = false, folderId?: string) => {
     if (!user) return;
     if (isLoadMore) setLoadingMore(true);
 
     const from = pageNumber * ITEMS_PER_PAGE;
     const to = from + ITEMS_PER_PAGE - 1;
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('solve_chats')
       .select('*')
       .eq('owner', user.id)
       .eq('service_type', 'grade')
       .order('created_at', { ascending: false })
       .range(from, to);
+
+    if (folderId !== undefined) {
+      query = query.eq('folder_id', folderId);
+    }
+
+    const { data, error } = await query;
     
     if (error) {
       console.error('Error fetching history:', error);
@@ -166,7 +190,7 @@ const GradePage: React.FC = () => {
   const handleLoadMore = () => {
     const nextPage = page + 1;
     setPage(nextPage);
-    fetchChatHistory(nextPage, true);
+    fetchChatHistory(nextPage, true, selectedFolderId);
   };
 
   const [previewAttachment, setPreviewAttachment] = useState<any>(null);
@@ -219,11 +243,102 @@ const GradePage: React.FC = () => {
     );
   };
 
+  const fetchFolders = async () => {
+    if (!user) return;
+    const { data } = await supabase.from('grade_folders').select('*').eq('user_id', user.id).order('created_at', { ascending: true });
+    if (data) setFolders(data);
+  };
+
+  const handleCreateFolder = async () => {
+    if (!folderInput.trim() || !user) return;
+    await supabase.from('grade_folders').insert({ user_id: user.id, name: folderInput.trim(), parent_id: folderModal.parentId, color: folderColor });
+    setFolderModal({ visible: false, parentId: null, renaming: null });
+    setFolderInput('');
+    fetchFolders();
+  };
+
+  const handleRenameFolder = async () => {
+    if (!folderInput.trim() || !folderModal.renaming) return;
+    await supabase.from('grade_folders').update({ name: folderInput.trim() }).eq('id', folderModal.renaming.id);
+    setFolderModal({ visible: false, parentId: null, renaming: null });
+    setFolderInput('');
+    fetchFolders();
+  };
+
+  const handleDeleteFolder = async (folder: GradeFolder) => {
+    if (!window.confirm(`Delete "${folder.name}"? Items inside will move to All.`)) return;
+    await supabase.from('solve_chats').update({ folder_id: null }).eq('folder_id', folder.id);
+    await supabase.from('grade_folders').delete().eq('id', folder.id);
+    if (selectedFolderId === folder.id) setSelectedFolderId(undefined);
+    fetchFolders();
+    fetchChatHistory(0, false, selectedFolderId === folder.id ? undefined : selectedFolderId);
+  };
+
+  const handleMoveChat = async (chatId: string, folderId: string | null) => {
+    await supabase.from('solve_chats').update({ folder_id: folderId }).eq('id', chatId);
+    setMovingChat(null);
+    fetchChatHistory(0, false, selectedFolderId);
+  };
+
+  const renderFolderTree = (list: GradeFolder[], depth: number): React.ReactNode => {
+    return list.map(folder => {
+      const children = folders.filter(f => f.parent_id === folder.id);
+      const isExpanded = expandedFolderIds.has(folder.id);
+      const isSelected = selectedFolderId === folder.id;
+      return (
+        <div key={folder.id}>
+          <div
+            className={`flex items-center gap-2 py-2 pr-3 text-sm cursor-pointer transition-colors group ${isSelected ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 font-medium' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'}`}
+            style={{ paddingLeft: 16 + depth * 12 }}
+            onClick={() => { setSelectedFolderId(folder.id); setOpenFolderMenuId(null); }}
+          >
+            {children.length > 0 ? (
+              <button onClick={e => { e.stopPropagation(); setExpandedFolderIds(prev => { const s = new Set(prev); s.has(folder.id) ? s.delete(folder.id) : s.add(folder.id); return s; }); }} className="flex-shrink-0">
+                <FaChevronDown size={8} className={`transition-transform ${isExpanded ? '' : '-rotate-90'}`} style={{ color: folder.color }} />
+              </button>
+            ) : <span className="w-2 flex-shrink-0" />}
+            <span style={{ color: folder.color }} className="flex-shrink-0">
+              {isExpanded ? <FaFolderOpen size={13} /> : <FaFolder size={13} />}
+            </span>
+            <span className="flex-1 truncate">{folder.name}</span>
+            <div className="relative flex-shrink-0">
+              <button
+                onClick={e => { e.stopPropagation(); setOpenFolderMenuId(prev => prev === folder.id ? null : folder.id); }}
+                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-opacity"
+              >
+                <FaEllipsisV size={10} />
+              </button>
+              {openFolderMenuId === folder.id && (
+                <div onClick={e => e.stopPropagation()} className="absolute right-0 top-6 z-40 min-w-[140px] bg-white dark:bg-[#17171a] border border-gray-200 dark:border-white/10 rounded-lg shadow-lg overflow-hidden">
+                  <button onClick={() => { setFolderInput(folder.name); setFolderModal({ visible: true, parentId: null, renaming: folder }); setOpenFolderMenuId(null); }} className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">Rename</button>
+                  <button onClick={() => { setFolderInput(''); setFolderColor('#a855f7'); setFolderModal({ visible: true, parentId: folder.id, renaming: null }); setOpenFolderMenuId(null); }} className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">Add Subfolder</button>
+                  <button onClick={() => handleDeleteFolder(folder)} className="w-full px-3 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">Delete</button>
+                </div>
+              )}
+            </div>
+          </div>
+          {isExpanded && renderFolderTree(children, depth + 1)}
+        </div>
+      );
+    });
+  };
+
   useEffect(() => {
     setPage(0);
     setHasMore(true);
-    fetchChatHistory(0, false);
+    fetchChatHistory(0, false, selectedFolderId);
+    fetchFolders();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      setPage(0);
+      setHasMore(true);
+      fetchChatHistory(0, false, selectedFolderId);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedFolderId]);
 
   const loadChat = async (chat: DBChat) => {
     setChatId(chat.id);
@@ -818,10 +933,11 @@ const GradePage: React.FC = () => {
             metadata: { subject: "Grade" },
             service_type: 'grade',
             rubric_url: rubricUrl || null,
-            rubric_name: manualRubric?.name || null
+            rubric_name: manualRubric?.name || null,
+            folder_id: selectedFolderId ?? null,
           });
           if (!chatError) {
-            fetchChatHistory();
+            fetchChatHistory(0, false, selectedFolderId);
           } else {
             console.error('Error creating chat:', chatError);
           }
@@ -1068,94 +1184,151 @@ const GradePage: React.FC = () => {
                  </button>
              </div>
 
-             {/* Your Grades Section */}
+             {/* Grades + Folders Section */}
              <div>
-                 <h2 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">{t('gradePage.yourGrades')}</h2>
-                 
-                 {history.length === 0 ? (
-                    <div className="text-center text-gray-500 py-8">
-                     {t('gradePage.noGradesYet')}
-                    </div>
-                 ) : (
-                    <div className="grid gap-4">
-                      {history.map(item => (
-                        <div 
-                          key={item.id} 
-                          onClick={() => loadChat(item)}
-                          className="relative bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl p-6 hover:border-gray-300 dark:hover:border-white/20 transition-colors cursor-pointer shadow-sm dark:shadow-none"
-                        >
-                             <div className="flex items-start justify-between mb-4">
-                                 <div className="flex items-center gap-4">
-                                     <div className="w-12 h-12 bg-gray-100 dark:bg-white rounded-lg flex items-center justify-center text-xl">
-                                         ✍️
-                                     </div>
-                                     <div>
-                                        <h3 className="font-bold mb-1 text-gray-900 dark:text-white">{item.title || t('gradePage.gradingReport')}</h3>
-                                         <p className="text-xs text-gray-500">{new Date(item.created_at).toLocaleDateString()} {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                                     </div>
-                                 </div>
-                                 <div className="relative">
-                                   <button
-                                     onClick={(e) => {
-                                       e.stopPropagation();
-                                       setOpenHistoryMenuId(prev => prev === item.id ? null : item.id);
-                                     }}
-                                     className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
-                                   >
-                                     <FaEllipsisV size={14} />
-                                   </button>
-                                   {openHistoryMenuId === item.id && (
-                                     <div
-                                       onClick={(e) => e.stopPropagation()}
-                                       className="absolute right-0 top-10 z-30 min-w-[140px] bg-white dark:bg-[#17171a] border border-gray-200 dark:border-white/10 rounded-lg shadow-lg overflow-hidden"
-                                     >
-                                       <button
-                                         onClick={() => handleDeleteHistoryItem(item.id)}
-                                         className="w-full px-3 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2"
-                                       >
-                                         <FaTrash size={12} />
-                                         Delete
-                                       </button>
-                                     </div>
-                                   )}
-                                 </div>
-                             </div>
-                             
-                             <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-6 line-clamp-2">
-                                {t('gradePage.viewDetailedReport')}
-                             </p>
-        
-                             <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-white/5">
-                                 <button className="flex items-center gap-2 text-sm text-gray-900 dark:text-white font-medium hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                                    {t('gradePage.viewDetails')} <FaChevronRight size={10} />
-                                 </button>
-                                 {item.rubric_url && (
-                                     <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setPreviewAttachment({
-                                            name: item.rubric_name || t('gradePage.rubric'),
-                                            type: getFileMimeType(item.rubric_name, item.rubric_url),
-                                            url: item.rubric_url
-                                          });
-                                        }}
-                                        className="flex items-center gap-1 text-xs bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors border border-indigo-100 dark:border-indigo-500/20"
-                                     >
-                                        <FaFileAlt size={10} />
-                                      View File
-                                     </button>
-                                 )}
-                             </div>
-                         </div>
-                      ))}
-                      
-                      {loadingMore && (
-                        <div className="flex justify-center mt-4 mb-4">
-                            <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                      )}
-                    </div>
+               <div className="flex items-center justify-between mb-6">
+                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('gradePage.yourGrades')}</h2>
+                 <button
+                   onClick={() => { setFolderInput(''); setFolderColor('#a855f7'); setFolderModal({ visible: true, parentId: null, renaming: null }); }}
+                   className="flex items-center gap-2 text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 transition-colors px-3 py-1.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                 >
+                   <FaFolderPlus size={13} />
+                   New Folder
+                 </button>
+               </div>
+
+               <div className="flex gap-5">
+                 {/* Folder sidebar — desktop only */}
+                 {folders.length > 0 && (
+                   <div className="w-52 flex-shrink-0 hidden md:block">
+                     <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm sticky top-4">
+                       <button
+                         onClick={() => setSelectedFolderId(undefined)}
+                         className={`w-full flex items-center gap-2.5 px-4 py-3 text-sm transition-colors border-b border-gray-100 dark:border-white/5 ${selectedFolderId === undefined ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'}`}
+                       >
+                         <FaLayerGroup size={13} />
+                         All Grades
+                       </button>
+                       <div className="py-1 max-h-96 overflow-y-auto">
+                         {renderFolderTree(folders.filter(f => !f.parent_id), 0)}
+                       </div>
+                     </div>
+                   </div>
                  )}
+
+                 {/* History list */}
+                 <div className="flex-1 min-w-0">
+                   {/* Mobile folder chips */}
+                   {folders.length > 0 && (
+                     <div className="flex gap-2 mb-4 overflow-x-auto pb-1 md:hidden flex-nowrap">
+                       <button
+                         onClick={() => setSelectedFolderId(undefined)}
+                         className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${selectedFolderId === undefined ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400'}`}
+                       >All</button>
+                       {folders.map(f => (
+                         <button key={f.id} onClick={() => setSelectedFolderId(f.id)}
+                           className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
+                           style={{ backgroundColor: selectedFolderId === f.id ? f.color : undefined, color: selectedFolderId === f.id ? '#fff' : undefined, ...(selectedFolderId !== f.id ? {} : {}) }}
+                         >
+                           {f.name}
+                         </button>
+                       ))}
+                     </div>
+                   )}
+
+                   {history.length === 0 ? (
+                      <div className="text-center text-gray-500 py-8">
+                        {selectedFolderId !== undefined ? 'No grades in this folder yet.' : t('gradePage.noGradesYet')}
+                      </div>
+                   ) : (
+                      <div className="grid gap-4">
+                        {history.map(item => (
+                          <div
+                            key={item.id}
+                            onClick={() => loadChat(item)}
+                            className="relative bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl p-6 hover:border-gray-300 dark:hover:border-white/20 transition-colors cursor-pointer shadow-sm dark:shadow-none"
+                          >
+                               <div className="flex items-start justify-between mb-4">
+                                   <div className="flex items-center gap-4">
+                                       <div className="w-12 h-12 bg-gray-100 dark:bg-white rounded-lg flex items-center justify-center text-xl">
+                                           ✍️
+                                       </div>
+                                       <div>
+                                          <h3 className="font-bold mb-1 text-gray-900 dark:text-white">{item.title || t('gradePage.gradingReport')}</h3>
+                                           <p className="text-xs text-gray-500">{new Date(item.created_at).toLocaleDateString()} {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                       </div>
+                                   </div>
+                                   <div className="relative">
+                                     <button
+                                       onClick={(e) => {
+                                         e.stopPropagation();
+                                         setOpenHistoryMenuId(prev => prev === item.id ? null : item.id);
+                                       }}
+                                       className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                                     >
+                                       <FaEllipsisV size={14} />
+                                     </button>
+                                     {openHistoryMenuId === item.id && (
+                                       <div
+                                         onClick={(e) => e.stopPropagation()}
+                                         className="absolute right-0 top-10 z-30 min-w-[160px] bg-white dark:bg-[#17171a] border border-gray-200 dark:border-white/10 rounded-lg shadow-lg overflow-hidden"
+                                       >
+                                         <button
+                                           onClick={() => { setMovingChat(item); setOpenHistoryMenuId(null); }}
+                                           className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors flex items-center gap-2"
+                                         >
+                                           <FaFolder size={12} />
+                                           Move to folder
+                                         </button>
+                                         <button
+                                           onClick={() => handleDeleteHistoryItem(item.id)}
+                                           className="w-full px-3 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2"
+                                         >
+                                           <FaTrash size={12} />
+                                           Delete
+                                         </button>
+                                       </div>
+                                     )}
+                                   </div>
+                               </div>
+                               
+                               <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-6 line-clamp-2">
+                                  {t('gradePage.viewDetailedReport')}
+                               </p>
+          
+                               <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-white/5">
+                                   <button className="flex items-center gap-2 text-sm text-gray-900 dark:text-white font-medium hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                                      {t('gradePage.viewDetails')} <FaChevronRight size={10} />
+                                   </button>
+                                   {item.rubric_url && (
+                                       <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setPreviewAttachment({
+                                              name: item.rubric_name || t('gradePage.rubric'),
+                                              type: getFileMimeType(item.rubric_name, item.rubric_url),
+                                              url: item.rubric_url
+                                            });
+                                          }}
+                                          className="flex items-center gap-1 text-xs bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors border border-indigo-100 dark:border-indigo-500/20"
+                                       >
+                                          <FaFileAlt size={10} />
+                                        View File
+                                       </button>
+                                   )}
+                               </div>
+                           </div>
+                        ))}
+                        
+                        {loadingMore && (
+                          <div className="flex justify-center mt-4 mb-4">
+                              <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                          </div>
+                        )}
+                      </div>
+                   )}
+                 </div>
+               </div>
              </div>
            </div>
            </div>
@@ -1537,6 +1710,73 @@ const GradePage: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Create / Rename Folder Modal */}
+      {folderModal.visible && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-end sm:items-center justify-center p-4" onClick={() => setFolderModal({ visible: false, parentId: null, renaming: null })}>
+          <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="p-5 border-b border-gray-100 dark:border-white/5">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                {folderModal.renaming ? 'Rename Folder' : folderModal.parentId ? 'New Subfolder' : 'New Folder'}
+              </h3>
+            </div>
+            <div className="p-5">
+              <input
+                autoFocus
+                type="text"
+                value={folderInput}
+                onChange={e => setFolderInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && (folderModal.renaming ? handleRenameFolder() : handleCreateFolder())}
+                placeholder="Folder name"
+                className="w-full border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-white/5 focus:outline-none focus:border-purple-400 dark:focus:border-purple-500 mb-4"
+              />
+              {!folderModal.renaming && (
+                <div className="flex gap-3 mb-5">
+                  {['#a855f7','#3b82f6','#22c55e','#f59e0b','#ef4444','#ec4899','#06b6d4'].map(color => (
+                    <button key={color} onClick={() => setFolderColor(color)}
+                      className="w-7 h-7 rounded-full transition-transform"
+                      style={{ backgroundColor: color, transform: folderColor === color ? 'scale(1.25)' : 'scale(1)', outline: folderColor === color ? `2px solid ${color}` : 'none', outlineOffset: 2 }}
+                    />
+                  ))}
+                </div>
+              )}
+              <button
+                onClick={folderModal.renaming ? handleRenameFolder : handleCreateFolder}
+                disabled={!folderInput.trim()}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {folderModal.renaming ? 'Rename' : 'Create Folder'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Move Chat to Folder Modal */}
+      {movingChat && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-end sm:items-center justify-center p-4" onClick={() => setMovingChat(null)}>
+          <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="p-5 border-b border-gray-100 dark:border-white/5">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Move to Folder</h3>
+            </div>
+            <div className="py-1 max-h-72 overflow-y-auto">
+              <button onClick={() => handleMoveChat(movingChat.id, null)}
+                className="w-full flex items-center gap-3 px-5 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                <FaLayerGroup size={14} className="text-gray-400" />
+                No Folder (All)
+              </button>
+              {folders.map(folder => (
+                <button key={folder.id} onClick={() => handleMoveChat(movingChat.id, folder.id)}
+                  className="w-full flex items-center gap-3 px-5 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                  style={folder.parent_id ? { paddingLeft: 28 } : {}}>
+                  <FaFolder size={14} style={{ color: folder.color }} />
+                  {folder.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <ResponseUpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}

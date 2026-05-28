@@ -101,8 +101,7 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
           animate={{ width: 256, opacity: 1 }} // 256px = w-64
           exit={{ width: 0, opacity: 0 }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
-          className={`bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-white/10 flex min-h-0 flex-col h-full p-4 flex-shrink-0 group text-gray-900 dark:text-white ${className}`}
-          style={{ height: '100vh', maxHeight: '100vh' }}
+          className={`bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-white/10 flex min-h-0 flex-col h-full p-4 flex-shrink-0 overflow-hidden group text-gray-900 dark:text-white ${className}`}
         >
           <div className="flex-1 overflow-y-auto overflow-x-hidden whitespace-nowrap min-h-0">
             {/* Logo */}
