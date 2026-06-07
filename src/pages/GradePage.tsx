@@ -1,1789 +1,2405 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { FaUpload, FaFileAlt, FaChevronRight, FaArrowUp, FaExpand, FaDownload, FaFilePdf, FaCopy, FaRegEdit, FaHistory, FaTimes, FaEllipsisV, FaTrash, FaBars, FaFolder, FaFolderOpen, FaFolderPlus, FaChevronDown, FaLayerGroup } from 'react-icons/fa';
-import SidebarLeft from '../components/dashboard/SidebarLeft';
-import { supabase } from '../utils/supabase';
-import { v4 as uuidv4 } from 'uuid';
-import { useAuth } from '../utils/AuthContext';
-import * as pdfjsLib from 'pdfjs-dist';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  FiAlertTriangle,
+  FiAward,
+  FiBarChart2,
+  FiBook,
+  FiCheckCircle,
+  FiClock,
+  FiEye,
+  FiFileText,
+  FiFolder,
+  FiFolderPlus,
+  FiLoader,
+  FiMessageSquare,
+  FiRefreshCw,
+  FiSearch,
+  FiSend,
+  FiTrash2,
+  FiTrendingUp,
+  FiUpload,
+  FiUsers,
+  FiX,
+} from 'react-icons/fi';
 import ReactMarkdown from 'react-markdown';
-import { jsPDF } from 'jspdf';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
+import DOMPurify from 'dompurify';
 import 'katex/dist/katex.min.css';
-import coinIcon from '../assets/assets_coin.png';
+import SidebarLeft from '../components/dashboard/SidebarLeft';
+import { getApiBaseUrl } from '../config/api';
+import { useAuth } from '../utils/AuthContext';
 import { useLanguage } from '../utils/LanguageContext';
-import { useResponseCheck, ResponseUpgradeModal } from '../utils/responseChecker';
+import coinIcon from '../assets/assets_coin.png';
 
-// Type definitions for PDF.js
-interface PDFPageProxy {
-  getViewport(params: { scale: number }): any;
-  render(renderContext: any): { promise: Promise<void> };
-}
+type TabKey = 'kb' | 'submissions' | 'results';
 
-interface PDFDocumentProxy {
-  numPages: number;
-  getPage(pageNumber: number): Promise<PDFPageProxy>;
-}
+type BannerState = {
+  type: 'success' | 'error' | 'info';
+  text: string;
+} | null;
 
-// Set up PDF.js worker
-if (typeof window !== 'undefined') {
-  try {
-    const pdfVersion = pdfjsLib.version;
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfVersion}/build/pdf.worker.min.mjs`;
-  } catch (error) {
-    console.error('Failed to load PDF worker:', error);
-  }
-}
-
-const sanitizeFileName = (name: string) => {
-  return name.replace(/[^a-zA-Z0-9._-]/g, '_');
+type FolderItem = {
+  id: string;
+  name: string;
+  description: string;
+  createdAt: string;
+  docsCount: number;
+  submissionsCount: number;
+  resultsCount: number;
 };
 
-interface Message {
+type FolderDetail = {
   id: string;
-  type: 'user' | 'ai';
-  content: string;
-  attachment?: {
-    name: string;
-    type: string;
-    url?: string;
-  };
-  subject?: string;
-  timestamp: Date;
-}
-
-interface GradeFolder {
-  id: string;
-  user_id: string;
   name: string;
-  parent_id: string | null;
-  color: string;
-  created_at: string;
-}
+  description: string;
+  docs: KnowledgeDoc[];
+};
 
-interface DBChat {
+type KnowledgeDoc = {
   id: string;
-  owner: string | null;
-  title: string | null;
-  created_at: string;
-  metadata: any;
-  service_type?: string;
-  rubric_url?: string | null;
-  rubric_name?: string | null;
-  folder_id?: string | null;
-}
-
-interface DBMessage {
-  id: string;
-  chat_id: string;
-  position: number;
-  content: string;
+  fileName: string;
   status: string;
-  created_by: string | null;
-  file_url: string | null;
-  file_name: string | null;
-  file_type: string | null;
-  file_size: number | null;
-  created_at: string;
-}
+  createdAt: string;
+  fileUrl: string;
+};
+
+type SubmissionItem = {
+  id: string;
+  studentName: string;
+  fileName: string;
+  status: string;
+  createdAt: string;
+  resultId: string;
+  fileUrl: string;
+};
+
+type QuestionBreakdownItem = {
+  question: string;
+  score: number;
+  maxScore: number;
+  feedback: string;
+};
+
+type ResultItem = {
+  id: string;
+  submissionId: string;
+  studentName: string;
+  score: number;
+  totalMarks: number;
+  percentage: number;
+  grade: string;
+  feedback: string;
+  strengths: string[];
+  weaknesses: string[];
+  questionBreakdown: QuestionBreakdownItem[];
+  createdAt: string;
+};
+
+type ChatMessage = {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  createdAt: string;
+};
+
+type ChatModalState = {
+  open: boolean;
+  resultId: string;
+  studentName: string;
+};
+
+const PAPER_GRADER_BASE = `${getApiBaseUrl()}/api/paper-grader`;
+const READY_LIKE_STATUSES = new Set(['ready', 'processed', 'completed', 'done', 'graded']);
+const FAILED_LIKE_STATUSES = new Set(['failed', 'error']);
+
+const toNumber = (value: unknown, fallback = 0): number => {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : fallback;
+};
+
+const toStringValue = (value: unknown, fallback = ''): string => {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number') {
+    return String(value);
+  }
+  return fallback;
+};
+
+const asArray = (value: unknown): any[] => {
+  return Array.isArray(value) ? value : [];
+};
+
+const pickArray = (payload: any, keys: string[]): any[] => {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  for (const key of keys) {
+    if (Array.isArray(payload?.[key])) {
+      return payload[key];
+    }
+  }
+
+  if (Array.isArray(payload?.data)) {
+    return payload.data;
+  }
+
+  for (const key of keys) {
+    if (Array.isArray(payload?.data?.[key])) {
+      return payload.data[key];
+    }
+  }
+
+  return [];
+};
+
+const pickObject = (payload: any, keys: string[]): any => {
+  if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+    for (const key of keys) {
+      if (payload[key] && typeof payload[key] === 'object') {
+        return payload[key];
+      }
+    }
+  }
+
+  if (payload?.data && typeof payload.data === 'object' && !Array.isArray(payload.data)) {
+    for (const key of keys) {
+      if (payload.data[key] && typeof payload.data[key] === 'object') {
+        return payload.data[key];
+      }
+    }
+    return payload.data;
+  }
+
+  return payload;
+};
+
+const splitStringList = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value.map((item) => toStringValue(item)).filter(Boolean);
+  }
+  if (typeof value === 'string') {
+    return value
+      .split(/\n|,/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  return [];
+};
+
+const normalizeFolder = (item: any): FolderItem => {
+  return {
+    id: toStringValue(item?.id ?? item?.folder_id ?? item?.uuid),
+    name: toStringValue(item?.name ?? item?.title, 'Untitled Folder'),
+    description: toStringValue(item?.description),
+    createdAt: toStringValue(item?.created_at ?? item?.createdAt),
+    docsCount: toNumber(item?.docs_count ?? item?.doc_count ?? item?.documents_count),
+    submissionsCount: toNumber(item?.submissions_count ?? item?.submission_count),
+    resultsCount: toNumber(item?.results_count ?? item?.result_count),
+  };
+};
+
+const normalizeDoc = (item: any): KnowledgeDoc => {
+  return {
+    id: toStringValue(item?.id ?? item?.doc_id ?? item?.uuid),
+    fileName: toStringValue(item?.file_name ?? item?.filename ?? item?.name, 'Unnamed Document'),
+    status: toStringValue(item?.status ?? item?.processing_status, 'processing'),
+    createdAt: toStringValue(item?.created_at ?? item?.createdAt),
+    fileUrl: toStringValue(item?.file_url ?? item?.url ?? item?.public_url),
+  };
+};
+
+const normalizeSubmission = (item: any): SubmissionItem => {
+  // paper_grader_results is an embedded array from the submissions endpoint
+  const embeddedResultId = toStringValue(
+    item?.paper_grader_results?.[0]?.id ?? item?.result_id ?? item?.resultId,
+  );
+  return {
+    id: toStringValue(item?.id ?? item?.submission_id ?? item?.uuid),
+    studentName: toStringValue(item?.student_name ?? item?.studentName, 'Unknown Student'),
+    fileName: toStringValue(item?.file_name ?? item?.filename ?? item?.name, 'Unnamed Submission'),
+    status: toStringValue(item?.status, 'processing'),
+    createdAt: toStringValue(item?.created_at ?? item?.createdAt),
+    resultId: embeddedResultId,
+    fileUrl: toStringValue(item?.file_url ?? item?.url ?? item?.public_url),
+  };
+};
+
+const normalizeQuestionBreakdown = (items: any[]): QuestionBreakdownItem[] => {
+  return items.map((item, index) => {
+    return {
+      question: toStringValue(
+        item?.question_number
+          ? `${item.question_number}: ${item?.question_text ?? ''}`
+          : (item?.question ?? item?.question_text ?? item?.question_no ?? item?.title),
+        `Question ${index + 1}`,
+      ),
+      score: toNumber(item?.marks_awarded ?? item?.score ?? item?.marks_obtained),
+      maxScore: toNumber(item?.marks_possible ?? item?.max_score ?? item?.max_marks ?? item?.total, 0),
+      feedback: toStringValue(item?.feedback ?? item?.remark),
+    };
+  });
+};
+
+const normalizeResult = (item: any): ResultItem => {
+  const score = toNumber(item?.marks_awarded ?? item?.score ?? item?.obtained_marks ?? item?.marks_obtained);
+  const totalMarks = toNumber(item?.total_marks ?? item?.totalMarks ?? item?.max_marks, 100);
+  const percentageFromServer = toNumber(item?.percentage ?? item?.percent ?? item?.score_percent, NaN);
+  const computedPercentage = totalMarks > 0 ? (score / totalMarks) * 100 : 0;
+  const percentage = Number.isNaN(percentageFromServer) ? computedPercentage : percentageFromServer;
+
+  return {
+    id: toStringValue(item?.id ?? item?.result_id ?? item?.uuid),
+    submissionId: toStringValue(item?.submission_id ?? item?.submissionId),
+    studentName: toStringValue(item?.student_name ?? item?.studentName, 'Unknown Student'),
+    score,
+    totalMarks,
+    percentage,
+    grade: toStringValue(item?.grade),
+    feedback: toStringValue(item?.feedback ?? item?.overall_feedback ?? item?.summary),
+    strengths: splitStringList(item?.strengths),
+    weaknesses: splitStringList(item?.weaknesses),
+    questionBreakdown: normalizeQuestionBreakdown(
+      asArray(item?.question_breakdown ?? item?.questionBreakdown ?? item?.questions),
+    ),
+    createdAt: toStringValue(item?.created_at ?? item?.createdAt),
+  };
+};
+
+const formatDate = (rawDate: string): string => {
+  if (!rawDate) {
+    return 'Just now';
+  }
+  const parsedDate = new Date(rawDate);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return rawDate;
+  }
+  return parsedDate.toLocaleString();
+};
+
+const formatPercent = (value: number): string => `${Math.max(0, Math.min(100, value)).toFixed(1)}%`;
+
+const toStatusTone = (status: string): string => {
+  const normalized = status.toLowerCase();
+  if (READY_LIKE_STATUSES.has(normalized)) {
+    return 'ready';
+  }
+  if (FAILED_LIKE_STATUSES.has(normalized)) {
+    return 'failed';
+  }
+  return 'processing';
+};
+
+type ApiMethod = 'GET' | 'POST' | 'DELETE';
+
+type FilePreviewType = 'pdf' | 'image' | 'office' | 'other';
+
+type PreviewModalState = {
+  open: boolean;
+  title: string;
+  fileName: string;
+  fileUrl: string;
+  type: FilePreviewType;
+};
+
+const getFilePreviewType = (name: string, url: string): FilePreviewType => {
+  const target = `${name} ${url}`.toLowerCase();
+
+  if (target.includes('.pdf')) {
+    return 'pdf';
+  }
+
+  if (/(\.png|\.jpg|\.jpeg|\.webp|\.gif|\.bmp|\.svg)/.test(target)) {
+    return 'image';
+  }
+
+  if (/(\.doc|\.docx|\.ppt|\.pptx|\.xls|\.xlsx|\.csv|\.txt)/.test(target)) {
+    return 'office';
+  }
+
+  return 'other';
+};
 
 const GradePage: React.FC = () => {
-  const { t } = useLanguage();
-  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(window.innerWidth >= 1024);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+  const { session, loading: authLoading } = useAuth();
+  const { t, formatDateTime } = useLanguage();
+  const [folders, setFolders] = useState<FolderItem[]>([]);
+  const [selectedFolderId, setSelectedFolderId] = useState<string>('');
+  const [folderDetail, setFolderDetail] = useState<FolderDetail | null>(null);
+  const [docs, setDocs] = useState<KnowledgeDoc[]>([]);
+  const [submissions, setSubmissions] = useState<SubmissionItem[]>([]);
+  const [results, setResults] = useState<ResultItem[]>([]);
+  const [selectedResultId, setSelectedResultId] = useState<string>('');
+  const [selectedResultDetail, setSelectedResultDetail] = useState<ResultItem | null>(null);
+  const [activeTab, setActiveTab] = useState<TabKey>('kb');
 
-  useEffect(() => {
-    const handleResize = () => {
-      const mobile = window.innerWidth < 1024;
-      setIsMobile(mobile);
-      if (mobile) {
-        setIsLeftSidebarOpen(false);
-      } else {
-        setIsLeftSidebarOpen(true);
+  const [folderSearch, setFolderSearch] = useState<string>('');
+  const [submissionSearch, setSubmissionSearch] = useState<string>('');
+
+  const [newFolderName, setNewFolderName] = useState<string>('');
+  const [newFolderDescription, setNewFolderDescription] = useState<string>('');
+  const [studentName, setStudentName] = useState<string>('');
+  const [totalMarksBySubmission, setTotalMarksBySubmission] = useState<Record<string, number>>({});
+
+  const [loadingFolders, setLoadingFolders] = useState<boolean>(false);
+  const [loadingWorkspace, setLoadingWorkspace] = useState<boolean>(false);
+  const [creatingFolder, setCreatingFolder] = useState<boolean>(false);
+  const [uploadingDoc, setUploadingDoc] = useState<boolean>(false);
+  const [uploadingSubmission, setUploadingSubmission] = useState<boolean>(false);
+  const [gradingSubmissionId, setGradingSubmissionId] = useState<string>('');
+  const [deletingId, setDeletingId] = useState<string>('');
+  const [banner, setBanner] = useState<BannerState>(null);
+  const [showSubmissionUploadModal, setShowSubmissionUploadModal] = useState<boolean>(false);
+  const [uploadModalStudentName, setUploadModalStudentName] = useState<string>('');
+  const [uploadModalFile, setUploadModalFile] = useState<File | null>(null);
+  const [showSubmissionReportModal, setShowSubmissionReportModal] = useState<boolean>(false);
+  const [previewModal, setPreviewModal] = useState<PreviewModalState>({
+    open: false,
+    title: '',
+    fileName: '',
+    fileUrl: '',
+    type: 'other',
+  });
+
+  // Chat state
+  const [chatModal, setChatModal] = useState<ChatModalState>({ open: false, resultId: '', studentName: '' });
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState<string>('');
+  const [chatLoading, setChatLoading] = useState<boolean>(false);
+  const [chatStreaming, setChatStreaming] = useState<boolean>(false);
+  const [clearingChat, setClearingChat] = useState<boolean>(false);
+  const chatMessagesEndRef = useRef<HTMLDivElement | null>(null);
+  const chatInputRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const bannerTimerRef = useRef<number | null>(null);
+  const kbInputRef = useRef<HTMLInputElement | null>(null);
+
+  const token = session?.access_token || '';
+
+  const formatDateLabel = useCallback(
+    (rawDate: string): string => {
+      if (!rawDate) {
+        return t('gradePage.studio.justNow');
       }
-    };
+      const parsedDate = new Date(rawDate);
+      if (Number.isNaN(parsedDate.getTime())) {
+        return rawDate;
+      }
+      return formatDateTime(parsedDate, { dateStyle: 'medium', timeStyle: 'short' });
+    },
+    [formatDateTime, t],
+  );
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+  const notify = useCallback((type: 'success' | 'error' | 'info', text: string) => {
+    setBanner({ type, text });
+    if (bannerTimerRef.current) {
+      window.clearTimeout(bannerTimerRef.current);
+    }
+    bannerTimerRef.current = window.setTimeout(() => {
+      setBanner(null);
+    }, 3600);
   }, []);
 
-  const [chatStarted, setChatStarted] = useState(false);
-  const [inputValue, setInputValue] = useState('');
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [attachedFile, setAttachedFile] = useState<File | null>(null);
-  const [chatId, setChatId] = useState<string>('');
-  const [isProcessing, setIsProcessingStarted] = useState(false);
-  const [processingStatus, setProcessingStatus] = useState('');
-  const [history, setHistory] = useState<DBChat[]>([]);
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const ITEMS_PER_PAGE = 10;
-  
-  const [rubricFile, setRubricFile] = useState<File | null>(null);
-  const [paperFile, setPaperFile] = useState<File | null>(null);
-  const [showRubricModal, setShowRubricModal] = useState(false);
-  const [showPaperModal, setShowPaperModal] = useState(false);
-  const [showPasteModal, setShowPasteModal] = useState(false);
-  const [pastedContent, setPastedContent] = useState('');
-  const [pdfPageCount, setPdfPageCount] = useState(0);
-  const [paperPdfPageCount, setPaperPdfPageCount] = useState(0);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [upgradeMessage, setUpgradeMessage] = useState('');
-  const [upgradeCtaType, setUpgradeCtaType] = useState<'coins' | 'subscription'>('subscription');
-  const [openHistoryMenuId, setOpenHistoryMenuId] = useState<string | null>(null);
-  const [folders, setFolders] = useState<GradeFolder[]>([]);
-  const [selectedFolderId, setSelectedFolderId] = useState<string | undefined>(undefined);
-  const [expandedFolderIds, setExpandedFolderIds] = useState<Set<string>>(new Set());
-  const [openFolderMenuId, setOpenFolderMenuId] = useState<string | null>(null);
-  const [folderModal, setFolderModal] = useState<{ visible: boolean; parentId: string | null; renaming: GradeFolder | null }>({ visible: false, parentId: null, renaming: null });
-  const [folderInput, setFolderInput] = useState('');
-  const [folderColor, setFolderColor] = useState('#a855f7');
-  const [movingChat, setMovingChat] = useState<DBChat | null>(null);
-  
-  const { user } = useAuth();
-  const { checkAndUseResponse } = useResponseCheck();
-  
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const rubricInputRef = useRef<HTMLInputElement>(null);
-  const paperInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    return () => {
+      if (bannerTimerRef.current) {
+        window.clearTimeout(bannerTimerRef.current);
+      }
+    };
+  }, []);
 
-  const fetchChatHistory = async (pageNumber = 0, isLoadMore = false, folderId?: string) => {
-    if (!user) return;
-    if (isLoadMore) setLoadingMore(true);
+  const apiRequest = useCallback(
+    async <T,>(path: string, method: ApiMethod, body?: unknown, isFormData = false): Promise<T> => {
+      if (!token) {
+        throw new Error('Please sign in again to use paper grading.');
+      }
 
-    const from = pageNumber * ITEMS_PER_PAGE;
-    const to = from + ITEMS_PER_PAGE - 1;
+      const headers: Record<string, string> = {
+        Authorization: `Bearer ${token}`,
+      };
 
-    let query = supabase
-      .from('solve_chats')
-      .select('*')
-      .eq('owner', user.id)
-      .eq('service_type', 'grade')
-      .order('created_at', { ascending: false })
-      .range(from, to);
-
-    if (folderId !== undefined) {
-      query = query.eq('folder_id', folderId);
-    }
-
-    const { data, error } = await query;
-    
-    if (error) {
-      console.error('Error fetching history:', error);
-    } else if (data) {
-        if (data.length < ITEMS_PER_PAGE) {
-            setHasMore(false);
+      let finalBody: BodyInit | undefined;
+      if (body instanceof FormData) {
+        finalBody = body;
+      } else if (body !== undefined) {
+        if (!isFormData) {
+          headers['Content-Type'] = 'application/json';
         }
-        if (isLoadMore) {
-            setHistory(prev => [...prev, ...data]);
-        } else {
-            setHistory(data);
-        }
-    }
-    if (isLoadMore) setLoadingMore(false);
-  };
+        finalBody = isFormData ? (body as BodyInit) : JSON.stringify(body);
+      }
 
-  const handleLoadMore = () => {
-    const nextPage = page + 1;
-    setPage(nextPage);
-    fetchChatHistory(nextPage, true, selectedFolderId);
-  };
+      const response = await fetch(`${PAPER_GRADER_BASE}${path}`, {
+        method,
+        headers,
+        body: finalBody,
+      });
 
-  const [previewAttachment, setPreviewAttachment] = useState<any>(null);
-
-  const getFileMimeType = (fileName?: string | null, fileUrl?: string | null) => {
-    const source = `${fileName || ''} ${fileUrl || ''}`.toLowerCase();
-    if (source.includes('.pdf')) return 'application/pdf';
-    if (source.includes('.png')) return 'image/png';
-    if (source.includes('.jpg') || source.includes('.jpeg')) return 'image/jpeg';
-    if (source.includes('.webp')) return 'image/webp';
-    return 'application/octet-stream';
-  };
-
-  const PDFThumbnail = ({ url }: { url: string }) => {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-      const renderThumb = async () => {
-        if (!url) return;
+      const rawText = await response.text();
+      let payload: any = null;
+      if (rawText) {
         try {
-          const loadingTask = pdfjsLib.getDocument(url);
-          const pdf = await loadingTask.promise;
-          const page = await pdf.getPage(1);
-          const viewport = page.getViewport({ scale: 0.5 });
-          const canvas = canvasRef.current;
-          if (canvas) {
-            const context = canvas.getContext('2d');
-            if (context) {
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-                const renderContext: any = { canvasContext: context, viewport };
-                await page.render(renderContext).promise;
-            }
-          }
-          setLoading(false);
-        } catch (e) {
-          console.error("Error rendering PDF thumbnail:", e);
-          setLoading(false);
+          payload = JSON.parse(rawText);
+        } catch {
+          payload = { message: rawText };
         }
-      };
-      renderThumb();
-    }, [url]);
+      }
 
-    return (
-       <div className="w-full h-full flex items-center justify-center bg-gray-100 overflow-hidden relative">
-          <canvas ref={canvasRef} className="w-full h-full object-cover" />
-          {loading && <div className="absolute inset-0 flex items-center justify-center bg-black/10"><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div></div>}
-       </div>
-    );
-  };
+      if (!response.ok) {
+        const message =
+          toStringValue(payload?.message) ||
+          toStringValue(payload?.error) ||
+          `Request failed (${response.status})`;
+        throw new Error(message);
+      }
 
-  const fetchFolders = async () => {
-    if (!user) return;
-    const { data } = await supabase.from('grade_folders').select('*').eq('user_id', user.id).order('created_at', { ascending: true });
-    if (data) setFolders(data);
-  };
+      return payload as T;
+    },
+    [token],
+  );
 
-  const handleCreateFolder = async () => {
-    if (!folderInput.trim() || !user) return;
-    await supabase.from('grade_folders').insert({ user_id: user.id, name: folderInput.trim(), parent_id: folderModal.parentId, color: folderColor });
-    setFolderModal({ visible: false, parentId: null, renaming: null });
-    setFolderInput('');
-    fetchFolders();
-  };
-
-  const handleRenameFolder = async () => {
-    if (!folderInput.trim() || !folderModal.renaming) return;
-    await supabase.from('grade_folders').update({ name: folderInput.trim() }).eq('id', folderModal.renaming.id);
-    setFolderModal({ visible: false, parentId: null, renaming: null });
-    setFolderInput('');
-    fetchFolders();
-  };
-
-  const handleDeleteFolder = async (folder: GradeFolder) => {
-    if (!window.confirm(`Delete "${folder.name}"? Items inside will move to All.`)) return;
-    await supabase.from('solve_chats').update({ folder_id: null }).eq('folder_id', folder.id);
-    await supabase.from('grade_folders').delete().eq('id', folder.id);
-    if (selectedFolderId === folder.id) setSelectedFolderId(undefined);
-    fetchFolders();
-    fetchChatHistory(0, false, selectedFolderId === folder.id ? undefined : selectedFolderId);
-  };
-
-  const handleMoveChat = async (chatId: string, folderId: string | null) => {
-    await supabase.from('solve_chats').update({ folder_id: folderId }).eq('id', chatId);
-    setMovingChat(null);
-    fetchChatHistory(0, false, selectedFolderId);
-  };
-
-  const renderFolderTree = (list: GradeFolder[], depth: number): React.ReactNode => {
-    return list.map(folder => {
-      const children = folders.filter(f => f.parent_id === folder.id);
-      const isExpanded = expandedFolderIds.has(folder.id);
-      const isSelected = selectedFolderId === folder.id;
-      return (
-        <div key={folder.id}>
-          <div
-            className={`flex items-center gap-2 py-2 pr-3 text-sm cursor-pointer transition-colors group ${isSelected ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 font-medium' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'}`}
-            style={{ paddingLeft: 16 + depth * 12 }}
-            onClick={() => { setSelectedFolderId(folder.id); setOpenFolderMenuId(null); }}
-          >
-            {children.length > 0 ? (
-              <button onClick={e => { e.stopPropagation(); setExpandedFolderIds(prev => { const s = new Set(prev); s.has(folder.id) ? s.delete(folder.id) : s.add(folder.id); return s; }); }} className="flex-shrink-0">
-                <FaChevronDown size={8} className={`transition-transform ${isExpanded ? '' : '-rotate-90'}`} style={{ color: folder.color }} />
-              </button>
-            ) : <span className="w-2 flex-shrink-0" />}
-            <span style={{ color: folder.color }} className="flex-shrink-0">
-              {isExpanded ? <FaFolderOpen size={13} /> : <FaFolder size={13} />}
-            </span>
-            <span className="flex-1 truncate">{folder.name}</span>
-            <div className="relative flex-shrink-0">
-              <button
-                onClick={e => { e.stopPropagation(); setOpenFolderMenuId(prev => prev === folder.id ? null : folder.id); }}
-                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-opacity"
-              >
-                <FaEllipsisV size={10} />
-              </button>
-              {openFolderMenuId === folder.id && (
-                <div onClick={e => e.stopPropagation()} className="absolute right-0 top-6 z-40 min-w-[140px] bg-white dark:bg-[#17171a] border border-gray-200 dark:border-white/10 rounded-lg shadow-lg overflow-hidden">
-                  <button onClick={() => { setFolderInput(folder.name); setFolderModal({ visible: true, parentId: null, renaming: folder }); setOpenFolderMenuId(null); }} className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">Rename</button>
-                  <button onClick={() => { setFolderInput(''); setFolderColor('#a855f7'); setFolderModal({ visible: true, parentId: folder.id, renaming: null }); setOpenFolderMenuId(null); }} className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">Add Subfolder</button>
-                  <button onClick={() => handleDeleteFolder(folder)} className="w-full px-3 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">Delete</button>
-                </div>
-              )}
-            </div>
-          </div>
-          {isExpanded && renderFolderTree(children, depth + 1)}
-        </div>
-      );
-    });
-  };
-
-  useEffect(() => {
-    setPage(0);
-    setHasMore(true);
-    fetchChatHistory(0, false, selectedFolderId);
-    fetchFolders();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
-
-  useEffect(() => {
-    if (user) {
-      setPage(0);
-      setHasMore(true);
-      fetchChatHistory(0, false, selectedFolderId);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedFolderId]);
-
-  const loadChat = async (chat: DBChat) => {
-    setChatId(chat.id);
-    setChatStarted(true);
-    
-    const { data, error } = await supabase
-      .from('solve_messages')
-      .select('*')
-      .eq('chat_id', chat.id)
-      .order('created_at', { ascending: true });
-
-    if (data) {
-      const formattedMessages: Message[] = data.map(m => ({
-        id: m.id,
-        type: m.created_by ? 'user' : 'ai',
-        content: m.content,
-        timestamp: new Date(m.created_at),
-        attachment: m.file_url ? {
-          name: m.file_name || 'Attachment',
-          type: m.file_type || 'unknown',
-          url: m.file_url
-        } : undefined,
-        subject: m.created_by ? undefined : chat.metadata?.subject
-      }));
-      setMessages(formattedMessages);
-    }
-  };
-
-  const scrollToBottom = () => {
-    if (messagesContainerRef.current) {
-      const { scrollHeight, clientHeight } = messagesContainerRef.current;
-      messagesContainerRef.current.scrollTo({
-        top: scrollHeight - clientHeight,
-        behavior: 'smooth'
-      });
-    }
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages.length, chatStarted]);
-
-  const handleNewChat = () => {
-    setChatStarted(false);
-    setMessages([]);
-    setInputValue('');
-    setAttachedFile(null);
-    setChatId(uuidv4());
-    setOpenHistoryMenuId(null);
-  };
-
-  const handleDeleteHistoryItem = async (chatIdToDelete: string) => {
-    if (!user) return;
-
-    const { error: messageDeleteError } = await supabase
-      .from('solve_messages')
-      .delete()
-      .eq('chat_id', chatIdToDelete);
-
-    if (messageDeleteError) {
-      console.error('Error deleting chat messages:', messageDeleteError);
+  const loadFolders = useCallback(async () => {
+    if (!token) {
       return;
     }
 
-    const { error: chatDeleteError } = await supabase
-      .from('solve_chats')
-      .delete()
-      .eq('id', chatIdToDelete)
-      .eq('owner', user.id);
+    setLoadingFolders(true);
+    try {
+      const response = await apiRequest<any>('/folders', 'GET');
+      const fetchedFolders = pickArray(response, ['folders', 'items', 'data'])
+        .map(normalizeFolder)
+        .filter((folder) => folder.id);
 
-    if (chatDeleteError) {
-      console.error('Error deleting chat history item:', chatDeleteError);
-      return;
-    }
-
-    setHistory(prev => prev.filter(item => item.id !== chatIdToDelete));
-    setOpenHistoryMenuId(null);
-  };
-
-  useEffect(() => {
-    // Initialize chat ID on mount
-    setChatId(uuidv4());
-  }, []);
-
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const responseCheck = await checkAndUseResponse({
-        responseType: 'paper_grader_upload_access',
-        queryData: { type: 'file_upload' },
-        consumeCredits: false
+      setFolders(fetchedFolders);
+      setSelectedFolderId((currentSelectedId) => {
+        if (currentSelectedId && fetchedFolders.some((folder) => folder.id === currentSelectedId)) {
+          return currentSelectedId;
+        }
+        return fetchedFolders[0]?.id || '';
       });
-      if (!responseCheck.canProceed) {
-        if (responseCheck.showUpgradeModal) {
-          setUpgradeMessage(responseCheck.message || 'You need an active subscription or coins to upload files.');
-          setUpgradeCtaType(responseCheck.ctaType || 'subscription');
-          setShowUpgradeModal(true);
-        }
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
+    } catch (error: any) {
+      notify('error', error?.message || 'Unable to load folders.');
+    } finally {
+      setLoadingFolders(false);
+    }
+  }, [apiRequest, notify, token]);
+
+  const loadFolderWorkspace = useCallback(
+    async (folderId: string) => {
+      if (!folderId) {
         return;
       }
 
-      const file = e.target.files[0];
-      const allowedTypes = [
-        'image/jpeg', 
-        'image/png', 
-        'image/webp',
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'text/plain',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'text/csv'
-      ];
-      
-      const isAllowed = allowedTypes.includes(file.type) || (file.type.startsWith('image/') && file.type !== 'image/gif');
-      
-      if (isAllowed) {
-        setAttachedFile(file);
-        
-        // Calculate PDF pages if needed
-        if (file.type === 'application/pdf') {
-          try {
-            const arrayBuffer = await file.arrayBuffer();
-            const loadingTask = pdfjsLib.getDocument({
-              data: arrayBuffer,
-              useWorkerFetch: false,
-              isEvalSupported: false,
-              useSystemFonts: true
-            });
-            const pdf = await loadingTask.promise;
-            setPdfPageCount(pdf.numPages);
-          } catch (error) {
-            console.error('Error counting PDF pages:', error);
-            setPdfPageCount(0);
+      setLoadingWorkspace(true);
+      try {
+        const [folderResponse, submissionsResponse, resultsResponse] = await Promise.all([
+          apiRequest<any>(`/folders/${folderId}`, 'GET'),
+          apiRequest<any>(`/folders/${folderId}/submissions`, 'GET'),
+          apiRequest<any>(`/folders/${folderId}/results`, 'GET'),
+        ]);
+
+        // GET /folders/:id returns { folder: {...}, docs: [...] } — docs at root, not inside folder
+        const folderObject = pickObject(folderResponse, ['folder', 'data']);
+        const normalizedDocs = pickArray(folderResponse, ['docs', 'documents', 'kb_docs'])
+          .map(normalizeDoc)
+          .filter((doc) => doc.id);
+
+        setFolderDetail({
+          id: toStringValue(folderObject?.id ?? folderId),
+          name: toStringValue(folderObject?.name, 'Folder'),
+          description: toStringValue(folderObject?.description),
+          docs: normalizedDocs,
+        });
+        setDocs(normalizedDocs);
+
+        const normalizedSubmissions = pickArray(submissionsResponse, ['submissions', 'items', 'data'])
+          .map(normalizeSubmission)
+          .filter((submission) => submission.id);
+        setSubmissions(normalizedSubmissions);
+
+        const normalizedResults = pickArray(resultsResponse, ['results', 'items', 'data'])
+          .map(normalizeResult)
+          .filter((result) => result.id);
+        setResults(normalizedResults);
+
+        setSelectedResultId((currentResultId) => {
+          if (currentResultId && normalizedResults.some((result) => result.id === currentResultId)) {
+            return currentResultId;
           }
-        } else {
-          setPdfPageCount(0);
-        }
-
-        // Automatically start chat when file is selected
-        setChatStarted(true);
-      } else {
-        alert('Please select a valid file (Image (no GIF), PDF, DOC, DOCX, TXT, XLSX, or CSV)');
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
+          return normalizedResults[0]?.id || '';
+        });
+      } catch (error: any) {
+        notify('error', error?.message || 'Unable to load folder workspace.');
+      } finally {
+        setLoadingWorkspace(false);
       }
-    }
-  };
+    },
+    [apiRequest, notify],
+  );
 
-  const handleRubricSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      // Allow PDF and Word for rubric
-      if (file.type === 'application/pdf' || 
-          file.type === 'application/msword' || 
-          file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        setRubricFile(file);
-      } else {
-        alert('Please select a PDF or Word document for the rubric');
-      }
-    }
-  };
-
-  const handlePaperSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const responseCheck = await checkAndUseResponse({
-        responseType: 'paper_grader_upload_access',
-        queryData: { type: 'paper_upload' },
-        consumeCredits: false
-      });
-      if (!responseCheck.canProceed) {
-        if (responseCheck.showUpgradeModal) {
-          setUpgradeMessage(responseCheck.message || 'You need an active subscription or coins to upload files.');
-          setUpgradeCtaType(responseCheck.ctaType || 'subscription');
-          setShowUpgradeModal(true);
-        }
-        if (paperInputRef.current) {
-          paperInputRef.current.value = '';
-        }
+  const loadResultDetail = useCallback(
+    async (resultId: string) => {
+      if (!resultId) {
+        setSelectedResultDetail(null);
         return;
       }
-
-      const file = e.target.files[0];
-      const allowedTypes = [
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'image/jpeg', 
-        'image/png', 
-        'image/webp'
-      ];
-      
-      if (allowedTypes.includes(file.type)) {
-        setPaperFile(file);
-
-        // Calculate PDF pages if needed
-        if (file.type === 'application/pdf') {
-          try {
-            const arrayBuffer = await file.arrayBuffer();
-            const loadingTask = pdfjsLib.getDocument({
-              data: arrayBuffer,
-              useWorkerFetch: false,
-              isEvalSupported: false,
-              useSystemFonts: true
-            });
-            const pdf = await loadingTask.promise;
-            setPaperPdfPageCount(pdf.numPages);
-          } catch (error) {
-            console.error('Error counting PDF pages:', error);
-            setPaperPdfPageCount(0);
-          }
-        } else {
-          setPaperPdfPageCount(0);
-        }
-      } else {
-        alert('Please select a valid file (PDF, Word, or Image) for the paper');
-      }
-    }
-  };
-
-  const handleUploadClick = () => {
-    setShowRubricModal(true);
-  };
-
-  const handleSkipRubric = () => {
-    setRubricFile(null);
-    setShowRubricModal(false);
-    setShowPaperModal(true);
-  };
-
-  const handleNextRubric = () => {
-    if (!rubricFile) {
-      handleSkipRubric();
-      return;
-    }
-    setShowRubricModal(false);
-    setShowPaperModal(true);
-  };
-
-  const handleGenerateGrading = () => {
-    if (!paperFile) return;
-    
-    // Close modal
-    setShowPaperModal(false);
-    
-    // Start chat with specific parameters
-    handleSendMessage("Grade this paper based on the provided rubric.", paperFile, rubricFile || undefined);
-    setPaperFile(null);
-    if (paperInputRef.current) {
-      paperInputRef.current.value = '';
-    }
-  };
-
-  const handlePasteClick = () => {
-    setChatStarted(true);
-    // User can paste in the input area of the chat interface
-  };
-
-  const handlePasteModalOpen = () => {
-    setPastedContent('');
-    setShowPasteModal(true);
-  };
-
-  const handlePasteSubmit = () => {
-    if (!pastedContent.trim()) return;
-    setShowPasteModal(false);
-    handleSendMessage(pastedContent, undefined, rubricFile || undefined);
-  };
-
-  const uploadToSupabase = async (file: File | Blob, fileName: string): Promise<string | null> => {
-    try {
-      setProcessingStatus('Uploading file...');
-      const sanitizedFileName = sanitizeFileName(fileName);
-      const filePath = `${user?.id || 'anonymous'}/${Date.now()}_${sanitizedFileName}`;
-      const { data, error } = await supabase.storage
-        .from('chat-attachments')
-        .upload(filePath, file);
-
-      if (error) {
-        console.error('Supabase upload error:', error);
-        return null;
-      }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('chat-attachments')
-        .getPublicUrl(filePath);
-
-      return publicUrl;
-    } catch (error) {
-      console.error('Upload to Supabase failed:', error);
-      return null;
-    }
-  };
-
-  const convertPdfToImages = async (file: File): Promise<string[]> => {
-    try {
-      setProcessingStatus('Processing PDF...');
-      
-      const arrayBuffer = await file.arrayBuffer();
-      const loadingTask = pdfjsLib.getDocument({
-        data: arrayBuffer,
-        useWorkerFetch: false,
-        isEvalSupported: false,
-        useSystemFonts: true
-      });
-      
-      const pdf = await loadingTask.promise as PDFDocumentProxy;
-      const images: string[] = [];
-      
-      setProcessingStatus(`Converting ${pdf.numPages} pages to images...`);
-      
-      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-        setProcessingStatus(`Converting page ${pageNum} of ${pdf.numPages}...`);
-        
-        const page = await pdf.getPage(pageNum);
-        const viewport = page.getViewport({ scale: 2.0 });
-        
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-        
-        if (!context) {
-          throw new Error('Could not get canvas context');
-        }
-        
-        const renderContext = {
-          canvasContext: context,
-          viewport: viewport,
-        };
-        
-        await page.render(renderContext).promise;
-        const imageDataUrl = canvas.toDataURL('image/jpeg', 0.9);
-        images.push(imageDataUrl);
-      }
-      
-      setProcessingStatus('PDF conversion completed!');
-      return images;
-    } catch (error) {
-      console.error('PDF URL conversion error:', error);
-      setProcessingStatus('Error converting PDF');
-      throw error;
-    }
-  };
-
-  const uploadBase64Images = async (base64Images: string[]): Promise<string[]> => {
-    const urls: string[] = [];
-    for (let i = 0; i < base64Images.length; i++) {
-      const base64 = base64Images[i];
-      const res = await fetch(base64);
-      const blob = await res.blob();
-      const fileName = `page_${i + 1}_${Date.now()}.jpg`;
-      const url = await uploadToSupabase(blob, fileName);
-      if (url) urls.push(url);
-    }
-    return urls;
-  };
-
-  const preprocessMath = (content: string) => {
-    if (!content) return '';
-    let processed = content.replace(/\\\[([\s\S]*?)\\\]/g, '$$$$$1$$$$');
-    processed = processed.replace(/\\\(([\s\S]*?)\\\)/g, '$$$1$$');
-    return processed;
-  };
-
-  const handleCopy = (content: string) => {
-    navigator.clipboard.writeText(content);
-  };
-
-  const handleExportPDF = (content: string) => {
-    const doc = new jsPDF();
-    const splitText = doc.splitTextToSize(content, 180);
-    doc.text(splitText, 10, 10);
-    doc.save('grading_report.pdf');
-  };
-
-  const handleSendMessage = async (manualContent?: string, manualFile?: File, manualRubric?: File) => {
-    // Determine content and file to use
-    const contentToSend = manualContent || inputValue;
-    const fileToSend = manualFile || attachedFile;
-    
-    if (!contentToSend.trim() && !fileToSend) return;
-    const responseCheck = await checkAndUseResponse({
-      responseType: 'paper_grader',
-      queryData: {
-        message: contentToSend,
-        hasAttachment: !!fileToSend,
-        hasRubric: !!manualRubric
-      },
-      requireCoins: true,
-      noCoinsMessage: 'Please buy more coins to continue.'
-    });
-    if (!responseCheck.canProceed) {
-      if (responseCheck.showUpgradeModal) {
-        setUpgradeMessage(responseCheck.message || 'You need an active subscription or coins to continue.');
-        setUpgradeCtaType(responseCheck.ctaType || 'subscription');
-        setShowUpgradeModal(true);
-      }
-      return;
-    }
-
-    if (!chatStarted) {
-      setChatStarted(true);
-    }
-
-    const currentChatId = chatId || uuidv4();
-    if (!chatId) setChatId(currentChatId);
-
-    const newUserMsg: Message = {
-      id: Date.now().toString(),
-      type: 'user',
-      content: contentToSend,
-      timestamp: new Date(),
-      attachment: fileToSend ? {
-        name: fileToSend.name,
-        type: fileToSend.type,
-        url: fileToSend.type.startsWith('image/') ? URL.createObjectURL(fileToSend) : undefined
-      } : undefined
-    };
-
-    const newAiMsgId = uuidv4();
-    const newAiMsg: Message = {
-      id: newAiMsgId,
-      type: 'ai',
-      content: '',
-      timestamp: new Date()
-    };
-    setMessages(prev => [...prev, newUserMsg, newAiMsg]);
-    
-    setInputValue('');
-    setAttachedFile(null);
-    setIsProcessingStarted(true);
-
-      let requestBody: any = {
-        stream: true,
-        messages: []
-      };
-
-      const userId = user?.id || '0a147ebe-af99-481b-bcaf-ae70c9aeb8d8';
-      const timestamp = new Date().toISOString().replace('T', ' ').replace('Z', '');
 
       try {
-        let currentFileUrl: string | undefined = undefined;
-        let rubricUrl: string | undefined = undefined;
+        const response = await apiRequest<any>(`/results/${resultId}`, 'GET');
+        const resultObject = pickObject(response, ['result', 'data']);
+        setSelectedResultDetail(normalizeResult(resultObject));
+      } catch (error: any) {
+        notify('error', error?.message || 'Unable to load result details.');
+      }
+    },
+    [apiRequest, notify],
+  );
 
-        // Upload Rubric if present
-        if (manualRubric) {
-           const rUrl = await uploadToSupabase(manualRubric, manualRubric.name);
-           if (rUrl) rubricUrl = rUrl;
-        }
+  useEffect(() => {
+    if (!authLoading && token) {
+      void loadFolders();
+    }
+  }, [authLoading, loadFolders, token]);
 
-        if (fileToSend) {
-          const fileUrl = await uploadToSupabase(fileToSend, fileToSend.name);
-          
-          if (!fileUrl) {
-            throw new Error('Failed to upload file');
-          }
-          currentFileUrl = fileUrl;
+  useEffect(() => {
+    if (selectedFolderId) {
+      void loadFolderWorkspace(selectedFolderId);
+      return;
+    }
+    setFolderDetail(null);
+    setDocs([]);
+    setSubmissions([]);
+    setResults([]);
+    setSelectedResultDetail(null);
+  }, [loadFolderWorkspace, selectedFolderId]);
 
-          // Append Rubric info to content if it exists
-          let finalContent = contentToSend;
-          if (rubricUrl) {
-            finalContent += `\n\n[System Note: A rubric document was provided for reference: ${rubricUrl}]`;
-          }
+  useEffect(() => {
+    if (selectedResultId) {
+      void loadResultDetail(selectedResultId);
+      return;
+    }
+    setSelectedResultDetail(null);
+  }, [loadResultDetail, selectedResultId]);
 
-          if (fileToSend.type.startsWith('image/')) {
-            requestBody.messages = [{
-              uid: userId,
-              type: "image",
-              text: { body: finalContent },
-              body: finalContent,
-              content: finalContent,
-              role: "user",
-              roleDescription: "A versatile AI assistant for everyday tasks and questions",
-              timestamp: timestamp,
-              chatid: currentChatId,
-              subject: "Grade",
-              url: fileUrl,
-              rubric_url: rubricUrl,
-              attachments: [{
-                url: fileUrl,
-                fileName: fileToSend.name,
-                fileType: "image",
-                originalName: fileToSend.name,
-                size: fileToSend.size
-              }]
-            }];
-            // If Rubric exists, maybe add it to attachments array?
-            if (rubricUrl && manualRubric) {
-                requestBody.messages[0].attachments.push({
-                    url: rubricUrl,
-                    fileName: manualRubric.name,
-                    fileType: "document", // Rubric is usually a doc
-                    originalName: manualRubric.name,
-                    size: manualRubric.size
-                });
-            }
+  const hasPendingProcessing = useMemo(() => {
+    const pendingDocs = docs.some((doc) => {
+      const tone = toStatusTone(doc.status);
+      return tone === 'processing';
+    });
+    const pendingSubmissions = submissions.some((submission) => {
+      const tone = toStatusTone(submission.status);
+      return tone === 'processing';
+    });
+    return pendingDocs || pendingSubmissions;
+  }, [docs, submissions]);
 
-          } else if (fileToSend.type === 'application/pdf') {
-            const base64Images = await convertPdfToImages(fileToSend);
-            const imageUrls = await uploadBase64Images(base64Images);
-            const formattedImageUrls = imageUrls;
+  useEffect(() => {
+    if (!selectedFolderId || !hasPendingProcessing) {
+      return;
+    }
+    const interval = window.setInterval(() => {
+      void loadFolderWorkspace(selectedFolderId);
+    }, 7000);
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [hasPendingProcessing, loadFolderWorkspace, selectedFolderId]);
 
-            requestBody.messages = [{
-              uid: userId,
-              type: "pdf_vision",
-              text: { body: finalContent },
-              body: finalContent,
-              content: finalContent,
-              role: "user",
-              roleDescription: "A versatile AI assistant for everyday tasks and questions",
-              timestamp: timestamp,
-              chatid: currentChatId,
-              subject: "Grade",
-              url: fileUrl,
-              rubric_url: rubricUrl,
-              image_urls: formattedImageUrls,
-              page_count: imageUrls.length,
-              attachments: rubricUrl && manualRubric ? [{
-                url: rubricUrl,
-                fileName: manualRubric.name,
-                fileType: "document",
-                originalName: manualRubric.name,
-                size: manualRubric.size
-              }] : []
-            }];
-          } else {
-            requestBody.messages = [{
-              uid: userId,
-              type: "document",
-              text: { body: finalContent },
-              body: finalContent,
-              content: finalContent,
-              role: "user",
-              roleDescription: "A versatile AI assistant for everyday tasks and questions",
-              timestamp: timestamp,
-              chatid: currentChatId,
-              subject: "Grade",
-              url: fileUrl,
-              rubric_url: rubricUrl,
-              attachments: [{
-                url: fileUrl,
-                fileName: fileToSend.name,
-                fileType: "document",
-                originalName: fileToSend.name,
-                size: fileToSend.size
-              }]
-            }];
-             if (rubricUrl && manualRubric) {
-                requestBody.messages[0].attachments.push({
-                    url: rubricUrl,
-                    fileName: manualRubric.name,
-                    fileType: "document",
-                    originalName: manualRubric.name,
-                    size: manualRubric.size
-                });
-            }
-          }
-        } else {
-          requestBody.messages = [{
-            uid: userId,
-            type: "text",
-            text: { body: "text" }, 
-            body: contentToSend,
-            content: contentToSend,
-            transcription: contentToSend,
-            role: "user",
-            roleDescription: "",
-            timestamp: timestamp,
-            chatid: currentChatId,
-            subject: "Grade",
-            rubric_url: rubricUrl,
-            attachments: rubricUrl && manualRubric ? [{
-                url: rubricUrl,
-                fileName: manualRubric.name,
-                fileType: "document",
-                originalName: manualRubric.name,
-                size: manualRubric.size
-            }] : []
-          }];
-        }
+  const filteredFolders = useMemo(() => {
+    const query = folderSearch.trim().toLowerCase();
+    if (!query) {
+      return folders;
+    }
+    return folders.filter((folder) => {
+      return (
+        folder.name.toLowerCase().includes(query) ||
+        folder.description.toLowerCase().includes(query)
+      );
+    });
+  }, [folderSearch, folders]);
 
-        const chatExists = history.some(c => c.id === currentChatId);
-        if (!chatExists) {
-          const { error: chatError } = await supabase.from('solve_chats').insert({
-            id: currentChatId,
-            owner: user?.id,
-            title: contentToSend.substring(0, 50) || (fileToSend ? fileToSend.name : 'New Grading'),
-            metadata: { subject: "Grade" },
-            service_type: 'grade',
-            rubric_url: rubricUrl || null,
-            rubric_name: manualRubric?.name || null,
-            folder_id: selectedFolderId ?? null,
-          });
-          if (!chatError) {
-            fetchChatHistory(0, false, selectedFolderId);
-          } else {
-            console.error('Error creating chat:', chatError);
-          }
-        }
+  const filteredSubmissions = useMemo(() => {
+    const query = submissionSearch.trim().toLowerCase();
+    if (!query) {
+      return submissions;
+    }
+    return submissions.filter((submission) => {
+      return (
+        submission.studentName.toLowerCase().includes(query) ||
+        submission.fileName.toLowerCase().includes(query)
+      );
+    });
+  }, [submissionSearch, submissions]);
 
-        const userMsgId = uuidv4();
-        const { error: msgError } = await supabase.from('solve_messages').insert({
-          id: userMsgId,
-          chat_id: currentChatId,
-          position: 0,
-          content: contentToSend,
-          status: 'done',
-          created_by: user?.id,
-          file_url: currentFileUrl || null,
-          file_name: fileToSend?.name || null,
-          file_type: fileToSend?.type || null,
-          file_size: fileToSend?.size || null
+  const analytics = useMemo(() => {
+    if (!results.length) {
+      return {
+        average: 0,
+        highest: 0,
+        lowest: 0,
+        passRate: 0,
+      };
+    }
+
+    const percentages = results.map((result) => result.percentage);
+    const total = percentages.reduce((sum, score) => sum + score, 0);
+    const passed = percentages.filter((score) => score >= 40).length;
+
+    return {
+      average: total / results.length,
+      highest: Math.max(...percentages),
+      lowest: Math.min(...percentages),
+      passRate: (passed / results.length) * 100,
+    };
+  }, [results]);
+
+  const resultsTrendPoints = useMemo(() => {
+    const sortedResults = [...results].sort((a, b) => {
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    });
+
+    if (!sortedResults.length) {
+      return '';
+    }
+
+    return sortedResults
+      .map((result, index) => {
+        const x = sortedResults.length <= 1 ? 8 : (index / (sortedResults.length - 1)) * 92 + 4;
+        const clamped = Math.max(0, Math.min(100, result.percentage));
+        const y = 96 - clamped * 0.88;
+        return `${x},${y}`;
+      })
+      .join(' ');
+  }, [results]);
+
+  const selectedFolder = useMemo(() => {
+    return folders.find((folder) => folder.id === selectedFolderId) || null;
+  }, [folders, selectedFolderId]);
+
+  const selectedResultFromList = useMemo(() => {
+    return results.find((result) => result.id === selectedResultId) || null;
+  }, [results, selectedResultId]);
+
+  const createFolder = useCallback(async () => {
+    const trimmedName = newFolderName.trim();
+    if (!trimmedName) {
+      notify('error', 'Folder name is required.');
+      return;
+    }
+
+    setCreatingFolder(true);
+    try {
+      const response = await apiRequest<any>('/folders', 'POST', {
+        name: trimmedName,
+        description: newFolderDescription.trim(),
+      });
+
+      const folderObject = pickObject(response, ['folder', 'data']);
+      const createdFolder = normalizeFolder(folderObject);
+
+      setNewFolderName('');
+      setNewFolderDescription('');
+      notify('success', t('gradePage.studio.messages.folderCreated'));
+      await loadFolders();
+
+      if (createdFolder.id) {
+        setSelectedFolderId(createdFolder.id);
+      }
+    } catch (error: any) {
+      notify('error', error?.message || 'Unable to create folder.');
+    } finally {
+      setCreatingFolder(false);
+    }
+  }, [apiRequest, loadFolders, newFolderDescription, newFolderName, notify, t]);
+
+  const deleteFolder = useCallback(
+    async (folderId: string) => {
+      const targetFolder = folders.find((folder) => folder.id === folderId);
+      const confirmed = window.confirm(
+        t('gradePage.studio.messages.deleteFolderConfirm', {
+          values: { name: targetFolder?.name || t('gradePage.studio.thisFolder') },
+        }),
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      setDeletingId(`folder-${folderId}`);
+      try {
+        await apiRequest(`/folders/${folderId}`, 'DELETE');
+        notify('success', t('gradePage.studio.messages.folderDeleted'));
+        await loadFolders();
+      } catch (error: any) {
+        notify('error', error?.message || 'Unable to delete folder.');
+      } finally {
+        setDeletingId('');
+      }
+    },
+    [apiRequest, folders, loadFolders, notify, t],
+  );
+
+  const uploadKnowledgeDoc = useCallback(
+    async (file: File) => {
+      if (!selectedFolderId) {
+        notify('error', t('gradePage.studio.messages.selectFolderFirst'));
+        return;
+      }
+
+      if (docs.length >= 5) {
+        notify('error', t('gradePage.studio.messages.maxDocsReached'));
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      setUploadingDoc(true);
+      try {
+        await apiRequest(`/folders/${selectedFolderId}/docs`, 'POST', formData, true);
+        notify('success', t('gradePage.studio.messages.kbUploaded'));
+        await loadFolderWorkspace(selectedFolderId);
+      } catch (error: any) {
+        notify('error', error?.message || 'Unable to upload document.');
+      } finally {
+        setUploadingDoc(false);
+      }
+    },
+    [apiRequest, docs.length, loadFolderWorkspace, notify, selectedFolderId, t],
+  );
+
+  const refreshDocStatus = useCallback(
+    async (docId: string) => {
+      if (!selectedFolderId) {
+        return;
+      }
+
+      try {
+        await apiRequest(`/folders/${selectedFolderId}/docs/${docId}/status`, 'GET');
+        await loadFolderWorkspace(selectedFolderId);
+      } catch (error: any) {
+        notify('error', error?.message || 'Unable to refresh doc status.');
+      }
+    },
+    [apiRequest, loadFolderWorkspace, notify, selectedFolderId, t],
+  );
+
+  const deleteDoc = useCallback(
+    async (docId: string) => {
+      if (!selectedFolderId) {
+        return;
+      }
+
+      const confirmed = window.confirm(t('gradePage.studio.messages.deleteDocConfirm'));
+      if (!confirmed) {
+        return;
+      }
+
+      setDeletingId(`doc-${docId}`);
+      try {
+        await apiRequest(`/folders/${selectedFolderId}/docs/${docId}`, 'DELETE');
+        notify('success', t('gradePage.studio.messages.docDeleted'));
+        await loadFolderWorkspace(selectedFolderId);
+      } catch (error: any) {
+        notify('error', error?.message || 'Unable to delete document.');
+      } finally {
+        setDeletingId('');
+      }
+    },
+    [apiRequest, loadFolderWorkspace, notify, selectedFolderId, t],
+  );
+
+  const uploadSubmission = useCallback(
+    async (file: File, providedStudentName?: string) => {
+      if (!selectedFolderId) {
+        notify('error', t('gradePage.studio.messages.selectFolderFirst'));
+        return;
+      }
+
+      const cleanStudentName = (providedStudentName ?? studentName).trim();
+      if (!cleanStudentName) {
+        notify('error', t('gradePage.studio.messages.studentNameRequired'));
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('student_name', cleanStudentName);
+
+      setUploadingSubmission(true);
+      try {
+        await apiRequest(`/folders/${selectedFolderId}/submissions`, 'POST', formData, true);
+        notify('success', t('gradePage.studio.messages.submissionUploaded'));
+        setStudentName('');
+        setUploadModalStudentName('');
+        setUploadModalFile(null);
+        setShowSubmissionUploadModal(false);
+        await loadFolderWorkspace(selectedFolderId);
+      } catch (error: any) {
+        notify('error', error?.message || 'Unable to upload submission.');
+      } finally {
+        setUploadingSubmission(false);
+      }
+    },
+    [apiRequest, loadFolderWorkspace, notify, selectedFolderId, studentName, t],
+  );
+
+  const refreshSubmissionStatus = useCallback(
+    async (submissionId: string) => {
+      if (!selectedFolderId) {
+        return;
+      }
+
+      try {
+        await apiRequest(`/folders/${selectedFolderId}/submissions/${submissionId}/status`, 'GET');
+        await loadFolderWorkspace(selectedFolderId);
+      } catch (error: any) {
+        notify('error', error?.message || 'Unable to refresh submission status.');
+      }
+    },
+    [apiRequest, loadFolderWorkspace, notify, selectedFolderId],
+  );
+
+  const deleteSubmission = useCallback(
+    async (submissionId: string) => {
+      if (!selectedFolderId) {
+        return;
+      }
+
+      const confirmed = window.confirm(t('gradePage.studio.messages.deleteSubmissionConfirm'));
+      if (!confirmed) {
+        return;
+      }
+
+      setDeletingId(`submission-${submissionId}`);
+      try {
+        await apiRequest(`/folders/${selectedFolderId}/submissions/${submissionId}`, 'DELETE');
+        notify('success', t('gradePage.studio.messages.submissionDeleted'));
+        await loadFolderWorkspace(selectedFolderId);
+      } catch (error: any) {
+        notify('error', error?.message || 'Unable to delete submission.');
+      } finally {
+        setDeletingId('');
+      }
+    },
+    [apiRequest, loadFolderWorkspace, notify, selectedFolderId],
+  );
+
+  const gradeSubmission = useCallback(
+    async (submission: SubmissionItem) => {
+      if (!selectedFolderId) {
+        return;
+      }
+
+      const marks = totalMarksBySubmission[submission.id] || 100;
+      if (!Number.isFinite(marks) || marks <= 0) {
+        notify('error', t('gradePage.studio.messages.totalMarksPositive'));
+        return;
+      }
+
+      setGradingSubmissionId(submission.id);
+      try {
+        await apiRequest(`/folders/${selectedFolderId}/submissions/${submission.id}/grade`, 'POST', {
+          total_marks: marks,
         });
-        if (msgError) console.error('Error saving user message:', msgError);
+        notify('success', t('gradePage.studio.messages.gradingCompleted'));
+        setActiveTab('submissions');
+        await loadFolderWorkspace(selectedFolderId);
+      } catch (error: any) {
+        notify('error', error?.message || 'Unable to grade submission.');
+      } finally {
+        setGradingSubmissionId('');
+      }
+    },
+    [apiRequest, loadFolderWorkspace, notify, selectedFolderId, t, totalMarksBySubmission],
+  );
 
-        console.log('Sending request to n8n:', requestBody);
+  const deleteResult = useCallback(
+    async (resultId: string) => {
+      const confirmed = window.confirm(t('gradePage.studio.messages.deleteResultConfirm'));
+      if (!confirmed) {
+        return;
+      }
 
-        const response = await fetch('https://n8n.matrixaiserver.com/webhook/matrixEdu/gradeQuestion', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody),
-        });
-
-        if (!response.body) {
-          throw new Error('No response body');
+      setDeletingId(`result-${resultId}`);
+      try {
+        await apiRequest(`/results/${resultId}`, 'DELETE');
+        notify('success', t('gradePage.studio.messages.resultDeleted'));
+        if (selectedFolderId) {
+          await loadFolderWorkspace(selectedFolderId);
         }
+      } catch (error: any) {
+        notify('error', error?.message || 'Unable to delete result.');
+      } finally {
+        setDeletingId('');
+      }
+    },
+    [apiRequest, loadFolderWorkspace, notify, selectedFolderId, t],
+  );
 
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let aiContent = '';
-        let buffer = '';
+  const handleKbInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      void uploadKnowledgeDoc(file);
+    }
+    event.target.value = '';
+  };
+
+  // ── Chat feature ──────────────────────────────────────────────────────────
+
+  const openChatModal = useCallback(
+    async (resultId: string, studentName: string) => {
+      setChatModal({ open: true, resultId, studentName });
+      setChatMessages([]);
+      setChatInput('');
+      setChatLoading(true);
+      try {
+        const response = await apiRequest<any>(`/results/${resultId}/chat`, 'GET');
+        const rawMessages: any[] = Array.isArray(response?.messages)
+          ? response.messages
+          : Array.isArray(response)
+          ? response
+          : [];
+        setChatMessages(
+          rawMessages.map((m: any) => ({
+            id: toStringValue(m?.id ?? m?.message_id, String(Math.random())),
+            role: m?.role === 'user' ? 'user' : 'assistant',
+            content: toStringValue(m?.content),
+            createdAt: toStringValue(m?.created_at ?? m?.createdAt),
+          })),
+        );
+      } catch {
+        // no prior messages — that's fine
+      } finally {
+        setChatLoading(false);
+      }
+    },
+    [apiRequest],
+  );
+
+  const closeChatModal = useCallback(() => {
+    setChatModal({ open: false, resultId: '', studentName: '' });
+    setChatMessages([]);
+    setChatInput('');
+  }, []);
+
+  // Auto-scroll chat to bottom whenever messages change
+  useEffect(() => {
+    chatMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
+
+  const sendChatMessage = useCallback(async () => {
+    const text = chatInput.trim();
+    if (!text || chatStreaming || !chatModal.resultId) {
+      return;
+    }
+
+    const userMsg: ChatMessage = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      content: text,
+      createdAt: new Date().toISOString(),
+    };
+    const assistantPlaceholderId = `ai-${Date.now()}`;
+    const assistantPlaceholder: ChatMessage = {
+      id: assistantPlaceholderId,
+      role: 'assistant',
+      content: '',
+      createdAt: new Date().toISOString(),
+    };
+
+    setChatMessages((prev) => [...prev, userMsg, assistantPlaceholder]);
+    setChatInput('');
+    setChatStreaming(true);
+
+    try {
+      const response = await fetch(`${PAPER_GRADER_BASE}/results/${chatModal.resultId}/chat`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: text }),
+      });
+
+      if (!response.ok || !response.body) {
+        throw new Error(`Request failed (${response.status})`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let aiContent = '';
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
-        
-        const chunk = decoder.decode(value, { stream: true });
-        buffer += chunk;
-        
+        if (done) {
+          break;
+        }
+        buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
         buffer = lines.pop() || '';
-        
+
         for (const line of lines) {
-          if (!line.trim()) continue;
-          
+          const trimmed = line.trim();
+          if (!trimmed || trimmed === 'data: [DONE]' || trimmed === '[DONE]') {
+            continue;
+          }
+          if (trimmed.startsWith('[ERROR]') || trimmed.startsWith('data: [ERROR]')) {
+            const errMsg = trimmed.replace(/^data:\s*/, '').replace('[ERROR]', '').trim();
+            setChatMessages((prev) =>
+              prev.filter((m) => m.id !== assistantPlaceholderId),
+            );
+            notify('error', errMsg || 'Chat error — please try again.');
+            return;
+          }
+          let jsonStr = trimmed.startsWith('data: ') ? trimmed.slice(6).trim() : trimmed;
+          if (!jsonStr || jsonStr === '[DONE]') {
+            continue;
+          }
           try {
-            const json = JSON.parse(line);
-            
-            if (json.type === 'item' && typeof json.content === 'string') {
-              aiContent += json.content;
-              
-              setMessages(prev => {
-                const newMessages = [...prev];
-                const lastMessageIndex = newMessages.findIndex(m => m.id === newAiMsgId);
-                if (lastMessageIndex !== -1) {
-                  newMessages[lastMessageIndex] = {
-                    ...newMessages[lastMessageIndex],
-                    content: aiContent
-                  };
-                }
-                return newMessages;
-              });
+            const parsed = JSON.parse(jsonStr);
+            const chunk = typeof parsed?.content === 'string' ? parsed.content : '';
+            if (chunk) {
+              aiContent += chunk;
+              setChatMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantPlaceholderId ? { ...m, content: aiContent } : m,
+                ),
+              );
             }
-          } catch (e) {
-            console.warn('Skipping invalid JSON line in stream:', line);
+          } catch {
+            // non-JSON line — skip
           }
         }
       }
-
-      if (aiContent) {
-        const { error: aiMsgError } = await supabase.from('solve_messages').insert({
-          id: newAiMsgId,
-          chat_id: currentChatId,
-          position: 0,
-          content: aiContent,
-          status: 'done',
-          created_by: null
-        });
-        if (aiMsgError) console.error('Error saving AI message:', aiMsgError);
-      }
-
-    } catch (error) {
-      console.error('Error sending message:', error);
-      setMessages(prev => [...prev, {
-        id: Date.now().toString(),
-        type: 'ai',
-        content: 'Sorry, I encountered an error while processing your request. Please try again.',
-        timestamp: new Date()
-      }]);
+    } catch (error: any) {
+      setChatMessages((prev) => prev.filter((m) => m.id !== assistantPlaceholderId));
+      notify('error', error?.message || 'Failed to send message.');
     } finally {
-      setIsProcessingStarted(false);
-      setProcessingStatus('');
+      setChatStreaming(false);
     }
-  };
+  }, [chatInput, chatModal.resultId, chatStreaming, notify, token]);
 
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-    if (scrollHeight - scrollTop <= clientHeight + 100 && hasMore && !loadingMore) {
-      handleLoadMore();
+  const clearChatHistory = useCallback(async () => {
+    if (!chatModal.resultId) {
+      return;
     }
-  };
+    setClearingChat(true);
+    try {
+      await apiRequest(`/results/${chatModal.resultId}/chat`, 'DELETE');
+      setChatMessages([]);
+    } catch (error: any) {
+      notify('error', error?.message || 'Failed to clear chat.');
+    } finally {
+      setClearingChat(false);
+    }
+  }, [apiRequest, chatModal.resultId, notify]);
 
-  const isSendDisabled = !inputValue.trim() && !attachedFile;
-
-  const calculateCost = () => {
-    if (attachedFile) {
-      if (attachedFile.type === 'application/pdf') {
-        return pdfPageCount * 2;
-      } else if (attachedFile.type.startsWith('image/')) {
-        return 3;
-      } else {
-        // Documents
-        return 10;
+  const openPreviewModal = useCallback(
+    (title: string, fileName: string, fileUrl: string) => {
+      if (!fileUrl) {
+        notify('error', t('gradePage.studio.messages.previewUnavailable'));
+        return;
       }
-    } else if (inputValue.trim()) {
-      return 2;
-    }
-    return 0;
-  };
-  
-  const calculatePaperCost = () => {
-    if (paperFile) {
-      if (paperFile.type === 'application/pdf') {
-        return paperPdfPageCount * 2;
-      } else if (paperFile.type.startsWith('image/')) {
-        return 3;
-      } else {
-        // Documents
-        return 10;
-      }
-    }
-    return 0;
-  };
 
-  const cost = calculateCost();
-  const paperCost = calculatePaperCost();
-  const pasteCost = 2; // Text only
+      setPreviewModal({
+        open: true,
+        title,
+        fileName,
+        fileUrl,
+        type: getFilePreviewType(fileName, fileUrl),
+      });
+    },
+    [notify, t],
+  );
+
+  const openSubmissionReport = useCallback(
+    async (submission: SubmissionItem) => {
+      const linkedResultId =
+        submission.resultId ||
+        results.find((result) => result.submissionId === submission.id || result.studentName === submission.studentName)?.id ||
+        '';
+
+      if (!linkedResultId) {
+        notify('info', t('gradePage.studio.messages.noReportYet'));
+        return;
+      }
+
+      setSelectedResultId(linkedResultId);
+      setShowSubmissionReportModal(true);
+
+      try {
+        const response = await apiRequest<any>(`/results/${linkedResultId}`, 'GET');
+        const resultObject = pickObject(response, ['result', 'data']);
+        setSelectedResultDetail(normalizeResult(resultObject));
+      } catch (error: any) {
+        notify('error', error?.message || 'Unable to load result details.');
+      }
+    },
+    [apiRequest, notify, results, t],
+  );
+
+  const handleSubmissionUploadFromModal = useCallback(() => {
+    if (!uploadModalFile) {
+      notify('error', t('gradePage.studio.messages.selectFileFirst'));
+      return;
+    }
+
+    void uploadSubmission(uploadModalFile, uploadModalStudentName);
+  }, [notify, t, uploadModalFile, uploadModalStudentName, uploadSubmission]);
+
+  if (authLoading) {
+    return (
+      <div className="h-screen bg-gray-50 dark:bg-[#111111] flex items-center justify-center">
+        <div className="inline-flex items-center gap-3 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] px-5 py-4 text-gray-700 dark:text-gray-200 shadow-sm">
+          <FiLoader className="animate-spin" />
+          {t('gradePage.studio.loadingPaperGrader')}
+        </div>
+      </div>
+    );
+  }
+
+  if (!token) {
+    return (
+      <div className="h-screen bg-gray-50 dark:bg-[#111111] flex items-center justify-center p-4">
+        <div className="max-w-lg rounded-2xl border border-amber-200 dark:border-amber-400/20 bg-amber-50 dark:bg-amber-500/10 p-8 text-amber-900 dark:text-amber-200 shadow-sm">
+          <h2 className="text-2xl font-semibold">{t('gradePage.studio.pleaseSignIn')}</h2>
+          <p className="mt-2 text-sm">
+            {t('gradePage.studio.signInPrompt')}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="h-screen bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-white flex font-sans overflow-hidden relative">
-      {/* Mobile Sidebar Overlay */}
-      {(isLeftSidebarOpen && isMobile) && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={() => setIsLeftSidebarOpen(false)}
-        />
-      )}
+    <div className="h-screen w-full overflow-hidden bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-white font-sans">
+      <div className="flex h-full w-full">
+        <SidebarLeft className="hidden lg:flex" />
 
-      <SidebarLeft 
-        isOpen={isLeftSidebarOpen} 
-        onClose={() => setIsLeftSidebarOpen(false)}
-        className="fixed inset-y-0 left-0 z-50 lg:relative lg:z-0 shadow-2xl lg:shadow-none h-full"
-      />
-      
-      <main className="flex-1 flex flex-col relative w-full">
-         {/* Hidden File Input */}
-         <input 
-            type="file" 
-            ref={fileInputRef} 
-            className="hidden" 
-            onChange={handleFileSelect}
-            accept=".jpg,.jpeg,.png,.webp,application/pdf,.doc,.docx,.txt,.xlsx,.csv"
-          />
+        <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          <header className="border-b border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] px-4 py-4 md:px-6">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="inline-flex items-center rounded-full bg-indigo-100 dark:bg-indigo-500/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-indigo-600 dark:text-indigo-400">
+                  {t('gradePage.studio.badge')}
+                </p>
+                <h1 className="mt-2 text-2xl font-bold md:text-3xl text-gray-900 dark:text-white">{t('gradePage.studio.title')}</h1>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 md:text-base">
+                  {t('gradePage.studio.subtitle')}
+                </p>
+              </div>
 
-         {/* Unified Header: ME Button + New Chat/Back Navigation */}
-         <div className="absolute top-6 left-6 z-30 flex items-center gap-4">
-            {!isLeftSidebarOpen && (
-              <button 
-                onClick={() => setIsLeftSidebarOpen(true)} 
-                className="w-10 h-10 rounded-full bg-indigo-600 dark:bg-indigo-500 text-white flex items-center justify-center font-bold text-sm hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors shadow-sm lg:hidden"
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+                <StatCard icon={<FiFolder />} label={t('gradePage.studio.stats.folders')} value={folders.length} color="indigo" />
+                <StatCard icon={<FiBook />} label={t('gradePage.studio.stats.docs')} value={docs.length} color="green" />
+                <StatCard icon={<FiUsers />} label={t('gradePage.studio.stats.submissions')} value={submissions.length} color="amber" />
+                <StatCard icon={<FiAward />} label={t('gradePage.studio.stats.results')} value={results.length} color="red" />
+                <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#111111] px-3 py-2 text-gray-700 dark:text-gray-200">
+                  <div className="flex items-center gap-1">
+                    <img src={coinIcon} alt={t('gradePage.studio.coinsAlt')} className="h-4 w-4" />
+                    <p className="text-[11px] font-semibold uppercase tracking-wide">{t('gradePage.studio.coinCostLabel')}</p>
+                  </div>
+                  <p className="text-lg font-bold">{t('gradePage.studio.coinCostValue')}</p>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <section className="min-h-0 flex-1 overflow-hidden p-4 md:p-6">
+            {banner && (
+              <div
+                className={`mb-4 rounded-xl border px-4 py-3 text-sm font-medium ${
+                  banner.type === 'success'
+                    ? 'border-green-200 dark:border-green-500/20 bg-green-50 dark:bg-green-500/10 text-green-800 dark:text-green-300'
+                    : banner.type === 'error'
+                    ? 'border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 text-red-800 dark:text-red-300'
+                    : 'border-indigo-200 dark:border-indigo-500/20 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-800 dark:text-indigo-300'
+                }`}
               >
-                ME
-              </button>
-            )}
-            {!isLeftSidebarOpen && (
-              <button
-                onClick={() => setIsLeftSidebarOpen(true)}
-                className="hidden lg:flex p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-white/10 shadow-sm transition-colors"
-                title="Open sidebar"
-              >
-                <FaBars size={16} />
-              </button>
+                {banner.text}
+              </div>
             )}
 
-            {chatStarted ? (
-               <button 
-                 onClick={handleNewChat}
-                 className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors bg-white/80 dark:bg-black/50 backdrop-blur-sm px-3 py-2 rounded-lg shadow-sm"
-               >
-                  <FaChevronRight className="rotate-180" size={12} /> 
-                  <span className="hidden sm:inline">{t('gradePage.backToDashboard')}</span>
-               </button>
-            ) : (
-               <button 
-                  onClick={handleNewChat}
-                  className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors bg-white/80 dark:bg-black/50 backdrop-blur-sm rounded-full shadow-sm"
-                  title={t('solvePage.newChat')}
-                >
-                   <FaRegEdit size={20} />
-                </button>
-            )}
-         </div>
+            <div className="grid h-full min-h-0 grid-cols-1 gap-4 xl:grid-cols-12">
+              <aside className="xl:col-span-4 2xl:col-span-3 min-h-0 overflow-hidden rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] shadow-sm">
+                <div className="border-b border-gray-100 dark:border-white/10 p-4">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('gradePage.studio.foldersTitle')}</h2>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('gradePage.studio.foldersSubtitle')}</p>
 
-         {!chatStarted ? (
-           <div 
-             className="flex-1 overflow-y-auto p-8 lg:p-12"
-             onScroll={handleScroll}
-           >
-             <div className="max-w-4xl mx-auto w-full pt-20 lg:pt-24">
-             <div className="text-center mb-16">
-                 <h1 className="text-4xl font-bold mb-3 text-gray-900 dark:text-white">{t('gradePage.whatDoYouWantToGrade')}</h1>
-                 <p className="text-gray-500 dark:text-gray-400">{t('gradePage.subtitle')}</p>
-             </div>
+                  <div className="mt-3 flex items-center gap-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#111111] px-3 py-2">
+                    <FiSearch className="text-gray-400" />
+                    <input
+                      type="text"
+                      value={folderSearch}
+                      onChange={(event) => setFolderSearch(event.target.value)}
+                      placeholder={t('gradePage.studio.searchFolders')}
+                      className="w-full bg-transparent text-sm outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500 text-gray-800 dark:text-gray-200"
+                    />
+                  </div>
 
-             {/* Action Cards */}
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6 mb-10 lg:mb-20 max-w-2xl mx-auto">
-                 <button 
-                  onClick={handleUploadClick}
-                  className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl p-6 lg:p-8 text-left hover:bg-gray-50 dark:hover:bg-[#151515] hover:border-gray-300 dark:hover:border-white/20 transition-all group shadow-sm dark:shadow-none"
-                 >
-                     <div className="mb-4 text-gray-400 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
-                         <FaUpload size={24} />
-                     </div>
-                     <h3 className="text-lg font-bold mb-1 text-gray-900 dark:text-white">{t('gradePage.upload')}</h3>
-                     <p className="text-sm text-gray-500">{t('gradePage.uploadFormats')}</p>
-                 </button>
+                  <div className="mt-3 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#111111] p-3">
+                    <div className="grid grid-cols-1 gap-2">
+                      <input
+                        type="text"
+                        value={newFolderName}
+                        onChange={(event) => setNewFolderName(event.target.value)}
+                        placeholder={t('gradePage.studio.folderNamePlaceholder')}
+                        className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] px-3 py-2 text-sm outline-none text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-500 dark:focus:border-indigo-500/50 transition-colors"
+                      />
+                      <input
+                        type="text"
+                        value={newFolderDescription}
+                        onChange={(event) => setNewFolderDescription(event.target.value)}
+                        placeholder={t('gradePage.studio.descriptionPlaceholder')}
+                        className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] px-3 py-2 text-sm outline-none text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-500 dark:focus:border-indigo-500/50 transition-colors"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void createFolder();
+                      }}
+                      disabled={creatingFolder}
+                      className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {creatingFolder ? <FiLoader className="animate-spin" /> : <FiFolderPlus />}
+                      {t('gradePage.studio.createFolder')}
+                    </button>
+                  </div>
+                </div>
 
-                 <button 
-                  onClick={handlePasteClick}
-                  className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl p-6 lg:p-8 text-left hover:bg-gray-50 dark:hover:bg-[#151515] hover:border-gray-300 dark:hover:border-white/20 transition-all group shadow-sm dark:shadow-none"
-                 >
-                     <div className="mb-4 text-gray-400 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
-                         <FaFileAlt size={24} />
-                     </div>
-                     <h3 className="text-lg font-bold mb-1 text-gray-900 dark:text-white">{t('gradePage.paste')}</h3>
-                     <p className="text-sm text-gray-500">{t('gradePage.pasteDescription')}</p>
-                 </button>
-             </div>
+                <div className="min-h-0 h-[calc(100%-220px)] overflow-y-auto p-3">
+                  {loadingFolders && !folders.length && (
+                    <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#111111] p-4 text-sm text-gray-500 dark:text-gray-400">
+                      {t('gradePage.studio.loadingFolders')}
+                    </div>
+                  )}
 
-             {/* Grades + Folders Section */}
-             <div>
-               <div className="flex items-center justify-between mb-6">
-                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('gradePage.yourGrades')}</h2>
-                 <button
-                   onClick={() => { setFolderInput(''); setFolderColor('#a855f7'); setFolderModal({ visible: true, parentId: null, renaming: null }); }}
-                   className="flex items-center gap-2 text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 transition-colors px-3 py-1.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20"
-                 >
-                   <FaFolderPlus size={13} />
-                   New Folder
-                 </button>
-               </div>
+                  {!loadingFolders && !filteredFolders.length && (
+                    <EmptyState
+                      icon={<FiFolderPlus />}
+                      title={t('gradePage.studio.emptyFoldersTitle')}
+                      subtitle={t('gradePage.studio.emptyFoldersSubtitle')}
+                    />
+                  )}
 
-               <div className="flex gap-5">
-                 {/* Folder sidebar — desktop only */}
-                 {folders.length > 0 && (
-                   <div className="w-52 flex-shrink-0 hidden md:block">
-                     <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm sticky top-4">
-                       <button
-                         onClick={() => setSelectedFolderId(undefined)}
-                         className={`w-full flex items-center gap-2.5 px-4 py-3 text-sm transition-colors border-b border-gray-100 dark:border-white/5 ${selectedFolderId === undefined ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 font-semibold' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'}`}
-                       >
-                         <FaLayerGroup size={13} />
-                         All Grades
-                       </button>
-                       <div className="py-1 max-h-96 overflow-y-auto">
-                         {renderFolderTree(folders.filter(f => !f.parent_id), 0)}
-                       </div>
-                     </div>
-                   </div>
-                 )}
-
-                 {/* History list */}
-                 <div className="flex-1 min-w-0">
-                   {/* Mobile folder chips */}
-                   {folders.length > 0 && (
-                     <div className="flex gap-2 mb-4 overflow-x-auto pb-1 md:hidden flex-nowrap">
-                       <button
-                         onClick={() => setSelectedFolderId(undefined)}
-                         className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${selectedFolderId === undefined ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400'}`}
-                       >All</button>
-                       {folders.map(f => (
-                         <button key={f.id} onClick={() => setSelectedFolderId(f.id)}
-                           className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
-                           style={{ backgroundColor: selectedFolderId === f.id ? f.color : undefined, color: selectedFolderId === f.id ? '#fff' : undefined, ...(selectedFolderId !== f.id ? {} : {}) }}
-                         >
-                           {f.name}
-                         </button>
-                       ))}
-                     </div>
-                   )}
-
-                   {history.length === 0 ? (
-                      <div className="text-center text-gray-500 py-8">
-                        {selectedFolderId !== undefined ? 'No grades in this folder yet.' : t('gradePage.noGradesYet')}
-                      </div>
-                   ) : (
-                      <div className="grid gap-4">
-                        {history.map(item => (
-                          <div
-                            key={item.id}
-                            onClick={() => loadChat(item)}
-                            className="relative bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl p-6 hover:border-gray-300 dark:hover:border-white/20 transition-colors cursor-pointer shadow-sm dark:shadow-none"
-                          >
-                               <div className="flex items-start justify-between mb-4">
-                                   <div className="flex items-center gap-4">
-                                       <div className="w-12 h-12 bg-gray-100 dark:bg-white rounded-lg flex items-center justify-center text-xl">
-                                           ✍️
-                                       </div>
-                                       <div>
-                                          <h3 className="font-bold mb-1 text-gray-900 dark:text-white">{item.title || t('gradePage.gradingReport')}</h3>
-                                           <p className="text-xs text-gray-500">{new Date(item.created_at).toLocaleDateString()} {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                                       </div>
-                                   </div>
-                                   <div className="relative">
-                                     <button
-                                       onClick={(e) => {
-                                         e.stopPropagation();
-                                         setOpenHistoryMenuId(prev => prev === item.id ? null : item.id);
-                                       }}
-                                       className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
-                                     >
-                                       <FaEllipsisV size={14} />
-                                     </button>
-                                     {openHistoryMenuId === item.id && (
-                                       <div
-                                         onClick={(e) => e.stopPropagation()}
-                                         className="absolute right-0 top-10 z-30 min-w-[160px] bg-white dark:bg-[#17171a] border border-gray-200 dark:border-white/10 rounded-lg shadow-lg overflow-hidden"
-                                       >
-                                         <button
-                                           onClick={() => { setMovingChat(item); setOpenHistoryMenuId(null); }}
-                                           className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors flex items-center gap-2"
-                                         >
-                                           <FaFolder size={12} />
-                                           Move to folder
-                                         </button>
-                                         <button
-                                           onClick={() => handleDeleteHistoryItem(item.id)}
-                                           className="w-full px-3 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2"
-                                         >
-                                           <FaTrash size={12} />
-                                           Delete
-                                         </button>
-                                       </div>
-                                     )}
-                                   </div>
-                               </div>
-                               
-                               <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-6 line-clamp-2">
-                                  {t('gradePage.viewDetailedReport')}
-                               </p>
-          
-                               <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-white/5">
-                                   <button className="flex items-center gap-2 text-sm text-gray-900 dark:text-white font-medium hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                                      {t('gradePage.viewDetails')} <FaChevronRight size={10} />
-                                   </button>
-                                   {item.rubric_url && (
-                                       <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setPreviewAttachment({
-                                              name: item.rubric_name || t('gradePage.rubric'),
-                                              type: getFileMimeType(item.rubric_name, item.rubric_url),
-                                              url: item.rubric_url
-                                            });
-                                          }}
-                                          className="flex items-center gap-1 text-xs bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors border border-indigo-100 dark:border-indigo-500/20"
-                                       >
-                                          <FaFileAlt size={10} />
-                                        View File
-                                       </button>
-                                   )}
-                               </div>
-                           </div>
-                        ))}
-                        
-                        {loadingMore && (
-                          <div className="flex justify-center mt-4 mb-4">
-                              <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                          </div>
-                        )}
-                      </div>
-                   )}
-                 </div>
-               </div>
-             </div>
-           </div>
-           </div>
-         ) : (
-           /* Chat State (Result View) */
-           <div className="flex-1 flex flex-col h-full w-full max-w-5xl mx-auto px-6 pt-6 pb-6 relative overflow-hidden">
-
-              {/* Messages Area */}
-              <div 
-                ref={messagesContainerRef}
-                className="flex-1 overflow-y-auto pr-2 custom-scrollbar pt-10 pb-20 lg:pb-32"
-              >
-                {messages.map((msg) => (
-                  <div key={msg.id} className={`mb-8 flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`${msg.type === 'user' ? 'max-w-[80%] flex flex-col items-end' : 'w-full max-w-full'}`}>
-                      
-                      {/* Attachment (User) */}
-                      {msg.type === 'user' && msg.attachment && (
-                        <div 
-                          className="mb-3 rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 w-64 h-32 cursor-pointer hover:border-gray-300 dark:hover:border-white/30 transition-all bg-gray-100 dark:bg-[#1f1f23] relative group"
-                          onClick={() => setPreviewAttachment(msg.attachment)}
+                  <div className="space-y-2">
+                    {filteredFolders.map((folder) => {
+                      const isSelected = folder.id === selectedFolderId;
+                      const isDeleting = deletingId === `folder-${folder.id}`;
+                      return (
+                        <button
+                          key={folder.id}
+                          type="button"
+                          onClick={() => setSelectedFolderId(folder.id)}
+                          className={`w-full rounded-xl border p-3 text-left transition ${
+                            isSelected
+                              ? 'border-indigo-500 dark:border-indigo-500/40 bg-indigo-50 dark:bg-indigo-500/10'
+                              : 'border-gray-200 dark:border-white/10 bg-white dark:bg-[#111111] hover:border-gray-300 dark:hover:border-white/20 hover:bg-gray-50 dark:hover:bg-white/5'
+                          }`}
                         >
-                          {msg.attachment.type.startsWith('image/') && msg.attachment.url ? (
-                            <>
-                              <img src={msg.attachment.url} alt="Attachment" className="w-full h-full object-cover" />
-                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
-                                <FaExpand className="text-white opacity-0 group-hover:opacity-100 transform scale-75 group-hover:scale-100 transition-all" size={24} />
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">{folder.name}</h3>
+                              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{folder.description || t('gradePage.studio.noDescription')}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                void deleteFolder(folder.id);
+                              }}
+                              disabled={isDeleting}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-500 dark:hover:text-red-400 disabled:cursor-not-allowed"
+                              aria-label={t('gradePage.studio.deleteFolder')}
+                            >
+                              {isDeleting ? <FiLoader className="animate-spin" /> : <FiTrash2 />}
+                            </button>
+                          </div>
+
+                          <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
+                            <Badge label={t('gradePage.studio.badges.docs')} value={folder.docsCount} tone="green" />
+                            <Badge label={t('gradePage.studio.badges.subs')} value={folder.submissionsCount} tone="amber" />
+                            <Badge label={t('gradePage.studio.badges.res')} value={folder.resultsCount} tone="red" />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </aside>
+
+              <section className="xl:col-span-8 2xl:col-span-9 min-h-0 overflow-hidden rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] shadow-sm">
+                {!selectedFolderId ? (
+                  <div className="flex h-full items-center justify-center p-6">
+                    <EmptyState
+                      icon={<FiFolder />}
+                      title={t('gradePage.studio.selectFolderTitle')}
+                      subtitle={t('gradePage.studio.selectFolderSubtitle')}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-full min-h-0 flex-col">
+                    <div className="border-b border-gray-100 dark:border-white/10 p-4 md:p-5">
+                      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                        <div>
+                          <h2 className="text-xl font-bold text-gray-900 dark:text-white">{folderDetail?.name || selectedFolder?.name || 'Folder'}</h2>
+                          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            {folderDetail?.description || selectedFolder?.description || t('gradePage.studio.noDescriptionProvided')}
+                          </p>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void loadFolderWorkspace(selectedFolderId);
+                            }}
+                            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 dark:border-white/10 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 transition hover:bg-gray-50 dark:hover:bg-white/5"
+                          >
+                            <FiRefreshCw />
+                            {t('common.refresh')}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void deleteFolder(selectedFolderId);
+                            }}
+                            className="inline-flex items-center gap-2 rounded-xl border border-red-200 dark:border-red-500/20 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 transition hover:bg-red-50 dark:hover:bg-red-500/10"
+                          >
+                            <FiTrash2 />
+                            {t('gradePage.studio.deleteFolder')}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        <TabButton
+                          title={t('gradePage.studio.tabs.kbTitle')}
+                          subtitle={t('gradePage.studio.tabs.kbSubtitle')}
+                          active={activeTab === 'kb'}
+                          icon={<FiBook />}
+                          onClick={() => setActiveTab('kb')}
+                        />
+                        <TabButton
+                          title={t('gradePage.studio.tabs.submissionsTitle')}
+                          subtitle={t('gradePage.studio.tabs.submissionsSubtitle')}
+                          active={activeTab === 'submissions'}
+                          icon={<FiUsers />}
+                          onClick={() => setActiveTab('submissions')}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="min-h-0 flex-1 overflow-y-auto p-4 md:p-5">
+                      {loadingWorkspace ? (
+                        <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#111111] p-6 text-sm text-gray-500 dark:text-gray-400">
+                          {t('gradePage.studio.loadingWorkspace')}
+                        </div>
+                      ) : (
+                        <>
+                          {activeTab === 'kb' && (
+                            <div className="space-y-4">
+                              <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#111111] p-4">
+                                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                  <div>
+                                    <h3 className="text-base font-semibold text-gray-900 dark:text-white">{t('gradePage.studio.kbTitle')}</h3>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                      {t('gradePage.studio.kbSubtitle')}
+                                    </p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => kbInputRef.current?.click()}
+                                    disabled={uploadingDoc || docs.length >= 5}
+                                    className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                  >
+                                    {uploadingDoc ? <FiLoader className="animate-spin" /> : <FiUpload />}
+                                    {t('gradePage.studio.uploadKbDoc')}
+                                  </button>
+                                </div>
+                                <input
+                                  ref={kbInputRef}
+                                  type="file"
+                                  className="hidden"
+                                  onChange={handleKbInputChange}
+                                  accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp"
+                                />
                               </div>
-                            </>
-                          ) : msg.attachment.type === 'application/pdf' && msg.attachment.url ? (
-                             <>
-                               <PDFThumbnail url={msg.attachment.url} />
-                               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
-                                 <FaExpand className="text-white opacity-0 group-hover:opacity-100 transform scale-75 group-hover:scale-100 transition-all" size={24} />
-                               </div>
-                             </>
-                          ) : (
-                            <div className="w-full h-full flex flex-col items-center justify-center gap-3 p-4">
-                                <FaFileAlt className="text-blue-400" size={32} />
-                              <span className="text-xs text-gray-300 font-medium truncate w-full text-center px-2">
-                                {msg.attachment.name}
-                              </span>
-                              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <FaDownload className="text-gray-400 hover:text-white" size={14} />
-                              </div>
+
+                              {!docs.length ? (
+                                <EmptyState
+                                  icon={<FiFileText />}
+                                  title={t('gradePage.studio.emptyKbTitle')}
+                                  subtitle={t('gradePage.studio.emptyKbSubtitle')}
+                                />
+                              ) : (
+                                <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                                  {docs.map((doc) => {
+                                    const statusTone = toStatusTone(doc.status);
+                                    const isDeletingDoc = deletingId === `doc-${doc.id}`;
+                                    return (
+                                      <div
+                                        key={doc.id}
+                                        className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#111111] p-4"
+                                      >
+                                        <div className="flex items-start justify-between gap-3">
+                                          <div className="min-w-0">
+                                            <h4 className="truncate text-sm font-semibold text-gray-800 dark:text-gray-100">{doc.fileName}</h4>
+                                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('gradePage.studio.uploadedAt', { values: { date: formatDateLabel(doc.createdAt) } })}</p>
+                                          </div>
+                                          <StatusPill status={doc.status} tone={statusTone} />
+                                        </div>
+
+                                        <div className="mt-4 flex flex-wrap gap-2">
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              void refreshDocStatus(doc.id);
+                                            }}
+                                            className="inline-flex items-center gap-1 rounded-lg border border-gray-200 dark:border-white/10 px-2.5 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 transition hover:bg-gray-50 dark:hover:bg-white/5"
+                                          >
+                                            <FiRefreshCw />
+                                            {t('gradePage.studio.status')}
+                                          </button>
+
+                                          {doc.fileUrl ? (
+                                            <button
+                                              type="button"
+                                              onClick={() => openPreviewModal(t('gradePage.studio.previewModal.kbPreviewTitle'), doc.fileName, doc.fileUrl)}
+                                              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 dark:border-white/10 px-2.5 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 transition hover:bg-gray-50 dark:hover:bg-white/5"
+                                            >
+                                              <FiEye />
+                                              {t('common.view')}
+                                            </button>
+                                          ) : (
+                                            <span className="inline-flex items-center gap-1 rounded-lg border border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-white/5 px-2.5 py-1.5 text-xs font-medium text-gray-400 dark:text-gray-500">
+                                              <FiEye />
+                                              {t('gradePage.studio.previewUnavailable')}
+                                            </span>
+                                          )}
+
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              void deleteDoc(doc.id);
+                                            }}
+                                            disabled={isDeletingDoc}
+                                            className="inline-flex items-center gap-1 rounded-lg border border-red-200 dark:border-red-500/20 px-2.5 py-1.5 text-xs font-semibold text-red-600 dark:text-red-400 transition hover:bg-red-50 dark:hover:bg-red-500/10 disabled:cursor-not-allowed"
+                                          >
+                                            {isDeletingDoc ? <FiLoader className="animate-spin" /> : <FiTrash2 />}
+                                            {t('common.delete')}
+                                          </button>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
                             </div>
                           )}
-                        </div>
-                      )}
 
-                      {/* Message Content */}
-                      <div className={`
-                        ${msg.type === 'user' 
-                          ? 'bg-gray-100 dark:bg-[#27272a] text-gray-900 dark:text-white px-5 py-3 rounded-2xl rounded-tr-sm' 
-                          : 'text-gray-900 dark:text-gray-200 w-full'
-                        }
-                      `}>
-                        {msg.type === 'ai' ? (
-                          <div className="w-full">
-                            {!msg.content && isProcessing && msg.id === messages[messages.length-1].id ? (
-                              <div className="flex space-x-2 items-center h-6 px-2">
-                                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                          {activeTab === 'submissions' && (
+                            <div className="space-y-4">
+                              <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#111111] p-4">
+                                <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
+                                  <div className="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] px-3 py-2 sm:w-72">
+                                    <FiSearch className="text-gray-400" />
+                                    <input
+                                      type="text"
+                                      value={submissionSearch}
+                                      onChange={(event) => setSubmissionSearch(event.target.value)}
+                                      placeholder={t('gradePage.studio.searchSubmissions')}
+                                      className="w-full bg-transparent text-sm outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500 text-gray-800 dark:text-gray-200"
+                                    />
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowSubmissionUploadModal(true)}
+                                    disabled={uploadingSubmission}
+                                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+                                  >
+                                    {uploadingSubmission ? <FiLoader className="animate-spin" /> : <FiUpload />}
+                                    {t('gradePage.studio.uploadAnswerSheet')}
+                                  </button>
+                                </div>
                               </div>
-                            ) : (
-                              <>
-                              <div className="prose dark:prose-invert max-w-none text-gray-900 dark:text-gray-200 text-left">
-                                  <ReactMarkdown 
-                                    remarkPlugins={[remarkGfm, remarkMath]}
-                                    rehypePlugins={[rehypeRaw, rehypeKatex]}
-                                    components={{
-                                      h1: ({node, ...props}) => <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4 mt-6 border-b border-gray-200 dark:border-gray-700 pb-2" {...props} />,
-                                      h2: ({node, ...props}) => <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-3 mt-8 border-b border-gray-200 dark:border-gray-800 pb-2" {...props} />,
-                                      h3: ({node, ...props}) => <h3 className="text-xl font-medium text-gray-800 dark:text-gray-200 mb-2 mt-6" {...props} />,
-                                      p: ({node, ...props}) => <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-6 text-lg" {...props} />,
-                                      ul: ({node, ...props}) => <ul className="list-disc pl-6 space-y-3 text-gray-600 dark:text-gray-300 my-4" {...props} />,
-                                      ol: ({node, ...props}) => <ol className="list-decimal pl-6 space-y-3 text-gray-600 dark:text-gray-300 my-4" {...props} />,
-                                      li: ({node, ...props}) => <li className="pl-1" {...props} />,
-                                      blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-indigo-500 pl-4 italic text-gray-600 dark:text-gray-400 my-6 bg-gray-50 dark:bg-white/5 p-4 rounded-r" {...props} />,
-                                      hr: ({node, ...props}) => <hr className="border-gray-200 dark:border-gray-700 my-8" {...props} />,
-                                      strong: ({node, ...props}) => <strong className="font-bold text-gray-900 dark:text-white" {...props} />,
-                                      em: ({node, ...props}) => <em className="italic text-gray-700 dark:text-gray-200" {...props} />,
-                                      table: ({node, ...props}) => <div className="overflow-x-auto my-8"><table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg" {...props} /></div>,
-                                      thead: ({node, ...props}) => <thead className="bg-gray-50 dark:bg-gray-800" {...props} />,
-                                      th: ({node, ...props}) => <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700" {...props} />,
-                                      td: ({node, ...props}) => <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700" {...props} />,
-                                      a: ({node, ...props}) => <a className="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 underline" {...props} />,
-                                      code: ({node, className, children, ...props}) => {
-                                          const match = /language-(\w+)/.exec(className || '');
-                                          return !match ? (
-                                              <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm text-indigo-600 dark:text-indigo-300" {...props}>
-                                                  {children}
-                                              </code>
-                                          ) : (
-                                              <code className={className} {...props}>
-                                                  {children}
-                                              </code>
-                                          );
-                                      }
-                                    }}
-                                  >
-                                    {preprocessMath(msg.content)}
-                                  </ReactMarkdown>
-                                </div>
-                                
-                                {/* AI Toolbar */}
-                                <div className="flex items-center gap-4 mt-4 pt-3 border-t border-gray-200 dark:border-white/5">
-                                  <button 
-                                    onClick={() => handleCopy(msg.content)}
-                                    className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
-                                    title={t('gradePage.copyToClipboard')}
-                                  >
-                                    <FaCopy /> {t('common.copy')}
-                                  </button>
-                                  <button 
-                                    onClick={() => handleExportPDF(msg.content)}
-                                    className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
-                                    title={t('gradePage.exportAsPdf')}
-                                  >
-                                    <FaFilePdf /> {t('gradePage.exportPdf')}
-                                  </button>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="whitespace-pre-wrap leading-relaxed">
-                            {msg.content}
-                          </div>
-                        )}
-                      </div>
 
+                              {!filteredSubmissions.length ? (
+                                <EmptyState
+                                  icon={<FiUsers />}
+                                  title={t('gradePage.studio.emptySubmissionsTitle')}
+                                  subtitle={t('gradePage.studio.emptySubmissionsSubtitle')}
+                                />
+                              ) : (
+                                <div className="space-y-3">
+                                  {filteredSubmissions.map((submission) => {
+                                    const statusTone = toStatusTone(submission.status);
+                                    const canGrade = statusTone === 'ready' || submission.status.toLowerCase() === 'ready';
+                                    const gradingNow = gradingSubmissionId === submission.id;
+                                    const deletingNow = deletingId === `submission-${submission.id}`;
+                                    const marks = totalMarksBySubmission[submission.id] || 100;
+
+                                    return (
+                                      <div
+                                        key={submission.id}
+                                        className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#111111] p-4"
+                                      >
+                                        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                                          <div className="min-w-0">
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                void openSubmissionReport(submission);
+                                              }}
+                                              className="truncate text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 underline underline-offset-2"
+                                            >
+                                              {submission.studentName}
+                                            </button>
+                                            <p className="truncate text-xs text-gray-500 dark:text-gray-400">{submission.fileName}</p>
+                                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('gradePage.studio.uploadedAt', { values: { date: formatDateLabel(submission.createdAt) } })}</p>
+                                          </div>
+
+                                          <div className="flex flex-wrap items-center gap-2">
+                                            <StatusPill status={submission.status} tone={statusTone} />
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                void refreshSubmissionStatus(submission.id);
+                                              }}
+                                              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 dark:border-white/10 px-2.5 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 transition hover:bg-gray-50 dark:hover:bg-white/5"
+                                            >
+                                              <FiRefreshCw />
+                                              {t('gradePage.studio.status')}
+                                            </button>
+
+                                            {submission.fileUrl && (
+                                              <button
+                                                type="button"
+                                                onClick={() => openPreviewModal(t('gradePage.studio.previewModal.submissionPreviewTitle'), submission.fileName, submission.fileUrl)}
+                                                className="inline-flex items-center gap-1 rounded-lg border border-gray-200 dark:border-white/10 px-2.5 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 transition hover:bg-gray-50 dark:hover:bg-white/5"
+                                              >
+                                                <FiEye />
+                                                {t('common.view')}
+                                              </button>
+                                            )}
+                                          </div>
+                                        </div>
+
+                                        <div className="mt-4 flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
+                                          <div className="flex items-center gap-2">
+                                            <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('gradePage.studio.totalMarks')}</label>
+                                            <input
+                                              type="number"
+                                              value={marks}
+                                              min={1}
+                                              onChange={(event) => {
+                                                const value = Number(event.target.value);
+                                                setTotalMarksBySubmission((current) => ({
+                                                  ...current,
+                                                  [submission.id]: Number.isFinite(value) ? value : 100,
+                                                }));
+                                              }}
+                                              className="w-24 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] px-2.5 py-1.5 text-sm text-gray-800 dark:text-gray-200 outline-none focus:border-indigo-500 dark:focus:border-indigo-500/50 transition-colors"
+                                            />
+                                          </div>
+
+                                          <div className="flex flex-wrap gap-2">
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                void gradeSubmission(submission);
+                                              }}
+                                              disabled={!canGrade || gradingNow}
+                                              className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                            >
+                                              {gradingNow ? <FiLoader className="animate-spin" /> : <FiAward />}
+                                              <img src={coinIcon} alt={t('gradePage.studio.coinsAlt')} className="h-3.5 w-3.5" />
+                                              {t('gradePage.studio.gradeCoinsButton')}
+                                            </button>
+
+                                            {submission.resultId && (
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  void openSubmissionReport(submission);
+                                                }}
+                                                className="inline-flex items-center gap-1 rounded-lg border border-gray-200 dark:border-white/10 px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 transition hover:bg-gray-50 dark:hover:bg-white/5"
+                                              >
+                                                <FiBarChart2 />
+                                                {t('gradePage.studio.viewReport')}
+                                              </button>
+                                            )}
+
+                                            {submission.resultId && (
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  void openChatModal(submission.resultId, submission.studentName);
+                                                }}
+                                                className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 dark:border-indigo-500/30 bg-indigo-50 dark:bg-indigo-500/10 px-3 py-2 text-xs font-semibold text-indigo-700 dark:text-indigo-400 transition hover:bg-indigo-100 dark:hover:bg-indigo-500/20"
+                                              >
+                                                <FiMessageSquare />
+                                                Chat
+                                              </button>
+                                            )}
+
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                void deleteSubmission(submission.id);
+                                              }}
+                                              disabled={deletingNow}
+                                              className="inline-flex items-center gap-1 rounded-lg border border-red-200 dark:border-red-500/20 px-3 py-2 text-xs font-semibold text-red-600 dark:text-red-400 transition hover:bg-red-50 dark:hover:bg-red-500/10 disabled:cursor-not-allowed"
+                                            >
+                                              {deletingNow ? <FiLoader className="animate-spin" /> : <FiTrash2 />}
+                                              {t('common.delete')}
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {activeTab === 'results' && (
+                            <div className="space-y-4">
+                              {!results.length ? (
+                                <EmptyState
+                                  icon={<FiAward />}
+                                  title="No graded results yet"
+                                  subtitle="Grade ready submissions to unlock AI analytics, score trends, and detailed feedback."
+                                />
+                              ) : (
+                                <>
+                                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                                    <MetricCard label="Average" value={formatPercent(analytics.average)} icon={<FiTrendingUp />} tone="indigo" />
+                                    <MetricCard label="Highest" value={formatPercent(analytics.highest)} icon={<FiCheckCircle />} tone="green" />
+                                    <MetricCard label="Lowest" value={formatPercent(analytics.lowest)} icon={<FiAlertTriangle />} tone="amber" />
+                                    <MetricCard label="Pass Rate" value={formatPercent(analytics.passRate)} icon={<FiAward />} tone="red" />
+                                  </div>
+
+                                  <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                                    <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#111111] p-4">
+                                      <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Score Progress Trend</h3>
+                                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Chronological grading performance across students.</p>
+                                      <div className="mt-3 h-40 w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] p-2">
+                                        <svg viewBox="0 0 100 100" className="h-full w-full">
+                                          <defs>
+                                            <linearGradient id="scoreLineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                              <stop offset="0%" stopColor="#6366f1" />
+                                              <stop offset="100%" stopColor="#818cf8" />
+                                            </linearGradient>
+                                          </defs>
+                                          <polyline
+                                            points={resultsTrendPoints}
+                                            fill="none"
+                                            stroke="url(#scoreLineGradient)"
+                                            strokeWidth="2.5"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                          />
+                                        </svg>
+                                      </div>
+                                    </div>
+
+                                    <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#111111] p-4">
+                                      <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Leaderboard</h3>
+                                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Top scores by percentage.</p>
+                                      <div className="mt-3 space-y-2">
+                                        {[...results]
+                                          .sort((a, b) => b.percentage - a.percentage)
+                                          .slice(0, 5)
+                                          .map((result, index) => (
+                                            <div
+                                              key={result.id}
+                                              className="flex items-center justify-between rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] px-3 py-2"
+                                            >
+                                              <div className="min-w-0">
+                                                <p className="truncate text-sm font-semibold text-gray-800 dark:text-gray-100">
+                                                  #{index + 1} {result.studentName}
+                                                </p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">{result.score}/{result.totalMarks}</p>
+                                              </div>
+                                              <span className="rounded-full bg-green-100 dark:bg-green-500/20 px-2.5 py-1 text-xs font-semibold text-green-700 dark:text-green-400">
+                                                {formatPercent(result.percentage)}
+                                              </span>
+                                            </div>
+                                          ))}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 gap-4 2xl:grid-cols-12">
+                                    <div className="2xl:col-span-5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#111111] p-4">
+                                      <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">All Results</h3>
+                                      <div className="mt-3 space-y-2">
+                                        {results
+                                          .slice()
+                                          .sort((a, b) => b.percentage - a.percentage)
+                                          .map((result) => {
+                                            const isActive = result.id === selectedResultId;
+                                            const deletingNow = deletingId === `result-${result.id}`;
+                                            return (
+                                              <button
+                                                key={result.id}
+                                                type="button"
+                                                onClick={() => setSelectedResultId(result.id)}
+                                                className={`w-full rounded-xl border p-3 text-left transition ${
+                                                  isActive
+                                                    ? 'border-indigo-500 dark:border-indigo-500/40 bg-indigo-50 dark:bg-indigo-500/10'
+                                                    : 'border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] hover:bg-gray-50 dark:hover:bg-white/5'
+                                                }`}
+                                              >
+                                                <div className="flex items-start justify-between gap-2">
+                                                  <div className="min-w-0">
+                                                    <p className="truncate text-sm font-semibold text-gray-800 dark:text-gray-100">{result.studentName}</p>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">{result.score}/{result.totalMarks} • {formatDate(result.createdAt)}</p>
+                                                  </div>
+                                                  <div className="flex items-center gap-2">
+                                                    <span className="rounded-full bg-indigo-100 dark:bg-indigo-500/20 px-2 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-400">
+                                                      {formatPercent(result.percentage)}
+                                                    </span>
+                                                    <button
+                                                      type="button"
+                                                      onClick={(event) => {
+                                                        event.stopPropagation();
+                                                        void deleteResult(result.id);
+                                                      }}
+                                                      disabled={deletingNow}
+                                                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-red-500 dark:text-red-400 transition hover:bg-red-50 dark:hover:bg-red-500/10 disabled:cursor-not-allowed"
+                                                    >
+                                                      {deletingNow ? <FiLoader className="animate-spin" /> : <FiTrash2 />}
+                                                    </button>
+                                                  </div>
+                                                </div>
+                                              </button>
+                                            );
+                                          })}
+                                      </div>
+                                    </div>
+
+                                    <div className="2xl:col-span-7 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] p-4">
+                                      {selectedResultDetail || selectedResultFromList ? (
+                                        <ResultDetailCard result={selectedResultDetail || selectedResultFromList!} />
+                                      ) : (
+                                        <EmptyState
+                                          icon={<FiBarChart2 />}
+                                          title="Select a result"
+                                          subtitle="Choose any result on the left to review AI feedback and question-wise details."
+                                        />
+                                      )}
+                                    </div>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
                   </div>
-                ))}
-              </div>
-
-              {/* Bottom Actions Area */}
-              <div className="absolute bottom-4 lg:bottom-8 left-0 right-0 z-20 flex items-center justify-center gap-2 lg:gap-4 pointer-events-none px-4">
-                   <button 
-                     onClick={() => setShowPaperModal(true)}
-                     className="pointer-events-auto flex items-center gap-2 lg:gap-3 bg-black/40 backdrop-blur-xl border border-white/10 hover:border-white/20 hover:bg-black/60 text-white px-4 py-3 lg:px-8 lg:py-4 rounded-full transition-all group shadow-lg"
-                   >
-                       <div className="w-6 h-6 lg:w-8 lg:h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
-                         <FaUpload className="text-gray-300 group-hover:text-white w-3 h-3 lg:w-3.5 lg:h-3.5" />
-                       </div>
-                       <span className="text-xs lg:text-base font-medium">{t('gradePage.uploadPaper')}</span>
-                   </button>
-                   
-                   <button 
-                     onClick={handlePasteModalOpen}
-                     className="pointer-events-auto flex items-center gap-2 lg:gap-3 bg-black/40 backdrop-blur-xl border border-white/10 hover:border-white/20 hover:bg-black/60 text-white px-4 py-3 lg:px-8 lg:py-4 rounded-full transition-all group shadow-lg"
-                   >
-                       <div className="w-6 h-6 lg:w-8 lg:h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
-                         <FaFileAlt className="text-gray-300 group-hover:text-white w-3 h-3 lg:w-3.5 lg:h-3.5" />
-                       </div>
-                       <span className="text-xs lg:text-base font-medium">{t('gradePage.pastePaper')}</span>
-                   </button>
-              </div>
-
-           </div>
-         )}
-         
-      {/* Rubric Modal */}
-      {showRubricModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
-            <div className="p-6 border-b border-gray-100 dark:border-white/5">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">{t('gradePage.uploadRubric')}</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {t('gradePage.uploadRubricDescription')}
-              </p>
+                )}
+              </section>
             </div>
-            
-            <div className="p-8 flex flex-col items-center justify-center border-b border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-[#151515]/50">
-              <input 
-                type="file" 
-                ref={rubricInputRef}
-                className="hidden" 
-                onChange={handleRubricSelect}
-                accept=".pdf,.doc,.docx"
-              />
-              
-              {rubricFile ? (
-                <div className="w-full bg-white dark:bg-[#1f1f23] border border-gray-200 dark:border-white/10 rounded-xl p-4 flex items-center gap-4 shadow-sm dark:shadow-none">
-                  <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
-                    <FaFileAlt className="text-blue-500 dark:text-blue-400" />
+          </section>
+
+          {showSubmissionUploadModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+              <div className="w-full max-w-lg rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] p-5 shadow-2xl">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('gradePage.studio.uploadModal.title')}</h3>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t('gradePage.studio.uploadModal.subtitle')}</p>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate text-gray-900 dark:text-white">{rubricFile.name}</p>
-                    <p className="text-xs text-gray-500">{(rubricFile.size / 1024).toFixed(1)} KB</p>
-                  </div>
-                  <button 
-                    onClick={() => setRubricFile(null)}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!uploadingSubmission) {
+                        setShowSubmissionUploadModal(false);
+                        setUploadModalFile(null);
+                      }
+                    }}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                    aria-label={t('common.close')}
                   >
-                    ✕
+                    <FiX />
                   </button>
                 </div>
-              ) : (
-                <button 
-                  onClick={() => rubricInputRef.current?.click()}
-                  className="w-full border-2 border-dashed border-gray-300 dark:border-white/10 rounded-xl p-8 hover:border-indigo-500 dark:hover:border-white/20 hover:bg-white dark:hover:bg-white/5 transition-all flex flex-col items-center gap-4 group"
-                >
-                  <div className="w-16 h-16 bg-white dark:bg-[#1f1f23] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm dark:shadow-none">
-                    <FaUpload className="text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-white" size={24} />
-                  </div>
-                  <div className="text-center">
-                    <p className="font-medium text-gray-900 dark:text-white mb-1">{t('gradePage.clickToUploadRubric')}</p>
-                    <p className="text-xs text-gray-500">{t('gradePage.rubricFormats')}</p>
-                  </div>
-                </button>
-              )}
-            </div>
-            
-            <div className="p-6 flex items-center justify-between bg-white dark:bg-[#111]">
-              <button 
-                onClick={handleSkipRubric}
-                className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium px-4 py-2"
-              >
-                {t('gradePage.skipRubric')}
-              </button>
-              <button 
-                onClick={handleNextRubric}
-                className="bg-gray-900 dark:bg-white text-white dark:text-black px-6 py-2 rounded-lg font-bold hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {t('common.next')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Paper Modal */}
-      {showPaperModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
-            <div className="p-6 border-b border-gray-100 dark:border-white/5">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">{t('gradePage.uploadPaper')}</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {t('gradePage.uploadPaperDescription')}
-              </p>
-            </div>
-            
-            <div className="p-8 flex flex-col items-center justify-center border-b border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-[#151515]/50">
-              <input 
-                type="file" 
-                ref={paperInputRef}
-                className="hidden" 
-                onChange={handlePaperSelect}
-                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"
-              />
-              
-              {paperFile ? (
-                <div className="w-full bg-white dark:bg-[#1f1f23] border border-gray-200 dark:border-white/10 rounded-xl p-4 flex items-center gap-4 shadow-sm dark:shadow-none">
-                  <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center">
-                    <FaFileAlt className="text-green-500 dark:text-green-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate text-gray-900 dark:text-white">{paperFile.name}</p>
-                    <p className="text-xs text-gray-500">{(paperFile.size / 1024).toFixed(1)} KB</p>
-                  </div>
-                  <button 
-                    onClick={() => setPaperFile(null)}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ) : (
-                <button 
-                  onClick={() => paperInputRef.current?.click()}
-                  className="w-full border-2 border-dashed border-gray-300 dark:border-white/10 rounded-xl p-8 hover:border-indigo-500 dark:hover:border-white/20 hover:bg-white dark:hover:bg-white/5 transition-all flex flex-col items-center gap-4 group"
-                >
-                  <div className="w-16 h-16 bg-white dark:bg-[#1f1f23] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm dark:shadow-none">
-                    <FaUpload className="text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-white" size={24} />
-                  </div>
-                  <div className="text-center">
-                    <p className="font-medium text-gray-900 dark:text-white mb-1">{t('gradePage.clickToUploadPaper')}</p>
-                    <p className="text-xs text-gray-500">{t('gradePage.paperFormats')}</p>
-                  </div>
-                </button>
-              )}
-            </div>
-            
-            <div className="p-6 flex items-center justify-between bg-white dark:bg-[#111]">
-              <button 
-                onClick={() => setShowPaperModal(false)}
-                className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium px-4 py-2"
-              >
-                {t('common.cancel')}
-              </button>
-              <button 
-                onClick={handleGenerateGrading}
-                disabled={!paperFile}
-                className="bg-gray-900 dark:bg-white text-white dark:text-black px-6 py-2 rounded-lg font-bold hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {t('gradePage.gradePaper')}
-                {paperFile && paperCost > 0 && (
-                   <>
-                     <span className="text-sm font-bold ml-1">-{paperCost}</span>
-                     <img src={coinIcon} alt="coins" className="w-4 h-4" />
-                   </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* Paste Modal */}
-      {showPasteModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl">
-            <div className="p-6 border-b border-gray-100 dark:border-white/5">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">{t('gradePage.pastePaperContent')}</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {t('gradePage.pastePaperContentDescription')}
-              </p>
-            </div>
-            
-            <div className="p-6 bg-gray-50 dark:bg-[#151515]/50">
-              <textarea
-                value={pastedContent}
-                onChange={(e) => setPastedContent(e.target.value)}
-                placeholder={t('gradePage.pasteYourTextHere')}
-                className="w-full h-64 bg-white dark:bg-[#1f1f23] text-gray-900 dark:text-gray-200 border border-gray-200 dark:border-white/10 rounded-xl p-4 focus:outline-none focus:border-indigo-500 dark:focus:border-white/30 resize-none"
-              />
-            </div>
-            
-            <div className="p-6 flex items-center justify-between bg-white dark:bg-[#111]">
-              <button 
-                onClick={() => setShowPasteModal(false)}
-                className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium px-4 py-2"
-              >
-                {t('common.cancel')}
-              </button>
-              <button 
-                onClick={handlePasteSubmit}
-                disabled={!pastedContent.trim()}
-                className="bg-gray-900 dark:bg-white text-white dark:text-black px-6 py-2 rounded-lg font-bold hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {t('gradePage.gradePaper')}
-                {pastedContent.trim() && (
-                   <>
-                     <span className="text-sm font-bold ml-1">-{pasteCost}</span>
-                     <img src={coinIcon} alt="coins" className="w-4 h-4" />
-                   </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+                <div className="mt-4 space-y-3">
+                  <input
+                    type="text"
+                    value={uploadModalStudentName}
+                    onChange={(event) => setUploadModalStudentName(event.target.value)}
+                    placeholder={t('gradePage.studio.uploadModal.studentNamePlaceholder')}
+                    className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#111111] px-3 py-2 text-sm text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 outline-none focus:border-indigo-500 dark:focus:border-indigo-500/50 transition-colors"
+                  />
 
-      {/* Preview Modal */}
-      {previewAttachment && (
-        <div className="fixed inset-0 bg-black/90 z-[60] flex flex-col items-center justify-center p-4" onClick={() => setPreviewAttachment(null)}>
-          <button onClick={() => setPreviewAttachment(null)} className="absolute top-4 right-4 text-white/70 hover:text-white p-2 z-50">
-             <FaTimes size={24} />
-          </button>
-          
-          <div className="w-full h-full max-w-6xl max-h-[90vh] flex items-center justify-center relative" onClick={e => e.stopPropagation()}>
-             {previewAttachment.type.startsWith('image/') && previewAttachment.url ? (
-                <img src={previewAttachment.url} alt={previewAttachment.name} className="max-w-full max-h-full object-contain" />
-             ) : previewAttachment.type === 'application/pdf' && previewAttachment.url ? (
-                <iframe src={previewAttachment.url} className="w-full h-full rounded-lg bg-white" title={previewAttachment.name}></iframe>
-             ) : (
-                <div className="text-white text-center">
-                   <FaFileAlt size={64} className="mx-auto mb-4 text-gray-400" />
-                   <p className="text-xl font-medium">{previewAttachment.name}</p>
-                   {previewAttachment.url && (
-                       <a href={previewAttachment.url} target="_blank" rel="noopener noreferrer" className="inline-block mt-4 bg-white text-black px-6 py-2 rounded-full font-bold hover:bg-gray-200 transition-colors">
-                         {t('gradePage.downloadFile')}
-                       </a>
-                   )}
-                </div>
-             )}
-          </div>
-        </div>
-      )}
-      {/* Create / Rename Folder Modal */}
-      {folderModal.visible && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-end sm:items-center justify-center p-4" onClick={() => setFolderModal({ visible: false, parentId: null, renaming: null })}>
-          <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="p-5 border-b border-gray-100 dark:border-white/5">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                {folderModal.renaming ? 'Rename Folder' : folderModal.parentId ? 'New Subfolder' : 'New Folder'}
-              </h3>
-            </div>
-            <div className="p-5">
-              <input
-                autoFocus
-                type="text"
-                value={folderInput}
-                onChange={e => setFolderInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && (folderModal.renaming ? handleRenameFolder() : handleCreateFolder())}
-                placeholder="Folder name"
-                className="w-full border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-gray-900 dark:text-white bg-gray-50 dark:bg-white/5 focus:outline-none focus:border-purple-400 dark:focus:border-purple-500 mb-4"
-              />
-              {!folderModal.renaming && (
-                <div className="flex gap-3 mb-5">
-                  {['#a855f7','#3b82f6','#22c55e','#f59e0b','#ef4444','#ec4899','#06b6d4'].map(color => (
-                    <button key={color} onClick={() => setFolderColor(color)}
-                      className="w-7 h-7 rounded-full transition-transform"
-                      style={{ backgroundColor: color, transform: folderColor === color ? 'scale(1.25)' : 'scale(1)', outline: folderColor === color ? `2px solid ${color}` : 'none', outlineOffset: 2 }}
+                  <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-dashed border-amber-300 dark:border-amber-400/30 bg-amber-50 dark:bg-amber-500/10 px-3 py-3 text-sm text-amber-800 dark:text-amber-300">
+                    <span className="truncate">{uploadModalFile?.name || t('gradePage.studio.uploadModal.selectFile')}</span>
+                    <span className="rounded-lg bg-amber-500 px-2.5 py-1 text-xs font-semibold text-white flex-shrink-0">{t('gradePage.studio.uploadModal.browse')}</span>
+                    <input
+                      type="file"
+                      className="hidden"
+                      onChange={(event) => setUploadModalFile(event.target.files?.[0] || null)}
+                      accept=".pdf,.doc,.docx"
                     />
-                  ))}
+                  </label>
+
+                  <p className="text-xs text-gray-400 dark:text-gray-500">{t('gradePage.studio.uploadModal.formats')}</p>
                 </div>
-              )}
-              <button
-                onClick={folderModal.renaming ? handleRenameFolder : handleCreateFolder}
-                disabled={!folderInput.trim()}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {folderModal.renaming ? 'Rename' : 'Create Folder'}
-              </button>
+
+                <div className="mt-5 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowSubmissionUploadModal(false);
+                      setUploadModalFile(null);
+                    }}
+                    className="rounded-xl border border-gray-200 dark:border-white/10 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                  >
+                    {t('common.cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSubmissionUploadFromModal}
+                    disabled={uploadingSubmission}
+                    className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {uploadingSubmission ? <FiLoader className="animate-spin" /> : <FiUpload />}
+                    {t('gradePage.studio.uploadModal.submit')}
+                  </button>
+                </div>
+              </div>
             </div>
+          )}
+
+          {previewModal.open && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+              <div className="flex h-[85vh] w-full max-w-5xl flex-col rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] shadow-2xl">
+                <div className="flex items-center justify-between gap-4 border-b border-gray-200 dark:border-white/10 px-4 py-3">
+                  <div className="min-w-0">
+                    <h3 className="truncate text-base font-semibold text-gray-900 dark:text-white">{previewModal.title}</h3>
+                    <p className="truncate text-xs text-gray-500 dark:text-gray-400">{previewModal.fileName}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={previewModal.fileUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-lg border border-gray-200 dark:border-white/10 px-2.5 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                    >
+                      {t('gradePage.studio.previewModal.openOriginal')}
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewModal((current) => ({ ...current, open: false }))}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                      aria-label={t('common.close')}
+                    >
+                      <FiX />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="min-h-0 flex-1 bg-gray-100 dark:bg-[#111111]">
+                  {previewModal.type === 'pdf' && <iframe src={previewModal.fileUrl} title={previewModal.fileName} className="h-full w-full" />}
+                  {previewModal.type === 'image' && (
+                    <div className="flex h-full items-center justify-center p-4">
+                      <img src={previewModal.fileUrl} alt={previewModal.fileName} className="max-h-full max-w-full rounded-xl object-contain" />
+                    </div>
+                  )}
+                  {previewModal.type === 'office' && (
+                    <iframe
+                      src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(previewModal.fileUrl)}`}
+                      title={previewModal.fileName}
+                      className="h-full w-full"
+                    />
+                  )}
+                  {previewModal.type === 'other' && (
+                    <div className="flex h-full items-center justify-center p-6 text-center text-gray-500 dark:text-gray-400">
+                      {t('gradePage.studio.previewModal.unsupported')}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showSubmissionReportModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+              <div className="flex h-[85vh] w-full max-w-5xl flex-col rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] shadow-2xl">
+                <div className="flex items-center justify-between border-b border-gray-200 dark:border-white/10 px-4 py-3">
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-white">{t('gradePage.studio.reportModal.title')}</h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowSubmissionReportModal(false)}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                    aria-label={t('common.close')}
+                  >
+                    <FiX />
+                  </button>
+                </div>
+
+                <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                  {selectedResultDetail || selectedResultFromList ? (
+                    <ResultDetailCard result={selectedResultDetail || selectedResultFromList!} />
+                  ) : (
+                    <EmptyState
+                      icon={<FiBarChart2 />}
+                      title={t('gradePage.studio.selectResultTitle')}
+                      subtitle={t('gradePage.studio.selectResultSubtitle')}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {chatModal.open && (
+            <div className="fixed inset-0 z-50 flex flex-col bg-gray-50 dark:bg-[#111111] sm:items-center sm:justify-center sm:bg-black/80 sm:p-4 sm:backdrop-blur-sm">
+              <div className="flex h-full w-full flex-col bg-white dark:bg-[#111111] sm:h-[90vh] sm:max-w-2xl sm:rounded-2xl sm:border sm:border-gray-200 sm:dark:border-white/10 sm:shadow-2xl sm:overflow-hidden">
+
+                {/* Header */}
+                <div className="flex flex-shrink-0 items-center justify-between gap-3 border-b border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] px-4 py-3">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <span className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400">
+                      <FiMessageSquare size={15} />
+                    </span>
+                    <div className="min-w-0">
+                      <h3 className="truncate text-sm font-semibold text-gray-900 dark:text-white">
+                        AI Chat — {chatModal.studentName}
+                      </h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Ask about this paper's results</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-shrink-0 items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void clearChatHistory()}
+                      disabled={clearingChat || chatStreaming || chatMessages.length === 0}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 px-2.5 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 transition hover:bg-gray-50 dark:hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {clearingChat ? <FiLoader className="animate-spin" size={11} /> : <FiTrash2 size={11} />}
+                      Clear
+                    </button>
+                    <button
+                      type="button"
+                      onClick={closeChatModal}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-600 dark:hover:text-gray-200"
+                      aria-label="Close chat"
+                    >
+                      <FiX />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Messages */}
+                <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+                  {chatLoading ? (
+                    <div className="flex h-full items-center justify-center">
+                      <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                        <FiLoader className="animate-spin" />
+                        Loading chat history…
+                      </div>
+                    </div>
+                  ) : chatMessages.length === 0 ? (
+                    <div className="flex h-full flex-col items-center justify-center px-4 text-center">
+                      <span className="mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 dark:text-indigo-400">
+                        <FiMessageSquare size={26} />
+                      </span>
+                      <p className="text-base font-semibold text-gray-800 dark:text-gray-100">Start a conversation</p>
+                      <p className="mt-1.5 max-w-xs text-sm text-gray-500 dark:text-gray-400">
+                        Ask anything about this student's paper — scores, question-level feedback, or how to improve.
+                      </p>
+                      <div className="mt-6 grid w-full max-w-sm grid-cols-1 gap-2">
+                        {[
+                          'Why did I lose marks on question 3?',
+                          'What are the main weaknesses in this paper?',
+                          'How can this student improve their score?',
+                        ].map((suggestion) => (
+                          <button
+                            key={suggestion}
+                            type="button"
+                            onClick={() => {
+                              setChatInput(suggestion);
+                              chatInputRef.current?.focus();
+                            }}
+                            className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] px-3 py-2.5 text-left text-xs font-medium text-gray-600 dark:text-gray-300 transition hover:border-indigo-300 dark:hover:border-indigo-500/40 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-700 dark:hover:text-indigo-300"
+                          >
+                            {suggestion}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-5">
+                      {chatMessages.map((msg) => (
+                        <div
+                          key={msg.id}
+                          className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
+                        >
+                          {/* Avatar */}
+                          <div className="flex-shrink-0">
+                            {msg.role === 'assistant' ? (
+                              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-500/20 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 select-none">
+                                AI
+                              </span>
+                            ) : (
+                              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 dark:bg-white/10 text-[10px] font-bold text-gray-600 dark:text-gray-300 select-none">
+                                You
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Bubble */}
+                          <div className={`min-w-0 max-w-[85%] sm:max-w-[78%] ${msg.role === 'user' ? 'items-end' : 'items-start'} flex flex-col`}>
+                            {msg.role === 'user' ? (
+                              <div className="rounded-2xl rounded-tr-sm bg-gray-100 dark:bg-[#27272a] px-4 py-2.5 text-sm leading-relaxed text-gray-900 dark:text-white">
+                                {msg.content}
+                              </div>
+                            ) : (
+                              <div className="w-full">
+                                {!msg.content ? (
+                                  /* Typing dots while streaming */
+                                  <div className="flex items-center gap-1.5 rounded-2xl rounded-tl-sm bg-indigo-50 dark:bg-indigo-500/10 px-4 py-3">
+                                    <span className="h-2 w-2 rounded-full bg-indigo-400 dark:bg-indigo-500 animate-bounce [animation-delay:0ms]" />
+                                    <span className="h-2 w-2 rounded-full bg-indigo-400 dark:bg-indigo-500 animate-bounce [animation-delay:150ms]" />
+                                    <span className="h-2 w-2 rounded-full bg-indigo-400 dark:bg-indigo-500 animate-bounce [animation-delay:300ms]" />
+                                  </div>
+                                ) : (
+                                  <div className="prose prose-sm dark:prose-invert max-w-full break-words overflow-x-hidden text-gray-800 dark:text-gray-100 [&_.katex-display]:max-w-full [&_.katex-display]:overflow-x-auto [&_.katex-display]:overflow-y-hidden">
+                                    <ReactMarkdown
+                                      remarkPlugins={[remarkGfm, remarkMath]}
+                                      rehypePlugins={[rehypeRaw, rehypeKatex]}
+                                      components={{
+                                        h1: ({ node, ...props }) => <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-3 mt-5 border-b border-gray-200 dark:border-gray-700 pb-1.5" {...props} />,
+                                        h2: ({ node, ...props }) => <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-2 mt-4 border-b border-gray-200 dark:border-gray-800 pb-1" {...props} />,
+                                        h3: ({ node, ...props }) => <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-2 mt-4" {...props} />,
+                                        p: ({ node, ...props }) => <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-3 text-sm" {...props} />,
+                                        ul: ({ node, ...props }) => <ul className="list-disc pl-5 space-y-1.5 text-gray-700 dark:text-gray-300 my-3 text-sm" {...props} />,
+                                        ol: ({ node, ...props }) => <ol className="list-decimal pl-5 space-y-1.5 text-gray-700 dark:text-gray-300 my-3 text-sm" {...props} />,
+                                        li: ({ node, ...props }) => <li className="pl-0.5" {...props} />,
+                                        blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-indigo-400 dark:border-indigo-500 pl-3 italic text-gray-600 dark:text-gray-400 my-4 bg-indigo-50/60 dark:bg-indigo-500/5 py-2 pr-3 rounded-r" {...props} />,
+                                        hr: ({ node, ...props }) => <hr className="border-gray-200 dark:border-gray-700 my-5" {...props} />,
+                                        strong: ({ node, ...props }) => <strong className="font-semibold text-gray-900 dark:text-white" {...props} />,
+                                        em: ({ node, ...props }) => <em className="italic text-gray-700 dark:text-gray-200" {...props} />,
+                                        table: ({ node, ...props }) => (
+                                          <div className="overflow-x-auto my-4">
+                                            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg text-xs" {...props} />
+                                          </div>
+                                        ),
+                                        thead: ({ node, ...props }) => <thead className="bg-gray-50 dark:bg-gray-800" {...props} />,
+                                        th: ({ node, ...props }) => <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700" {...props} />,
+                                        td: ({ node, ...props }) => <td className="px-3 py-2 text-xs text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700" {...props} />,
+                                        a: ({ node, ...props }) => <a className="text-indigo-600 dark:text-indigo-400 hover:underline" target="_blank" rel="noreferrer" {...props} />,
+                                        code: ({ node, className, children, ...props }) => {
+                                          const match = /language-(\w+)/.exec(className || '');
+                                          const lang = match ? match[1] : '';
+                                          if (lang === 'svg') {
+                                            const svgStr = String(children).trim();
+                                            const safeSvg = DOMPurify.sanitize(svgStr, { USE_PROFILES: { svg: true, svgFilters: true } });
+                                            return <div className="my-2 overflow-x-auto" dangerouslySetInnerHTML={{ __html: safeSvg }} />;
+                                          }
+                                          return !match ? (
+                                            <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-xs text-indigo-600 dark:text-indigo-300 font-mono" {...props}>
+                                              {children}
+                                            </code>
+                                          ) : (
+                                            <code className={className} {...props}>{children}</code>
+                                          );
+                                        },
+                                        pre: ({ node, ...props }) => <pre className="max-w-full overflow-x-auto rounded-lg p-3 bg-gray-100 dark:bg-gray-900 text-xs my-3" {...props} />,
+                                        img: ({ node, ...props }) => <img className="max-w-full h-auto rounded-lg" {...props} />,
+                                      }}
+                                    >
+                                      {msg.content}
+                                    </ReactMarkdown>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            {/* Timestamp */}
+                            {msg.createdAt && (
+                              <p className="mt-1 px-1 text-[10px] text-gray-400 dark:text-gray-500">
+                                {(() => {
+                                  const d = new Date(msg.createdAt);
+                                  return Number.isNaN(d.getTime()) ? '' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                })()}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      <div ref={chatMessagesEndRef} />
+                    </div>
+                  )}
+                </div>
+
+                {/* Input bar */}
+                <div className="flex-shrink-0 border-t border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] px-3 py-3">
+                  <div className="flex items-end gap-2 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#111111] px-3 py-2 transition-colors focus-within:border-indigo-500 dark:focus-within:border-indigo-500/50">
+                    <textarea
+                      ref={chatInputRef}
+                      value={chatInput}
+                      onChange={(e) => {
+                        setChatInput(e.target.value);
+                        // auto-grow
+                        e.target.style.height = 'auto';
+                        e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          void sendChatMessage();
+                        }
+                      }}
+                      placeholder="Ask about this paper… (Enter to send)"
+                      rows={1}
+                      className="min-h-[36px] max-h-[120px] flex-1 resize-none bg-transparent text-sm text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 outline-none leading-[1.5] self-center"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void sendChatMessage()}
+                      disabled={!chatInput.trim() || chatStreaming}
+                      className="mb-0.5 inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {chatStreaming ? <FiLoader className="animate-spin" size={14} /> : <FiSend size={14} />}
+                    </button>
+                  </div>
+                  <p className="mt-1.5 text-center text-[10px] text-gray-400 dark:text-gray-500">
+                    This AI only has context about this specific paper · Shift+Enter for new line
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  );
+};
+
+const TabButton: React.FC<{
+  title: string;
+  subtitle: string;
+  active: boolean;
+  icon: React.ReactNode;
+  onClick: () => void;
+}> = ({ title, subtitle, active, icon, onClick }) => {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-xl border px-3 py-3 text-left transition ${
+        active
+          ? 'border-indigo-500 dark:border-indigo-500/40 bg-indigo-50 dark:bg-indigo-500/10'
+          : 'border-gray-200 dark:border-white/10 bg-white dark:bg-[#111111] hover:bg-gray-50 dark:hover:bg-white/5'
+      }`}
+    >
+      <div className="flex items-start gap-2">
+        <span className={`mt-0.5 text-base ${active ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-500'}`}>{icon}</span>
+        <div>
+          <p className={`text-sm font-semibold ${active ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-800 dark:text-gray-200'}`}>{title}</p>
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{subtitle}</p>
+        </div>
+      </div>
+    </button>
+  );
+};
+
+const StatusPill: React.FC<{ status: string; tone: string }> = ({ status, tone }) => {
+  const className =
+    tone === 'ready'
+      ? 'border-green-200 dark:border-green-500/20 bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400'
+      : tone === 'failed'
+      ? 'border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400'
+      : 'border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400';
+
+  const icon = tone === 'ready' ? <FiCheckCircle /> : tone === 'failed' ? <FiAlertTriangle /> : <FiClock />;
+
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold ${className}`}>
+      {icon}
+      {status}
+    </span>
+  );
+};
+
+const EmptyState: React.FC<{ icon: React.ReactNode; title: string; subtitle: string }> = ({
+  icon,
+  title,
+  subtitle,
+}) => {
+  return (
+    <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#111111] p-6 text-center">
+      <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-xl bg-white dark:bg-[#1a1a1a] text-gray-400 dark:text-gray-500 shadow-sm">
+        {icon}
+      </div>
+      <h3 className="mt-3 text-base font-semibold text-gray-800 dark:text-gray-100">{title}</h3>
+      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{subtitle}</p>
+    </div>
+  );
+};
+
+const StatCard: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  color: 'indigo' | 'green' | 'amber' | 'red';
+}> = ({ icon, label, value, color }) => {
+  const styleMap: Record<string, string> = {
+    indigo: 'border-indigo-200 dark:border-indigo-500/20 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400',
+    green: 'border-green-200 dark:border-green-500/20 bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400',
+    amber: 'border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400',
+    red: 'border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400',
+  };
+
+  return (
+    <div className={`rounded-xl border px-3 py-2 ${styleMap[color]}`}>
+      <div className="text-base">{icon}</div>
+      <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide">{label}</p>
+      <p className="text-lg font-bold">{value}</p>
+    </div>
+  );
+};
+
+const MetricCard: React.FC<{
+  label: string;
+  value: string;
+  icon: React.ReactNode;
+  tone: 'indigo' | 'green' | 'amber' | 'red';
+}> = ({ label, value, icon, tone }) => {
+  const styleMap: Record<string, string> = {
+    indigo: 'border-indigo-200 dark:border-indigo-500/20 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400',
+    green: 'border-green-200 dark:border-green-500/20 bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400',
+    amber: 'border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400',
+    red: 'border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400',
+  };
+
+  return (
+    <div className={`rounded-xl border p-3 ${styleMap[tone]}`}>
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold uppercase tracking-wide">{label}</span>
+        <span className="text-sm">{icon}</span>
+      </div>
+      <p className="mt-2 text-xl font-bold">{value}</p>
+    </div>
+  );
+};
+
+const Badge: React.FC<{ label: string; value: number; tone: 'green' | 'amber' | 'red' }> = ({
+  label,
+  value,
+  tone,
+}) => {
+  const styleMap: Record<string, string> = {
+    green: 'bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400',
+    amber: 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400',
+    red: 'bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400',
+  };
+  return (
+    <span className={`inline-flex items-center justify-center rounded-lg px-1.5 py-1 font-semibold text-[10px] ${styleMap[tone]}`}>
+      {label}: {value}
+    </span>
+  );
+};
+
+const ResultDetailCard: React.FC<{ result: ResultItem }> = ({ result }) => {
+  return (
+    <div>
+      <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#111111] p-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">{result.studentName}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Graded on {formatDate(result.createdAt)}</p>
           </div>
+          <div className="rounded-xl bg-indigo-100 dark:bg-indigo-500/20 px-3 py-2 text-indigo-800 dark:text-indigo-300">
+            <p className="text-xs font-semibold uppercase tracking-wide">Score</p>
+            <p className="text-lg font-bold">
+              {result.score}/{result.totalMarks} ({formatPercent(result.percentage)})
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {result.feedback && (
+        <div className="mt-4 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#111111] p-4">
+          <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100">AI Summary</h4>
+          <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{result.feedback}</p>
         </div>
       )}
 
-      {/* Move Chat to Folder Modal */}
-      {movingChat && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-end sm:items-center justify-center p-4" onClick={() => setMovingChat(null)}>
-          <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="p-5 border-b border-gray-100 dark:border-white/5">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Move to Folder</h3>
-            </div>
-            <div className="py-1 max-h-72 overflow-y-auto">
-              <button onClick={() => handleMoveChat(movingChat.id, null)}
-                className="w-full flex items-center gap-3 px-5 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                <FaLayerGroup size={14} className="text-gray-400" />
-                No Folder (All)
-              </button>
-              {folders.map(folder => (
-                <button key={folder.id} onClick={() => handleMoveChat(movingChat.id, folder.id)}
-                  className="w-full flex items-center gap-3 px-5 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
-                  style={folder.parent_id ? { paddingLeft: 28 } : {}}>
-                  <FaFolder size={14} style={{ color: folder.color }} />
-                  {folder.name}
-                </button>
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="rounded-xl border border-green-200 dark:border-green-500/20 bg-green-50 dark:bg-green-500/10 p-4">
+          <h4 className="text-sm font-semibold text-green-800 dark:text-green-300">Strengths</h4>
+          {result.strengths.length ? (
+            <ul className="mt-2 space-y-1 text-sm text-green-800 dark:text-green-300">
+              {result.strengths.map((strength, index) => (
+                <li key={`${strength}-${index}`} className="rounded-lg bg-white/70 dark:bg-white/5 px-2 py-1">
+                  {strength}
+                </li>
               ))}
-            </div>
-          </div>
+            </ul>
+          ) : (
+            <p className="mt-2 text-sm text-green-700 dark:text-green-400">No strengths generated yet.</p>
+          )}
         </div>
-      )}
 
-      <ResponseUpgradeModal
-        isOpen={showUpgradeModal}
-        onClose={() => setShowUpgradeModal(false)}
-        message={upgradeMessage}
-        ctaType={upgradeCtaType}
-      />
-      </main>
+        <div className="rounded-xl border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10 p-4">
+          <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-300">Weaknesses</h4>
+          {result.weaknesses.length ? (
+            <ul className="mt-2 space-y-1 text-sm text-amber-800 dark:text-amber-300">
+              {result.weaknesses.map((weakness, index) => (
+                <li key={`${weakness}-${index}`} className="rounded-lg bg-white/70 dark:bg-white/5 px-2 py-1">
+                  {weakness}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2 text-sm text-amber-700 dark:text-amber-400">No weaknesses generated yet.</p>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#111111] p-4">
+        <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Question Breakdown</h4>
+        {!result.questionBreakdown.length ? (
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">No question-level details available.</p>
+        ) : (
+          <div className="mt-2 space-y-2">
+            {result.questionBreakdown.map((question, index) => {
+              const percent = question.maxScore > 0 ? (question.score / question.maxScore) * 100 : 0;
+              return (
+                <div key={`${question.question}-${index}`} className="rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#1a1a1a] p-3">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{question.question}</p>
+                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                      {question.score}/{question.maxScore}
+                    </p>
+                  </div>
+                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-white/10">
+                    <div className="h-full rounded-full bg-indigo-500" style={{ width: `${Math.min(100, Math.max(0, percent))}%` }} />
+                  </div>
+                  {question.feedback && <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{question.feedback}</p>}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

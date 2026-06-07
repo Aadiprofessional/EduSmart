@@ -34,6 +34,7 @@ const CoinPanel: React.FC<CoinPanelProps> = ({ variant = 'sidebar', onUpgradeCli
 
   const coinsPerAd = adRewardConfig?.coinsPerAd ?? 1;
   const canWatch = cooldownRemaining === 0 && dailyAdsRemaining > 0;
+  const displayCoins = Math.min(Math.max(currentCoins, 0), 9999);
 
   // ── Sidebar variant ─────────────────────────────────────────────────────────
   if (variant === 'sidebar') {
@@ -45,7 +46,7 @@ const CoinPanel: React.FC<CoinPanelProps> = ({ variant = 'sidebar', onUpgradeCli
             <span className="text-yellow-400 text-xs font-semibold uppercase tracking-wide">Coins</span>
             <div className="flex items-center gap-1">
               <span className="text-lg">🪙</span>
-              <span className="text-white font-bold text-base">{currentCoins}</span>
+              <span className="text-white font-bold text-base tabular-nums min-w-[4ch] text-right">{displayCoins}</span>
             </div>
           </div>
 
@@ -121,7 +122,7 @@ const CoinPanel: React.FC<CoinPanelProps> = ({ variant = 'sidebar', onUpgradeCli
       <div className="flex items-center gap-3 px-4 py-2 rounded-xl border border-yellow-500/30 bg-yellow-500/10">
         <div className="flex items-center gap-1.5">
           <span className="text-lg">🪙</span>
-          <span className="text-white font-bold">{currentCoins} coins</span>
+          <span className="text-white font-bold tabular-nums">{displayCoins} coins</span>
         </div>
         <div className="h-4 w-px bg-gray-600" />
         {canWatch ? (

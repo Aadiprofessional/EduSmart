@@ -544,8 +544,8 @@ const MatrixEduDashboard: React.FC = () => {
                 <div className="w-full mx-auto px-4 md:px-8 lg:px-12 relative flex flex-col justify-center min-h-[60px]">
                     
                     {/* Top Row: Nav Toggles + (Optional) Compact Actions */}
-                    <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-3">
+                    <div className="flex justify-between items-center gap-2 flex-nowrap">
+                      <div className="flex items-center gap-2 shrink-0">
                             {!isLeftSidebarOpen && (
                                 <button 
                                     onClick={() => setIsLeftSidebarOpen(true)} 
@@ -567,7 +567,7 @@ const MatrixEduDashboard: React.FC = () => {
                         </div>
 
                         {/* Compact Action Cards (Visible only when scrolled) */}
-                        <div className={`flex-1 mx-4 transition-all duration-300 ${isScrolled ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none absolute left-0 right-0'}`}>
+                        <div className={`flex-1 min-w-0 mx-1 sm:mx-4 transition-all duration-300 ${isScrolled ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none absolute left-0 right-0'}`}>
                             {isScrolled && (
                                 <ActionCards 
                                    onUpload={() => handleOpenActionModal('upload')}
@@ -579,9 +579,9 @@ const MatrixEduDashboard: React.FC = () => {
                             )}
                         </div>
 
-                        <div className="">
+                        <div className="shrink-0">
                             {!isRightSidebarOpen && (
-                                <button onClick={() => setIsRightSidebarOpen(true)} className="flex items-center gap-2 px-3 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-none transition-colors">
+                            <button onClick={() => setIsRightSidebarOpen(true)} className="flex items-center gap-2 px-2.5 sm:px-3 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-none transition-colors">
                                     <FaFolder size={16} />
                                     <span className="text-sm font-medium hidden sm:inline">{t('sidebar.folders')}</span>
                                 </button>

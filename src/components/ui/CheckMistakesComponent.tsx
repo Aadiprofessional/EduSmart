@@ -1048,6 +1048,64 @@ const CheckMistakesComponent: React.FC<CheckMistakesComponentProps> = ({ classNa
     }
   };
 
+  const showCorrectedTextView = () => {
+    if (textOnlyMode && pageMistakes[0]?.mistakes) {
+      const baseText = extractedTexts[0]?.text || directText;
+      if (baseText) {
+        setCorrectedText(generateCorrectedText(baseText, pageMistakes[0].mistakes));
+      }
+    } else if (documentPages.length === 0 && extractedTexts[0]?.text && pageMistakes[0]?.mistakes) {
+      setCorrectedText(generateCorrectedText(extractedTexts[0].text, pageMistakes[0].mistakes));
+    }
+
+    setShowCorrectedText(true);
+  };
+
+  const renderTextModeButtons = () => (
+    <div className={`px-2 py-2 rounded-xl shadow-sm backdrop-blur-md flex items-center gap-2 ${
+      variant === 'solve'
+        ? 'bg-white/90 dark:bg-[#151518]/90 border border-gray-200 dark:border-white/10'
+        : 'bg-slate-900/70 border border-white/10'
+    }`}>
+        <motion.button
+          onClick={() => setShowCorrectedText(false)}
+          className={`flex items-center px-3 py-1.5 rounded-lg border text-xs ${
+            !showCorrectedText
+              ? variant === 'solve'
+                ? 'bg-indigo-600 text-white border-transparent'
+                : 'bg-blue-500/30 text-blue-200 border-blue-400/40'
+              : variant === 'solve'
+                ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
+                : 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border-blue-500/30'
+          }`}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <IconComponent icon={AiOutlineFileText} className="h-3.5 w-3.5 mr-1" />
+          Extract Text
+        </motion.button>
+        {pageMistakes.some(pm => pm.mistakes.length > 0) && (
+          <motion.button
+            onClick={showCorrectedTextView}
+            className={`flex items-center px-3 py-1.5 rounded-lg border text-xs ${
+              showCorrectedText
+                ? variant === 'solve'
+                  ? 'bg-emerald-600 text-white border-transparent'
+                  : 'bg-emerald-500/35 text-emerald-100 border-emerald-300/40'
+                : variant === 'solve'
+                  ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
+                  : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/30'
+            }`}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <IconComponent icon={AiOutlineCheckCircle} className="h-3.5 w-3.5 mr-1" />
+            Correct Text
+          </motion.button>
+        )}
+    </div>
+  );
+
   const focusMistake = (mistakeId: number) => {
     setSelectedMistakeId(selectedMistakeId === mistakeId ? null : mistakeId);
     requestAnimationFrame(() => {
@@ -4148,20 +4206,6 @@ Be thorough and fair in your assessment.`
             <IconComponent icon={AiOutlineFileText} className="h-3.5 w-3.5 mr-1" />
             View
           </motion.button>
-          {pageMistakes.some(pm => pm.mistakes.length > 0) && (
-            <motion.button
-              onClick={applyAutoCorrect}
-              className={`flex items-center px-2.5 py-1.5 rounded-lg border text-xs ${
-                variant === 'solve'
-                  ? 'bg-gray-100 hover:bg-gray-200 dark:bg-[#27272a] dark:hover:bg-[#313136] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/10'
-                  : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/30'
-              }`}
-              whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-            >
-              <IconComponent icon={AiOutlineCheckCircle} className="h-3.5 w-3.5 mr-1" />
-              Correct
-            </motion.button>
-          )}
           {markingSummary && overallProcessingComplete && (
             <motion.button
               onClick={() => setShowReportModal(true)}
@@ -4181,7 +4225,7 @@ Be thorough and fair in your assessment.`
 
       <div className="flex flex-col gap-6 lg:flex-1 lg:min-h-0 lg:grid lg:grid-cols-2 lg:overflow-hidden">
         {/* Left Side - Document (Full width on mobile, half on desktop) */}
-        <div className={`rounded-xl shadow-lg overflow-hidden lg:min-h-0 order-1 lg:order-1 border ${
+        <div className={`relative rounded-xl shadow-lg overflow-hidden lg:min-h-0 order-1 lg:order-1 border ${
           variant === 'solve'
             ? 'bg-white dark:bg-[#111111] border-gray-200 dark:border-white/10'
             : 'bg-[#0f172a]/60 backdrop-blur-md border-white/10'
@@ -4238,9 +4282,21 @@ Be thorough and fair in your assessment.`
                 <IconComponent icon={AiOutlineFileText} className="h-3.5 w-3.5 mr-1" />
                 Full Screen
               </motion.button>
+              {(textOnlyMode || documentPages.length === 0 || documentView === 'text') && (
+                <div className="hidden lg:flex">{renderTextModeButtons()}</div>
+              )}
             </div>
             
           </div>
+          {(textOnlyMode || documentPages.length === 0 || documentView === 'text') && (
+            <div className={`px-4 pt-3 lg:hidden ${
+              variant === 'solve'
+                ? 'bg-gray-50 dark:bg-[#151518]'
+                : 'bg-[#0f172a]/60 backdrop-blur-md'
+            }`}>
+              {renderTextModeButtons()}
+            </div>
+          )}
           
             <div className="h-64 lg:h-full p-4 relative overflow-hidden">
             <div className={`w-full h-full rounded-lg overflow-hidden border relative ${
@@ -4267,7 +4323,7 @@ Be thorough and fair in your assessment.`
               )}
               {textOnlyMode ? (
                 /* Direct Text Display */
-                <div className="w-full h-full overflow-auto lg:overflow-hidden p-4">
+                <div className="w-full h-full overflow-auto lg:overflow-hidden p-4 relative">
                   <div className={`whitespace-pre-wrap font-mono text-sm leading-relaxed ${variant === 'solve' ? 'text-gray-700 dark:text-gray-300' : 'text-slate-300'}`}>
                     {getCurrentDisplayText() ? (
                       showCorrectedText && correctedText ? (
@@ -4321,7 +4377,7 @@ Be thorough and fair in your assessment.`
                   </div>
                 </div>
               ) : documentPages.length === 0 ? (
-                <div className="w-full h-full overflow-auto lg:overflow-hidden p-4">
+                <div className="w-full h-full overflow-auto lg:overflow-hidden p-4 relative">
                   <div className="mb-4 flex items-center gap-3">
                         <IconComponent icon={AiOutlineFileText} className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                         {/* Filename moved into document area info card to avoid header duplication */}

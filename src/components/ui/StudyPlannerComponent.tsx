@@ -161,7 +161,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
   const { showSuccess, showError, showWarning } = useNotification();
   const { user } = useAuth();
   const { checkAndUseResponse } = useResponseCheck();
-  const { studyTasks, addStudyTask, updateStudyTask, deleteStudyTask, setReminder, unsetReminder, refreshData, isLoading } = useAppData();
+  const { studyTasks, addStudyTask, updateStudyTask, deleteStudyTask, refreshData, isLoading } = useAppData();
   
   const [newTask, setNewTask] = useState({
     task: '',
@@ -202,15 +202,6 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | null>(null);
   const [dateDrafts, setDateDrafts] = useState<Record<string, string>>({});
-  const [reminderModal, setReminderModal] = useState<{
-    isOpen: boolean;
-    taskId: string;
-  }>({
-    isOpen: false,
-    taskId: ''
-  });
-  const [reminderDate, setReminderDate] = useState('');
-  const [reminderTime, setReminderTime] = useState('');
 
   // AI Timetable Import state
   const [showAIModal, setShowAIModal] = useState(false);
@@ -701,75 +692,6 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
     setFilterPriority('all');
     setFilterSubject('all');
     setSearchQuery('');
-  };
-
-  // Reminder functions
-  const openReminderModal = (taskId: string) => {
-    setReminderModal({
-      isOpen: true,
-      taskId
-    });
-    
-    // Pre-fill with existing reminder if available for study tasks only
-    const task = studyTasks.find(t => t.id === taskId);
-    if (task?.reminderDate) {
-      const reminderDate = new Date(task.reminderDate);
-      setReminderDate(reminderDate.toISOString().split('T')[0]);
-      setReminderTime(reminderDate.toTimeString().slice(0, 5));
-    } else {
-      setReminderDate('');
-      setReminderTime('');
-    }
-  };
-
-  const closeReminderModal = () => {
-    setReminderModal({
-      isOpen: false,
-      taskId: ''
-    });
-    setReminderDate('');
-    setReminderTime('');
-  };
-
-  const handleSetReminder = async () => {
-    if (!reminderModal.isOpen || !reminderDate || !reminderTime) return;
-
-    try {
-      const reminderDateTime = `${reminderDate}T${reminderTime}`;
-      const taskId = reminderModal.taskId;
-      
-      // Only handle real study tasks
-      await updateStudyTask(taskId, { 
-        reminder: true, 
-        reminderDate: reminderDateTime 
-      });
-      showSuccess('Reminder set successfully!');
-      
-      closeReminderModal();
-    } catch (error) {
-      console.error('Error setting reminder:', error);
-      showError('Failed to set reminder. Please try again.');
-    }
-  };
-
-  const handleUnsetReminder = async () => {
-    if (!reminderModal.isOpen) return;
-
-    try {
-      const taskId = reminderModal.taskId;
-      
-      // Only handle real study tasks
-      await updateStudyTask(taskId, { 
-        reminder: false, 
-        reminderDate: undefined 
-      });
-      showSuccess('Reminder removed successfully!');
-      
-      closeReminderModal();
-    } catch (error) {
-      console.error('Error removing reminder:', error);
-      showError('Failed to remove reminder. Please try again.');
-    }
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1801,14 +1723,17 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
 
               <div>
                 <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-2">{t('aiStudy.dueDate')}</label>
-                <input
-                  type="date"
-                  value={newTask.date}
-                  onClick={(e) => e.currentTarget.showPicker()}
-                  onChange={(e) => setNewTask({...newTask, date: e.target.value})}
-                  className="w-full px-3 py-2 bg-white dark:bg-[#1f1f23] border border-gray-200 dark:border-white/10 rounded-lg text-gray-900 dark:text-gray-300 focus:outline-none focus:border-indigo-500 dark:focus:border-white/20 dark:[color-scheme:dark]"
-                  required
-                />
+                <div className="flex items-center bg-white dark:bg-[#1f1f23] border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2">
+                  <IconComponent icon={FiCalendar} className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
+                  <input
+                    type="date"
+                    value={newTask.date}
+                    onClick={(e) => e.currentTarget.showPicker()}
+                    onChange={(e) => setNewTask({...newTask, date: e.target.value})}
+                    className="w-full bg-transparent border-none text-gray-900 dark:text-gray-300 focus:outline-none dark:[color-scheme:dark]"
+                    required
+                  />
+                </div>
               </div>
 
               <div>
@@ -2115,33 +2040,10 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                           </div>
                         </div>
                         
-                        {/* Reminder Status (if set) */}
-                        {task.reminder && task.reminderDate && (
-                          <div className="flex items-center gap-2 text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-2.5 py-1 rounded-md w-fit border border-amber-100 dark:border-amber-500/10">
-                            <IconComponent icon={FaBell} className="h-3 w-3" />
-                            <span>
-                              Reminder: {new Date(task.reminderDate).toLocaleDateString()} at {new Date(task.reminderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          </div>
-                        )}
                       </div>
 
                       {/* Actions (Vertical or Horizontal) */}
                       <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-2 group-hover:translate-x-0">
-                         <motion.button
-                          onClick={() => openReminderModal(task.id)}
-                          className={`p-2 rounded-lg transition-colors ${
-                            task.reminder 
-                              ? 'text-amber-500 bg-amber-500/10 dark:bg-amber-500/20' 
-                              : 'text-gray-400 hover:text-amber-500 hover:bg-amber-500/10 dark:hover:bg-amber-500/20'
-                          }`}
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          title={task.reminder ? 'Edit Reminder' : 'Set Reminder'}
-                        >
-                          <IconComponent icon={FaBell} className="h-4 w-4" />
-                        </motion.button>
-                        
                         <motion.button
                           onClick={() => handleDeleteTask(task.id)}
                           className="p-2 text-gray-400 hover:text-rose-500 hover:bg-rose-500/10 dark:hover:bg-rose-500/20 rounded-lg transition-colors"
@@ -2506,7 +2408,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
             className="flex items-center justify-center z-50 p-4"
           >
             <motion.div
-              className="bg-white dark:bg-black/90 backdrop-blur-xl border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col overflow-visible"
+              className="bg-white dark:bg-[#0f0f10] border border-gray-200 dark:border-white/10 rounded-2xl shadow-lg dark:shadow-none w-full max-w-lg flex flex-col overflow-visible"
               initial={{ scale: 0.95, opacity: 0, y: 10 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 10 }}
@@ -2517,9 +2419,6 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                     <IconComponent icon={AiOutlineRobot} className="mr-2 text-emerald-600 dark:text-emerald-400" />
                     {t('aiStudy.aiStudyRoadmapGenerator')}
                   </h2>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {t('aiStudy.generatePersonalizedStudyPlan')}
-                  </p>
                 </div>
                 <motion.button
                   onClick={closeAISuggestionModal}
@@ -2559,12 +2458,12 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                           {new Date(suggestionDateRange.endDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
                       ) : (
-                        <span className="text-gray-400 dark:text-gray-500">{t('aiStudy.selectDateRange')}</span>
+                        <span className="text-gray-400 dark:text-gray-500">Choose start and end dates</span>
                       )}
                     </button>
 
                     {showDateRangePicker && (
-                      <div className="absolute top-full left-0 mt-2 z-50 bg-white dark:bg-[#1e1e1e] border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl p-4 w-[300px]">
+                      <div className="absolute top-full left-0 mt-2 z-50 bg-white dark:bg-[#1e1e1e] border border-gray-200 dark:border-white/10 rounded-2xl shadow-lg p-4 w-[300px]">
                         {/* Month Navigation */}
                         <div className="flex items-center justify-between mb-3">
                           <button
@@ -2702,7 +2601,7 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
                 <motion.button
                   onClick={generateAISuggestion}
                   disabled={isGeneratingSuggestion}
-                  className={`w-full py-3.5 rounded-xl font-medium text-sm flex items-center justify-center shadow-lg shadow-emerald-500/20 ${
+                  className={`w-full py-3.5 rounded-xl font-medium text-sm flex items-center justify-center shadow-sm ${
                     isGeneratingSuggestion
                       ? 'bg-gray-100 dark:bg-white/5 text-gray-400 cursor-not-allowed'
                       : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white transform hover:-translate-y-0.5'
@@ -3120,113 +3019,6 @@ const StudyPlannerComponent = React.forwardRef<StudyPlannerComponentHandle, Stud
         )}
       </AnimatePresence>
 
-      {/* Reminder Modal */}
-      <AnimatePresence>
-        {reminderModal.isOpen && (
-          <PortalModal
-            isOpen={reminderModal.isOpen}
-            onClose={closeReminderModal}
-            className="flex items-center justify-center z-50 p-4"
-          >
-            <motion.div
-              className="bg-white dark:bg-black/80 backdrop-blur-xl rounded-2xl border border-gray-200 dark:border-white/10 shadow-2xl w-full max-w-md"
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            >
-              <div className="p-6 border-b border-gray-200 dark:border-white/10">
-                <h2 className="text-xl font-bold text-cyan-600 dark:text-cyan-400 flex items-center">
-                  <IconComponent icon={FaBell} className="mr-2" />
-                  {(() => {
-                    const task = studyTasks.find(t => t.id === reminderModal.taskId);
-                    return task?.reminder ? t('aiStudy.updateReminder') : t('aiStudy.setReminder');
-                  })()}
-                </h2>
-                {(() => {
-                  const task = studyTasks.find(t => t.id === reminderModal.taskId);
-                  if (task?.reminder && task?.reminderDate) {
-                    const reminderDateTime = new Date(task.reminderDate);
-                    return (
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                        {t('aiStudy.currentReminder')}: {reminderDateTime.toLocaleDateString()} {t('aiStudy.atTime')} {reminderDateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    );
-                  }
-                  return null;
-                })()}
-              </div>
-              
-              <div className="p-6">
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      {t('aiStudy.reminderDateLabel')}
-                    </label>
-                    <input
-                      type="date"
-                      value={reminderDate}
-                      onClick={(e) => e.currentTarget.showPicker()}
-                      onChange={(e) => setReminderDate(e.target.value)}
-                      className="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-lg px-4 py-3 text-gray-900 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 dark:[color-scheme:dark]"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      {t('aiStudy.reminderTimeLabel')}
-                    </label>
-                    <input
-                      type="time"
-                      value={reminderTime}
-                      onClick={(e) => e.currentTarget.showPicker()}
-                      onChange={(e) => setReminderTime(e.target.value)}
-                      className="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-lg px-4 py-3 text-gray-900 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 dark:[color-scheme:dark]"
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="p-6 border-t border-gray-200 dark:border-white/10 flex justify-between">
-                <div className="flex gap-2">
-                  <motion.button
-                    onClick={closeReminderModal}
-                    className="bg-gray-100 dark:bg-black/20 hover:bg-gray-200 dark:hover:bg-black/40 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-lg transition-colors"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    {t('aiStudy.cancel')}
-                  </motion.button>
-                  {(() => {
-                    const task = studyTasks.find(t => t.id === reminderModal.taskId);
-                    if (task?.reminder) {
-                      return (
-                        <motion.button
-                          onClick={handleUnsetReminder}
-                          className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-6 py-3 rounded-lg font-medium transition-all"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          {t('aiStudy.removeReminder')}
-                        </motion.button>
-                      );
-                    }
-                    return null;
-                  })()}
-                </div>
-                
-                <motion.button
-                  onClick={handleSetReminder}
-                  className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-all"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  {t('aiStudy.setReminder')}
-                </motion.button>
-              </div>
-            </motion.div>
-          </PortalModal>
-        )}
-      </AnimatePresence>
       <ResponseUpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}

@@ -70,9 +70,7 @@ const PricingPage: React.FC = () => {
     const fetchPlans = async () => {
       setLoading(true);
       try {
-        // Use 'fake-user-for-plans' if user is not logged in, as per user instructions
-        const uid = user?.id || 'fake-user-for-plans';
-        const response = await subscriptionAPI.getPlans(session, uid);
+        const response = await subscriptionAPI.getPlans(session, user?.id);
         
         if (response.success && response.data) {
           setPlans(response.data);

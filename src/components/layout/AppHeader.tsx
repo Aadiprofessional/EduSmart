@@ -134,7 +134,7 @@ const Header: React.FC = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-6">
               <Link to="/about" className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white transition-colors">{t('appHeader.careers')} <span className="text-[10px] bg-green-500/20 text-green-600 dark:text-green-500 px-1.5 py-0.5 rounded ml-1">{t('appHeader.hiring')}</span></Link>
-              <Link to="/blog" className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white transition-colors">{t('nav.blog')}</Link>
+              <Link to="/contact" className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white transition-colors">Contact Us</Link>
               <Link to="/pricing" className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white transition-colors">{t('nav.pricing')}</Link>
               <button onClick={scrollToFeatures} className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white transition-colors">{t('appHeader.features')}</button>
           </div>
@@ -184,7 +184,7 @@ const Header: React.FC = () => {
 
           {/* Mobile Menu Button & Theme Toggle (Mobile) */}
           <div className="flex items-center gap-3 md:hidden">
-            <LanguageSelector />
+            <LanguageSelector compactMobile />
             {user && !subLoading && subscriptionStatus?.hasActiveSubscription && (
                 <div className="flex items-center px-2 py-1 bg-yellow-500/10 border border-yellow-500/30 rounded-full text-yellow-600 dark:text-yellow-400 backdrop-blur-sm">
                     <img src={coinIcon} alt={t('matrixEduNavbar.coinsAlt')} className="w-3.5 h-3.5 mr-1" />
@@ -218,7 +218,7 @@ const Header: React.FC = () => {
               >
                   <div className="px-4 py-6 space-y-4 flex flex-col">
                       <Link to="/about" className="text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white">{t('appHeader.careers')}</Link>
-                      <Link to="/blog" className="text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white">{t('nav.blog')}</Link>
+                      <Link to="/contact" className="text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white">Contact Us</Link>
                       <Link to="/pricing" className="text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white">{t('nav.pricing')}</Link>
                       <button onClick={scrollToFeatures} className="text-left text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white">{t('appHeader.features')}</button>
                       <div className="pt-4 border-t border-gray-200 dark:border-white/5 flex flex-col gap-3">

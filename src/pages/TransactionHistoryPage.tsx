@@ -94,10 +94,7 @@ const TransactionHistoryPage: React.FC = () => {
     const fetchHistory = async () => {
       setLoading(true);
       try {
-        // Use 'fake-user-for-plans' if user is not logged in, though typically history requires login
-        // But user provided a curl example with uid, so we follow that pattern
-        const uid = user?.id || 'fake-user-for-plans';
-        const response = await subscriptionAPI.getTransactionHistory(1, 20, session, uid);
+        const response = await subscriptionAPI.getTransactionHistory(1, 20, session, user?.id);
         
         console.log('API Response:', response); // Debug log
 

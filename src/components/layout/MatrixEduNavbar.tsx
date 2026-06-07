@@ -84,7 +84,7 @@ const MatrixEduNavbar: React.FC = () => {
           <Link to="/" className={`transition-colors hover:text-gray-900 dark:hover:text-white ${location.pathname === '/' ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>{t('nav.home')}</Link>
           <Link to="/about" className={`transition-colors hover:text-gray-900 dark:hover:text-white ${location.pathname === '/about' ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>{t('nav.about')}</Link>
           <Link to="/pricing" className={`transition-colors hover:text-gray-900 dark:hover:text-white ${location.pathname === '/pricing' ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>{t('nav.pricing')}</Link>
-          <Link to="/blog" className={`transition-colors hover:text-gray-900 dark:hover:text-white ${location.pathname === '/blog' ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>{t('nav.blog')}</Link>
+          <Link to="/contact" className={`transition-colors hover:text-gray-900 dark:hover:text-white ${location.pathname === '/contact' ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>Contact Us</Link>
       </div>
 
       {/* Auth Buttons & Coins */}
@@ -159,7 +159,7 @@ const MatrixEduNavbar: React.FC = () => {
                     <Link to="/" onClick={() => setIsMenuOpen(false)} className="text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-lg">{t('nav.home')}</Link>
                     <Link to="/about" onClick={() => setIsMenuOpen(false)} className="text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-lg">{t('nav.about')}</Link>
                     <Link to="/pricing" onClick={() => setIsMenuOpen(false)} className="text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-lg">{t('nav.pricing')}</Link>
-                    <Link to="/blog" onClick={() => setIsMenuOpen(false)} className="text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-lg">{t('nav.blog')}</Link>
+                    <Link to="/contact" onClick={() => setIsMenuOpen(false)} className="text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-lg">Contact Us</Link>
                     <div className="h-px bg-indigo-100 dark:bg-white/10 my-2"></div>
                     {user ? (
                         <button 

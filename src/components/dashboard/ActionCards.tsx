@@ -14,7 +14,7 @@ const ActionCards: React.FC<ActionCardsProps> = ({ onUpload, onUrl, onText, onRe
   const { t } = useLanguage();
 
   return (
-    <div className={`grid grid-cols-4 gap-2 md:gap-4 transition-all duration-300 ${isCompact ? 'mb-4' : 'mb-8 md:mb-16'}`}>
+        <div className={`grid grid-cols-4 transition-all duration-300 ${isCompact ? 'gap-1 sm:gap-2 mb-0' : 'gap-2 md:gap-4 mb-8 md:mb-16'}`}>
         <ActionCard 
            icon={<FaUpload />} 
            title={t('matrixDashboard.actionCards.upload.title')} 
@@ -59,11 +59,11 @@ const ActionCard: React.FC<ActionCardProps> = ({ icon, title, description, onCli
     <div 
       onClick={onClick}
       className={`bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-xl md:rounded-2xl 
-        ${isCompact ? 'p-2 sm:p-3 flex flex-row items-center justify-center sm:gap-3' : 'p-3 md:p-6 flex flex-col'} 
+        ${isCompact ? 'p-1.5 sm:p-2 min-h-[40px] sm:min-h-[44px] flex items-center justify-center' : 'p-3 md:p-6 flex flex-col'} 
         hover:bg-gray-50 dark:hover:bg-[#151515] hover:border-gray-300 dark:hover:border-white/20 transition-all cursor-pointer group shadow-sm dark:shadow-none h-full`}
     >
-        <div className={`${isCompact ? 'text-lg mb-0' : 'text-xl md:text-2xl mb-2 md:mb-4'} text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors flex-shrink-0`}>{icon}</div>
-        <div className={isCompact ? 'text-left hidden sm:block' : ''}>
+        <div className={`${isCompact ? 'text-base sm:text-lg mb-0' : 'text-xl md:text-2xl mb-2 md:mb-4'} text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors flex-shrink-0`}>{icon}</div>
+        <div className={isCompact ? 'hidden' : ''}>
             <h3 className={`${isCompact ? 'text-sm' : 'text-sm md:text-base'} font-bold mb-0 md:mb-1 text-gray-900 dark:text-white`}>{title}</h3>
             {!isCompact && <p className="text-[10px] md:text-xs text-gray-500 leading-tight block">{description}</p>}
         </div>

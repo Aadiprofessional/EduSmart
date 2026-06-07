@@ -1,6 +1,14 @@
 import { Session } from '@supabase/supabase-js';
 import { API_BASE_URL, getDefaultHeaders } from '../config/api';
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const normalizeUid = (uid?: string | null): string => {
+  const trimmed = uid?.trim();
+  if (!trimmed) return '';
+  return UUID_REGEX.test(trimmed) ? trimmed : '';
+};
+
 // Helper function to make API calls with authentication
 const apiCall = async (method: string, endpoint: string, data: any = null, session?: Session | null, requireAuth: boolean = true) => {
   try {
@@ -207,7 +215,8 @@ export interface AdRewardResponse {
 export const subscriptionAPI = {
   // Authenticated endpoints (require session)
   getPlans: async (session?: Session | null, uid?: string): Promise<{ success: boolean; data?: SubscriptionPlan[]; error?: string }> => {
-    const queryParams = uid ? `?uid=${uid}` : (session?.user?.id ? `?uid=${session.user.id}` : '');
+    const validUid = normalizeUid(uid) || normalizeUid(session?.user?.id);
+    const queryParams = validUid ? `?uid=${encodeURIComponent(validUid)}` : '';
     return apiCall('GET', `/api/subscriptions/plans${queryParams}`, null, session, false);
   },
 
@@ -394,7 +403,8 @@ export const subscriptionAPI = {
   },
 
   getTransactionHistory: async (page: number = 1, limit: number = 10, session?: Session | null, uid?: string): Promise<{ success: boolean; data?: { transactions: Transaction[]; pagination: any }; error?: string }> => {
-    const uidParam = uid ? `&uid=${uid}` : (session?.user?.id ? `&uid=${session.user.id}` : '');
+    const validUid = normalizeUid(uid) || normalizeUid(session?.user?.id);
+    const uidParam = validUid ? `&uid=${encodeURIComponent(validUid)}` : '';
     return apiCall('GET', `/api/subscriptions/transactions?page=${page}&limit=${limit}${uidParam}`, null, session);
   },
 

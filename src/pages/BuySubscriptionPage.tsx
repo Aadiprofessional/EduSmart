@@ -24,9 +24,7 @@ const BuySubscriptionPage: React.FC = () => {
     if (!plan && planId) {
       const fetchPlan = async () => {
         try {
-          // Use 'fake-user-for-plans' if user is not logged in
-          const uid = user?.id || 'fake-user-for-plans';
-          const response = await subscriptionAPI.getPlans(session, uid);
+          const response = await subscriptionAPI.getPlans(session, user?.id);
           
           if (response.success && response.data) {
             const foundPlan = response.data.find(p => p.id === planId);

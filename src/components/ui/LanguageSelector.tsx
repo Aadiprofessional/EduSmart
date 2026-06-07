@@ -48,7 +48,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ compactMobile = fal
   const updateDropdownPosition = () => {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
-      const dropdownWidth = isMobile ? (compactMobile ? 240 : 280) : 224;
+      const dropdownWidth = isMobile ? (compactMobile ? 192 : 280) : 224;
       
       if (isMobile) {
         setDropdownPosition({
@@ -130,7 +130,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ compactMobile = fal
   const dropdownContent = isOpen ? (
     <div
       className={`language-dropdown fixed bg-white/95 dark:bg-[#050505]/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-indigo-100 dark:border-white/15 py-3 ${
-        isMobile ? (compactMobile ? 'w-60' : 'w-72') : 'w-56'
+        isMobile ? (compactMobile ? 'w-48' : 'w-72') : 'w-56'
       }`}
       style={{
         top: `${dropdownPosition.top}px`,
@@ -162,11 +162,11 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ compactMobile = fal
               language === option.code
                 ? 'text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20'
                 : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
-            } ${isMobile ? 'py-4' : ''}`} // Larger touch targets on mobile
+            } ${isMobile ? (compactMobile ? 'py-2.5' : 'py-4') : ''}`} // Larger touch targets on mobile
           >
             <div className="flex items-center gap-3">
               <span className={`inline-flex items-center justify-center rounded-md border px-2 py-1 font-semibold tracking-wide ${
-                isMobile ? 'text-xs' : 'text-[10px]'
+                isMobile ? (compactMobile ? 'text-[11px]' : 'text-xs') : 'text-[10px]'
               } ${
                 language === option.code
                   ? 'border-indigo-300 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-200'
@@ -175,11 +175,11 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ compactMobile = fal
                 {option.shortLabel}
               </span>
               <div className="flex flex-col items-start">
-                <span className={`font-medium ${isMobile ? 'text-base' : 'text-sm'}`}>
+                <span className={`font-medium ${isMobile ? (compactMobile ? 'text-sm' : 'text-base') : 'text-sm'}`}>
                   {option.nativeName}
                 </span>
                 {option.nativeName !== option.name && (
-                  <span className={`text-gray-500 dark:text-gray-500 ${isMobile ? 'text-sm' : 'text-xs'}`}>
+                  <span className={`text-gray-500 dark:text-gray-500 ${isMobile ? (compactMobile ? 'text-xs' : 'text-sm') : 'text-xs'}`}>
                     {option.name}
                   </span>
                 )}
@@ -205,25 +205,25 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ compactMobile = fal
         className={`group flex items-center rounded-full border transition-all duration-200 ${
           isMobile
             ? compactMobile
-              ? 'gap-1.5 px-2.5 py-2 border-indigo-200 dark:border-white/20 bg-white dark:bg-white/5 hover:bg-indigo-50 dark:hover:bg-white/10 hover:border-indigo-300 dark:hover:border-white/30'
+              ? 'gap-1 px-2 py-1.5 border-indigo-200 dark:border-white/20 bg-white dark:bg-white/5 hover:bg-indigo-50 dark:hover:bg-white/10 hover:border-indigo-300 dark:hover:border-white/30'
               : 'gap-2 px-3 py-2.5 border-indigo-200 dark:border-white/20 bg-white dark:bg-white/5 hover:bg-indigo-50 dark:hover:bg-white/10 hover:border-indigo-300 dark:hover:border-white/30'
             : 'gap-2 px-3 py-1.5 border-indigo-200 dark:border-white/15 bg-white dark:bg-white/[0.04] hover:bg-indigo-50 dark:hover:bg-white/10 hover:border-indigo-300 dark:hover:border-white/30'
         }`}
         aria-label={t('languageSelector.title')}
       >
         <span className={`inline-flex items-center justify-center rounded-md border border-indigo-200 dark:border-white/20 bg-indigo-50 dark:bg-white/5 font-semibold text-gray-700 dark:text-white/90 tracking-wide ${
-          isMobile ? (compactMobile ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-1 text-xs') : 'px-2 py-1 text-[10px]'
+          isMobile ? (compactMobile ? 'px-1 py-0.5 text-[9px]' : 'px-2 py-1 text-xs') : 'px-2 py-1 text-[10px]'
         }`}>
           {currentLanguage.shortLabel}
         </span>
         {!(isMobile && compactMobile) && (
           <span className={`font-medium text-gray-700 dark:text-white/80 group-hover:text-gray-900 dark:group-hover:text-white ${isMobile ? 'text-sm' : 'text-xs'}`}>{currentLanguage.nativeName}</span>
         )}
-        <IconComponent icon={AiOutlineGlobal} className={`${isMobile ? 'h-4 w-4' : 'h-3.5 w-3.5'} text-indigo-600 dark:text-indigo-300`} />
+        <IconComponent icon={AiOutlineGlobal} className={`${isMobile ? (compactMobile ? 'h-3.5 w-3.5' : 'h-4 w-4') : 'h-3.5 w-3.5'} text-indigo-600 dark:text-indigo-300`} />
         <IconComponent 
           icon={AiOutlineDown} 
           className={`transition-transform duration-200 text-gray-500 dark:text-white/70 ${isOpen ? 'rotate-180' : ''} ${
-            isMobile ? 'h-4 w-4' : 'h-3 w-3'
+            isMobile ? (compactMobile ? 'h-3.5 w-3.5' : 'h-4 w-4') : 'h-3 w-3'
           }`} 
         />
       </button>

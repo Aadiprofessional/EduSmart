@@ -33,6 +33,7 @@ import LogoWithText from '../ui/LogoWithText';
 import CoinPanel from '../ads/CoinPanel';
 import SubscriptionBadge from '../ads/SubscriptionBadge';
 import { subscriptionAPI } from '../../utils/subscriptionAPI';
+import { useAdReward } from '../../utils/AdRewardContext';
 
 interface SidebarLeftProps {
   className?: string;
@@ -46,6 +47,7 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
   const { user, session, signOut } = useAuth();
   const { t, language, setLanguage } = useLanguage();
   const { theme, setTheme } = useTheme();
+  const { currentCoins } = useAdReward();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
   const [deleteConfirmStep, setDeleteConfirmStep] = useState<0 | 1 | 2>(0);
@@ -92,6 +94,7 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
   ];
 
   const currentLangLabel = languageOptions.find(l => l.code === language)?.label || language;
+  const displayCoins = Math.min(Math.max(currentCoins, 0), 9999);
 
   return (
     <AnimatePresence>
@@ -266,9 +269,15 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({ className = '', isOpen = true
                 <div className="w-8 h-8 rounded-full bg-cyan-600 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
                   {user?.email?.substring(0, 2).toUpperCase() || 'AI'}
                 </div>
-                <div className="flex-1 overflow-hidden">
+                <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate text-gray-900 dark:text-white">{user?.email?.split('@')[0] || t('sidebar.user')}</p>
-                  <SubscriptionBadge className="mt-0.5" />
+                  <div className="mt-0.5 flex flex-wrap items-center gap-1.5 w-full">
+                    <SubscriptionBadge className="shrink-0" />
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-yellow-500/20 border border-yellow-500/40 text-yellow-300 shrink-0 max-w-full">
+                      <FaCoins size={10} className="text-yellow-400" />
+                      <span className="tabular-nums leading-none">{displayCoins}</span>
+                    </span>
+                  </div>
                 </div>
                 {isMenuOpen ? <FaChevronUp size={12} className="text-gray-500 flex-shrink-0" /> : <FaChevronDown size={12} className="text-gray-500 flex-shrink-0" />}
             </div>

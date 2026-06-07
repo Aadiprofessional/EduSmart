@@ -26,20 +26,22 @@ const ThankYou: React.FC = () => {
   const { t } = useLanguage();
   
   const state = location.state as ThankYouState;
+  const resolvedPlanName = state?.planName || (state?.isAddon ? 'Coin Add-on' : 'Pro Plan');
+  const resolvedPlanPrice = typeof state?.planPrice === 'number' ? state.planPrice : 0;
 
-  // Redirect to home if no user or no purchase state
+  // Keep users in dashboard flow after successful payment.
   useEffect(() => {
-    if (!user || !state) {
-      navigate('/', { replace: true });
+    if (!user) {
+      navigate('/login', { replace: true });
       return;
     }
 
     // Refresh subscription status
     refreshStatus();
 
-    // Prevent back navigation - redirect to home
+    // Prevent back navigation from taking users back into checkout.
     const handlePopState = () => {
-      navigate('/', { replace: true });
+      navigate('/dashboard', { replace: true });
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -50,19 +52,19 @@ const ThankYou: React.FC = () => {
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [user, state, navigate, refreshStatus]);
+  }, [user, navigate, refreshStatus]);
 
-  // Auto redirect to home after 10 seconds
+  // Auto redirect to dashboard after 10 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
-      navigate('/', { replace: true });
+      navigate('/dashboard', { replace: true });
     }, 10000);
 
     return () => clearTimeout(timer);
   }, [navigate]);
 
   const handleGoHome = () => {
-    navigate('/', { replace: true });
+    navigate('/dashboard', { replace: true });
   };
 
   const containerVariants: Variants = {
@@ -112,7 +114,7 @@ const ThankYou: React.FC = () => {
     }
   };
 
-  if (!user || !state) {
+  if (!user) {
     return null;
   }
 
@@ -170,10 +172,10 @@ const ThankYou: React.FC = () => {
               {t('thankYou.title')}
             </h1>
             <p className="text-2xl md:text-3xl text-white mb-4 font-semibold">
-              {state.isAddon ? t('thankYou.addonPurchaseSuccessful') : t('thankYou.welcomeToPro')}
+              {state?.isAddon ? t('thankYou.addonPurchaseSuccessful') : t('thankYou.welcomeToPro')}
             </p>
             <p className="text-lg text-gray-300 mb-8 max-w-xl mx-auto">
-              {state.isAddon 
+              {state?.isAddon 
                 ? t('thankYou.addonMessage')
                 : t('thankYou.proMessage')
               }
@@ -191,15 +193,15 @@ const ThankYou: React.FC = () => {
                 animate={{ rotate: [0, 5, -5, 0] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
-                <IconComponent icon={state.isAddon ? FaGift : FaCrown} className="w-8 h-8 text-white" />
+                <IconComponent icon={state?.isAddon ? FaGift : FaCrown} className="w-8 h-8 text-white" />
               </motion.div>
               <div>
-                <h3 className="text-xl font-bold text-white">{state.planName}</h3>
-                <p className="text-2xl font-bold text-green-400">${state.planPrice}</p>
+                <h3 className="text-xl font-bold text-white">{resolvedPlanName}</h3>
+                <p className="text-2xl font-bold text-green-400">${resolvedPlanPrice}</p>
               </div>
             </div>
             
-            {state.transactionId && (
+            {state?.transactionId && (
               <div className="text-center">
                 <p className="text-gray-400 text-sm mb-1">{t('thankYou.transactionId')}</p>
                 <p className="text-white font-mono text-sm bg-gray-800/50 px-3 py-1 rounded-lg inline-block">
@@ -214,7 +216,7 @@ const ThankYou: React.FC = () => {
             className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8"
             variants={itemVariants}
           >
-            {!state.isAddon && (
+            {!state?.isAddon && (
               <>
                 <motion.div
                   className="bg-black/20 backdrop-blur-xl rounded-2xl border border-white/10 p-6"
@@ -245,7 +247,7 @@ const ThankYou: React.FC = () => {
               </>
             )}
             
-            {state.isAddon && (
+            {state?.isAddon && (
               <motion.div
                 className="bg-black/20 backdrop-blur-xl rounded-2xl border border-white/10 p-6 md:col-span-3"
                 whileHover={{ scale: 1.05, y: -5 }}
